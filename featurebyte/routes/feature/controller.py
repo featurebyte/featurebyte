@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Union
+from typing import Any, Dict, Literal, Union
 
 from http import HTTPStatus
 
@@ -12,6 +12,7 @@ from fastapi.exceptions import HTTPException
 
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature import (
@@ -109,6 +110,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             await self.feature_readiness_service.update_feature(
                 feature_id=feature_id,
                 readiness=FeatureReadiness(data.readiness),
+                ignore_guardrails=bool(data.ignore_guardrails),
                 return_document=False,
             )
         return await self.get(document_id=feature_id)
@@ -119,7 +121,11 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
-        **kwargs: Any,
+        search: str | None = None,
+        name: str | None = None,
+        version: str | None = None,
+        feature_list_id: ObjectId | None = None,
+        feature_namespace_id: ObjectId | None = None,
     ) -> FeaturePaginatedList:
         """
         List documents stored at persistent (GitDB or MongoDB)
@@ -134,23 +140,32 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             Key used to sort the returning documents
         sort_dir: "asc" or "desc"
             Sorting the returning documents in ascending order or descending order
-        kwargs: Any
-            Additional keyword arguments
+        search: str | None
+            Search token to be used in filtering
+        name: str | None
+            Feature name to be used in filtering
+        version: str | None
+            Feature version to be used in filtering
+        feature_list_id: ObjectId | None
+            Feature list ID to be used in filtering
+        feature_namespace_id: ObjectId | None
+            Feature namespace ID to be used in filtering
 
         Returns
         -------
         FeaturePaginatedList
             List of documents fulfilled the filtering condition
         """
-        params = kwargs.copy()
-        feature_list_id = params.pop("feature_list_id")
+        params: Dict[str, Any] = {"search": search, "name": name}
+        if version:
+            params["version"] = VersionIdentifier.from_str(version).dict()
+
         if feature_list_id:
             feature_list_document = await self.feature_list_service.get_document(
                 document_id=feature_list_id
             )
             params["query_filter"] = {"_id": {"$in": feature_list_document.feature_ids}}
 
-        feature_namespace_id = params.pop("feature_namespace_id")
         if feature_namespace_id:
             query_filter = params.get("query_filter", {}).copy()
             query_filter["feature_namespace_id"] = feature_namespace_id

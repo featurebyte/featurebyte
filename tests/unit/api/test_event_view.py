@@ -15,12 +15,16 @@ from featurebyte.api.feature import Feature
 from featurebyte.enum import DBVarType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TableDetails, TabularSource
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.cleaning_operation import (
+    DisguisedValueImputation,
+    MissingValueImputation,
+)
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import get_node
+from tests.util.helper import check_sdk_code_generation, get_node
 
 
 class TestEventView(BaseViewTestSuite):
@@ -31,9 +35,24 @@ class TestEventView(BaseViewTestSuite):
     protected_columns = ["event_timestamp"]
     view_type = ViewType.EVENT_VIEW
     col = "cust_id"
-    factory_method = EventView.from_event_data
     view_class = EventView
     bool_col = "col_boolean"
+    expected_view_with_raw_accessor_sql = """
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      CAST("event_timestamp" AS STRING) AS "event_timestamp",
+      "cust_id" AS "cust_id",
+      (
+        "cust_id" + 1
+      ) AS "new_col"
+    FROM "sf_database"."sf_schema"."sf_table"
+    LIMIT 10
+    """
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
         assert row_subset.default_feature_job_setting == view_under_test.default_feature_job_setting
@@ -44,11 +63,15 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache):
     Test from_event_data
     """
     _ = mock_api_object_cache
-    event_view_first = EventView.from_event_data(snowflake_event_data)
+    event_view_first = snowflake_event_data.get_view()
+    expected_view_columns_info = [
+        col
+        for col in snowflake_event_data.columns_info
+        if col.name != snowflake_event_data.record_creation_date_column
+    ]
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
-    assert event_view_first.node.parameters == snowflake_event_data.frame.node.parameters
     assert event_view_first.row_index_lineage == snowflake_event_data.frame.row_index_lineage
-    assert event_view_first.columns_info == snowflake_event_data.columns_info
+    assert event_view_first.columns_info == expected_view_columns_info
 
     entity = Entity(name="customer", serving_names=["cust_id"])
     entity.save()
@@ -58,14 +81,19 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache):
             blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
         )
     )
-    event_view_second = EventView.from_event_data(snowflake_event_data)
-    assert event_view_second.columns_info == snowflake_event_data.columns_info
+    event_view_second = snowflake_event_data.get_view()
+    expected_view_columns_info = [
+        col
+        for col in snowflake_event_data.columns_info
+        if col.name != snowflake_event_data.record_creation_date_column
+    ]
+    assert event_view_second.columns_info == expected_view_columns_info
     assert event_view_second.default_feature_job_setting == FeatureJobSetting(
         blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
     )
 
 
-def test_getitem__list_of_str(snowflake_event_view):
+def test_getitem__list_of_str_contains_protected_column(snowflake_event_data, snowflake_event_view):
     """
     Test retrieving subset of the event data features
     """
@@ -114,7 +142,9 @@ def test_getitem__list_of_str(snowflake_event_view):
         ("col_text", 2, DBVarType.VARCHAR),
     ],
 )
-def test_event_view_column_lag(snowflake_event_view, column, offset, expected_var_type):
+def test_event_view_column_lag(
+    snowflake_event_view, snowflake_event_data, column, offset, expected_var_type
+):
     """
     Test EventViewColumn lag operation
     """
@@ -135,6 +165,18 @@ def test_event_view_column_lag(snowflake_event_view, column, offset, expected_va
         "offset": expected_offset_param,
     }
     assert lagged_column.tabular_data_ids == snowflake_event_view[column].tabular_data_ids
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        lagged_column,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+            }
+        },
+    )
 
 
 def test_event_view_column_lag__invalid(snowflake_event_view):
@@ -173,7 +215,9 @@ def test_event_view_copy(snowflake_event_view):
     assert id(deep_view_column.graph.nodes) == id(view_column.graph.nodes)
 
 
-def test_event_view_groupby__prune(snowflake_event_view_with_entity):
+def test_event_view_groupby__prune(
+    snowflake_event_view_with_entity, snowflake_event_data_with_entity
+):
     """Test event view groupby pruning algorithm"""
     event_view = snowflake_event_view_with_entity
     feature_job_setting = {
@@ -204,17 +248,34 @@ def test_event_view_groupby__prune(snowflake_event_view_with_entity):
     pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()
     # assign 1 & assign 2 dependency are kept
     assert pruned_graph.edges_map == {
-        "input_1": ["project_1", "assign_1"],
-        "project_1": ["add_1"],
         "add_1": ["assign_1", "add_2"],
         "add_2": ["assign_2"],
         "assign_1": ["assign_2"],
         "assign_2": ["groupby_1", "groupby_2"],
+        "graph_1": ["project_1", "assign_1"],
         "groupby_1": ["project_2"],
         "groupby_2": ["project_3"],
+        "input_1": ["graph_1"],
+        "project_1": ["add_1"],
         "project_2": ["mul_1"],
         "project_3": ["mul_1"],
     }
+
+    # check SDK code generation
+    event_data_columns_info = snowflake_event_data_with_entity.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data_with_entity.id: {
+                "name": snowflake_event_data_with_entity.name,
+                "record_creation_date_column": snowflake_event_data_with_entity.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail during GroupBy construction
+                "columns_info": event_data_columns_info,
+            }
+        },
+    )
 
 
 def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_event_view):
@@ -547,12 +608,13 @@ def get_generic_input_node_params_fixture():
     }
 
 
-def test_add_feature(snowflake_event_view, non_time_based_feature):
+def test_add_feature(
+    snowflake_event_data, snowflake_event_view, snowflake_item_data, non_time_based_feature
+):
     """
     Test add feature
     """
     original_column_info = copy.deepcopy(snowflake_event_view.columns_info)
-    original_node_name = snowflake_event_view.node_name
 
     # Add feature
     snowflake_event_view.add_feature("new_col", non_time_based_feature, "cust_id")
@@ -569,7 +631,7 @@ def test_add_feature(snowflake_event_view, non_time_based_feature):
 
     join_feature_node_name = snowflake_event_view.node.name
     assert join_feature_node_name.startswith("join_feature")
-    assert snowflake_event_view.row_index_lineage == (original_node_name,)
+    assert snowflake_event_view.row_index_lineage == (snowflake_event_data.frame.node_name,)
 
     # assert graph node (excluding name since that can changed by graph pruning)
     view_dict = snowflake_event_view.dict()
@@ -583,12 +645,102 @@ def test_add_feature(snowflake_event_view, non_time_based_feature):
         "view_point_in_time_column": None,
     }
     assert view_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "join_1"},
-        {"source": "input_2", "target": "join_1"},
-        {"source": "join_1", "target": "item_groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "input_2", "target": "graph_2"},
+        {"source": "graph_1", "target": "graph_2"},
+        {"source": "graph_2", "target": "item_groupby_1"},
         {"source": "item_groupby_1", "target": "project_1"},
-        {"source": "input_1", "target": "join_feature_1"},
+        {"source": "graph_1", "target": "join_feature_1"},
         {"source": "project_1", "target": "join_feature_1"},
+    ]
+
+    # check SDK code generation
+    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
+    item_data_columns_info = snowflake_item_data.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        snowflake_event_view,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in GroupBy construction
+                "columns_info": event_data_columns_info,
+            },
+            snowflake_item_data.id: {
+                "name": snowflake_item_data.name,
+                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in GroupBy construction
+                "columns_info": item_data_columns_info,
+            },
+        },
+    )
+
+
+def test_add_feature__wrong_type(snowflake_event_view):
+    """
+    Test add feature with invalid type
+    """
+    with pytest.raises(TypeError) as exc_info:
+        col = snowflake_event_view["col_int"]
+        snowflake_event_view.add_feature("new_col", col, "cust_id")
+    assert (
+        str(exc_info.value)
+        == 'type of argument "feature" must be Feature; got EventViewColumn instead'
+    )
+
+
+def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
+    snowflake_event_data_with_entity, feature_group_feature_job_setting
+):
+    """Test pruned feature only keeps minimum required cleaning operations"""
+    subset_cols = ["col_int", "col_float"]
+    for col in subset_cols:
+        snowflake_event_data_with_entity[col].update_critical_data_info(
+            cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+        )
+
+    # create event view & the metadata
+    event_view = snowflake_event_data_with_entity.get_view()
+    graph_metadata = event_view.node.parameters.metadata
+    assert graph_metadata.column_cleaning_operations == [
+        {
+            "column_name": "col_int",
+            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+        },
+        {
+            "column_name": "col_float",
+            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+        },
+    ]
+
+    # create feature
+    feature_group = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )
+    feat = feature_group["sum_30m"]
+
+    # check pruned graph's nested graph nodes
+    pruned_graph, node = feat.extract_pruned_graph_and_node()
+    nested_view_graph_node = pruned_graph.get_node_by_name("graph_1")
+    assert nested_view_graph_node.parameters.type == "event_view"
+
+    # note that cleaning operation is not pruned before saving
+    assert nested_view_graph_node.parameters.metadata.column_cleaning_operations == [
+        {
+            "column_name": "col_int",
+            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+        },
+        {
+            "column_name": "col_float",
+            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+        },
     ]
 
 
@@ -606,3 +758,37 @@ def test__validate_column_is_not_used(empty_event_view_builder):
     with pytest.raises(ValueError) as exc_info:
         event_view._validate_column_is_not_used(new_column_name=col_name)
     assert "New column name provided is already a column in the existing view" in str(exc_info)
+
+
+def test_sdk_code_generation(saved_event_data, update_fixtures):
+    """Check SDK code generation"""
+    to_use_saved_data = True
+    event_view = saved_event_data.get_view()
+    check_sdk_code_generation(
+        event_view,
+        to_use_saved_data=to_use_saved_data,
+        fixture_path="tests/fixtures/sdk_code/event_view.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_event_data.id,
+    )
+
+    # add some cleaning operations to the data before view construction
+    saved_event_data.col_int.update_critical_data_info(
+        cleaning_operations=[
+            MissingValueImputation(imputed_value=-1),
+        ]
+    )
+    saved_event_data.col_float.update_critical_data_info(
+        cleaning_operations=[
+            DisguisedValueImputation(disguised_values=[-99], imputed_value=-1),
+        ]
+    )
+
+    event_view = saved_event_data.get_view()
+    check_sdk_code_generation(
+        event_view,
+        to_use_saved_data=to_use_saved_data,
+        fixture_path="tests/fixtures/sdk_code/event_view_with_column_clean_ops.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_event_data.id,
+    )

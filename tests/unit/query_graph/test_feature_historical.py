@@ -29,6 +29,7 @@ def mocked_session_fixture():
         mocked_session = Mock(name="MockedSession", sf_schema="FEATUREBYTE")
         mocked_session.register_table = AsyncMock()
         mocked_session.generate_session_unique_id = Mock(return_value="1")
+        mocked_session.source_type = SourceType.SNOWFLAKE
         session_manager_cls.return_value = session_manager
         yield mocked_session
 
@@ -52,7 +53,7 @@ async def test_get_historical_features__missing_point_in_time(
     mock_snowflake_feature, mocked_session
 ):
     """Test validation of missing point in time for historical features"""
-    training_events = pd.DataFrame(
+    observation_set = pd.DataFrame(
         {
             "cust_id": ["C1", "C2", "C3"],
         }
@@ -62,7 +63,7 @@ async def test_get_historical_features__missing_point_in_time(
             session=mocked_session,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
-            training_events=training_events,
+            observation_set=observation_set,
             source_type=SourceType.SNOWFLAKE,
         )
     assert str(exc_info.value) == "POINT_IN_TIME column is required"
@@ -78,7 +79,7 @@ async def test_get_historical_features__too_recent_point_in_time(
     point_in_time_vals = ["2022-04-15", "2022-04-30"]
     if point_in_time_is_datetime_dtype:
         point_in_time_vals = pd.to_datetime(point_in_time_vals)
-    training_events = pd.DataFrame(
+    observation_set = pd.DataFrame(
         {
             "POINT_IN_TIME": point_in_time_vals,
             "cust_id": ["C1", "C2"],
@@ -89,7 +90,7 @@ async def test_get_historical_features__too_recent_point_in_time(
             session=mocked_session,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
-            training_events=training_events,
+            observation_set=observation_set,
             source_type=SourceType.SNOWFLAKE,
         )
     assert str(exc_info.value) == (
@@ -103,7 +104,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     float_feature,
     config,
     mocked_session,
-    mocked_tile_cache,
+    mocked_compute_tiles_on_demand,
 ):
     """
     Test that if point in time column is provided as string, it is converted to datetime before
@@ -123,17 +124,17 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
         session=mocked_session,
         graph=float_feature.graph,
         nodes=[float_feature.node],
-        training_events=df_request,
+        observation_set=df_request,
         source_type=SourceType.SNOWFLAKE,
     )
 
     # Check POINT_IN_TIME is converted to datetime
     mocked_session.register_table.assert_awaited_once()
     args, _ = mocked_session.register_table.await_args_list[0]
-    df_training_events_registered = args[1]
-    assert df_training_events_registered.dtypes["POINT_IN_TIME"] == "datetime64[ns]"
+    df_observation_set_registered = args[1]
+    assert df_observation_set_registered.dtypes["POINT_IN_TIME"] == "datetime64[ns]"
 
-    mocked_tile_cache.compute_tiles_on_demand.assert_called_once()
+    mocked_compute_tiles_on_demand.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -141,7 +142,7 @@ async def test_get_historical_features__skip_tile_cache_if_deployed(
     float_feature,
     config,
     mocked_session,
-    mocked_tile_cache,
+    mocked_compute_tiles_on_demand,
 ):
     """
     Test that for with is_feature_list_deployed=True on demand tile computation is skipped
@@ -157,11 +158,11 @@ async def test_get_historical_features__skip_tile_cache_if_deployed(
         session=mocked_session,
         graph=float_feature.graph,
         nodes=[float_feature.node],
-        training_events=df_request,
+        observation_set=df_request,
         source_type=SourceType.SNOWFLAKE,
         is_feature_list_deployed=True,
     )
-    mocked_tile_cache.compute_tiles_on_demand.assert_not_called()
+    mocked_compute_tiles_on_demand.assert_not_called()
 
 
 def test_get_historical_feature_sql(float_feature, update_fixtures):
@@ -200,24 +201,24 @@ def test_get_historical_feature_sql__serving_names_mapping(float_feature, update
 
 def test_validate_historical_requests_point_in_time():
     """Test validate_historical_requests_point_in_time work with timestamps that contain timezone"""
-    original_training_events = pd.DataFrame(
+    original_observation_set = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.date_range("2020-01-01T10:00:00+08:00", freq="D", periods=10),
         }
     )
-    training_events = original_training_events.copy()
+    observation_set = original_observation_set.copy()
 
     # this should not fail and convert point-in-time values to UTC
-    validated_training_events = validate_historical_requests_point_in_time(training_events)
+    validated_observation_set = validate_historical_requests_point_in_time(observation_set)
     expected_df = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.date_range("2020-01-01T02:00:00", freq="D", periods=10),
         }
     )
-    assert_frame_equal(validated_training_events, expected_df)
+    assert_frame_equal(validated_observation_set, expected_df)
 
-    # training_events should not be modified
-    assert_frame_equal(training_events, original_training_events)
+    # observation_set should not be modified
+    assert_frame_equal(observation_set, original_observation_set)
 
 
 def test_get_historical_feature_sql__with_missing_value_imputation(

@@ -12,13 +12,17 @@ from pydantic import Field, StrictStr
 from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
+    FeatureByteWorkspaceBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
@@ -109,7 +113,7 @@ class ConstructGraphMixin:
         return graph, inserted_input_node
 
 
-class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel, ABC):
+class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteWorkspaceBaseDocumentModel, ABC):
     """
     DataModel schema
 
@@ -150,6 +154,17 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel
         return list(set(col.semantic_id for col in self.columns_info if col.semantic_id))
 
     @property
+    def table_data(self) -> BaseTableData:
+        """
+        Table data
+
+        Returns
+        -------
+        BaseTableData
+        """
+        return self._table_data_class(**self.json_dict())
+
+    @property
     @abstractmethod
     def primary_key_columns(self) -> List[str]:
         """
@@ -158,6 +173,27 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel
         Returns
         -------
         List[str]
+        """
+
+    @abstractmethod
+    def create_view_graph_node(
+        self, input_node: InputNode, metadata: Any, **kwargs: Any
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Create view graph node
+
+        Parameters
+        ----------
+        input_node: InputNode
+            Input node
+        metadata: Any
+            Metadata add to the graph node
+        kwargs: Any
+            Additional arguments
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
         """
 
     class Settings(FeatureByteBaseDocumentModel.Settings):

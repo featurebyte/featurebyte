@@ -6,26 +6,18 @@ import pytest
 from featurebyte.session.base import BaseSession
 
 
-@pytest.fixture(name="db_session", scope="session")
-def db_session_fixture(request):
-    if request.param == "snowflake":
-        return request.getfixturevalue("snowflake_session")
-    elif request.param == "databricks":
-        return request.getfixturevalue("databricks_session")
-    raise NotImplementedError(f"{request.param}")
-
-
 @pytest.mark.parametrize(
-    "db_session",
+    "source_type",
     [
         "snowflake",
         # "databricks",
+        "spark",
     ],
     indirect=True,
 )
 @pytest.mark.asyncio
 async def test_timestamp_to_index(
-    db_session,
+    session,
     timestamp_to_index_fixture,
 ):
     """
@@ -39,15 +31,22 @@ async def test_timestamp_to_index(
         tile_index,
     ) = timestamp_to_index_fixture
 
-    sql = f"SELECT F_TIMESTAMP_TO_INDEX('{test_input}', {time_modulo_frequency_second}, {blind_spot_second}, {frequency_minute}) as INDEX"
-    assert isinstance(db_session, BaseSession)
-    result = await db_session.execute_query(sql)
+    sql = f"""
+        SELECT F_TIMESTAMP_TO_INDEX(
+            CAST('{test_input}' AS TIMESTAMP),
+            {time_modulo_frequency_second},
+            {blind_spot_second},
+            {frequency_minute}
+        ) as INDEX
+        """
+    assert isinstance(session, BaseSession)
+    result = await session.execute_query(sql)
     res = result["INDEX"].iloc[0]
     assert res == tile_index
 
 
 @pytest.mark.parametrize(
-    "db_session",
+    "source_type",
     [
         "snowflake",
         # "databricks",
@@ -56,7 +55,7 @@ async def test_timestamp_to_index(
 )
 @pytest.mark.asyncio
 async def test_index_to_timestamp(
-    db_session,
+    session,
     index_to_timestamp_fixture,
 ):
     """
@@ -71,7 +70,7 @@ async def test_index_to_timestamp(
     ) = index_to_timestamp_fixture
 
     sql = f"SELECT F_INDEX_TO_TIMESTAMP({tile_index}, {time_modulo_frequency_second}, {blind_spot_second}, {frequency_minute}) as TIMESTAMP"
-    assert isinstance(db_session, BaseSession)
-    result = await db_session.execute_query(sql)
+    assert isinstance(session, BaseSession)
+    result = await session.execute_query(sql)
     res = result["TIMESTAMP"].iloc[0]
     assert res == time_stamp_str

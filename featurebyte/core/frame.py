@@ -3,18 +3,19 @@ Frame class
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Tuple, TypeVar, Union
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, validator
 from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import GetAttrMixin, OpsMixin, SampleMixin
-from featurebyte.core.series import Series
+from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.node.validator import construct_unique_name_validator
 
 
 class BaseFrame(QueryObject, SampleMixin):
@@ -28,6 +29,11 @@ class BaseFrame(QueryObject, SampleMixin):
     """
 
     columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
+
+    # pydantic validator
+    _validate_column_names = validator("columns_info", allow_reuse=True)(
+        construct_unique_name_validator(field="name")
+    )
 
     @property
     def column_var_type_map(self) -> dict[str, DBVarType]:
@@ -63,12 +69,17 @@ class BaseFrame(QueryObject, SampleMixin):
         return list(self.column_var_type_map)
 
 
-class Frame(BaseFrame, OpsMixin, GetAttrMixin):
+FrozenFrameT = TypeVar("FrozenFrameT", bound="FrozenFrame")
+
+
+class FrozenFrame(BaseFrame, OpsMixin, GetAttrMixin):
     """
-    Implement operations to manipulate database table
+    FrozenFrame class used for representing a table in the query graph with the ability to perform
+    column(s) subsetting and row filtering. This class is immutable as it does not support
+    in-place modification of the table in the query graph.
     """
 
-    _series_class = Series
+    _series_class = FrozenSeries
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
@@ -92,13 +103,13 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         """
         return {}
 
-    def _check_any_missing_column(self, item: str | list[str] | Series) -> None:
+    def _check_any_missing_column(self, item: str | list[str] | FrozenSeries) -> None:
         """
         Check whether there is any unknown column from the specified item (single column or list of columns)
 
         Parameters
         ----------
-        item: str | list[str]
+        item: str | list[str] | FrozenSeries
             input column(s)
 
         Raises
@@ -115,7 +126,9 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 raise KeyError(f"Columns {not_found_columns} not found!")
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
+    def __getitem__(
+        self, item: Union[str, List[str], FrozenSeries]
+    ) -> Union[FrozenSeries, FrozenFrame]:
         """
         Extract column or perform row filtering on the table. When the item has a `str` or `list[str]` type,
         column(s) projection is expected. When the item has a boolean `Series` type, row filtering operation
@@ -123,39 +136,20 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
 
         Parameters
         ----------
-        item: Union[str, List[str], Series]
+        item: Union[str, List[str], FrozenSeries]
             input item used to perform column(s) projection or row filtering
 
         Returns
         -------
-        Series or Frame
+        FrozenSeries or FrozenFrame
         """
         self._check_any_missing_column(item)
         if isinstance(item, str):
-            # When single column projection happens, the last node of the Series lineage
-            # (from the operation structure) is used rather than the DataFrame's last node (`self.node`).
-            # This is to prevent adding redundant project node to the graph when the value of the column does
-            # not change. Consider the following case if `self.node` is used:
-            # >>> df["c"] = df["b"]
-            # >>> b = df["b"]
-            # >>> dict(df.graph.edges)
-            # {
-            #     "input_1": ["project_1", "assign_1"],
-            #     "project_1": ["assign_1"],
-            #     "assign_1": ["project_2"]
-            # }
-            # Current implementation uses the last node of each lineage, it results in a simpler graph:
-            # >>> dict(df.graph.edges)
-            # {
-            #     "input_1": ["project_1", "assign_1"],
-            #     "project_1": ["assign_1"],
-            # }
-            op_struct = self.graph.extract_operation_structure(node=self.node)
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": [item]},
                 node_output_type=NodeOutputType.SERIES,
-                input_nodes=[self.graph.get_node_by_name(op_struct.get_column_node_name(item))],
+                input_nodes=[self.node],
             )
             output = self._series_class(
                 feature_store=self.feature_store,
@@ -193,19 +187,30 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             **self._getitem_frame_params,
         )
 
+
+class Frame(FrozenFrame):
+    """
+    Frame is a mutable version of the FrozenFrame class. It is used to represent a table in the query graph.
+    This class supports column assignment to the table.
+    """
+
+    _series_class = Series
+
     @typechecked
     def __setitem__(
-        self, key: Union[str, Tuple[Series, str]], value: Union[int, float, str, bool, Series]
+        self,
+        key: Union[str, Tuple[FrozenSeries, str]],
+        value: Union[int, float, str, bool, FrozenSeries],
     ) -> None:
         """
         Assign a scalar value or Series object of the same `dtype` to the `Frame` object
 
         Parameters
         ----------
-        key: Union[str, Tuple[Series, str]]
+        key: Union[str, Tuple[FrozenSeries, str]]
             column name to store the item. Alternatively, if a tuple is passed in, we will perform the masking
             operation.
-        value: Union[int, float, str, bool, Series]
+        value: Union[int, float, str, bool, FrozenSeries]
             value to be assigned to the column
 
         Raises
@@ -219,16 +224,22 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError(f"{len(key)} elements found, when we only expect 2.")
-            mask = key[0]
-            if type(mask) != Series:  # pylint: disable=unidiomatic-typecheck
-                raise ValueError("The mask provided should be a Series.")
+
+            # subset the column to get the type first
             column_name: str = key[1]
             column = self[column_name]
+
+            # check whether the mask has the expected types
+            mask = key[0]
+            if type(mask) not in {Series, FrozenSeries}:
+                class_name = type(column).__name__
+                raise ValueError(f"The mask provided should be a {class_name}.")
+
             assert isinstance(column, Series)
             column[mask] = value
             return
 
-        if isinstance(value, Series):
+        if isinstance(value, FrozenSeries):
             if self.row_index_lineage != value.row_index_lineage:
                 raise ValueError(f"Row indices between '{self}' and '{value}' are not aligned!")
             node = self.graph.add_operation(
@@ -237,7 +248,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node, value.node],
             )
-            self.columns_info.append(ColumnInfo(name=key, dtype=value.dtype))
+            column_info = ColumnInfo(name=key, dtype=value.dtype)
         else:
             node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
@@ -245,9 +256,12 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node],
             )
-            self.columns_info.append(
-                ColumnInfo(name=key, dtype=self.pytype_dbtype_map[type(value)])
-            )
+            column_info = ColumnInfo(name=key, dtype=self.pytype_dbtype_map[type(value)])
+
+        # update columns_info
+        columns_info = [col for col in self.columns_info if col.name != key]
+        columns_info.append(column_info)
+        self.columns_info = columns_info
 
         # update node_name
         self.node_name = node.name

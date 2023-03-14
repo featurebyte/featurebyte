@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Optional, OrderedDict
+from typing import Any, AsyncGenerator, ClassVar, List, Optional, OrderedDict
 
 import asyncio
 
@@ -24,7 +24,6 @@ import aiofiles
 import pandas as pd
 import pyarrow as pa
 from pydantic import BaseModel, PrivateAttr
-from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import (
@@ -35,14 +34,6 @@ from featurebyte.common.utils import (
 from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logger import logger
-
-EXPECTED_ERRORS: list[type[Exception]] = [ProgrammingError]
-try:
-    from databricks.sql.exc import ServerOperationError
-
-    EXPECTED_ERRORS.append(ServerOperationError)
-except ImportError:
-    pass
 
 
 class RunThread(threading.Thread):
@@ -89,6 +80,11 @@ class BaseSession(BaseModel):
     source_type: SourceType
     _connection: Any = PrivateAttr(default=None)
     _unique_id: int = PrivateAttr(default=0)
+    _no_schema_error: ClassVar[Any] = Exception
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        # close connection
+        self._connection.close()
 
     async def initialize(self) -> None:
         """
@@ -295,7 +291,7 @@ class BaseSession(BaseModel):
         query = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
         try:
             results = await self.execute_query(query)
-        except tuple(EXPECTED_ERRORS):
+        except self._no_schema_error:  # pylint: disable=broad-except
             # Snowflake and Databricks will error if the table is not initialized
             # We will need to catch more errors here if/when we add support for
             # more platforms.
@@ -438,6 +434,14 @@ class BaseSession(BaseModel):
         Returns
         -------
         str
+        """
+
+    @classmethod
+    @abstractmethod
+    def is_threadsafe(cls) -> bool:
+        """
+        Whether the session object can be shared across threads. If True, SessionManager will cache
+        the session object once it is created.
         """
 
 
@@ -611,7 +615,31 @@ class BaseSchemaInitializer(ABC):
             self.current_working_schema_version
         )
 
+    @staticmethod
+    def _sort_sql_objects(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """
+        Order sql objects taking into account dependencies between then
+
+        Parameters
+        ----------
+        items: list[dict[str, Any]
+            SQL items to sort
+
+        Returns
+        -------
+        list[dict[str, Any]
+        """
+        depended_items = []
+        dependant_items = []
+        for item in items:
+            if item["identifier"] == "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE":
+                depended_items.append(item)
+            else:
+                dependant_items.append(item)
+        return depended_items + dependant_items
+
     async def _register_sql_objects(self, items: list[dict[str, Any]]) -> None:
+        items = self._sort_sql_objects(items)
         for item in items:
             logger.debug(f'Registering {item["identifier"]}')
             async with aiofiles.open(item["filename"], encoding="utf-8") as f_handle:
@@ -686,6 +714,33 @@ class MetadataSchemaInitializer:
     def __init__(self, session: BaseSession):
         self.session = session
 
+    def create_metadata_table_queries(self, current_migration_version: int) -> List[str]:
+        """Queries to create metadata table
+
+        Parameters
+        ----------
+        current_migration_version: int
+            Current migration version
+
+        Returns
+        -------
+        List[str]
+        """
+        return [
+            (
+                "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
+                "WORKING_SCHEMA_VERSION INT, "
+                f"{InternalName.MIGRATION_VERSION} INT, "
+                "FEATURE_STORE_ID VARCHAR, "
+                "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
+                ") AS "
+                "SELECT 0 AS WORKING_SCHEMA_VERSION, "
+                f"{current_migration_version} AS {InternalName.MIGRATION_VERSION}, "
+                "NULL AS FEATURE_STORE_ID, "
+                "SYSDATE() AS CREATED_AT;"
+            )
+        ]
+
     async def update_metadata_schema_version(self, new_version: int) -> None:
         """Inserts default information into the metadata schema.
 
@@ -710,19 +765,9 @@ class MetadataSchemaInitializer:
         current_migration_version = max(
             retrieve_all_migration_methods(data_warehouse_migrations_only=True)
         )
-        create_metadata_table_query = (
-            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
-            "WORKING_SCHEMA_VERSION INT, "
-            f"{InternalName.MIGRATION_VERSION} INT, "
-            "FEATURE_STORE_ID VARCHAR, "
-            "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
-            ") AS "
-            "SELECT 0 AS WORKING_SCHEMA_VERSION, "
-            f"{current_migration_version} AS {InternalName.MIGRATION_VERSION}, "
-            "NULL AS FEATURE_STORE_ID, "
-            "SYSDATE() AS CREATED_AT;"
-        )
-        await self.session.execute_query(create_metadata_table_query)
+        metadata_table_queries = self.create_metadata_table_queries(current_migration_version)
+        for query in metadata_table_queries:
+            await self.session.execute_query(query)
         logger.debug("Creating METADATA_SCHEMA table")
 
     async def update_feature_store_id(self, new_feature_store_id: str) -> None:

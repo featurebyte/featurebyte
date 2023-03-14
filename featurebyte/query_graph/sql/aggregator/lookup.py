@@ -16,7 +16,11 @@ from featurebyte.query_graph.sql.aggregator.base import (
     LeftJoinableSubquery,
     NonTileBasedAggregator,
 )
-from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    CteStatements,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
 from featurebyte.query_graph.sql.specs import LookupSpec
 
@@ -277,8 +281,6 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
 
         return table_expr, scd_agg_result_names
 
-    def get_common_table_expressions(
-        self, request_table_name: str
-    ) -> list[tuple[str, expressions.Select]]:
+    def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
         _ = request_table_name
         return []

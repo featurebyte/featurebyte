@@ -1,7 +1,7 @@
 """
 This module contains mixins used in node classes
 """
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, Dict, List, Optional, Set
 
 from abc import abstractmethod
 
@@ -112,7 +112,7 @@ class AggregationOpStructMixin:
                 parent_columns = [parent_column]
         return parent_columns
 
-    def _get_agg_func(self) -> Optional[str]:
+    def _get_agg_func(self) -> Optional[AggFunc]:
         """
         Retrieve agg_func from the parameters
 
@@ -148,8 +148,13 @@ class AggregationOpStructMixin:
         """
         _ = global_state
         input_operation_info = inputs[0]
-        lineage_columns = set(self.get_required_input_columns())  # type: ignore
-        wanted_columns = lineage_columns.difference(self._exclude_source_columns())
+        required_input_columns = self.get_required_input_columns(  # type: ignore
+            input_index=0, available_column_names=input_operation_info.output_column_names
+        )
+        lineage_columns = set(required_input_columns)
+        wanted_columns = lineage_columns
+        if not global_state.keep_all_source_columns:
+            wanted_columns = lineage_columns.difference(self._exclude_source_columns())
         parent_columns = self._get_parent_columns(input_operation_info.columns)
         agg_func = self._get_agg_func()
         if parent_columns:
@@ -180,7 +185,7 @@ class AggregationOpStructMixin:
 
         # prepare output variable type
         if agg_func:
-            aggregation_func_obj = construct_agg_func(cast(AggFunc, agg_func))
+            aggregation_func_obj = construct_agg_func(agg_func)
             input_var_type = parent_columns[0].dtype if parent_columns else columns[0].dtype
             output_var_type = aggregation_func_obj.derive_output_var_type(
                 input_var_type=input_var_type, category=self.parameters.value_by

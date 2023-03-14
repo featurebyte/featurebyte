@@ -42,7 +42,7 @@ async def test_preview_feature__time_based_feature_without_point_in_time_errors(
     """
     feature_preview = FeaturePreview(
         feature_store_name="feature_store_name",
-        point_in_time_and_serving_name={},
+        point_in_time_and_serving_name_list=[{}],
         graph=float_feature.graph,
         node_name=float_feature.node_name,
     )
@@ -61,9 +61,11 @@ async def test_preview_feature__non_time_based_feature_without_point_in_time_doe
     _ = transaction_entity
     feature_preview = FeaturePreview(
         feature_store_name="sf_featurestore",
-        point_in_time_and_serving_name={
-            "transaction_id": 1,
-        },
+        point_in_time_and_serving_name_list=[
+            {
+                "transaction_id": 1,
+            }
+        ],
         graph=non_time_based_feature.graph,
         node_name=non_time_based_feature.node_name,
     )
@@ -80,10 +82,12 @@ async def test_preview_feature__missing_entity(
     """
     feature_preview = FeaturePreview(
         feature_store_name="sf_featurestore",
-        point_in_time_and_serving_name={
-            "POINT_IN_TIME": "2022-05-01",
-            "abc": 1,
-        },
+        point_in_time_and_serving_name_list=[
+            {
+                "POINT_IN_TIME": "2022-05-01",
+                "abc": 1,
+            }
+        ],
         graph=production_ready_feature.graph,
         node_name=production_ready_feature.node_name,
     )
@@ -111,9 +115,11 @@ async def test_preview_featurelist__time_based_feature_errors_without_time(
                 node_names=[float_feature.node_name],
             ),
         ],
-        point_in_time_and_serving_name={
-            "event_id_col": 1,
-        },
+        point_in_time_and_serving_name_list=[
+            {
+                "event_id_col": 1,
+            }
+        ],
     )
     with pytest.raises(MissingPointInTimeColumnError) as exc:
         await preview_service.preview_featurelist(feature_list_preview, get_credential)
@@ -137,9 +143,11 @@ async def test_preview_featurelist__non_time_based_feature_no_error_without_time
                 node_names=[non_time_based_feature.node_name],
             ),
         ],
-        point_in_time_and_serving_name={
-            "transaction_id": 1,
-        },
+        point_in_time_and_serving_name_list=[
+            {
+                "transaction_id": 1,
+            }
+        ],
     )
     await preview_service.preview_featurelist(feature_list_preview, get_credential)
 
@@ -154,10 +162,12 @@ async def test_preview_featurelist__missing_entity(
     feature_list_preview = FeatureListPreview(
         feature_store_name="sf_featurestore",
         feature_clusters=production_ready_feature_list.feature_clusters,
-        point_in_time_and_serving_name={
-            "POINT_IN_TIME": "2022-05-01",
-            "abc": 1,
-        },
+        point_in_time_and_serving_name_list=[
+            {
+                "POINT_IN_TIME": "2022-05-01",
+                "abc": 1,
+            }
+        ],
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
         await preview_service.preview_featurelist(feature_list_preview, get_credential)

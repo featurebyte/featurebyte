@@ -9,6 +9,7 @@ from pathlib import Path
 
 import requests
 import yaml
+from bson import ObjectId
 from pydantic import AnyHttpUrl, BaseModel, Field, validator
 from pydantic.error_wrappers import ValidationError
 from requests import Response
@@ -17,13 +18,16 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import get_version
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
-from featurebyte.models.credential import Credential, UsernamePasswordCredential
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
 
 # data source to credential mapping
 Credentials = Dict[str, Optional[Credential]]
 
 # default local location
-DEFAULT_HOME_PATH = Path.home().joinpath(".featurebyte")
+DEFAULT_HOME_PATH: Path = Path.home().joinpath(".featurebyte")
+
+ACTIVE_WORKSPACE_ID: ObjectId = DEFAULT_WORKSPACE_ID
 
 
 def get_home_path() -> Path:
@@ -36,6 +40,30 @@ def get_home_path() -> Path:
         Featurebyte Home path
     """
     return Path(os.environ.get("FEATUREBYTE_HOME", str(DEFAULT_HOME_PATH)))
+
+
+def get_active_workspace_id() -> ObjectId:
+    """
+    Get active workspace id
+
+    Returns
+    -------
+    ObjectId
+    """
+    return ACTIVE_WORKSPACE_ID
+
+
+def activate_workspace(workspace_id: ObjectId) -> None:
+    """
+    Set active workspace
+
+    Parameters
+    ----------
+    workspace_id: ObjectId
+        Workspace ID to set as active
+    """
+    global ACTIVE_WORKSPACE_ID  # pylint: disable=global-statement
+    ACTIVE_WORKSPACE_ID = workspace_id
 
 
 class LogLevel(StrEnum):
@@ -169,6 +197,9 @@ class APIClient(BaseAPIClient):
             Invalid service endpoint
         """
         try:
+            params = kwargs.get("params", {})
+            params["workspace_id"] = str(get_active_workspace_id())
+            kwargs["params"] = params
             return super().request(
                 method,
                 self.base_url + str(url),
@@ -266,17 +297,18 @@ class Configurations:
             name = credential.pop("feature_store", "unnamed")
             try:
                 # parse and store credentials
-                try:
-                    new_credential = Credential(
-                        name=name,
-                        credential_type=credential["credential_type"],
-                        credential=credential,
-                    )
-                except KeyError:
-                    new_credential = None
+                new_credential = Credential(
+                    **{
+                        "name": name,
+                        "credential_type": credential.get("credential_type", CredentialType.NONE),
+                        "credential": credential,
+                    },
+                )
                 self.credentials[name] = new_credential
             except ValidationError as exc:
-                raise InvalidSettingsError(f"Invalid settings for feature store: {name}") from exc
+                raise InvalidSettingsError(
+                    f"Invalid settings for feature store: {name}\n{str(exc)}"
+                ) from exc
 
         logging_settings = self.settings.pop("logging", None)
         if logging_settings:

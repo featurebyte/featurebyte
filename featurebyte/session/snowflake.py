@@ -12,7 +12,12 @@ import json
 import pandas as pd
 from pydantic import Field
 from snowflake import connector
-from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
+from snowflake.connector.errors import (
+    DatabaseError,
+    NotSupportedError,
+    OperationalError,
+    ProgrammingError,
+)
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.common.utils import create_new_arrow_stream_writer, pa_table_to_record_batches
@@ -33,6 +38,8 @@ class SnowflakeSession(BaseSession):
     Precision & scale:
     https://docs.snowflake.com/en/sql-reference/data-types-numeric.html#impact-of-precision-and-scale-on-storage-size
     """
+
+    _no_schema_error = ProgrammingError
 
     account: str
     warehouse: str
@@ -77,6 +84,10 @@ class SnowflakeSession(BaseSession):
     @property
     def database_name(self) -> str:
         return self.database
+
+    @classmethod
+    def is_threadsafe(cls) -> bool:
+        return True
 
     async def list_databases(self) -> list[str]:
         """
@@ -307,10 +318,10 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 15
+        return 16
 
     async def create_schema(self) -> None:
-        create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
+        create_schema_query = f'CREATE SCHEMA "{self.session.schema_name}"'
         await self.session.execute_query(create_schema_query)
 
     @property

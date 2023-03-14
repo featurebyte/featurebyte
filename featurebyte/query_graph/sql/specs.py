@@ -21,7 +21,7 @@ from featurebyte.query_graph.node.generic import (
     AggregateAsAtNode,
     AggregateAsAtParameters,
     EventLookupParameters,
-    GroupbyNode,
+    GroupByNode,
     ItemGroupbyNode,
     ItemGroupbyParameters,
     LookupNode,
@@ -55,7 +55,7 @@ class AggregationSpec(ABC):
     Base class of all aggregation specifications
     """
 
-    entity_ids: list[ObjectId]
+    entity_ids: list[ObjectId] | None  # DEV-556: should not be None for new features
     serving_names: list[str]
     serving_names_mapping: Optional[dict[str, str]]
 
@@ -153,7 +153,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         list[TileBasedAggregationSpec]
             List of AggregationSpec
         """
-        assert isinstance(groupby_node, GroupbyNode)
+        assert isinstance(groupby_node, GroupByNode)
         tile_table_id = groupby_node.parameters.tile_id
         aggregation_id = groupby_node.parameters.aggregation_id
         params = groupby_node.parameters.dict()

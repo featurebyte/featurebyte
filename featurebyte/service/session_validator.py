@@ -3,6 +3,8 @@ SessionValidator service
 """
 from typing import Any, Optional
 
+from bson import ObjectId
+
 from featurebyte.enum import SourceType, StrEnum
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
 from featurebyte.logger import logger
@@ -31,12 +33,19 @@ class SessionValidatorService:
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, credential_provider: ConfigCredentialProvider
+        self,
+        user: Any,
+        persistent: Persistent,
+        workspace_id: ObjectId,
+        credential_provider: ConfigCredentialProvider,
     ):
         self.user = user
         self.persistent = persistent
+        self.workspace_id = workspace_id
         self.credential_provider = credential_provider
-        self.feature_store_service = FeatureStoreService(user=self.user, persistent=self.persistent)
+        self.feature_store_service = FeatureStoreService(
+            user=self.user, persistent=self.persistent, workspace_id=workspace_id
+        )
 
     @classmethod
     async def validate_existing_session(

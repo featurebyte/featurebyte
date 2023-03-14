@@ -153,6 +153,8 @@ EXPECTED_FUNCTIONS = [
     "F_TIMESTAMP_TO_INDEX",
     "F_COUNT_DICT_ENTROPY",
     "F_COUNT_DICT_MOST_FREQUENT",
+    "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE",
+    "F_COUNT_DICT_MOST_FREQUENT_VALUE",
     "F_COUNT_DICT_NUM_UNIQUE",
     "F_COUNT_DICT_COSINE_SIMILARITY",
     "F_GET_RANK",
@@ -318,6 +320,16 @@ def test_schema_initializer__sql_objects(
             "type": "function",
         },
         {
+            "filename": "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE.sql",
+            "identifier": "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE",
+            "type": "function",
+        },
+        {
+            "filename": "F_COUNT_DICT_MOST_FREQUENT_VALUE.sql",
+            "identifier": "F_COUNT_DICT_MOST_FREQUENT_VALUE",
+            "type": "function",
+        },
+        {
             "filename": "F_COUNT_DICT_NUM_UNIQUE.sql",
             "identifier": "F_COUNT_DICT_NUM_UNIQUE",
             "type": "function",
@@ -477,7 +489,7 @@ async def test_schema_initializer__all_missing(
     # Should create schema if not exists
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list[:1] == [
-        call("CREATE SCHEMA FEATUREBYTE"),
+        call('CREATE SCHEMA "FEATUREBYTE"'),
     ]
     # Should register custom functions and procedures
     counts = check_create_commands(session)

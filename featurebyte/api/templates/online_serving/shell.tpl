@@ -2,4 +2,4 @@
 
 curl -X POST {{header_params}} -d \
     '{"entity_serving_names": {{entity_serving_names}}}' \
-    {{serving_url}}
+    {{serving_url}}?workspace_id={{workspace_id}}

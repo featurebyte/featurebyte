@@ -208,9 +208,30 @@ class SourceType(StrEnum):
     SNOWFLAKE = "snowflake", "Snowflake connection details"
     SQLITE = "sqlite", "SQLite connection details"
     DATABRICKS = "databricks", "DataBricks connection details"
+    SPARK = "spark", "Spark connection details"
 
     # TEST source type should only be used for mocking in unit tests.
     TEST = "test", "For testing only"
+
+    @classmethod
+    def credential_required_types(cls) -> list[str]:
+        """
+        List all types that require credential
+
+        Returns
+        -------
+        list[str]
+        """
+        return [cls.SNOWFLAKE, cls.DATABRICKS]
+
+
+class StorageType(StrEnum):
+    """
+    Distributed storage type
+    """
+
+    FILE = "file"
+    S3 = "s3", "s3 Storage"
 
 
 class SpecialColumnName(StrEnum):
@@ -244,6 +265,7 @@ class InternalName(StrEnum):
     POINT_IN_TIME_SQL_PLACEHOLDER = "__FB_POINT_IN_TIME_SQL_PLACEHOLDER"
 
     MIGRATION_VERSION = "MIGRATION_VERSION"
+    ROW_INDEX = "__FB_ROW_INDEX"
 
 
 class WorkerCommand(StrEnum):
@@ -251,8 +273,10 @@ class WorkerCommand(StrEnum):
     Command names for worker tasks
     """
 
+    TEST = "TEST_TASK"
     FEATURE_JOB_SETTING_ANALYSIS_CREATE = "FEATURE_JOB_SETTING_ANALYSIS_CREATE"
     FEATURE_JOB_SETTING_ANALYSIS_BACKTEST = "FEATURE_JOB_SETTING_ANALYSIS_BACKTEST"
+    TILE = "TILE_TASK"
 
 
 class TableDataType(StrEnum):
@@ -265,6 +289,15 @@ class TableDataType(StrEnum):
     ITEM_DATA = "item_data"
     DIMENSION_DATA = "dimension_data"
     SCD_DATA = "scd_data"
+
+
+class ViewMode(StrEnum):
+    """
+    ViewMode enum
+    """
+
+    AUTO = "auto"
+    MANUAL = "manual"
 
 
 class SemanticType(StrEnum):

@@ -29,14 +29,22 @@ class DeployService(BaseService):
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, online_enable_service: OnlineEnableService
+        self,
+        user: Any,
+        persistent: Persistent,
+        workspace_id: ObjectId,
+        online_enable_service: OnlineEnableService,
     ):
-        super().__init__(user, persistent)
-        self.feature_service = FeatureService(user=user, persistent=persistent)
+        super().__init__(user, persistent, workspace_id)
+        self.feature_service = FeatureService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
         self.online_enable_service = online_enable_service
-        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
+        self.feature_list_service = FeatureListService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
         self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
 
     @classmethod
@@ -51,7 +59,6 @@ class DeployService(BaseService):
         self,
         feature_id: ObjectId,
         feature_list: FeatureListModel,
-        get_credential: Any,
         return_document: bool = True,
     ) -> Optional[FeatureModel]:
         """
@@ -64,8 +71,6 @@ class DeployService(BaseService):
             Target Feature ID
         feature_list: FeatureListModel
             Updated FeatureList object (deployed status)
-        get_credential: Any
-            Get credential handler function
         return_document: bool
             Whether to return updated document
 
@@ -82,8 +87,8 @@ class DeployService(BaseService):
             document = await self.online_enable_service.update_feature(
                 feature_id=feature_id,
                 online_enabled=online_enabled,
-                get_credential=get_credential,
             )
+
         return await self.feature_service.update_document(
             document_id=feature_id,
             data=FeatureServiceUpdate(
@@ -161,11 +166,16 @@ class DeployService(BaseService):
         # revert all online enabled status back before raising exception
         for feature_id, online_enabled in feature_online_enabled_map.items():
             async with self.persistent.start_transaction():
-                await self.online_enable_service.update_feature(
+                document = await self.online_enable_service.update_feature(
                     feature_id=feature_id,
                     online_enabled=online_enabled,
-                    get_credential=get_credential,
                 )
+            # move update warehouse and backfill tiles to outside of transaction
+            await self.online_enable_service.update_data_warehouse(
+                updated_feature=document,
+                online_enabled_before_update=online_enabled,
+                get_credential=get_credential,
+            )
 
         # update feature list namespace again
         assert isinstance(feature_list, FeatureListModel)
@@ -227,11 +237,18 @@ class DeployService(BaseService):
                     async with self.persistent.start_transaction():
                         feature = await self.feature_service.get_document(document_id=feature_id)
                         feature_online_enabled_map[feature.id] = feature.online_enabled
-                        await self._update_feature(
+                        updated_feature = await self._update_feature(
                             feature_id=feature_id,
                             feature_list=feature_list,
+                            return_document=True,
+                        )
+
+                    if updated_feature:
+                        # move update warehouse and backfill tiles to outside of transaction
+                        await self.online_enable_service.update_data_warehouse(
+                            updated_feature=updated_feature,
+                            online_enabled_before_update=feature.online_enabled,
                             get_credential=get_credential,
-                            return_document=False,
                         )
 
                 async with self.persistent.start_transaction():

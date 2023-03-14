@@ -7,21 +7,21 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from featurebyte import EventView, FeatureList
+from featurebyte import FeatureList
 from featurebyte.common.date_util import get_next_job_datetime
-from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from tests.util.helper import fb_assert_frame_equal
 
 
 @pytest.fixture(name="features", scope="session")
-def features_fixture(event_data):
+def features_fixture(event_data, source_type):
     """
     Fixture for feature
     """
-    event_view = EventView.from_event_data(event_data)
-    event_view["ÀMOUNT"].fillna(0)
+    event_view = event_data.get_view()
+    event_view["ÀMOUNT"].fillna(0)  # pylint: disable=no-member
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",
         method="sum",
@@ -53,22 +53,30 @@ def features_fixture(event_data):
         "TOTAL_EVENT_COUNT_BY_ACTION_7d"
     ].cd.cosine_similarity(feature_group_dict["EVENT_COUNT_BY_ACTION_24h"])
     feature_complex_3.name = "COMPLEX_FEATURE_3"
-    features = [
-        feature_group["AMOUNT_SUM_2h"],
-        feature_group["AMOUNT_SUM_24h"],
-        feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
-        feature_complex_1,
-        feature_complex_2,
-        feature_complex_3,
-    ]
+
+    if source_type == "spark":
+        features = [
+            feature_group["AMOUNT_SUM_2h"],
+            feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
+        ]
+    else:
+        features = [
+            feature_group["AMOUNT_SUM_2h"],
+            feature_group["AMOUNT_SUM_24h"],
+            feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
+            feature_complex_1,
+            feature_complex_2,
+            feature_complex_3,
+        ]
 
     for feature in features:
         feature.save()
     return features
 
 
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_online_serving_sql(features, snowflake_session, config):
+async def test_online_serving_sql(features, session, config):
     """
     Test executing feature compute sql and feature retrieval SQL for online store
     """
@@ -85,7 +93,7 @@ async def test_online_serving_sql(features, snowflake_session, config):
     # Deploy as at point_in_time (will trigger online and offline tile jobs using previous job time)
     feature_list.save()
     with patch(
-        "featurebyte.feature_manager.snowflake_feature.get_next_job_datetime",
+        "featurebyte.feature_manager.manager.get_next_job_datetime",
         return_value=next_job_datetime,
     ):
         feature_list.deploy(make_production_ready=True, enable=True)
@@ -107,24 +115,20 @@ async def test_online_serving_sql(features, snowflake_session, config):
         online_retrieval_sql = get_online_store_retrieval_sql(
             feature_clusters[0].graph,
             feature_clusters[0].nodes,
-            source_type=SourceType.SNOWFLAKE,
+            source_type=session.source_type,
             request_table_columns=["üser id"],
             request_table_expr=request_table_expr,
         )
-        online_features = await snowflake_session.execute_query(online_retrieval_sql)
+        online_features = await session.execute_query(online_retrieval_sql)
 
         # Check result is expected
-        columns = [
-            "üser id",
-            "AMOUNT_SUM_2h",
-            "AMOUNT_SUM_24h",
-            "EVENT_COUNT_BY_ACTION_24h",
-            "COMPLEX_FEATURE_1",
-            "COMPLEX_FEATURE_2",
-            "COMPLEX_FEATURE_3",
-        ]
+        columns = ["üser id"] + [feature.name for feature in features]
         assert set(online_features.columns.tolist()) == set(columns)
-        pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
+        fb_assert_frame_equal(
+            df_historical[columns],
+            online_features[columns],
+            dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
+        )
 
         # Check online_features route
         check_online_features_route(feature_list, config, df_historical, columns)
@@ -157,4 +161,4 @@ def check_online_features_route(feature_list, config, df_historical, columns):
     df_expected = df_historical[df_historical["üser id"].isin(user_ids)][columns].reset_index(
         drop=True
     )
-    pd.testing.assert_frame_equal(df_expected, df, check_dtype=False)
+    fb_assert_frame_equal(df_expected, df, dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"])

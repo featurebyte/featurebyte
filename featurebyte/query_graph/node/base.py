@@ -2,7 +2,7 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 from abc import ABC, abstractmethod
 
@@ -18,6 +18,15 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructureBranchState,
     OperationStructureInfo,
     PostAggregationColumn,
+)
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    CodeGenerationConfig,
+    ExpressionStr,
+    StatementT,
+    ValueStr,
+    VariableNameGenerator,
+    VariableNameStr,
+    VarNameExpressionStr,
 )
 
 NODE_TYPES = []
@@ -45,6 +54,11 @@ class BaseNode(BaseModel):
     type: NodeType
     output_type: NodeOutputType
     parameters: BaseModel
+
+    # class variables
+    # _auto_convert_expression_to_variable: when the expression is long, it will convert to a new
+    # variable to limit the line width of the generated SDK code.
+    _auto_convert_expression_to_variable: ClassVar[bool] = True
 
     class Config:
         """Model configuration"""
@@ -130,25 +144,51 @@ class BaseNode(BaseModel):
                     out.update(cls._extract_column_str_values(val, column_str_type))
         return list(out)
 
-    def get_required_input_columns(self) -> List[str]:
+    def get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         """
-        Get the required input column names based on this node parameters
+        Get the required input column names for the given input based on this node parameters.
+        For example, a JoinNode will consume two input node and inside the JoinNode parameters,
+        some columns are referenced from the first input node and some are referenced from the
+        second input node. When the input_order is 0, this method will return the column names
+        from the first input node. When the input_order is 1, this method will return the column
+        names from the second input node.
+
+        Parameters
+        ----------
+        input_index: int
+            This parameter is used to specify which input to get the required columns
+        available_column_names: List[str]
+            List of available column names
 
         Returns
         -------
-        list[str]
+        Sequence[str]
+            When the output is empty, it means this node does not have any column name requirement
+            for the given input index.
         """
-        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        self._validate_get_required_input_columns_input_index(input_index)
+        return self._get_required_input_columns(input_index, available_column_names)
 
-    def get_new_output_columns(self) -> List[str]:
+    @abstractmethod
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         """
-        Get additional column names generated based on this node parameters
+        Helper method for get_required_input_columns
+
+        Parameters
+        ----------
+        input_index: int
+            This parameter is used to specify which input to get the required columns
+        available_column_names: List[str]
+            List of input available columns
 
         Returns
         -------
-        list[str]
+        Sequence[str]
         """
-        return self._extract_column_str_values(self.parameters.dict(), OutColumnStr)
 
     def derive_node_operation_info(
         self,
@@ -185,6 +225,58 @@ class BaseNode(BaseModel):
         }
         return OperationStructure(**{**operation_info.dict(), **update_args})
 
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        """
+        Derive SDK codes based on the graph traversal from starting node(s) to this node
+
+        Parameters
+        ----------
+        input_var_name_expressions: List[VarNameExpressionStr]
+            Input variables name
+        input_node_types: List[NodeType]
+            Input node types
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        operation_structure: OperationStructure
+            Operation structure of current node
+        config: CodeGenerationConfig
+            Code generation configuration
+
+        Returns
+        -------
+        Tuple[List[StatementT], VarNameExpressionStr]
+        """
+        statements, var_name_expression = self._derive_sdk_code(
+            input_var_name_expressions=input_var_name_expressions,
+            input_node_types=input_node_types,
+            var_name_generator=var_name_generator,
+            operation_structure=operation_structure,
+            config=config,
+        )
+
+        if (
+            self._auto_convert_expression_to_variable
+            and isinstance(var_name_expression, ExpressionStr)
+            and len(var_name_expression) > config.max_expression_length
+        ):
+            # if the output of the var_name_expression is an expression and
+            # the length of expression exceeds limit specified in code generation config,
+            # then assign a new variable to reduce line width.
+            var_name = var_name_generator.generate_variable_name(
+                node_output_type=operation_structure.output_type,
+                node_output_category=operation_structure.output_category,
+            )
+            statements.append((var_name, var_name_expression))
+            return statements, var_name
+        return statements, var_name_expression
+
     def clone(self: NodeT, **kwargs: Any) -> NodeT:
         """
         Clone an existing object with certain update
@@ -202,7 +294,7 @@ class BaseNode(BaseModel):
 
     def prune(
         self: NodeT,
-        target_nodes: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         """
@@ -210,7 +302,7 @@ class BaseNode(BaseModel):
 
         Parameters
         ----------
-        target_nodes: Sequence[BaseNode]
+        target_node_input_order_pairs: Sequence[Tuple[BaseNode, int]]
             List of target nodes
         input_operation_structures: List[OperationStructure]
             List of input operation structures
@@ -219,8 +311,43 @@ class BaseNode(BaseModel):
         -------
         NodeT
         """
-        _ = target_nodes, input_operation_structures
+        _ = target_node_input_order_pairs, input_operation_structures
         return self
+
+    @staticmethod
+    def _convert_expression_to_variable(
+        var_name_expression: VarNameExpressionStr,
+        var_name_generator: VariableNameGenerator,
+        node_output_type: NodeOutputType,
+        node_output_category: NodeOutputCategory,
+    ) -> Tuple[List[StatementT], VariableNameStr]:
+        """
+        Convert expression to variable
+
+        Parameters
+        ----------
+        var_name_expression: VarNameExpressionStr
+            Variable name expression
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        node_output_type: NodeOutputType
+            Node output type
+        node_output_category: NodeOutputCategory
+            Node output category
+
+        Returns
+        -------
+        VarNameStr
+        """
+        statements: List[StatementT] = []
+        if isinstance(var_name_expression, ExpressionStr):
+            var_name = var_name_generator.generate_variable_name(
+                node_output_type=node_output_type,
+                node_output_category=node_output_category,
+            )
+            statements.append((var_name, var_name_expression))
+            return statements, var_name
+        return statements, var_name_expression
 
     @abstractmethod
     def _derive_node_operation_info(
@@ -245,6 +372,90 @@ class BaseNode(BaseModel):
         -------
         OperationStructure
         """
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        """
+        Derive SDK codes based to be implemented at the concrete node class
+
+        Parameters
+        ----------
+        input_var_name_expressions: List[VarNameExpression]
+            Input variables name
+        input_node_types: List[NodeType]
+            Input node types
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        operation_structure: OperationStructure
+            Operation structure of current node
+        config: CodeGenerationConfig
+            Code generation configuration
+
+        Returns
+        -------
+        Tuple[List[StatementT], VarNameExpression]
+        """
+        # TODO: convert this method to an abstract method and remove the following dummy implementation
+        _ = input_node_types, var_name_generator, operation_structure, config
+        input_params = ", ".join(input_var_name_expressions)
+        expression = ExpressionStr(f"{self.type}({input_params})")
+        return [], expression
+
+    @property
+    @abstractmethod
+    def max_input_count(self) -> int:
+        """
+        Maximum number of inputs for this node
+
+        Returns
+        -------
+        int
+        """
+
+    def _validate_get_required_input_columns_input_index(self, input_index: int) -> None:
+        """
+        Validate that input index value is within the correct range.
+
+        Parameters
+        ----------
+        input_index: int
+            Input index
+
+        Raises
+        ------
+        ValueError
+            If input index is out of range
+        """
+        if input_index < 0 or input_index >= self.max_input_count:
+            raise ValueError(
+                f"Input index {input_index} is out of range. "
+                f"Input index should be within 0 to {self.max_input_count - 1}."
+            )
+
+    def _assert_empty_required_input_columns(self) -> Sequence[str]:
+        """
+        Assert empty required input columns and return emtpy list. This is used to check if the node
+        parameters has any InColumnStr parameters. If yes, we should update get_required_input_columns
+        method to reflect the required input columns.
+
+        Returns
+        -------
+        Sequence[str]
+
+        Raises
+        ------
+        AssertionError
+            If required input columns is not empty
+        """
+        input_columns = self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        assert len(input_columns) == 0
+        return input_columns
 
 
 class SeriesOutputNodeOpStructMixin:
@@ -356,6 +567,53 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: SingleValueNodeParameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
+
+    def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
+        _ = self
+        return left_operand, right_operand
+
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
+        """
+        Generate expression for the node
+
+        Parameters
+        ----------
+        left_operand: str
+            Left operand
+        right_operand: str
+            Right operand
+
+        Returns
+        -------
+        str
+        """
+        # TODO: make this method abstract and remove the following dummy implementation
+        _ = left_operand, right_operand
+        return ""
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        left_operand: str = input_var_name_expressions[0].as_input()
+        right_operand: str = ValueStr.create(self.parameters.value).as_input()
+        if len(input_var_name_expressions) == 2:
+            right_operand = input_var_name_expressions[1].as_input()
+        left_operand, right_operand = self._reorder_operands(left_operand, right_operand)
+        return [], ExpressionStr(self.generate_expression(left_operand, right_operand))
+
 
 class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode):
     """BinaryLogicalOpNode class"""
@@ -381,6 +639,57 @@ class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
         if DBVarType.FLOAT in input_var_types:
             return DBVarType.FLOAT
         return inputs[0].series_output_dtype
+
+    def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
+        if self.parameters.right_op:
+            return right_operand, left_operand
+        return left_operand, right_operand
+
+
+class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
+    """BaseSingleOperandNode class"""
+
+    # class variable
+    _derive_sdk_code_return_var_name_expression_type: ClassVar[
+        Union[Type[VariableNameStr], Type[ExpressionStr]]
+    ] = VariableNameStr
+
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
+
+    @abstractmethod
+    def generate_expression(self, operand: str) -> str:
+        """
+        Generate expression for the unary operation
+
+        Parameters
+        ----------
+        operand: str
+            Operand
+
+        Returns
+        -------
+        str
+        """
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expression = input_var_name_expressions[0]
+        return [], self._derive_sdk_code_return_var_name_expression_type(
+            self.generate_expression(var_name_expression.as_input())
+        )
 
 
 class BasePrunableNode(BaseNode):

@@ -9,8 +9,9 @@ import pytest
 from featurebyte.enum import InternalName
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile_missing_tile(snowflake_session):
+async def test_monitor_tile_missing_tile(session):
     """
     Test monitoring with missing tiles
     """
@@ -26,17 +27,17 @@ async def test_monitor_tile_missing_tile(snowflake_session):
         f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
         f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE', null)"
     )
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
     sql = (
         f"call SP_TILE_MONITOR('{monitor_tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, "
         f"'{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE')"
     )
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_MONITOR"].iloc[0]
     sql = f"SELECT * FROM {tile_id}_MONITOR"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 5
 
     assert result.iloc[-1]["VALUE"] == 4
@@ -48,12 +49,13 @@ async def test_monitor_tile_missing_tile(snowflake_session):
     assert result.iloc[-3]["客户"] == 1
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 5
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile_updated_tile(snowflake_session):
+async def test_monitor_tile_updated_tile(session):
     """
     Test monitoring with outdated tiles in which the tile value has been incremented by 1
     """
@@ -69,21 +71,21 @@ async def test_monitor_tile_updated_tile(snowflake_session):
         f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
         f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE', null)"
     )
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
     sql = f"UPDATE {table_name} SET VALUE = VALUE + 1"
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
     sql = (
         f"call SP_TILE_MONITOR('{monitor_tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{entity_col_names}', "
         f"'{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE')"
     )
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_MONITOR"].iloc[0]
 
     sql = f"SELECT * FROM {tile_id}_MONITOR"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 10
 
     assert result.iloc[0]["VALUE"] == 6
@@ -92,12 +94,13 @@ async def test_monitor_tile_updated_tile(snowflake_session):
     assert result.iloc[1]["OLD_VALUE"] == 2
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 10
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile_updated_tile_new_column(snowflake_session):
+async def test_monitor_tile_updated_tile_new_column(session):
     """
     Test monitoring with outdated tiles in which the tile value has been incremented by 1
     """
@@ -112,11 +115,11 @@ async def test_monitor_tile_updated_tile_new_column(snowflake_session):
         f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
         f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE', null)"
     )
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
     sql = f"UPDATE {table_name} SET VALUE = VALUE + 1"
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
     value_col_names_2 = "VALUE,VALUE_2"
     value_col_types_2 = "FLOAT,FLOAT"
@@ -125,16 +128,16 @@ async def test_monitor_tile_updated_tile_new_column(snowflake_session):
         f"call SP_TILE_MONITOR('{monitor_tile_sql_2}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{entity_col_names}', "
         f"'{value_col_names_2}', '{value_col_types_2}', '{tile_id}', 'ONLINE')"
     )
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_MONITOR"].iloc[0]
 
     sql = f"SELECT * FROM {tile_id}_MONITOR"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 10
 
     assert pd.notna(result.iloc[0]["VALUE"])
     assert pd.notna(result.iloc[0]["OLD_VALUE"])
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 10

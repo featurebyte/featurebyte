@@ -3,7 +3,6 @@
 Common test fixtures used across unit test directories
 """
 import json
-import os
 import tempfile
 from unittest import mock
 from unittest.mock import PropertyMock, patch
@@ -11,13 +10,12 @@ from unittest.mock import PropertyMock, patch
 import pandas as pd
 import pytest
 import pytest_asyncio
-import yaml
 from bson.objectid import ObjectId
 from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
-from featurebyte import FeatureJobSetting, ItemView, SnowflakeDetails
+from featurebyte import FeatureJobSetting, ItemView, MissingValueImputation, SnowflakeDetails
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
@@ -31,86 +29,40 @@ from featurebyte.api.item_data import ItemData
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import User, app
 from featurebyte.common.model_util import get_version
-from featurebyte.config import Configurations
 from featurebyte.enum import AggFunc, DBVarType, InternalName
+from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.node import construct_node
 from featurebyte.routes.app_container import AppContainer
+from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
+from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+from tests.unit.conftest_config import (
+    config_file_fixture,
+    config_fixture,
+    mock_config_path_env_fixture,
+)
+from tests.util.helper import iet_entropy
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
 
-
-@pytest.fixture(name="config_file")
-def config_file_fixture():
-    """
-    Config file for unit testing
-    """
-    config_dict = {
-        "credential": [
-            {
-                "feature_store": "sf_featurestore",
-                "credential_type": "USERNAME_PASSWORD",
-                "username": "sf_user",
-                "password": "sf_password",
-            },
-            {
-                "feature_store": "sq_featurestore",
-            },
-        ],
-        "profile": [
-            {
-                "name": "local",
-                "api_url": "http://localhost:8080",
-                "api_token": "token",
-            },
-        ],
-    }
-    with tempfile.TemporaryDirectory() as tempdir:
-        config_file_path = os.path.join(tempdir, "config.yaml")
-        with open(config_file_path, "w") as file_handle:
-            file_handle.write(yaml.dump(config_dict))
-            file_handle.flush()
-            yield config_file_path
-
-
-@pytest.fixture(name="config")
-def config_fixture(config_file):
-    """
-    Config object for unit testing
-    """
-    yield Configurations(config_file_path=config_file)
-
-
-@pytest.fixture(name="mock_config_path_env")
-def mock_config_path_env_fixture(config_file):
-    """
-    Mock FEATUREBYTE_HOME in featurebyte/config.py
-    """
-
-    def mock_env_side_effect(*args, **kwargs):
-        if args[0] == "FEATUREBYTE_HOME":
-            return os.path.dirname(config_file)
-        env = dict(os.environ)
-        return env.get(*args, **kwargs)
-
-    with mock.patch("featurebyte.config.os.environ.get") as mock_env_get:
-        mock_env_get.side_effect = mock_env_side_effect
-        yield
+# "Registering" fixtures so that they'll be available for use as if they were defined here.
+# We keep the definition in a separate file for readability
+_ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
 
 
 @pytest.fixture(name="mock_api_object_cache")
@@ -421,6 +373,24 @@ def snowflake_item_data_id_2_fixture():
     return ObjectId("6337f9651050ee7d5980662e")
 
 
+@pytest.fixture(name="cust_id_entity_id")
+def cust_id_entity_id_fixture():
+    """Customer ID entity ID"""
+    # Note that these IDs are part of the groupby node parameters, it will affect the node hash calculation.
+    # Altering these IDs may cause the SDK code generation to fail (due to the generated code could slightly
+    # be different).
+    return ObjectId("63f94ed6ea1f050131379214")
+
+
+@pytest.fixture(name="transaction_entity_id")
+def transaction_entity_id_fixture():
+    """Transaction entity ID"""
+    # Note that these IDs are part of the groupby node parameters, it will affect the node hash calculation.
+    # Altering these IDs may cause the SDK code generation to fail (due to the generated code could slightly
+    # be different).
+    return ObjectId("63f94ed6ea1f050131379204")
+
+
 @pytest.fixture(name="snowflake_event_data")
 def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_id):
     """EventData object fixture"""
@@ -529,22 +499,23 @@ def snowflake_item_data_same_event_id_fixture(
 
 
 @pytest.fixture(name="cust_id_entity")
-def cust_id_entity_fixture():
+def cust_id_entity_fixture(cust_id_entity_id):
     """
     Customer ID entity fixture
     """
-    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity = Entity(name="customer", serving_names=["cust_id"], _id=cust_id_entity_id)
     entity.save()
     yield entity
 
 
 @pytest.fixture(name="transaction_entity")
-def transaction_entity_fixture():
+def transaction_entity_fixture(transaction_entity_id):
     """
     Event entity fixture
     """
-    entity = Entity(name="transaction", serving_names=["transaction_id"])
+    entity = Entity(name="transaction", serving_names=["transaction_id"], _id=transaction_entity_id)
     entity.save()
+    assert entity.id == transaction_entity_id
     yield entity
 
 
@@ -614,7 +585,7 @@ def snowflake_event_view_fixture(
     """
     EventData object fixture
     """
-    event_view = EventView.from_event_data(event_data=snowflake_event_data)
+    event_view = snowflake_event_data.get_view()
     assert isinstance(event_view, EventView)
     expected_input_node = construct_node(
         name="input_2",
@@ -655,8 +626,7 @@ def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity):
     """
     Snowflake event view with entity
     """
-    event_view = EventView.from_event_data(event_data=snowflake_event_data_with_entity)
-    assert event_view.node.parameters.id == snowflake_event_data_with_entity.id
+    event_view = snowflake_event_data_with_entity.get_view()
     yield event_view
 
 
@@ -667,10 +637,7 @@ def snowflake_event_view_entity_feature_job_fixture(
     """
     Snowflake event view with entity
     """
-    event_view = EventView.from_event_data(
-        event_data=snowflake_event_data_with_entity_and_feature_job
-    )
-    assert event_view.node.parameters.id == snowflake_event_data_with_entity_and_feature_job.id
+    event_view = snowflake_event_data_with_entity_and_feature_job.get_view()
     yield event_view
 
 
@@ -685,22 +652,40 @@ def grouped_event_view_fixture(snowflake_event_view_with_entity):
     yield grouped
 
 
+@pytest.fixture(name="feature_group_feature_job_setting")
+def feature_group_feature_job_setting():
+    """
+    Get feature group feature job setting
+    """
+    return {
+        "blind_spot": "10m",
+        "frequency": "30m",
+        "time_modulo_frequency": "5m",
+    }
+
+
 @pytest.fixture(name="feature_group")
-def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_data_with_entity):
+def feature_group_fixture(
+    grouped_event_view,
+    cust_id_entity,
+    snowflake_event_data_with_entity,
+    feature_group_feature_job_setting,
+):
     """
     FeatureList fixture
     """
+    snowflake_event_data_with_entity.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(
+            **feature_group_feature_job_setting,
+        )
+    )
     global_graph = GlobalQueryGraph()
     assert id(global_graph.nodes) == id(grouped_event_view.view_obj.graph.nodes)
     feature_group = grouped_event_view.aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=feature_group_feature_job_setting,
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
     assert isinstance(feature_group, FeatureGroup)
@@ -722,6 +707,32 @@ def production_ready_feature_fixture(feature_group):
     feature.__dict__["version"] = "V220401"
     feature_group["production_ready_feature"] = feature
     return feature
+
+
+@pytest.fixture(name="feature_with_cleaning_operations")
+def feature_with_cleaning_operations_fixture(
+    snowflake_event_data, cust_id_entity, feature_group_feature_job_setting, snowflake_feature_store
+):
+    """
+    Fixture to get a feature with cleaning operations
+    """
+    snowflake_feature_store.save()
+    snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
+    snowflake_event_data.save()
+    snowflake_event_data["col_float"].update_critical_data_info(
+        cleaning_operations=[
+            MissingValueImputation(imputed_value=0.0),
+        ]
+    )
+    event_view = snowflake_event_data.get_view()
+    feature_group = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )
+    yield feature_group["sum_30m"]
 
 
 @pytest.fixture(name="non_time_based_feature")
@@ -923,9 +934,7 @@ async def feature_manager(mock_execute_query, session_manager, snowflake_feature
     Feature Manager fixture
     """
     _ = mock_execute_query
-    return FeatureManagerSnowflake(
-        session=await session_manager.get_session(snowflake_feature_store)
-    )
+    return FeatureManager(session=await session_manager.get_session(snowflake_feature_store))
 
 
 @pytest.fixture
@@ -968,22 +977,13 @@ def mock_snowflake_feature_list_model(
     return mock_feature_list
 
 
-@pytest.fixture(name="mocked_tile_cache")
-def mocked_tile_cache_fixture():
+@pytest.fixture(name="mocked_compute_tiles_on_demand")
+def mocked_compute_tiles_on_demand():
     """Fixture for a mocked SnowflakeTileCache object"""
     with mock.patch(
-        "featurebyte.query_graph.sql.feature_historical.get_tile_cache"
-    ) as mocked_get_tile_cache:
-
-        async def _mock_compute_tiles_on_demand(*args, **kwargs):
-            _ = args
-            _ = kwargs
-            return None
-
-        mocked_tile_cache = mock.Mock()
-        mocked_tile_cache.compute_tiles_on_demand.side_effect = _mock_compute_tiles_on_demand
-        mocked_get_tile_cache.return_value = mocked_tile_cache
-        yield mocked_tile_cache
+        "featurebyte.query_graph.sql.feature_historical.TileCache.compute_tiles_on_demand"
+    ) as mocked_compute_tiles_on_demand:
+        yield mocked_compute_tiles_on_demand
 
 
 @pytest.fixture(name="noop_validate_feature_store_id_not_used_in_warehouse", autouse=True)
@@ -1014,15 +1014,49 @@ def get_noop_session_validator_fixture():
         yield
 
 
-def test_save_payload_fixtures(
+@pytest.fixture(name="api_object_to_id")
+def api_object_to_id_fixture():
+    """
+    Dictionary contains API object to payload object ID mapping
+    """
+    base_path = "tests/fixtures/request_payloads"
+    object_names = [
+        "entity",
+        "feature_store",
+        "event_data",
+        "item_data",
+        "dimension_data",
+        "scd_data",
+        "feature_sum_30m",
+        "feature_sum_2h",
+        "feature_iet",
+        "feature_list_single",
+        "feature_list_multi",
+        "feature_namespace",
+        "feature_list_namespace",
+        "feature_job_setting_analysis",
+        "context",
+    ]
+    output = {}
+    for obj_name in object_names:
+        filename = f"{base_path}/{obj_name}.json"
+        with open(filename, "r") as fhandle:
+            output[obj_name] = json.load(fhandle)["_id"]
+    return output
+
+
+def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     update_fixtures,
     snowflake_feature_store,
     snowflake_event_data,
     snowflake_item_data,
     snowflake_dimension_data,
     snowflake_scd_data,
+    snowflake_event_view_with_entity,
     feature_group,
+    non_time_based_feature,
     cust_id_entity,
+    transaction_entity,
 ):
     """
     Write request payload for testing api route
@@ -1030,6 +1064,13 @@ def test_save_payload_fixtures(
     # pylint: disable=too-many-locals
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_2h = feature_group["sum_2h"]
+    feature_iet = iet_entropy(
+        view=snowflake_event_view_with_entity,
+        group_by_col="cust_id",
+        window="24h",
+        name="iet_entropy_24h",
+        feature_job_setting={"frequency": "6h", "time_modulo_frequency": "3h", "blind_spot": "3h"},
+    )
     feature_list = FeatureList([feature_sum_30m], name="sf_feature_list")
     feature_list_multiple = FeatureList(
         [feature_sum_30m, feature_sum_2h], name="sf_feature_list_multiple"
@@ -1072,10 +1113,27 @@ def test_save_payload_fixtures(
         job_time_buffer_setting="auto",
         late_data_allowance=5e-05,
     )
+    context = ContextCreate(name="transaction_context", entity_ids=[cust_id_entity.id])
+    relationship_info = RelationshipInfoCreate(
+        _id="63f6a145e549df8ccf123456",
+        name="child_parent_relationship",
+        relationship_type=RelationshipType.CHILD_PARENT,
+        primary_entity_id=cust_id_entity.id,
+        related_entity_id=transaction_entity.id,
+        primary_data_source_id="6337f9651050ee7d5980660d",
+        is_enabled=True,
+        updated_by="63f6a145e549df8ccf123444",
+    )
 
     if update_fixtures:
+        generated_comment = [
+            "THIS IS A GENERATED FILE. DO NOT EDIT THIS FILE DIRECTLY.",
+            "Instead, update the test conftest.py#test_save_payload_fixtures.",
+            "Run `pytest --update-fixtures` to update it.",
+        ]
         api_object_name_pairs = [
             (cust_id_entity, "entity"),
+            (transaction_entity, "entity_transaction"),
             (snowflake_feature_store, "feature_store"),
             (snowflake_event_data, "event_data"),
             (snowflake_item_data, "item_data"),
@@ -1083,6 +1141,8 @@ def test_save_payload_fixtures(
             (snowflake_scd_data, "scd_data"),
             (feature_sum_30m, "feature_sum_30m"),
             (feature_sum_2h, "feature_sum_2h"),
+            (non_time_based_feature, "feature_non_time_based"),
+            (feature_iet, "feature_iet"),
             (feature_list, "feature_list_single"),
             (feature_list_multiple, "feature_list_multi"),
         ]
@@ -1091,27 +1151,25 @@ def test_save_payload_fixtures(
         for api_object, name in api_object_name_pairs:
             filename = f"{base_path}/{name}.json"
             with open(filename, "w") as fhandle:
-                fhandle.write(
-                    json.dumps(api_object._get_create_payload(), indent=4, sort_keys=True)
-                )
+                json_payload = api_object._get_create_payload()
+                json_payload["_COMMENT"] = generated_comment
+                fhandle.write(json.dumps(json_payload, indent=4, sort_keys=True))
             output_filenames.append(filename)
 
-        json_filename = f"{base_path}/feature_namespace.json"
-        with open(json_filename, "w") as fhandle:
-            fhandle.write(json.dumps(feature_namespace.json_dict(), indent=4, sort_keys=True))
-            output_filenames.append(json_filename)
-
-        json_filename = f"{base_path}/feature_list_namespace.json"
-        with open(json_filename, "w") as fhandle:
-            fhandle.write(json.dumps(feature_list_namespace.json_dict(), indent=4, sort_keys=True))
-            output_filenames.append(json_filename)
-
-        json_filename = f"{base_path}/feature_job_setting_analysis.json"
-        with open(json_filename, "w") as fhandle:
-            fhandle.write(
-                json.dumps(feature_job_setting_analysis.json_dict(), indent=4, sort_keys=True)
-            )
-            output_filenames.append(json_filename)
+        schema_payload_name_pairs = [
+            (feature_namespace, "feature_namespace"),
+            (feature_list_namespace, "feature_list_namespace"),
+            (feature_job_setting_analysis, "feature_job_setting_analysis"),
+            (context, "context"),
+            (relationship_info, "relationship_info"),
+        ]
+        for schema, name in schema_payload_name_pairs:
+            filename = f"{base_path}/{name}.json"
+            with open(filename, "w") as fhandle:
+                json_to_write = schema.json_dict()
+                json_to_write["_COMMENT"] = generated_comment
+                fhandle.write(json.dumps(json_to_write, indent=4, sort_keys=True))
+            output_filenames.append(filename)
 
         raise AssertionError(
             f"Fixtures {output_filenames} updated, please set update_fixture to False"
@@ -1124,11 +1182,12 @@ def app_container_fixture(persistent):
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
     user = User()
-    task_manager = TaskManager(user_id=user.id)
+    task_manager = TaskManager(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
     return AppContainer.get_instance(
         user=user,
         persistent=persistent,
         temp_storage=LocalTempStorage(),
         task_manager=task_manager,
         storage=LocalTempStorage(),
+        workspace_id=DEFAULT_WORKSPACE_ID,
     )

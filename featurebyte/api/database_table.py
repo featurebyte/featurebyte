@@ -25,7 +25,7 @@ from featurebyte.query_graph.model.common_table import BaseTableData, TabularSou
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
 
 
@@ -42,7 +42,9 @@ class TableDataFrame(BaseFrame):
         node = self.node
         if kwargs.get("after_cleaning"):
             assert isinstance(node, InputNode)
-            graph_node = self.table_data.construct_cleaning_recipe_node(input_node=node)
+            graph_node = self.table_data.construct_cleaning_recipe_node(
+                input_node=node, skip_column_names=[]
+            )
             if graph_node:
                 node = self.graph.add_node(node=graph_node, input_nodes=[self.node])
 

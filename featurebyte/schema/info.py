@@ -10,10 +10,8 @@ from datetime import datetime
 from featurebyte_freeware.feature_job_analysis.schema import AnalysisOptions, AnalysisParameters
 from pydantic import Field, StrictStr, root_validator
 
-from featurebyte import SourceType
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListStatus,
@@ -22,10 +20,17 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
-from featurebyte.schema.feature import FeatureBriefInfoList, ReadinessComparison, VersionComparison
+from featurebyte.schema.feature import (
+    DataCleaningOperationComparison,
+    DataFeatureJobSettingComparison,
+    FeatureBriefInfoList,
+    ReadinessComparison,
+    VersionComparison,
+)
 from featurebyte.schema.feature_list import ProductionReadyFractionComparison
 
 
@@ -44,6 +49,7 @@ class EntityBriefInfo(BaseBriefInfo):
     """
 
     serving_names: List[str]
+    workspace_name: str
 
 
 class EntityInfo(EntityBriefInfo, BaseInfo):
@@ -73,7 +79,7 @@ class EntityBriefInfoList(FeatureByteBaseModel):
         -------
         EntityBriefInfoList
         """
-        entity_project = DictProject(rule=("data", ["name", "serving_names"]))
+        entity_project = DictProject(rule=("data", ["name", "serving_names", "workspace_name"]))
         return EntityBriefInfoList(__root__=entity_project.project(paginated_data))
 
 
@@ -83,6 +89,7 @@ class DataBriefInfo(BaseBriefInfo):
     """
 
     status: DataStatus
+    workspace_name: str
 
 
 class DataBriefInfoList(FeatureByteBaseModel):
@@ -106,7 +113,7 @@ class DataBriefInfoList(FeatureByteBaseModel):
         -------
         DataBriefInfoList
         """
-        data_project = DictProject(rule=("data", ["name", "status"]))
+        data_project = DictProject(rule=("data", ["name", "status", "workspace_name"]))
         return DataBriefInfoList(__root__=data_project.project(paginated_data))
 
 
@@ -218,6 +225,7 @@ class NamespaceInfo(BaseInfo):
     tabular_data: DataBriefInfoList
     default_version_mode: DefaultVersionMode
     version_count: int
+    workspace_name: str
 
 
 class FeatureNamespaceInfo(NamespaceInfo):
@@ -237,6 +245,8 @@ class FeatureInfo(FeatureNamespaceInfo):
     dtype: DBVarType
     version: VersionComparison
     readiness: ReadinessComparison
+    data_feature_job_setting: DataFeatureJobSettingComparison
+    data_cleaning_operation: DataCleaningOperationComparison
     versions_info: Optional[FeatureBriefInfoList]
     metadata: Any
 
@@ -283,7 +293,7 @@ class FeatureListBriefInfoList(FeatureByteBaseModel):
         FeatureBriefInfoList
         """
         feature_list_project = DictProject(
-            rule=("data", ["version", "readiness_distribution", "created_at"])
+            rule=("data", ["version", "readiness_distribution", "created_at", "workspace_id"])
         )
         return FeatureListBriefInfoList(__root__=feature_list_project.project(paginated_data))
 
@@ -324,3 +334,41 @@ class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
     recommendation: FeatureJobSetting
+    workspace_name: str
+
+
+class WorkspaceBriefInfo(BaseBriefInfo):
+    """
+    Workspace brief info schema
+    """
+
+
+class WorkspaceInfo(WorkspaceBriefInfo, BaseInfo):
+    """
+    Workspace info schema
+    """
+
+
+class WorkspaceBriefInfoList(FeatureByteBaseModel):
+    """
+    Paginated list of workspace brief info
+    """
+
+    __root__: List[WorkspaceBriefInfo]
+
+    @classmethod
+    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> WorkspaceBriefInfoList:
+        """
+        Construct workspace brief info list from paginated data
+
+        Parameters
+        ----------
+        paginated_data: dict[str, Any]
+            Paginated data
+
+        Returns
+        -------
+        WorkspaceBriefInfoList
+        """
+        workspace_project = DictProject(rule=("data", ["name"]))
+        return WorkspaceBriefInfoList(__root__=workspace_project.project(paginated_data))

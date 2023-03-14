@@ -71,7 +71,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -560,3 +559,8 @@ MigrationBackup/
 featurebyte_beta/
 featurebyte_beta.tar.gz
 featurebyte_beta.zip
+spark-warehouse/
+metastore_db/
+pytest.xml*
+*.sqlite
+debug/

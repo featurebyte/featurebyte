@@ -2,15 +2,17 @@
 Tests for more features
 """
 import pandas as pd
+import pytest
 
-from featurebyte import EventView, FeatureList
+from featurebyte import FeatureList
 
 
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_features_without_entity(event_data):
     """
     Test working with purely time based features without any entity
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     feature_group = event_view.groupby([]).aggregate_over(
         method="count",
         windows=["2h", "24h"],
@@ -56,8 +58,8 @@ def test_features_without_entity(event_data):
             .reset_index(drop=True)
         )
     finally:
-        feature_list_1.deploy(enable=False, make_production_ready=True)
-        feature_list_2.deploy(enable=False, make_production_ready=True)
+        feature_list_1.deploy(enable=False, make_production_ready=False)
+        feature_list_2.deploy(enable=False, make_production_ready=False)
 
     pd.testing.assert_frame_equal(df_features_1, df_features_deployed_1)
     pd.testing.assert_frame_equal(df_features_2, df_features_deployed_2)

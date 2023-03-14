@@ -17,10 +17,10 @@ from featurebyte.logger import logger
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.tile_cache import get_tile_cache
+from featurebyte.tile.tile_cache import TileCache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
@@ -131,11 +131,14 @@ def get_historical_features_sql(
     )
     plan = planner.generate_plan(nodes)
 
-    sql = plan.construct_combined_sql(
-        request_table_name=request_table_name,
-        point_in_time_column=SpecialColumnName.POINT_IN_TIME,
-        request_table_columns=request_table_columns,
-    ).sql(pretty=True)
+    sql = sql_to_string(
+        plan.construct_combined_sql(
+            request_table_name=request_table_name,
+            point_in_time_column=SpecialColumnName.POINT_IN_TIME,
+            request_table_columns=request_table_columns,
+        ),
+        source_type=source_type,
+    )
 
     return sql
 
@@ -144,7 +147,7 @@ async def get_historical_features(
     session: BaseSession,
     graph: QueryGraph,
     nodes: list[Node],
-    training_events: pd.DataFrame,
+    observation_set: pd.DataFrame,
     source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
     is_feature_list_deployed: bool = False,
@@ -160,8 +163,8 @@ async def get_historical_features(
         Query graph
     nodes : list[Node]
         List of query graph node
-    training_events : pd.DataFrame
-        Training events DataFrame
+    observation_set : pd.DataFrame
+        Observation set DataFrame
     source_type : SourceType
         Source type information
     serving_names_mapping : dict[str, str] | None
@@ -181,8 +184,8 @@ async def get_historical_features(
     tic_ = time.time()
 
     # Validate request
-    validate_request_schema(training_events)
-    training_events = validate_historical_requests_point_in_time(training_events)
+    validate_request_schema(observation_set)
+    training_events = validate_historical_requests_point_in_time(observation_set)
 
     # use a unique request table name
     request_id = session.generate_session_unique_id()
@@ -205,7 +208,7 @@ async def get_historical_features(
     # Compute tiles on demand if required
     if not is_feature_list_deployed:
         tic = time.time()
-        tile_cache = get_tile_cache(session=session)
+        tile_cache = TileCache(session=session)
         await tile_cache.compute_tiles_on_demand(
             graph=graph,
             nodes=nodes,

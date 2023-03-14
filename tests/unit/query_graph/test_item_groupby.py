@@ -75,7 +75,7 @@ def test_item_groupby_sql_node(
                 CASE
                   WHEN INNER_."item_type" IS NULL
                   THEN '__MISSING__'
-                  ELSE CAST(INNER_."item_type" AS VARCHAR)
+                  ELSE CAST(INNER_."item_type" AS TEXT)
                 END,
                 TO_VARIANT(INNER_."feature_name_inner")
               ) AS "feature_name"

@@ -14,15 +14,10 @@ from mongomock_motor import AsyncMongoMockClient
 from featurebyte.persistent.mongo import MongoDB
 
 
-def pytest_configure(config):
-    """Set up additional pytest markers"""
-    # register an additional marker
-    config.addinivalue_line("markers", "no_mock_process_store: mark test to not mock process store")
-
-
 def pytest_addoption(parser):
     """Set up additional pytest options"""
     parser.addoption("--update-fixtures", action="store_true", default=False)
+    parser.addoption("--source-types", type=str, default=None)
 
 
 @pytest.fixture(scope="session")

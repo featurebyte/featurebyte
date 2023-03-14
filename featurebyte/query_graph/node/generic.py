@@ -1,19 +1,20 @@
 """
 This module contains SQL operation related node classes
 """
+# pylint: disable=too-many-lines
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
-from typing_extensions import Annotated
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
 
 from pydantic import BaseModel, Field, root_validator, validator
 
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import (
     BaseNode,
     BasePrunableNode,
     BaseSeriesOutputNode,
+    BaseSeriesOutputWithAScalarParamNode,
     NodeT,
 )
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
@@ -25,139 +26,21 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructureBranchState,
     OperationStructureInfo,
     PostAggregationColumn,
-    SourceDataColumn,
     ViewDataColumn,
 )
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    CodeGenerationConfig,
+    ExpressionStr,
+    RightHandSide,
+    StatementStr,
+    StatementT,
+    ValueStr,
+    VariableNameGenerator,
+    VariableNameStr,
+    VarNameExpressionStr,
+)
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
-from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.util import append_to_lineage
-
-
-class InputNode(BaseNode):
-    """InputNode class"""
-
-    class BaseParameters(BaseModel):
-        """BaseParameters"""
-
-        columns: List[ColumnSpec]
-        table_details: TableDetails
-        feature_store_details: FeatureStoreDetails
-
-        @root_validator(pre=True)
-        @classmethod
-        def _convert_columns_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-            # DEV-556: convert list of string to list of dictionary
-            columns = values.get("columns")
-            if columns and isinstance(columns[0], str):
-                values["columns"] = [{"name": col, "dtype": DBVarType.UNKNOWN} for col in columns]
-            return values
-
-    class GenericParameters(BaseParameters):
-        """GenericParameters"""
-
-        type: Literal[TableDataType.GENERIC] = Field(TableDataType.GENERIC)
-        id: Optional[PydanticObjectId] = Field(default=None)
-
-    class EventDataParameters(BaseParameters):
-        """EventDataParameters"""
-
-        type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
-        id: Optional[PydanticObjectId] = Field(default=None)
-        timestamp_column: Optional[InColumnStr] = Field(
-            default=None
-        )  # DEV-556: this should be compulsory
-        id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
-
-        @root_validator(pre=True)
-        @classmethod
-        def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-            # DEV-556: converted older record (parameters) into a newer format
-            if "dbtable" in values:
-                values["table_details"] = values["dbtable"]
-            if "feature_store" in values:
-                values["feature_store_details"] = values["feature_store"]
-            if "timestamp" in values:
-                values["timestamp_column"] = values["timestamp"]
-            return values
-
-    class ItemDataParameters(BaseParameters):
-        """ItemDataParameters"""
-
-        type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
-        id: Optional[PydanticObjectId] = Field(default=None)
-        id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
-        event_data_id: Optional[PydanticObjectId] = Field(default=None)
-        event_id_column: Optional[InColumnStr] = Field(default=None)
-
-    class DimensionDataParameters(BaseParameters):
-        """DimensionDataParameters"""
-
-        type: Literal[TableDataType.DIMENSION_DATA] = Field(
-            TableDataType.DIMENSION_DATA, const=True
-        )
-        id: Optional[PydanticObjectId] = Field(default=None)
-        id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
-
-    class SCDDataParameters(BaseParameters):
-        """SCDDataParameters"""
-
-        type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
-        id: Optional[PydanticObjectId] = Field(default=None)
-        natural_key_column: Optional[InColumnStr] = Field(
-            default=None
-        )  # DEV-556: this should be compulsory
-        effective_timestamp_column: Optional[InColumnStr] = Field(
-            default=None
-        )  # DEV-556: this should be compulsory
-        surrogate_key_column: Optional[InColumnStr] = Field(default=None)
-        end_timestamp_column: Optional[InColumnStr] = Field(default=None)
-        current_flag_column: Optional[InColumnStr] = Field(default=None)
-
-    type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Annotated[
-        Union[
-            EventDataParameters,
-            ItemDataParameters,
-            GenericParameters,
-            DimensionDataParameters,
-            SCDDataParameters,
-        ],
-        Field(discriminator="type"),
-    ]
-
-    @root_validator(pre=True)
-    @classmethod
-    def _set_default_table_data_type(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        # DEV-556: set default table data type when it is not present
-        if "parameters" in values:
-            if "type" not in values["parameters"]:
-                values["parameters"]["type"] = TableDataType.EVENT_DATA
-        return values
-
-    def _derive_node_operation_info(
-        self,
-        inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
-        global_state: OperationStructureInfo,
-    ) -> OperationStructure:
-        _ = branch_state, global_state
-        return OperationStructure(
-            columns=[
-                SourceDataColumn(
-                    name=column.name,
-                    tabular_data_id=self.parameters.id,
-                    tabular_data_type=self.parameters.type,
-                    node_names={self.name},
-                    node_name=self.name,
-                    dtype=column.dtype,
-                )
-                for column in self.parameters.columns
-            ],
-            output_type=NodeOutputType.FRAME,
-            output_category=NodeOutputCategory.VIEW,
-            row_index_lineage=(self.name,),
-        )
 
 
 class ProjectNode(BaseNode):
@@ -171,6 +54,33 @@ class ProjectNode(BaseNode):
     type: Literal[NodeType.PROJECT] = Field(NodeType.PROJECT, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self.parameters.columns
+
+    def prune(
+        self: NodeT,
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
+        input_operation_structures: List[OperationStructure],
+    ) -> NodeT:
+        assert len(input_operation_structures) == 1
+        input_op_struct = input_operation_structures[0]
+        if input_op_struct.output_category == NodeOutputCategory.VIEW:
+            # for view, the available columns are the columns
+            avail_columns = set(col.name for col in input_op_struct.columns)
+        else:
+            # for feature, the available columns are the aggregations
+            avail_columns = set(col.name for col in input_op_struct.aggregations)
+
+        node_params = self.parameters.dict()
+        node_params["columns"] = [col for col in self.parameters.columns if col in avail_columns]  # type: ignore
+        return self.clone(parameters=node_params)
+
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
@@ -180,7 +90,7 @@ class ProjectNode(BaseNode):
         _ = branch_state, global_state
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
-        names = set(self.get_required_input_columns())
+        names = set(self.parameters.columns)
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
@@ -203,12 +113,71 @@ class ProjectNode(BaseNode):
             row_index_lineage=input_operation_info.row_index_lineage,
         )
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        if input_node_types[0] in {NodeType.ITEM_GROUPBY, NodeType.AGGREGATE_AS_AT}:
+            # special handling for item_view.aggregate output
+            # since the output is already single series, no projection is needed
+            statements, var_name = self._convert_expression_to_variable(
+                var_name_expression=var_name_expr,
+                var_name_generator=var_name_generator,
+                node_output_type=operation_structure.output_type,
+                node_output_category=operation_structure.output_category,
+            )
+            return statements, var_name
+
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=operation_structure.output_category,
+        )
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+
+        # must assign the projection result to a new variable
+        # otherwise, it could cause issue when the original variable is modified
+        # for example, the second `view["col_int", "col_float"]]` is different from the first one:
+        #     view.join(view["col_int", "col_float"]], rsuffix="_y")
+        #     view.join(view["col_int", "col_float"]], rsuffix="_z")
+        # after the first join, the `view` node get updated and the second join will refer to the updated `view`
+        if operation_structure.output_type == NodeOutputType.FRAME:
+            expression = ExpressionStr(f"{var_name}[{self.parameters.columns}]")
+        else:
+            expression = ExpressionStr(f"{var_name}['{self.parameters.columns[0]}']")
+
+        statements.append((out_var_name, expression))
+        return statements, out_var_name
+
 
 class FilterNode(BaseNode):
     """FilterNode class"""
 
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
+
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        # the first input is the input view and the second input is the mask view
+        if input_index == 0:
+            # for the input view, all columns are required, otherwise it may drop some columns
+            # during the preview (where the final output is a filter node)
+            return available_column_names
+        return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
         self,
@@ -250,6 +219,25 @@ class FilterNode(BaseNode):
             output_category=output_category,
             row_index_lineage=append_to_lineage(input_operation_info.row_index_lineage, self.name),
         )
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        mask_name = input_var_name_expressions[1].as_input()
+        expression = ExpressionStr(f"{var_name}[{mask_name}]")
+        return statements, expression
 
 
 class AssignColumnMixin:
@@ -337,6 +325,15 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
+
     @staticmethod
     def _validate_series(series_op_structure: OperationStructure) -> None:
         assert series_op_structure.output_type == NodeOutputType.SERIES
@@ -371,6 +368,28 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             new_column_var_type=dtype,
         )
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        column_name = self.parameters.name
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=operation_structure.output_category,
+        )
+        value: RightHandSide = ValueStr.create(self.parameters.value)
+        if len(input_var_name_expressions) == 2:
+            value = input_var_name_expressions[1]
+        statements.append((VariableNameStr(f"{var_name}['{column_name}']"), value))
+        return statements, var_name
+
 
 class LagNode(BaseSeriesOutputNode):
     """LagNode class"""
@@ -386,12 +405,46 @@ class LagNode(BaseSeriesOutputNode):
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return len(self.parameters.entity_columns) + 2
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        # this node has the following input structure:
+        # [0] column to lag
+        # [1...n-1] entity column(s)
+        # [n] timestamp column
+        if input_index == 0:
+            # first input (zero-based)
+            return []
+        if input_index == len(self.parameters.entity_columns):
+            # last input (zero-based)
+            return [self.parameters.timestamp_column]
+        # entity column
+        return [self.parameters.entity_columns[input_index - 1]]
+
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        col_name = input_var_name_expressions[0].as_input()
+        entity_columns = ValueStr.create(self.parameters.entity_columns)
+        offset = ValueStr.create(self.parameters.offset)
+        expression = f"{col_name}.lag(entity_columns={entity_columns}, offset={offset})"
+        return [], ExpressionStr(expression)
 
-class GroupbyNode(AggregationOpStructMixin, BaseNode):
-    """GroupbyNode class"""
+
+class GroupByNode(AggregationOpStructMixin, BaseNode):
+    """GroupByNode class"""
 
     class Parameters(BaseGroupbyParameters):
         """Parameters"""
@@ -408,6 +461,15 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
     type: Literal[NodeType.GROUPBY] = Field(NodeType.GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
         cols = self.parameters.keys + [self.parameters.timestamp]
@@ -443,16 +505,17 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
 
     def prune(
         self: NodeT,
-        target_nodes: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
-        _ = input_operation_structures
-
-        # Only prune the groupby node if all the target output are the project node, this is to prevent
-        # unexpected parameters pruning if groupby node output is used by other node like graph node.
-        if target_nodes and all(node.type == NodeType.PROJECT for node in target_nodes):
+        if target_node_input_order_pairs:
             required_columns = set().union(
-                *(node.get_required_input_columns() for node in target_nodes)
+                *(
+                    node.get_required_input_columns(
+                        input_index=input_order, available_column_names=self.parameters.names  # type: ignore
+                    )
+                    for node, input_order in target_node_input_order_pairs
+                )
             )
             params = self.parameters
             pruned_params_dict = self.parameters.dict()
@@ -463,6 +526,47 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
                     pruned_params_dict["windows"].append(window)
             return self.clone(parameters=pruned_params_dict)
         return self
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        windows = ValueStr.create(self.parameters.windows)
+        feature_names = ValueStr.create(self.parameters.names)
+        feature_job_setting = {
+            "blind_spot": f"{self.parameters.blind_spot}s",
+            "frequency": f"{self.parameters.frequency}s",
+            "time_modulo_frequency": f"{self.parameters.time_modulo_frequency}s",
+        }
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        agg = (
+            f"aggregate_over(value_column={value_column}, "
+            f"method={method}, "
+            f"windows={windows}, "
+            f"feature_names={feature_names}, "
+            f"feature_job_setting={feature_job_setting}, "
+            f"skip_fill_na=True)"
+        )
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        statements.append((out_var_name, ExpressionStr(f"{grouped}.{agg}")))
+        return statements, out_var_name
 
 
 class ItemGroupbyParameters(BaseGroupbyParameters):
@@ -477,6 +581,18 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     type: Literal[NodeType.ITEM_GROUPBY] = Field(NodeType.ITEM_GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: ItemGroupbyParameters
+
+    # class variable
+    _auto_convert_expression_to_variable: ClassVar[bool] = False
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]
@@ -507,6 +623,38 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
                 dtype=output_var_type,
             )
         ]
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        # Note: this node is a special case as the output of this node is not a complete SDK code.
+        # Currently, `item_view.groupby(...).aggregate()` will generate ItemGroupbyNode + ProjectNode.
+        # Output of ItemGroupbyNode is just an expression, the actual variable assignment
+        # will be done at the ProjectNode.
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        feature_name = ValueStr.create(self.parameters.name)
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        agg = (
+            f"aggregate(value_column={value_column}, "
+            f"method={method}, "
+            f"feature_name={feature_name}, "
+            f"skip_fill_na=True)"
+        )
+        return statements, ExpressionStr(f"{grouped}.{agg}")
 
 
 class SCDBaseParameters(BaseModel):
@@ -572,6 +720,15 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+
     def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
         parent_columns = [col for col in columns if col.name in self.parameters.input_column_names]
         return parent_columns
@@ -612,47 +769,109 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
     def _exclude_source_columns(self) -> List[str]:
         return [self.parameters.entity_column]
 
-
-class JoinNode(BaseNode):
-    """Join class"""
-
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        left_on: str
-        right_on: str
-        left_input_columns: List[InColumnStr]
-        left_output_columns: List[OutColumnStr]
-        right_input_columns: List[InColumnStr]
-        right_output_columns: List[OutColumnStr]
-        join_type: Literal["left", "inner"]
-        scd_parameters: Optional[SCDJoinParameters]
-
-        @validator(
-            "left_input_columns",
-            "right_input_columns",
-            "left_output_columns",
-            "right_output_columns",
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
         )
-        @classmethod
-        def _validate_columns_are_unique(cls, values: List[str]) -> List[str]:
-            if len(values) != len(set(values)):
-                raise ValueError(f"Column names (values: {values}) must be unique!")
-            return values
+        input_column_names = self.parameters.input_column_names
+        feature_names = self.parameters.feature_names
+        offset = None
+        if self.parameters.scd_parameters:
+            offset = self.parameters.scd_parameters.offset
+        grouped = (
+            f"{var_name}.as_features(column_names={input_column_names}, "
+            f"feature_names={feature_names}, "
+            f"offset={ValueStr.create(offset)})"
+        )
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        statements.append((out_var_name, ExpressionStr(grouped)))
+        return statements, out_var_name
 
-        @root_validator
-        @classmethod
-        def _validate_left_and_right_output_columns(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-            duplicated_output_cols = set(values.get("left_output_columns", [])).intersection(
-                values.get("right_output_columns", [])
-            )
-            if duplicated_output_cols:
-                raise ValueError("Left and right output columns should not have common item(s).")
-            return values
+
+class JoinMetadata(BaseModel):
+    """Metadata to track general `view.join(...)` operation"""
+
+    type: str = Field("join", const=True)
+    on: Optional[str]
+    rsuffix: str
+
+
+class JoinEventDataAttributesMetadata(BaseModel):
+    """Metadata to track `item_view.join_event_data_attributes(...)` operation"""
+
+    type: str = Field("join_event_data_attributes", const=True)
+    columns: List[str]
+    event_suffix: Optional[str]
+
+
+class JoinNodeParameters(BaseModel):
+    """JoinNodeParameters"""
+
+    left_on: str
+    right_on: str
+    left_input_columns: List[InColumnStr]
+    left_output_columns: List[OutColumnStr]
+    right_input_columns: List[InColumnStr]
+    right_output_columns: List[OutColumnStr]
+    join_type: Literal["left", "inner"]
+    scd_parameters: Optional[SCDJoinParameters]
+    metadata: Optional[Union[JoinMetadata, JoinEventDataAttributesMetadata]] = Field(
+        default=None
+    )  # DEV-556: should be compulsory
+
+    @validator(
+        "left_input_columns",
+        "right_input_columns",
+        "left_output_columns",
+        "right_output_columns",
+    )
+    @classmethod
+    def _validate_columns_are_unique(cls, values: List[str]) -> List[str]:
+        if len(values) != len(set(values)):
+            raise ValueError(f"Column names (values: {values}) must be unique!")
+        return values
+
+    @root_validator
+    @classmethod
+    def _validate_left_and_right_output_columns(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        duplicated_output_cols = set(values.get("left_output_columns", [])).intersection(
+            values.get("right_output_columns", [])
+        )
+        if duplicated_output_cols:
+            raise ValueError("Left and right output columns should not have common item(s).")
+        return values
+
+
+class JoinNode(BasePrunableNode):
+    """Join class"""
 
     type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Parameters
+    parameters: JoinNodeParameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        if input_index == 0:
+            return list(set(self.parameters.left_input_columns).union([self.parameters.left_on]))
+        return list(set(self.parameters.right_input_columns).union([self.parameters.right_on]))
 
     @staticmethod
     def _filter_columns(
@@ -668,7 +887,7 @@ class JoinNode(BaseNode):
 
     def prune(
         self: NodeT,
-        target_nodes: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         # Prune the join node parameters by using the available columns. If the input column is not found in the
@@ -693,7 +912,16 @@ class JoinNode(BaseNode):
             self.parameters.right_output_columns,  # type: ignore[attr-defined]
             right_avail_columns,
         )
+        metadata = node_params.get("metadata") or {}
+        if metadata.get("type") == "join_event_data_attributes":
+            node_params["metadata"]["columns"] = [
+                col for col in node_params["metadata"]["columns"] if col in left_avail_columns
+            ]
         return self.clone(parameters=node_params)
+
+    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
+        # if this join node is pruned, use the first input node to resolve pruned node not found issue
+        return input_node_names[0]
 
     def _derive_node_operation_info(
         self,
@@ -710,7 +938,10 @@ class JoinNode(BaseNode):
         left_columns = {
             col.name: col.clone(
                 name=left_col_map[col.name],  # type: ignore
-                node_names=col.node_names.union([self.name]),
+                # if the join type is left, current node is not a compulsory node for the column
+                node_names=col.node_names.union([self.name])
+                if params.join_type != "left"
+                else col.node_names,
                 node_name=self.name,
             )
             for col in inputs[0].columns
@@ -741,6 +972,48 @@ class JoinNode(BaseNode):
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=row_index_lineage,
         )
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        left_statements, left_var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        right_statements, right_var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[1],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        statements = left_statements + right_statements
+        assert self.parameters.metadata is not None, "Join node metadata is not set."
+        if isinstance(self.parameters.metadata, JoinMetadata):
+            var_name = left_var_name
+            other_var_name = right_var_name
+            statement = StatementStr(
+                f"{var_name}.join({other_var_name}, "
+                f"on={ValueStr.create(self.parameters.metadata.on)}, "
+                f"how={ValueStr.create(self.parameters.join_type)}, "
+                f"rsuffix={ValueStr.create(self.parameters.metadata.rsuffix)})"
+            )
+        else:
+            var_name = right_var_name
+            statement = StatementStr(
+                f"{var_name}.join_event_data_attributes("
+                f"columns={ValueStr.create(self.parameters.metadata.columns)}, "
+                f"event_suffix={ValueStr.create(self.parameters.metadata.event_suffix)})"
+            )
+
+        statements.append(statement)
+        return statements, var_name
 
 
 class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
@@ -777,6 +1050,20 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        if input_index == 0:
+            view_required_columns = [self.parameters.view_entity_column]
+            if self.parameters.view_point_in_time_column:
+                view_required_columns.append(self.parameters.view_point_in_time_column)
+            return view_required_columns
+        return [self.parameters.feature_entity_column]
+
     @staticmethod
     def _validate_feature(feature_op_structure: OperationStructure) -> None:
         columns = feature_op_structure.columns
@@ -810,6 +1097,30 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             new_column_var_type=feature_operation_info.series_output_dtype,
         )
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        new_column_name = ValueStr.create(self.parameters.name)
+        feature = input_var_name_expressions[1]
+        entity_column = ValueStr.create(self.parameters.view_entity_column)
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        statement = StatementStr(
+            f"{var_name}.add_feature(new_column_name={new_column_name}, "
+            f"feature={feature}, entity_column={entity_column})"
+        )
+        statements.append(statement)
+        return statements, var_name
+
 
 class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
     """Parameters for AggregateAsAtNode"""
@@ -825,6 +1136,18 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     type: Literal[NodeType.AGGREGATE_AS_AT] = Field(NodeType.AGGREGATE_AS_AT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: AggregateAsAtParameters
+
+    # class variable
+    _auto_convert_expression_to_variable: ClassVar[bool] = False
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]
@@ -856,6 +1179,42 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
             )
         ]
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        # Note: this node is a special case as the output of this node is not a complete SDK code.
+        # Currently, `scd_view.groupby(...).aggregate_asat()` will generate AggregateAsAtNode + ProjectNode.
+        # Output of AggregateAsAtNode is just an expression, the actual variable assignment
+        # will be done at the ProjectNode.
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        feature_name = ValueStr.create(self.parameters.name)
+        offset = ValueStr.create(self.parameters.offset)
+        backward = ValueStr.create(self.parameters.backward)
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        agg = (
+            f"aggregate_asat(value_column={value_column}, "
+            f"method={method}, "
+            f"feature_name={feature_name}, "
+            f"offset={offset}, "
+            f"backward={backward}, "
+            f"skip_fill_na=True)"
+        )
+        return statements, ExpressionStr(f"{grouped}.{agg}")
+
 
 class AliasNode(BaseNode):
     """AliasNode class"""
@@ -867,6 +1226,15 @@ class AliasNode(BaseNode):
 
     type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
     parameters: Parameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
         self,
@@ -904,3 +1272,63 @@ class AliasNode(BaseNode):
             output_category=output_category,
             row_index_lineage=input_operation_info.row_index_lineage,
         )
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        statements.append(
+            (VariableNameStr(f"{var_name}.name"), ValueStr.create(self.parameters.name))
+        )
+        return statements, var_name
+
+
+class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
+    """ConditionalNode class"""
+
+    type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
+
+    @property
+    def max_input_count(self) -> int:
+        return 3
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return inputs[0].series_output_dtype
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        mask_var_name_expr = input_var_name_expressions[1]
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        value: RightHandSide = ValueStr.create(self.parameters.value)
+        if len(input_var_name_expressions) == 3:
+            value = input_var_name_expressions[2]
+        statements.append((VariableNameStr(f"{var_name}[{mask_var_name_expr}]"), value))
+        return statements, var_name

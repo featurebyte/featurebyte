@@ -184,7 +184,9 @@ class OnlineStorePrecomputePlan:
             exclude_post_aggregation=True,
         )
         sql = sql_to_string(sql_expr, source_type)
-        table_name = get_online_store_table_name_from_entity_ids(set(params.agg_spec.entity_ids))
+        table_name = get_online_store_table_name_from_entity_ids(
+            set(params.agg_spec.entity_ids if params.agg_spec.entity_ids is not None else [])
+        )
 
         op_struct = (
             OperationStructureExtractor(graph=params.pruned_graph)
@@ -383,7 +385,10 @@ def get_online_store_retrieval_sql(
 
     # Form a request table as a common table expression (CTE) and add the point in time column
     expr = select(*[f"REQ.{quoted_identifier(col).sql()}" for col in request_table_columns])
-    expr = expr.select(f"SYSDATE() AS {SpecialColumnName.POINT_IN_TIME}")
+    adapter = get_sql_adapter(source_type)
+    expr = expr.select(
+        expressions.alias_(adapter.current_timestamp(), alias=SpecialColumnName.POINT_IN_TIME)
+    )
     request_table_columns.append(SpecialColumnName.POINT_IN_TIME)
 
     if request_table_name is not None:

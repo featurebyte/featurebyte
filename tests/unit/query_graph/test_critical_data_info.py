@@ -7,8 +7,8 @@ from pydantic.error_wrappers import ValidationError
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
-from featurebyte.query_graph.model.critical_data_info import (
-    CriticalDataInfo,
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
+from featurebyte.query_graph.node.cleaning_operation import (
     DisguisedValueImputation,
     MissingValueImputation,
     StringValueImputation,

@@ -8,8 +8,12 @@ from typing import Optional
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from sqlglot import expressions
+from sqlglot.expressions import Anonymous, Expression
+
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.common import quoted_identifier
 
 
 @dataclass
@@ -41,7 +45,7 @@ class TileSpec:
         Alias for the result of the SQL expression
     """
 
-    tile_expr: str
+    tile_expr: Expression
     tile_column_name: str
     tile_column_type: str
 
@@ -94,6 +98,27 @@ class TilingAggregator(ABC):
         str
         """
 
+    def construct_numeric_tile_spec(self, tile_expr: Expression, tile_column_name: str) -> TileSpec:
+        """
+        Construct a TileSpec for a numeric tile
+
+        Parameters
+        ----------
+        tile_expr: Expression
+            SQL expression
+        tile_column_name: str
+            Alias for the result of the SQL expression
+
+        Returns
+        -------
+        TileSpec
+        """
+        return TileSpec(
+            tile_expr,
+            tile_column_name,
+            self.adapter.get_physical_type_from_dtype(DBVarType.FLOAT),
+        )
+
 
 class OrderIndependentAggregator(TilingAggregator, ABC):
     """Base class for all aggregators are not order dependent"""
@@ -116,7 +141,11 @@ class CountAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         _ = col
-        return [TileSpec("COUNT(*)", f"value_{agg_id}", "FLOAT")]
+        return [
+            self.construct_numeric_tile_spec(
+                expressions.Count(this=expressions.Star()), f"value_{agg_id}"
+            )
+        ]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -129,8 +158,13 @@ class AvgAggregator(OrderIndependentAggregator):
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
         tile_specs = [
-            TileSpec(f'SUM("{col.name}")', f"sum_value_{agg_id}", "FLOAT"),
-            TileSpec(f'COUNT("{col.name}")', f"count_value_{agg_id}", "FLOAT"),
+            self.construct_numeric_tile_spec(
+                expressions.Sum(this=quoted_identifier(col.name)), f"sum_value_{agg_id}"
+            ),
+            self.construct_numeric_tile_spec(
+                expressions.Count(this=quoted_identifier(col.name)),
+                f"count_value_{agg_id}",
+            ),
         ]
         return tile_specs
 
@@ -144,7 +178,11 @@ class SumAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        return [TileSpec(f'SUM("{col.name}")', f"value_{agg_id}", "FLOAT")]
+        return [
+            self.construct_numeric_tile_spec(
+                expressions.Sum(this=quoted_identifier(col.name)), f"value_{agg_id}"
+            )
+        ]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -156,7 +194,11 @@ class MinAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        return [TileSpec(f'MIN("{col.name}")', f"value_{agg_id}", "FLOAT")]
+        return [
+            self.construct_numeric_tile_spec(
+                expressions.Min(this=quoted_identifier(col.name)), f"value_{agg_id}"
+            )
+        ]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -168,7 +210,11 @@ class MaxAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        return [TileSpec(f'MAX("{col.name}")', f"value_{agg_id}", "FLOAT")]
+        return [
+            self.construct_numeric_tile_spec(
+                expressions.Max(this=quoted_identifier(col.name)), f"value_{agg_id}"
+            )
+        ]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -180,7 +226,15 @@ class NACountAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        return [TileSpec(f'SUM(CAST("{col.name}" IS NULL AS INTEGER))', f"value_{agg_id}", "FLOAT")]
+        col_is_null = expressions.Is(
+            this=quoted_identifier(col.name), expression=expressions.Null()
+        )
+        col_casted_as_integer = expressions.Cast(this=col_is_null, to="INTEGER")
+        return [
+            self.construct_numeric_tile_spec(
+                expressions.Sum(this=col_casted_as_integer), f"value_{agg_id}"
+            )
+        ]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -192,10 +246,16 @@ class StdAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
+        col_expr = quoted_identifier(col.name)
+        sum_value_squared = expressions.Sum(
+            this=expressions.Mul(this=col_expr, expression=col_expr)
+        )
+        sum_value = expressions.Sum(this=col_expr)
+        count_value = expressions.Count(this=col_expr)
         return [
-            TileSpec(f'SUM("{col.name}" * "{col.name}")', f"sum_value_squared_{agg_id}", "FLOAT"),
-            TileSpec(f'SUM("{col.name}")', f"sum_value_{agg_id}", "FLOAT"),
-            TileSpec(f'COUNT("{col.name}")', f"count_value_{agg_id}", "FLOAT"),
+            self.construct_numeric_tile_spec(sum_value_squared, f"sum_value_squared_{agg_id}"),
+            self.construct_numeric_tile_spec(sum_value, f"sum_value_{agg_id}"),
+            self.construct_numeric_tile_spec(count_value, f"count_value_{agg_id}"),
         ]
 
     @staticmethod
@@ -215,7 +275,7 @@ class LatestValueAggregator(OrderDependentAggregator):
         assert col is not None
         return [
             TileSpec(
-                f'FIRST_VALUE("{col.name}")',
+                Anonymous(this="FIRST_VALUE", expressions=[quoted_identifier(col.name)]),
                 f"value_{agg_id}",
                 self.adapter.get_physical_type_from_dtype(col.dtype),
             ),

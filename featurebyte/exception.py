@@ -22,14 +22,21 @@ class ResponseException(Exception):
         exc_info = response.text
         try:
             response_dict = response.json()
+            field_value: Any = None
             for field in ["detail", "traceback"]:
                 if field in response_dict:
-                    exc_info = response_dict[field]
+                    field_value = response_dict[field]
                     break
-            if resolution:
-                exc_info += resolution
+
+            if isinstance(field_value, list):
+                exc_info = " ".join(str(elem) for elem in field_value)
+            elif field_value:
+                exc_info = str(field_value)
         except JSONDecodeError:
             pass
+
+        if resolution:
+            exc_info += resolution
 
         if exc_info:
             super().__init__(exc_info, *args, **kwargs)
@@ -105,10 +112,23 @@ class RequiredEntityNotProvidedError(Exception):
     """
 
 
+class UnexpectedServingNamesMappingError(Exception):
+    """
+    Raised when unexpected keys are provided in serving names mapping
+    """
+
+
 class EntityJoinPathNotFoundError(Exception):
     """
     Raised when it is not possible to identify a join path to an entity using the provided entities
     as children entities
+    """
+
+
+class AmbiguousEntityRelationshipError(Exception):
+    """
+    Raised when the relationship between entities is ambiguous and automatic serving of parent
+    features is not possible
     """
 
 
@@ -263,4 +283,22 @@ class ChangeViewNoJoinColumnError(Exception):
     Raise when get_join_column is called in ChangeView.
 
     ChangeView's don't have a primary key, and as such we don't expect there to be a join column.
+    """
+
+
+class TileScheduleNotSupportedError(NotImplementedError):
+    """
+    Raise when the Tile Scheduling is not supported
+    """
+
+
+class NoFeatureJobSettingInSourceError(Exception):
+    """
+    Raise when the input data does not have any feature job setting.
+    """
+
+
+class NoChangesInFeatureVersionError(DocumentError):
+    """
+    Raise when we try to create a new feature version, but there are no differences.
     """

@@ -5,11 +5,11 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple
 
-from collections import defaultdict
+from collections import OrderedDict
 
 from bson import ObjectId
 
-from featurebyte.exception import EntityJoinPathNotFoundError
+from featurebyte.exception import AmbiguousEntityRelationshipError, EntityJoinPathNotFoundError
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.parent_serving import JoinStep
@@ -29,10 +29,11 @@ class ParentEntityLookupService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
+        workspace_id: ObjectId,
         entity_service: EntityService,
         data_service: DataService,
     ):
-        super().__init__(user, persistent)
+        super().__init__(user, persistent, workspace_id)
         self.entity_service = entity_service
         self.data_service = data_service
 
@@ -53,29 +54,35 @@ class ParentEntityLookupService(BaseService):
         if entity_info.are_all_required_entities_provided():
             return []
 
-        all_join_steps = []
+        # all_join_steps is a mapping from parent serving name to JoinStep. Each parent serving name
+        # should be looked up exactly once and then reused.
+        all_join_steps: dict[str, JoinStep] = OrderedDict()
         current_available_entities = entity_info.provided_entity_ids
 
         for entity in entity_info.missing_entities:
             join_path = await self._get_entity_join_path(entity, current_available_entities)
 
             # Extract list of JoinStep
-            join_steps = await self._get_join_steps_from_join_path(join_path)
+            join_steps = await self._get_join_steps_from_join_path(entity_info, join_path)
             for join_step in join_steps:
-                if join_step not in all_join_steps:
-                    all_join_steps.append(join_step)
+                if join_step.parent_serving_name not in all_join_steps:
+                    all_join_steps[join_step.parent_serving_name] = join_step
 
             # All the entities in the path are now available
             current_available_entities.update([entity.id for entity in join_path])
 
-        return all_join_steps
+        return list(all_join_steps.values())
 
-    async def _get_join_steps_from_join_path(self, join_path: list[EntityModel]) -> list[JoinStep]:
+    async def _get_join_steps_from_join_path(
+        self, entity_info: EntityInfo, join_path: list[EntityModel]
+    ) -> list[JoinStep]:
         """
         Convert a list of join path (list of EntityModel) into a list of JoinStep
 
         Parameters
         ----------
+        entity_info: EntityInfo
+            Entity information
         join_path: list[EntityModel]
             A list of related entities from a given entity to a target entity
 
@@ -116,9 +123,9 @@ class ParentEntityLookupService(BaseService):
             join_step = JoinStep(
                 data=data.dict(by_alias=True),
                 parent_key=parent_key,
-                parent_serving_name=parent_entity.serving_names[0],
+                parent_serving_name=entity_info.get_effective_serving_name(parent_entity),
                 child_key=child_key,
-                child_serving_name=child_entity.serving_names[0],
+                child_serving_name=entity_info.get_effective_serving_name(child_entity),
             )
             join_steps.append(join_step)
 
@@ -151,26 +158,37 @@ class ParentEntityLookupService(BaseService):
         ------
         EntityJoinPathNotFoundError
             If a join path cannot be identified
+        AmbiguousEntityRelationshipError
+            If no unique join path can be identified due to ambiguous relationships
         """
-        # Perform a BFS traversal from the required entity and stop once any of the available
-        # entities is reached. This should be the fastest way to join datas to obtain the required
-        # entity (requiring the least number of joins) assuming all joins have the same cost.
         pending: List[Tuple[EntityModel, List[EntityModel]]] = [(required_entity, [])]
-        visited = defaultdict(bool)
+        queued = set()
+        result = None
 
         while pending:
 
             (current_entity, current_path), pending = pending[0], pending[1:]
             updated_path = [current_entity] + current_path
 
-            if current_entity.id in available_entity_ids:
-                return updated_path
+            if current_entity.id in available_entity_ids and result is None:
+                # Do not exit early, continue to see if there are multiple join paths (can be
+                # detected when an entity is queued more than once)
+                result = updated_path
 
-            visited[current_entity.id] = True
             children_entities = await self.entity_service.get_children_entities(current_entity.id)
             for child_entity in children_entities:
-                if not visited[child_entity.id]:
+                if child_entity.name not in queued:
+                    queued.add(child_entity.name)
                     pending.append((child_entity, updated_path))
+                else:
+                    # There should be only one way to obtain the parent entity. Raise an error
+                    # otherwise.
+                    raise AmbiguousEntityRelationshipError(
+                        f"Cannot find an unambiguous join path for entity {required_entity.name}"
+                    )
+
+        if result is not None:
+            return result
 
         raise EntityJoinPathNotFoundError(
             f"Cannot find a join path for entity {required_entity.name}"

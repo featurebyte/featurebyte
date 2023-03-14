@@ -6,6 +6,7 @@ import pytest
 from featurebyte.core.frame import Frame, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from tests.util.helper import get_node
 
 
@@ -144,7 +145,7 @@ def test__getitem__type_not_supported(dataframe):
     with pytest.raises(TypeError) as exc:
         _ = dataframe[True]
     expected_msg = (
-        'type of argument "item" must be one of (str, List[str], featurebyte.core.series.Series); '
+        'type of argument "item" must be one of (str, List[str], featurebyte.core.series.FrozenSeries); '
         "got bool instead"
     )
     assert expected_msg in str(exc.value)
@@ -199,8 +200,8 @@ def test__setitem__tuple_assignment_with_mask(dataframe):
     assert dataframe_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "input_1", "target": "project_2"},
-        {"source": "project_2", "target": "conditional_1"},
         {"source": "project_1", "target": "conditional_1"},
+        {"source": "project_2", "target": "conditional_1"},
         {"source": "input_1", "target": "assign_1"},
         {"source": "conditional_1", "target": "assign_1"},
     ]
@@ -265,7 +266,7 @@ def test__setitem__type_not_supported(dataframe):
     with pytest.raises(TypeError) as exc:
         dataframe[1.234] = True
     assert (
-        'type of argument "key" must be one of (str, Tuple[featurebyte.core.series.Series, str]); got float '
+        'type of argument "key" must be one of (str, Tuple[featurebyte.core.series.FrozenSeries, str]); got float '
         "instead" in str(exc.value)
     )
 
@@ -393,8 +394,9 @@ def test_multiple_statements(dataframe):
         {"source": "filter_1", "target": "assign_1"},
         {"source": "add_1", "target": "assign_1"},
         {"source": "assign_1", "target": "project_4"},
-        {"source": "project_4", "target": "gt_1"},
-        {"source": "project_2", "target": "lt_1"},
+        {"source": "project_4", "target": "lt_1"},
+        {"source": "assign_1", "target": "project_5"},
+        {"source": "project_5", "target": "gt_1"},
         {"source": "lt_1", "target": "and_1"},
         {"source": "gt_1", "target": "and_1"},
         {"source": "assign_1", "target": "assign_2"},
@@ -493,9 +495,9 @@ def test_frame__autocompletion(dataframe):
     assert dataframe._ipython_key_completions_() == set(dataframe.columns)
 
 
-def test_frame__redundant_project_nodes_get_removed(dataframe):
+def test_frame__project_always_uses_current_node_as_input(dataframe):
     """
-    Test project node get removed due to __getitem__ (by using operation_structure's node_name)
+    Test project node always uses the current node as input
     """
     sub_df = dataframe[["CUST_ID", "VALUE"]]
     cust_id = sub_df["CUST_ID"]
@@ -504,14 +506,61 @@ def test_frame__redundant_project_nodes_get_removed(dataframe):
     parent_nodes = sub_df.graph.backward_edges_map[cust_id.node_name]
     assert len(parent_nodes) == 1
     node = sub_df.graph.get_node_by_name(parent_nodes[0])
-    assert node.type == NodeType.INPUT
+    assert node.type == NodeType.PROJECT
 
-    # check the pruned graph
+    # check the pruned graph (expected to be improved in the future - project_1 should be pruned
+    # automatically since it is redundant)
     graph = cust_id.dict()["graph"]
-    assert graph["edges"] == [{"source": "input_1", "target": "project_1"}]
-    assert graph["nodes"][1] == {
-        "name": "project_1",
+    assert graph["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "project_2"},
+    ]
+    assert graph["nodes"][2] == {
+        "name": "project_2",
         "type": "project",
         "output_type": "series",
         "parameters": {"columns": ["CUST_ID"]},
     }
+
+
+def test_frame__setitem_with_multiple_assignments(dataframe):
+    """Test frame setitem with multiple assignments"""
+    mask = dataframe["MASK"]
+    dataframe["new_column"] = "some_value"
+    dataframe.new_column[mask] = "some_other_value"
+    dataframe.new_column[~mask] = "other_value"
+
+    # check that there is no duplicated 'new_column' column info
+    assert dataframe.columns_info == [
+        ColumnInfo(
+            name="CUST_ID", dtype="INT", entity_id=None, semantic_id=None, critical_data_info=None
+        ),
+        ColumnInfo(
+            name="PRODUCT_ACTION",
+            dtype="VARCHAR",
+            entity_id=None,
+            semantic_id=None,
+            critical_data_info=None,
+        ),
+        ColumnInfo(
+            name="VALUE", dtype="FLOAT", entity_id=None, semantic_id=None, critical_data_info=None
+        ),
+        ColumnInfo(
+            name="MASK", dtype="BOOL", entity_id=None, semantic_id=None, critical_data_info=None
+        ),
+        ColumnInfo(
+            name="TIMESTAMP",
+            dtype="TIMESTAMP",
+            entity_id=None,
+            semantic_id=None,
+            critical_data_info=None,
+        ),
+        ColumnInfo(name="PROMOTION_START_DATE", dtype="DATE", entity_id=None, semantic_id=None),
+        ColumnInfo(
+            name="new_column",
+            dtype="VARCHAR",
+            entity_id=None,
+            semantic_id=None,
+            critical_data_info=None,
+        ),
+    ]

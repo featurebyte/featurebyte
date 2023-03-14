@@ -1,7 +1,7 @@
 """
 This module contains common table related models.
 """
-from typing import Any, Dict, Iterable, List, Literal, Optional, cast
+from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, TypeVar, cast
 
 from abc import abstractmethod
 
@@ -13,10 +13,16 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.critical_data_info import CleaningOperation
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
-from featurebyte.query_graph.node.generic import InputNode, ProjectNode
+from featurebyte.query_graph.node.cleaning_operation import (
+    CleaningOperation,
+    ColumnCleaningOperation,
+)
+from featurebyte.query_graph.node.generic import ProjectNode
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ViewMetadata
 from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 
 
@@ -29,6 +35,7 @@ class TabularSource(FeatureByteBaseModel):
 
 SPECIFIC_DATA_TABLES = []
 DATA_TABLES = []
+TableDataT = TypeVar("TableDataT", bound="BaseTableData")
 
 
 class BaseTableData(FeatureByteBaseModel):
@@ -54,6 +61,53 @@ class BaseTableData(FeatureByteBaseModel):
             DATA_TABLES.append(cls)
         if table_type.default != TableDataType.GENERIC:
             SPECIFIC_DATA_TABLES.append(cls)
+
+    @property
+    def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+        """
+        Get column cleaning operations from column info's critical data info
+
+        Returns
+        -------
+        List[ColumnCleaningOperation]
+        """
+        return [
+            ColumnCleaningOperation(
+                column_name=col.name, cleaning_operations=col.critical_data_info.cleaning_operations
+            )
+            for col in self.columns_info
+            if col.critical_data_info is not None and col.critical_data_info.cleaning_operations
+        ]
+
+    def clone(
+        self: TableDataT, column_cleaning_operations: List[ColumnCleaningOperation]
+    ) -> TableDataT:
+        """
+        Create a new table data with the specified column cleaning operations
+
+        Parameters
+        ----------
+        column_cleaning_operations: List[ColumnCleaningOperation]
+            Column cleaning operations
+
+        Returns
+        -------
+        TableDataT
+        """
+        columns_info = []
+        col_to_cleaning_ops = {
+            col_clean_op.column_name: col_clean_op.cleaning_operations
+            for col_clean_op in column_cleaning_operations
+        }
+        for col in self.columns_info:
+            if col.name in col_to_cleaning_ops:
+                col.critical_data_info = CriticalDataInfo(
+                    cleaning_operations=col_to_cleaning_ops[col.name]
+                )
+            else:
+                col.critical_data_info = None
+            columns_info.append(col)
+        return type(self)(**{**self.dict(by_alias=True), "columns_info": columns_info})
 
     def _get_common_input_node_parameters(self) -> Dict[str, Any]:
         return {
@@ -120,7 +174,9 @@ class BaseTableData(FeatureByteBaseModel):
             input_nodes=[frame_node, input_node],
         )
 
-    def construct_cleaning_recipe_node(self, input_node: InputNode) -> Optional[GraphNode]:
+    def construct_cleaning_recipe_node(
+        self, input_node: InputNode, skip_column_names: List[str]
+    ) -> Optional[GraphNode]:
         """
         Construct cleaning recipe graph node
 
@@ -128,6 +184,8 @@ class BaseTableData(FeatureByteBaseModel):
         ----------
         input_node: InputNode
             Input node for the cleaning recipe
+        skip_column_names: List[str]
+            List of column names to skip
 
         Returns
         -------
@@ -137,6 +195,9 @@ class BaseTableData(FeatureByteBaseModel):
         proxy_input_nodes: List[BaseNode] = []
         frame_node: Node
         for col_info in self._iterate_column_info_with_cleaning_operations():
+            if col_info.name in skip_column_names:
+                continue
+
             if graph_node is None:
                 graph_node, proxy_input_nodes = GraphNode.create(
                     node_type=NodeType.PROJECT,
@@ -165,6 +226,101 @@ class BaseTableData(FeatureByteBaseModel):
             )
 
         return graph_node
+
+    def prepare_view_columns_info(self, drop_column_names: List[str]) -> List[ColumnInfo]:
+        """
+        Prepare view columns info
+
+        Parameters
+        ----------
+        drop_column_names: List[str]
+            List of column names to drop
+
+        Returns
+        -------
+        List[ColumnInfo]
+        """
+        columns_info: List[ColumnInfo] = []
+        unwanted_column_names = set(drop_column_names)
+        for col_info in self.columns_info:
+            if col_info.name not in unwanted_column_names:
+                columns_info.append(col_info)
+        return columns_info
+
+    def construct_view_graph_node(
+        self,
+        graph_node_type: GraphNodeType,
+        data_node: InputNode,
+        other_input_nodes: List[Node],
+        drop_column_names: List[str],
+        metadata: ViewMetadata,
+    ) -> Tuple[GraphNode, List[Node]]:
+        """
+        Construct view graph node from table data. The output of any view should be a single graph node
+        that is based on a single data node and optionally other input node(s). By using graph node, we can add
+        some metadata to the node to help with the SDK code reconstruction from the graph. Note that introducing
+        a graph node does not change the tile & aggregation hash ID if the final flatten graph is the same. Metadata
+        added to the graph node also won't affect the tile & aggregation hash ID.
+
+        Parameters
+        ----------
+        graph_node_type: GraphNodeType
+            Graph node type
+        data_node: InputNode
+            Input node for the view
+        other_input_nodes: List[Node]
+            Other input nodes for the view (used to construct additional proxy input nodes in the nested graph)
+        drop_column_names: List[str]
+            List of column names to drop
+        metadata: ViewMetadata
+            Metadata for the view graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[Node]]
+        """
+        # prepare graph node's inputs
+        view_graph_input_nodes: List[Node] = [data_node]
+        if other_input_nodes:
+            view_graph_input_nodes.extend(other_input_nodes)
+
+        # prepare project columns
+        columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
+        project_columns = [col.name for col in columns_info]
+
+        # project node assume single input only and view_graph_input_nodes could have more than 1 item.
+        # therefore, nested_node_input_indices is used to specify the input node index for the project node
+        # without using all the proxy input nodes.
+        view_graph_node, proxy_input_nodes = GraphNode.create(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": project_columns},
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=view_graph_input_nodes,
+            graph_node_type=graph_node_type,
+            nested_node_input_indices=[0],
+            metadata=metadata,
+        )
+
+        # prepare view graph node
+        cleaning_graph_node = self.construct_cleaning_recipe_node(
+            input_node=data_node, skip_column_names=drop_column_names
+        )
+        if cleaning_graph_node:
+            # cleaning graph node only requires single input
+            view_graph_node.add_operation(
+                node_type=NodeType.GRAPH,
+                node_params=cleaning_graph_node.parameters.dict(by_alias=True),
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[view_graph_node.output_node],
+            )
+
+        # prepare nested input nodes
+        # first input node is the cleaning graph node output node (apply cleaning recipe)
+        # other input nodes are the proxy input nodes (used to construct additional proxy input nodes
+        # in the nested graph)
+        nested_input_nodes: List[Node] = [view_graph_node.output_node, *proxy_input_nodes[1:]]
+        assert len(proxy_input_nodes) == len(nested_input_nodes)
+        return view_graph_node, nested_input_nodes
 
     @property
     @abstractmethod

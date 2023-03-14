@@ -5,15 +5,20 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
+import re
 from abc import abstractmethod
 
 from sqlglot import expressions
-from sqlglot.expressions import Expression, select
+from sqlglot.expressions import Expression, alias_, select
 
 from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import MISSING_VALUE_REPLACEMENT, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    MISSING_VALUE_REPLACEMENT,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 
 
 class BaseAdapter:
@@ -96,7 +101,6 @@ class BaseAdapter:
         """
 
     @classmethod
-    @abstractmethod
     def construct_key_value_aggregation_sql(
         cls,
         point_in_time_column: Optional[str],
@@ -153,6 +157,74 @@ class BaseAdapter:
         Returns
         -------
         str
+        """
+        inner_alias = "INNER_"
+
+        if point_in_time_column:
+            outer_group_by_keys = [f"{inner_alias}.{quoted_identifier(point_in_time_column).sql()}"]
+        else:
+            outer_group_by_keys = []
+        for serving_name in serving_names:
+            outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
+
+        category_col = get_qualified_column_identifier(value_by, inner_alias)
+
+        # Cast type to string first so that integer can be represented nicely ('{"0": 7}' vs
+        # '{"0.00000": 7}')
+        category_col_casted = expressions.Cast(
+            this=category_col, to=expressions.DataType.build("TEXT")
+        )
+
+        # Replace missing category values since OBJECT_AGG ignores keys that are null
+        category_filled_null = expressions.Case(
+            ifs=[
+                expressions.If(
+                    this=expressions.Is(this=category_col, expression=expressions.Null()),
+                    true=make_literal_value(MISSING_VALUE_REPLACEMENT),
+                )
+            ],
+            default=category_col_casted,
+        )
+
+        object_agg_exprs = [
+            alias_(
+                cls.object_agg(
+                    key_column=category_filled_null,
+                    value_column=get_qualified_column_identifier(
+                        inner_agg_result_name, inner_alias
+                    ),
+                ),
+                alias=agg_result_name,
+                quoted=True,
+            )
+            for inner_agg_result_name, agg_result_name in zip(
+                inner_agg_result_names, agg_result_names
+            )
+        ]
+        agg_expr = (
+            select(*outer_group_by_keys, *object_agg_exprs)
+            .from_(inner_agg_expr.subquery(alias=inner_alias))
+            .group_by(*outer_group_by_keys)
+        )
+        return agg_expr
+
+    @classmethod
+    @abstractmethod
+    def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
+        """
+        Construct a OBJECT_AGG expression that combines a key column and a value column in to a
+        dictionary column
+
+        Parameters
+        ----------
+        key_column: str | Expression
+            Name or expression for the key column
+        value_column: str | Expression
+            Name or expression for the value column
+
+        Returns
+        -------
+        Expression
         """
 
     @classmethod
@@ -246,6 +318,60 @@ class BaseAdapter:
             expression which returns the value for a key provided
         """
 
+    @classmethod
+    @abstractmethod
+    def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
+        """
+        Expression to convert timestamp to UTC time
+
+        Parameters
+        ----------
+        timestamp_expr : Expression
+            Expression for the timestamp
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    def is_qualify_clause_supported(cls) -> bool:
+        """
+        Check whether the database supports the qualify clause
+
+        Returns
+        -------
+        bool
+        """
+        return True
+
+    @classmethod
+    @abstractmethod
+    def current_timestamp(cls) -> Expression:
+        """
+        Expression to get the current timestamp
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
+    def escape_quote_char(cls, query: str) -> str:
+        """
+        Escape the quote character in the query
+
+        Parameters
+        ----------
+        query : str
+            Query to escape
+
+        Returns
+        -------
+        str
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -305,47 +431,9 @@ class SnowflakeAdapter(BaseAdapter):
         return output_expr
 
     @classmethod
-    def construct_key_value_aggregation_sql(
-        cls,
-        point_in_time_column: Optional[str],
-        serving_names: list[str],
-        value_by: str,
-        agg_result_names: list[str],
-        inner_agg_result_names: list[str],
-        inner_agg_expr: expressions.Select,
-    ) -> expressions.Select:
-
-        inner_alias = "INNER_"
-
-        if point_in_time_column:
-            outer_group_by_keys = [f"{inner_alias}.{quoted_identifier(point_in_time_column).sql()}"]
-        else:
-            outer_group_by_keys = []
-        for serving_name in serving_names:
-            outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
-
-        category_col = f"{inner_alias}.{quoted_identifier(value_by).sql()}"
-        # Cast type to string first so that integer can be represented nicely ('{"0": 7}' vs
-        # '{"0.00000": 7}')
-        category_col_casted = f"CAST({category_col} AS VARCHAR)"
-        # Replace missing category values since OBJECT_AGG ignores keys that are null
-        category_filled_null = (
-            f"CASE WHEN {category_col} IS NULL THEN '{MISSING_VALUE_REPLACEMENT}' ELSE "
-            f"{category_col_casted} END"
-        )
-        object_agg_exprs = [
-            f'OBJECT_AGG({category_filled_null}, TO_VARIANT({inner_alias}."{inner_agg_result_name}"))'
-            f' AS "{agg_result_name}"'
-            for inner_agg_result_name, agg_result_name in zip(
-                inner_agg_result_names, agg_result_names
-            )
-        ]
-        agg_expr = (
-            select(*outer_group_by_keys, *object_agg_exprs)
-            .from_(inner_agg_expr.subquery(alias=inner_alias))
-            .group_by(*outer_group_by_keys)
-        )
-        return agg_expr
+    def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
+        value_column = expressions.Anonymous(this="TO_VARIANT", expressions=[value_column])
+        return expressions.Anonymous(this="OBJECT_AGG", expressions=[key_column, value_column])
 
     @classmethod
     def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
@@ -392,23 +480,40 @@ class SnowflakeAdapter(BaseAdapter):
             this="GET", expressions=[dictionary_expression, key_expression]
         )
 
+    @classmethod
+    def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
+        return expressions.Anonymous(
+            this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), timestamp_expr]
+        )
+
+    @classmethod
+    def current_timestamp(cls) -> Expression:
+        return expressions.Anonymous(this="SYSDATE")
+
+    @classmethod
+    def escape_quote_char(cls, query: str) -> str:
+        # Snowflake sql escapes ' with ''. Use regex to make it safe to call this more than once.
+        return re.sub("(?<!')'(?!')", "''", query)
+
 
 class DatabricksAdapter(BaseAdapter):
     """
     Helper class to generate Databricks specific SQL expressions
     """
 
+    class DataType(StrEnum):
+        """
+        Possible column types in DataBricks
+        """
+
+        FLOAT = "DOUBLE"
+        TIMESTAMP = "TIMESTAMP"
+        STRING = "STRING"
+        MAP = "MAP<STRING, DOUBLE>"
+
     @classmethod
-    def construct_key_value_aggregation_sql(
-        cls,
-        point_in_time_column: Optional[str],
-        serving_names: list[str],
-        value_by: str,
-        agg_result_names: list[str],
-        inner_agg_result_names: list[str],
-        inner_agg_expr: expressions.Select,
-    ) -> expressions.Select:
-        raise NotImplementedError()
+    def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
+        return expressions.Anonymous(this="OBJECT_AGG", expressions=[key_column, value_column])
 
     @classmethod
     def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
@@ -473,15 +578,26 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
-        raise NotImplementedError()
+        mapping = {
+            DBVarType.INT: cls.DataType.FLOAT,
+            DBVarType.FLOAT: cls.DataType.FLOAT,
+            DBVarType.VARCHAR: cls.DataType.STRING,
+            DBVarType.OBJECT: cls.DataType.MAP,
+            DBVarType.TIMESTAMP: cls.DataType.TIMESTAMP,
+        }
+        if dtype in mapping:
+            return mapping[dtype]
+        return cls.DataType.STRING
 
     @classmethod
     def object_keys(cls, dictionary_expression: Expression) -> Expression:
-        raise NotImplementedError()
+        return expressions.Anonymous(this="map_keys", expressions=[dictionary_expression])
 
     @classmethod
     def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
-        raise NotImplementedError()
+        return expressions.Anonymous(
+            this="array_contains", expressions=[array_expression, input_expression]
+        )
 
     @classmethod
     def is_string_type(cls, column_expr: Expression) -> Expression:
@@ -491,6 +607,43 @@ class DatabricksAdapter(BaseAdapter):
     def get_value_from_dictionary(
         cls, dictionary_expression: Expression, key_expression: Expression
     ) -> Expression:
+        return expressions.Bracket(this=dictionary_expression, expressions=[key_expression])
+
+    @classmethod
+    def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
+        # timestamps do not have timezone information
+        return timestamp_expr
+
+    @classmethod
+    def current_timestamp(cls) -> Expression:
+        return expressions.Anonymous(this="current_timestamp")
+
+    @classmethod
+    def escape_quote_char(cls, query: str) -> str:
+        # Databricks sql escapes ' with \'. Use regex to make it safe to call this more than once.
+        return re.sub(r"(?<!\\)'", "\\'", query)
+
+
+class SparkAdapter(DatabricksAdapter):
+    """
+    Helper class to generate Spark specific SQL expressions
+
+    Spark is the OSS version of Databricks, so it shares most of the same SQL syntax.
+    """
+
+    @classmethod
+    def is_qualify_clause_supported(cls) -> bool:
+        """
+        Spark does not support the `QUALIFY` clause though DataBricks does.
+
+        Returns
+        -------
+        bool
+        """
+        return False
+
+    @classmethod
+    def is_string_type(cls, column_expr: Expression) -> Expression:
         raise NotImplementedError()
 
 
@@ -510,4 +663,6 @@ def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
     """
     if source_type == SourceType.DATABRICKS:
         return DatabricksAdapter()
+    if source_type == SourceType.SPARK:
+        return SparkAdapter()
     return SnowflakeAdapter()

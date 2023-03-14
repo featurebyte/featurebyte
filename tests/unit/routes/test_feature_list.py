@@ -21,20 +21,22 @@ from featurebyte.common.utils import (
     dataframe_to_arrow_bytes,
 )
 from featurebyte.enum import SourceType
-from tests.unit.routes.base import BaseApiTestSuite
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
-class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-methods
+class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many-public-methods
     """
     TestFeatureListApi class
     """
 
     class_name = "FeatureList"
     base_route = "/feature_list"
-    payload = BaseApiTestSuite.load_payload(
+    payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_list_single.json"
     )
-    payload_multi = BaseApiTestSuite.load_payload(
+    payload_multi = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_list_multi.json"
     )
     object_id = str(ObjectId())
@@ -52,7 +54,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         ),
         (
             payload_multi,
-            'Feature (id: "63a443938bcb22a73462595b") not found. Please save the Feature object first.',
+            'Feature (id: "63ff1a9d5631c515f17fc67f") not found. Please save the Feature object first.',
         ),
         (
             {**payload, "feature_ids": []},
@@ -77,7 +79,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         ),
     ]
 
-    def setup_creation_route(self, api_client):
+    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
         """
         Setup for post route
         """
@@ -89,7 +91,9 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(f"/{api_object}", json=payload)
+            response = api_client.post(
+                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
+            )
             assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):
@@ -121,7 +125,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         """
         Mock _update_data_warehouse method in OnlineEnableService to make it a no-op
         """
-        with patch("featurebyte.service.deploy.OnlineEnableService._update_data_warehouse"):
+        with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 
     @pytest.mark.asyncio
@@ -143,6 +147,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
                 "_id": ObjectId(),
                 "user_id": ObjectId(user_id),
                 "readiness": "PRODUCTION_READY",
+                "workspace_id": DEFAULT_WORKSPACE_ID,
             },
             user_id=user_id,
         )
@@ -202,11 +207,16 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             "/feature",
             json={
                 "source_feature_id": feature_id,
-                "feature_job_setting": {
-                    "blind_spot": "1d",
-                    "frequency": "1d",
-                    "time_modulo_frequency": "1h",
-                },
+                "data_feature_job_settings": [
+                    {
+                        "data_name": "sf_event_data",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
             },
         )
         feature_response_dict = feature_response.json()
@@ -301,7 +311,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         response = test_api_client.post(
-            f"{self.base_route}",
+            self.base_route,
             json={"source_feature_list_id": create_response_dict["_id"], "mode": "manual"},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -313,6 +323,57 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == "No change detected on the new feature list version."
+
+    def test_list_200__filter_by_name_and_version(
+        self, test_api_client_persistent, create_multiple_success_responses
+    ):
+        """Test list (success) when filtering by name and version"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_multiple_success_responses[0].json()
+
+        # create a new feature version
+        feature_id = create_response_dict["feature_ids"][0]
+        feature_response = test_api_client.post(
+            "/feature",
+            json={
+                "source_feature_id": feature_id,
+                "data_feature_job_settings": [
+                    {
+                        "data_name": "sf_event_data",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
+            },
+        )
+        assert feature_response.status_code == HTTPStatus.CREATED
+
+        # then create a new feature list version
+        new_version_response = test_api_client.post(
+            self.base_route,
+            json={"source_feature_list_id": create_response_dict["_id"], "mode": "auto"},
+        )
+
+        # check retrieving old feature list version
+        version = create_response_dict["version"]["name"]
+        response = test_api_client.get(
+            self.base_route, params={"name": create_response_dict["name"], "version": version}
+        )
+        response_dict = response.json()
+        assert response_dict["total"] == 1
+        assert response_dict["data"] == [create_response_dict]
+
+        # check retrieving new feature list version
+        response = test_api_client.get(
+            self.base_route,
+            params={"name": create_response_dict["name"], "version": f"{version}_1"},
+        )
+        response_dict = response.json()
+        assert response_dict["total"] == 1
+        assert response_dict["data"] == [new_version_response.json()]
 
     def test_list_200__filter_by_namespace_id(
         self, test_api_client_persistent, create_multiple_success_responses
@@ -367,7 +428,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         assert response.json()["deployed"] is False
 
     def test_update_200__deploy_with_make_production_ready(
-        self, test_api_client_persistent, create_success_response
+        self, test_api_client_persistent, create_success_response, api_object_to_id
     ):
         """Test update (success) with make production ready"""
         test_api_client, _ = test_api_client_persistent
@@ -386,10 +447,15 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
         version = get_version()
+        feature_list_id = api_object_to_id["feature_list_single"]
         expected_info_response = {
             "name": "sf_feature_list",
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+            ],
+            "tabular_data": [
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
+            ],
             "default_version_mode": "AUTO",
             "version_count": 1,
             "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
@@ -399,7 +465,8 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             "production_ready_fraction": {"this": 1.0, "default": 1.0},
             "versions_info": None,
             "deployed": True,
-            "serving_endpoint": "/feature_list/63a443938bcb22a73462595f/online_features",
+            "serving_endpoint": f"/feature_list/{feature_list_id}/online_features",
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
@@ -422,8 +489,12 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         version = get_version()
         expected_info_response = {
             "name": "sf_feature_list",
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+            ],
+            "tabular_data": [
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
+            ],
             "default_version_mode": "AUTO",
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
             "version_count": 1,
@@ -432,6 +503,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             "production_ready_fraction": {"this": 0, "default": 0},
             "deployed": False,
             "serving_endpoint": None,
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
@@ -480,10 +552,12 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         """
         return {
             "feature_clusters": featurelist_feature_clusters,
-            "point_in_time_and_serving_name": {
-                "cust_id": "C1",
-                "POINT_IN_TIME": "2022-04-01",
-            },
+            "point_in_time_and_serving_name_list": [
+                {
+                    "cust_id": "C1",
+                    "POINT_IN_TIME": "2022-04-01",
+                }
+            ],
         }
 
     def test_preview_200(
@@ -519,7 +593,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
     ):
         """Test feature list get_historical_features"""
         test_api_client, _ = test_api_client_persistent
-        training_events = pd.DataFrame({"cust_id": [0, 1, 2], "POINT_IN_TIME": ["2022-04-01"] * 3})
+        observation_set = pd.DataFrame({"cust_id": [0, 1, 2], "POINT_IN_TIME": ["2022-04-01"] * 3})
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
 
         async def mock_get_async_query_stream(query):
@@ -536,7 +610,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         response = test_api_client.post(
             f"{self.base_route}/historical_features",
             data={"payload": json.dumps(featurelist_get_historical_features_payload)},
-            files={"training_events": dataframe_to_arrow_bytes(training_events)},
+            files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
             stream=True,
         )
         assert response.status_code == HTTPStatus.OK, response.json()
@@ -555,7 +629,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0" AS "sum_30m"\n'
+            'SELECT\n  "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 
@@ -567,7 +641,8 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         assert isinstance(feature_clusters, list)
         assert len(feature_clusters) == 1
         expected_feature_cluster = featurelist_feature_clusters[0]
-        groupby_node = expected_feature_cluster["graph"]["nodes"][1]["parameters"]
+        graph = QueryGraphModel(**expected_feature_cluster["graph"])
+        groupby_node = graph.get_node_by_name("groupby_1").parameters.dict()
         groupby_node["names"] = ["sum_30m"]
         groupby_node["windows"] = ["30m"]
         assert feature_clusters[0] == expected_feature_cluster
@@ -703,11 +778,14 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         test_api_client, _ = test_api_client_persistent
         featurelist = create_success_response.json()
         feature_list_id = featurelist["_id"]
+        graph = QueryGraphModel(**featurelist["feature_clusters"][0]["graph"])
+        groupby_node = graph.get_node_by_name("groupby_1")
+        aggregation_id = groupby_node.parameters.aggregation_id
 
         job_logs = pd.DataFrame(
             {
                 "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
-                "AGGREGATION_ID": ["sum_fba233e0f502088c233315a322f4c51e939072c0"] * 6,
+                "AGGREGATION_ID": [aggregation_id] * 6,
                 "CREATED_AT": pd.to_datetime(
                     [
                         "2020-01-02 18:00:00",
@@ -736,7 +814,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         expected_df = pd.DataFrame(
             {
                 "SESSION_ID": ["SID1", "SID2"],
-                "AGGREGATION_ID": ["sum_fba233e0f502088c233315a322f4c51e939072c0"] * 2,
+                "AGGREGATION_ID": [aggregation_id] * 2,
                 "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
                 "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
                 "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
@@ -750,7 +828,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         assert (
             mock_session.execute_query.call_args[0][0]
             == textwrap.dedent(
-                """
+                f"""
             SELECT
               "SESSION_ID",
               "CREATED_AT",
@@ -761,7 +839,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             WHERE
               "CREATED_AT" >= CAST('2022-01-01 10:00:00' AS TIMESTAMPNTZ)
               AND "CREATED_AT" < CAST('2022-01-02 10:00:00' AS TIMESTAMPNTZ)
-              AND "AGGREGATION_ID" IN ('sum_fba233e0f502088c233315a322f4c51e939072c0')
+              AND "AGGREGATION_ID" IN ('{aggregation_id}')
               AND "TILE_TYPE" = 'ONLINE'
             """
             ).strip()

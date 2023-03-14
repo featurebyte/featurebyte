@@ -132,7 +132,7 @@ def test_item_aggregation(aggregation_specs):
               CASE
                 WHEN INNER_."item_type" IS NULL
                 THEN '__MISSING__'
-                ELSE CAST(INNER_."item_type" AS VARCHAR)
+                ELSE CAST(INNER_."item_type" AS TEXT)
               END,
               TO_VARIANT(INNER_."max_price_fc08c26b73105fff_inner")
             ) AS "max_price_fc08c26b73105fff"

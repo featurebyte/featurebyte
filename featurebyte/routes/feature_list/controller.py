@@ -3,7 +3,7 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Union
+from typing import Any, Dict, Literal, Union
 
 from http import HTTPStatus
 
@@ -18,8 +18,10 @@ from featurebyte.exception import (
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
     TooRecentPointInTimeError,
+    UnexpectedServingNamesMappingError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController
@@ -134,6 +136,7 @@ class FeatureListController(
                 await self.feature_readiness_service.update_feature(
                     feature_id=feature_id,
                     readiness=FeatureReadiness.PRODUCTION_READY,
+                    ignore_guardrails=False,
                     return_document=False,
                 )
         if data.deployed is not None:
@@ -151,7 +154,10 @@ class FeatureListController(
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
-        **kwargs: Any,
+        search: str | None = None,
+        name: str | None = None,
+        version: str | None = None,
+        feature_list_namespace_id: ObjectId | None = None,
     ) -> FeatureListPaginatedList:
         """
         List documents stored at persistent (GitDB or MongoDB)
@@ -166,16 +172,24 @@ class FeatureListController(
             Key used to sort the returning documents
         sort_dir: "asc" or "desc"
             Sorting the returning documents in ascending order or descending order
-        kwargs: Any
-            Additional keyword arguments
+        search: str | None
+            Search token to be used in filtering
+        name: str | None
+            Feature name to be used in filtering
+        version: str | None
+            Feature version to be used in filtering
+        feature_list_namespace_id: ObjectId | None
+            Feature list namespace ID to be used in filtering
 
         Returns
         -------
         FeatureListPaginatedList
             List of documents fulfilled the filtering condition
         """
-        params = kwargs.copy()
-        feature_list_namespace_id = params.pop("feature_list_namespace_id")
+        params: Dict[str, Any] = {"search": search, "name": name}
+        if version:
+            params["version"] = VersionIdentifier.from_str(version).dict()
+
         if feature_list_namespace_id:
             query_filter = params.get("query_filter", {}).copy()
             query_filter["feature_list_namespace_id"] = feature_list_namespace_id
@@ -223,7 +237,7 @@ class FeatureListController(
 
     async def get_historical_features(
         self,
-        training_events: UploadFile,
+        observation_set: UploadFile,
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
         get_credential: Any,
     ) -> StreamingResponse:
@@ -232,7 +246,7 @@ class FeatureListController(
 
         Parameters
         ----------
-        training_events: UploadFile
+        observation_set: UploadFile
             Uploaded file
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures
             FeatureListGetHistoricalFeatures object
@@ -251,7 +265,7 @@ class FeatureListController(
         """
         try:
             bytestream = await self.preview_service.get_historical_features(
-                training_events=dataframe_from_arrow_stream(training_events.file),
+                observation_set=dataframe_from_arrow_stream(observation_set.file),
                 featurelist_get_historical_features=featurelist_get_historical_features,
                 get_credential=get_credential,
             )
@@ -259,6 +273,7 @@ class FeatureListController(
             MissingPointInTimeColumnError,
             TooRecentPointInTimeError,
             RequiredEntityNotProvidedError,
+            UnexpectedServingNamesMappingError,
         ) as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
@@ -310,7 +325,7 @@ class FeatureListController(
 
     async def get_historical_features_sql(
         self,
-        training_events: UploadFile,
+        observation_set: UploadFile,
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
     ) -> str:
         """
@@ -318,7 +333,7 @@ class FeatureListController(
 
         Parameters
         ----------
-        training_events: UploadFile
+        observation_set: UploadFile
             Uploaded file
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures
             FeatureListGetHistoricalFeatures object
@@ -335,7 +350,7 @@ class FeatureListController(
         """
         try:
             return await self.preview_service.get_historical_features_sql(
-                training_events=dataframe_from_arrow_stream(training_events.file),
+                observation_set=dataframe_from_arrow_stream(observation_set.file),
                 featurelist_get_historical_features=featurelist_get_historical_features,
             )
         except (MissingPointInTimeColumnError, TooRecentPointInTimeError) as exc:

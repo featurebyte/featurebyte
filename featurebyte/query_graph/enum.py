@@ -1,6 +1,7 @@
 """
 This module contains all the enums used for query graph.
 """
+from typing import Set
 
 from featurebyte.enum import StrEnum
 
@@ -108,4 +109,29 @@ class GraphNodeType(StrEnum):
     GraphNodeType enum is used to tag the purpose of the graph node.
     """
 
+    # graph contains critical data info cleaning operations
     CLEANING = "cleaning"
+
+    # graph contains view specific operations
+    EVENT_VIEW = "event_view"
+    ITEM_VIEW = "item_view"
+    DIMENSION_VIEW = "dimension_view"
+    SCD_VIEW = "scd_view"
+    CHANGE_VIEW = "change_view"
+
+    @classmethod
+    def view_graph_node_types(cls) -> Set["GraphNodeType"]:
+        """
+        Returns all the view graph node types
+
+        Returns
+        -------
+        Set[GraphNodeType]
+        """
+        return {
+            cls.EVENT_VIEW,
+            cls.ITEM_VIEW,
+            cls.DIMENSION_VIEW,
+            cls.SCD_VIEW,
+            cls.CHANGE_VIEW,
+        }

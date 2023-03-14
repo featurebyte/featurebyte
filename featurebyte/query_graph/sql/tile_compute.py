@@ -13,7 +13,7 @@ from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import update_maximum_window_size_dict
@@ -30,12 +30,12 @@ class OnDemandTileComputePlan:
 
     Parameters
     ----------
-    point_in_time : str
-        Point in time value specified when calling preview
+    point_in_time_list : list[str]
+        List of point in time values specified when calling preview
     """
 
-    def __init__(self, point_in_time: str, source_type: SourceType):
-        self.point_in_time = point_in_time
+    def __init__(self, point_in_time_list: list[str], source_type: SourceType):
+        self.point_in_time_list = point_in_time_list
         self.processed_agg_ids: set[str] = set()
         self.max_window_size_by_tile_id: dict[str, Optional[int]] = {}
         self.tile_infos: list[TileGenSql] = []
@@ -83,7 +83,7 @@ class OnDemandTileComputePlan:
             # point-in-time and feature window sizes
             tile_sql_with_start_end_expr = get_tile_sql_from_point_in_time(
                 sql_template=tile_info.sql_template,
-                point_in_time=self.point_in_time,
+                point_in_time_list=self.point_in_time_list,
                 frequency=tile_info.frequency,
                 time_modulo_frequency=tile_info.time_modulo_frequency,
                 blind_spot=tile_info.blind_spot,
@@ -176,7 +176,7 @@ class OnDemandTileComputePlan:
         """
         return self.max_window_size_by_tile_id[tile_id]
 
-    def construct_on_demand_tile_ctes(self) -> list[tuple[str, Select]]:
+    def construct_on_demand_tile_ctes(self) -> CteStatements:
         """Construct the CTE statements that would compute all the required tiles
 
         Returns
@@ -245,7 +245,7 @@ def epoch_seconds_to_timestamp(num_seconds: int) -> pd.Timestamp:
 
 
 def compute_start_end_date_from_point_in_time(
-    point_in_time: str,
+    point_in_time_list: list[str],
     frequency: int,
     time_modulo_frequency: int,
     blind_spot: int,
@@ -255,8 +255,8 @@ def compute_start_end_date_from_point_in_time(
 
     Parameters
     ----------
-    point_in_time : str
-        Point in time. This will determine the range of data required to build tiles
+    point_in_time_list : list[str]
+        List of point in time. This will determine the range of data required to build tiles
     frequency : int
         Frequency in feature job setting
     time_modulo_frequency : int
@@ -271,16 +271,42 @@ def compute_start_end_date_from_point_in_time(
     tuple[pd.Timestamp, pd.Timestamp]
         Tuple of start and end dates
     """
-    # Calculate the time of the latest feature job before point in time
-    point_in_time_epoch_seconds = get_epoch_seconds(point_in_time)
-    last_job_index = (point_in_time_epoch_seconds - time_modulo_frequency) // frequency
-    last_job_time_epoch_seconds = last_job_index * frequency + time_modulo_frequency
+    # Convert point in time to UNIX timestamp
+    point_in_time_epoch_seconds_list = [
+        get_epoch_seconds(point_in_time) for point_in_time in point_in_time_list
+    ]
 
-    # Compute start and end dates based on number of tiles required
-    end_date_epoch_seconds = last_job_time_epoch_seconds - blind_spot
-    end_date = epoch_seconds_to_timestamp(end_date_epoch_seconds)
+    def _compute_end_date_epoch_seconds(point_in_time_epoch_seconds: int) -> pd.Timestamp:
+        """
+        Compute end date based on point in time in epoch seconds
+
+        Parameters
+        ----------
+        point_in_time_epoch_seconds : int
+            Point in time in epoch seconds
+
+        Returns
+        -------
+        int
+            End date
+        """
+        # Calculate the time of the latest feature job before point in time
+        last_job_index = (point_in_time_epoch_seconds - time_modulo_frequency) // frequency
+        last_job_time_epoch_seconds = last_job_index * frequency + time_modulo_frequency
+        # Compute end date in epoch seconds
+        return last_job_time_epoch_seconds - blind_spot
+
+    # Compute end date of latest point in time
+    latest_end_date_epoch_seconds = _compute_end_date_epoch_seconds(
+        max(point_in_time_epoch_seconds_list)
+    )
+
+    # Compute start date of earliest point in time based on number of tiles required
+    earliest_end_date_epoch_seconds = _compute_end_date_epoch_seconds(
+        min(point_in_time_epoch_seconds_list)
+    )
     if num_tiles is not None:
-        start_date_epoch_seconds = end_date_epoch_seconds - num_tiles * frequency
+        start_date_epoch_seconds = earliest_end_date_epoch_seconds - num_tiles * frequency
         start_date = epoch_seconds_to_timestamp(start_date_epoch_seconds)
     else:
         # In this case, we need a timestamp that is earlier than all possible event timestamps and
@@ -288,12 +314,12 @@ def compute_start_end_date_from_point_in_time(
         # beginning of epoch.
         start_date = epoch_seconds_to_timestamp(time_modulo_frequency - blind_spot)
 
-    return start_date, end_date
+    return start_date, epoch_seconds_to_timestamp(latest_end_date_epoch_seconds)
 
 
 def get_tile_sql_from_point_in_time(
     sql_template: SqlExpressionTemplate,
-    point_in_time: str,
+    point_in_time_list: list[str],
     frequency: int,
     time_modulo_frequency: int,
     blind_spot: int,
@@ -305,8 +331,8 @@ def get_tile_sql_from_point_in_time(
     ----------
     sql_template : SqlExpressionTemplate
         Tile SQL template expression
-    point_in_time : str
-        Point in time in the request
+    point_in_time_list : list[str]
+        List of point in time in the request
     frequency : int
         Frequency in feature job setting
     time_modulo_frequency : int
@@ -325,7 +351,7 @@ def get_tile_sql_from_point_in_time(
     else:
         num_tiles = None
     start_date, end_date = compute_start_end_date_from_point_in_time(
-        point_in_time,
+        point_in_time_list,
         frequency=frequency,
         time_modulo_frequency=time_modulo_frequency,
         blind_spot=blind_spot,

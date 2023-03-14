@@ -27,8 +27,8 @@ def test__getitem__series_key(int_series, bool_series):
     assert series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "input_1", "target": "project_2"},
-        {"source": "project_1", "target": "filter_1"},
         {"source": "project_2", "target": "filter_1"},
+        {"source": "project_1", "target": "filter_1"},
     ]
 
 
@@ -64,7 +64,7 @@ def test__getitem__type_not_supported(int_series):
     with pytest.raises(TypeError) as exc:
         _ = int_series[True]
     expected_msg = (
-        'type of argument "item" must be featurebyte.core.series.Series; got bool instead'
+        'type of argument "item" must be featurebyte.core.series.FrozenSeries; got bool instead'
     )
     assert expected_msg in str(exc.value)
 
@@ -160,13 +160,13 @@ def test__setitem__cond_assign_consecutive(dataframe, bool_series):
     assert series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "input_1", "target": "project_2"},
-        {"source": "project_2", "target": "conditional_1"},
         {"source": "project_1", "target": "conditional_1"},
+        {"source": "project_2", "target": "conditional_1"},
         {"source": "input_1", "target": "assign_1"},
         {"source": "conditional_1", "target": "assign_1"},
         {"source": "assign_1", "target": "project_3"},
         {"source": "project_3", "target": "conditional_2"},
-        {"source": "project_1", "target": "conditional_2"},
+        {"source": "project_2", "target": "conditional_2"},
         {"source": "assign_1", "target": "assign_2"},
         {"source": "conditional_2", "target": "assign_2"},
         {"source": "assign_2", "target": "project_4"},
@@ -183,8 +183,8 @@ def test__setitem__conditional_assign_series(int_series):
     int_series_dict = int_series.dict()
     assert int_series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
-        {"source": "project_1", "target": "mul_1"},
         {"source": "project_1", "target": "gt_1"},
+        {"source": "project_1", "target": "mul_1"},
         {"source": "mul_1", "target": "filter_1"},
         {"source": "gt_1", "target": "filter_1"},
         {"source": "project_1", "target": "conditional_1"},
@@ -278,7 +278,9 @@ def test__setitem__key_type_not_supported(int_series):
     """
     with pytest.raises(TypeError) as exc:
         int_series[1] = True
-    expected_msg = 'type of argument "key" must be featurebyte.core.series.Series; got int instead'
+    expected_msg = (
+        'type of argument "key" must be featurebyte.core.series.FrozenSeries; got int instead'
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -324,7 +326,10 @@ def test_logical_operators(bool_series, int_series):
 
     with pytest.raises(TypeError) as exc:
         _ = bool_series & "string"
-    expected_msg = 'type of argument "other" must be one of (bool, featurebyte.core.series.Series); got str instead'
+    expected_msg = (
+        'type of argument "other" must be one of (bool, featurebyte.core.series.FrozenSeries); '
+        "got str instead"
+    )
     assert expected_msg in str(exc.value)
 
     with pytest.raises(TypeError) as exc:
@@ -886,7 +891,15 @@ def test_notnull(bool_series, expression_sql_template):
         construct_node(name="not_1", type=NodeType.NOT, **node_kwargs),
         exclude=exclude,
     )
-    expected_sql = expression_sql_template.format(expression='NOT "MASK" IS NULL')
+    expected_sql = expression_sql_template.format(
+        expression=textwrap.dedent(
+            """
+            NOT (
+              "MASK" IS NULL
+            )
+            """
+        ).strip()
+    )
     assert expected_sql == result.preview_sql()
 
 

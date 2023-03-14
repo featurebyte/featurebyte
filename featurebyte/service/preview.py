@@ -3,9 +3,10 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Dict, Tuple
+from typing import Any, AsyncGenerator, Dict, Optional, Tuple
 
 import pandas as pd
+from bson import ObjectId
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import SpecialColumnName
@@ -48,12 +49,15 @@ class PreviewService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
+        workspace_id: ObjectId,
         session_manager_service: SessionManagerService,
         feature_list_service: FeatureListService,
         entity_validation_service: EntityValidationService,
     ):
-        super().__init__(user, persistent)
-        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
+        super().__init__(user, persistent, workspace_id)
+        self.feature_store_service = FeatureStoreService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
         self.session_manager_service = session_manager_service
         self.feature_list_service = feature_list_service
         self.entity_validation_service = entity_validation_service
@@ -211,22 +215,22 @@ class PreviewService(BaseService):
 
     @staticmethod
     def _update_point_in_time_if_needed(
-        point_in_time_and_serving_name: Dict[str, Any], is_time_based: bool
-    ) -> Tuple[Dict[str, Any], bool]:
+        point_in_time_and_serving_name_list: list[Dict[str, Any]], is_time_based: bool
+    ) -> Tuple[list[Dict[str, Any]], bool]:
         """
         Helper method to update point in time if needed.
 
         Parameters
         ----------
-        point_in_time_and_serving_name: Dict[str, Any]
-            dictionary containing point in time and serving name
+        point_in_time_and_serving_name_list: list[Dict[str, Any]]
+            list of dictionary containing point in time and serving name
         is_time_based: bool
             whether the feature is time based
 
         Returns
         -------
-        Tuple[Dict[str, Any], bool]
-            updated dictionary, and whether the dictionary was updated with an arbitrary time. Updated will only return
+        Tuple[list[Dict[str, Any]], bool]
+            updated list of dictionary, and whether the dictionary was updated with an arbitrary time. Updated will only return
             True if the dictionary did not contain a point in time variable before.
 
         Raises
@@ -235,16 +239,23 @@ class PreviewService(BaseService):
             raised if the point in time column is not provided in the dictionary for a time based feature
         """
         updated = False
-        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
-            if is_time_based:
-                raise MissingPointInTimeColumnError(
-                    f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
-                )
+        for point_in_time_and_serving_name in point_in_time_and_serving_name_list:
+            if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
+                if is_time_based:
+                    raise MissingPointInTimeColumnError(
+                        f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
+                    )
 
-            # If it's not time based, and no time is provided, use an arbitrary time.
-            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = ARBITRARY_TIME
-            updated = True
-        return point_in_time_and_serving_name, updated
+                # If it's not time based, and no time is provided, use an arbitrary time.
+                point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = ARBITRARY_TIME
+                updated = True
+
+                # convert point in time to tz-naive UTC
+                point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+                    point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME], utc=True
+                ).tz_localize(None)
+
+        return point_in_time_and_serving_name_list, updated
 
     async def preview_feature(
         self, feature_preview: FeaturePreview, get_credential: Any
@@ -266,20 +277,18 @@ class PreviewService(BaseService):
         """
         graph = feature_preview.graph
         feature_node = graph.get_node_by_name(feature_preview.node_name)
-        point_in_time_and_serving_name = feature_preview.point_in_time_and_serving_name
         operation_struction = feature_preview.graph.extract_operation_structure(feature_node)
 
-        # We only need to ensure that the point in time column is provided, if the feature aggregation is time based.
-        point_in_time_and_serving_name, updated = PreviewService._update_point_in_time_if_needed(
-            point_in_time_and_serving_name, operation_struction.is_time_based
+        # We only need to ensure that the point in time column is provided,
+        # if the feature aggregation is time based.
+        (
+            point_in_time_and_serving_name_list,
+            updated,
+        ) = PreviewService._update_point_in_time_if_needed(
+            feature_preview.point_in_time_and_serving_name_list, operation_struction.is_time_based
         )
 
-        # convert point in time to tz-naive UTC
-        point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
-            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME], utc=True
-        ).tz_localize(None)
-
-        request_column_names = set(point_in_time_and_serving_name.keys())
+        request_column_names = set(point_in_time_and_serving_name_list[0].keys())
         feature_store, session = await self._get_feature_store_session(
             graph=graph,
             node_name=feature_preview.node_name,
@@ -298,7 +307,7 @@ class PreviewService(BaseService):
             request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
             graph=graph,
             nodes=[feature_node],
-            point_in_time_and_serving_name=point_in_time_and_serving_name,
+            point_in_time_and_serving_name_list=point_in_time_and_serving_name_list,
             source_type=feature_store.type,
             parent_serving_preparation=parent_serving_preparation,
         )
@@ -338,16 +347,18 @@ class PreviewService(BaseService):
                 if operation_struction.is_time_based:
                     has_time_based_feature = True
                     break
-
         # Raise error if there's no point in time provided for time based features.
-        point_in_time_and_serving_name, updated = PreviewService._update_point_in_time_if_needed(
-            featurelist_preview.point_in_time_and_serving_name, has_time_based_feature
+        (
+            point_in_time_and_serving_name_list,
+            updated,
+        ) = PreviewService._update_point_in_time_if_needed(
+            featurelist_preview.point_in_time_and_serving_name_list, has_time_based_feature
         )
 
-        result: pd.DataFrame = None
-        group_join_keys = list(point_in_time_and_serving_name.keys())
+        result: Optional[pd.DataFrame] = None
+        group_join_keys = list(point_in_time_and_serving_name_list[0].keys())
         for feature_cluster in featurelist_preview.feature_clusters:
-            request_column_names = set(point_in_time_and_serving_name.keys())
+            request_column_names = set(group_join_keys)
             feature_store = await self.feature_store_service.get_document(
                 feature_cluster.feature_store_id
             )
@@ -365,7 +376,7 @@ class PreviewService(BaseService):
                 request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.generate_session_unique_id()}",
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,
-                point_in_time_and_serving_name=point_in_time_and_serving_name,
+                point_in_time_and_serving_name_list=point_in_time_and_serving_name_list,
                 source_type=feature_store.type,
                 parent_serving_preparation=parent_serving_preparation,
             )
@@ -384,7 +395,7 @@ class PreviewService(BaseService):
 
     async def get_historical_features(
         self,
-        training_events: pd.DataFrame,
+        observation_set: pd.DataFrame,
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
         get_credential: Any,
     ) -> AsyncGenerator[bytes, None]:
@@ -393,8 +404,8 @@ class PreviewService(BaseService):
 
         Parameters
         ----------
-        training_events: pd.DataFrame
-            Training events data
+        observation_set: pd.DataFrame
+            Observation set data
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures
             FeatureListGetHistoricalFeatures object
         get_credential: Any
@@ -414,7 +425,7 @@ class PreviewService(BaseService):
             document_id=feature_cluster.feature_store_id
         )
 
-        request_column_names = set(training_events.columns)
+        request_column_names = set(observation_set.columns)
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
                 graph=feature_cluster.graph,
@@ -444,7 +455,7 @@ class PreviewService(BaseService):
             session=db_session,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
-            training_events=training_events,
+            observation_set=observation_set,
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
             source_type=feature_store.type,
             is_feature_list_deployed=is_feature_list_deployed,
@@ -511,7 +522,7 @@ class PreviewService(BaseService):
 
     async def get_historical_features_sql(
         self,
-        training_events: pd.DataFrame,
+        observation_set: pd.DataFrame,
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
     ) -> str:
         """
@@ -519,8 +530,8 @@ class PreviewService(BaseService):
 
         Parameters
         ----------
-        training_events: pd.DataFrame
-            Training events data
+        observation_set: pd.DataFrame
+            Observation set data
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures
             FeatureListGetHistoricalFeatures object
 
@@ -542,7 +553,7 @@ class PreviewService(BaseService):
             request_table_name=REQUEST_TABLE_NAME,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
-            request_table_columns=training_events.columns.tolist(),
+            request_table_columns=observation_set.columns.tolist(),
             source_type=source_type,
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
         )

@@ -9,9 +9,9 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
-from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.scd_data import SCDDataModel
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.util.helper import check_sdk_code_generation
 
 
 class TestSlowChangingDataTestSuite(BaseDataTestSuite):
@@ -38,9 +38,9 @@ class TestSlowChangingDataTestSuite(BaseDataTestSuite):
       "col_text" AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("effective_timestamp" AS VARCHAR) AS "effective_timestamp",
-      CAST("end_timestamp" AS VARCHAR) AS "end_timestamp",
-      CAST("created_at" AS VARCHAR) AS "created_at",
+      CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
+      CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
@@ -53,15 +53,17 @@ class TestSlowChangingDataTestSuite(BaseDataTestSuite):
     """
     expected_clean_data_sql = """
     SELECT
-      CAST(CASE WHEN "col_int" IS NULL THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int",
+      CAST(CASE WHEN (
+        "col_int" IS NULL
+      ) THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int",
       "col_float" AS "col_float",
       "is_active" AS "is_active",
       "col_text" AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("effective_timestamp" AS VARCHAR) AS "effective_timestamp",
-      CAST("end_timestamp" AS VARCHAR) AS "end_timestamp",
-      CAST("created_at" AS VARCHAR) AS "created_at",
+      CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
+      CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
@@ -333,3 +335,35 @@ def test_accessing_saved_scd_data_attributes(saved_scd_data):
     )
     assert saved_scd_data.record_creation_date_column == "effective_timestamp"
     assert cloned.record_creation_date_column == "effective_timestamp"
+
+
+def test_sdk_code_generation(snowflake_database_table_scd_data, update_fixtures):
+    """Check SDK code generation for unsaved data"""
+    scd_data = SlowlyChangingData.from_tabular_source(
+        tabular_source=snowflake_database_table_scd_data,
+        name="sf_scd_data",
+        natural_key_column="col_text",
+        surrogate_key_column="col_int",
+        effective_timestamp_column="effective_timestamp",
+        end_timestamp_column="end_timestamp",
+        current_flag_column="is_active",
+        record_creation_date_column="created_at",
+    )
+    check_sdk_code_generation(
+        scd_data.frame,
+        to_use_saved_data=False,
+        fixture_path="tests/fixtures/sdk_code/scd_data.py",
+        update_fixtures=update_fixtures,
+        data_id=scd_data.id,
+    )
+
+
+def test_sdk_code_generation_on_saved_data(saved_scd_data, update_fixtures):
+    """Check SDK code generation for saved data"""
+    check_sdk_code_generation(
+        saved_scd_data.frame,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/saved_scd_data.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_scd_data.id,
+    )

@@ -23,7 +23,13 @@ from featurebyte.query_graph.sql.aggregator.window import WindowAggregator
 from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
-from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    CteStatement,
+    CteStatements,
+    SQLType,
+    construct_cte_sql,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.query_graph.sql.specs import (
     AggregateAsAtSpec,
@@ -139,7 +145,7 @@ class FeatureExecutionPlan:
         self,
         request_table_name: str,
         request_table_columns: list[str],
-    ) -> expressions.Select:
+    ) -> tuple[expressions.Select, list[str]]:
         """
         Construct updated request table with parent entities added
 
@@ -152,23 +158,23 @@ class FeatureExecutionPlan:
 
         Returns
         -------
-        expressions.Select
+        tuple[expressions.Select, List[str]]
         """
         assert self.parent_serving_preparation is not None
-        table_expr = construct_request_table_with_parent_entities(
+        table_expr, new_columns = construct_request_table_with_parent_entities(
             request_table_name=request_table_name,
             request_table_columns=request_table_columns,
             join_steps=self.parent_serving_preparation.join_steps,
             feature_store_details=self.parent_serving_preparation.feature_store_details,
         )
-        return table_expr
+        return table_expr, new_columns
 
     def construct_combined_aggregation_cte(
         self,
         request_table_name: str,
         point_in_time_column: str,
         request_table_columns: Optional[list[str]],
-    ) -> tuple[str, expressions.Select, list[str]]:
+    ) -> tuple[CteStatement, list[str]]:
         """Construct SQL code for all aggregations
 
         Parameters
@@ -182,8 +188,8 @@ class FeatureExecutionPlan:
 
         Returns
         -------
-        tuple[str, expressions.Select]
-            Tuple of table name and SQL expression
+        tuple[CteStatement, list[str]]
+            Tuple of CteExpression and list of column names
         """
         # Select original columns first
         if request_table_columns:
@@ -211,7 +217,7 @@ class FeatureExecutionPlan:
             current_columns += agg_result.column_names
             agg_result_names += agg_result.column_names
 
-        return self.AGGREGATION_TABLE_NAME, table_expr, agg_result_names
+        return (self.AGGREGATION_TABLE_NAME, table_expr), agg_result_names
 
     def construct_post_aggregation_sql(
         self,
@@ -219,7 +225,7 @@ class FeatureExecutionPlan:
         request_table_columns: Optional[list[str]],
         exclude_post_aggregation: bool,
         agg_result_names: list[str],
-        exclude_columns: Optional[set[str]] = None,
+        exclude_columns: set[str],
     ) -> expressions.Select:
         """Construct SQL code for post-aggregation that transforms aggregated results to features
 
@@ -240,18 +246,15 @@ class FeatureExecutionPlan:
             output columns directly. Intended to be used by online store pre-computation.
         agg_result_names: bool
             Names of the aggregated columns. Used when excluded_post_aggregation is True.
-        exclude_columns: Optional[set[str]]
-            When provided, exclude these columns from the output. This is currently used when
-            generating feature retrieval sql for online requests where we want to exclude the
-            internally added point in time column from the final output.
+        exclude_columns: set[str]
+            Exclude these columns from the output. This is currently used when generating feature
+            retrieval sql for online requests where we want to exclude the internally added point in
+            time column from the final output.
 
         Returns
         -------
         str
         """
-        if exclude_columns is None:
-            exclude_columns = set()
-
         columns: list[expressions.Expression | str] = []
         if exclude_post_aggregation:
             for agg_result_name in agg_result_names:
@@ -280,7 +283,7 @@ class FeatureExecutionPlan:
         request_table_name: str,
         point_in_time_column: str,
         request_table_columns: list[str],
-        prior_cte_statements: Optional[list[tuple[str, expressions.Select]]] = None,
+        prior_cte_statements: Optional[CteStatements] = None,
         exclude_post_aggregation: bool = False,
         exclude_columns: Optional[set[str]] = None,
     ) -> expressions.Select:
@@ -312,23 +315,31 @@ class FeatureExecutionPlan:
             assert isinstance(prior_cte_statements, list)
             cte_statements.extend(prior_cte_statements)
 
+        if exclude_columns is None:
+            exclude_columns = set()
+
         if self.parent_serving_preparation is not None:
-            updated_request_table_expr = self.construct_request_table_with_parent_entities(
+            (
+                updated_request_table_expr,
+                new_columns,
+            ) = self.construct_request_table_with_parent_entities(
                 request_table_name=request_table_name,
                 request_table_columns=request_table_columns,
             )
             request_table_name = "JOINED_PARENTS_" + request_table_name
             cte_statements.append((request_table_name, updated_request_table_expr))
+            request_table_columns = request_table_columns + list(new_columns)
+            exclude_columns.update(new_columns)
 
         for aggregator in self.iter_aggregators():
             cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))
 
-        agg_cte_name, agg_expr, agg_result_names = self.construct_combined_aggregation_cte(
+        agg_cte, agg_result_names = self.construct_combined_aggregation_cte(
             request_table_name,
             point_in_time_column,
             request_table_columns,
         )
-        cte_statements.append((agg_cte_name, agg_expr))
+        cte_statements.append(agg_cte)
         cte_context = construct_cte_sql(cte_statements)
 
         post_aggregation_sql = self.construct_post_aggregation_sql(

@@ -7,9 +7,10 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import EventView, Feature, FeatureList
+from featurebyte import Feature, FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV6
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.utils.credential import get_credential
 
 
@@ -57,15 +58,15 @@ async def revert_when_done(session, table_name):
         await session.execute_query(f"CREATE OR REPLACE TABLE {table_name} CLONE {backup_name}")
 
 
-@pytest_asyncio.fixture(name="bad_feature_stores")
-async def bad_feature_stores_fixture(snowflake_feature_store, persistent, user):
+@pytest_asyncio.fixture(name="bad_feature_stores", scope="session")
+async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     """
     Invalid FeatureStore documents to test error handling during migration
     """
-    feature_store_doc = await persistent.find_one(
-        "feature_store", {"_id": snowflake_feature_store.id}
-    )
+    feature_store_doc = await persistent.find_one("feature_store", {"_id": feature_store.id})
     del feature_store_doc["_id"]
+
+    bad_feature_store_docs = []
 
     # FeatureStore without credentials configured
     feature_store = deepcopy(feature_store_doc)
@@ -74,6 +75,7 @@ async def bad_feature_stores_fixture(snowflake_feature_store, persistent, user):
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
+    bad_feature_store_docs.append(feature_store)
 
     # FeatureStore with wrong credentials
     feature_store = deepcopy(feature_store_doc)
@@ -82,6 +84,7 @@ async def bad_feature_stores_fixture(snowflake_feature_store, persistent, user):
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
+    bad_feature_store_docs.append(feature_store)
 
     # FeatureStore that can no longer instantiate a session object because of working schema
     # collision (they used to be allowed and might still exist as old documents)
@@ -97,6 +100,7 @@ async def bad_feature_stores_fixture(snowflake_feature_store, persistent, user):
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
+    bad_feature_store_docs.append(feature_store)
 
     # FeatureStore with unreachable host
     feature_store = deepcopy(feature_store_doc)
@@ -107,20 +111,27 @@ async def bad_feature_stores_fixture(snowflake_feature_store, persistent, user):
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
 
+    yield
 
+    for doc in bad_feature_store_docs:
+        drop_schema_query = f'DROP SCHEMA IF EXISTS {doc["details"]["sf_schema"]}'
+        await session.execute_query(drop_schema_query)
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_data_warehouse_migration_v6(
     user,
     persistent,
     event_data,
-    snowflake_session,
+    session,
     bad_feature_stores,
 ):
     """
     Test data warehouse migration
     """
     _ = bad_feature_stores
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     features_1 = event_view.groupby("ÜSER ID").aggregate_over(
         method="count",
         windows=["7d"],
@@ -165,46 +176,46 @@ async def test_data_warehouse_migration_v6(
     latest_feature_tile_column = f"value_{latest_feature_agg_id}"
 
     async def _retrieve_tile_registry():
-        df = await snowflake_session.execute_query(
+        df = await session.execute_query(
             f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{expected_tile_id}'"
         )
         return df.sort_values("TILE_ID")
 
     async def _retrieve_tile_table():
-        df = await snowflake_session.execute_query(f"SELECT * FROM {expected_tile_id}")
+        df = await session.execute_query(f"SELECT * FROM {expected_tile_id}")
         return df
 
     async def _get_migration_version():
-        df = await snowflake_session.execute_query(f"SELECT * FROM METADATA_SCHEMA")
+        df = await session.execute_query(f"SELECT * FROM METADATA_SCHEMA")
         return df["MIGRATION_VERSION"].iloc[0]
 
     # New TILE_REGISTRY always has VALUE_COLUMN_TYPES column correctly setup
     df_expected = await _retrieve_tile_registry()
 
-    async with revert_when_done(snowflake_session, "TILE_REGISTRY"):
+    async with revert_when_done(session, "TILE_REGISTRY"):
 
         # Simulate migration scenario where VALUE_COLUMN_TYPES column is missing
-        await snowflake_session.execute_query(
-            "ALTER TABLE TILE_REGISTRY DROP COLUMN VALUE_COLUMN_TYPES"
-        )
+        await session.execute_query("ALTER TABLE TILE_REGISTRY DROP COLUMN VALUE_COLUMN_TYPES")
         assert "VALUE_COLUMN_TYPES" not in (await _retrieve_tile_registry())
 
         # Simulate the case when the column in the tile table has wrong type to be corrected (FLOAT
         # is the wrong type, should be TIMESTAMP_NTZ)
-        await snowflake_session.execute_query(
+        await session.execute_query(
             f"ALTER TABLE {expected_tile_id} DROP COLUMN {latest_feature_tile_column}"
         )
-        await snowflake_session.execute_query(
+        await session.execute_query(
             f"ALTER TABLE {expected_tile_id} ADD COLUMN {latest_feature_tile_column} FLOAT DEFAULT NULL"
         )
 
         # Simulate missing MIGRATION_VERSION
-        await snowflake_session.execute_query(
+        await session.execute_query(
             f"ALTER TABLE METADATA_SCHEMA DROP COLUMN {InternalName.MIGRATION_VERSION}"
         )
 
         # Run migration
-        service = DataWarehouseMigrationServiceV6(user=user, persistent=persistent)
+        service = DataWarehouseMigrationServiceV6(
+            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        )
         service.set_credential_callback(get_credential)
         await service.add_tile_value_types_column()
 

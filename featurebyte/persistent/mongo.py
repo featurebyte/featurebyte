@@ -160,7 +160,10 @@ class MongoDB(Persistent):
 
         if sort_by:
             cursor = cursor.sort(
-                [(str(sort_by), pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING)]
+                [
+                    (str(sort_by), pymongo.ASCENDING if sort_dir == "asc" else pymongo.DESCENDING),
+                    ("_id", pymongo.DESCENDING),  # break ties using _id
+                ]
             )
 
         if page_size > 0:

@@ -5,6 +5,7 @@
     "job_time_modulo_frequency": 61,
     "blind_spot": 10,
     "user_id": "6301d232b9a5c3e5bfc45a0b",
+    "workspace_id": "63eda344d0313fb925f7883a",
     "output_document_id": "62f301e841b9a757c9ff871b",
     "command": "FEATURE_JOB_SETTING_ANALYSIS_BACKTEST",
     "output_collection_name": "temp_data"

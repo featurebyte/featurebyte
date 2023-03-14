@@ -332,6 +332,20 @@ def query_graph_with_groupby_fixture(query_graph_and_assign_node, groupby_node_p
     return graph
 
 
+@pytest.fixture(name="query_graph_with_groupby_no_entity_ids")
+def query_graph_with_groupby_fixture_no_entity_ids(
+    query_graph_and_assign_node, groupby_node_params
+):
+    """
+    Fixture of a query graph with a groupby operation (DEV-556: old version without entity_ids)
+    """
+    graph, assign_node = query_graph_and_assign_node
+    node_params = copy.deepcopy(groupby_node_params)
+    node_params.pop("entity_ids")
+    add_groupby_operation(graph, node_params, assign_node)
+    return graph
+
+
 @pytest.fixture(name="query_graph_with_groupby_and_feature_nodes")
 def query_graph_with_groupby_and_feature_nodes_fixture(query_graph_with_groupby):
     graph = query_graph_with_groupby

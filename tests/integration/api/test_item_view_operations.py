@@ -3,16 +3,12 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
 
-from featurebyte import EventView, FeatureList
+from featurebyte import AggFunc, FeatureList
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.item_view import ItemView
 
 
-@pytest.mark.parametrize(
-    "item_data",
-    ["snowflake"],
-    indirect=True,
-)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_expected_rows_and_columns(item_data, expected_joined_event_item_dataframe):
     """
     Test ItemView rows and columns are correct
@@ -50,7 +46,7 @@ def item_aggregate_with_category_features(item_data):
     """
     item_view = ItemView.from_item_data(item_data)
     feature = item_view.groupby("order_id", category="item_type").aggregate(
-        method="count", feature_name="my_item_feature"
+        method=AggFunc.COUNT, feature_name="my_item_feature"
     )
     most_frequent_feature = feature.cd.most_frequent()
     most_frequent_feature.name = "most_frequent_item_type"
@@ -59,16 +55,13 @@ def item_aggregate_with_category_features(item_data):
     return FeatureList([most_frequent_feature, entropy_feature], name="feature_list")
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_aggregation_with_category(item_aggregate_with_category_features, event_data):
     """
     Test ItemView.groupby(..., category=...).aggregate() feature
     """
     # check preview
-    df = item_aggregate_with_category_features.preview(
-        {
-            "order_id": "T42",
-        }
-    )
+    df = item_aggregate_with_category_features.preview(pd.DataFrame([{"order_id": "T42"}]))
     assert df.iloc[0].to_dict() == {
         "order_id": "T42",
         "most_frequent_item_type": "type_21",
@@ -89,7 +82,7 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
     np.testing.assert_allclose(df["item_type_entropy"].values, [1.79175947, 1.09861229, 2.19722458])
 
     # check add_feature (note added feature value is the same as the preview above)
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     event_view.add_feature(
         "most_frequent_item_type",
         item_aggregate_with_category_features["most_frequent_item_type"],
@@ -99,6 +92,7 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
     assert df.iloc[0]["most_frequent_item_type"] == "type_21"
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
     """
     Test ItemView operations
@@ -129,7 +123,7 @@ def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
         windows=["30d"],
         feature_names=["count_30d"],
     )["count_30d"]
-    df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1})
+    df = feature.preview(pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}]))
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
@@ -158,10 +152,10 @@ def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
 
     # Create a feature using aggregation without time window and preview it
     feature = item_view_filtered.groupby("order_id").aggregate(
-        method="count",
+        method=AggFunc.COUNT,
         feature_name="order_size",
     )
-    df = feature.preview({"order_id": "T30"})
+    df = feature.preview(pd.DataFrame([{"order_id": "T30"}]))
     assert df.iloc[0].to_dict() == {"order_id": "T30", "order_size": 1}
 
 
@@ -177,11 +171,7 @@ def assert_match(item_id: str, item_name: str, item_type: str):
     assert item_type == expected_type
 
 
-@pytest.mark.parametrize(
-    "item_data",
-    ["snowflake"],
-    indirect=True,
-)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_joined_with_dimension_view(
     transaction_data_upper_case, item_data, dimension_data
 ):

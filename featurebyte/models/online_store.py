@@ -9,7 +9,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.online_serving import (
     OnlineStorePrecomputeQuery,

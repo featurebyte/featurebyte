@@ -9,7 +9,8 @@ from pydantic import Field, StrictStr
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.models.event_data import EventDataModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.tabular_data import DataCreate, DataServiceUpdate, DataUpdate
 

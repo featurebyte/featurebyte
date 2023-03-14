@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from bson import ObjectId
+from pydantic import PrivateAttr
 
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel
@@ -13,6 +14,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_enable import OnlineEnableService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
 
 
@@ -41,9 +43,16 @@ class WorkingSchemaService(BaseService):
     WorkingSchemaService is responsible for managing the working schema in the data warehouse
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
-        super().__init__(user, persistent)
-        self.feature_service = FeatureService(user=user, persistent=persistent)
+    _task_manager: TaskManager = PrivateAttr()
+
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+        super().__init__(user, persistent, workspace_id)
+        self.feature_service = FeatureService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self._task_manager = TaskManager(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
 
     async def recreate_working_schema(
         self, feature_store_id: ObjectId, session: BaseSession
@@ -82,13 +91,19 @@ class WorkingSchemaService(BaseService):
         self, feature_store_id: ObjectId, session: BaseSession
     ) -> None:
 
+        # activate use of raw query filter to retrieve all documents regardless of workspace membership
+        self.feature_service.allow_use_raw_query_filter()
         online_enabled_feature_docs = self.feature_service.list_documents_iterator(
-            {"tabular_source.feature_store_id": feature_store_id, "online_enabled": True}
+            query_filter={
+                "tabular_source.feature_store_id": feature_store_id,
+                "online_enabled": True,
+            },
+            use_raw_query_filter=True,
         )
 
         async for feature_doc in online_enabled_feature_docs:
             logger.info(f'Rescheduling jobs for online enabled feature: {feature_doc["name"]}')
             feature = FeatureModel(**feature_doc)
             await OnlineEnableService.update_data_warehouse_with_session(
-                session=session, feature=feature
+                session=session, feature=feature, task_manager=self._task_manager
             )

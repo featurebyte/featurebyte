@@ -3,7 +3,6 @@ Test for graph pruning related logics
 """
 import os
 
-import pytest
 from bson import json_util
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -85,13 +84,13 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     target_node = dataframe["target"].node
     pruned_graph, node_name_map = dataframe.graph.prune(target_node=target_node, aggressive=True)
     assert pruned_graph.edges_map == {
-        "input_1": ["project_1", "assign_1", "project_2"],
+        "input_1": ["project_1", "assign_1"],
         "project_1": ["div_1"],
         "div_1": ["assign_1"],
+        "assign_1": ["project_2", "assign_2"],
         "project_2": ["add_1"],
         "add_1": ["assign_2"],
-        "assign_1": ["assign_2", "project_4"],
-        "assign_2": ["project_3", "assign_3"],
+        "assign_2": ["project_3", "project_4", "assign_3"],
         "project_3": ["mul_1"],
         "project_4": ["mul_1"],
         "mul_1": ["assign_3"],
@@ -201,6 +200,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         "right_output_columns": ["item_type", "item_name"],
         "join_type": "inner",
         "scd_parameters": None,
+        "metadata": {"type": "join", "on": None, "rsuffix": ""},
     }
     join_node = global_graph.add_operation(
         node_type=NodeType.JOIN,
@@ -265,13 +265,19 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
     assert pruned_join_node.parameters == join_node_parameters
 
-    # check aggressive mode (node could be removed and is parameters could be pruned)
+    # check aggressive mode (node could be removed and its parameters could be pruned)
     pruned_graph, node_name_map = global_graph.prune(target_node=groupby_node, aggressive=True)
     pruned_graph = QueryGraph(**pruned_graph.json_dict())
     pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
 
     op_struct = pruned_graph.extract_operation_structure(node=pruned_node)
-    assert op_struct.columns == expected_op_struct_columns
+    expected_op_struct_columns = sorted(
+        col.dict(exclude={"node_names": True}) for col in op_struct.columns
+    )
+    assert (
+        sorted(col.dict(exclude={"node_names"}) for col in op_struct.columns)
+        == expected_op_struct_columns
+    )
     assert op_struct.aggregations == expected_op_struct_aggregations
 
     # check pruned join node
@@ -285,6 +291,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         "right_on": "order_id",
         "right_output_columns": ["item_type", "item_name"],
         "scd_parameters": None,
+        "metadata": join_node_parameters["metadata"],
     }
     assert pruned_join_node.parameters == expected_pruned_join_node_params
 
@@ -292,8 +299,127 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_graph, _, _ = prune_query_graph(
         graph=global_graph,
         node=join_node,
-        target_columns=groupby_node.get_required_input_columns(),
+        target_columns=groupby_node._get_required_input_columns(
+            input_index=0, available_column_names=[]
+        ),
         aggressive=True,
     )
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
     assert pruned_join_node.parameters == expected_pruned_join_node_params
+
+
+def test_join_is_prunable(
+    global_graph, event_data_input_node, item_data_input_node, groupby_node_params
+):
+    """Test join node parameters pruning"""
+    # construct a join node to join an item data & an event data (with a redundant column)
+    join_node_parameters = {
+        "left_on": "order_id",
+        "right_on": "order_id",
+        "left_input_columns": ["cust_id", "order_id", "order_method"],
+        "left_output_columns": ["cust_id", "order_id", "order_method"],
+        "right_input_columns": ["item_type", "item_name"],
+        "right_output_columns": ["item_type", "item_name"],
+        "join_type": "left",
+        "scd_parameters": None,
+        "metadata": {"type": "join", "on": None, "rsuffix": ""},
+    }
+    join_node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=join_node_parameters,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_data_input_node, item_data_input_node],
+    )
+    pruned_graph, node_name_map = global_graph.prune(target_node=join_node, aggressive=True)
+    pruned_graph = QueryGraph(**pruned_graph.dict())
+    pruned_ev_node = pruned_graph.get_node_by_name(node_name_map[event_data_input_node.name])
+    pruned_it_node = pruned_graph.get_node_by_name(node_name_map[item_data_input_node.name])
+
+    # check operation structure of the join node output
+    op_struct = pruned_graph.extract_operation_structure(node=join_node)
+    kwargs = {"include": {"name": True, "node_names": True}}
+    input_only_names = ["cust_id", "order_id", "order_method"]
+    input_and_join_names = ["item_type", "item_name"]
+    for i, name in enumerate(input_only_names):
+        assert op_struct.columns[i].dict(**kwargs) == {
+            "name": name,
+            "node_names": {pruned_ev_node.name},
+        }
+    for i, name in enumerate(input_and_join_names):
+        assert op_struct.columns[i + 3].dict(**kwargs) == {
+            "name": name,
+            "node_names": {pruned_it_node.name, "join_1"},
+        }
+
+    # check join node can be pruned
+    proj_cust_id = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["cust_id"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[join_node],
+    )
+    pruned_graph, node_name_map = global_graph.prune(target_node=proj_cust_id, aggressive=True)
+    assert pruned_graph.edges_map == {"input_1": ["project_1"]}
+    assert node_name_map[proj_cust_id.name] == "project_1"
+
+    # check join node is kept if it is required
+    proj_item_type = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["item_type"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[join_node],
+    )
+    pruned_graph, node_name_map = global_graph.prune(target_node=proj_item_type, aggressive=True)
+    assert pruned_graph.edges_map == {
+        "input_1": ["join_1"],
+        "input_2": ["join_1"],
+        "join_1": ["project_1"],
+    }
+    assert node_name_map[proj_item_type.name] == "project_1"
+
+    # check inner join should not prune join node
+    join_node_parameters["join_type"] = "inner"
+    inner_join_node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=join_node_parameters,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_data_input_node, item_data_input_node],
+    )
+    proj_cust_id_inner = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["cust_id"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[inner_join_node],
+    )
+    pruned_graph, node_name_map = global_graph.prune(
+        target_node=proj_cust_id_inner, aggressive=True
+    )
+    assert pruned_graph.edges_map == {
+        "input_1": ["join_1"],
+        "input_2": ["join_1"],
+        "join_1": ["project_1"],
+    }
+    assert node_name_map[proj_cust_id_inner.name] == "project_1"
+
+
+def test_project_node_parameters_pruning(query_graph_and_assign_node):
+    """Test pruning of project node parameters"""
+    graph, assign_node = query_graph_and_assign_node
+    proj_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["ts", "cust_id", "a", "b", "c"]},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
+    target_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_node],
+    )
+
+    # after pruning, the project node parameters should be pruned
+    pruned_graph, node_name_map = graph.prune(target_node=target_node, aggressive=True)
+    mapped_proj_node_name = node_name_map[proj_node.name]
+    mapped_proj_node = pruned_graph.get_node_by_name(mapped_proj_node_name)
+    assert mapped_proj_node.parameters.columns == ["ts", "cust_id", "a", "b"]

@@ -28,6 +28,7 @@ class FeatureListNamespaceUpdate(FeatureByteBaseModel):
 
     status: Optional[FeatureListStatus]
     default_version_mode: Optional[DefaultVersionMode]
+    default_feature_list_id: Optional[PydanticObjectId]
 
 
 class FeatureListNamespaceServiceUpdate(

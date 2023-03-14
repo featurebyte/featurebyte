@@ -78,12 +78,13 @@ class GroupBy:
     def aggregate_over(
         self,
         value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
         windows: Optional[List[Optional[str]]] = None,
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -94,7 +95,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: str
+        method: Optional[Literal[tuple(AggFunc)]]
             Aggregation method
         windows: List[str]
             List of aggregation window sizes. Use `None` to indicated unbounded window size (only
@@ -121,6 +122,8 @@ class GroupBy:
             feature job setting parameters
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
 
         Returns
         -------
@@ -153,17 +156,19 @@ class GroupBy:
             timestamp_column=timestamp_column,
             feature_job_setting=feature_job_setting,
             fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
 
     @typechecked
     def aggregate_asat(
         self,
         value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
         feature_name: Optional[str] = None,
         offset: Optional[str] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> Feature:
         """
         Aggregate a column in SlowlyChangingView as at a point in time
@@ -172,7 +177,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: str
+        method: Optional[Literal[tuple(AggFunc)]]
             Aggregation method
         feature_name: str
             Output feature name
@@ -195,6 +200,8 @@ class GroupBy:
             Whether the offset should be applied backward or forward
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
 
         Returns
         -------
@@ -219,15 +226,17 @@ class GroupBy:
             offset=offset,
             backward=backward,
             fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
 
     @typechecked
     def aggregate(
         self,
         value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
@@ -238,12 +247,14 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[str]
+        method: Optional[Literal[tuple(AggFunc)]]
             Aggregation method
         feature_name: Optional[str]
             Output feature name
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
 
         Returns
         -------
@@ -256,4 +267,5 @@ class GroupBy:
             method=method,
             feature_name=feature_name,
             fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )

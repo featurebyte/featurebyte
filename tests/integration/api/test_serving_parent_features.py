@@ -15,7 +15,7 @@ from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest_asyncio.fixture(name="feature_list_with_child_entities", scope="session")
-async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_feature_store):
+async def feature_list_with_child_entities_fixture(session, feature_store):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
     """
@@ -54,14 +54,10 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
         }
     )
     table_prefix = "TEST_SERVING_PARENT_FEATURES"
-    await snowflake_session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
-    await snowflake_session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
-    await snowflake_session.register_table(
-        f"{table_prefix}_DIMENSION_1", df_dimension_1, temporary=False
-    )
-    await snowflake_session.register_table(
-        f"{table_prefix}_DIMENSION_2", df_dimension_2, temporary=False
-    )
+    await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
+    await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
+    await session.register_table(f"{table_prefix}_DIMENSION_1", df_dimension_1, temporary=False)
+    await session.register_table(f"{table_prefix}_DIMENSION_2", df_dimension_2, temporary=False)
 
     event_entity = Entity(name=f"{table_prefix}_event", serving_names=["serving_event_id"])
     event_entity.save()
@@ -75,10 +71,10 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
     country_entity.save()
 
     event_data = EventData.from_tabular_source(
-        tabular_source=snowflake_feature_store.get_table(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_EVENT",
-            database_name=snowflake_session.database,
-            schema_name=snowflake_session.sf_schema,
+            database_name=session.database_name,
+            schema_name=session.schema_name,
         ),
         name=f"{table_prefix}_event_data",
         event_id_column="event_id",
@@ -89,10 +85,10 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
     event_data["cust_id"].as_entity(customer_entity.name)
 
     scd_data = SlowlyChangingData.from_tabular_source(
-        tabular_source=snowflake_feature_store.get_table(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_SCD",
-            database_name=snowflake_session.database,
-            schema_name=snowflake_session.sf_schema,
+            database_name=session.database_name,
+            schema_name=session.schema_name,
         ),
         name=f"{table_prefix}_scd_data",
         natural_key_column="scd_cust_id",
@@ -104,10 +100,10 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
     scd_data["scd_city"].as_entity(city_entity.name)
 
     dimension_data_1 = DimensionData.from_tabular_source(
-        tabular_source=snowflake_feature_store.get_table(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_DIMENSION_1",
-            database_name=snowflake_session.database,
-            schema_name=snowflake_session.sf_schema,
+            database_name=session.database_name,
+            schema_name=session.schema_name,
         ),
         name=f"{table_prefix}_dimension_data_1",
         dimension_id_column="city",
@@ -117,10 +113,10 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
     dimension_data_1["state"].as_entity(state_entity.name)
 
     dimension_data_2 = DimensionData.from_tabular_source(
-        tabular_source=snowflake_feature_store.get_table(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_DIMENSION_2",
-            database_name=snowflake_session.database,
-            schema_name=snowflake_session.sf_schema,
+            database_name=session.database_name,
+            schema_name=session.schema_name,
         ),
         name=f"{table_prefix}_dimension_data_2",
         dimension_id_column="state",
@@ -143,6 +139,7 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.parametrize(
     "point_in_time, provided_entity, expected",
     [
@@ -169,19 +166,17 @@ def test_preview(feature_list_with_child_entities, point_in_time, provided_entit
 
     # Preview feature
     feature = feature_list_with_child_entities["Country Name"]
-    df = feature.preview(preview_params)
+    df = feature.preview(pd.DataFrame([preview_params]))
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
     # Preview feature list
-    df = feature_list_with_child_entities.preview(preview_params)
+    df = feature_list_with_child_entities.preview(pd.DataFrame([preview_params]))
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
 
-def test_historical_features(feature_list_with_child_entities):
-    """
-    Test get historical features
-    """
-    observations_set_with_expected_feature = pd.DataFrame(
+@pytest.fixture(name="observations_set_with_expected_features")
+def observations_set_with_expected_features_fixture():
+    observations_set_with_expected_features = pd.DataFrame(
         [
             {"POINT_IN_TIME": "2022-01-01 10:00:00", "serving_event_id": 1, "Country Name": np.nan},
             {
@@ -196,20 +191,54 @@ def test_historical_features(feature_list_with_child_entities):
             },
         ]
     )
-
-    observations_set = observations_set_with_expected_feature[["POINT_IN_TIME", "serving_event_id"]]
-    df = feature_list_with_child_entities.get_historical_features(observations_set)
-
-    df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
-    observations_set_with_expected_feature = observations_set_with_expected_feature.sort_values(
+    observations_set_with_expected_features["POINT_IN_TIME"] = pd.to_datetime(
+        observations_set_with_expected_features["POINT_IN_TIME"]
+    )
+    observations_set_with_expected_features = observations_set_with_expected_features.sort_values(
         ["POINT_IN_TIME", "serving_event_id"]
     )
-    observations_set_with_expected_feature["POINT_IN_TIME"] = pd.to_datetime(
-        observations_set_with_expected_feature["POINT_IN_TIME"]
+    return observations_set_with_expected_features
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+def test_historical_features(
+    feature_list_with_child_entities,
+    observations_set_with_expected_features,
+):
+    """
+    Test get historical features
+    """
+    observations_set = observations_set_with_expected_features[
+        ["POINT_IN_TIME", "serving_event_id"]
+    ]
+    df = feature_list_with_child_entities.get_historical_features(observations_set)
+    df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
+    pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+def test_historical_features_with_serving_names_mapping(
+    feature_list_with_child_entities,
+    observations_set_with_expected_features,
+):
+    """
+    Test get historical features with serving_names_mapping
+    """
+    observations_set_with_expected_features.rename(
+        {"serving_event_id": "new_serving_event_id"}, axis=1, inplace=True
     )
-    pd.testing.assert_frame_equal(df, observations_set_with_expected_feature, check_dtype=False)
+    observations_set = observations_set_with_expected_features[
+        ["POINT_IN_TIME", "new_serving_event_id"]
+    ]
+    df = feature_list_with_child_entities.get_historical_features(
+        observations_set,
+        serving_names_mapping={"serving_event_id": "new_serving_event_id"},
+    )
+    df = df.sort_values(["POINT_IN_TIME", "new_serving_event_id"])
+    pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_online_features(config, feature_list_with_child_entities):
     """
     Test requesting online features

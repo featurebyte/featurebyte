@@ -14,7 +14,11 @@ from featurebyte.query_graph.sql.aggregator.base import (
     NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
-from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    CteStatements,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.specs import ItemAggregationSpec
 
@@ -145,9 +149,7 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
             table_expr=table_expr, current_query_index=current_query_index, queries=queries
         )
 
-    def get_common_table_expressions(
-        self, request_table_name: str
-    ) -> list[tuple[str, expressions.Select]]:
+    def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
         return self.non_time_aware_request_table_plan.construct_request_table_ctes(
             request_table_name
         )

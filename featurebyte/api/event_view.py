@@ -3,26 +3,27 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 import copy
 
 from pydantic import Field
-from typeguard import typechecked
 
-from featurebyte.api.event_data import EventData
-from featurebyte.api.feature import Feature
-from featurebyte.api.join_utils import join_tabular_data_ids
 from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.join_utils import join_tabular_data_ids
+from featurebyte.common.typing import validate_type_is_feature
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.input import InputNode
+
+if TYPE_CHECKING:
+    from featurebyte.api.feature import Feature
 
 
 class EventViewColumn(LaggableViewColumn):
@@ -36,14 +37,17 @@ class EventViewColumn(LaggableViewColumn):
 
 class EventView(View, GroupByMixin):
     """
-    EventView class
+    EventViews allow users to transform EventData to support the data preparation necessary before creating features.
     """
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["View"], proxy_class="featurebyte.EventView")
 
+    # class variables
     _series_class = EventViewColumn
+    _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.EVENT_VIEW
 
+    # pydantic instance variables
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
     event_id_column: Optional[str] = Field(allow_mutation=False)
 
@@ -76,28 +80,6 @@ class EventView(View, GroupByMixin):
         list[str]
         """
         return super().protected_attributes + ["timestamp_column"]
-
-    @classmethod
-    @typechecked
-    def from_event_data(cls, event_data: EventData) -> EventView:
-        """
-        Construct an EventView object
-
-        Parameters
-        ----------
-        event_data: EventData
-            EventData object used to construct EventView object
-
-        Returns
-        -------
-        EventView
-            constructed EventView object
-        """
-        return cls.from_data(
-            event_data,
-            default_feature_job_setting=event_data.default_feature_job_setting,
-            event_id_column=event_data.event_id_column,
-        )
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
@@ -333,7 +315,6 @@ class EventView(View, GroupByMixin):
             f"from the EventView columns: {sorted(self.columns)}"
         )
 
-    @typechecked
     def add_feature(
         self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None
     ) -> None:
@@ -352,6 +333,8 @@ class EventView(View, GroupByMixin):
         entity_column: Optional[str]
             The entity column to use in the EventView. The type of this entity should match the entity of the feature.
         """
+        validate_type_is_feature(feature, "feature")
+
         # Validation
         self._validate_feature_addition(new_column_name, feature, entity_column)
 

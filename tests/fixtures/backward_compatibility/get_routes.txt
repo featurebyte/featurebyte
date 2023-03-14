@@ -10,7 +10,10 @@
 /feature_namespace
 /feature_store
 /item_data
+/relationship_info
 /scd_data
 /semantic
 /tabular_data
 /task
+/workspace
+/periodic_task

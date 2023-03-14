@@ -17,15 +17,34 @@ from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.item_data import ItemDataModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, ItemTableData
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 
 
 class ItemData(DataApiObject):
     """
-    ItemData class
+    ItemData is an object connected with an item table that has a ‘one to many’ relationship with an event table.
+    Example:\n
+    - Order item table -> Order table\n
+    - Drug prescriptions -> Doctor visits.
+
+    The table does not explicitly contain any timestamp, but is implicitly related to an event timestamp via its
+    relationship with the event table.
+
+    To register a new ItemData, users are asked to provide:\n
+    - the name of the column of the item id\n
+    - the name of the column of the event id\n
+    - the name of the event data it is related to
+
+    The ItemData inherits the default FeatureJob setting of the Event data.
+
+    Like for Event Data, users are strongly encouraged to annotate the data by tagging entities and defining:\n
+    - the semantic of the data field\n
+    - critical data information on the data quality that requires cleaning before feature engineering
+
+    To create features from an ItemData, users create an ItemView.
     """
 
     # documentation metadata
@@ -145,6 +164,27 @@ class ItemData(DataApiObject):
         ------
         ValueError
             If the associated EventData does not have event_id_column defined
+
+        Examples
+        --------
+        Create ItemData from a table in the feature store
+
+        >>> order_items = ItemData.from_tabular_source(  # doctest: +SKIP
+        ...    name="Order Items",
+        ...    tabular_source=feature_store.get_table(
+        ...      database_name="DEMO",
+        ...      schema_name="ORDERS",
+        ...      table_name="ORDER_ITEMS"
+        ...    ),
+        ...    event_id_column="ORDER_ID",
+        ...    item_id_column="ITEM_ID",
+        ...    event_data_name="Order List",
+        ...    record_creation_date_column="RECORD_AVAILABLE_AT",
+        ... )
+
+        Get information about the ItemData
+
+        >>> order_items.info(verbose=True)  # doctest: +SKIP
         """
         event_data = EventData.get(event_data_name)
         if event_data.event_id_column is None:

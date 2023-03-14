@@ -7,7 +7,7 @@ import pytest
 
 from featurebyte.api.base_data import DataColumn
 from featurebyte.enum import StrEnum
-from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
+from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 
 
 class DataType(StrEnum):

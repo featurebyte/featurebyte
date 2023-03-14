@@ -3,7 +3,7 @@ Base models for task and task payload
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict
 
 from abc import abstractmethod
 from enum import Enum
@@ -11,7 +11,7 @@ from enum import Enum
 from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 
-TASK_MAP = {}
+TASK_MAP: Dict[Enum, type[BaseTask]] = {}
 
 
 class BaseTask:
@@ -24,15 +24,17 @@ class BaseTask:
     def __init__(
         self,
         payload: dict[str, Any],
-        progress: Any = None,
-        get_persistent: Any = None,
-        get_storage: Any = None,
-        get_temp_storage: Any = None,
-        get_credential: Any = None,
+        progress: Any,
+        user: Any,
+        get_persistent: Any,
+        get_storage: Any,
+        get_temp_storage: Any,
+        get_credential: Any,
     ):
         if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
         self.payload = self.payload_class(**payload)
+        self.user = user
         self.get_persistent = get_persistent
         self.get_storage = get_storage
         self.get_temp_storage = get_temp_storage

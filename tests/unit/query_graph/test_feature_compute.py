@@ -116,7 +116,7 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     assert len(ctes) == 1
 
     cte = ctes[0]
-    assert cte[0] == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
+    assert cte[0].sql() == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -157,7 +157,7 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
 
     # check expanded table for 2h
     name, sql = ctes[0]
-    assert name == '"REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"'
+    assert name.sql() == '"REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -179,7 +179,7 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
 
     # check expanded table for 1d
     name, sql = ctes[1]
-    assert name == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
+    assert name.sql() == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -289,6 +289,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
             feature_expr=f'"agg_w172800_avg_{groupby_node_aggregation_id}"',
         ),
     }
+    assert plan.required_entity_ids == {ObjectId("637516ebc9c18f5a277a78db")}
 
 
 def test_feature_execution_planner__serving_names_mapping(
@@ -409,7 +410,7 @@ def test_feature_execution_planner__query_graph_with_graph_node(
         query_graph, source_type=SourceType.SNOWFLAKE, is_online_serving=False
     )
     execution_plan = planner.generate_plan([groupby_node])
-    groupby_node_aggregation_id = "3ae85dc1a626a1fc7a70dec80d7d86adcb32245c"
+    groupby_node_aggregation_id = "c71175f130409c5091d0bc0058c328194000e16d"
     assert execution_plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
@@ -420,3 +421,20 @@ def test_feature_execution_planner__query_graph_with_graph_node(
             feature_expr=f'"agg_w172800_avg_{groupby_node_aggregation_id}"',
         ),
     }
+
+
+def test_feature_execution_planner__feature_no_entity_ids(
+    query_graph_with_groupby_no_entity_ids,
+    groupby_node_aggregation_id,
+):
+    """
+    Test FeatureExecutionPlanner when feature node has no entity_ids
+    """
+    groupby_node = query_graph_with_groupby_no_entity_ids.get_node_by_name("groupby_1")
+    planner = FeatureExecutionPlanner(
+        query_graph_with_groupby_no_entity_ids,
+        source_type=SourceType.SNOWFLAKE,
+        is_online_serving=False,
+    )
+    plan = planner.generate_plan([groupby_node])
+    assert plan.required_entity_ids == set()

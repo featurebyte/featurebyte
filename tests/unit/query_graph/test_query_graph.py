@@ -13,7 +13,7 @@ from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, Qu
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.transform.reconstruction import (
-    GroupbyNode,
+    GroupByNode,
     add_pruning_sensitive_operation,
 )
 from tests.util.helper import get_node
@@ -146,6 +146,7 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
         "div_2",
         "project_4",
         "project_5",
+        "project_6",
     }
 
     # construct the query of the last node
@@ -274,7 +275,7 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     assert "tile_id" not in groupby_node_params
     assert "aggregation_id" not in groupby_node_params
     groupby_node = add_pruning_sensitive_operation(
-        graph=graph, node_cls=GroupbyNode, node_params=groupby_node_params, input_node=node_input
+        graph=graph, node_cls=GroupByNode, node_params=groupby_node_params, input_node=node_input
     )
     tile_id = "TILE_F3600_M1800_B900_EC6D76DA23C191C86A5DCF6D5777C82C92C34930"
     aggregation_id = "sum_a73868167cb600aedfaf16dee4559ad29681e63e"
@@ -290,7 +291,7 @@ def test_query_graph__add_groupby_operation_with_graph_node(
     assert "tile_id" not in groupby_node_params
     assert "aggregation_id" not in groupby_node_params
     groupby_node = add_pruning_sensitive_operation(
-        graph=graph, node_cls=GroupbyNode, node_params=groupby_node_params, input_node=graph_node
+        graph=graph, node_cls=GroupByNode, node_params=groupby_node_params, input_node=graph_node
     )
     tile_id = "TILE_F3600_M1800_B900_B0C4FEC926625091C00D634AF8F7D03EA464918C"
     aggregation_id = "sum_aca8e1c2bca28b4e16e7267f1bbafa698b125c03"
@@ -367,3 +368,138 @@ def test_query_graph__representation():
     ).strip()
     assert repr(graph) == expected
     assert str(graph) == expected
+
+
+def insert_input_node(graph, input_node_params):
+    """Insert input node to the graph"""
+    return graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=input_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+
+
+def insert_project_node(graph, input_node, column_name):
+    """Insert project node to the graph"""
+    return graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": [column_name]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+
+
+def insert_add_node(graph, first_node, second_node):
+    """Insert add node to the graph"""
+    return graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[first_node, second_node],
+    )
+
+
+@pytest.fixture(name="query_graph_abc_and_node")
+def query_graph_abc_and_node_fixture(input_node):
+    """Query graph with three project nodes"""
+    graph = QueryGraph()
+    node_input = insert_input_node(graph, input_node.parameters.dict())
+    node_a = insert_project_node(graph, node_input, "a")
+    node_b = insert_project_node(graph, node_input, "b")
+    node_c = insert_project_node(graph, node_input, "ts")
+    node_add_ab = insert_add_node(graph, node_a, node_b)
+    node_add_abc = insert_add_node(graph, node_add_ab, node_c)
+    return graph, node_add_abc
+
+
+@pytest.fixture(name="query_graph_cab_and_node")
+def query_graph_cab_and_node_fixture(input_node):
+    """Query graph with three project nodes"""
+    graph = QueryGraph()
+    node_input = insert_input_node(graph, input_node.parameters.dict())
+    node_c = insert_project_node(graph, node_input, "ts")
+    node_a = insert_project_node(graph, node_input, "a")
+    node_b = insert_project_node(graph, node_input, "b")
+    node_add_ab = insert_add_node(graph, node_a, node_b)
+    node_add_abc = insert_add_node(graph, node_add_ab, node_c)
+    return graph, node_add_abc
+
+
+@pytest.fixture(name="query_graph_bca_and_node")
+def query_graph_bca_and_node_fixture(input_node):
+    """Query graph with three project nodes"""
+    graph = QueryGraph()
+    node_input = insert_input_node(graph, input_node.parameters.dict())
+    node_b = insert_project_node(graph, node_input, "b")
+    node_c = insert_project_node(graph, node_input, "ts")
+    node_a = insert_project_node(graph, node_input, "a")
+    node_add_ab = insert_add_node(graph, node_a, node_b)
+    node_add_abc = insert_add_node(graph, node_add_ab, node_c)
+    return graph, node_add_abc
+
+
+def test_query_graph_insensitive_to_node_name(
+    query_graph_abc_and_node, query_graph_cab_and_node, query_graph_bca_and_node
+):
+    """Check that graph ordering is insensitive to node names"""
+    query_graph_abc, node_abc = query_graph_abc_and_node
+    query_graph_cab, node_cab = query_graph_cab_and_node
+    query_graph_bca, node_bca = query_graph_bca_and_node
+    assert query_graph_abc != query_graph_cab
+    assert query_graph_cab != query_graph_bca
+
+    pruned_graph_abc, node_name_map_abc = query_graph_abc.prune(
+        target_node=node_abc, aggressive=False
+    )
+    pruned_graph_cab, node_name_map_cab = query_graph_cab.prune(
+        target_node=node_cab, aggressive=False
+    )
+    pruned_graph_bca, node_name_map_bca = query_graph_bca.prune(
+        target_node=node_bca, aggressive=False
+    )
+    assert pruned_graph_abc == pruned_graph_cab == pruned_graph_bca
+    assert (
+        node_name_map_abc[node_abc.name]
+        == node_name_map_cab[node_cab.name]
+        == node_name_map_bca[node_bca.name]
+    )
+
+
+@pytest.fixture(name="invalid_query_graph_groupby_node")
+def invalid_query_graph_groupby_node_fixture(
+    snowflake_feature_store_details_dict, snowflake_table_details_dict
+):
+    """Invalid query graph fixture"""
+    groupby_node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "avg",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a_2h_average", "a_48h_average"],
+        "windows": ["2h", "48h"],
+    }
+    graph = QueryGraph()
+    node_input = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "type": "generic",
+            "columns": ["random_column"],
+            "table_details": snowflake_table_details_dict,
+            "feature_store_details": snowflake_feature_store_details_dict,
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    node_group_by = graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params=groupby_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input],
+    )
+    return graph, node_group_by

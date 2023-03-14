@@ -3,16 +3,22 @@ TaskManager service is responsible to submit task message
 """
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Any, Optional, Union, cast
 
+import datetime
 from abc import abstractmethod
 from uuid import UUID
 
 from bson.objectid import ObjectId
 
+from featurebyte.logger import logger
+from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
+from featurebyte.models.task import Task as TaskModel
+from featurebyte.persistent import Persistent
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.worker.process_store import ProcessStore
+from featurebyte.service.periodic_task import PeriodicTaskService
+from featurebyte.worker import celery
 
 TaskId = Union[ObjectId, UUID]
 
@@ -22,16 +28,22 @@ class AbstractTaskManager:
     AbstractTaskManager defines interface for TaskManager
     """
 
-    def __init__(self, user_id: Optional[ObjectId]):
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId) -> None:
         """
         TaskManager constructor
 
         Parameters
         ----------
-        user_id: Optional[ObjectId]
-            User ID
+        user: Any
+            User
+        persistent: Persistent
+            Persistent
+        workspace_id: ObjectId
+            Workspace ID
         """
-        self.user_id = user_id
+        self.user = user
+        self.persistent = persistent
+        self.workspace_id = workspace_id
 
     @abstractmethod
     async def submit(self, payload: BaseTaskPayload) -> TaskId:
@@ -95,16 +107,65 @@ class TaskManager(AbstractTaskManager):
     """
 
     async def submit(self, payload: BaseTaskPayload) -> TaskId:
-        assert self.user_id == payload.user_id
-        task_id = await ProcessStore().submit(
-            payload=payload.json(), output_path=payload.task_output_path
-        )
-        return task_id
+        """
+        Submit task to celery
 
-    async def get_task(self, task_id: str) -> Optional[Task]:
-        process_store = ProcessStore()
-        process_dict = await process_store.get(user_id=self.user_id, task_id=ObjectId(task_id))
-        return Task(**process_dict) if process_dict else None
+        Parameters
+        ----------
+        payload: BaseTaskPayload
+            Payload to submit
+
+        Returns
+        -------
+        TaskId
+            Task ID
+        """
+        assert self.user.id == payload.user_id
+        kwargs = payload.json_dict()
+        kwargs["task_output_path"] = payload.task_output_path
+        task = celery.send_task("featurebyte.worker.task_executor.execute_task", kwargs=kwargs)
+        return cast(TaskId, task.id)
+
+    async def get_task(self, task_id: str) -> Task | None:
+        """
+        Get task information
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+
+        Returns
+        -------
+        Task
+            Task object
+        """
+        task_id = str(task_id)
+        task_result = celery.AsyncResult(task_id)
+        payload = {}
+        output_path = None
+        traceback = None
+
+        # try to find in persistent first
+        document = await self.persistent.find_one(
+            collection_name=TaskModel.collection_name(),
+            query_filter={"_id": task_id},
+        )
+
+        if document:
+            output_path = document.get("kwargs", {}).get("task_output_path")
+            payload = document.get("kwargs", {})
+            traceback = document.get("traceback")
+        elif not task_result:
+            return None
+
+        return Task(
+            id=UUID(task_id),
+            status=task_result.status,
+            output_path=output_path,
+            payload=payload,
+            traceback=traceback,
+        )
 
     async def list_tasks(
         self,
@@ -112,12 +173,202 @@ class TaskManager(AbstractTaskManager):
         page_size: int = 10,
         ascending: bool = True,
     ) -> tuple[list[Task], int]:
-        output = []
-        process_store = ProcessStore()
-        for _, process_data_dict in await process_store.list(user_id=self.user_id):
-            if process_data_dict:
-                output.append(Task(**process_data_dict))
+        # Perform the query
+        results, total = await self.persistent.find(
+            collection_name=TaskModel.collection_name(),
+            query_filter={},
+            page=page,
+            page_size=page_size,
+            sort_by="date_done",
+            sort_dir="asc" if ascending else "desc",
+        )
 
-        output = sorted(output, key=lambda ts: ts.id, reverse=not ascending)
-        start_idx = (page - 1) * page_size
-        return output[start_idx : (start_idx + page_size)], len(output)
+        tasks = [
+            Task(
+                **document,
+                id=document["_id"],
+                payload=document.get("kwargs", {}),
+                output_path=document.get("kwargs", {}).get("task_output_path"),
+            )
+            for document in results
+        ]
+        return tasks, total
+
+    async def schedule_interval_task(
+        self,
+        name: str,
+        payload: BaseTaskPayload,
+        interval: Interval,
+        start_after: Optional[datetime.datetime] = None,
+    ) -> ObjectId:
+        """
+        Schedule task to run periodically
+
+        Parameters
+        ----------
+        name: str
+            Task name
+        payload: BaseTaskPayload
+            Payload to use for scheduled task
+        interval: Interval
+            Interval specification
+        start_after: Optional[datetime.datetime]
+            Start after this time
+
+        Returns
+        -------
+        ObjectId
+            PeriodicTask ID
+        """
+        assert self.user.id == payload.user_id
+        periodic_task = PeriodicTask(
+            name=name,
+            task="featurebyte.worker.task_executor.execute_task",
+            interval=interval,
+            args=[],
+            kwargs=payload.json_dict(),
+            start_after=start_after,
+        )
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        await periodic_task_service.create_document(data=periodic_task)
+        return periodic_task.id
+
+    async def schedule_cron_task(
+        self,
+        name: str,
+        payload: BaseTaskPayload,
+        crontab: Crontab,
+        start_after: Optional[datetime.datetime] = None,
+    ) -> ObjectId:
+        """
+        Schedule task to run on cron setting
+
+        Parameters
+        ----------
+        name: str
+            Task name
+        payload: BaseTaskPayload
+            Payload to use for scheduled task
+        crontab: Crontab
+            Cron specification
+        start_after: Optional[datetime.datetime]
+            Start after this time
+
+        Returns
+        -------
+        ObjectId
+            PeriodicTask ID
+        """
+        assert self.user.id == payload.user_id
+        periodic_task = PeriodicTask(
+            name=name,
+            task="featurebyte.worker.task_executor.execute_task",
+            crontab=crontab,
+            args=[],
+            kwargs=payload.json_dict(),
+            start_after=start_after,
+        )
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        await periodic_task_service.create_document(data=periodic_task)
+        return periodic_task.id
+
+    async def get_periodic_task(self, periodic_task_id: ObjectId) -> PeriodicTask:
+        """
+        Retrieve periodic task
+
+        Parameters
+        ----------
+        periodic_task_id: ObjectId
+            PeriodicTask ID
+
+        Returns
+        -------
+        PeriodicTask
+        """
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        return await periodic_task_service.get_document(document_id=periodic_task_id)
+
+    async def get_periodic_task_by_name(self, name: str) -> Optional[PeriodicTask]:
+        """
+        Retrieve periodic task
+
+        Parameters
+        ----------
+        name: str
+            name of the periodic task
+
+        Returns
+        -------
+        PeriodicTask
+        """
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+
+        result = await periodic_task_service.list_documents(
+            page=1,
+            page_size=0,
+            query_filter={"name": name},
+        )
+
+        data = result["data"]
+        if data:
+            return PeriodicTask(**data[0])
+
+        return None
+
+    async def delete_periodic_task(self, periodic_task_id: ObjectId) -> None:
+        """
+        Delete periodic task
+
+        Parameters
+        ----------
+        periodic_task_id: ObjectId
+            PeriodicTask ID
+        """
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        await periodic_task_service.delete_document(document_id=periodic_task_id)
+
+    async def delete_periodic_task_by_name(self, name: str) -> None:
+        """
+        Delete periodic task by name
+
+        Parameters
+        ----------
+        name: str
+            Document Name
+        """
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        result = await periodic_task_service.list_documents(
+            page=1,
+            page_size=0,
+            query_filter={"name": name},
+        )
+
+        data = result["data"]
+        if not data:
+            logger.error(f"Document with name {name} not found")
+        else:
+            await periodic_task_service.delete_document(document_id=data[0]["_id"])

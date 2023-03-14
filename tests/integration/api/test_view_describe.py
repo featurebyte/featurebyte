@@ -5,16 +5,22 @@ import pandas as pd
 from pandas.testing import assert_series_equal
 
 from featurebyte.api.dimension_view import DimensionView
-from featurebyte.api.event_view import EventView
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SlowlyChangingView
 
 
-def test_event_view_describe(snowflake_event_data):
+def _to_utc_no_offset(date):
+    """
+    Comvert timestamp to timezone naive UTC
+    """
+    return pd.to_datetime(date, utc=True).tz_localize(None)
+
+
+def test_event_view_describe(event_data):
     """
     Test describe for EventView
     """
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = event_data.get_view()
 
     describe_df = event_view.describe()
     assert describe_df.columns.tolist() == [
@@ -27,7 +33,8 @@ def test_event_view_describe(snowflake_event_data):
         "ÀMOUNT",
         "TRANSACTION_ID",
     ]
-    assert describe_df.index.tolist() == [
+
+    expected_row_idx = [
         "dtype",
         "unique",
         "%missing",
@@ -42,36 +49,42 @@ def test_event_view_describe(snowflake_event_data):
         "50%",
         "75%",
         "max",
-        "min TZ offset",
-        "max TZ offset",
     ]
+    expected_min_timestamp = pd.to_datetime("2001-01-01 00:23:02.000349")
+    expected_max_timestamp = pd.to_datetime("2002-01-01 22:43:16.000409")
+    if event_data.name == "snowflake_event_data":
+        # Snowflake event data has timestamps with tz offsets
+        expected_row_idx += [
+            "min TZ offset",
+            "max TZ offset",
+        ]
 
-    assert describe_df.shape == (16, 8)
-    assert describe_df["ËVENT_TIMESTAMP"]["min"] == pd.to_datetime(
-        "2001-01-01 01:35:16.000223+01:00"
-    )
-    assert describe_df["ËVENT_TIMESTAMP"]["max"] == pd.to_datetime(
-        "2002-01-02 18:08:53.000960+22:00"
-    )
+    assert describe_df.index.tolist() == expected_row_idx
+    assert describe_df.shape == (len(expected_row_idx), 8)
+    assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["min"]) == expected_min_timestamp
+    assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
 
-def test_event_view_describe_with_date_range(snowflake_event_data):
+def test_event_view_describe_with_date_range(event_data):
     """
     Test describe for EventView with date range
     """
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = event_data.get_view()
     sample_params = {
         "from_timestamp": "2001-10-10",
         "to_timestamp": "2001-10-14",
     }
+
     describe_df = event_view.describe(**sample_params)
-    assert describe_df.shape == (16, 8)
-    assert describe_df["ËVENT_TIMESTAMP"]["min"] == pd.to_datetime(
-        "2001-10-10 00:15:16.000751+00:00"
-    )
-    assert describe_df["ËVENT_TIMESTAMP"]["max"] == pd.to_datetime(
-        "2001-10-14 17:51:02.000709+19:00"
-    )
+    expected_num_rows = 16
+    expected_min_timestamp = pd.to_datetime("2001-10-10 00:15:16.000751")
+    expected_max_timestamp = pd.to_datetime("2001-10-13 23:50:48.000003")
+    if event_data.name != "snowflake_event_data":
+        expected_num_rows = 14
+
+    assert describe_df.shape == (expected_num_rows, 8)
+    assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["min"]) == expected_min_timestamp
+    assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
     # describe single non-numeric column
     col_describe_df = event_view["TRANSACTION_ID"].describe(**sample_params)
@@ -106,11 +119,11 @@ def test_event_view_describe_with_date_range(snowflake_event_data):
     )
 
 
-def test_item_view_describe(snowflake_item_data):
+def test_item_view_describe(item_data):
     """
     Test describe for ItemView
     """
-    item_view = ItemView.from_item_data(snowflake_item_data)
+    item_view = ItemView.from_item_data(item_data)
 
     describe_df = item_view.describe()
     assert describe_df.columns.tolist() == [
@@ -122,7 +135,7 @@ def test_item_view_describe(snowflake_item_data):
         "item_id",
         "item_type",
     ]
-    assert describe_df.index.tolist() == [
+    expected_row_idx = [
         "dtype",
         "unique",
         "%missing",
@@ -137,24 +150,27 @@ def test_item_view_describe(snowflake_item_data):
         "50%",
         "75%",
         "max",
-        "min TZ offset",
-        "max TZ offset",
     ]
+    expected_min_timestamp = pd.to_datetime("2001-01-01 00:23:02.000349")
+    expected_max_timestamp = pd.to_datetime("2002-01-01 22:43:16.000409")
+    if item_data.name == "snowflake_item_data":
+        # Snowflake event data has timestamps with tz offsets
+        expected_row_idx += [
+            "min TZ offset",
+            "max TZ offset",
+        ]
 
-    assert describe_df.shape == (16, 7)
-    assert describe_df["ËVENT_TIMESTAMP"]["min"] == pd.to_datetime(
-        "2001-01-01 01:35:16.000223+01:00"
-    )
-    assert describe_df["ËVENT_TIMESTAMP"]["max"] == pd.to_datetime(
-        "2002-01-02 18:08:53.000960+22:00"
-    )
+    assert describe_df.index.tolist() == expected_row_idx
+    assert describe_df.shape == (len(expected_row_idx), 7)
+    assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["min"]) == expected_min_timestamp
+    assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
 
-def test_dimension_view_describe(snowflake_dimension_data):
+def test_dimension_view_describe(dimension_data):
     """
     Test sample for DimensionView
     """
-    dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    dimension_view = DimensionView.from_dimension_data(dimension_data)
     describe_df = dimension_view.describe()
     assert describe_df.columns.tolist() == [
         "created_at",
@@ -176,11 +192,11 @@ def test_dimension_view_describe(snowflake_dimension_data):
     assert describe_df.shape == (9, 4)
 
 
-def test_scd_view_describe(snowflake_scd_data):
+def test_scd_view_describe(scd_data):
     """
     Test sample for DimensionView
     """
-    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
     describe_df = scd_view.describe()
     assert describe_df.columns.tolist() == [
         "Effective Timestamp",
@@ -188,7 +204,7 @@ def test_scd_view_describe(snowflake_scd_data):
         "User Status",
         "ID",
     ]
-    assert describe_df.index.tolist() == [
+    expected_row_idx = [
         "dtype",
         "unique",
         "%missing",
@@ -203,10 +219,17 @@ def test_scd_view_describe(snowflake_scd_data):
         "50%",
         "75%",
         "max",
-        "min TZ offset",
-        "max TZ offset",
     ]
+    expected_min_timestamp = pd.to_datetime("2001-01-01 12:00:00")
+    expected_max_timestamp = pd.to_datetime("2002-01-01 04:00:00")
+    if scd_data.name == "snowflake_scd_data":
+        # Snowflake event data has timestamps with tz offsets
+        expected_row_idx += [
+            "min TZ offset",
+            "max TZ offset",
+        ]
 
-    assert describe_df.shape == (16, 4)
-    assert describe_df["Effective Timestamp"]["min"] == pd.to_datetime("2001-01-01 12:00:00+00:00")
-    assert describe_df["Effective Timestamp"]["max"] == pd.to_datetime("2002-01-01 04:00:00+00:00")
+    assert describe_df.index.tolist() == expected_row_idx
+    assert describe_df.shape == (len(expected_row_idx), 4)
+    assert _to_utc_no_offset(describe_df["Effective Timestamp"]["min"]) == expected_min_timestamp
+    assert _to_utc_no_offset(describe_df["Effective Timestamp"]["max"]) == expected_max_timestamp

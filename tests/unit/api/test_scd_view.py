@@ -1,12 +1,14 @@
 """
 Unit tests for SlowlyChangingView class
 """
+import textwrap
+
 import pytest
 
 from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.exception import JoinViewMismatchError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import get_node
+from tests.util.helper import check_sdk_code_generation, get_node
 
 
 class TestSlowlyChangingView(BaseViewTestSuite):
@@ -20,6 +22,24 @@ class TestSlowlyChangingView(BaseViewTestSuite):
     factory_method = SlowlyChangingView.from_slowly_changing_data
     view_class = SlowlyChangingView
     bool_col = "col_boolean"
+    expected_view_with_raw_accessor_sql = """
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "is_active" AS "is_active",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
+      CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      CAST("created_at" AS STRING) AS "created_at",
+      "cust_id" AS "cust_id",
+      (
+        "cust_id" + 1
+      ) AS "new_col"
+    FROM "sf_database"."sf_schema"."scd_table"
+    LIMIT 10
+    """
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
         assert row_subset.natural_key_column == view_under_test.natural_key_column
@@ -49,7 +69,9 @@ def test_get_join_column(snowflake_scd_view):
     assert column == "col_text"
 
 
-def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
+def test_event_view_join_scd_view(
+    snowflake_event_view, snowflake_event_data, snowflake_scd_view, snowflake_scd_data
+):
     """
     Test additional join parameters are added for SCDView
     """
@@ -65,7 +87,6 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
             "col_binary",
             "col_boolean",
             "event_timestamp",
-            "created_at",
             "cust_id",
         ],
         "left_output_columns": [
@@ -76,7 +97,6 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
             "col_binary",
             "col_boolean",
             "event_timestamp",
-            "created_at",
             "cust_id",
         ],
         "right_input_columns": ["col_float", "col_binary", "col_boolean", "created_at", "cust_id"],
@@ -95,7 +115,24 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
             "end_timestamp_column": "end_timestamp",
             "left_timestamp_column": "event_timestamp",
         },
+        "metadata": {"type": "join", "on": None, "rsuffix": "_scd"},
     }
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        snowflake_event_view,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_scd_data.id: {
+                "name": snowflake_scd_data.name,
+                "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+            },
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+            },
+        },
+    )
 
 
 def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
@@ -127,6 +164,22 @@ def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
             "event_parameters": None,
         },
     }
+
+    # check SDK code generation
+    scd_data_columns_info = snowflake_scd_data.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_scd_data.id: {
+                "name": snowflake_scd_data.name,
+                "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in as_features method
+                "columns_info": scd_data_columns_info,
+            }
+        },
+    )
 
 
 def test_scd_view_as_feature__invalid_duration(snowflake_scd_data, cust_id_entity):
@@ -173,3 +226,67 @@ def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity)
         },
         "event_parameters": None,
     }
+
+    # check SDK code generation
+    scd_data_columns_info = snowflake_scd_data.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_scd_data.id: {
+                "name": snowflake_scd_data.name,
+                "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in as_features method
+                "columns_info": scd_data_columns_info,
+            }
+        },
+    )
+
+
+def test_sdk_code_generation(saved_scd_data, update_fixtures):
+    """Check SDK code generation"""
+    to_use_saved_data = True
+    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    check_sdk_code_generation(
+        scd_view,
+        to_use_saved_data=to_use_saved_data,
+        fixture_path="tests/fixtures/sdk_code/scd_view.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_scd_data.id,
+    )
+
+
+def test_aggregate_asat_sdk_code_generation(saved_scd_data, transaction_entity):
+    """Test SDK code generation for aggregate asat"""
+    saved_scd_data.col_int.as_entity(transaction_entity.name)
+    snowflake_scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    feature = snowflake_scd_view.groupby(by_keys=["col_int"]).aggregate_asat(
+        value_column="col_float", method="max", feature_name="col_float_max"
+    )
+    expected = """
+    # Generated by SDK version: 0.1.0
+    from bson import ObjectId
+    from featurebyte import SlowlyChangingData
+    from featurebyte import SlowlyChangingView
+
+
+    # scd_data name: "sf_scd_data"
+    slowly_changing_data = SlowlyChangingData.get_by_id(ObjectId("6337f9651050ee7d123466cd"))
+    scd_view = SlowlyChangingView.from_slowly_changing_data(
+        slowly_changing_data=slowly_changing_data,
+        view_mode="manual",
+        drop_column_names=[],
+        column_cleaning_operations=[],
+    )
+    feat = scd_view.groupby(by_keys=["col_int"], category=None).aggregate_asat(
+        value_column="col_float",
+        method="max",
+        feature_name="col_float_max",
+        offset=None,
+        backward=True,
+        skip_fill_na=True,
+    )
+    output = feat
+    """
+    assert feature.definition.strip() == textwrap.dedent(expected).strip()

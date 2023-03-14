@@ -1,0 +1,135 @@
+version: "3.8"
+
+services:
+  mongo-rs:
+    networks:
+      - featurebyte
+    hostname: mongo-rs
+    container_name: mongo-rs
+    image: "mongo:6.0.3"
+    entrypoint: ["/bin/bash", "./scripts/entrypoint.sh"]
+    volumes:
+      - ./entrypoint-mongo.sh:/scripts/entrypoint.sh
+      - ~/.featurebyte/data/mongodb:/data/
+    healthcheck:
+      test: ["CMD", "mongosh", "--port=27022", "--eval", "rs.status()"]
+    logging:
+      driver: local
+
+  redis:
+    networks:
+      - featurebyte
+    hostname: redis
+    container_name: redis
+    image: "redis:6.2.5"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+    logging:
+      driver: local
+
+  featurebyte-server:
+    networks:
+      - featurebyte
+    hostname: featurebyte-server
+    container_name: featurebyte-server
+    image: featurebyte-server:latest
+    depends_on:
+      mongo-rs:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8088:8088"
+    environment:
+      FEATUREBYTE_HOME: /app/.featurebyte
+      MPLCONFIGDIR: /app/matplotlib
+      REDIS_URI: redis://redis:6379
+      MONGODB_URI: mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0
+      API_HOST: 0.0.0.0
+      API_PORT: 8088
+      WORKERS: 3
+      LOG_LEVEL: info
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/status"]
+    volumes:
+      - ./migration.py:/scripts/migration.py
+      - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
+      - ~/.featurebyte/data/spark/staging:/data/staging
+    logging:
+      driver: local
+
+  featurebyte-worker:
+    networks:
+      - featurebyte
+    hostname: featurebyte-worker
+    container_name: featurebyte-worker
+    image: featurebyte-server:latest
+    depends_on:
+      mongo-rs:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      FEATUREBYTE_HOME: /app/.featurebyte
+      MPLCONFIGDIR: /app/matplotlib
+      REDIS_URI: redis://redis:6379
+      MONGODB_URI: mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0
+    entrypoint: |
+      /bin/bash /scripts/entrypoint-worker.sh
+    volumes:
+      - ./entrypoint-worker.sh:/scripts/entrypoint-worker.sh
+      - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
+      - ~/.featurebyte/data/spark/staging:/data/staging
+    logging:
+      driver: local
+
+  spark-thrift:
+    networks:
+      - featurebyte
+    image: featurebyte/cluster-apache-spark:3.3.1
+    container_name: spark-thrift
+    ports:
+      - "10000:10000"
+      - "4040:4040"
+    environment:
+      - SPARK_MASTER=local
+      - SPARK_LOCAL_IP=spark-thrift
+      - "LOCAL_UID=${LOCAL_UID}"
+      - "LOCAL_GID=${LOCAL_GID}"
+    volumes:
+      - ~/.featurebyte/data/spark/staging:/opt/spark/data/staging
+      - spark-warehouse:/opt/spark/data/derby
+    healthcheck:
+      test: netstat -ltn | grep -c 10000
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    command:
+      - /bin/sh
+      - -c
+      - |
+        /opt/spark/bin/spark-submit \
+        --class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 \
+        --name Thrift JDBC/ODBC Server \
+        --hiveconf hive.server2.thrift.port=10000 \
+        --hiveconf hive.server2.thrift.bind.host=0.0.0.0 \
+        --hiveconf derby.system.home=/opt/spark/data/derby \
+        --master=local[4] \
+        --jars /opt/spark/jars/delta-core_2.12-2.2.0.jar,/opt/spark/jars/delta-storage-2.2.0.jar,/opt/spark/jars/antlr4-runtime-4.8.jar \
+        --conf spark.driver.memory=6G \
+        --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
+        --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
+        --conf spark.sql.catalogImplementation=hive  \
+        --conf spark.sql.warehouse.dir=file:///opt/spark/data/derby/warehouse/ \
+        --conf spark.sql.hive.thriftServer.singleSession=false \
+        --conf spark.hadoop.metastore.catalog.default=spark \
+        --conf spark.sql.adaptive.enabled=true
+    logging:
+      driver: local
+
+networks:
+  featurebyte:
+    driver: bridge
+    external: true
+
+volumes:
+  spark-warehouse:

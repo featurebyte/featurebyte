@@ -16,18 +16,22 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_json
-from tests.unit.routes.base import BaseApiTestSuite
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
-class TestFeatureApi(BaseApiTestSuite):
+class TestFeatureApi(BaseWorkspaceApiTestSuite):
     """
     TestFeatureApi class
     """
 
     class_name = "Feature"
     base_route = "/feature"
-    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
-    namespace_payload = BaseApiTestSuite.load_payload(
+    payload = BaseWorkspaceApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/feature_sum_30m.json"
+    )
+    namespace_payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_namespace.json"
     )
     object_id = str(ObjectId())
@@ -114,13 +118,13 @@ class TestFeatureApi(BaseApiTestSuite):
             },
             (
                 'Feature (name: "sum_30m") object(s) within the same namespace must have '
-                "the same \"entity_ids\" value (namespace: ['63a443938bcb22a734625955'], "
+                "the same \"entity_ids\" value (namespace: ['63f94ed6ea1f050131379214'], "
                 "feature: ['631161373527e8d21e4197ac'])."
             ),
         ),
     ]
 
-    def setup_creation_route(self, api_client):
+    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
         """
         Setup for post route
         """
@@ -131,7 +135,9 @@ class TestFeatureApi(BaseApiTestSuite):
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(f"/{api_object}", json=payload)
+            response = api_client.post(
+                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
+            )
             assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):
@@ -187,6 +193,7 @@ class TestFeatureApi(BaseApiTestSuite):
         expected_response = new_payload.copy()
         expected_response["graph"] = new_response_dict["graph"]
         assert new_response.status_code == HTTPStatus.CREATED
+        expected_response.pop("_COMMENT")
         assert new_response_dict.items() >= expected_response.items()
         assert new_response_dict["version"] == {"name": get_version(), "suffix": 1}
 
@@ -215,28 +222,56 @@ class TestFeatureApi(BaseApiTestSuite):
         """Test new version creation (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
+        graph_origin = QueryGraphModel(**create_response_dict["graph"])
+        graph_node_origin = graph_origin.get_node_by_name("graph_1")
+        assert graph_node_origin.parameters.metadata.column_cleaning_operations == []
+
+        # create a new version
+        column_cleaning_operations = [
+            {
+                "column_name": "col_float",
+                "cleaning_operations": [{"type": "missing", "imputed_value": 0.0}],
+            },
+        ]
         response = test_api_client.post(
             f"{self.base_route}",
             json={
                 "source_feature_id": create_response_dict["_id"],
-                "feature_job_setting": {
-                    "blind_spot": "1d",
-                    "frequency": "1d",
-                    "time_modulo_frequency": "1h",
-                },
+                "data_feature_job_settings": [
+                    {
+                        "data_name": "sf_event_data",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
+                "data_cleaning_operations": [
+                    {
+                        "data_name": "sf_event_data",
+                        "column_cleaning_operations": column_cleaning_operations,
+                    }
+                ],
             },
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED
         assert response_dict["version"] == {"name": get_version(), "suffix": 1}
 
-        groupby_node = response_dict["graph"]["nodes"][1]
-        assert groupby_node["name"] == "groupby_1"
-
-        parameters = groupby_node["parameters"]
+        # check feature job setting using the specified feature job setting
+        graph = QueryGraphModel(**response_dict["graph"])
+        groupby_node = graph.get_node_by_name("groupby_1")
+        parameters = groupby_node.parameters.dict()
         assert parameters["time_modulo_frequency"] == 3600
         assert parameters["frequency"] == 86400
         assert parameters["blind_spot"] == 86400
+
+        # check that the data cleaning operations are applied
+        graph_node = graph.get_node_by_name("graph_1")
+        assert (
+            graph_node.parameters.metadata.column_cleaning_operations == column_cleaning_operations
+        )
 
     def test_create_422__create_new_version(
         self, test_api_client_persistent, create_success_response
@@ -252,6 +287,71 @@ class TestFeatureApi(BaseApiTestSuite):
 
         response_dict = response.json()
         assert response_dict["detail"] == "No change detected on the new feature version."
+
+    def test_create_422__create_new_version__unrelated_cleaning_operations(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test create new version (unprocessable entity due to unrelated cleaning operations)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        response = test_api_client.post(
+            f"{self.base_route}",
+            json={
+                "source_feature_id": create_response_dict["_id"],
+                "data_cleaning_operations": [
+                    {"data_name": "random_data", "column_cleaning_operations": []}
+                ],
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+        response_dict = response.json()
+        expected_msg = (
+            "Data cleaning operation(s) does not result a new feature version. "
+            "This is because the new feature version is the same as the source feature."
+        )
+        assert response_dict["detail"] == expected_msg
+
+    def test_list_200__filter_by_name_and_version(
+        self, test_api_client_persistent, create_multiple_success_responses
+    ):
+        """Test list (success) when filtering by name and version"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_multiple_success_responses[0].json()
+        new_version_response = test_api_client.post(
+            f"{self.base_route}",
+            json={
+                "source_feature_id": create_response_dict["_id"],
+                "data_feature_job_settings": [
+                    {
+                        "data_name": "sf_event_data",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
+            },
+        )
+
+        # check retrieving old feature version
+        version = create_response_dict["version"]["name"]
+        response = test_api_client.get(
+            self.base_route, params={"name": create_response_dict["name"], "version": version}
+        )
+        response_dict = response.json()
+        assert response_dict["total"] == 1
+        assert response_dict["data"] == [create_response_dict]
+
+        # check retrieving new feature version
+        response = test_api_client.get(
+            self.base_route,
+            params={"name": create_response_dict["name"], "version": f"{version}_1"},
+        )
+        response_dict = response.json()
+        assert response_dict["total"] == 1
+        assert response_dict["data"] == [new_version_response.json()]
 
     def test_list_404__feature_list_not_found(
         self,
@@ -350,13 +450,18 @@ class TestFeatureApi(BaseApiTestSuite):
         version = get_version()
         expected_info_response = {
             "name": "sum_30m",
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+            ],
+            "tabular_data": [
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
+            ],
             "dtype": "FLOAT",
             "default_version_mode": "AUTO",
             "version_count": 1,
             "readiness": {"this": "DRAFT", "default": "DRAFT"},
             "version": {"this": version, "default": version},
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
@@ -390,10 +495,16 @@ class TestFeatureApi(BaseApiTestSuite):
             "feature_store_name": feature_store["name"],
             "graph": feature["graph"],
             "node_name": feature["node_name"],
-            "point_in_time_and_serving_name": {
-                "cust_id": "C1",
-                "POINT_IN_TIME": "2022-04-01",
-            },
+            "point_in_time_and_serving_name_list": [
+                {
+                    "cust_id": "C1",
+                    "POINT_IN_TIME": "2022-04-01",
+                },
+                {
+                    "cust_id": "C3",
+                    "POINT_IN_TIME": "2022-04-03",
+                },
+            ],
         }
 
     def test_preview_200(
@@ -416,7 +527,7 @@ class TestFeatureApi(BaseApiTestSuite):
         Test feature preview validation missing point in time
         """
         test_api_client, _ = test_api_client_persistent
-        feature_preview_payload["point_in_time_and_serving_name"] = {
+        feature_preview_payload["point_in_time_and_serving_name_list"][0] = {
             "cust_id": "C1",
         }
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
@@ -428,7 +539,7 @@ class TestFeatureApi(BaseApiTestSuite):
         Test feature preview validation missing point in time
         """
         test_api_client, _ = test_api_client_persistent
-        feature_preview_payload["point_in_time_and_serving_name"] = {
+        feature_preview_payload["point_in_time_and_serving_name_list"][0] = {
             "POINT_IN_TIME": "2022-04-01",
         }
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
@@ -440,12 +551,14 @@ class TestFeatureApi(BaseApiTestSuite):
         Test feature preview validation but dict is not provided
         """
         test_api_client, _ = test_api_client_persistent
-        feature_preview_payload["point_in_time_and_serving_name"] = tuple(["2022-04-01", "C1"])
+        feature_preview_payload["point_in_time_and_serving_name_list"][0] = tuple(
+            ["2022-04-01", "C1"]
+        )
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == [
             {
-                "loc": ["body", "point_in_time_and_serving_name"],
+                "loc": ["body", "point_in_time_and_serving_name_list", 0],
                 "msg": "value is not a valid dict",
                 "type": "type_error.dict",
             }
@@ -457,7 +570,7 @@ class TestFeatureApi(BaseApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/sql", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0" AS "sum_30m"\n'
+            'SELECT\n  "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 
@@ -470,13 +583,16 @@ class TestFeatureApi(BaseApiTestSuite):
     ):
         """Test get feature job logs"""
         test_api_client, _ = test_api_client_persistent
-        featurelist = create_success_response.json()
-        feature_id = featurelist["_id"]
+        feature_doc = create_success_response.json()
+        feature_id = feature_doc["_id"]
+        graph = QueryGraphModel(**feature_doc["graph"])
+        groupby_node = graph.get_node_by_name("groupby_1")
+        aggregation_id = groupby_node.parameters.aggregation_id
 
         job_logs = pd.DataFrame(
             {
                 "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
-                "AGGREGATION_ID": ["sum_fba233e0f502088c233315a322f4c51e939072c0"] * 6,
+                "AGGREGATION_ID": [aggregation_id] * 6,
                 "CREATED_AT": pd.to_datetime(
                     [
                         "2020-01-02 18:00:00",
@@ -505,7 +621,7 @@ class TestFeatureApi(BaseApiTestSuite):
         expected_df = pd.DataFrame(
             {
                 "SESSION_ID": ["SID1", "SID2"],
-                "AGGREGATION_ID": ["sum_fba233e0f502088c233315a322f4c51e939072c0"] * 2,
+                "AGGREGATION_ID": [aggregation_id] * 2,
                 "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
                 "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
                 "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
@@ -519,7 +635,7 @@ class TestFeatureApi(BaseApiTestSuite):
         assert (
             mock_session.execute_query.call_args[0][0]
             == textwrap.dedent(
-                """
+                f"""
             SELECT
               "SESSION_ID",
               "CREATED_AT",
@@ -530,7 +646,7 @@ class TestFeatureApi(BaseApiTestSuite):
             WHERE
               "CREATED_AT" >= CAST('2022-01-01 10:00:00' AS TIMESTAMPNTZ)
               AND "CREATED_AT" < CAST('2022-01-02 10:00:00' AS TIMESTAMPNTZ)
-              AND "AGGREGATION_ID" IN ('sum_fba233e0f502088c233315a322f4c51e939072c0')
+              AND "AGGREGATION_ID" IN ('{aggregation_id}')
               AND "TILE_TYPE" = 'ONLINE'
             """
             ).strip()

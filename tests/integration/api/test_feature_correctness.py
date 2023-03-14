@@ -5,15 +5,13 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.api.types import is_numeric_dtype
 
-from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.logger import logger
 from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
-from tests.util.helper import get_lagged_series_pandas
+from tests.util.helper import fb_assert_frame_equal, get_lagged_series_pandas
 
 
 def calculate_aggregate_over_ground_truth(
@@ -198,63 +196,6 @@ def sum_func(values):
     return values.sum()
 
 
-def assert_dict_equal(s1, s2):
-    """
-    Check two dict like columns are equal
-
-    Parameters
-    ----------
-    s1 : Series
-        First series
-    s2 : Series
-        Second series
-    """
-
-    def _json_normalize(x):
-        # json conversion during preview changed None to nan
-        if x is None or np.nan:
-            return None
-        return json.loads(x)
-
-    s1 = s1.apply(_json_normalize)
-    s2 = s2.apply(_json_normalize)
-    pd.testing.assert_series_equal(s1, s2)
-
-
-def fb_assert_frame_equal(df, df_expected, dict_like_columns=None):
-    """
-    Check that two DataFrames are equal
-
-    Parameters
-    ----------
-    df : DataFrame
-        DataFrame to check
-    df_expected : DataFrame
-        Reference DataFrame
-    dict_like_columns : list | None
-        List of dict like columns which will be compared accordingly, not just exact match
-    """
-
-    assert df.columns.tolist() == df_expected.columns.tolist()
-
-    regular_columns = df.columns.tolist()
-    if dict_like_columns is not None:
-        assert isinstance(dict_like_columns, list)
-        regular_columns = [col for col in regular_columns if col not in dict_like_columns]
-
-    if regular_columns:
-        for col in regular_columns:
-            if is_numeric_dtype(df_expected[col]):
-                df[col] = df[col].astype(float)
-        pd.testing.assert_frame_equal(
-            df[regular_columns], df_expected[regular_columns], check_dtype=False
-        )
-
-    if dict_like_columns:
-        for col in dict_like_columns:
-            assert_dict_equal(df[col], df_expected[col])
-
-
 def add_inter_events_derived_columns(df, event_view):
     """
     Add inter-events columns such as lags
@@ -289,33 +230,22 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     ).dt.tz_localize(None)
 
     tic = time.time()
-    sampled_points = df_expected.sample(n=n_points, random_state=0)
-    for _, preview_time_point in sampled_points.iterrows():
-        preview_param = {
-            "POINT_IN_TIME": preview_time_point["POINT_IN_TIME"],
-            "üser id": preview_time_point["ÜSER ID"],
-        }
-        output = feature_list[feature_list.feature_names].preview(preview_param)
-        output.rename({"üser id": "ÜSER ID"}, axis=1, inplace=True)
-        df_expected = pd.DataFrame([preview_time_point], index=output.index)
-        fb_assert_frame_equal(output, df_expected, dict_like_columns)
+    sampled_points = df_expected.sample(n=n_points, random_state=0).reset_index(drop=True)
+    sampled_points.rename({"ÜSER ID": "üser id"}, axis=1, inplace=True)
+    output = feature_list[feature_list.feature_names].preview(
+        sampled_points[["POINT_IN_TIME", "üser id"]]
+    )
+    fb_assert_frame_equal(output, sampled_points, dict_like_columns)
     elapsed = time.time() - tic
     print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 
 
-def test_aggregate_over(
-    transaction_data_upper_case,
-    observation_set,
-    event_data,
-    config,
-):
+@pytest.fixture(name="feature_parameters")
+def feature_parameters_fixture(source_type):
     """
-    Test that aggregate_over produces correct feature values
+    Parameters for feature tests using aggregate_over
     """
-
-    # Test cases listed here. This is written this way instead of parametrized test is so that all
-    # features can be retrieved in one historical request
-    feature_parameters = [
+    parameters = [
         ("ÀMOUNT", "avg", "2h", "avg_2h", lambda x: x.mean(), None),
         ("ÀMOUNT", "avg", "24h", "avg_24h", lambda x: x.mean(), None),
         ("ÀMOUNT", "min", "24h", "min_24h", lambda x: x.min(), None),
@@ -351,8 +281,23 @@ def test_aggregate_over(
             None,
         ),
     ]
+    if source_type == "spark":
+        parameters = [param for param in parameters if param[1] in ["max", "std", "latest"]]
+    return parameters
 
-    event_view = EventView.from_event_data(event_data)
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+def test_aggregate_over(
+    transaction_data_upper_case,
+    observation_set,
+    event_data,
+    config,
+    feature_parameters,
+):
+    """
+    Test that aggregate_over produces correct feature values
+    """
+    event_view = event_data.get_view()
     feature_job_setting = event_data.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
         frequency=feature_job_setting.frequency,
@@ -432,6 +377,8 @@ def test_aggregate_over(
     feature_list = FeatureList(features, name="feature_list")
 
     dict_like_columns = ["count_by_action_24h"]
+    dict_like_columns = [col for col in dict_like_columns if col in df_expected.columns]
+
     check_feature_preview(feature_list, df_expected, dict_like_columns)
 
     tic = time.time()
@@ -442,14 +389,6 @@ def test_aggregate_over(
     elapsed_historical = time.time() - tic
     logger.debug(f"elapsed historical: {elapsed_historical}")
 
-    # Note: The row output order can be different, so sort before comparing
-    df_expected = df_expected.sort_values(["POINT_IN_TIME", entity_column_name]).reset_index(
-        drop=True
-    )
-    df_historical_features = df_historical_features.sort_values(
-        ["POINT_IN_TIME", entity_column_name]
-    ).reset_index(drop=True)
-
     # expect point-in-time to be converted to UTC without timezone
     df_expected["POINT_IN_TIME"] = pd.to_datetime(
         df_expected["POINT_IN_TIME"], utc=True
@@ -458,6 +397,7 @@ def test_aggregate_over(
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_asat(
     scd_dataframe,
     scd_observation_set,

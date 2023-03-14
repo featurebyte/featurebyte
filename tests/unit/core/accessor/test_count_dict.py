@@ -6,7 +6,7 @@ import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from tests.util.helper import get_node
+from tests.util.helper import check_sdk_code_generation, get_node
 
 
 @pytest.mark.parametrize(
@@ -29,7 +29,12 @@ from tests.util.helper import get_node
     ],
 )
 def test_transformation(
-    count_per_category_feature, method, method_kwargs, expected_var_type, expected_parameters
+    snowflake_event_data,
+    count_per_category_feature,
+    method,
+    method_kwargs,
+    expected_var_type,
+    expected_parameters,
 ):
     new_feature = getattr(count_per_category_feature.cd, method)(**method_kwargs)
     assert new_feature.node.output_type == NodeOutputType.SERIES
@@ -39,6 +44,22 @@ def test_transformation(
     assert new_feature.tabular_data_ids == count_per_category_feature.tabular_data_ids
     assert new_feature.entity_ids == count_per_category_feature.entity_ids
 
+    # check SDK code generation
+    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        new_feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail during GroupBy construction
+                "columns_info": event_data_columns_info,
+            }
+        },
+    )
+
 
 def test_non_supported_feature_type(bool_feature):
     """Test count dict accessor on non-supported type"""
@@ -47,14 +68,17 @@ def test_non_supported_feature_type(bool_feature):
     assert str(exc.value) == "Can only use .cd accessor with count per category features"
 
 
-def test_cosine_similarity(count_per_category_feature, count_per_category_feature_2h):
+def test_cosine_similarity(
+    snowflake_event_data, count_per_category_feature, count_per_category_feature_2h
+):
     """
     Test cosine_similarity operation
     """
     result = count_per_category_feature.cd.cosine_similarity(count_per_category_feature_2h)
     result_dict = result.dict()
     assert result_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
         {"source": "groupby_1", "target": "project_2"},
         {"source": "project_2", "target": "cosine_similarity_1"},
@@ -67,6 +91,22 @@ def test_cosine_similarity(count_per_category_feature, count_per_category_featur
         "parameters": {},
         "output_type": "series",
     }
+
+    # check SDK code generation
+    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        result,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail during GroupBy construction
+                "columns_info": event_data_columns_info,
+            }
+        },
+    )
 
 
 def test_cosine_similarity__other_not_dict_series(float_feature, count_per_category_feature):
@@ -103,10 +143,13 @@ def test_get_value_from_dictionary__validation_fails(float_feature, count_per_ca
     assert "not a lookup feature" in str(exc)
 
 
-def test_get_value_from_dictionary__success(count_per_category_feature, sum_per_category_feature):
+def test_get_value_from_dictionary__success(
+    snowflake_event_data, count_per_category_feature, sum_per_category_feature
+):
     """Test get_value method"""
     # count don't have parent column & sum has parent column,
     # use different aggregation methods to cover both cases
+    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
     for per_cat_feat in [count_per_category_feature, sum_per_category_feature]:
         # check the count_dict has a proper dtype
         count_dict_op_struct = per_cat_feat.graph.extract_operation_structure(
@@ -119,16 +162,32 @@ def test_get_value_from_dictionary__success(count_per_category_feature, sum_per_
         result_dict = result.dict()
         assert result.dtype == "FLOAT"
         assert result_dict["graph"]["edges"] == [
-            {"source": "input_1", "target": "groupby_1"},
+            {"source": "input_1", "target": "graph_1"},
+            {"source": "graph_1", "target": "groupby_1"},
             {"source": "groupby_1", "target": "project_1"},
             {"source": "project_1", "target": "get_value_1"},
         ]
-        assert result_dict["graph"]["nodes"][3] == {
+        assert result_dict["graph"]["nodes"][4] == {
             "name": "get_value_1",
             "output_type": "series",
             "parameters": {"value": "key"},
             "type": "get_value",
         }
+
+        # check SDK code generation
+        check_sdk_code_generation(
+            result,
+            to_use_saved_data=False,
+            data_id_to_info={
+                snowflake_event_data.id: {
+                    "name": snowflake_event_data.name,
+                    "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                    # since the data is not saved, we need to pass in the columns info
+                    # otherwise, entity id will be missing and code generation will fail during GroupBy construction
+                    "columns_info": event_data_columns_info,
+                }
+            },
+        )
 
 
 def test_get_rank_from_dictionary__validation_fails(float_feature, count_per_category_feature):

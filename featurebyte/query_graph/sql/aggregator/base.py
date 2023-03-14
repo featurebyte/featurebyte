@@ -15,7 +15,11 @@ from sqlglot.expressions import Select, alias_, select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    CteStatements,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.online_serving_util import (
     get_online_store_table_name_from_entity_ids,
 )
@@ -121,7 +125,8 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             Aggregation specification
         """
         self.required_serving_names.update(aggregation_spec.serving_names)
-        self.required_entity_ids.update(aggregation_spec.entity_ids)
+        if aggregation_spec.entity_ids is not None:
+            self.required_entity_ids.update(aggregation_spec.entity_ids)
         self.additional_update(aggregation_spec)
 
     @abstractmethod
@@ -279,9 +284,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         return wrapped_table_expr
 
     @abstractmethod
-    def get_common_table_expressions(
-        self, request_table_name: str
-    ) -> list[tuple[str, expressions.Select]]:
+    def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
         """
         Construct any common table expressions (CTE) required to support the aggregation, typically
         the original request table processed in some ways. This will be used to form the WITH
@@ -294,7 +297,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
 
         Returns
         -------
-        list[tuple[str, expressions.Select]]
+        CteStatements
             List of common table expressions as tuples. The first element of the tuple is the name
             of the CTE and the second element is the corresponding sql expression.
         """
@@ -315,7 +318,7 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         super().update(aggregation_spec)
         if self.is_online_serving:
             table_name = get_online_store_table_name_from_entity_ids(
-                set(aggregation_spec.entity_ids)
+                set(aggregation_spec.entity_ids if aggregation_spec.entity_ids is not None else [])
             )
             self.agg_result_names_by_online_store_table[table_name].add(
                 aggregation_spec.agg_result_name

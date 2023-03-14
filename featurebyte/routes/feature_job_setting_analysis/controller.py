@@ -88,9 +88,9 @@ class FeatureJobSettingAnalysisController(
         Task
             Task object for the submitted task
         """
-        task_id = await self.service.create_document_creation_task(
-            data=data, task_manager=self.task_controller.task_manager
-        )
+        # submit a task to run analysis
+        payload = await self.service.create_document_creation_task(data=data)
+        task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
     async def backtest(
@@ -110,9 +110,8 @@ class FeatureJobSettingAnalysisController(
         Task
             Task object for the submitted task
         """
-        task_id = await self.service.create_backtest_task(
-            data=data, task_manager=self.task_controller.task_manager
-        )
+        payload = await self.service.create_backtest_task(data=data)
+        task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
     async def get_feature_job_setting_analysis_report(

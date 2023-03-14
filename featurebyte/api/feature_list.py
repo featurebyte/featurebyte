@@ -36,6 +36,7 @@ from featurebyte.api.api_object import (
     PAGINATED_CALL_PAGE_SIZE,
     ApiObject,
     ConflictResolution,
+    ForeignKeyMapping,
     SavableApiObject,
 )
 from featurebyte.api.base_data import DataApiObject
@@ -50,9 +51,11 @@ from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
 from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import (
+    CodeStr,
     dataframe_from_arrow_stream,
     dataframe_from_json,
     dataframe_to_arrow_bytes,
+    enforce_observation_set_row_order,
 )
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
@@ -90,22 +93,11 @@ from featurebyte.schema.feature_list import (
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 
 
-class CodeObject(str):
-    """
-    Code content
-    """
-
-    def _repr_markdown_(self) -> str:
-        return (
-            '<div style="margin:30px; padding: 20px; border:1px solid #aaa">\n\n'
-            f"```python\n{str(self).strip()}\n```"
-            "\n\n</div>"
-        )
-
-
 class BaseFeatureGroup(FeatureByteBaseModel):
     """
     BaseFeatureGroup class
+
+    This class represents a collection of Feature's that users create.
 
     Parameters
     ----------
@@ -233,18 +225,19 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         )
 
     @typechecked
+    @enforce_observation_set_row_order
     def preview(
         self,
-        point_in_time_and_serving_name: Dict[str, Any],
-    ) -> pd.DataFrame:
+        observation_set: pd.DataFrame,
+    ) -> Optional[pd.DataFrame]:
         """
         Preview a FeatureGroup
 
         Parameters
         ----------
-        point_in_time_and_serving_name : Dict[str, Any]
-            Dictionary consisting the point in time and serving names based on which the feature
-            preview will be computed
+        observation_set : pd.DataFrame
+            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
+            as well as columns with serving names for all entities used by features in the feature list.
 
         Returns
         -------
@@ -262,18 +255,18 @@ class BaseFeatureGroup(FeatureByteBaseModel):
 
         payload = FeatureListPreview(
             feature_clusters=self._get_feature_clusters(),
-            point_in_time_and_serving_name=point_in_time_and_serving_name,
+            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
         )
 
         client = Configurations().get_client()
-        response = client.post(url="/feature_list/preview", json=payload.json_dict())
+        response = client.post("/feature_list/preview", json=payload.json_dict())
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         result = response.json()
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return dataframe_from_json(result)
+        return dataframe_from_json(result)  # pylint: disable=no-member
 
     @property
     def sql(self) -> str:
@@ -307,7 +300,13 @@ class BaseFeatureGroup(FeatureByteBaseModel):
 
 class FeatureGroup(BaseFeatureGroup, ParentMixin):
     """
-    FeatureGroup class
+    FeatureGroup represents a collection of Feature's.
+
+    These Features are typically not production ready, and are mostly used as an in-memory representation while
+    users are still building up their features in the SDK. Note that while this object has a `save` function, it is
+    actually the individual features within this feature group that get persisted. Similarly, the object that
+    gets constructed on the read path does not become a FeatureGroup. The persisted version that users interact with
+    is called a FeatureList.
     """
 
     # documentation metadata
@@ -365,7 +364,21 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
 
 class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     """
-    FeatureListNamespace class
+    FeatureListNamespace represents all the versions of the FeatureList that have the same FeatureList name.
+
+    For example, a user might have created a FeatureList called "my feature list". That feature list might in turn
+    contain 2 features:
+    - feature_1,
+    - feature_2
+
+    The FeatureListNamespace object is primarily concerned with keeping track of version changes to the feature list,
+    and not so much the version of the features within. This means that if a user creates a new version of "my feature
+    list", the feature list namespace will contain a reference to the two versions. A simplified model would look like
+
+      feature_list_namespace = ["my feature list_v1", "my feature list_v2"]
+
+    Even if a user saves a new version of the feature in the feature list (eg. feature_1_v2), the
+    feature_list_namespace will not change.
     """
 
     # class variable
@@ -386,8 +399,8 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         "created_at",
     ]
     _list_foreign_keys = [
-        ("entity_ids", Entity, "entities"),
-        ("tabular_data_ids", DataApiObject, "data"),
+        ForeignKeyMapping("entity_ids", Entity, "entities"),
+        ForeignKeyMapping("tabular_data_ids", DataApiObject, "data"),
     ]
 
     @property
@@ -515,7 +528,9 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
 
 class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, FeatureJobMixin):
     """
-    FeatureList class
+    FeatureList represents the persisted version of a collection of a features.
+
+    The FeatureList is typically how a user interacts with their collection of features.
 
     items : list[Union[Feature, BaseFeatureGroup]]
         List of feature like objects to be used to create the FeatureList
@@ -561,6 +576,28 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
         return {"items": []}
+
+    @classmethod
+    def get(cls, name: str, version: Optional[str] = None) -> FeatureList:
+        """
+        Get a feature list by name
+
+        Parameters
+        ----------
+        name: str
+            Name of the feature list
+        version: Optional[str]
+            Version of the feature list, if None, the default version will be returned
+
+        Returns
+        -------
+        FeatureList
+            Feature list object
+        """
+        if version is None:
+            feature_list_namespace = FeatureListNamespace.get(name=name)
+            return cls.get_by_id(id=feature_list_namespace.default_feature_list_id)
+        return cls._get(name=name, other_params={"version": version})
 
     def _get_create_payload(self) -> dict[str, Any]:
         feature_ids = [feature.id for feature in self.feature_objects.values()]
@@ -620,9 +657,10 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                     feature_store_id = TabularSource(
                         **feature_dict["tabular_source"]
                     ).feature_store_id
-                    feature_store_map[feature_store_id] = feature_store_map.get(
-                        feature_store_id, FeatureStore.get_by_id(feature_store_id)
-                    )
+                    if feature_store_id not in feature_store_map:
+                        feature_store_map[feature_store_id] = FeatureStore.get_by_id(
+                            feature_store_id
+                        )
                     feature_dict["feature_store"] = feature_store_map[feature_store_id]
 
                     # deserialize feature record into feature object
@@ -794,8 +832,30 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         return self._list(include_id=include_id, params={"name": self.name})
 
     @classmethod
-    def list(cls, *args: Any, **kwargs: Any) -> pd.DataFrame:
-        return FeatureListNamespace.list(*args, **kwargs)
+    def list(
+        cls,
+        include_id: Optional[bool] = False,
+        entity: Optional[str] = None,
+        data: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        List saved feature lists
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+        entity: Optional[str]
+            Name of entity used to filter results
+        data: Optional[str]
+            Name of data used to filter results
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of feature lists
+        """
+        return FeatureListNamespace.list(include_id=include_id, entity=entity, data=data)
 
     def list_features(
         self, entity: Optional[str] = None, data: Optional[str] = None
@@ -820,7 +880,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     @typechecked
     def get_historical_features_sql(
         self,
-        training_events: pd.DataFrame,
+        observation_set: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> str:
         """
@@ -828,8 +888,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Parameters
         ----------
-        training_events : pd.DataFrame
-            Training events DataFrame, which should contain the `POINT_IN_TIME` column,
+        observation_set : pd.DataFrame
+            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
             as well as columns with serving names for all entities used by features in the feature list.
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events data has different serving name
@@ -855,7 +915,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         response = client.post(
             "/feature_list/historical_features_sql",
             data={"payload": payload.json()},
-            files={"training_events": dataframe_to_arrow_bytes(training_events)},
+            files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
@@ -866,9 +926,10 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         )
 
     @typechecked
+    @enforce_observation_set_row_order
     def get_historical_features(
         self,
-        training_events: pd.DataFrame,
+        observation_set: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
         max_batch_size: int = 5000,
     ) -> Optional[pd.DataFrame]:
@@ -876,8 +937,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Parameters
         ----------
-        training_events : pd.DataFrame
-            Training events DataFrame, which should contain the `POINT_IN_TIME` column,
+        observation_set : pd.DataFrame
+            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
             as well as columns with serving names for all entities used by features in the feature list.
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events data has different serving name
@@ -918,17 +979,17 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         client = Configurations().get_client()
         output = []
         with alive_bar(
-            total=int(np.ceil(len(training_events) / max_batch_size)),
+            total=int(np.ceil(len(observation_set) / max_batch_size)),
             title="Retrieving Historical Feature(s)",
             **get_alive_bar_additional_params(),
         ) as progress_bar:
-            for _, batch in training_events.groupby(
-                np.arange(len(training_events)) // max_batch_size
+            for _, batch in observation_set.groupby(
+                np.arange(len(observation_set)) // max_batch_size
             ):
                 response = client.post(
                     "/feature_list/historical_features",
                     data={"payload": payload.json()},
-                    files={"training_events": dataframe_to_arrow_bytes(batch)},
+                    files={"observation_set": dataframe_to_arrow_bytes(batch)},
                 )
                 if response.status_code != HTTPStatus.OK:
                     raise RecordRetrievalException(
@@ -968,6 +1029,41 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ------
         RecordCreationException
             When failed to save a new version
+
+        Examples
+        --------
+
+        Create new version of feature list with auto mode. Parameter `features` has no effect if `mode` is `auto`.
+
+        >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
+        >>> feature_list.create_new_version(mode="auto")  # doctest: +SKIP
+
+
+        Create new version of feature list with manual mode (only the versions of the features that are specified are
+        changed). The versions of other features are the same as the origin feature list version.
+
+        >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
+        >>> feature_list.create_new_version(
+        ...   mode="manual",
+        ...   features=[
+        ...     # list of features to update, other features are the same as the original version
+        ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...
+        ...   ]
+        ... )  # doctest: +SKIP
+
+
+        Create new version of feature list with semi-auto mode (uses the current default versions of features except
+        for the features versions that are specified).
+
+        >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
+        >>> feature_list.create_new_version(
+        ...   mode="semi-auto",
+        ...   features=[
+        ...     # list of features to update, other features use the current default versions
+        ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...
+        ...   ]
+        ... )  # doctest: +SKIP
+
         """
         client = Configurations().get_client()
         response = client.post(
@@ -1014,6 +1110,15 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
             allow_update_local=False,
         )
+
+    def as_default_version(self) -> None:
+        """
+        Set the feature list as the default version
+        """
+        self.feature_list_namespace.update(
+            update_payload={"default_feature_list_id": self.id}, allow_update_local=False
+        )
+        assert self.feature_list_namespace.default_feature_list_id == self.id
 
     @typechecked
     def deploy(self, enable: bool, make_production_ready: bool = False) -> None:
@@ -1107,8 +1212,9 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ) as file_object:
             template = Template(file_object.read())
 
-        return CodeObject(
+        return CodeStr(
             template.render(
+                workspace_id=self.workspace_id,
                 headers=json.dumps(headers),
                 header_params=header_params,
                 serving_url=serving_url,

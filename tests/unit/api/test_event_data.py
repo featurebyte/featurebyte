@@ -4,7 +4,8 @@ Unit test for EventData class
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
@@ -21,9 +22,12 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
-from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
+from featurebyte.models.event_data import EventDataModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
+from featurebyte.schema.task import Task, TaskStatus
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture(name="event_data_dict")
@@ -242,8 +246,8 @@ class TestEventDataTestSuite(BaseDataTestSuite):
       "col_text" AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
-      CAST("created_at" AS VARCHAR) AS "created_at",
+      CAST("event_timestamp" AS STRING) AS "event_timestamp",
+      CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."sf_table"
     LIMIT 10
@@ -256,14 +260,16 @@ class TestEventDataTestSuite(BaseDataTestSuite):
     """
     expected_clean_data_sql = """
     SELECT
-      CAST(CASE WHEN "col_int" IS NULL THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int",
+      CAST(CASE WHEN (
+        "col_int" IS NULL
+      ) THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int",
       "col_float" AS "col_float",
       "col_char" AS "col_char",
       "col_text" AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
-      CAST("created_at" AS VARCHAR) AS "created_at",
+      CAST("event_timestamp" AS STRING) AS "event_timestamp",
+      CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."sf_table"
     LIMIT 10
@@ -315,13 +321,16 @@ def test_info(saved_event_data, cust_id_entity):
         "record_creation_date_column": "created_at",
         "default_feature_job_setting": None,
         "status": "DRAFT",
-        "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+        "entities": [
+            {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+        ],
         "column_count": 9,
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table",
         },
+        "workspace_name": "default",
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert info_dict["updated_at"] is not None, info_dict["updated_at"]
@@ -599,17 +608,17 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure__event
     assert expected_msg in str(exc)
 
 
-@pytest.fixture(name="mock_process_store")
-def mock_process_store_fixture():
-    with patch("featurebyte.service.task_manager.ProcessStore") as mock:
-        task_id = ObjectId()
-        mock.return_value.submit = AsyncMock()
-        mock.return_value.submit.return_value = task_id
-        yield mock
+@pytest.fixture(name="mock_celery")
+def mock_celery_fixture():
+    with patch("featurebyte.service.task_manager.celery") as mock_celery:
+        mock_celery.send_task.side_effect = lambda *args, **kwargs: Mock(id=uuid4())
+        mock_celery.AsyncResult.return_value.status = TaskStatus.STARTED
+        yield mock_celery
 
 
-def test_update_default_job_setting__feature_job_setting_analysis_failure(
-    mock_process_store,
+@pytest.mark.asyncio
+async def test_update_default_job_setting__feature_job_setting_analysis_failure(
+    mock_celery,
     saved_event_data,
     config,
 ):
@@ -624,10 +633,10 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure(
         "status": "FAILURE",
         "traceback": "ValueError: Event Data not found",
     }
-    mock_process_store.return_value.get = AsyncMock()
-    mock_process_store.return_value.get.return_value = get_return
-    with pytest.raises(RecordCreationException) as exc:
-        saved_event_data.initialize_default_feature_job_setting()
+    with patch("featurebyte.service.task_manager.TaskManager.get_task") as mock_get_task:
+        mock_get_task.return_value = Task(**get_return)
+        with pytest.raises(RecordCreationException) as exc:
+            saved_event_data.initialize_default_feature_job_setting()
     assert "ValueError: Event Data not found" in str(exc.value)
 
 
@@ -678,8 +687,8 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     assert EventData.get_by_id(id=snowflake_event_data.id) == snowflake_event_data
 
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_event_data = EventData.get("unknown_event_data")
-        _ = lazy_event_data.name
+        EventData.get("unknown_event_data")
+
     expected_msg = (
         'EventData (name: "unknown_event_data") not found. '
         "Please save the EventData object first."
@@ -695,8 +704,7 @@ def test_get_event_data__schema_has_been_changed(mock_get_session, mock_logger, 
     """
     recent_schema = {"column": "INT"}
     mock_get_session.return_value.list_table_schema.return_value = recent_schema
-    lazy_event_data = EventData.get_by_id(saved_event_data.id)
-    _ = lazy_event_data.id
+    event_data = EventData.get_by_id(saved_event_data.id)
     assert mock_logger.warning.call_args.args[0] == "Table schema has been changed."
 
     # this is ok as additional column should not break backward compatibility
@@ -879,6 +887,7 @@ def test_default_feature_job_setting_history(saved_event_data):
         "type",
         "updated_at",
         "user_id",
+        "workspace_id",
     }
 
 
@@ -992,3 +1001,32 @@ def test_accessing_saved_event_data_attributes(saved_event_data):
     saved_event_data.update_default_feature_job_setting(feature_job_setting=feature_job_setting)
     assert saved_event_data.default_feature_job_setting == feature_job_setting
     assert cloned.default_feature_job_setting == feature_job_setting
+
+
+def test_sdk_code_generation(snowflake_database_table, update_fixtures):
+    """Check SDK code generation for unsaved data"""
+    event_data = EventData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="sf_event_data",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        record_creation_date_column="created_at",
+    )
+    check_sdk_code_generation(
+        event_data.frame,
+        to_use_saved_data=False,
+        fixture_path="tests/fixtures/sdk_code/event_data.py",
+        update_fixtures=update_fixtures,
+        data_id=event_data.id,
+    )
+
+
+def test_sdk_code_generation_on_saved_data(saved_event_data, update_fixtures):
+    """Check SDK code generation for saved data"""
+    check_sdk_code_generation(
+        saved_event_data.frame,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/saved_event_data.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_event_data.id,
+    )

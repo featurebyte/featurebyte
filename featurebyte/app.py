@@ -1,11 +1,11 @@
 """
 FastAPI Application
 """
-from typing import Callable, Optional
+from typing import Callable
 
 import uvicorn
+from bson import ObjectId
 from fastapi import Depends, FastAPI, Request
-from pydantic import Field
 
 import featurebyte.routes.context.api as context_api
 import featurebyte.routes.dimension_data.api as dimension_data_api
@@ -18,28 +18,23 @@ import featurebyte.routes.feature_list_namespace.api as feature_list_namespace_a
 import featurebyte.routes.feature_namespace.api as feature_namespace_api
 import featurebyte.routes.feature_store.api as feature_store_api
 import featurebyte.routes.item_data.api as item_data_api
+import featurebyte.routes.periodic_tasks.api as periodic_tasks_api
+import featurebyte.routes.relationship_info.api as relationship_info_api
 import featurebyte.routes.scd_data.api as scd_data_api
 import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.tabular_data.api as tabular_data_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
+import featurebyte.routes.workspace.api as workspace_api
 from featurebyte.common.utils import get_version
 from featurebyte.middleware import request_handler
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema import APIServiceStatus
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import ConfigCredentialProvider
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
-
-
-class User(FeatureByteBaseModel):
-    """
-    Skeleton user class to provide static user for API routes
-    """
-
-    id: Optional[PydanticObjectId] = Field(default=None)
 
 
 def _get_api_deps() -> Callable[[Request], None]:
@@ -67,13 +62,18 @@ def _get_api_deps() -> Callable[[Request], None]:
         request.state.get_credential = ConfigCredentialProvider().get_credential
         request.state.get_storage = get_storage
         request.state.get_temp_storage = get_temp_storage
-
+        workspace_id = ObjectId(request.query_params.get("workspace_id", DEFAULT_WORKSPACE_ID))
         request.state.app_container = AppContainer.get_instance(
             user=request.state.user,
-            persistent=get_persistent(),
+            persistent=request.state.persistent,
             temp_storage=get_temp_storage(),
-            task_manager=TaskManager(user_id=request.state.user.id),
+            task_manager=TaskManager(
+                user=request.state.user,
+                persistent=request.state.persistent,
+                workspace_id=workspace_id,
+            ),
             storage=get_storage(),
+            workspace_id=workspace_id,
         )
 
     return _dep_injection_func
@@ -103,11 +103,14 @@ def get_app() -> FastAPI:
         feature_list_namespace_api,
         feature_namespace_api,
         feature_store_api,
+        relationship_info_api,
         scd_data_api,
         semantic_api,
         tabular_data_api,
         task_api,
         temp_data_api,
+        workspace_api,
+        periodic_tasks_api,
     ]
     dependencies = _get_api_deps()
     for resource_api in resource_apis:

@@ -1,6 +1,7 @@
 """
 DatabricksSession class
 """
+# pylint: disable=duplicate-code
 from __future__ import annotations
 
 from typing import Any, OrderedDict
@@ -11,6 +12,7 @@ import pandas as pd
 
 try:
     from databricks import sql as databricks_sql
+    from databricks.sql.exc import ServerOperationError
 
     HAS_DATABRICKS_SQL_CONNECTOR = True
 except ImportError:
@@ -28,6 +30,8 @@ class DatabricksSession(BaseSession):
     """
     Databricks session class
     """
+
+    _no_schema_error = ServerOperationError
 
     server_hostname: str
     http_path: str
@@ -60,6 +64,10 @@ class DatabricksSession(BaseSession):
     @property
     def database_name(self) -> str:
         return self.featurebyte_catalog
+
+    @classmethod
+    def is_threadsafe(cls) -> bool:
+        return True
 
     async def list_databases(self) -> list[str]:
         cursor = self._connection.cursor().catalogs()

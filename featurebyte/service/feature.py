@@ -3,6 +3,10 @@ FeatureService class
 """
 from __future__ import annotations
 
+from typing import Any
+
+from bson import ObjectId
+
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
@@ -12,6 +16,9 @@ from featurebyte.models.feature import (
     FeatureNamespaceModel,
     FeatureReadiness,
 )
+from featurebyte.persistent import Persistent
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.schema.feature import FeatureCreate, FeatureServiceUpdate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
@@ -20,6 +27,7 @@ from featurebyte.schema.feature_namespace import (
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.tabular_data import DataService
+from featurebyte.service.view_construction import ViewConstructionService
 
 
 async def validate_feature_version_and_namespace_consistency(
@@ -69,6 +77,12 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
 
     document_class = FeatureModel
 
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+        super().__init__(user=user, persistent=persistent, workspace_id=workspace_id)
+        self.view_construction_service = ViewConstructionService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()
         _, count = await self.persistent.find(
@@ -77,6 +91,34 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         )
         return VersionIdentifier(name=version_name, suffix=count or None)
 
+    async def prepare_graph_to_store(self, feature: FeatureModel) -> tuple[QueryGraphModel, str]:
+        """
+        Prepare the graph to store
+
+        Parameters
+        ----------
+        feature: FeatureModel
+            Feature object
+
+        Returns
+        -------
+        Tuple[GraphNode, str]
+            GraphNode object & target node name
+        """
+        # reconstruct view graph node to remove unused column cleaning operations
+        graph, node_name_map = await self.view_construction_service.construct_graph(
+            query_graph=feature.graph,
+            target_node=feature.node,
+            data_cleaning_operations=[],
+        )
+        node = graph.get_node_by_name(node_name_map[feature.node_name])
+
+        # prune the graph to remove unused nodes
+        pruned_graph, pruned_node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
+            target_node=node, aggressive=True
+        )
+        return pruned_graph, pruned_node_name_map[node.name]
+
     async def create_document(self, data: FeatureCreate) -> FeatureModel:
         document = FeatureModel(
             **{
@@ -84,19 +126,22 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
                 "readiness": FeatureReadiness.DRAFT,
                 "version": await self._get_feature_version(data.name),
                 "user_id": self.user.id,
+                "workspace_id": self.workspace_id,
             }
         )
 
         # prepare the raw graph (without getting aggressively pruned) & aggressively pruned graph
         raw_graph = document.graph
-        graph, node_name = document.graph.prepare_to_store(target_node=document.node)
+        graph, node_name = await self.prepare_graph_to_store(feature=document)
 
         async with self.persistent.start_transaction() as session:
             # check any conflict with existing documents
             await self._check_document_unique_constraints(document=document)
 
             # check whether data has been saved at persistent storage
-            data_service = DataService(user=self.user, persistent=self.persistent)
+            data_service = DataService(
+                user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+            )
             for tabular_data_id in data.tabular_data_ids:
                 _ = await data_service.get_document(document_id=tabular_data_id)
 
@@ -113,7 +158,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             assert insert_id == document.id
 
             feature_namespace_service = FeatureNamespaceService(
-                user=self.user, persistent=self.persistent
+                user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
             )
             try:
                 feature_namespace = await feature_namespace_service.get_document(

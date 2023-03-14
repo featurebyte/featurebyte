@@ -28,6 +28,8 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
+from featurebyte.service.version import VersionService
 
 
 class FeatureReadinessService(BaseService):
@@ -36,13 +38,24 @@ class FeatureReadinessService(BaseService):
     consistencies between feature & feature list (version & namespace).
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
-        super().__init__(user, persistent)
-        self.feature_service = FeatureService(user=user, persistent=persistent)
-        self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
-        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
-        self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        workspace_id: ObjectId,
+        feature_service: FeatureService,
+        feature_namespace_service: FeatureNamespaceService,
+        feature_list_service: FeatureListService,
+        feature_list_namespace_service: FeatureListNamespaceService,
+        version_service: VersionService,
+    ):
+        super().__init__(user, persistent, workspace_id)
+        self.feature_service = feature_service
+        self.feature_namespace_service = feature_namespace_service
+        self.feature_list_service = feature_list_service
+        self.feature_list_namespace_service = feature_list_namespace_service
+        self.production_ready_validator = ProductionReadyValidator(
+            self.feature_namespace_service, version_service
         )
 
     async def update_feature_list_namespace(
@@ -203,10 +216,11 @@ class FeatureReadinessService(BaseService):
             )
         return self.conditional_return(document=updated_document, condition=return_document)
 
-    async def update_feature(
+    async def update_feature(  # pylint: disable=unused-argument
         self,
         feature_id: ObjectId,
         readiness: FeatureReadiness,
+        ignore_guardrails: bool = False,
         return_document: bool = True,
     ) -> Optional[FeatureModel]:
         """
@@ -218,6 +232,10 @@ class FeatureReadinessService(BaseService):
             Target feature ID
         readiness: FeatureReadiness
             Target feature readiness status
+        ignore_guardrails: bool
+            Allow a user to specify if they want to ignore any guardrails when updating this feature. This should
+            currently only apply of the FeatureReadiness value is being updated to PRODUCTION_READY. This should
+            be a no-op for all other scenarios.
         return_document: bool
             Whether to return updated document
 

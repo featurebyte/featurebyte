@@ -12,6 +12,7 @@ from unittest.mock import Mock
 import pytest
 import pytest_asyncio
 
+from featurebyte.models.base import User
 from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import BaseTask
 
@@ -77,6 +78,7 @@ class BaseTaskTestSuite:
         task = task_class(
             payload,
             progress=progress,
+            user=User(id=payload.get("user_id")),
             get_persistent=lambda: persistent,
             get_credential=get_credential,
             get_storage=lambda: storage,

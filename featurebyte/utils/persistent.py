@@ -9,6 +9,8 @@ from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
 
 PERSISTENT = None
+DATABASE_NAME = os.environ.get("MONGODB_DB", "featurebyte")
+MONGO_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27021")
 
 
 def get_persistent() -> Persistent:
@@ -22,5 +24,5 @@ def get_persistent() -> Persistent:
     """
     global PERSISTENT  # pylint: disable=global-statement
     if not PERSISTENT:
-        PERSISTENT = MongoDB(uri=os.environ.get("MONGODB_URI", "mongodb://localhost:27021"))
+        PERSISTENT = MongoDB(uri=MONGO_URI, database=DATABASE_NAME)
     return PERSISTENT

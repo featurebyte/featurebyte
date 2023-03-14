@@ -13,16 +13,17 @@ from featurebyte_freeware.feature_job_analysis.database import EventDataset
 from featurebyte_freeware.feature_job_analysis.schema import FeatureJobSetting
 
 from featurebyte.logger import logger
-from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisData,
     FeatureJobSettingAnalysisModel,
 )
-from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
 )
+from featurebyte.service.event_data import EventDataService
+from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.manager import SessionManager
 from featurebyte.worker.task.base import BaseTask
 
@@ -37,42 +38,24 @@ class FeatureJobSettingAnalysisTask(BaseTask):
     async def execute(self) -> Any:
         """
         Execute the task
-
-        Raises
-        ------
-        ValueError
-            Event data or feature store records not found
         """
         self.update_progress(percent=0, message="Preparing data")
         payload = cast(FeatureJobSettingAnalysisTaskPayload, self.payload)
         persistent = self.get_persistent()
 
         # retrieve event data
-        query_filter = {"_id": payload.event_data_id}
-        document = await persistent.find_one(
-            collection_name=EventDataModel.collection_name(),
-            query_filter=query_filter,
-            user_id=payload.user_id,
+        event_data_service = EventDataService(
+            user=self.user, persistent=persistent, workspace_id=self.payload.workspace_id
         )
-        if not document:
-            message = "Event Data not found"
-            logger.error(message, extra={"query_filter": query_filter})
-            raise ValueError(message)
-
-        event_data = EventDataModel(**document)
+        event_data = await event_data_service.get_document(document_id=payload.event_data_id)
 
         # retrieve feature store
-        query_filter = {"_id": event_data.tabular_source.feature_store_id}
-        document = await persistent.find_one(
-            collection_name=FeatureStoreModel.collection_name(),
-            query_filter=query_filter,
-            user_id=payload.user_id,
+        feature_store_service = FeatureStoreService(
+            user=self.user, persistent=persistent, workspace_id=self.payload.workspace_id
         )
-        if not document:
-            message = "Feature Store not found"
-            logger.error(message, extra={"query_filter": query_filter})
-            raise ValueError(message)
-        feature_store = FeatureStoreModel(**document)
+        feature_store = await feature_store_service.get_document(
+            document_id=event_data.tabular_source.feature_store_id
+        )
 
         # establish database session
         session_manager = SessionManager(
@@ -90,11 +73,11 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             table_details=event_data.tabular_source.table_details.dict(),
             creation_date_column=event_data.record_creation_date_column,
             event_timestamp_column=event_data.event_timestamp_column,
-            sql_query_func=db_session.execute_query_blocking,
+            sql_query_func=db_session.execute_query,
         )
 
         self.update_progress(percent=5, message="Running Analysis")
-        analysis = create_feature_job_settings_analysis(
+        analysis = await create_feature_job_settings_analysis(
             event_dataset=event_dataset,
             **payload.json_dict(),
         )
@@ -112,12 +95,13 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         )
 
         self.update_progress(percent=95, message="Saving Analysis")
-        insert_id = await persistent.insert_one(
-            collection_name=FeatureJobSettingAnalysisModel.collection_name(),
-            document=analysis_doc.dict(by_alias=True),
-            user_id=payload.user_id,
+        feature_job_settings_analysis_service = FeatureJobSettingAnalysisService(
+            user=self.user, persistent=persistent, workspace_id=self.payload.workspace_id
         )
-        assert insert_id == payload.output_document_id
+        analysis_doc = await feature_job_settings_analysis_service.create_document(
+            data=analysis_doc
+        )
+        assert analysis_doc.id == payload.output_document_id
 
         # store analysis data in storage
         analysis_data = FeatureJobSettingAnalysisData(**analysis.dict())
@@ -142,27 +126,19 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
     async def execute(self) -> None:
         """
         Execute the task
-
-        Raises
-        ------
-        ValueError
-            Event data or feature store records not found
         """
         self.update_progress(percent=0, message="Preparing data")
         payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
         persistent = self.get_persistent()
 
         # retrieve analysis doc from persistent
-        query_filter = {"_id": payload.feature_job_setting_analysis_id}
-        document = await persistent.find_one(
-            collection_name=FeatureJobSettingAnalysisModel.collection_name(),
-            query_filter=query_filter,
-            user_id=payload.user_id,
+        feature_job_settings_analysis_service = FeatureJobSettingAnalysisService(
+            user=self.user, persistent=persistent, workspace_id=self.payload.workspace_id
         )
-        if not document:
-            message = "Feature Job Setting Analysis not found"
-            logger.error(message, extra={"query_filter": query_filter})
-            raise ValueError(message)
+        analysis_doc = await feature_job_settings_analysis_service.get_document(
+            document_id=payload.feature_job_setting_analysis_id
+        )
+        document = analysis_doc.dict(by_alias=True)
 
         # retrieve analysis data from storage
         storage = self.get_storage()

@@ -10,6 +10,7 @@ import pytest_asyncio
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.worker.task.feature_job_setting_analysis import (
@@ -119,10 +120,11 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         persistent, _ = mongo_persistent
 
         # execute task with payload
+        feature_job_setting_analysis_id = ObjectId()
         payload = copy.deepcopy(self.payload)
-        payload["feature_job_setting_analysis_id"] = ObjectId()
+        payload["feature_job_setting_analysis_id"] = feature_job_setting_analysis_id
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(DocumentNotFoundError) as excinfo:
             await self.execute_task(
                 task_class=self.task_class,
                 payload=payload,
@@ -131,7 +133,10 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
                 storage=storage,
                 temp_storage=temp_storage,
             )
-        assert str(excinfo.value) == "Feature Job Setting Analysis not found"
+        assert str(excinfo.value) == (
+            f'FeatureJobSettingAnalysis (id: "{feature_job_setting_analysis_id}") not found. '
+            "Please save the FeatureJobSettingAnalysis object first."
+        )
 
         # check progress update records
         assert progress.put.call_args_list == [

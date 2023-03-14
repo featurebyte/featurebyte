@@ -1,18 +1,21 @@
 """
 Common test fixtures used across files in integration directory
 """
-# pylint: disable=too-many-lines
-from typing import AsyncIterator
+from typing import AsyncIterator, Dict, List
 
 import asyncio
 import json
 import os
+
+# pylint: disable=too-many-lines
+import shutil
 import sqlite3
 import tempfile
 import textwrap
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
+from pathlib import Path
 from unittest import mock
 
 import numpy as np
@@ -25,7 +28,7 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
-from featurebyte import DatabricksDetails, DimensionView, SnowflakeDetails
+from featurebyte import DatabricksDetails, DimensionView, FeatureJobSetting, SnowflakeDetails
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -33,20 +36,85 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
+from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.config import Configurations
-from featurebyte.enum import InternalName
-from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
-from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.enum import InternalName, SourceType, StorageType
+from featurebyte.feature_manager.manager import FeatureManager
+from featurebyte.feature_manager.model import ExtendedFeatureListModel
+from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.query_graph.node.schema import SQLiteDetails, TableDetails
-from featurebyte.session.databricks import DatabricksSession
+from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
 from featurebyte.session.manager import SessionManager
-from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.tile.databricks_tile import TileManagerDatabricks
-from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
+from featurebyte.tile.snowflake_tile import TileSpec
+
+# Static testing mongodb connection from docker/test/docker-compose.yml
+MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
+
+
+def pytest_collection_modifyitems(config, items):
+    """
+    Re-order the tests such that tests using the same source_type are run together. This prevents
+    premature tear down of fixtures that depend on source_type. This is because if a fixture depends
+    on the source_type fixture, at any one time there can be only one single instance of it with a
+    specific source_type.
+
+    For example, we need to ensure that all tests using Snowflake are run first, then run the Spark
+    tests, etc. Before the Spark tests run, pytest will tear down all the Snowflake fixtures.
+
+    Also handles filtering of integration tests by source_type (specified via --source-types option
+    as a comma separated list).
+    """
+
+    source_types_config = config.getoption("source_types")
+    if source_types_config is not None:
+        filtered_source_types = source_types_config.split(",")
+        filtered_source_types = {source_type.strip() for source_type in filtered_source_types}
+    else:
+        filtered_source_types = None
+
+    def get_source_type_from_item(item):
+        if hasattr(item, "callspec"):
+            source_type = item.callspec.params.get("source_type")
+            if source_type is not None:
+                return source_type
+        return None
+
+    def get_sorting_key(entry):
+
+        index, item = entry
+        extra_ordering_key = ""
+
+        # check for the source_type parameter if available
+        source_type = get_source_type_from_item(item)
+        if source_type is not None:
+            extra_ordering_key = source_type
+
+        # include index as the sorting key to preserve the original ordering
+        return extra_ordering_key, index
+
+    def filter_items_by_source_types(all_items):
+
+        if not filtered_source_types:
+            return all_items
+
+        filtered_items = []
+        for item in all_items:
+            source_type = get_source_type_from_item(item)
+            if source_type is None:
+                source_type = "none"
+            if source_type in filtered_source_types:
+                filtered_items.append(item)
+
+        return filtered_items
+
+    # re-order the tests
+    _ = config
+    sorted_entries = sorted(enumerate(items), key=get_sorting_key)
+    sorted_items = [entry[1] for entry in sorted_entries]
+    filtered_items = filter_items_by_source_types(sorted_items)
+    items[:] = filtered_items
 
 
 @pytest.fixture(name="config", scope="session")
@@ -116,7 +184,20 @@ def event_loop():
     """
     Event loop to be used for async tests
     """
-    return asyncio.get_event_loop()
+    try:
+        loop = asyncio.get_event_loop()
+        yield loop
+        loop.close()
+    except Exception as e:  # pylint: disable=broad-except
+        if "there is no current event loop in thread" in str(e):
+            logger.exception(
+                f"no event loop found. explicitly recreating and resetting new event loop.\n"
+                f"previous error: {str(e)}"
+            )
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            yield loop
+            loop.close()
 
 
 @pytest.fixture(name="persistent", scope="session")
@@ -142,10 +223,9 @@ def mongo_persistent_fixture():
     """
     Mongo persistent fixture
     """
-    mongo_connection = os.getenv("MONGO_CONNECTION")
     database_name = f"test_{ObjectId()}"
-    client = pymongo.MongoClient(mongo_connection)
-    persistent = MongoDB(uri=mongo_connection, database=database_name)
+    client = pymongo.MongoClient(MONGO_CONNECTION)
+    persistent = MongoDB(uri=MONGO_CONNECTION, database=database_name)
     yield persistent, client[database_name]
     client.drop_database(database_name)
 
@@ -173,80 +253,105 @@ def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
         yield
 
 
-@pytest.fixture(name="snowflake_details", scope="session")
-def get_snowflake_details_fixture():
+@pytest.fixture(name="source_type", scope="session", params=["snowflake", "spark"])
+def source_type_fixture(request):
     """
-    Get snowflake details
+    Fixture for the source_type parameter used to create all the other fixtures
+
+    This is the fixture that controls what sources a test will run against. By default, a test will
+    run on all the sources listed in "params" above. If it is desired that a test only runs on a
+    different set of sources, it can be customised at test time using parametrize().
+
+    Example 1
+    ---------
+
+    def my_test(event_data):
+        # event_data will be instantiated using Snowflake, Spark, ... etc. my_test will be executed
+        # multiple times, each time with an EventData from a different source.
+        ...
+
+    Example 2
+    ----------
+
+    @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+    def my_test(event_data):
+        # event_data will be instantiated using Snowflake as the source and my_test only runs once
+        ...
+
     """
-    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    details = SnowflakeDetails(
-        account=os.getenv("SNOWFLAKE_ACCOUNT"),
-        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-        sf_schema=temp_schema_name,
-        database=os.getenv("SNOWFLAKE_DATABASE"),
-    )
-    return details
+    return request.param
 
 
-@pytest.fixture(name="snowflake_featurestore_name", scope="session")
-def get_snowflake_featurestore_name_fixture():
+@pytest.fixture(name="feature_store_details", scope="session")
+def feature_store_details_fixture(source_type, sqlite_filename):
     """
-    Returns the featurestore name that is used by the default feature store in integration tests.
+    Fixture for a BaseDatabaseDetails specific to source_type
     """
-    return "snowflake_featurestore"
 
+    if source_type == "snowflake":
+        schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
+        temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+        return SnowflakeDetails(
+            account=os.getenv("SNOWFLAKE_ACCOUNT"),
+            warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+            sf_schema=temp_schema_name,
+            database=os.getenv("SNOWFLAKE_DATABASE"),
+        )
 
-@pytest.fixture(name="snowflake_feature_store", scope="session")
-def snowflake_feature_store_fixture(
-    mock_get_persistent, snowflake_details, snowflake_featurestore_name
-):
-    """
-    Snowflake feature store fixture
-    """
-    _ = mock_get_persistent
-    feature_store = FeatureStore(
-        name=snowflake_featurestore_name,
-        type="snowflake",
-        details=snowflake_details,
-    )
-    feature_store.save()
-    return feature_store
-
-
-@pytest.fixture(name="databricks_feature_store", scope="session")
-def databricks_feature_store_fixture(mock_get_persistent):
-    """
-    Databricks database source fixture
-    """
-    _ = mock_get_persistent
-    schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    feature_store = FeatureStore(
-        name="databricks_featurestore",
-        type="databricks",
-        details=DatabricksDetails(
+    if source_type == "databricks":
+        schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
+        temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+        return DatabricksDetails(
             server_hostname=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
             featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
             featurebyte_schema=temp_schema_name,
-        ),
-    )
-    feature_store.save()
-    return feature_store
+        )
+
+    if source_type == "spark":
+        schema_name = "featurebyte"
+        temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+        return SparkDetails(
+            host="localhost",
+            port=10000,
+            http_path="cliservice",
+            use_http_transport=False,
+            storage_type=StorageType.FILE,
+            storage_url=f"~/.spark/data/staging/{temp_schema_name}",
+            storage_spark_url=f"file:///opt/spark/data/derby/staging/{temp_schema_name}",
+            featurebyte_catalog="spark_catalog",
+            featurebyte_schema=temp_schema_name,
+        )
+
+    if source_type == "sqlite":
+        return SQLiteDetails(filename=sqlite_filename)
+
+    return NotImplementedError(f"Unexpected source_type: {source_type}")
 
 
-@pytest.fixture(name="sqlite_feature_store", scope="session")
-def sqlite_feature_store_fixture(mock_get_persistent, sqlite_filename):
+@pytest.fixture(name="feature_store_name", scope="session")
+def feature_store_name_fixture(source_type):
     """
-    Sqlite source fixture
+    Feature store name fixture
+    """
+    return f"{source_type}_featurestore"
+
+
+@pytest.fixture(name="feature_store", scope="session")
+def feature_store_fixture(
+    source_type, feature_store_name, feature_store_details, mock_get_persistent
+):
+    """
+    Feature store fixture
     """
     _ = mock_get_persistent
-    return FeatureStore(
-        name="sqlite_datasource",
-        type="sqlite",
-        details=SQLiteDetails(filename=sqlite_filename),
+    feature_store = FeatureStore(
+        name=feature_store_name,
+        type=source_type,
+        details=feature_store_details,
     )
+    feature_store.save()
+    yield feature_store
 
 
 @pytest.fixture(name="mock_config_path_env", scope="session")
@@ -494,92 +599,111 @@ async def datasets_registration_helper_fixture(
     Reusable helper to register all the datasets used in integration tests
     """
 
-    async def register_datasets(session):
+    class DatasetsRegistrationHelper:
+        """
+        Helper to register datasets
+        """
 
-        # EventData table
-        await session.register_table("TEST_TABLE", transaction_data_upper_case, temporary=False)
+        def __init__(self):
+            self.datasets: Dict[str, pd.DataFrame] = {}
 
-        # ItemData table
-        await session.register_table("ITEM_DATA_TABLE", items_dataframe, temporary=False)
+        def add_table(self, table_name: str, df: pd.DataFrame):
+            """
+            Register a table in memory (not yet written to database)
 
-        # DimensionData table
-        await session.register_table(
-            dimension_data_table_name, dimension_dataframe, temporary=False
+            Parameters
+            ----------
+            table_name: str
+                Table name
+            df: DataFrame
+                Pandas DataFrame
+            """
+            self.datasets[table_name] = df.copy()
+
+        async def register_datasets(self, session):
+            """
+            Register all the added tables to data warehouse
+
+            Parameters
+            ----------
+            session: BaseSession
+                Session object
+            """
+            for table_name, df in self.datasets.items():
+                await session.register_table(table_name, df, temporary=False)
+
+        @property
+        def table_names(self) -> List[str]:
+            """
+            List of table names registered
+
+            Returns
+            -------
+            list[str]
+            """
+            return list(self.datasets.keys())
+
+    helper = DatasetsRegistrationHelper()
+
+    # EventData table
+    helper.add_table("TEST_TABLE", transaction_data_upper_case)
+
+    # ItemData table
+    helper.add_table("ITEM_DATA_TABLE", items_dataframe)
+
+    # DimensionData table
+    helper.add_table(dimension_data_table_name, dimension_dataframe)
+
+    # SCD table
+    helper.add_table(scd_data_table_name, scd_dataframe)
+
+    # Tile table for tile manager integration tests
+    df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
+    # Tile table timestamps are TZ-naive
+    df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(
+        df_tiles[InternalName.TILE_START_DATE], utc=True
+    ).dt.tz_localize(None)
+    helper.add_table("TEMP_TABLE", df_tiles)
+
+    yield helper
+
+
+@pytest_asyncio.fixture(name="session", scope="session")
+async def session_fixture(source_type, session_manager, dataset_registration_helper, feature_store):
+    """
+    Fixture for a BaseSession based on source_type
+    """
+    session = await session_manager.get_session(feature_store)
+
+    await dataset_registration_helper.register_datasets(session)
+
+    if source_type == "databricks":
+        await session.execute_query(
+            """
+            CREATE TABLE TEST_TABLE
+            USING CSV
+            OPTIONS (header "true", inferSchema "true")
+            LOCATION 'dbfs:/FileStore/tables/transactions_data_upper_case_2022_10_17.csv';
+            """
         )
 
-        # SCD table
-        await session.register_table(scd_data_table_name, scd_dataframe, temporary=False)
-
-        # Tile table for tile manager integration tests
-        df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
-        # Tile table timestamps are TZ-naive
-        df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(
-            df_tiles[InternalName.TILE_START_DATE], utc=True
-        ).dt.tz_localize(None)
-        await session.register_table("TEMP_TABLE", df_tiles, temporary=False)
-
-    yield register_datasets
-
-
-@pytest_asyncio.fixture(name="snowflake_session", scope="session")
-async def snowflake_session_fixture(
-    session_manager,
-    dataset_registration_helper,
-    snowflake_feature_store,
-):
-    """
-    Snowflake session
-    """
-    session = await session_manager.get_session(snowflake_feature_store)
-    assert isinstance(session, SnowflakeSession)
-
-    await dataset_registration_helper(session)
-
     yield session
 
-    await session.execute_query(
-        f"DROP SCHEMA IF EXISTS {snowflake_feature_store.details.sf_schema}"
-    )
+    if source_type == "snowflake":
+        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name}")
+
+    if source_type == "databricks":
+        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
+
+    if source_type == "spark":
+        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
+        # clean up storage
+        shutil.rmtree(Path(feature_store.details.storage_url).expanduser())
 
 
-@pytest_asyncio.fixture(name="databricks_session", scope="session")
-async def databricks_session_fixture(config, databricks_feature_store):
+def create_generic_tile_spec():
     """
-    Databricks session
-    """
-    session_manager = SessionManager(credentials=config.credentials)
-    session = await session_manager.get_session(databricks_feature_store)
-    assert isinstance(session, DatabricksSession)
-
-    await session.execute_query(
-        """
-        CREATE TABLE TEST_TABLE
-        USING CSV
-        OPTIONS (header "true", inferSchema "true")
-        LOCATION 'dbfs:/FileStore/tables/transactions_data_upper_case_2022_10_17.csv';
-        """
-    )
-
-    yield session
-
-    await session.execute_query(
-        f"DROP SCHEMA IF EXISTS {databricks_feature_store.details.featurebyte_schema} CASCADE"
-    )
-
-
-@pytest_asyncio.fixture(scope="session")
-async def sqlite_session(config, sqlite_feature_store):
-    """
-    SQLite session
-    """
-    session_manager = SessionManager(credentials=config.credentials)
-    return await session_manager.get_session(sqlite_feature_store)
-
-
-@pytest_asyncio.fixture
-async def snowflake_tile(snowflake_session):
-    """
-    Pytest Fixture for TileSnowflake instance
+    Helper to create a generic tile_spec
     """
     col_names_list = [InternalName.TILE_START_DATE, "PRODUCT_ACTION", "CUST_ID", "VALUE"]
     col_names = ",".join(col_names_list)
@@ -591,7 +715,7 @@ async def snowflake_tile(snowflake_session):
     tile_id = "TILE_ID1"
     aggregation_id = "agg_id1"
 
-    tile_spec = TileSpec(
+    return TileSpec(
         time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
@@ -604,24 +728,47 @@ async def snowflake_tile(snowflake_session):
         aggregation_id=aggregation_id,
     )
 
-    yield tile_spec
 
-    await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-    await snowflake_session.execute_query(
-        f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"
-    )
-    await snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
-    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{aggregation_id}_ONLINE")
-    await snowflake_session.execute_query(
-        f"DROP TASK IF EXISTS SHELL_TASK_{aggregation_id}_OFFLINE"
-    )
+@asynccontextmanager
+async def create_snowflake_tile_spec(session):
+    """
+    Helper to create a snowflake tile_spec with snowflake specific clean up
+    """
+    assert session.source_type == "snowflake"
+    tile_spec = None
+    try:
+        tile_spec = create_generic_tile_spec()
+        yield tile_spec
+    finally:
+        if tile_spec is not None:
+            await session.execute_query("DELETE FROM TILE_REGISTRY")
+            await session.execute_query(
+                f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"
+            )
+            await session.execute_query(f"DROP TABLE IF EXISTS {tile_spec.tile_id}")
+            await session.execute_query(
+                f"DROP TASK IF EXISTS SHELL_TASK_{tile_spec.aggregation_id}_ONLINE"
+            )
+            await session.execute_query(
+                f"DROP TASK IF EXISTS SHELL_TASK_{tile_spec.aggregation_id}_OFFLINE"
+            )
 
 
-@pytest_asyncio.fixture
-async def databricks_tile_spec(databricks_session):
+@asynccontextmanager
+async def create_spark_tile_specs(session):
+    """
+    Helper to create a snowflake tile_spec with spark specific clean up
+    """
+    _ = session
+    yield create_generic_tile_spec()
+
+
+@asynccontextmanager
+async def create_databricks_tile_spec(session):
     """
     Pytest Fixture for TileSnowflake instance
     """
+    assert session.source_type == "databricks"
     col_names_list = [InternalName.TILE_START_DATE, "PRODUCT_ACTION", "CUST_ID", "VALUE"]
     col_names = ",".join(col_names_list)
     table_name = "default.TEST_TILE_TABLE_2"
@@ -643,25 +790,37 @@ async def databricks_tile_spec(databricks_session):
         aggregation_id="agg_id1",
     )
 
-    yield tile_spec
+    try:
+        yield tile_spec
+    finally:
+        await session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
 
-    await databricks_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
+
+@pytest_asyncio.fixture(name="tile_spec")
+async def tile_spec_fixture(session):
+    """
+    Pytest Fixture for TileSnowflake instance
+    """
+    creator = None
+    if session.source_type == "snowflake":
+        creator = create_snowflake_tile_spec
+    if session.source_type == "spark":
+        creator = create_spark_tile_specs
+    elif session.source_type == "databricks":
+        creator = create_databricks_tile_spec
+
+    assert creator is not None, f"tile_spec fixture does not support {session.source_type}"
+
+    async with creator(session) as created_tile_spec:
+        yield created_tile_spec
 
 
 @pytest.fixture
-def tile_manager(snowflake_session):
+def tile_manager(session):
     """
-    Feature Manager fixture
+    Tile Manager fixture
     """
-    return TileManagerSnowflake(session=snowflake_session)
-
-
-@pytest.fixture
-def tile_manager_databricks(databricks_session):
-    """
-    Feature Manager fixture
-    """
-    return TileManagerDatabricks(session=databricks_session)
+    return tile_manager_from_session(session=session)
 
 
 @pytest.fixture(name="feature_model_dict")
@@ -670,36 +829,6 @@ def feature_model_dict_feature(test_dir):
     feature_fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
     with open(feature_fixture_path) as file_handle:
         return json.load(file_handle)
-
-
-@pytest_asyncio.fixture
-async def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_store):
-    """
-    Fixture for a ExtendedFeatureModel object
-    """
-    feature_model_dict.update(
-        {
-            "tabular_source": {
-                "feature_store_id": snowflake_feature_store.id,
-                "table_details": TableDetails(table_name="some_random_table"),
-            },
-            "version": "v1",
-            "readiness": FeatureReadiness.DRAFT,
-            "online_enabled": False,
-            "tabular_data_ids": [
-                ObjectId("626bccb9697a12204fb22ea3"),
-                ObjectId("726bccb9697a12204fb22ea3"),
-            ],
-        }
-    )
-    feature = ExtendedFeatureModel(**feature_model_dict)
-    tile_id = feature.tile_specs[0].tile_id
-
-    yield feature
-
-    await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
-    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
 
 
 @pytest.fixture(name="snowflake_feature_expected_tile_spec_dict")
@@ -760,11 +889,11 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
 
 
 @pytest.fixture
-def feature_manager(snowflake_session):
+def feature_manager(session):
     """
     Feature Manager fixture
     """
-    return FeatureManagerSnowflake(session=snowflake_session)
+    return FeatureManager(session=session)
 
 
 @pytest_asyncio.fixture
@@ -883,7 +1012,9 @@ def create_transactions_event_data_from_feature_store(
     )
     expected_dtypes = pd.Series(
         {
-            "ËVENT_TIMESTAMP": "TIMESTAMP_TZ",
+            "ËVENT_TIMESTAMP": "TIMESTAMP_TZ"
+            if feature_store.type == SourceType.SNOWFLAKE
+            else "TIMESTAMP",
             "CREATED_AT": "INT",
             "CUST_ID": "INT",
             "ÜSER ID": "INT",
@@ -914,51 +1045,72 @@ def create_transactions_event_data_from_feature_store(
     return event_data
 
 
-@pytest.fixture(name="snowflake_event_data", scope="session")
-def snowflake_event_data_fixture(
-    snowflake_session,
-    snowflake_feature_store,
+@pytest.fixture(name="event_data_name", scope="session")
+def event_data_name_fixture(source_type):
+    """
+    Fixture for the EventData name
+    """
+    return f"{source_type}_event_data"
+
+
+@pytest.fixture(name="event_data", scope="session")
+def event_data_fixture(
+    session,
+    feature_store,
+    event_data_name,
     user_entity,
     product_action_entity,
     customer_entity,
     order_entity,
 ):
-    """Fixture for an EventData in integration tests"""
+    """
+    Fixture for an EventData in integration tests
+    """
     _ = user_entity
     _ = product_action_entity
     _ = customer_entity
     _ = order_entity
     event_data = create_transactions_event_data_from_feature_store(
-        snowflake_feature_store,
-        database_name=snowflake_session.database,
-        schema_name=snowflake_session.sf_schema,
+        feature_store,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
         table_name="TEST_TABLE",
-        event_data_name="snowflake_event_data",
+        event_data_name=event_data_name,
     )
     return event_data
 
 
-@pytest.fixture(name="snowflake_item_data", scope="session")
-def snowflake_item_data_fixture(
-    snowflake_session,
-    snowflake_feature_store,
-    snowflake_event_data,
+@pytest.fixture(name="item_data_name", scope="session")
+def item_data_name_fixture(source_type):
+    """
+    Fixture for the ItemData name
+    """
+    return f"{source_type}_item_data"
+
+
+@pytest.fixture(name="item_data", scope="session")
+def item_data_fixture(
+    session,
+    feature_store,
+    item_data_name,
+    event_data,
     order_entity,
     item_entity,
 ):
-    """Fixture for an ItemData in integration tests"""
-    database_table = snowflake_feature_store.get_table(
-        database_name=snowflake_session.database_name,
-        schema_name=snowflake_session.sf_schema,
+    """
+    Fixture for an ItemData in integration tests
+    """
+    database_table = feature_store.get_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
         table_name="ITEM_DATA_TABLE",
     )
-    item_data_name = "snowflake_item_data"
     item_data = ItemData.from_tabular_source(
         tabular_source=database_table,
         name=item_data_name,
         event_id_column="order_id",
         item_id_column="item_id",
-        event_data_name=snowflake_event_data.name,
+        event_data_name=event_data.name,
     )
     item_data.save()
     item_data = ItemData.get(item_data_name)
@@ -967,22 +1119,30 @@ def snowflake_item_data_fixture(
     return item_data
 
 
-@pytest.fixture(name="snowflake_dimension_data", scope="session")
-def snowflake_dimension_data_fixture(
-    snowflake_session,
-    snowflake_feature_store,
+@pytest.fixture(name="dimension_data_name", scope="session")
+def dimension_data_name_fixture(source_type):
+    """
+    Fixture for the DimensionData name
+    """
+    return f"{source_type}_dimension_data"
+
+
+@pytest.fixture(name="dimension_data", scope="session")
+def dimension_data_fixture(
+    session,
+    feature_store,
     dimension_data_table_name,
+    dimension_data_name,
     item_entity,
 ):
     """
     Fixture for a DimensionData in integration tests
     """
-    database_table = snowflake_feature_store.get_table(
-        database_name=snowflake_session.database_name,
-        schema_name=snowflake_session.sf_schema,
+    database_table = feature_store.get_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
         table_name=dimension_data_table_name,
     )
-    dimension_data_name = "snowflake_dimension_data"
     dimension_data = DimensionData.from_tabular_source(
         tabular_source=database_table,
         name=dimension_data_name,
@@ -995,128 +1155,60 @@ def snowflake_dimension_data_fixture(
 
 
 @pytest.fixture(name="scd_data_tabular_source", scope="session")
-def get_scd_data_tabular_source_fixture(
-    snowflake_session,
-    snowflake_feature_store,
+def scd_data_tabular_source_fixture(
+    session,
+    feature_store,
     scd_data_table_name,
 ):
     """
     Fixture for scd data tabular source
     """
-    database_table = snowflake_feature_store.get_table(
-        database_name=snowflake_session.database_name,
-        schema_name=snowflake_session.sf_schema,
+    database_table = feature_store.get_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
         table_name=scd_data_table_name,
     )
     return database_table
 
 
-@pytest.fixture(name="snowflake_scd_data", scope="session")
-def snowflake_scd_data_fixture(
+@pytest.fixture(name="scd_data_name", scope="session")
+def scd_data_name_fixture(source_type):
+    """
+    Fixture for the SlowlyChangingData name
+    """
+    return f"{source_type}_scd_data"
+
+
+@pytest.fixture(name="scd_data", scope="session")
+def scd_data_fixture(
     scd_data_tabular_source,
+    scd_data_name,
     user_entity,
     status_entity,
 ):
     """
     Fixture for a SlowlyChangingData in integration tests
     """
-    name = "snowflake_scd_data"
     data = SlowlyChangingData.from_tabular_source(
         tabular_source=scd_data_tabular_source,
-        name=name,
+        name=scd_data_name,
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
     )
     data.save()
-    data = SlowlyChangingData.get(name)
+    data = SlowlyChangingData.get(scd_data_name)
     data["User ID"].as_entity(user_entity.name)
     data["User Status"].as_entity(status_entity.name)
     return data
 
 
-@pytest.fixture(name="databricks_event_data", scope="session")
-def databricks_event_data_fixture(
-    databricks_session,
-    databricks_feature_store,
-    user_entity,
-    product_action_entity,
-    customer_entity,
-):
-    """Fixture for an EventData in integration tests"""
-    _ = user_entity
-    _ = product_action_entity
-    _ = customer_entity
-    event_data = create_transactions_event_data_from_feature_store(
-        databricks_feature_store,
-        database_name=databricks_session.featurebyte_catalog,
-        schema_name=databricks_session.featurebyte_schema,
-        table_name="TEST_TABLE",
-        event_data_name="databricks_event_data",
-    )
-    return event_data
-
-
-def get_data_source_from_request(request, valid_data_sources):
-    """
-    Helper function to get data source from request.
-
-    Note that this currently just checks for snowflake. We can update this in the future when we start to add
-    support for other data sources.
-    """
-    kind = "snowflake"
-    if hasattr(request, "param"):
-        kind = request.param
-    assert kind in valid_data_sources
-    return kind
-
-
-@pytest.fixture(name="dimension_data", scope="session")
-def dimension_data_fixture(request):
-    """
-    Parametrizable fixture for DimensionData (possible parameters: "snowflake")
-    """
-    _ = get_data_source_from_request(request, {"snowflake"})
-    return request.getfixturevalue("snowflake_dimension_data")
-
-
 @pytest.fixture(name="dimension_view", scope="session")
-def dimension_view_fixture(request):
+def dimension_view_fixture(dimension_data):
     """
-    Parametrizable fixture for DimensionView (possible parameters: "snowflake")
+    Fixture for a DimensionView
     """
-    _ = get_data_source_from_request(request, {"snowflake"})
-    dimension_data = request.getfixturevalue("snowflake_dimension_data")
     return DimensionView.from_dimension_data(dimension_data)
-
-
-@pytest.fixture(name="scd_data", scope="session")
-def scd_data_fixture(request):
-    """
-    Parametrizable fixture for DimensionData (possible parameters: "snowflake")
-    """
-    _ = get_data_source_from_request(request, {"snowflake"})
-    return request.getfixturevalue("snowflake_scd_data")
-
-
-@pytest.fixture(name="event_data", scope="session")
-def event_data_fixture(request):
-    """
-    Parametrizable fixture for EventData (possible parameters: "snowflake", "databricks")
-    """
-    kind = get_data_source_from_request(request, {"snowflake", "databricks"})
-    if kind == "snowflake":
-        return request.getfixturevalue("snowflake_event_data")
-    return request.getfixturevalue("databricks_event_data")
-
-
-@pytest.fixture(name="item_data", scope="session")
-def item_data_fixture(request):
-    """
-    Fixture for ItemData
-    """
-    _ = get_data_source_from_request(request, {"snowflake"})
-    return request.getfixturevalue("snowflake_item_data")
 
 
 @pytest.fixture(name="get_cred")

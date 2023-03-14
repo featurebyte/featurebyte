@@ -9,7 +9,7 @@ skips = ["B608"]
 
 [tool.black]  # https://github.com/psf/black
 color = true
-exclude = '/(\.direnv|\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build|buck-out|build|dist|__pypackages__)/'
+exclude = '/(\.direnv|\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build|buck-out|build|dist|__pypackages__|docker)/'
 line-length = 100
 target-version = ["py38"]
 
@@ -21,7 +21,7 @@ exclude_lines = [
     "@abstractmethod",
     "NotImplementedError",
 ]
-fail_under = 50
+fail_under = 0  # Do not allow failure but report in Pull Request
 show_missing = true
 
 [tool.coverage.run]
@@ -38,6 +38,7 @@ line_length = 100
 multi_line_output = 3
 profile = "black"
 sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+skip_glob = ["tests/fixtures/sdk_code/*"]
 
 [tool.mypy]  # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
 allow_redefinition = false
@@ -68,20 +69,24 @@ warn_unused_ignores = true
 
 [tool.poetry]
 authors = ["FeatureByte <it-admin@featurebyte.com>"]
-classifiers = [  #! Update me
-  "Development Status :: 3 - Alpha",
+classifiers = [
+  "Development Status :: 4 - Alpha",
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Topic :: Software Development :: Libraries :: Python Modules",
-  "License :: OSI Approved :: Apache Software License",
+  "License :: Other/Proprietary License :: Elastic License 2.0",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
 ]
 description = "Python Library for FeatureOps"
 homepage = "https://github.com/featurebyte/featurebyte"
-keywords = []  #! Update me
-license = "Apache Software License 2.0"
+include = [
+    "featurebyte/sql/spark/*.jar",
+    "docker/docker-compose.yml"
+]
+keywords = []
+license = "Elastic License 2.0"
 name = "featurebyte"
 readme = "README.md"
 repository = "https://github.com/featurebyte/featurebyte"
@@ -92,11 +97,15 @@ PyYAML = "^6.0"
 aiofiles = { version = "^22.1.0", optional = true }
 alive-progress = "^2.4.1"
 asyncache = "^0.1.1"
+black = { version = "^22.3.0", allow-prereleases = true }
+boto3 = { version = "1.24.59", optional = true }   # Upstream aiobotocore only allows a specific version of boto3
 cachetools = { version = "^5.2.0", optional = true }
+celery = { version = "^5.2.6", extras = ["redis"], optional = true }
+celerybeat-mongo = { version = "^0.2.0", optional = true }
 databricks-cli = { version = "^0.17.3", optional = true }
 fastapi = { version =  "^0.85.1", optional = true }
 featurebyte-databricks-sql-connector = { version = "^2.2.0", source = "featurebyte_np" }
-featurebyte-freeware = { version = "^0.1.8", allow-prereleases = true, source = "featurebyte_np", optional = true }
+featurebyte-freeware = { version = "^0.1.9", allow-prereleases = true, source = "featurebyte_np" }
 humanize = "^4.4.0"
 importlib_metadata = { version = "^4.5.0", python = "^3.8"}
 jinja2 = { version = "^3.1.2", optional = true }
@@ -108,26 +117,34 @@ pandas = "^1.4.2"
 pdfkit = { version = "^1.0.0", optional = true }
 pyarrow = "^8.0.0,<9.0"   # "9.0.0" causes seg faults
 pydantic = "^1.9.1"
+pyhive = { version = "^0.6.5", optional = true }
 pymongo = "^4.1.1"
 python = ">=3.8,<3.11"
 python-multipart = "^0.0.5"
+python-on-whales = "^0.58.0"
+redis = { version = "^4.5.1", optional = true }
 requests = "^2.27.1"
 rich = "^12.6.0"
+sasl = { version = "^0.3.1", optional = true }
+smart-open = { version = "^6.3.0", optional = true }
 snowflake-connector-python = { version = "^2.7.7", optional = true }
 sqlglot = "^10.1.3,<10.4"  # SQL generation doesn't match as >10.4 double quotes are missing
+thrift-sasl = { version = "^0.4.3", optional = true }
 typeguard = "^2.13.3"
+typer = "^0.7.0"
 uvicorn = { version = "^0.18.2", extras = ["standard"], optional = true }
+wheel = "0.38.1"
 
 [tool.poetry.extras]
-server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit"]
+server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
+junitparser = "^2.8.0"
 mongomock = "^4.0.0"
 mongomock-motor = "^0.0.12"
 pip-licenses = "^3.5.4"
 pre-commit = "^2.20.0"
-pyspark = "^3.3.0"
 pytest = "^7.2.0"
 pytest-asyncio = "^0.19.0"
 pytest-cov = "^4.0.0"
@@ -177,9 +194,13 @@ types-requests = "^2.28.2"
 types-setuptools = "^63.2.1"
 types-simplejson = "^3.17.7"
 types-toml = "^0.10.0"
+types-typed-ast = "^1.5.8.4"
 types-tzlocal = "^4.2.2"
 types-ujson = "^5.4.0"
 types-urllib3 = "^1.26.16"
+
+[tool.poetry.scripts]
+featurebyte = "featurebyte.__main__:app"
 
 [[tool.poetry.source]]
 name = "featurebyte_np"
@@ -209,6 +230,6 @@ ignore-signatures = true
 min-similarity-lines = 10
 
 [tool.pytest.ini_options]
-addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure"] # Extra options:
+addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure", "--ignore-glob=tests/fixtures/*"] # Extra options:
 doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]

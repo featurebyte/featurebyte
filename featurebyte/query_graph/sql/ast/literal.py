@@ -30,4 +30,6 @@ def make_literal_value(value: Any, cast_as_timestamp: bool = False) -> expressio
         return cast(expressions.Expression, parse_one(f"CAST('{str(value)}' AS TIMESTAMP)"))
     if isinstance(value, str):
         return expressions.Literal.string(value)
+    if isinstance(value, bool):
+        return expressions.Boolean(this=value)
     return expressions.Literal.number(value)

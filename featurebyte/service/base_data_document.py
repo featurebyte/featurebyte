@@ -62,15 +62,24 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
         """
         return "".join(elem.title() for elem in self.tabular_data_type.split("_"))
 
-    def _construct_get_query_filter(self, document_id: ObjectId, **kwargs: Any) -> QueryFilter:
-        query_filter = super()._construct_get_query_filter(document_id=document_id, **kwargs)
+    def _construct_get_query_filter(
+        self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
+    ) -> QueryFilter:
+        query_filter = super()._construct_get_query_filter(
+            document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
         query_filter["type"] = self.tabular_data_type
         return query_filter
 
     def _construct_list_query_filter(
-        self, query_filter: Optional[dict[str, Any]] = None, **kwargs: Any
+        self,
+        query_filter: Optional[dict[str, Any]] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
     ) -> QueryFilter:
-        output = super()._construct_list_query_filter(query_filter=query_filter, **kwargs)
+        output = super()._construct_list_query_filter(
+            query_filter=query_filter, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
         output["type"] = self.tabular_data_type
         return output
 
@@ -107,13 +116,15 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
 
     async def create_document(self, data: DocumentCreate) -> Document:
         # retrieve feature store to check the feature_store_id is valid
-        _ = await FeatureStoreService(user=self.user, persistent=self.persistent).get_document(
-            document_id=data.tabular_source.feature_store_id
-        )
+        _ = await FeatureStoreService(
+            user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+        ).get_document(document_id=data.tabular_source.feature_store_id)
 
         # create document ID if it is None
         data_doc_id = data.id or ObjectId()
         payload_dict = {**data.json_dict(), "_id": data_doc_id}
+        if self.is_workspace_specific:
+            payload_dict = {**payload_dict, "workspace_id": self.workspace_id}
 
         # create document for insertion
         document = self.document_class(

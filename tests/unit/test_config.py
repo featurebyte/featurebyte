@@ -20,7 +20,12 @@ from featurebyte.config import (
 )
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.logger import logger
-from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
+from featurebyte.models.credential import (
+    Credential,
+    CredentialType,
+    StorageCredentialType,
+    UsernamePasswordCredential,
+)
 
 
 def test_configurations():
@@ -35,7 +40,12 @@ def test_configurations():
     assert config.credentials[feature_store_name].dict() == {
         "name": feature_store_name,
         "credential_type": CredentialType.USERNAME_PASSWORD,
-        "credential": {"username": "user", "password": "password"},
+        "credential": {
+            "username": "user",
+            "password": "password",
+            "storage_credential_type": StorageCredentialType.NONE,
+            "storage_credential": {},
+        },
     }
 
     # logging settings

@@ -9,10 +9,9 @@ import pytest
 from pandas._testing import assert_frame_equal
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_update_feature_store__update_feature_value(
-    snowflake_session, tile_task_prep
-):
+async def test_schedule_update_feature_store__update_feature_value(session, tile_task_prep):
     """
     Test the stored procedure for updating feature store
     """
@@ -21,10 +20,10 @@ async def test_schedule_update_feature_store__update_feature_value(
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
     sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
     expected_df = pd.DataFrame(
         {
@@ -43,12 +42,12 @@ async def test_schedule_update_feature_store__update_feature_value(
         UPDATE ONLINE_STORE_MAPPING SET SQL_QUERY = 'select {entity_col_names}, 100.0 as "{feature_name}" from TEMP_TABLE limit {number_records}'
         WHERE TILE_ID = '{tile_id}'
 """
-    await snowflake_session.execute_query(update_mapping_sql)
+    await session.execute_query(update_mapping_sql)
 
     sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
     sql = f"SELECT * FROM {feature_store_table_name}"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
 
     expected_df = pd.DataFrame(
@@ -64,10 +63,9 @@ async def test_schedule_update_feature_store__update_feature_value(
     assert_frame_equal(result, expected_df)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_update_feature_store__insert_remove_feature_value(
-    snowflake_session, tile_task_prep
-):
+async def test_schedule_update_feature_store__insert_remove_feature_value(session, tile_task_prep):
     """
     Test the stored procedure for updating feature store
     """
@@ -76,10 +74,10 @@ async def test_schedule_update_feature_store__insert_remove_feature_value(
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
     sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
     # verify existing feature store table
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
     expected_df = pd.DataFrame(
         {
@@ -103,12 +101,12 @@ async def test_schedule_update_feature_store__insert_remove_feature_value(
         UPDATE ONLINE_STORE_MAPPING SET SQL_QUERY = '{sql}'
         WHERE TILE_ID = '{tile_id}'
 """
-    await snowflake_session.execute_query(update_mapping_sql)
+    await session.execute_query(update_mapping_sql)
     sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 3
     assert np.isnan(
         result[result.__FB_TILE_START_DATE_COLUMN == "2022-06-05 23:58:00"][feature_name].iloc[0]
@@ -127,9 +125,10 @@ async def test_schedule_update_feature_store__insert_remove_feature_value(
     assert_frame_equal(result, expected_df)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_update_feature_store__insert_with_new_feature_column(
-    snowflake_session, tile_task_prep
+    session, tile_task_prep
 ):
     """
     Test the stored procedure for updating feature store
@@ -139,10 +138,10 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
     sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
     # verify existing feature store table
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
     expected_df = pd.DataFrame(
         {
@@ -177,14 +176,14 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
                 '{entity_col_names}'
             )
     """
-    await snowflake_session.execute_query(insert_new_mapping_sql)
+    await session.execute_query(insert_new_mapping_sql)
 
     sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
 
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
     expected_df = pd.DataFrame(
         {
@@ -200,9 +199,10 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
     assert_frame_equal(result, expected_df)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_update_feature_store__insert_varchar_feature_column(
-    snowflake_session, tile_task_prep
+    session, tile_task_prep
 ):
     """
     Test the stored procedure for updating feature store
@@ -218,13 +218,13 @@ async def test_schedule_update_feature_store__insert_varchar_feature_column(
             UPDATE ONLINE_STORE_MAPPING SET SQL_QUERY = '{sql}', RESULT_TYPE = 'VARCHAR'
             WHERE TILE_ID = '{tile_id}'
     """
-    await snowflake_session.execute_query(update_mapping_sql)
+    await session.execute_query(update_mapping_sql)
 
     sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
     # verify existing feature store table
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 1
     expected_df = pd.DataFrame(
         {

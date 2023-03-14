@@ -7,7 +7,8 @@ from bson import ObjectId
 from featurebyte.exception import DocumentNotFoundError, DocumentUpdateError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node.generic import InputNode, JoinNode
+from featurebyte.query_graph.node.generic import JoinNode
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.schema.context import ContextCreate, ContextUpdate
 
 
@@ -121,6 +122,11 @@ def join_node_fixture():
             "right_output_columns": ["event_id_col", "item_type", "item_amount"],
             "join_type": "inner",
             "scd_parameters": None,
+            "metadata": {
+                "type": "join_event_data_attributes",
+                "columns": ["item_type", "item_amount"],
+                "event_suffix": None,
+            },
         },
     }
 

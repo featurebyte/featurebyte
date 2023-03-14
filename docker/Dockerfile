@@ -9,7 +9,7 @@ ENV POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD=${FEATUREBYTE_NP_PASSWORD?missing_
 
 # install build tools
 RUN apt-get update && \
-    apt-get install -y build-essential curl wkhtmltopdf && \
+    apt-get install -y build-essential curl libsasl2-dev && \
     apt-get clean
 
 # install poetry
@@ -20,15 +20,14 @@ COPY poetry.lock pyproject.toml /app/
 
 # Install into .venv
 RUN poetry config virtualenvs.in-project true && \
-    poetry install --only main --extras "server" --no-interaction --no-ansi && \
-    poetry run pip install jupyterlab==3.5.3
+    poetry install --only main --extras "server" --no-interaction --no-ansi
 
 FROM python:3.8-slim AS runner
 
 ARG USER_HOME=/app
 
 RUN apt-get update && \
-    apt-get install -y netcat && \
+    apt-get install -y libsasl2-dev wkhtmltopdf gosu curl && \
     apt-get clean
 
 WORKDIR $USER_HOME
@@ -37,8 +36,8 @@ COPY ./dist $USER_HOME/dist
 ENV PATH="${USER_HOME}/.venv/bin:${PATH}"
 RUN bash -c "source ${USER_HOME}/.venv/bin/activate; pip install --no-index -f ${USER_HOME}/dist featurebyte"  # Install featurebyte into /app/.venv
 
-## Copy scripts
+## Copy script
 COPY ./docker/entrypoint.sh             /scripts/entrypoint.sh
-COPY ./docker/samples/                  /samples
+RUN chmod +x /scripts/entrypoint.sh
 
 CMD ["/bin/bash", "/scripts/entrypoint.sh"]

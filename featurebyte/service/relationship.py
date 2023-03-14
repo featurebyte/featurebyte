@@ -201,9 +201,11 @@ class EntityRelationshipService(RelationshipService):
     EntityRelationshipService is responsible to update relationship between different entities.
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
-        super().__init__(user, persistent)
-        self.entity_service = EntityService(user=user, persistent=persistent)
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+        super().__init__(user, persistent, workspace_id)
+        self.entity_service = EntityService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
 
     @property
     def document_service(self) -> BaseDocumentServiceT:
@@ -221,9 +223,11 @@ class SemanticRelationshipService(RelationshipService):
     SemanticRelationshipService is responsible to update relationship between different semantics.
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
-        super().__init__(user, persistent)
-        self.semantic_service = SemanticService(user=user, persistent=persistent)
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+        super().__init__(user, persistent, workspace_id)
+        self.semantic_service = SemanticService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
 
     @property
     def document_service(self) -> BaseDocumentServiceT:

@@ -8,6 +8,7 @@ from unittest.mock import call
 import pytest
 from bson import ObjectId
 
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -118,10 +119,10 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         persistent, _ = mongo_persistent
 
         # execute task with payload
+        event_data_id = ObjectId()
         payload = copy.deepcopy(self.payload)
-        payload["event_data_id"] = ObjectId()
-
-        with pytest.raises(ValueError) as excinfo:
+        payload["event_data_id"] = event_data_id
+        with pytest.raises(DocumentNotFoundError) as excinfo:
             await self.execute_task(
                 task_class=self.task_class,
                 payload=payload,
@@ -130,7 +131,10 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                 storage=storage,
                 temp_storage=temp_storage,
             )
-        assert str(excinfo.value) == "Event Data not found"
+        assert (
+            str(excinfo.value)
+            == f'EventData (id: "{event_data_id}") not found. Please save the EventData object first.'
+        )
 
         # check progress update records
         assert progress.put.call_args_list == [

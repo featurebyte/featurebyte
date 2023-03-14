@@ -10,9 +10,8 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.view import View
-from featurebyte.enum import DBVarType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
-from featurebyte.models.event_data import FeatureJobSetting
 
 
 @pytest.mark.parametrize(
@@ -36,7 +35,7 @@ def test_constructor(snowflake_event_data, keys, expected_keys):
         # mark the column as entity
         snowflake_event_data[column].as_entity(column)
 
-    snowflake_event_view = EventView.from_event_data(event_data=snowflake_event_data)
+    snowflake_event_view = snowflake_event_data.get_view()
     grouped = GroupBy(obj=snowflake_event_view, keys=keys)
     assert grouped.keys == expected_keys
     assert grouped.serving_names == expected_serving_names
@@ -111,9 +110,11 @@ def test_groupby__wrong_method(snowflake_event_view_with_entity):
     Test not valid aggregation method passed to groupby
     """
     grouped = GroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(TypeError) as exc:
         grouped.aggregate_over("a", "unknown_method", ["1d"], ["feature_name"])
-    expected_message = "Aggregation method not supported: unknown_method"
+    expected_message = (
+        'type of argument "method" must be one of (Literal[sum, avg, min, max, count, na_count'
+    )
     assert expected_message in str(exc.value)
 
 
@@ -216,7 +217,7 @@ def test_groupby__default_feature_job_setting(
         "frequency": 360,
         "time_modulo_frequency": 180,
         "tile_id": "TILE_F360_M180_B90_B1D6A11C54A3BA6081F14AB1ECCAC6D9CBCC6DA2",
-        "aggregation_id": "sum_9c2e3af158f593f94d93ee281754b7c583d23a20",
+        "aggregation_id": "sum_f6c607a93e05d666f3ce6934fbd10ac9c200a215",
         "timestamp": "event_timestamp",
         "value_by": None,
         "serving_names": ["cust_id"],
@@ -252,7 +253,7 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
         "frequency": 360,
         "time_modulo_frequency": 180,
         "tile_id": "TILE_F360_M180_B90_E0A502A51198638842541C02AA38C67BC064DF9C",
-        "aggregation_id": "sum_ba9ad2d920956bbd60b96138d2f238ca5ee9850b",
+        "aggregation_id": "sum_d6065bcb5946aba9578ce230e2cc3aa6dad775dc",
         "timestamp": "event_timestamp",
         "value_by": "col_int",
         "serving_names": ["cust_id"],
@@ -362,11 +363,12 @@ def test_groupby__prune(snowflake_event_view_with_entity):
     graph_edges = feature_dict["graph"]["edges"]
     # check that the two assign nodes not get pruned
     assert graph_edges == [
-        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "project_1"},
         {"source": "project_1", "target": "mul_1"},
-        {"source": "input_1", "target": "assign_1"},
+        {"source": "graph_1", "target": "assign_1"},
         {"source": "mul_1", "target": "assign_1"},
-        {"source": "input_1", "target": "project_2"},
+        {"source": "assign_1", "target": "project_2"},
         {"source": "project_2", "target": "mul_2"},
         {"source": "assign_1", "target": "assign_2"},
         {"source": "mul_2", "target": "assign_2"},
@@ -400,7 +402,7 @@ def test_supported_views__aggregate(snowflake_event_view_with_entity):
     """
     with pytest.raises(AggregationNotSupportedForViewError) as exc:
         snowflake_event_view_with_entity.groupby("cust_id").aggregate(
-            value_column="col_float", method="sum", feature_name="my_feature"
+            value_column="col_float", method=AggFunc.SUM, feature_name="my_feature"
         )
     assert str(exc.value) == "aggregate() is only available for ItemView"
 
@@ -587,3 +589,26 @@ def test__fill_value_not_allowed_with_category(snowflake_event_view_with_entity)
             ),
         )
     assert str(exc.value) == "fill_value is not supported for aggregation per category"
+
+
+def test__fill_value_not_allowed_with_skip_fill_na(snowflake_event_view_with_entity):
+    """
+    Test fill_value not allowed when skip_fill_na is True (vice versa)
+    """
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+            value_column="col_float",
+            method="sum",
+            fill_value=0,
+            skip_fill_na=True,
+            windows=["30m"],
+            feature_names=["feat_30m"],
+            feature_job_setting=dict(
+                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+            ),
+        )
+    expected_error = (
+        "Specifying both fill_value and skip_fill_na is not allowed;"
+        " try setting fill_value to None or skip_fill_na to False"
+    )
+    assert str(exc.value) == expected_error

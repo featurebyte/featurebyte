@@ -11,7 +11,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode, NodeT
-from featurebyte.query_graph.node.generic import GroupbyNode as BaseGroupbyNode
+from featurebyte.query_graph.node.generic import GroupByNode as BaseGroupbyNode
 from featurebyte.query_graph.node.generic import ItemGroupbyNode as BaseItemGroupbyNode
 from featurebyte.query_graph.transform.base import BaseGraphTransformer, QueryGraphT
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
@@ -65,7 +65,7 @@ class BasePruningSensitiveNode(BaseNode):
         """
 
 
-class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
+class GroupByNode(BaseGroupbyNode, BasePruningSensitiveNode):
     """An extended GroupbyNode that implements the derive_parameters_post_prune method"""
 
     @staticmethod
@@ -148,26 +148,34 @@ def add_pruning_sensitive_operation(
     node_params: Dict[str, Any]
         Node parameters
     input_node: NodeT
-        Input node
+        Input node to the aggregation node
 
     Returns
     -------
     PruningSensitiveNodeT
     """
+    # prepare input operation structure to extract available column names
+    operation_structure_info = OperationStructureExtractor(graph=graph).extract(node=input_node)
+    input_operation_structure = operation_structure_info.operation_structure_map[input_node.name]
+
     # create a temporary node & prune the graph before deriving additional parameters based on
     # the pruned graph
     temp_node = node_cls(name="temp", parameters=node_params)
     pruned_graph, _, pruned_input_node_name = prune_query_graph(
         graph=graph,
         node=input_node,
-        target_columns=temp_node.get_required_input_columns(),
+        target_columns=list(
+            temp_node.get_required_input_columns(
+                input_index=0,
+                available_column_names=input_operation_structure.output_column_names,
+            )
+        ),
         aggressive=True,
     )
 
     # flatten the pruned graph before further operations
     flat_graph, node_name_map = GraphFlatteningTransformer(graph=pruned_graph).transform()
     mapped_input_node_name = node_name_map[pruned_input_node_name]
-
     additional_parameters = node_cls.derive_parameters_post_prune(
         graph=graph,
         input_node=input_node,

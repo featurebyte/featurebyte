@@ -8,6 +8,7 @@ from _pytest._code import ExceptionInfo
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.models import DimensionDataModel
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.query_graph.node.schema import TableDetails
 
@@ -83,6 +84,7 @@ def get_base_expected_dimension_data_model(dimension_data_model, dimension_colum
             },
         },
         "dimension_id_column": "dimension_id",
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
 
 

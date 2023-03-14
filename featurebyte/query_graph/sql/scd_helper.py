@@ -170,7 +170,9 @@ def get_scd_join_expr(
     return select_expr
 
 
-def _convert_to_utc_ntz(col_expr: expressions.Expression) -> expressions.Expression:
+def _convert_to_utc_ntz(
+    col_expr: expressions.Expression, adapter: BaseAdapter
+) -> expressions.Expression:
     """
     Convert timestamp expression to UTC values and NTZ timestamps
 
@@ -178,14 +180,14 @@ def _convert_to_utc_ntz(col_expr: expressions.Expression) -> expressions.Express
     ----------
     col_expr: expressions.Expression
         Timestamp expression to convert
+    adapter: BaseAdapter
+        Instance of BaseAdapter for engine specific sql generation
 
     Returns
     -------
     expressions.Expression
     """
-    utc_ts_expr = expressions.Anonymous(
-        this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), col_expr]
-    )
+    utc_ts_expr = adapter.convert_to_utc_timestamp(col_expr)
     return expressions.Cast(this=utc_ts_expr, to=parse_one("TIMESTAMP"))
 
 
@@ -267,8 +269,8 @@ def augment_table_with_effective_timestamp(
         left_ts_col = left_table.timestamp_column_expr
     right_ts_col = right_table.timestamp_column_expr
     if convert_timestamps_to_utc:
-        left_ts_col = _convert_to_utc_ntz(left_ts_col)
-        right_ts_col = _convert_to_utc_ntz(right_ts_col)
+        left_ts_col = _convert_to_utc_ntz(left_ts_col, adapter)
+        right_ts_col = _convert_to_utc_ntz(right_ts_col, adapter)
 
     # Left table. Set up special columns: TS_COL, KEY_COL, EFFECTIVE_TS_COL and TS_TIE_BREAKER_COL
     left_view_with_ts_and_key = select(

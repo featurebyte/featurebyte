@@ -22,7 +22,9 @@ from featurebyte.schema.dimension_data import DimensionDataCreate, DimensionData
 
 class DimensionData(DataApiObject):
     """
-    DimensionData class
+    Dimension Data is a data source object connected with a Dimension table in the data warehouse that has static data.
+
+    To build features, users create Dimension Views from Dimension Data
     """
 
     # documentation metadata
@@ -77,7 +79,7 @@ class DimensionData(DataApiObject):
         _id: Optional[ObjectId] = None,
     ) -> DimensionData:
         """
-        Create DimensionData object from tabular source
+        Create DimensionData object from tabular source.
 
         Parameters
         ----------
@@ -95,6 +97,25 @@ class DimensionData(DataApiObject):
         Returns
         -------
         DimensionData
+
+        Examples
+        --------
+        Create DimensionData from a table in the feature store
+
+        >>> us_postal_codes = DimensionData.from_tabular_source(  # doctest: +SKIP
+        ...    name="US Postal Codes",
+        ...    tabular_source=feature_store.get_table(
+        ...      database_name="DEMO",
+        ...      schema_name="US",
+        ...      table_name="POSTAL_CODES"
+        ...    ),
+        ...    dimension_id_column="POSTAL_CODE_ID",
+        ...    record_creation_date_column="RECORD_AVAILABLE_AT",
+        ... )
+
+        Get information about the DimensionData
+
+        >>> us_postal_codes.info(verbose=True)  # doctest: +SKIP
         """
         return super().create(
             tabular_source=tabular_source,

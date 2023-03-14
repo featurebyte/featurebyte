@@ -7,26 +7,27 @@ from pandas.testing import assert_series_equal
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.api.dimension_view import DimensionView
-from featurebyte.api.event_view import EventView
 from featurebyte.api.item_view import ItemView
 
 
-def test_event_data_sample(snowflake_event_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_event_data_sample(event_data):
     """
     Test event data sample & event data column sample
     """
-    event_data_df = snowflake_event_data.sample()
+    event_data_df = event_data.sample()
     ts_col = "ËVENT_TIMESTAMP"
-    ev_ts = snowflake_event_data[ts_col].sample()
+    ev_ts = event_data[ts_col].sample()
     pd.testing.assert_frame_equal(event_data_df[[ts_col]], ev_ts)
 
 
-def test_event_view_sample(snowflake_event_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_event_view_sample(event_data):
     """
     Test sample for EventView
     """
     sample_kwargs = {"size": 10, "seed": 1234}
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = event_data.get_view()
     sample_df = event_view.sample(**sample_kwargs)
     assert sample_df.columns.tolist() == [
         "ËVENT_TIMESTAMP",
@@ -49,22 +50,24 @@ def test_event_view_sample(snowflake_event_data):
     pd.testing.assert_frame_equal(sample_df[[ts_col]], ev_ts)
 
 
-def test_event_view_sample_seed(snowflake_event_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_event_view_sample_seed(event_data):
     """
     Test sample for EventView using a different seed
     """
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = event_data.get_view()
     sample_df = event_view.sample(size=10, seed=4321)
     assert sample_df.shape == (10, 8)
     assert sample_df["ËVENT_TIMESTAMP"].min() == pd.Timestamp("2001-01-01 22:23:02.000349+22:00")
     assert sample_df["ËVENT_TIMESTAMP"].max() == pd.Timestamp("2001-10-05 14:34:01.000068+10:00")
 
 
-def test_event_view_sample_with_date_range(snowflake_event_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_event_view_sample_with_date_range(event_data):
     """
     Test sample for EventView with date range
     """
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = event_data.get_view()
     sample_params = {
         "size": 15,
         "seed": 1234,
@@ -80,11 +83,12 @@ def test_event_view_sample_with_date_range(snowflake_event_data):
     assert_series_equal(col_sample_df["TRANSACTION_ID"], sample_df["TRANSACTION_ID"])
 
 
-def test_item_view_sample(snowflake_item_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_item_view_sample(item_data):
     """
     Test sample for ItemView
     """
-    item_view = ItemView.from_item_data(snowflake_item_data)
+    item_view = ItemView.from_item_data(item_data)
     sample_df = item_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
         "ËVENT_TIMESTAMP",
@@ -101,11 +105,12 @@ def test_item_view_sample(snowflake_item_data):
     assert sample_df["ËVENT_TIMESTAMP"].max() == pd.Timestamp("2001-12-27 14:51:49.000824+1300")
 
 
-def test_item_view_sample_with_date_range(snowflake_item_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_item_view_sample_with_date_range(item_data):
     """
     Test sample for ItemView with date range
     """
-    item_view = ItemView.from_item_data(snowflake_item_data)
+    item_view = ItemView.from_item_data(item_data)
     sample_params = {
         "size": 15,
         "seed": 1234,
@@ -121,11 +126,12 @@ def test_item_view_sample_with_date_range(snowflake_item_data):
     assert_series_equal(col_sample_df["item_id"], sample_df["item_id"])
 
 
-def test_dimension_view_sample(snowflake_dimension_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_dimension_view_sample(dimension_data):
     """
     Test sample for DimensionView
     """
-    dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    dimension_view = DimensionView.from_dimension_data(dimension_data)
     sample_df = dimension_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
         "created_at",
@@ -137,11 +143,12 @@ def test_dimension_view_sample(snowflake_dimension_data):
     assert sample_df.shape == (10, 4)
 
 
-def test_dimension_view_sample_with_date_range(snowflake_dimension_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_dimension_view_sample_with_date_range(dimension_data):
     """
     Test sample for DimensionView with date range
     """
-    dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    dimension_view = DimensionView.from_dimension_data(dimension_data)
     with pytest.raises(ValidationError) as exc:
         dimension_view.sample(
             size=15, seed=1234, from_timestamp="2001-10-10", to_timestamp="2001-10-14"

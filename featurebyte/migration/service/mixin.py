@@ -9,10 +9,10 @@ from abc import ABC, abstractmethod
 
 from bson import ObjectId
 
-from featurebyte.app import User
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
 from featurebyte.logger import logger
+from featurebyte.models.base import User
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import Document, QueryFilter
 from featurebyte.persistent.base import Persistent
@@ -44,7 +44,10 @@ class BaseMigrationServiceMixin(Protocol):
 
     @abstractmethod
     def _construct_list_query_filter(
-        self, query_filter: Optional[dict[str, Any]] = None, **kwargs: Any
+        self,
+        query_filter: Optional[dict[str, Any]] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
     ) -> QueryFilter:
         ...
 
@@ -60,6 +63,10 @@ class BaseMigrationServiceMixin(Protocol):
         version: Optional[int]
             Migration number
         """
+
+    @abstractmethod
+    def allow_use_raw_query_filter(self) -> None:
+        """Activate use of raw query filter"""
 
     async def migrate_all_records(
         self,
@@ -81,7 +88,8 @@ class BaseMigrationServiceMixin(Protocol):
         """
         # migrate all records and audit records
         if query_filter is None:
-            query_filter = dict(self._construct_list_query_filter())
+            self.allow_use_raw_query_filter()
+            query_filter = dict(self._construct_list_query_filter(use_raw_query_filter=True))
         to_iterate, page = True, 1
 
         logger.info(f'Start migrating all records (collection: "{self.collection_name}")')
@@ -171,11 +179,12 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
         credential_provider = ConfigCredentialProvider()
         user = User(id=feature_store.user_id)
         session_validator_service = SessionValidatorService(
-            user, self.persistent, credential_provider
+            user, self.persistent, self.workspace_id, credential_provider
         )
         session_manager_service = SessionManagerService(
             user=user,
             persistent=self.persistent,
+            workspace_id=self.workspace_id,
             credential_provider=credential_provider,
             session_validator_service=session_validator_service,
         )

@@ -3,6 +3,7 @@ SessionManager service
 """
 from typing import Any
 
+from bson import ObjectId
 from pydantic import ValidationError
 
 from featurebyte.exception import CredentialsError
@@ -23,11 +24,13 @@ class SessionManagerService:
         self,
         user: Any,
         persistent: Persistent,
+        workspace_id: ObjectId,
         credential_provider: ConfigCredentialProvider,
         session_validator_service: SessionValidatorService,
     ):
         self.user = user
         self.persistent = persistent
+        self.workspace_id = workspace_id
         self.credential_provider = credential_provider
         self.session_validator_service = session_validator_service
 

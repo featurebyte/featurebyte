@@ -3,13 +3,10 @@ Unit test for ItemData class
 """
 from __future__ import annotations
 
-from datetime import datetime
 from unittest.mock import Mock, patch
 
-import pandas as pd
 import pytest
 from bson.objectid import ObjectId
-from pandas.testing import assert_frame_equal
 
 from featurebyte.api.base_data import DataColumn
 from featurebyte.api.entity import Entity
@@ -22,10 +19,10 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.item_data import ItemDataModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture(name="item_data_dict")
@@ -237,8 +234,8 @@ class TestItemDataTestSuite(BaseDataTestSuite):
       "item_id_col" AS "item_id_col",
       "item_type" AS "item_type",
       "item_amount" AS "item_amount",
-      CAST("created_at" AS VARCHAR) AS "created_at",
-      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp"
+      CAST("created_at" AS STRING) AS "created_at",
+      CAST("event_timestamp" AS STRING) AS "event_timestamp"
     FROM "sf_database"."sf_schema"."items_table"
     LIMIT 10
     """
@@ -250,12 +247,14 @@ class TestItemDataTestSuite(BaseDataTestSuite):
     """
     expected_clean_data_sql = """
     SELECT
-      CAST(CASE WHEN "event_id_col" IS NULL THEN 0 ELSE "event_id_col" END AS BIGINT) AS "event_id_col",
+      CAST(CASE WHEN (
+        "event_id_col" IS NULL
+      ) THEN 0 ELSE "event_id_col" END AS BIGINT) AS "event_id_col",
       "item_id_col" AS "item_id_col",
       "item_type" AS "item_type",
       "item_amount" AS "item_amount",
-      CAST("created_at" AS VARCHAR) AS "created_at",
-      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp"
+      CAST("created_at" AS STRING) AS "created_at",
+      CAST("event_timestamp" AS STRING) AS "event_timestamp"
     FROM "sf_database"."sf_schema"."items_table"
     LIMIT 10
     """
@@ -360,8 +359,8 @@ def test_get_item_data(saved_item_data, snowflake_item_data):
     assert ItemData.get_by_id(id=loaded_data.id) == snowflake_item_data
 
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_event_data = ItemData.get("unknown_item_data")
-        _ = lazy_event_data.name
+        ItemData.get("unknown_item_data")
+
     expected_msg = (
         'ItemData (name: "unknown_item_data") not found. ' "Please save the ItemData object first."
     )
@@ -447,3 +446,39 @@ def test_accessing_saved_item_data_attributes(saved_item_data):
     saved_item_data["item_type"].as_entity(entity.name)
     assert saved_item_data["item_type"].info.entity_id == entity.id
     assert cloned["item_type"].info.entity_id == entity.id
+
+    # check table_data property
+    assert saved_item_data.item_id_col.info.entity_id is not None
+    saved_item_data.item_id_col.as_entity(None)
+    assert cloned.item_id_col.info.entity_id is None
+    assert cloned.table_data.columns_info == saved_item_data.columns_info
+
+
+def test_sdk_code_generation(snowflake_database_table_item_data, saved_event_data, update_fixtures):
+    """Check SDK code generation for unsaved data"""
+    item_data = ItemData.from_tabular_source(
+        tabular_source=snowflake_database_table_item_data,
+        name="sf_item_data",
+        event_id_column="event_id_col",
+        item_id_column="item_id_col",
+        event_data_name="sf_event_data",
+    )
+    check_sdk_code_generation(
+        item_data.frame,
+        to_use_saved_data=False,
+        fixture_path="tests/fixtures/sdk_code/item_data.py",
+        update_fixtures=update_fixtures,
+        data_id=item_data.id,
+        event_data_id=saved_event_data.id,
+    )
+
+
+def test_sdk_code_generation_on_saved_data(saved_item_data, update_fixtures):
+    """Check SDK code generation for saved data"""
+    check_sdk_code_generation(
+        saved_item_data.frame,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/saved_item_data.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_item_data.id,
+    )

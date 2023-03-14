@@ -164,7 +164,7 @@ def test_item_data_join_event_data_attributes_on_demand_tile_gen(
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "item_type",
-          COUNT(*) AS value_count_7ae9b63c27e9f4f0a013cd6ec230f5a7a6b6fa62
+          COUNT(*) AS value_count_d3aca2b274b8253dd5a2aa41d62f55757aa2f2ce
         FROM (
           SELECT
             *,

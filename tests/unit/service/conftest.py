@@ -4,6 +4,8 @@ Fixture for Service related unit tests
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
+from typing import Optional
+
 import json
 import os.path
 from unittest.mock import Mock, patch
@@ -13,7 +15,9 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType, SourceType
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.entity import ParentEntity
+from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_data import DimensionDataCreate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
@@ -26,7 +30,6 @@ from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.schema.scd_data import SCDDataCreate
 from featurebyte.service.context import ContextService
 from featurebyte.service.data_update import DataUpdateService
-from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
@@ -34,7 +37,6 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.scd_data import SCDDataService
@@ -68,91 +70,95 @@ def get_credential_fixture(config):
 @pytest.fixture(name="feature_store_service")
 def feature_store_service_fixture(user, persistent):
     """FeatureStore service"""
-    return FeatureStoreService(user=user, persistent=persistent)
+    return FeatureStoreService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="entity_service")
 def entity_service_fixture(user, persistent):
     """Entity service"""
-    return EntityService(user=user, persistent=persistent)
+    return EntityService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="semantic_service")
 def semantic_service_fixture(user, persistent):
     """Semantic service"""
-    return SemanticService(user=user, persistent=persistent)
+    return SemanticService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="context_service")
 def context_service_fixture(user, persistent):
     """Context service"""
-    return ContextService(user=user, persistent=persistent)
+    return ContextService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="event_data_service")
 def event_data_service_fixture(user, persistent):
     """EventData service"""
-    return EventDataService(user=user, persistent=persistent)
+    return EventDataService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="item_data_service")
 def item_data_service_fixture(user, persistent):
     """ItemData service"""
-    return ItemDataService(user=user, persistent=persistent)
+    return ItemDataService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="dimension_data_service")
 def dimension_data_service_fixture(user, persistent):
     """DimensionData service"""
-    return DimensionDataService(user=user, persistent=persistent)
+    return DimensionDataService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="scd_data_service")
 def scd_data_service_fixture(user, persistent):
     """SCDData service"""
-    return SCDDataService(user=user, persistent=persistent)
+    return SCDDataService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="feature_namespace_service")
 def feature_namespace_service_fixture(user, persistent):
     """FeatureNamespaceService fixture"""
-    return FeatureNamespaceService(user=user, persistent=persistent)
+    return FeatureNamespaceService(
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
 
 
 @pytest.fixture(name="feature_service")
 def feature_service_fixture(user, persistent):
     """FeatureService fixture"""
-    return FeatureService(user=user, persistent=persistent)
+    return FeatureService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="feature_list_namespace_service")
 def feature_list_namespace_service_fixture(user, persistent):
     """FeatureListNamespaceService fixture"""
-    return FeatureListNamespaceService(user=user, persistent=persistent)
+    return FeatureListNamespaceService(
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
 
 
 @pytest.fixture(name="feature_list_service")
 def feature_list_service_fixture(user, persistent):
     """FeatureListService fixture"""
-    return FeatureListService(user=user, persistent=persistent)
+    return FeatureListService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="data_update_service")
 def data_update_service_fixture(user, persistent):
     """DataUpdateService fixture"""
-    return DataUpdateService(user=user, persistent=persistent)
+    return DataUpdateService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="feature_readiness_service")
-def feature_readiness_service_fixture(user, persistent):
+def feature_readiness_service_fixture(app_container):
     """FeatureReadinessService fixture"""
-    return FeatureReadinessService(user=user, persistent=persistent)
+    return app_container.feature_readiness_service
 
 
 @pytest.fixture(name="default_version_mode_service")
-def default_version_mode_service_fixture(user, persistent):
+def default_version_mode_service_fixture(app_container):
     """DefaultVersionModeService fixture"""
-    return DefaultVersionModeService(user=user, persistent=persistent)
+    return app_container.default_version_mode_service
 
 
 @pytest.fixture(name="online_enable_service")
@@ -167,6 +173,14 @@ def preview_service_fixture(app_container):
     return app_container.preview_service
 
 
+@pytest.fixture(name="relationship_info_service")
+def relationship_info_service_fixture(app_container):
+    """
+    RelationshipInfoService fixture
+    """
+    return app_container.relationship_info_service
+
+
 @pytest.fixture(name="online_enable_service_data_warehouse_mocks")
 def online_enable_service_data_warehouse_mocks_fixture():
     """
@@ -178,7 +192,7 @@ def online_enable_service_data_warehouse_mocks_fixture():
         "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
     ) as mock_get_feature_store_session:
         with patch(
-            "featurebyte.service.online_enable.FeatureManagerSnowflake", autospec=True
+            "featurebyte.service.online_enable.FeatureManager", autospec=True
         ) as feature_manager_cls:
             mock_get_feature_store_session.return_value = Mock(source_type=SourceType.SNOWFLAKE)
             mocks["get_feature_store_session"] = mock_get_feature_store_session
@@ -195,7 +209,7 @@ def online_serving_service_fixture(app_container):
 @pytest.fixture(name="version_service")
 def version_service_fixture(user, persistent):
     """VersionService fixture"""
-    return VersionService(user=user, persistent=persistent)
+    return VersionService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.fixture(name="deploy_service")
@@ -238,6 +252,16 @@ async def entity_fixture(test_dir, entity_service):
         return entity
 
 
+@pytest_asyncio.fixture(name="entity_transaction")
+async def entity_transaction_fixture(test_dir, entity_service):
+    """Entity model"""
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/entity_transaction.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        entity = await entity_service.create_document(data=EntityCreate(**payload))
+        return entity
+
+
 @pytest_asyncio.fixture(name="context")
 async def context_fixture(test_dir, context_service, feature_store, entity):
     """Context model"""
@@ -249,31 +273,47 @@ async def context_fixture(test_dir, context_service, feature_store, entity):
         return context
 
 
-@pytest_asyncio.fixture(name="event_data")
-async def event_data_fixture(test_dir, feature_store, event_data_service, semantic_service):
-    """EventData model"""
+@pytest.fixture(name="event_data_factory")
+def event_data_factory_fixture(test_dir, feature_store, event_data_service, semantic_service):
+    """
+    EventData factory returns a function that can be used to create EventData models.
+    """
     _ = feature_store
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
-    with open(fixture_path, encoding="utf") as fhandle:
-        payload = json.loads(fhandle.read())
-        payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
-        event_data = await event_data_service.create_document(data=EventDataCreate(**payload))
-        event_timestamp = await semantic_service.get_or_create_document(
-            name=SemanticType.EVENT_TIMESTAMP
-        )
-        columns_info = []
-        for col in event_data.columns_info:
-            col_dict = col.dict()
-            if col.name == "event_timestamp":
-                col_dict["semantic_id"] = event_timestamp.id
-            columns_info.append(col_dict)
 
-        event_data = await event_data_service.update_document(
-            document_id=event_data.id,
-            data=EventDataServiceUpdate(columns_info=columns_info),
-            return_document=True,
-        )
-        return event_data
+    async def factory(
+        remove_feature_job_setting: Optional[bool] = False,
+    ):
+        fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
+        with open(fixture_path, encoding="utf") as fhandle:
+            payload = json.loads(fhandle.read())
+            payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
+            if remove_feature_job_setting:
+                payload["default_feature_job_setting"] = None
+            event_data = await event_data_service.create_document(data=EventDataCreate(**payload))
+            event_timestamp = await semantic_service.get_or_create_document(
+                name=SemanticType.EVENT_TIMESTAMP
+            )
+            columns_info = []
+            for col in event_data.columns_info:
+                col_dict = col.dict()
+                if col.name == "event_timestamp":
+                    col_dict["semantic_id"] = event_timestamp.id
+                columns_info.append(col_dict)
+
+            event_data = await event_data_service.update_document(
+                document_id=event_data.id,
+                data=EventDataServiceUpdate(columns_info=columns_info),
+                return_document=True,
+            )
+            return event_data
+
+    return factory
+
+
+@pytest_asyncio.fixture(name="event_data")
+async def event_data_fixture(event_data_factory):
+    """EventData model"""
+    return await event_data_factory()
 
 
 @pytest_asyncio.fixture(name="item_data")
@@ -314,15 +354,30 @@ async def scd_data_fixture(test_dir, feature_store, scd_data_service):
         return scd_data
 
 
+@pytest.fixture(name="feature_factory")
+def feature_factory_fixture(test_dir, feature_service):
+    """
+    Feature factory
+
+    Note that this will only create the feature, and might throw an error if used alone. You'll need to make sure that
+    you've created the event data and entity models first.
+    """
+
+    async def factory():
+        fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
+        with open(fixture_path, encoding="utf") as fhandle:
+            payload = json.loads(fhandle.read())
+            feature = await feature_service.create_document(data=FeatureCreate(**payload))
+            return feature
+
+    return factory
+
+
 @pytest_asyncio.fixture(name="feature")
-async def feature_fixture(test_dir, event_data, entity, feature_service):
+async def feature_fixture(event_data, entity, feature_factory):
     """Feature model"""
     _ = event_data, entity
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
-    with open(fixture_path, encoding="utf") as fhandle:
-        payload = json.loads(fhandle.read())
-        feature = await feature_service.create_document(data=FeatureCreate(**payload))
-        return feature
+    return await feature_factory()
 
 
 @pytest_asyncio.fixture(name="feature_iet")
@@ -336,11 +391,24 @@ async def feature_iet_fixture(test_dir, event_data, entity, feature_service):
         return feature
 
 
+@pytest_asyncio.fixture(name="feature_non_time_based")
+async def feature_non_time_based_fixture(
+    test_dir, event_data, item_data, entity_transaction, feature_service
+):
+    """Feature model (non-time-based feature)"""
+    _ = event_data, item_data, entity_transaction
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_non_time_based.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        feature = await feature_service.create_document(data=FeatureCreate(**payload))
+        return feature
+
+
 @pytest_asyncio.fixture(name="production_ready_feature")
 async def production_ready_feature_fixture(feature_readiness_service, feature):
     """Production ready readiness feature fixture"""
     prod_feat = await feature_readiness_service.update_feature(
-        feature_id=feature.id, readiness="PRODUCTION_READY"
+        feature_id=feature.id, readiness="PRODUCTION_READY", ignore_guardrails=True
     )
     assert prod_feat.readiness == "PRODUCTION_READY"
     return prod_feat
@@ -405,6 +473,7 @@ async def insert_feature_into_persistent(test_dir, user, persistent, readiness, 
         payload = FeatureCreate(**payload, user_id=user.id).dict(by_alias=True)
         payload["_id"] = ObjectId()
         payload["readiness"] = readiness
+        payload["workspace_id"] = DEFAULT_WORKSPACE_ID
         if name:
             payload["name"] = name
         feature_id = await persistent.insert_one(
@@ -535,6 +604,40 @@ async def entity_d_fixture(entity_service):
     return entity_d
 
 
+@pytest_asyncio.fixture(name="entity_e")
+async def entity_e_fixture(entity_service):
+    """
+    An entity E
+    """
+    entity_e = await entity_service.create_document(EntityCreate(name="entity_e", serving_name="E"))
+    return entity_e
+
+
+async def create_data_and_add_parent(
+    test_dir,
+    event_data_service,
+    entity_service,
+    child_entity,
+    parent_entity,
+    child_column,
+    parent_column,
+):
+    """
+    Helper function to create data and add a relationship between two entities
+    """
+    data = await create_event_data_with_entities(
+        f"{parent_entity.name}_is_parent_of_{child_entity.name}_data",
+        test_dir,
+        event_data_service,
+        [(child_column, child_entity.id), (parent_column, parent_entity.id)],
+    )
+    parents = (await entity_service.get_document(child_entity.id)).parents
+    parents += [ParentEntity(id=parent_entity.id, data_type=data.type, data_id=data.id)]
+    update_parents = EntityServiceUpdate(parents=parents)
+    await entity_service.update_document(child_entity.id, update_parents)
+    return data
+
+
 @pytest_asyncio.fixture(name="b_is_parent_of_a")
 async def b_is_parent_of_a_fixture(
     entity_a,
@@ -548,16 +651,15 @@ async def b_is_parent_of_a_fixture(
     Fixture to make B a parent of A
     """
     _ = feature_store
-    data = await create_event_data_with_entities(
-        "b_is_parent_of_a_data",
+    return await create_data_and_add_parent(
         test_dir,
         event_data_service,
-        [("a", entity_a.id), ("b", entity_b.id)],
+        entity_service,
+        child_entity=entity_a,
+        parent_entity=entity_b,
+        child_column="a",
+        parent_column="b",
     )
-    parent = ParentEntity(id=entity_b.id, data_type=data.type, data_id=data.id)
-    update_entity_a = EntityServiceUpdate(parents=[parent])
-    await entity_service.update_document(entity_a.id, update_entity_a)
-    return data
 
 
 @pytest_asyncio.fixture(name="c_is_parent_of_b")
@@ -573,17 +675,15 @@ async def c_is_parent_of_b_fixture(
     Fixture to make C a parent of B
     """
     _ = feature_store
-    data = await create_event_data_with_entities(
-        "c_is_parent_of_b_data",
+    return await create_data_and_add_parent(
         test_dir,
         event_data_service,
-        [("b", entity_b.id), ("c", entity_c.id)],
+        entity_service,
+        child_entity=entity_b,
+        parent_entity=entity_c,
+        child_column="b",
+        parent_column="c",
     )
-    parents = (await entity_service.get_document(entity_b.id)).parents
-    parents += [ParentEntity(id=entity_c.id, data_type=data.type, data_id=data.id)]
-    update_entity_b = EntityServiceUpdate(parents=parents)
-    await entity_service.update_document(entity_b.id, update_entity_b)
-    return data
 
 
 @pytest_asyncio.fixture(name="d_is_parent_of_b")
@@ -599,18 +699,100 @@ async def d_is_parent_of_b_fixture(
     Fixture to make D a parent of B
     """
     _ = feature_store
-    data = await create_event_data_with_entities(
-        "d_is_parent_of_b_data",
+    return await create_data_and_add_parent(
         test_dir,
         event_data_service,
-        [("b", entity_b.id), ("d", entity_d.id)],
+        entity_service,
+        child_entity=entity_b,
+        parent_entity=entity_d,
+        child_column="b",
+        parent_column="d",
     )
-    parents = (await entity_service.get_document(entity_b.id)).parents
-    parents += [ParentEntity(id=entity_d.id, data_type=data.type, data_id=data.id)]
-    update_entity_b = EntityServiceUpdate(parents=parents)
-    await entity_service.update_document(entity_b.id, update_entity_b)
 
-    return data
+
+@pytest_asyncio.fixture(name="d_is_parent_of_c")
+async def d_is_parent_of_c_fixture(
+    entity_c,
+    entity_d,
+    entity_service,
+    event_data_service,
+    test_dir,
+    feature_store,
+):
+    """
+    Fixture to make D a parent of C
+    """
+    _ = feature_store
+    return await create_data_and_add_parent(
+        test_dir,
+        event_data_service,
+        entity_service,
+        child_entity=entity_c,
+        parent_entity=entity_d,
+        child_column="c",
+        parent_column="d",
+    )
+
+
+@pytest_asyncio.fixture(name="e_is_parent_of_c_and_d")
+async def e_is_parent_of_c_and_d_fixture(
+    entity_c,
+    entity_d,
+    entity_e,
+    entity_service,
+    event_data_service,
+    test_dir,
+    feature_store,
+):
+    """
+    Fixture to make E a parent of C and D
+    """
+    _ = feature_store
+    await create_data_and_add_parent(
+        test_dir,
+        event_data_service,
+        entity_service,
+        child_entity=entity_c,
+        parent_entity=entity_e,
+        child_column="c",
+        parent_column="e",
+    )
+    await create_data_and_add_parent(
+        test_dir,
+        event_data_service,
+        entity_service,
+        child_entity=entity_d,
+        parent_entity=entity_e,
+        child_column="d",
+        parent_column="e",
+    )
+
+
+@pytest.fixture
+def entity_info_with_ambiguous_relationships(
+    entity_a,
+    entity_e,
+    b_is_parent_of_a,
+    c_is_parent_of_b,
+    d_is_parent_of_b,
+    e_is_parent_of_c_and_d,
+) -> EntityInfo:
+    """
+    EntityInfo the arises from ambiguous relationships
+
+    a (provided) --> b --> c ---> e (required)
+                      `--> d --´
+    """
+    _ = b_is_parent_of_a
+    _ = c_is_parent_of_b
+    _ = d_is_parent_of_b
+    _ = e_is_parent_of_c_and_d
+    entity_info = EntityInfo(
+        required_entities=[entity_e],
+        provided_entities=[entity_a],
+        serving_names_mapping={"A": "new_A"},
+    )
+    return entity_info
 
 
 @pytest.fixture

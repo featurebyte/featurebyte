@@ -3,18 +3,29 @@ View class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from abc import ABC, abstractmethod
 
 from pydantic import Field, PrivateAttr
 from typeguard import typechecked
 
-from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
-from featurebyte.api.join_utils import (
+from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
@@ -23,14 +34,13 @@ from featurebyte.api.join_utils import (
     is_column_name_in_columns,
     join_tabular_data_ids,
 )
-from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import Scalar, ScalarSequence
-from featurebyte.core.frame import Frame
+from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
-from featurebyte.core.series import Series
-from featurebyte.enum import DBVarType
+from featurebyte.core.series import FrozenSeries, Series
+from featurebyte.enum import DBVarType, ViewMode
 from featurebyte.exception import (
     ChangeViewNoJoinColumnError,
     NoJoinKeyFoundError,
@@ -38,11 +48,14 @@ from featurebyte.exception import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import InputNode, ProjectNode
+from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
+from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import BaseGraphNode
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -50,12 +63,16 @@ else:
     GroupBy = TypeVar("GroupBy")
 
 ViewT = TypeVar("ViewT", bound="View")
+TableDataT = TypeVar("TableDataT", bound=BaseTableData)
 
 
 class ViewColumn(Series, SampleMixin):
     """
     ViewColumn class that is the base class of columns returned from any View (e.g. EventView)
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(section=["ViewColumn"], proxy_class="featurebyte.ViewColumn")
 
     _parent: Optional[View] = PrivateAttr(default=None)
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
@@ -66,13 +83,15 @@ class ViewColumn(Series, SampleMixin):
             return None
         return self._parent.timestamp_column
 
-    def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
+    def binary_op_series_params(
+        self, other: Scalar | FrozenSeries | ScalarSequence
+    ) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
         Parameters
         ----------
-        other: Scalar | Series | ScalarSequence
+        other: Scalar | FrozenSeries | ScalarSequence
             Other object
 
         Returns
@@ -158,8 +177,7 @@ class GroupByMixin:
         Examples
         --------
         Create GroupBy object from an event view
-        >>> import featurebyte as fb
-        >>> transactions_view = fb.EventView.from_event_data(transactions_data)  # doctest: +SKIP
+        >>> transactions_view = transactions_data.get_view()  # doctest: +SKIP
         >>> transactions_view.groupby("AccountID")  # doctest: +SKIP
         GroupBy(EventView(node.name=input_1), keys=['AccountID'])
         """
@@ -202,6 +220,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     View class that is the base class of any View (e.g. EventView)
     """
 
+    __fbautodoc__ = FBAutoDoc(
+        section=["View"],
+        proxy_class="featurebyte.View",
+    )
+
+    # class variables
+    _view_graph_node_type: ClassVar[GraphNodeType]
+
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     def __repr__(self) -> str:
@@ -210,42 +236,33 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     def __str__(self) -> str:
         return repr(self)
 
-    @classmethod
-    @typechecked
-    def from_data(cls: Type[ViewT], data: DataApiObject, **kwargs: Any) -> ViewT:
+    @property
+    def raw(self) -> FrozenFrame:
         """
-        Construct a View object
-
-        Parameters
-        ----------
-        data: DataApiObject
-            EventData object used to construct a View object
-        kwargs: dict
-            Additional parameters to be passed to the View constructor
+        Return the raw input data view (without any cleaning operations applied)
 
         Returns
         -------
-        ViewT
-            constructed View object
+        FrozenFrame
         """
-        global_graph, node_name_map = GlobalQueryGraph().load(data.frame.graph)
-        node_name = node_name_map[data.frame.node.name]
-        data_node = global_graph.get_node_by_name(node_name=node_name)
-        assert isinstance(data_node, InputNode)
-        graph_node = data.table_data.construct_cleaning_recipe_node(input_node=data_node)
-        if graph_node:
-            inserted_graph_node = GlobalQueryGraph().add_node(
-                node=graph_node, input_nodes=[data_node]
-            )
-            node_name = inserted_graph_node.name
+        view_input_node_names = []
+        for graph_node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GRAPH):
+            assert isinstance(graph_node, BaseGraphNode)
+            if graph_node.parameters.type == self._view_graph_node_type:
+                view_input_node_names = self.graph.get_input_node_names(graph_node)
 
-        return cls(
-            feature_store=data.feature_store,
-            tabular_source=data.tabular_source,
-            columns_info=data.columns_info,
-            node_name=node_name,
-            tabular_data_ids=[data.id],
-            **kwargs,
+        # first input node names must be the input node used to create the view
+        assert len(view_input_node_names) >= 1, "View should have at least one input"
+        input_node = self.graph.get_node_by_name(view_input_node_names[0])
+        assert isinstance(input_node, InputNode)
+        return FrozenFrame(
+            node_name=input_node.name,
+            tabular_source=self.tabular_source,
+            feature_store=self.feature_store,
+            columns_info=[
+                ColumnInfo(name=col.name, dtype=col.dtype, entity_id=None, semantic_id=None)
+                for col in input_node.parameters.columns
+            ],
         )
 
     @property
@@ -286,6 +303,71 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         except ChangeViewNoJoinColumnError:
             return additional_columns
 
+    @staticmethod
+    def _validate_view_mode_params(
+        view_mode: ViewMode,
+        drop_column_names: Optional[List[str]],
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]],
+        event_drop_column_names: Optional[List[str]] = None,
+        event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
+        event_join_column_names: Optional[List[str]] = None,
+    ) -> None:
+        """
+        Validate parameters passed from_*_data method
+
+        Parameters
+        ----------
+        view_mode: ViewMode
+            ViewMode
+        drop_column_names: Optional[List[str]]
+            List of column names to drop
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
+            List of column cleaning operations
+        event_drop_column_names: Optional[List[str]]
+            List of event column names to drop
+        event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
+            List of event column cleaning operations
+        event_join_column_names: Optional[List[str]]
+            List of event join column names
+
+        Raises
+        ------
+        ValueError
+            If any of the parameters are passed in auto mode
+        """
+        manual_mode_only_params = {
+            "drop_column_names": drop_column_names,
+            "column_cleaning_operations": column_cleaning_operations,
+            "event_drop_column_names": event_drop_column_names,
+            "event_column_cleaning_operations": event_column_cleaning_operations,
+            "event_join_column_names": event_join_column_names,
+        }
+        non_empty_params = [name for name, value in manual_mode_only_params.items() if value]
+        if view_mode == ViewMode.AUTO and any(non_empty_params):
+            params = ", ".join(non_empty_params)
+            is_or_are = "is" if len(non_empty_params) == 1 else "are"
+            raise ValueError(f"{params} {is_or_are} only supported in manual mode")
+
+    @staticmethod
+    def _prepare_table_data_and_column_cleaning_operations(
+        table_data: TableDataT,
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]],
+        view_mode: ViewMode,
+    ) -> Tuple[TableDataT, List[ColumnCleaningOperation]]:
+        column_cleaning_operations = column_cleaning_operations or []
+        if view_mode == ViewMode.MANUAL:
+            table_data = table_data.clone(column_cleaning_operations=column_cleaning_operations)
+        else:
+            column_cleaning_operations = [
+                ColumnCleaningOperation(
+                    column_name=col.name,
+                    cleaning_operations=col.critical_data_info.cleaning_operations,
+                )
+                for col in table_data.columns_info
+                if col.critical_data_info and col.critical_data_info.cleaning_operations
+            ]
+        return table_data, column_cleaning_operations
+
     def _get_additional_inherited_columns(self) -> set[str]:
         """
         Additional columns set to be added to inherited_columns. To be overridden by subclasses of
@@ -320,7 +402,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return {"tabular_data_ids": self.tabular_data_ids}
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
+    def __getitem__(
+        self, item: Union[str, List[str], FrozenSeries]
+    ) -> Union[FrozenSeries, FrozenFrame]:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
@@ -328,7 +412,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     @typechecked
     def __setitem__(
-        self, key: Union[str, Tuple[Series, str]], value: Union[int, float, str, bool, Series]
+        self,
+        key: Union[str, Tuple[FrozenSeries, str]],
+        value: Union[int, float, str, bool, FrozenSeries],
     ) -> None:
         key_to_check = key if not isinstance(key, tuple) else key[1]
         if key_to_check in self.protected_columns:
@@ -399,6 +485,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         new_node_name: str,
         joined_columns_info: List[ColumnInfo],
         joined_tabular_data_ids: List[PydanticObjectId],
+        **kwargs: Any,
     ) -> None:
         """
         Updates the metadata for the new join
@@ -411,12 +498,15 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             joined columns info
         joined_tabular_data_ids: List[PydanticObjectId]
             joined tabular data IDs
+        kwargs: Any
+            Additional keyword arguments used to override the underlying metadata
         """
         self.node_name = new_node_name
         self.columns_info = joined_columns_info
         self.__dict__.update(
             {
                 "tabular_data_ids": joined_tabular_data_ids,
+                **kwargs,
             }
         )
 
@@ -642,6 +732,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             "right_input_columns": right_input_columns,
             "right_output_columns": right_output_columns,
             "join_type": how,
+            "metadata": JoinMetadata(on=on, rsuffix=rsuffix),
         }
         node_params.update(
             other_view._get_join_parameters(self)  # pylint: disable=protected-access

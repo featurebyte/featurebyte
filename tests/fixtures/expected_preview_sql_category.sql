@@ -102,7 +102,7 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
         CASE
           WHEN INNER_."product_type" IS NULL
           THEN '__MISSING__'
-          ELSE CAST(INNER_."product_type" AS VARCHAR)
+          ELSE CAST(INNER_."product_type" AS TEXT)
         END,
         TO_VARIANT(INNER_."inner_agg_w7200_avg_658906478ded8ef60deb5e8aca90f8ef7d06c2c6")
       ) AS "agg_w7200_avg_658906478ded8ef60deb5e8aca90f8ef7d06c2c6"
@@ -139,7 +139,7 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
         CASE
           WHEN INNER_."product_type" IS NULL
           THEN '__MISSING__'
-          ELSE CAST(INNER_."product_type" AS VARCHAR)
+          ELSE CAST(INNER_."product_type" AS TEXT)
         END,
         TO_VARIANT(INNER_."inner_agg_w172800_avg_658906478ded8ef60deb5e8aca90f8ef7d06c2c6")
       ) AS "agg_w172800_avg_658906478ded8ef60deb5e8aca90f8ef7d06c2c6"

@@ -1,0 +1,336 @@
+{
+    "edges": [
+        {
+            "source": "input_1",
+            "target": "graph_1"
+        }
+    ],
+    "nodes": [
+        {
+            "name": "input_1",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+                "columns": [
+                    {
+                        "name": "col_int",
+                        "dtype": "INT"
+                    },
+                    {
+                        "name": "col_float",
+                        "dtype": "FLOAT"
+                    },
+                    {
+                        "name": "col_char",
+                        "dtype": "CHAR"
+                    },
+                    {
+                        "name": "col_text",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "col_binary",
+                        "dtype": "BINARY"
+                    },
+                    {
+                        "name": "col_boolean",
+                        "dtype": "BOOL"
+                    },
+                    {
+                        "name": "event_timestamp",
+                        "dtype": "TIMESTAMP_TZ"
+                    },
+                    {
+                        "name": "created_at",
+                        "dtype": "TIMESTAMP_TZ"
+                    },
+                    {
+                        "name": "cust_id",
+                        "dtype": "INT"
+                    }
+                ],
+                "table_details": {
+                    "database_name": "sf_database",
+                    "schema_name": "sf_schema",
+                    "table_name": "sf_table"
+                },
+                "feature_store_details": {
+                    "type": "snowflake",
+                    "details": {
+                        "account": "sf_account",
+                        "warehouse": "sf_warehouse",
+                        "database": "sf_database",
+                        "sf_schema": "sf_schema"
+                    }
+                },
+                "type": "event_data",
+                "id": {
+                    "$oid": "6337f9651050ee7d5980660d"
+                },
+                "timestamp_column": "event_timestamp",
+                "id_column": "col_int"
+            }
+        },
+        {
+            "name": "graph_1",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+                "graph": {
+                    "edges": [
+                        {
+                            "source": "proxy_input_1",
+                            "target": "graph_1"
+                        },
+                        {
+                            "source": "graph_1",
+                            "target": "project_1"
+                        }
+                    ],
+                    "nodes": [
+                        {
+                            "name": "proxy_input_1",
+                            "type": "proxy_input",
+                            "output_type": "frame",
+                            "parameters": {
+                                "input_order": 0
+                            }
+                        },
+                        {
+                            "name": "graph_1",
+                            "type": "graph",
+                            "output_type": "frame",
+                            "parameters": {
+                                "graph": {
+                                    "edges": [
+                                        {
+                                            "source": "proxy_input_1",
+                                            "target": "project_1"
+                                        },
+                                        {
+                                            "source": "project_1",
+                                            "target": "is_null_1"
+                                        },
+                                        {
+                                            "source": "project_1",
+                                            "target": "conditional_1"
+                                        },
+                                        {
+                                            "source": "is_null_1",
+                                            "target": "conditional_1"
+                                        },
+                                        {
+                                            "source": "conditional_1",
+                                            "target": "cast_1"
+                                        },
+                                        {
+                                            "source": "cast_1",
+                                            "target": "lt_1"
+                                        },
+                                        {
+                                            "source": "cast_1",
+                                            "target": "conditional_2"
+                                        },
+                                        {
+                                            "source": "lt_1",
+                                            "target": "conditional_2"
+                                        },
+                                        {
+                                            "source": "conditional_2",
+                                            "target": "cast_2"
+                                        },
+                                        {
+                                            "source": "proxy_input_1",
+                                            "target": "assign_1"
+                                        },
+                                        {
+                                            "source": "cast_2",
+                                            "target": "assign_1"
+                                        },
+                                        {
+                                            "source": "proxy_input_1",
+                                            "target": "project_2"
+                                        },
+                                        {
+                                            "source": "project_2",
+                                            "target": "is_string_1"
+                                        },
+                                        {
+                                            "source": "project_2",
+                                            "target": "conditional_3"
+                                        },
+                                        {
+                                            "source": "is_string_1",
+                                            "target": "conditional_3"
+                                        },
+                                        {
+                                            "source": "conditional_3",
+                                            "target": "cast_3"
+                                        },
+                                        {
+                                            "source": "assign_1",
+                                            "target": "assign_2"
+                                        },
+                                        {
+                                            "source": "cast_3",
+                                            "target": "assign_2"
+                                        }
+                                    ],
+                                    "nodes": [
+                                        {
+                                            "name": "proxy_input_1",
+                                            "type": "proxy_input",
+                                            "output_type": "frame",
+                                            "parameters": {
+                                                "input_order": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "project_1",
+                                            "type": "project",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "columns": [
+                                                    "col_int"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "name": "is_null_1",
+                                            "type": "is_null",
+                                            "output_type": "series",
+                                            "parameters": {}
+                                        },
+                                        {
+                                            "name": "conditional_1",
+                                            "type": "conditional",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "cast_1",
+                                            "type": "cast",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "type": "int",
+                                                "from_dtype": "INT"
+                                            }
+                                        },
+                                        {
+                                            "name": "lt_1",
+                                            "type": "lt",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "conditional_2",
+                                            "type": "conditional",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "cast_2",
+                                            "type": "cast",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "type": "int",
+                                                "from_dtype": "INT"
+                                            }
+                                        },
+                                        {
+                                            "name": "assign_1",
+                                            "type": "assign",
+                                            "output_type": "frame",
+                                            "parameters": {
+                                                "name": "col_int",
+                                                "value": null
+                                            }
+                                        },
+                                        {
+                                            "name": "project_2",
+                                            "type": "project",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "columns": [
+                                                    "col_float"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "name": "is_string_1",
+                                            "type": "is_string",
+                                            "output_type": "series",
+                                            "parameters": {}
+                                        },
+                                        {
+                                            "name": "conditional_3",
+                                            "type": "conditional",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "cast_3",
+                                            "type": "cast",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "type": "float",
+                                                "from_dtype": "FLOAT"
+                                            }
+                                        },
+                                        {
+                                            "name": "assign_2",
+                                            "type": "assign",
+                                            "output_type": "frame",
+                                            "parameters": {
+                                                "name": "col_float",
+                                                "value": null
+                                            }
+                                        }
+                                    ]
+                                },
+                                "output_node_name": "assign_2",
+                                "type": "cleaning"
+                            }
+                        },
+                        {
+                            "name": "project_1",
+                            "type": "project",
+                            "output_type": "frame",
+                            "parameters": {
+                                "columns": [
+                                    "col_int",
+                                    "col_float",
+                                    "col_char",
+                                    "col_text",
+                                    "col_binary",
+                                    "col_boolean",
+                                    "event_timestamp",
+                                    "created_at",
+                                    "cust_id"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "output_node_name": "project_1",
+                "type": "event_view",
+                "metadata": {
+                    "view_mode": "auto",
+                    "drop_column_names": ["created_at"],
+                    "column_cleaning_operations": [],
+                    "data_id": {
+                        "$oid": "6337f9651050ee7d5980660d"
+                    }
+                }
+            }
+        }
+    ]
+}

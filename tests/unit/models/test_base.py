@@ -7,7 +7,11 @@ import pytest
 from bson.objectid import ObjectId
 from pydantic import StrictStr, ValidationError
 
-from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    VersionIdentifier,
+)
 
 
 def test_featurebyte_base_model__error_message():
@@ -61,3 +65,17 @@ def test_base_model__id_validation():
     id_value = ObjectId()
     model = FeatureByteBaseDocumentModel(_id=id_value)
     assert model.id == id_value
+
+
+@pytest.mark.parametrize(
+    "version_str,version_identifier_dict",
+    [
+        ("V210304", {"name": "V210304", "suffix": None}),
+        ("V210304_1", {"name": "V210304", "suffix": 1}),
+    ],
+)
+def test_version_identifier(version_str, version_identifier_dict):
+    """Test version identifier conversion"""
+    version_identifier = VersionIdentifier(**version_identifier_dict)
+    assert VersionIdentifier.from_str(version_str) == version_identifier
+    assert version_identifier.to_str() == version_str

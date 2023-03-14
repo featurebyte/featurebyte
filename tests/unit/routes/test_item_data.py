@@ -8,6 +8,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import ItemTableData
@@ -105,7 +106,9 @@ class TestItemDataApi(BaseDataApiTestSuite):
         """Test item id semantic is set correctly"""
         user = mock.Mock()
         user.id = user_id
-        semantic_service = SemanticService(user=user, persistent=persistent)
+        semantic_service = SemanticService(
+            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        )
         item_id_semantic = await semantic_service.get_or_create_document(name=SemanticType.ITEM_ID)
 
         # check the that semantic ID is set correctly
@@ -145,8 +148,9 @@ class TestItemDataApi(BaseDataApiTestSuite):
             "status": "DRAFT",
             "entities": [],
             "semantics": ["item_id"],
-            "column_count": 5,
+            "column_count": 6,
             "event_data_name": "sf_event_data",
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

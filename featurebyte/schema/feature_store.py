@@ -12,6 +12,7 @@ from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.schema.common.base import PaginationMixin
@@ -87,11 +88,16 @@ class FeatureStoreSample(FeatureStorePreview):
 
             # validate timestamp_column exists in a frame
             graph = values["graph"]
-            columns = graph.get_input_node(values["node_name"]).parameters.columns
-            column_names = [col.name for col in columns]
-            assert (
-                timestamp_column in column_names
-            ), f'timestamp_column: "{timestamp_column}" does not exist'
+            node_name = values["node_name"]
+            target_node = graph.get_node_by_name(node_name)
+            found = False
+            for input_node in graph.iterate_nodes(
+                target_node=target_node, node_type=NodeType.INPUT
+            ):
+                column_names = [col.name for col in input_node.parameters.columns]
+                if timestamp_column in column_names:
+                    found = True
+            assert found, f'timestamp_column: "{timestamp_column}" does not exist'
 
         # make sure to_timestamp is lt from_timestamp
         if from_timestamp and to_timestamp:

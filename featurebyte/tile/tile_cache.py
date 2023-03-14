@@ -3,15 +3,15 @@ Module for TileCache and its implementors
 """
 from __future__ import annotations
 
-from typing import Type, cast
+from typing import cast
 
 import time
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, select
 
+from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec
@@ -28,7 +28,6 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
 @dataclass
@@ -68,7 +67,7 @@ class OnDemandTileComputeRequest:
         return tile_spec, self.tracker_sql
 
 
-class TileCache(ABC):
+class TileCache:
     """Responsible for on-demand tile computation for historical features
 
     Parameters
@@ -79,18 +78,8 @@ class TileCache(ABC):
 
     def __init__(self, session: BaseSession):
         self.session = session
+        self.tile_manager = tile_manager_from_session(session=session, task_manager=None)
         self._materialized_temp_table_names: set[str] = set()
-
-    @property
-    @abstractmethod
-    def tile_manager_class(self) -> Type[TileManagerSnowflake]:
-        """
-        Returns the TileManager class to be used
-
-        Returns
-        -------
-        Type[TileManagerSnowflake]
-        """
 
     @property
     def adapter(self) -> BaseAdapter:
@@ -166,12 +155,11 @@ class TileCache(ABC):
         required_requests : list[OnDemandTileComputeRequest]
             List of required compute requests (where entity table is non-empty)
         """
-        tile_manager = self.tile_manager_class(session=self.session)
         tile_inputs = []
         for request in required_requests:
             tile_input = request.to_tile_manager_input()
             tile_inputs.append(tile_input)
-        await tile_manager.generate_tiles_on_demand(tile_inputs=tile_inputs)
+        await self.tile_manager.generate_tiles_on_demand(tile_inputs=tile_inputs)
 
     async def cleanup_temp_tables(self) -> None:
         """Drops all the temp tables that was created by TileCache"""
@@ -291,13 +279,15 @@ class TileCache(ABC):
         list[str]
             List of tile table IDs with existing entity tracker tables
         """
-        all_trackers = {
-            table
-            for table in await self.session.list_tables(
-                database_name=self.session.database_name, schema_name=self.session.schema_name
-            )
-            if table.endswith(InternalName.TILE_ENTITY_TRACKER_SUFFIX.value)
-        }
+        all_trackers = set()
+        for table in await self.session.list_tables(
+            database_name=self.session.database_name, schema_name=self.session.schema_name
+        ):
+            # always convert to upper case in case some backends change the casing
+            table = table.upper()
+            if table.endswith(InternalName.TILE_ENTITY_TRACKER_SUFFIX.value):
+                all_trackers.add(table)
+
         out = []
         for tile_id in tile_ids:
             tile_id_tracker_name = self._get_tracker_name_from_tile_id(tile_id)
@@ -654,35 +644,3 @@ class TileCache(ABC):
             cast(Expression, parse_one("CAST('1970-01-01' AS TIMESTAMP)")),
         )
         return start_date_expr, end_date_expr
-
-
-class SnowflakeTileCache(TileCache):
-    """Responsible for on-demand tile computation and caching for Snowflake"""
-
-    @property
-    def tile_manager_class(self) -> Type[TileManagerSnowflake]:
-        return TileManagerSnowflake
-
-
-def get_tile_cache(session: BaseSession) -> TileCache:
-    """
-    Returns an instance of TileCache compatible with the source type
-
-    Parameters
-    ----------
-    session : BaseSession
-        The session object
-
-    Returns
-    -------
-    TileCache
-
-    Raises
-    ------
-    NotImplementedError
-        if the TileCache for the source type is not implemented
-    """
-    source_type = session.source_type
-    if source_type == SourceType.SNOWFLAKE:
-        return SnowflakeTileCache(session)
-    raise NotImplementedError()

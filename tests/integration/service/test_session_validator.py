@@ -24,9 +24,7 @@ def get_session_validator_service_fixture(mongo_persistent):
 
 
 @pytest_asyncio.fixture(name="reset_session")
-async def get_reset_session_fixture(
-    session_manager, snowflake_details, snowflake_featurestore_name
-):
+async def get_reset_session_fixture(session_manager, feature_store_details, featurestore_name):
     """
     Resets the session by dropping the working schema table.
 
@@ -35,22 +33,23 @@ async def get_reset_session_fixture(
     will manually drop and recreate the metadata as needed.
     """
     session = await session_manager.get_session_with_params(
-        feature_store_name=snowflake_featurestore_name,
+        feature_store_name=featurestore_name,
         session_type=SourceType.SNOWFLAKE,
-        details=snowflake_details,
+        details=feature_store_details,
     )
     await session.execute_query(f"UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = NULL")
 
 
 @pytest.mark.skip(reason="skipping while we rollback the default state")
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 @mock.patch("featurebyte.app.get_persistent")
 async def test_validate_feature_store_id_not_used_in_warehouse(
     mock_persistent,
     session_validator_service,
-    snowflake_details,
+    feature_store_details,
     get_cred,
-    snowflake_featurestore_name,
+    featurestore_name,
     reset_session,
     mongo_persistent,
 ):
@@ -61,9 +60,9 @@ async def test_validate_feature_store_id_not_used_in_warehouse(
     _ = reset_session
     mock_persistent.return_value = mongo_persistent[0]
     status = await session_validator_service.validate_feature_store_id_not_used_in_warehouse(
-        feature_store_name=snowflake_featurestore_name,
+        feature_store_name=featurestore_name,
         session_type=SourceType.SNOWFLAKE,
-        details=snowflake_details,
+        details=feature_store_details,
         get_credential=get_cred,
         users_feature_store_id=None,
     )
@@ -71,17 +70,17 @@ async def test_validate_feature_store_id_not_used_in_warehouse(
 
     # Create feature store
     feature_store = FeatureStore.create(
-        name=snowflake_featurestore_name,
+        name=featurestore_name,
         source_type=SourceType.SNOWFLAKE,
-        details=snowflake_details,
+        details=feature_store_details,
     )
 
     # Assert that there's a collision now
     with pytest.raises(FeatureStoreSchemaCollisionError):
         await session_validator_service.validate_feature_store_id_not_used_in_warehouse(
-            feature_store_name=snowflake_featurestore_name,
+            feature_store_name=featurestore_name,
             session_type=SourceType.SNOWFLAKE,
-            details=snowflake_details,
+            details=feature_store_details,
             get_credential=get_cred,
             users_feature_store_id=feature_store.id,
         )

@@ -3,7 +3,7 @@ Models related to entity validation
 """
 from __future__ import annotations
 
-from typing import List
+from typing import Dict, List, Optional
 
 from bson import ObjectId
 from pydantic import validator
@@ -20,10 +20,14 @@ class EntityInfo(FeatureByteBaseModel):
         List of entities required to by the feature / feature list
     provided_entities: List[EntityModel]
         List of entities provided in the request
+    serving_names_mapping: Optional[Dict[str, str]]
+        Optional mapping from original serving name to new serving names (used when the request
+        wants to override the original serving names with new ones)
     """
 
     required_entities: List[EntityModel]
     provided_entities: List[EntityModel]
+    serving_names_mapping: Optional[Dict[str, str]]
 
     @validator("required_entities", "provided_entities")
     @classmethod
@@ -76,3 +80,24 @@ class EntityInfo(FeatureByteBaseModel):
         """
         provided_ids = self.provided_entity_ids
         return [entity for entity in self.required_entities if entity.id not in provided_ids]
+
+    def get_effective_serving_name(self, entity: EntityModel) -> str:
+        """
+        Get the serving name for the entity taking into account the serving names mapping, if any
+
+        Parameters
+        ----------
+        entity: EntityModel
+            Entity object
+
+        Returns
+        -------
+        str
+        """
+        original_serving_name = entity.serving_names[0]
+        if (
+            self.serving_names_mapping is None
+            or original_serving_name not in self.serving_names_mapping
+        ):
+            return original_serving_name
+        return self.serving_names_mapping[original_serving_name]

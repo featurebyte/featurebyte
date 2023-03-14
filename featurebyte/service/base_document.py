@@ -17,8 +17,10 @@ from featurebyte.exception import (
     DocumentNotFoundError,
     QueryNotSupportedError,
 )
+from featurebyte.logger import logger
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
+    FeatureByteWorkspaceBaseDocumentModel,
     UniqueConstraintResolutionSignature,
     VersionIdentifier,
 )
@@ -29,6 +31,10 @@ from featurebyte.service.mixin import Document, DocumentCreateSchema, OpsService
 
 DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
+RAW_QUERY_FILTER_WARNING = (
+    "Using raw query filter breaks application logic. "
+    "It should only be used when absolutely necessary."
+)
 
 
 class BaseDocumentService(
@@ -42,9 +48,20 @@ class BaseDocumentService(
 
     document_class: Type[Document]
 
-    def __init__(self, user: Any, persistent: Persistent):
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
         self.user = user
         self.persistent = persistent
+        self.workspace_id = workspace_id
+        self._allow_to_use_raw_query_filter = False
+
+    def allow_use_raw_query_filter(self) -> None:
+        """
+        Activate use of raw query filter.
+        This should be used ONLY when there is need to access all documents regardless of workspace membership.
+        Valid use cases are data migration or data restoration.
+        """
+        logger.warning(RAW_QUERY_FILTER_WARNING)
+        self._allow_to_use_raw_query_filter = True
 
     @property
     def collection_name(self) -> str:
@@ -67,6 +84,17 @@ class BaseDocumentService(
         camel case collection name
         """
         return "".join(elem.title() for elem in self.collection_name.split("_"))
+
+    @property
+    def is_workspace_specific(self) -> bool:
+        """
+        Whether service operates on workspace specific documents
+
+        Returns
+        -------
+        bool
+        """
+        return issubclass(self.document_class, FeatureByteWorkspaceBaseDocumentModel)
 
     @staticmethod
     def _extract_additional_creation_kwargs(data: DocumentCreateSchema) -> dict[str, Any]:
@@ -98,10 +126,14 @@ class BaseDocumentService(
         -------
         Document
         """
+        kwargs = self._extract_additional_creation_kwargs(data)
+        if self.is_workspace_specific:
+            kwargs = {**kwargs, "workspace_id": self.workspace_id}
+
         document = self.document_class(
             **{
                 **data.json_dict(),
-                **self._extract_additional_creation_kwargs(data),
+                **kwargs,
                 "user_id": self.user.id,
             },
         )
@@ -119,7 +151,9 @@ class BaseDocumentService(
         assert insert_id == document.id
         return await self.get_document(document_id=insert_id)
 
-    def _construct_get_query_filter(self, document_id: ObjectId, **kwargs: Any) -> QueryFilter:
+    def _construct_get_query_filter(
+        self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
+    ) -> QueryFilter:
         """
         Construct query filter used in get route
 
@@ -127,20 +161,36 @@ class BaseDocumentService(
         ----------
         document_id: ObjectId
             Document ID
+        use_raw_query_filter: bool
+            Use only provided query filter
         kwargs: Any
             Additional keyword arguments
 
         Returns
         -------
         QueryFilter
+
+        Raises
+        ------
+        NotImplementedError
+            Using raw query filter without activating override
         """
         _ = self, kwargs
-        return {"_id": ObjectId(document_id)}
+        kwargs = {"_id": ObjectId(document_id)}
+        if use_raw_query_filter:
+            if not self._allow_to_use_raw_query_filter:
+                raise NotImplementedError(RAW_QUERY_FILTER_WARNING)
+            return kwargs
+        # inject workspace_id into filter if document is workspace specific
+        if self.is_workspace_specific:
+            kwargs = {**kwargs, "workspace_id": self.workspace_id}
+        return kwargs
 
     async def get_document(
         self,
         document_id: ObjectId,
         exception_detail: str | None = None,
+        use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> Document:
         """
@@ -152,6 +202,8 @@ class BaseDocumentService(
             Document ID
         exception_detail: str | None
             Exception detail message
+        use_raw_query_filter: bool
+            Use only provided query filter
         kwargs: Any
             Additional keyword arguments
 
@@ -164,7 +216,9 @@ class BaseDocumentService(
         DocumentNotFoundError
             If the requested document not found
         """
-        query_filter = self._construct_get_query_filter(document_id=document_id, **kwargs)
+        query_filter = self._construct_get_query_filter(
+            document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
         document_dict = await self.persistent.find_one(
             collection_name=self.collection_name,
             query_filter=query_filter,
@@ -177,8 +231,57 @@ class BaseDocumentService(
             raise DocumentNotFoundError(exception_detail)
         return self.document_class(**document_dict)
 
+    async def delete_document(
+        self,
+        document_id: ObjectId,
+        exception_detail: Optional[str] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        """
+        Delete document dictionary given document id
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        exception_detail: Optional[str]
+            Exception detail message
+        use_raw_query_filter: bool
+            Use only provided query filter
+        kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        int
+            number of records deleted
+
+        Raises
+        ------
+        DocumentNotFoundError
+            If the requested document not found
+        """
+        query_filter = self._construct_get_query_filter(
+            document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
+        num_of_records_deleted = await self.persistent.delete_one(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            user_id=self.user.id,
+        )
+        if not num_of_records_deleted:
+            exception_detail = exception_detail or (
+                f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
+            )
+            raise DocumentNotFoundError(exception_detail)
+        return int(num_of_records_deleted)
+
     def _construct_list_query_filter(
-        self, query_filter: Optional[Dict[str, Any]] = None, **kwargs: Any
+        self,
+        query_filter: Optional[Dict[str, Any]] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
     ) -> QueryFilter:
         """
         Construct query filter used in list route
@@ -187,22 +290,40 @@ class BaseDocumentService(
         ----------
         query_filter: Optional[Dict[str, Any]]
             Query filter to use as starting point
+        use_raw_query_filter: bool
+            Use only provided query filter
         kwargs: Any
             Keyword arguments passed to the list controller
 
         Returns
         -------
         QueryFilter
+
+        Raises
+        ------
+        NotImplementedError
+            Using raw query filter without activating override
         """
         _ = self
         if not query_filter:
             output = {}
         else:
             output = copy.deepcopy(query_filter)
+
+        if use_raw_query_filter:
+            if not self._allow_to_use_raw_query_filter:
+                raise NotImplementedError(RAW_QUERY_FILTER_WARNING)
+            return output
         if kwargs.get("name"):
             output["name"] = kwargs["name"]
+        if kwargs.get("version"):
+            output["version"] = kwargs["version"]
         if kwargs.get("search"):
             output["$text"] = {"$search": kwargs["search"]}
+        # inject workspace_id into filter if document is workspace specific
+        if self.is_workspace_specific:
+            output["workspace_id"] = self.workspace_id
+
         return output
 
     async def list_documents(
@@ -211,6 +332,7 @@ class BaseDocumentService(
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: SortDir = "desc",
+        use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """
@@ -226,6 +348,8 @@ class BaseDocumentService(
             Key used to sort the returning documents
         sort_dir: SortDir
             Sorting the returning documents in ascending order or descending order
+        use_raw_query_filter: bool
+            Use only provided query filter
         kwargs: Any
             Additional keyword arguments
 
@@ -239,7 +363,9 @@ class BaseDocumentService(
         QueryNotSupportedError
             If the persistent query is not supported
         """
-        query_filter = self._construct_list_query_filter(**kwargs)
+        query_filter = self._construct_list_query_filter(
+            use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
         try:
             docs, total = await self.persistent.find(
                 collection_name=self.collection_name,
@@ -255,7 +381,10 @@ class BaseDocumentService(
         return {"page": page, "page_size": page_size, "total": total, "data": list(docs)}
 
     async def list_documents_iterator(
-        self, query_filter: Dict[str, Any], page_size: int = 1000
+        self,
+        query_filter: Dict[str, Any],
+        page_size: int = 1000,
+        use_raw_query_filter: bool = False,
     ) -> AsyncIterator[Dict[str, Any]]:
         """
         List documents iterator to retrieve all the results based on given document service & query filter
@@ -266,6 +395,8 @@ class BaseDocumentService(
             Query filter
         page_size: int
             Page size
+        use_raw_query_filter: bool
+            Use only provided query filter
 
         Yields
         ------
@@ -276,7 +407,10 @@ class BaseDocumentService(
 
         while to_iterate:
             list_results = await self.list_documents(
-                page=page, page_size=page_size, query_filter=query_filter
+                page=page,
+                page_size=page_size,
+                query_filter=query_filter,
+                use_raw_query_filter=use_raw_query_filter,
             )
             for doc in list_results["data"]:
                 yield doc
@@ -500,6 +634,10 @@ class BaseDocumentService(
         DocumentConflictError
             When there is a conflict with existing document(s) stored at the persistent
         """
+        # for workspace specific document type constraint uniqueness checking to the workspace
+        if self.is_workspace_specific:
+            query_filter = {**query_filter, "workspace_id": self.workspace_id}
+
         conflict_doc = await self.persistent.find_one(
             collection_name=self.collection_name,
             query_filter=query_filter,

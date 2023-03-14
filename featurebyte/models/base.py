@@ -10,12 +10,14 @@ from datetime import datetime
 
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field, StrictStr, validator
+from pydantic import BaseModel, Field, StrictStr, root_validator, validator
 from pydantic.errors import DictError, PydanticTypeError
 
 from featurebyte.enum import StrEnum
 
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
+
+DEFAULT_WORKSPACE_ID = ObjectId("63eda344d0313fb925f7883a")
 
 
 class PydanticObjectId(ObjectId):
@@ -293,3 +295,47 @@ class VersionIdentifier(BaseModel):
         if self.suffix:
             return f"{self.name}_{self.suffix}"
         return self.name
+
+    @classmethod
+    def from_str(cls, version: str) -> VersionIdentifier:
+        """
+        Convert the version string into VersionIdentifier object
+
+        Parameters
+        ----------
+        version: str
+            Version string
+
+        Returns
+        -------
+        VersionIdentifier object
+        """
+        version_identifier = cls(name=version)
+        if "_" in version:
+            name, suffix = version.split("_", 1)
+            version_identifier = cls(name=name, suffix=suffix)
+        return version_identifier
+
+
+class FeatureByteWorkspaceBaseDocumentModel(FeatureByteBaseDocumentModel):
+    """
+    FeatureByte Workspace-specific BaseDocumentModel
+    """
+
+    workspace_id: PydanticObjectId
+
+    @root_validator(pre=True)
+    @classmethod
+    def _validate_workspace_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        workspace_id = values.get("workspace_id")
+        if workspace_id is None:
+            values["workspace_id"] = DEFAULT_WORKSPACE_ID
+        return values
+
+
+class User(FeatureByteBaseModel):
+    """
+    Skeleton user class to provide static user
+    """
+
+    id: Optional[PydanticObjectId] = Field(default=None)

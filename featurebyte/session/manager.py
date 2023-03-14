@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 import json
+import time
 
 from asyncache import cached
 from cachetools import TTLCache
@@ -19,21 +20,22 @@ from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.session.base import BaseSession
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.snowflake import SnowflakeSession
+from featurebyte.session.spark import SparkSession
 from featurebyte.session.sqlite import SQLiteSession
 
 SOURCE_TYPE_SESSION_MAP = {
     SourceType.SQLITE: SQLiteSession,
     SourceType.SNOWFLAKE: SnowflakeSession,
     SourceType.DATABRICKS: DatabricksSession,
+    SourceType.SPARK: SparkSession,
 }
 
 session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
 
 
-@cached(cache=session_cache)
-async def get_session(item: str, credential_params: str) -> BaseSession:
+async def get_new_session(item: str, credential_params: str) -> BaseSession:
     """
-    Retrieve or create a new session for the given database source key
+    Create a new session for the given database source key
 
     Parameters
     ----------
@@ -47,6 +49,7 @@ async def get_session(item: str, credential_params: str) -> BaseSession:
     BaseSession
         Newly created session
     """
+    tic = time.time()
     item_dict = json.loads(item)
     logger.debug(f'Create a new session for {item_dict["type"]}')
     credential_params_dict = json.loads(credential_params)
@@ -54,7 +57,29 @@ async def get_session(item: str, credential_params: str) -> BaseSession:
         **item_dict["details"], **credential_params_dict
     )
     await session.initialize()
+    logger.debug(f"Session creation time: {time.time() - tic:.3f}s")
     return session
+
+
+@cached(cache=session_cache)
+async def get_session(item: str, credential_params: str) -> BaseSession:
+    """
+    Retrieve or create a new session for the given database source key. If a new session is created,
+    it will be cached.
+
+    Parameters
+    ----------
+    item: str
+        JSON dumps of feature store type & details
+    credential_params: str
+        JSON dumps of credential parameters used to initiate a new session
+
+    Returns
+    -------
+    BaseSession
+        Retrieved or created session object
+    """
+    return await get_new_session(item, credential_params)
 
 
 class SessionManager(BaseModel):
@@ -91,23 +116,31 @@ class SessionManager(BaseModel):
         """
         if feature_store_name in self.credentials:
             credential = self.credentials[feature_store_name]
-            credential_params = credential.credential.dict() if credential else {}
-            json_str = json.dumps(
-                {
-                    "type": session_type,
-                    "details": details.json_dict(),
-                },
-                sort_keys=True,
+        elif session_type not in SourceType.credential_required_types():
+            credential = None
+        else:
+            raise ValueError(
+                f'Credentials do not contain info for the feature store "{feature_store_name}"!'
             )
-            session = await get_session(
-                item=json_str,
-                credential_params=json.dumps(credential_params, sort_keys=True),
-            )
-            assert isinstance(session, BaseSession)
-            return session
-        raise ValueError(
-            f'Credentials do not contain info for the feature store "{feature_store_name}"!'
+
+        credential_params = credential.credential.dict() if credential else {}
+        json_str = json.dumps(
+            {
+                "type": session_type,
+                "details": details.json_dict(),
+            },
+            sort_keys=True,
         )
+        if SOURCE_TYPE_SESSION_MAP[session_type].is_threadsafe():
+            get_session_func = get_session
+        else:
+            get_session_func = get_new_session
+        session = await get_session_func(
+            item=json_str,
+            credential_params=json.dumps(credential_params, sort_keys=True),
+        )
+        assert isinstance(session, BaseSession)
+        return session
 
     async def get_session(self, item: FeatureStoreModel) -> BaseSession:
         """

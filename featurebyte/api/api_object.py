@@ -3,27 +3,14 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    Iterator,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar, Union
 
 import operator
 import time
+from dataclasses import dataclass
 from functools import partial
 from http import HTTPStatus
 
-import lazy_object_proxy
 import pandas as pd
 from bson.objectid import ObjectId
 from cachetools import TTLCache, cachedmethod
@@ -33,6 +20,7 @@ from pydantic import Field
 from rich.pretty import pretty_repr
 from typeguard import typechecked
 
+from featurebyte.common.utils import construct_repr_string
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -49,19 +37,6 @@ ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
-
-
-class ApiObjectProxy(lazy_object_proxy.Proxy):
-    """
-    Proxy with customized representation
-    """
-
-    def __repr__(self) -> str:
-        return (
-            f"<{self.__class__.__module__}.{self.__class__.__name__} at {hex(id(self))}>"
-            + "\n"
-            + repr(self.info())
-        )
 
 
 class PrettyDict(Dict[str, Any]):
@@ -102,6 +77,25 @@ def get_api_object_cache_key(
     return hashkey(collection_name, obj.id, *args, **kwargs)
 
 
+@dataclass
+class ForeignKeyMapping:
+    """
+    ForeignKeyMapping contains information about a foreign key field mapping that we can use to map
+    IDs to their names in the list API response.
+    """
+
+    # Field name of the existing ID field in the list API response.
+    foreign_key_field: str
+    # Object class that we will be trying to retrieve the data from.
+    object_class: Any
+    # New field name that we want to display in the list API response
+    new_field_name: str
+    # Field to display instead of `name` from the retrieved list API response.
+    # By default, we will pull the `name` from the retrieved values. This will override that behaviour
+    # to pull a different field.
+    display_field_override: Optional[str] = None
+
+
 class ApiObject(FeatureByteBaseDocumentModel):
     """
     ApiObject contains common methods used to retrieve data
@@ -113,7 +107,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
     _list_schema = FeatureByteBaseDocumentModel
     _get_schema = FeatureByteBaseDocumentModel
     _list_fields = ["name", "created_at"]
-    _list_foreign_keys: List[Tuple[str, Any, str]] = []
+    _list_foreign_keys: List[ForeignKeyMapping] = []
 
     # global api object cache shared by all the ApiObject class & its child classes
     _cache: Any = TTLCache(maxsize=1024, ttl=1)
@@ -122,7 +116,14 @@ class ApiObject(FeatureByteBaseDocumentModel):
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
 
     def __repr__(self) -> str:
-        return repr(self.info())
+        info_repr = ""
+        try:
+            info_repr = repr(self.info())
+        except RecordCreationException:
+            # object has not been saved yet
+            pass
+
+        return construct_repr_string(self, info_repr)
 
     @property  # type: ignore
     @cachedmethod(cache=operator.attrgetter("_cache"), key=get_api_object_cache_key)
@@ -174,9 +175,12 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return {}
 
     @classmethod
-    def _get_object_dict_by_name(cls: Type[ApiObjectT], name: str) -> dict[str, Any]:
+    def _get_object_dict_by_name(
+        cls: Type[ApiObjectT], name: str, other_params: Optional[dict[str, Any]] = None
+    ) -> dict[str, Any]:
         client = Configurations().get_client()
-        response = client.get(url=cls._route, params={"name": name})
+        other_params = other_params or {}
+        response = client.get(url=cls._route, params={"name": name, **other_params})
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             if response_dict["data"]:
@@ -199,9 +203,11 @@ class ApiObject(FeatureByteBaseDocumentModel):
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
-    def _get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
+    def _get(
+        cls: Type[ApiObjectT], name: str, other_params: Optional[dict[str, Any]] = None
+    ) -> ApiObjectT:
         return cls(
-            **cls._get_object_dict_by_name(name=name),
+            **cls._get_object_dict_by_name(name=name, other_params=other_params),
             **cls._get_init_params(),
             saved=True,
             _validate_schema=True,
@@ -210,7 +216,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
     @classmethod
     def get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
         """
-        Retrieve lazy object from the persistent given object name
+        Retrieve object from the persistent given object name
 
         Parameters
         ----------
@@ -222,7 +228,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ApiObjectT
             Retrieved object with the specified name
         """
-        return cast(ApiObjectT, ApiObjectProxy(partial(cls._get, name)))
+        return cls._get(name)
 
     @classmethod
     def from_persistent_object_dict(
@@ -254,7 +260,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> ApiObjectT:
         """
-        Get the lazy object from the persistent given the object ID
+        Get the object from the persistent given the object ID
 
         Parameters
         ----------
@@ -266,7 +272,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ApiObjectT
             ApiObject object of the given object ID
         """
-        return cast(ApiObjectT, ApiObjectProxy(partial(cls._get_by_id, id)))
+        return cls._get_by_id(id)
 
     @staticmethod
     def _to_request_func(response_dict: dict[str, Any], page: int) -> bool:
@@ -446,11 +452,17 @@ class ApiObject(FeatureByteBaseDocumentModel):
         DataFrame
         """
         # populate object names using foreign keys
-        for foreign_key_field, object_class, new_field_name in cls._list_foreign_keys:
-            object_list = object_class.list(include_id=True)
+        for foreign_key_mapping in cls._list_foreign_keys:
+            object_list = foreign_key_mapping.object_class.list(include_id=True)
             if object_list.shape[0] > 0:
                 object_list.index = object_list.id
-                object_map = object_list["name"].to_dict()
+                field_to_pull = (
+                    foreign_key_mapping.display_field_override
+                    if foreign_key_mapping.display_field_override
+                    else "name"
+                )
+                object_map = object_list[field_to_pull].to_dict()
+                foreign_key_field = foreign_key_mapping.foreign_key_field
                 if "." in foreign_key_field:
                     # foreign_key is a dict
                     foreign_key_field, object_id_field = foreign_key_field.split(".")
@@ -463,7 +475,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
                 new_field_values = item_list[foreign_key_field].apply(mapping_function)
             else:
                 new_field_values = [[]] * item_list.shape[0]
-            item_list[new_field_name] = new_field_values
+            item_list[foreign_key_mapping.new_field_name] = new_field_values
 
         return item_list
 

@@ -1,7 +1,7 @@
 """
 This model contains query graph internal model structures
 """
-from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Tuple
+from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple
 
 import json
 from collections import defaultdict
@@ -11,9 +11,10 @@ from pydantic import Field, root_validator, validator
 from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
-from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.query_graph.util import hash_node
 
 
@@ -51,15 +52,50 @@ class QueryGraphModel(FeatureByteBaseModel):
         return repr(self)
 
     @property
+    def sorted_node_names_by_ref(self) -> List[str]:
+        """
+        Sorted node names by reference
+
+        Returns
+        -------
+        List[str]
+        """
+        return sorted(self.nodes_map, key=lambda x: self.node_name_to_ref[x])
+
+    @property
+    def sorted_edges_map_by_ref(self) -> Dict[str, List[str]]:
+        """
+        Sorted edges map by reference
+
+        Returns
+        -------
+        Dict[str, List[str]]
+        """
+        # To make the order insensitive to the node names, we first sort the backward edges map by node hash.
+        # Backward edges map is used due to the fact that input node order are important to the node operation.
+        # If edges map is used, the input order will be lost. After that, we reconstruct the edges map from
+        # the sorted backward edges map (required for topological sort).
+        edges_map = defaultdict(list)
+        sorted_backward_edges_keys = sorted(
+            self.backward_edges_map, key=lambda x: self.node_name_to_ref[x]
+        )
+        for target_node_name in sorted_backward_edges_keys:
+            for source_node_name in self.backward_edges_map[target_node_name]:
+                edges_map[source_node_name].append(target_node_name)
+        return edges_map
+
+    @property
     def node_topological_order_map(self) -> Dict[str, int]:
         """
-        Node name to topological sort order index mapping
+        Node name to topological sort order index mapping. This mapping is used to sort the nodes in the graph.
 
         Returns
         -------
         Dict[int, str]
         """
-        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
+        sorted_node_names = topological_sort(
+            self.sorted_node_names_by_ref, self.sorted_edges_map_by_ref
+        )
         return {value: idx for idx, value in enumerate(sorted_node_names)}
 
     @staticmethod
@@ -103,7 +139,34 @@ class QueryGraphModel(FeatureByteBaseModel):
         return node_type_counter
 
     @staticmethod
+    def _get_node_parameter_for_compute_node_hash(node: Node) -> Dict[str, Any]:
+        """
+        Get node parameters for computing node hash. If the node is a graph node, the output node hash of the
+        nested graph is used to represent the graph parameters. Without doing this, the graph node's hash will
+        be sensitive to the order of the nodes/edges in the nested graph.
+
+        Parameters
+        ----------
+        node: Node
+            Node to get parameters for computing node hash
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        node_parameters = node.parameters.dict()
+        if node.type == NodeType.GRAPH:
+            nested_graph = node.parameters.graph  # type: ignore
+            node_parameters["graph"] = nested_graph.node_name_to_ref[node.parameters.output_node_name]  # type: ignore
+            # remove node name from graph parameters to prevent the node name
+            # from affecting the graph hash (node name could be different if the insert order is different)
+            # even if the final graph is the same
+            node_parameters.pop("output_node_name")
+        return node_parameters
+
+    @classmethod
     def _derive_node_name_to_ref(
+        cls,
         nodes_map: Dict[str, Node],
         edges_map: Dict[str, List[str]],
         backward_edges_map: Dict[str, List[str]],
@@ -120,7 +183,7 @@ class QueryGraphModel(FeatureByteBaseModel):
             node = nodes_map[node_name]
             node_name_to_ref[node_name] = hash_node(
                 node.type,
-                node.parameters.dict(),
+                cls._get_node_parameter_for_compute_node_hash(node),
                 node.output_type,
                 input_node_refs,
             )
@@ -238,15 +301,67 @@ class QueryGraphModel(FeatureByteBaseModel):
     def get_input_node_names(self, node: Node) -> List[str]:
         """
         Get the input node names of the given node
+
         Parameters
         ----------
         node: Node
             Node
+
         Returns
         -------
         List[str]
         """
         return self.backward_edges_map.get(node.name, [])
+
+    def get_target_nodes_required_column_names(
+        self,
+        node_name: str,
+        keep_target_node_names: Optional[Set[str]],
+        available_column_names: List[str],
+    ) -> List[str]:
+        """
+        Get the target required column names of the given node.
+        Current node output must have these columns, otherwise it will trigger error in processing the graph.
+
+        Parameters
+        ----------
+        node_name: str
+            Node name
+        keep_target_node_names: Optional[Set[str]]
+            If provided, only use the target nodes with names in the set
+        available_column_names: List[str]
+            List of available input columns
+
+        Returns
+        -------
+        List[str]
+        """
+        assert node_name in self.edges_map, "Node name not found in edges_map"
+        target_node_names = self.edges_map[node_name]
+        if keep_target_node_names:
+            target_node_names = [
+                node_name for node_name in target_node_names if node_name in keep_target_node_names
+            ]
+        target_nodes = [self.get_node_by_name(node_name) for node_name in target_node_names]
+        if target_nodes:
+            # get the input column order from current node to the target nodes
+            target_node_input_order_pairs = []
+            for target_node in target_nodes:
+                target_node_input_node_names = self.get_input_node_names(node=target_node)
+                node_name_input_order = target_node_input_node_names.index(node_name)
+                target_node_input_order_pairs.append((target_node, node_name_input_order))
+
+            # construct required column names
+            required_columns = set().union(
+                *(
+                    node.get_required_input_columns(
+                        input_index=input_order, available_column_names=available_column_names
+                    )
+                    for node, input_order in target_node_input_order_pairs
+                )
+            )
+            return list(required_columns)
+        return []
 
     def iterate_nodes(self, target_node: Node, node_type: NodeType) -> Iterator[Node]:
         """
@@ -268,6 +383,33 @@ class QueryGraphModel(FeatureByteBaseModel):
             if node.type == node_type:
                 yield node
 
+    def iterate_sorted_graph_nodes(
+        self, graph_node_types: Set[GraphNodeType]
+    ) -> Iterator[BaseGraphNode]:
+        """
+        Iterate all specified nodes in this query graph in a topologically sorted order
+
+        Parameters
+        ----------
+        graph_node_types: Set[GraphNodeType]
+            Specific node types to iterate
+
+        Yields
+        ------
+        BaseGraphNode
+            Graph nodes of the specified graph node types
+        """
+        for node in self.iterate_sorted_nodes():
+            if node.type == NodeType.GRAPH:
+                assert isinstance(node, BaseGraphNode)
+                if node.parameters.type in graph_node_types:
+                    yield node
+                else:
+                    for graph_node in node.parameters.graph.iterate_sorted_graph_nodes(
+                        graph_node_types=graph_node_types
+                    ):
+                        yield graph_node
+
     def iterate_sorted_nodes(self) -> Iterator[Node]:
         """
         Iterate all nodes in topological sorted order
@@ -277,7 +419,9 @@ class QueryGraphModel(FeatureByteBaseModel):
         Node
             Topologically sorted query graph nodes
         """
-        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
+        sorted_node_names = topological_sort(
+            self.sorted_node_names_by_ref, self.sorted_edges_map_by_ref
+        )
         for node_name in sorted_node_names:
             yield self.nodes_map[node_name]
 
@@ -367,7 +511,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         )
         node_ref = hash_node(
             temp_node.type,
-            temp_node.parameters.dict(),
+            self._get_node_parameter_for_compute_node_hash(temp_node),
             temp_node.output_type,
             input_node_refs,
         )

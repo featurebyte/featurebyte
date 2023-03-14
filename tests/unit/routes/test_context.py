@@ -6,17 +6,18 @@ from http import HTTPStatus
 import pytest
 from bson.objectid import ObjectId
 
-from tests.unit.routes.base import BaseApiTestSuite
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
-class TestContextApi(BaseApiTestSuite):
+class TestContextApi(BaseWorkspaceApiTestSuite):
     """
     TestContextApi class
     """
 
     class_name = "Context"
     base_route = "/context"
-    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/context.json")
+    payload = BaseWorkspaceApiTestSuite.load_payload("tests/fixtures/request_payloads/context.json")
     unknown_id = ObjectId()
     create_conflict_payload_expected_detail_pairs = [
         (payload, f'Context (id: "{payload["_id"]}") already exists.')
@@ -79,7 +80,7 @@ class TestContextApi(BaseApiTestSuite):
                 self.update_unprocessable_payload_expected_detail_pairs,
             )
 
-    def setup_creation_route(self, api_client):
+    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
         """Setup for post route"""
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
@@ -89,7 +90,9 @@ class TestContextApi(BaseApiTestSuite):
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(f"/{api_object}", json=payload)
+            response = api_client.post(
+                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
+            )
             assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):

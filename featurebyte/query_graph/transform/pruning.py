@@ -1,11 +1,9 @@
 """
 This module contains graph pruning related classes.
 """
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-from pydantic import BaseModel, Field
-
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BasePrunableNode
@@ -126,11 +124,19 @@ def prune_query_graph(
 class NodeParametersPruningGlobalState(OperationStructureInfo):
     """NodeParametersPruningGlobalState class"""
 
-    # variables for extractor output
-    graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
-    node_name_map: NodeNameMap = Field(default_factory=dict)
-    target_columns: Optional[List[str]] = Field(default=None)
-    target_node_name: str
+    def __init__(
+        self,
+        target_node_name: str,
+        graph: Optional[QueryGraphModel] = None,
+        node_name_map: Optional[NodeNameMap] = None,
+        target_columns: Optional[List[str]] = None,
+        **kwargs: Any,
+    ):
+        super().__init__(**kwargs)
+        self.graph = graph or QueryGraphModel()
+        self.node_name_map = node_name_map or {}
+        self.target_columns = target_columns
+        self.target_node_name = target_node_name
 
 
 class NodeParametersPruningExtractor(
@@ -162,35 +168,40 @@ class NodeParametersPruningExtractor(
         input_op_structs = []
         mapped_input_nodes = []
         for input_node_name in self.graph.get_input_node_names(node):
-            input_op_structs.append(global_state.operation_structure_map[input_node_name])
             mapped_input_node_name = global_state.node_name_map[input_node_name]
+            input_op_structs.append(global_state.operation_structure_map[mapped_input_node_name])
             mapped_input_nodes.append(global_state.graph.get_node_by_name(mapped_input_node_name))
 
         if not isinstance(node, BaseGraphNode):
             # For the graph node, the pruning happens in GraphStructurePruningExtractor.
             # Prepare target nodes (nodes that consider current node as an input node) & input operation
             # structures to the node. Use these 2 info to perform the actual node parameters pruning.
-            target_nodes: Sequence[Node]
+            target_node_input_order_pairs: List[Tuple[Node, int]] = []
             if node.name == global_state.target_node_name and global_state.target_columns:
                 # create a temporary project node if
                 # - current node name equals to target_node_name
                 # - target_columns is not empty
-                target_nodes = [
-                    ProjectNode(
-                        name="temp",
-                        parameters={"columns": global_state.target_columns},
-                        output_type=NodeOutputType.FRAME,
-                    )
-                ]
+                project_node = ProjectNode(
+                    name="temp",
+                    parameters={"columns": global_state.target_columns},
+                    output_type=NodeOutputType.FRAME,
+                )
+                target_node_input_order_pairs.append((project_node, 0))
             else:
                 # get the output nodes of current node (target nodes)
                 target_node_names = self.graph.edges_map[node.name]
-                target_nodes = [
-                    self.graph.get_node_by_name(node_name) for node_name in target_node_names
-                ]
+                for target_node_name in target_node_names:
+                    target_node = self.graph.get_node_by_name(target_node_name)
+                    target_node_input_order_pairs.append(
+                        (
+                            target_node,
+                            self.graph.get_input_node_names(target_node).index(node.name),
+                        )
+                    )
 
             node = node.prune(
-                target_nodes=target_nodes, input_operation_structures=input_op_structs
+                target_node_input_order_pairs=target_node_input_order_pairs,
+                input_operation_structures=input_op_structs,
             )
 
         # add the pruned node back to a graph to reconstruct a parameters-pruned graph
@@ -233,22 +244,38 @@ class NodeParametersPruningExtractor(
         return global_state.graph, global_state.node_name_map
 
 
-class GraphPruningBranchState(BaseModel):
+class GraphPruningBranchState:
     """GraphPruningBranchState class"""
 
 
 class GraphPruningGlobalState(OperationStructureInfo):
     """GraphPruningGlobalState class"""
 
-    # variables to store some internal pruning info
-    node_names: Set[str]  # node names that contributes to the final output
+    def __init__(
+        self,
+        node_names: Set[str],
+        target_node_name: str,
+        graph: Optional[QueryGraphModel] = None,
+        node_name_map: Optional[NodeNameMap] = None,
+        target_columns: Optional[List[str]] = None,
+        aggressive: bool = False,
+        **kwargs: Any,
+    ):
+        super().__init__(**kwargs)
 
-    # variables for extractor output
-    graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
-    node_name_map: NodeNameMap = Field(default_factory=dict)
+        # variables to store some internal pruning info
+        self.node_names = node_names
 
-    # variables to control pruning behavior
-    aggressive: bool
+        # variables for extractor output
+        self.graph = graph or QueryGraphModel()
+        self.node_name_map = node_name_map or {}
+
+        # variables to track output node & target columns
+        self.target_columns = target_columns
+        self.target_node_name = target_node_name
+
+        # variables to control pruning behavior
+        self.aggressive = aggressive
 
 
 class GraphStructurePruningExtractor(
@@ -273,6 +300,10 @@ class GraphStructurePruningExtractor(
             and isinstance(node, BasePrunableNode)
             and node.name not in global_state.node_names
         ):
+            if isinstance(node, BaseGraphNode) and not node.is_prunable:
+                # graph node is not prunable
+                return input_node_names, False
+
             # prune the graph structure if
             # - pruning mode is aggressive (means that travelled node can be removed)
             # - node is prunable
@@ -290,24 +321,34 @@ class GraphStructurePruningExtractor(
     ) -> GraphPruningBranchState:
         return GraphPruningBranchState()
 
+    def _prepare_target_columns(
+        self, node: Node, global_state: GraphPruningGlobalState
+    ) -> Optional[List[str]]:
+        if node.name == global_state.target_node_name:
+            # since the target node doesn't have the output node,
+            # we use the target columns in the global state
+            return global_state.target_columns
+
+        # otherwise, we use the target columns from the node
+        # global_state.node_names is a set of node names that contributes to the final output
+        operation_structure = global_state.operation_structure_map[node.name]
+        return self.graph.get_target_nodes_required_column_names(
+            node_name=node.name,
+            keep_target_node_names=global_state.node_names,
+            available_column_names=operation_structure.output_column_names,
+        )
+
     @classmethod
     def _prune_nested_graph(
         cls,
         node: BaseGraphNode,
-        target_nodes: List[Node],
+        target_columns: Optional[List[str]],
         proxy_input_operation_structures: List[OperationStructure],
         aggressive: bool,
     ) -> Node:
         nested_graph = node.parameters.graph
         output_node_name = node.parameters.output_node_name
         nested_target_node = nested_graph.get_node_by_name(output_node_name)
-        target_columns: Optional[List[str]] = None
-        if target_nodes and all(node.type == NodeType.PROJECT for node in target_nodes):
-            required_columns = set().union(
-                *(node.get_required_input_columns() for node in target_nodes)
-            )
-            target_columns = list(required_columns)
-
         pruned_graph, _, output_node_name = prune_query_graph(
             graph=nested_graph,
             node=nested_target_node,
@@ -320,6 +361,7 @@ class GraphStructurePruningExtractor(
                 "graph": pruned_graph,
                 "output_node_name": output_node_name,
                 "type": node.parameters.type,
+                "metadata": node.parameters.metadata,  # type: ignore
             }
         )
 
@@ -356,16 +398,15 @@ class GraphStructurePruningExtractor(
             mapped_input_nodes.append(global_state.graph.get_node_by_name(mapped_input_node_name))
 
         # add the node back to the pruned graph
-        target_node_names = global_state.edges_map[node.name]
-        target_nodes = [self.graph.get_node_by_name(node_name) for node_name in target_node_names]
         if global_state.aggressive and isinstance(node, BaseGraphNode):
             proxy_input_operation_structures = [
                 global_state.operation_structure_map[node_name]
                 for node_name in self.graph.get_input_node_names(node=node)
             ]
+            target_columns = self._prepare_target_columns(node=node, global_state=global_state)
             node = self._prune_nested_graph(
                 node=node,
-                target_nodes=target_nodes,
+                target_columns=target_columns,
                 proxy_input_operation_structures=proxy_input_operation_structures,
                 aggressive=global_state.aggressive,
             )
@@ -410,6 +451,8 @@ class GraphStructurePruningExtractor(
         global_state = GraphPruningGlobalState(
             node_names=operation_structure.all_node_names.difference([temp_node_name]),
             edges_map=op_struct_info.edges_map,
+            target_node_name=node.name,
+            target_columns=target_columns,
             operation_structure_map=op_struct_info.operation_structure_map,
             aggressive=aggressive,
         )

@@ -49,7 +49,7 @@ class Project(ExpressionNode):
 
     @property
     def sql_standalone(self) -> Expression:
-        return self.table_node.get_sql_for_expression(self.sql, alias=self.column_name)
+        return self.table_node.get_sql_for_expressions(exprs=[self.sql], aliases=[self.column_name])
 
 
 @dataclass

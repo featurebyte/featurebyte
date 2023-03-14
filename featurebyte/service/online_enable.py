@@ -6,10 +6,10 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from bson.objectid import ObjectId
+from pydantic import PrivateAttr
 
-from featurebyte.enum import SourceType
+from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.online_store import OnlineFeatureSpec
@@ -23,6 +23,7 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 
 
@@ -32,15 +33,32 @@ class OnlineEnableService(BaseService):
     of feature online enablement.
     """
 
+    _task_manager: TaskManager = PrivateAttr()
+
     def __init__(
-        self, user: Any, persistent: Persistent, session_manager_service: SessionManagerService
+        self,
+        user: Any,
+        persistent: Persistent,
+        workspace_id: ObjectId,
+        session_manager_service: SessionManagerService,
     ):
-        super().__init__(user, persistent)
-        self.feature_service = FeatureService(user=user, persistent=persistent)
+        super().__init__(user, persistent, workspace_id)
+        self.feature_service = FeatureService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
         self.session_manager_service = session_manager_service
-        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
-        self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
-        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
+        self.feature_store_service = FeatureStoreService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.feature_namespace_service = FeatureNamespaceService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.feature_list_service = FeatureListService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self._task_manager = TaskManager(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
 
     @classmethod
     def _extract_online_enabled_feature_ids(
@@ -125,7 +143,7 @@ class OnlineEnableService(BaseService):
 
     @staticmethod
     async def update_data_warehouse_with_session(
-        session: BaseSession, feature: FeatureModel
+        session: BaseSession, feature: FeatureModel, task_manager: Optional[TaskManager] = None
     ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
@@ -137,6 +155,8 @@ class OnlineEnableService(BaseService):
             Session object
         feature: FeatureModel
             Updated Feature object
+        task_manager: Optional[TaskManager]
+            TaskManager object
         """
         extended_feature_model = ExtendedFeatureModel(**feature.dict())
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
@@ -144,42 +164,48 @@ class OnlineEnableService(BaseService):
         if not online_feature_spec.is_online_store_eligible:
             return
 
-        # Currently only Snowflake is supported as there is no abstraction on FeatureManager for
-        # different engines. To be fixed: https://featurebyte.atlassian.net/browse/DEV-810
-        if session.source_type != SourceType.SNOWFLAKE:
-            return
-        feature_manager = FeatureManagerSnowflake(session)
+        feature_manager = FeatureManager(session=session, task_manager=task_manager)
 
         if feature.online_enabled:
             await feature_manager.online_enable(online_feature_spec)
         else:
             await feature_manager.online_disable(online_feature_spec)
 
-    async def _update_data_warehouse(self, feature: FeatureModel, get_credential: Any) -> None:
+    async def update_data_warehouse(
+        self, updated_feature: FeatureModel, online_enabled_before_update: bool, get_credential: Any
+    ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
         disabling scheduled tile and feature jobs
 
         Parameters
         ----------
-        feature: FeatureModel
-            Updated Feature object
+        updated_feature: FeatureModel
+            Updated Feature
+        online_enabled_before_update: bool
+            Online enabled status
         get_credential: Any
             Get credential handler function
         """
+        if updated_feature.online_enabled == online_enabled_before_update:
+            # updated_feature has the same online_enabled status as the original one
+            # no need to update
+            return
+
         feature_store_model = await self.feature_store_service.get_document(
-            document_id=feature.tabular_source.feature_store_id
+            document_id=updated_feature.tabular_source.feature_store_id
         )
         session = await self.session_manager_service.get_feature_store_session(
             feature_store_model, get_credential
         )
-        await self.update_data_warehouse_with_session(session=session, feature=feature)
+        await self.update_data_warehouse_with_session(
+            session=session, feature=updated_feature, task_manager=self._task_manager
+        )
 
     async def update_feature(
         self,
         feature_id: ObjectId,
         online_enabled: bool,
-        get_credential: Any,
     ) -> FeatureModel:
         """
         Update feature online enabled & trigger list of cascading updates
@@ -190,8 +216,6 @@ class OnlineEnableService(BaseService):
             Target feature ID
         online_enabled: bool
             Value to update the feature online_enabled status
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -218,6 +242,7 @@ class OnlineEnableService(BaseService):
                         feature=feature,
                         return_document=False,
                     )
-                await self._update_data_warehouse(feature=feature, get_credential=get_credential)
+
                 return await self.feature_service.get_document(document_id=feature_id)
+
         return document

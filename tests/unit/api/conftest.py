@@ -35,8 +35,8 @@ def expected_snowflake_table_preview_query() -> str:
           "col_text" AS "col_text",
           "col_binary" AS "col_binary",
           "col_boolean" AS "col_boolean",
-          CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
-          CAST("created_at" AS VARCHAR) AS "created_at",
+          CAST("event_timestamp" AS STRING) AS "event_timestamp",
+          CAST("created_at" AS STRING) AS "created_at",
           "cust_id" AS "cust_id"
         FROM "sf_database"."sf_schema"."sf_table"
         LIMIT 10
@@ -56,8 +56,8 @@ def expected_item_data_table_preview_query() -> str:
           "item_id_col" AS "item_id_col",
           "item_type" AS "item_type",
           "item_amount" AS "item_amount",
-          CAST("created_at" AS VARCHAR) AS "created_at",
-          CAST("event_timestamp" AS VARCHAR) AS "event_timestamp"
+          CAST("created_at" AS STRING) AS "created_at",
+          CAST("event_timestamp" AS STRING) AS "event_timestamp"
         FROM "sf_database"."sf_schema"."items_table"
         LIMIT 10
         """
@@ -191,12 +191,23 @@ def snowflake_item_data_fixture(
     yield item_data
 
 
+@pytest.fixture()
+def item_entity_id():
+    """
+    Item entity id fixture
+    """
+    # Note that these IDs are part of the groupby node parameters, it will affect the node hash calculation.
+    # Altering these IDs may cause the SDK code generation to fail (due to the generated code could slightly
+    # be different).
+    return ObjectId("63f9506dd478b941271ed957")
+
+
 @pytest.fixture
-def item_entity():
+def item_entity(item_entity_id):
     """
     Item entity fixture
     """
-    entity = Entity(name="item", serving_names=["item_id"])
+    entity = Entity(name="item", serving_names=["item_id"], _id=item_entity_id)
     entity.save()
     return entity
 
@@ -285,7 +296,7 @@ def snowflake_event_view_fixture(
     snowflake_event_data.update_default_feature_job_setting(
         feature_job_setting=arbitrary_default_feature_job_setting
     )
-    event_view = EventView.from_event_data(event_data=snowflake_event_data)
+    event_view = snowflake_event_data.get_view()
     yield event_view
 
 

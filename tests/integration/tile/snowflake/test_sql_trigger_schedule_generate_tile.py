@@ -6,8 +6,9 @@ import pytest
 from featurebyte.enum import InternalName
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_trigger_tile_schedule(snowflake_session):
+async def test_trigger_tile_schedule(session):
     """
     Test creation of scheduled task for tile generation and monitoring
     """
@@ -47,13 +48,13 @@ async def test_trigger_tile_schedule(snowflake_session):
           {tile_monitor}
         )
         """
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
-    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{agg_id}%'")
+    result = await session.execute_query(f"SHOW TASKS LIKE '%{agg_id}%'")
     assert len(result) == 1
     assert result["name"].iloc[0] == task_name
     assert result["schedule"].iloc[0] == "5 MINUTE"
 
-    await snowflake_session.execute_query(f"DROP TASK IF EXISTS {task_name}")
-    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{agg_id}%'")
+    await session.execute_query(f"DROP TASK IF EXISTS {task_name}")
+    result = await session.execute_query(f"SHOW TASKS LIKE '%{agg_id}%'")
     assert len(result) == 0

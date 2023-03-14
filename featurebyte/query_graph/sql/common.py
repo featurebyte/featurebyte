@@ -3,7 +3,7 @@ Common helpers and data structures for feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Sequence, Tuple, Union
 
 from enum import Enum
 
@@ -18,15 +18,18 @@ REQUEST_TABLE_NAME = "REQUEST_TABLE"
 # related operations which discard missing keys by default.
 MISSING_VALUE_REPLACEMENT = "__MISSING__"
 
+CteStatement = Tuple[Union[str, Expression], Expression]
+CteStatements = Sequence[CteStatement]
+
 
 def construct_cte_sql(
-    cte_statements: Sequence[tuple[str | expressions.Identifier, Expression]]
+    cte_statements: CteStatements,
 ) -> expressions.Select:
     """Construct CTEs section of a SQL code
 
     Parameters
     ----------
-    cte_statements : list[tuple[str, str]]
+    cte_statements : CteStatements
         List of CTE statements
 
     Returns
@@ -99,7 +102,7 @@ def get_dialect_from_source_type(source_type: SourceType) -> str:
     -------
     str
     """
-    if source_type == SourceType.DATABRICKS:
+    if source_type in [SourceType.DATABRICKS, SourceType.SPARK]:
         dialect = "spark"
     else:
         assert source_type == SourceType.SNOWFLAKE

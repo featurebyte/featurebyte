@@ -762,21 +762,22 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
             {
                 "name": "TIMESTAMP_VALUE",
                 "dtype": "TIMESTAMP",
-                **extract_column_parameters(input_node, {"project_1"}),
+                **extract_column_parameters(input_node, {"project_1", "project_3"}),
             }
         ],
         "transforms": ["date_diff", "date_add"],
         "type": "derived",
         "filter": False,
         "node_names": {
-            "input_1",
-            "date_diff_1",
-            "assign_1",
-            "date_add_1",
-            "assign_3",
-            "project_1",
-            "project_2",
             "project_3",
+            "assign_1",
+            "project_1",
+            "assign_3",
+            "input_1",
+            "project_2",
+            "date_diff_1",
+            "project_4",
+            "date_add_1",
         },
         "node_name": "assign_3",
         "dtype": "TIMESTAMP",
@@ -797,7 +798,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
             "transforms": [],
             "type": "derived",
             "filter": False,
-            "node_names": {"assign_2", "project_4"},
+            "node_names": {"assign_2", "project_5"},
             "node_name": "assign_2",
             "dtype": "INT",
         }
@@ -807,7 +808,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
 
     # check frame
     op_struct = graph.extract_operation_structure(node=dataframe.node)
-    expected_new_ts["node_names"].remove("project_3")
+    expected_new_ts["node_names"].remove("project_4")
     assert to_dict(op_struct.columns) == [
         {"name": "CUST_ID", "dtype": "INT", **common_data_column_params},
         {"name": "PRODUCT_ACTION", "dtype": "VARCHAR", **common_data_column_params},
@@ -840,7 +841,7 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
     graph = dataframe.graph
     input_node = graph.get_node_by_name("input_1")
     op_struct = graph.extract_operation_structure(node=dataframe["diff"].node)
-    assert op_struct == {
+    assert to_dict(op_struct) == {
         "aggregations": [],
         "columns": [
             {
@@ -848,12 +849,14 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
                     {
                         "name": "VALUE",
                         "dtype": "FLOAT",
-                        **extract_column_parameters(input_node, {"project_1"}),
+                        **extract_column_parameters(input_node, {"project_1", "input_1"}),
                     },
                     {
                         "name": "CUST_ID",
                         "dtype": "INT",
-                        **extract_column_parameters(input_node, {"project_2"}),
+                        **extract_column_parameters(
+                            input_node, {"project_2", "input_1", "project_4"}
+                        ),
                     },
                 ],
                 "filter": False,
@@ -872,6 +875,7 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
                     "project_4",
                     "project_5",
                     "project_6",
+                    "project_7",
                 },
                 "node_name": "assign_4",
                 "transforms": ["sub", "add"],
@@ -965,7 +969,7 @@ def test_extract_operation_structure__graph_node_row_index_lineage(
             "filter": False,
             "node_names": {"input_1", "graph_1"},
             "node_name": "graph_1",
-            "transforms": ["graph"],
+            "transforms": [],
             "columns": [
                 {
                     "name": "a",

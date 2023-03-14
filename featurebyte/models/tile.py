@@ -3,6 +3,7 @@ This module contains Tile related models
 """
 from typing import Any, Dict, List, Optional
 
+from bson import ObjectId
 from pydantic import Field, root_validator, validator
 
 from featurebyte.enum import StrEnum
@@ -48,6 +49,17 @@ class TileSpec(FeatureByteBaseModel):
     tile_id: str
     aggregation_id: str
     category_column_name: Optional[str]
+
+    feature_store_id: Optional[ObjectId]
+    user_id: Optional[ObjectId]
+    workspace_id: Optional[ObjectId]
+
+    class Config:
+        """
+        Config for pydantic model
+        """
+
+        arbitrary_types_allowed: bool = True
 
     @validator("tile_id")
     @classmethod

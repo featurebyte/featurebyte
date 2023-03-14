@@ -7,20 +7,26 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.common.validator import columns_info_validator
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, ViewMode
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.model.critical_data_info import (
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
+from featurebyte.query_graph.model.table import (
+    DimensionTableData,
+    EventTableData,
+    GenericTableData,
+    ItemTableData,
+)
+from featurebyte.query_graph.node.cleaning_operation import (
     ConditionOperationField,
-    CriticalDataInfo,
     DisguisedValueImputation,
     MissingValueImputation,
     StringValueImputation,
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
-from featurebyte.query_graph.model.table import DimensionTableData, EventTableData, GenericTableData
+from featurebyte.query_graph.node.nested import ItemViewMetadata, ViewMetadata
 from featurebyte.query_graph.node.schema import (
     FeatureStoreDetails,
     SnowflakeDetails,
@@ -73,6 +79,7 @@ def event_table_data_fixture(tabular_source):
     return EventTableData(
         columns_info=[
             ColumnInfo(name="event_timestamp", dtype=DBVarType.TIMESTAMP),
+            ColumnInfo(name="event_id", dtype=DBVarType.INT),
             ColumnInfo(
                 name="amount",
                 dtype=DBVarType.FLOAT,
@@ -88,6 +95,29 @@ def event_table_data_fixture(tabular_source):
         ],
         tabular_source=tabular_source,
         event_timestamp_column="event_timestamp",
+        event_id_column="event_id",
+    )
+
+
+@pytest.fixture(name="item_table_data")
+def item_table_data_fixture(tabular_source, event_table_data):
+    """Item table data fixture"""
+    return ItemTableData(
+        columns_info=[
+            ColumnInfo(name="item_id", dtype=DBVarType.INT),
+            ColumnInfo(name="item_name", dtype=DBVarType.VARCHAR),
+            ColumnInfo(
+                name="item_amount",
+                dtype=DBVarType.FLOAT,
+                critical_data_info=CriticalDataInfo(
+                    cleaning_operations=[MissingValueImputation(imputed_value=0)]
+                ),
+            ),
+        ],
+        tabular_source=tabular_source,
+        event_id_column="event_timestamp",
+        item_id_column="item_id",
+        event_data_id=event_table_data.id,
     )
 
 
@@ -158,17 +188,25 @@ def event_input_node_fixture(feature_store_details, event_table_data):
         "parameters": {
             "columns": [
                 {"name": "event_timestamp", "dtype": "TIMESTAMP"},
+                {"name": "event_id", "dtype": "INT"},
                 {"name": "amount", "dtype": "FLOAT"},
             ],
             "feature_store_details": feature_store_details,
             "id": event_table_data.id,
             "table_details": event_table_data.tabular_source.table_details,
-            "id_column": None,
+            "id_column": "event_id",
             "timestamp_column": "event_timestamp",
             "type": "event_data",
         },
         "output_type": "frame",
     }
+    return input_node
+
+
+@pytest.fixture(name="item_input_node")
+def item_input_node_fixture(feature_store_details, item_table_data):
+    """Item table data input node"""
+    input_node = item_table_data.construct_input_node(feature_store_details=feature_store_details)
     return input_node
 
 
@@ -202,7 +240,19 @@ def test_construct_cleaning_recipe_node__missing_critical_data_info(
     generic_table_data, generic_input_node
 ):
     """Test construct_cleaning_recipe_node on a table data without any critical data info"""
-    output = generic_table_data.construct_cleaning_recipe_node(input_node=generic_input_node)
+    output = generic_table_data.construct_cleaning_recipe_node(
+        input_node=generic_input_node, skip_column_names=[]
+    )
+    assert output is None
+
+
+def test_construct_cleaning_recipe_node__check_skip_columns_works_as_expected(
+    event_table_data, event_input_node
+):
+    """Test construct_cleaning_recipe_node (skip columns)"""
+    output = event_table_data.construct_cleaning_recipe_node(
+        input_node=event_input_node, skip_column_names=["amount"]
+    )
     assert output is None
 
 
@@ -211,7 +261,9 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
     # construct an input node & a graph node
     query_graph = QueryGraph()
     inserted_input_node = query_graph.add_node(node=event_input_node, input_nodes=[])
-    graph_node = event_table_data.construct_cleaning_recipe_node(input_node=inserted_input_node)
+    graph_node = event_table_data.construct_cleaning_recipe_node(
+        input_node=inserted_input_node, skip_column_names=[]
+    )
     output_node = query_graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
 
     # generate query
@@ -223,12 +275,17 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
             """
         SELECT
           "event_timestamp" AS "event_timestamp",
+          "event_id" AS "event_id",
           CAST(CASE
             WHEN (
-              CAST(CASE WHEN "amount" IS NULL THEN 0 ELSE "amount" END AS FLOAT) < 0
+              CAST(CASE WHEN (
+                "amount" IS NULL
+              ) THEN 0 ELSE "amount" END AS FLOAT) < 0
             )
             THEN NULL
-            ELSE CAST(CASE WHEN "amount" IS NULL THEN 0 ELSE "amount" END AS FLOAT)
+            ELSE CAST(CASE WHEN (
+              "amount" IS NULL
+            ) THEN 0 ELSE "amount" END AS FLOAT)
           END AS FLOAT) AS "amount"
         FROM "db_name"."schema_name"."table_name"
         LIMIT 10
@@ -240,7 +297,7 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
 def test_construct_cleaning_recipe_node__dimension_data(dimension_table_data, dimension_input_node):
     """Test construct_cleaning_recipe_node (SQL generation is not ready for IS_IN and IS_STRING node)"""
     graph_node = dimension_table_data.construct_cleaning_recipe_node(
-        input_node=dimension_input_node
+        input_node=dimension_input_node, skip_column_names=[]
     )
     assert graph_node.parameters.graph.edges_map == {
         "proxy_input_1": ["project_1", "assign_1", "project_2"],
@@ -273,3 +330,104 @@ def test_columns_info_validator():
             ],
         )
     assert 'Column name "dup_col" is duplicated.' in str(exc.value)
+
+
+def test_event_view_graph_node(event_table_data, event_input_node):
+    """Test construct_event_view_graph_node function"""
+    graph_node, columns_info = event_table_data.construct_event_view_graph_node(
+        event_data_node=event_input_node,
+        drop_column_names=["event_timestamp"],
+        metadata=ViewMetadata(
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=["event_timestamp"],
+            column_cleaning_operations=[],
+            data_id=event_table_data.id,
+        ),
+    )
+    # only amount is required as it is used in cleaning nested graph
+    # since we drop event_timestamp, only "amount" is in columns_info
+    assert set(
+        graph_node._get_required_input_columns(input_index=0, available_column_names=[])
+    ) == {"amount", "event_id"}
+    assert columns_info == [
+        {
+            "name": "event_id",
+            "dtype": "INT",
+            "semantic_id": None,
+            "entity_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "amount",
+            "dtype": "FLOAT",
+            "semantic_id": None,
+            "entity_id": None,
+            "critical_data_info": {
+                "cleaning_operations": [
+                    {"type": "missing", "imputed_value": 0},
+                    {"type": "less_than", "end_point": 0, "imputed_value": None},
+                ]
+            },
+        },
+    ]
+
+
+def test_item_view_graph_node(item_table_data, event_table_data, item_input_node, event_input_node):
+    """Test construct_item_view_graph_node function"""
+    event_graph_node, event_columns_info = event_table_data.construct_event_view_graph_node(
+        event_data_node=event_input_node,
+        drop_column_names=[],
+        metadata=ViewMetadata(
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=[],
+            column_cleaning_operations=[],
+            data_id=event_table_data.id,
+        ),
+    )
+    (
+        item_graph_node,
+        item_columns_info,
+        timestamp_column,
+    ) = item_table_data.construct_item_view_graph_node(
+        item_data_node=item_input_node,
+        columns_to_join=["event_timestamp", "amount"],
+        event_view_node=event_graph_node,
+        event_view_columns_info=event_columns_info,
+        event_view_event_id_column="event_id",
+        event_suffix="_event",
+        drop_column_names=[],
+        metadata=ItemViewMetadata(
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=[],
+            column_cleaning_operations=[],
+            data_id=item_table_data.id,
+            event_suffix="_event",
+            event_drop_column_names=[],
+            event_column_cleaning_operations=[],
+            event_join_column_names=[],
+            event_data_id=event_table_data.id,
+        ),
+    )
+
+    assert set(
+        item_graph_node._get_required_input_columns(input_index=0, available_column_names=[])
+    ) == {
+        "item_name",
+        "item_amount",
+        "item_id",
+    }
+    assert set(
+        item_graph_node._get_required_input_columns(input_index=1, available_column_names=[])
+    ) == {
+        "amount",
+        "event_id",
+        "event_timestamp",
+    }
+    assert timestamp_column == "event_timestamp_event"
+    assert {col.name for col in item_columns_info} == {
+        "item_id",
+        "item_name",
+        "item_amount",
+        "event_timestamp_event",
+        "amount_event",
+    }

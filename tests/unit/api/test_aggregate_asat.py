@@ -6,7 +6,7 @@ import pytest
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.scd_view import SlowlyChangingView
-from tests.util.helper import get_node
+from tests.util.helper import check_sdk_code_generation, get_node
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def scd_view_with_entity(snowflake_scd_data, entity_col_int):
     return SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
 
 
-def test_aggregate_asat__valid(scd_view_with_entity, entity_col_int):
+def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_data, entity_col_int):
     """
     Test valid usage of aggregate_asat
     """
@@ -68,9 +68,26 @@ def test_aggregate_asat__valid(scd_view_with_entity, entity_col_int):
         },
     }
     assert graph_dict["edges"] == [
-        {"source": "input_1", "target": "aggregate_as_at_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "aggregate_as_at_1"},
         {"source": "aggregate_as_at_1", "target": "project_1"},
     ]
+
+    # check SDK code generation
+    scd_data_columns_info = snowflake_scd_data.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_scd_data.id: {
+                "name": snowflake_scd_data.name,
+                "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail during aggregate_asat
+                "columns_info": scd_data_columns_info,
+            }
+        },
+    )
 
 
 def test_aggregate_asat__method_required(scd_view_with_entity):

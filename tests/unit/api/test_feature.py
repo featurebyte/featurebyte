@@ -1,6 +1,7 @@
 """
 Unit test for Feature & FeatureList classes
 """
+import textwrap
 from datetime import datetime
 from unittest.mock import patch
 
@@ -8,8 +9,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
+from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
+from featurebyte import EventData, MissingValueImputation
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
@@ -21,12 +24,19 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.feature_job_setting import (
+    DataFeatureJobSetting,
+    FeatureJobSetting,
+)
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.node.cleaning_operation import (
+    ColumnCleaningOperation,
+    DataCleaningOperation,
+)
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from tests.util.helper import check_aggressively_pruned_graph, get_node
+from tests.util.helper import check_aggressively_pruned_graph, check_sdk_code_generation, get_node
 
 
 @pytest.fixture(name="float_feature_dict")
@@ -44,9 +54,11 @@ def float_feature_dict_fixture(float_feature):
         "input_1",
         "groupby_1",
         "project_1",
+        "graph_1",
     }
     assert feat_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
     ]
     yield feat_dict
@@ -91,7 +103,8 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
         "output_type": "series",
     }
     assert float_feature_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
         {"source": "project_1", "target": "gt_1"},
         {"source": "project_1", "target": "conditional_1"},
@@ -116,7 +129,8 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
     }
     # No assignment occurred
     assert temp_feature_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
         {"source": "project_1", "target": "gt_1"},
         {"source": "project_1", "target": "add_1"},
@@ -129,9 +143,7 @@ def test_feature__preview_missing_point_in_time(float_feature):
     """
     Test feature preview validation missing point in time
     """
-    invalid_params = {
-        "cust_id": "C1",
-    }
+    invalid_params = pd.DataFrame([{"cust_id": "C1"}])
     with pytest.raises(RecordRetrievalException) as exc_info:
         float_feature.preview(invalid_params)
     assert "Point in time column not provided: POINT_IN_TIME" in str(exc_info.value)
@@ -141,25 +153,10 @@ def test_feature__preview_missing_entity_id(float_feature):
     """
     Test feature preview validation missing required entity
     """
-    invalid_params = {
-        "POINT_IN_TIME": "2022-04-01",
-    }
+    invalid_params = pd.DataFrame([{"POINT_IN_TIME": "2022-04-01"}])
     with pytest.raises(RecordRetrievalException) as exc_info:
         float_feature.preview(invalid_params)
     assert "Required entities are not provided in the request" in str(exc_info.value)
-
-
-def test_feature__preview_not_a_dict(float_feature):
-    """
-    Test feature preview validation but dict is not provided
-    """
-    invalid_params = tuple(["2022-04-01", "C1"])
-    with pytest.raises(TypeError) as exc_info:
-        float_feature.preview(invalid_params)
-    expected_error = (
-        'type of argument "point_in_time_and_serving_name" must be a dict; got tuple instead'
-    )
-    assert expected_error in str(exc_info.value)
 
 
 def test_feature_deserialization(
@@ -250,6 +247,11 @@ def saved_feature_fixture(
     """
     event_data_id_before = snowflake_event_data.id
     snowflake_feature_store.save()
+    snowflake_event_data.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
+        )
+    )
     snowflake_event_data.save()
     assert snowflake_event_data.id == event_data_id_before
     feature_id_before = float_feature.id
@@ -276,7 +278,7 @@ def saved_feature_fixture(
         groupby_node.parameters.tile_id
         == "TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817"
     )
-    assert groupby_node.parameters.aggregation_id == "sum_072a1700018ba111c99ff5d80e934ef4dd5a9f85"
+    assert groupby_node.parameters.aggregation_id == "sum_60e19c3e160be7db3a64f2a828c1c7929543abb4"
 
     # test list features
     assert float_feature.name == "sum_1d"
@@ -305,14 +307,30 @@ def test_info(saved_feature):
     Test info
     """
     info_dict = saved_feature.info()
+    data_feature_job_setting = {
+        "data_name": "sf_event_data",
+        "feature_job_setting": {
+            "blind_spot": "600s",
+            "frequency": "1800s",
+            "time_modulo_frequency": "300s",
+        },
+    }
     expected_info = {
         "name": "sum_1d",
         "dtype": "FLOAT",
-        "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+        "entities": [
+            {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+        ],
+        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}],
+        "data_feature_job_setting": {
+            "this": [data_feature_job_setting],
+            "default": [data_feature_job_setting],
+        },
+        "data_cleaning_operation": {"this": [], "default": []},
         "default_version_mode": "AUTO",
         "default_feature_id": str(saved_feature.id),
         "readiness": {"this": "DRAFT", "default": "DRAFT"},
+        "workspace_name": "default",
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict
@@ -463,12 +481,13 @@ def test_get_feature(saved_feature):
         "graph.edges",
         "graph.nodes",
         "dtype",
+        "workspace_id",
     }
 
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_feature = Feature.get(name="random_name")
-        _ = lazy_feature.name
-    expected_msg = 'Feature (name: "random_name") not found. Please save the Feature object first.'
+        Feature.get(name="random_name")
+
+    expected_msg = 'FeatureNamespace (name: "random_name") not found. Please save the FeatureNamespace object first.'
     assert expected_msg in str(exc.value)
 
 
@@ -511,12 +530,18 @@ def test_feature_derived_from_saved_feature_not_saved(saved_feature):
     assert derived_feat.saved is False
 
 
-def test_create_new_version(saved_feature):
+def test_create_new_version(saved_feature, snowflake_event_data):
     """Test creation a new version"""
     new_version = saved_feature.create_new_version(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-        )
+        data_feature_job_settings=[
+            DataFeatureJobSetting(
+                data_name=snowflake_event_data.name,
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+                ),
+            )
+        ],
+        data_cleaning_operations=None,
     )
 
     assert new_version.id != saved_feature.id
@@ -527,7 +552,8 @@ def test_create_new_version(saved_feature):
     assert new_version.version == {"name": saved_feature_version.name, "suffix": 1}
 
     new_version_dict = new_version.dict()
-    groupby_node = new_version_dict["graph"]["nodes"][1]
+    assert new_version_dict["graph"]["nodes"][1]["type"] == "graph"
+    groupby_node = new_version_dict["graph"]["nodes"][2]
     groupby_node_params = groupby_node["parameters"]
     assert groupby_node["type"] == "groupby"
     assert groupby_node_params["blind_spot"] == 45 * 60
@@ -535,19 +561,124 @@ def test_create_new_version(saved_feature):
     assert groupby_node_params["time_modulo_frequency"] == 15 * 60
 
 
+def test_create_new_version__with_data_cleaning_operations(
+    saved_feature, snowflake_event_data, update_fixtures
+):
+    """Test creation of new version with data cleaning operations"""
+    # check sdk code generation of source feature
+    check_sdk_code_generation(saved_feature, to_use_saved_data=True)
+
+    # create a new feature version
+    new_version = saved_feature.create_new_version(
+        data_feature_job_settings=[
+            DataFeatureJobSetting(
+                data_name=snowflake_event_data.name,
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+                ),
+            )
+        ],
+        data_cleaning_operations=[
+            DataCleaningOperation(
+                data_name="sf_event_data",
+                column_cleaning_operations=[
+                    # column to be aggregated on
+                    ColumnCleaningOperation(
+                        column_name="col_float",
+                        cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+                    ),
+                    # group by column
+                    ColumnCleaningOperation(
+                        column_name="cust_id",
+                        cleaning_operations=[MissingValueImputation(imputed_value=-999)],
+                    ),
+                    # unused column
+                    ColumnCleaningOperation(
+                        column_name="col_int",
+                        cleaning_operations=[MissingValueImputation(imputed_value=0)],
+                    ),
+                ],
+            )
+        ],
+    )
+
+    # check sdk code generation for newly created feature
+    check_sdk_code_generation(
+        new_version,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/feature_time_based_with_data_cleaning_operations.py.jinja2",
+        update_fixtures=update_fixtures,
+        data_id=saved_feature.tabular_data_ids[0],
+    )
+
+    # create another new feature version without data cleaning operations
+    version_without_clean_ops = new_version.create_new_version(
+        data_cleaning_operations=[
+            DataCleaningOperation(data_name="sf_event_data", column_cleaning_operations=[])
+        ]
+    )
+    check_sdk_code_generation(version_without_clean_ops, to_use_saved_data=True)
+
+
 def test_create_new_version__error(float_feature):
     """Test creation a new version (exception)"""
     with pytest.raises(RecordCreationException) as exc:
         float_feature.create_new_version(
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-            )
+            data_feature_job_settings=[
+                DataFeatureJobSetting(
+                    data_name="sf_event_data",
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+                    ),
+                )
+            ],
+            data_cleaning_operations=None,
         )
 
     expected_msg = (
         f'Feature (id: "{float_feature.id}") not found. Please save the Feature object first.'
     )
     assert expected_msg in str(exc.value)
+
+
+def test_feature__as_default_version(saved_feature):
+    """Test feature as_default_version method"""
+    new_version = saved_feature.create_new_version(
+        data_feature_job_settings=[
+            DataFeatureJobSetting(
+                data_name="sf_event_data",
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="15m", frequency="30m", time_modulo_frequency="15m"
+                ),
+            )
+        ],
+        data_cleaning_operations=None,
+    )
+    assert new_version.is_default is True
+    assert new_version.default_version_mode == "AUTO"
+
+    # check setting default version fails when default version mode is not MANUAL
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_feature.as_default_version()
+    expected = "Cannot set default feature ID when default version mode is not MANUAL"
+    assert expected in str(exc.value)
+
+    # check get by name use the default version
+    assert Feature.get(name=saved_feature.name) == new_version
+
+    # check setting default version manually
+    assert new_version.is_default is True
+    assert saved_feature.is_default is False
+    saved_feature.update_default_version_mode(DefaultVersionMode.MANUAL)
+    saved_feature.as_default_version()
+    assert new_version.is_default is False
+    assert saved_feature.is_default is True
+
+    # check get by name use the default version
+    assert Feature.get(name=saved_feature.name) == saved_feature
+
+    # check get by name and version
+    assert Feature.get(name=saved_feature.name, version=new_version.version.to_str()) == new_version
 
 
 def test_composite_features(snowflake_event_data_with_entity):
@@ -558,7 +689,7 @@ def test_composite_features(snowflake_event_data_with_entity):
     # make col_binary as an entity column
     snowflake_event_data_with_entity.col_binary.as_entity("binary")
 
-    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    event_view = snowflake_event_data_with_entity.get_view()
     feature_job_setting = {
         "blind_spot": "10m",
         "frequency": "30m",
@@ -630,7 +761,7 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
 def test_get_sql(float_feature):
     """Test get sql for feature"""
     assert float_feature.sql.endswith(
-        'SELECT\n  "agg_w86400_sum_072a1700018ba111c99ff5d80e934ef4dd5a9f85" AS "sum_1d"\n'
+        'SELECT\n  "agg_w86400_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" AS "sum_1d"\n'
         "FROM _FB_AGGREGATED AS AGG"
     )
 
@@ -733,12 +864,30 @@ def test_list_versions(saved_feature):
 
 
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@freeze_time("2023-01-20 03:20:00")
 def test_get_feature_jobs_status(
     mock_execute_query, saved_feature, feature_job_logs, update_fixtures
 ):
     """
     Test get_feature_jobs_status
     """
+    if update_fixtures:
+        # update job_logs.csv fixture
+        log_fixture_path = "tests/fixtures/feature_job_status/job_logs.csv"
+        feature_job_logs = pd.read_csv(log_fixture_path)
+        feature_job_logs["CREATED_AT"] = pd.to_datetime(feature_job_logs["CREATED_AT"])
+
+        # extract tile ID and aggregation ID from the feature
+        groupby_node = saved_feature.extract_pruned_graph_and_node()[0].get_node_by_name(
+            "groupby_1"
+        )
+        tile_id = groupby_node.parameters.tile_id
+        feature_job_logs["AGGREGATION_ID"] = groupby_node.parameters.aggregation_id
+        feature_job_logs["SESSION_ID"] = feature_job_logs["SESSION_ID"].apply(
+            lambda x: f"{tile_id}|{x.split('|')[1]}"
+        )
+        feature_job_logs.to_csv(log_fixture_path, index=False)
+
     mock_execute_query.return_value = feature_job_logs
     job_status_result = saved_feature.get_feature_jobs_status(
         job_history_window=24, job_duration_tolerance=1700
@@ -754,6 +903,7 @@ def test_get_feature_jobs_status(
 
 
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@freeze_time("2023-01-20 03:20:00")
 def test_get_feature_jobs_status_incomplete_logs(
     mock_execute_query, saved_feature, feature_job_logs
 ):
@@ -765,7 +915,7 @@ def test_get_feature_jobs_status_incomplete_logs(
     assert job_status_result.job_session_logs.shape == (1, 11)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "072a1700"},
+            "aggregation_hash": {0: "60e19c3e"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},
@@ -776,10 +926,13 @@ def test_get_feature_jobs_status_incomplete_logs(
             "time_since_last": {0: "NaT"},
         }
     )
-    assert_frame_equal(job_status_result.feature_job_summary, expected_feature_job_summary)
+    assert_frame_equal(
+        job_status_result.feature_job_summary, expected_feature_job_summary, check_dtype=False
+    )
 
 
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@freeze_time("2023-01-20 03:20:00")
 def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, feature_job_logs):
     """
     Test get_feature_jobs_status incomplete logs found
@@ -789,7 +942,7 @@ def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, f
     assert job_status_result.job_session_logs.shape == (0, 11)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "072a1700"},
+            "aggregation_hash": {0: "60e19c3e"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},
@@ -874,3 +1027,210 @@ def test_feature_properties_from_cached_model__after_save(saved_feature):
     assert saved_feature.is_default is True
     assert saved_feature.default_version_mode == DefaultVersionMode.AUTO
     assert saved_feature.default_readiness == FeatureReadiness.DRAFT
+
+
+@pytest.fixture(name="feature_with_clean_column_names")
+def feature_with_clean_column_names_fixture(saved_event_data, cust_id_entity):
+    """Feature with clean column names"""
+    col_names = ["col_int", "col_float", "cust_id"]
+    for col_name in col_names:
+        col = saved_event_data[col_name]
+        col.update_critical_data_info(
+            cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+        )
+
+    saved_event_data.cust_id.as_entity(cust_id_entity.name)
+    event_view = saved_event_data.get_view()
+    feature = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_names=["sum_30m"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
+    )["sum_30m"]
+    return feature, col_names
+
+
+def test_feature_graph_prune_unused_cleaning_operations(feature_with_clean_column_names):
+    """Test feature graph pruning unused cleaning operations"""
+    feature, col_names = feature_with_clean_column_names
+
+    # check feature graph before saving
+    graph = QueryGraphModel(**feature._get_create_payload()["graph"])
+    event_view_graph_node_metadata = graph.get_node_by_name("graph_1").parameters.metadata
+    assert event_view_graph_node_metadata.column_cleaning_operations == [
+        {"column_name": col_name, "cleaning_operations": [{"type": "missing", "imputed_value": -1}]}
+        for col_name in col_names
+    ]
+
+    # check feature graph after saving
+    feature.save()
+    graph = QueryGraphModel(**feature.dict()["graph"])
+
+    # check event view graph node metadata
+    event_view_graph_node = graph.get_node_by_name("graph_1")
+    assert event_view_graph_node.parameters.type == "event_view"
+    event_view_graph_node_metadata = event_view_graph_node.parameters.metadata
+    assert event_view_graph_node_metadata.column_cleaning_operations == [
+        {"column_name": col_name, "cleaning_operations": [{"type": "missing", "imputed_value": -1}]}
+        for col_name in ["col_float", "cust_id"]
+    ]
+
+    # check cleaning graph node (should contain only those columns that are used in the feature)
+    cleaning_graph_node = event_view_graph_node.parameters.graph.get_node_by_name("graph_1")
+    assert cleaning_graph_node.parameters.type == "cleaning"
+    nested_graph = cleaning_graph_node.parameters.graph
+    for assign_node in nested_graph.iterate_nodes(
+        target_node=cleaning_graph_node.output_node,
+        node_type="assign",
+    ):
+        assert assign_node.parameters.name in {"col_float", "cust_id"}
+
+
+def test_feature_definition(feature_with_clean_column_names):
+    """Test feature definition"""
+    feature, _ = feature_with_clean_column_names
+
+    # before save, the redundant cleaning operation should be included
+    redundant_clean_op = (
+        'column_name="col_int", cleaning_operations=[MissingValueImputation(imputed_value=-1)]'
+    )
+    assert redundant_clean_op in feature.definition
+
+    # after save, the redundant cleaning operation should be removed
+    expected = textwrap.dedent(
+        """
+    # Generated by SDK version: 0.1.0
+    from bson import ObjectId
+    from featurebyte import ColumnCleaningOperation
+    from featurebyte import EventData
+    from featurebyte import MissingValueImputation
+
+
+    # event_data name: "sf_event_data"
+    event_data = EventData.get_by_id(ObjectId("6337f9651050ee7d5980660d"))
+    event_view = event_data.get_view(
+        view_mode="manual",
+        drop_column_names=["created_at"],
+        column_cleaning_operations=[
+            ColumnCleaningOperation(
+                column_name="col_float", cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+            ),
+            ColumnCleaningOperation(
+                column_name="cust_id", cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+            ),
+        ],
+    )
+    grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_names=["sum_30m"],
+        feature_job_setting={
+            "blind_spot": "600s",
+            "frequency": "1800s",
+            "time_modulo_frequency": "300s",
+        },
+        skip_fill_na=True,
+    )
+    feat = grouped["sum_30m"]
+    output = feat
+    """
+    ).strip()
+    feature.save()
+    assert feature.definition.strip() == expected
+    assert redundant_clean_op not in expected
+
+
+@pytest.mark.parametrize("main_data_from_event_data", [True, False])
+def test_feature_create_new_version__multiple_event_data(
+    saved_event_data, snowflake_database_table_scd_data, cust_id_entity, main_data_from_event_data
+):
+    """Test create new version with multiple feature job settings"""
+    another_event_data = EventData.from_tabular_source(
+        tabular_source=snowflake_database_table_scd_data,
+        name="another_event_data",
+        event_id_column="col_int",
+        event_timestamp_column="effective_timestamp",
+        record_creation_date_column="end_timestamp",
+    )
+    another_event_data.save()
+
+    # label entity column
+    saved_event_data.cust_id.as_entity(cust_id_entity.name)
+    another_event_data.col_text.as_entity(cust_id_entity.name)
+
+    event_view = saved_event_data.get_view()
+    another_event_view = another_event_data.get_view()
+    if main_data_from_event_data:
+        event_view.join(
+            another_event_view,
+            on="col_int",
+            how="left",
+            rsuffix="_another",
+        )
+        event_view_used = event_view
+        entity_col_name = "cust_id"
+        main_data_name, non_main_data_name = saved_event_data.name, another_event_data.name
+    else:
+        another_event_view.join(
+            event_view,
+            on="col_int",
+            how="left",
+            rsuffix="_another",
+        )
+        event_view_used = another_event_view
+        entity_col_name = "col_text"
+        main_data_name, non_main_data_name = another_event_data.name, saved_event_data.name
+
+    feature = event_view_used.groupby(entity_col_name).aggregate_over(
+        method="count",
+        windows=["30m"],
+        feature_names=["count_30m"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
+    )["count_30m"]
+    feature.save()
+
+    # create new version with different feature job setting on another event data dataset
+    feature_job_setting = FeatureJobSetting(
+        blind_spot="20m", frequency="30m", time_modulo_frequency="5m"
+    )
+    with pytest.raises(RecordCreationException) as exc:
+        feature.create_new_version(
+            data_feature_job_settings=[
+                DataFeatureJobSetting(
+                    data_name=non_main_data_name,
+                    feature_job_setting=feature_job_setting,
+                ),
+            ],
+        )
+
+    # error expected as the group by is on event data dataset, but not on another event data dataset
+    expected_error = (
+        "Feature job setting does not result a new feature version. "
+        "This is because the new feature version is the same as the source feature."
+    )
+    assert expected_error in str(exc.value)
+
+    # create new version on event data & check group by params
+    new_version = feature.create_new_version(
+        data_feature_job_settings=[
+            DataFeatureJobSetting(
+                data_name=main_data_name, feature_job_setting=feature_job_setting
+            ),
+        ]
+    )
+    pruned_graph, _ = new_version.extract_pruned_graph_and_node()
+    expected_job_settings = feature_job_setting.to_seconds()
+    group_by_params = pruned_graph.get_node_by_name("groupby_1").parameters
+    assert group_by_params.blind_spot == expected_job_settings["blind_spot"]
+    assert group_by_params.frequency == expected_job_settings["frequency"]
+    assert group_by_params.time_modulo_frequency == expected_job_settings["time_modulo_frequency"]

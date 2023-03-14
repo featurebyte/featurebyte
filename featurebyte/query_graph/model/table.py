@@ -1,20 +1,36 @@
 """
 This module contains specialized table related models.
 """
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
+
+from dataclasses import dataclass
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, parse_obj_as
 
+from featurebyte.common.join_utils import (
+    append_rsuffix_to_column_info,
+    append_rsuffix_to_columns,
+    combine_column_info_of_views,
+    filter_columns,
+)
 from featurebyte.enum import TableDataType
+from featurebyte.exception import RepeatedColumnNamesError
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import (
     DATA_TABLES,
     SPECIFIC_DATA_TABLES,
     BaseTableData,
 )
-from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.generic import JoinEventDataAttributesMetadata, JoinNodeParameters
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ChangeViewMetadata, ItemViewMetadata, ViewMetadata
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
@@ -64,6 +80,38 @@ class EventTableData(BaseTableData):
             },
         )
 
+    def construct_event_view_graph_node(
+        self,
+        event_data_node: InputNode,
+        drop_column_names: List[str],
+        metadata: ViewMetadata,
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Construct a graph node & columns info for EventView of this event data.
+
+        Parameters
+        ----------
+        event_data_node: InputNode
+            Event data node
+        drop_column_names: List[str]
+            List of column names to drop from the event data
+        metadata: ViewMetadata
+            Metadata to be added to the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
+        """
+        view_graph_node, _ = self.construct_view_graph_node(
+            graph_node_type=GraphNodeType.EVENT_VIEW,
+            data_node=event_data_node,
+            other_input_nodes=[],
+            drop_column_names=drop_column_names,
+            metadata=metadata,
+        )
+        columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
+        return view_graph_node, columns_info
+
 
 class ItemTableData(BaseTableData):
     """ItemTableData class"""
@@ -91,6 +139,188 @@ class ItemTableData(BaseTableData):
             },
         )
 
+    @classmethod
+    def _prepare_join_with_event_view_columns_parameters(
+        cls,
+        item_view_columns: List[str],
+        item_view_event_id_column: str,
+        event_view_columns: List[str],
+        event_view_event_id_column: str,
+        columns_to_join: List[str],
+        event_suffix: Optional[str] = None,
+    ) -> JoinNodeParameters:
+        for col in columns_to_join:
+            if col not in event_view_columns:
+                raise ValueError(f"Column does not exist in EventData: {col}")
+
+        # ItemData columns
+        right_on = item_view_event_id_column
+        right_input_columns = item_view_columns
+        right_output_columns = item_view_columns
+
+        # EventData columns
+        left_on = event_view_event_id_column
+        # EventData's event_id_column will be excluded from the result since that would be same as
+        # ItemView's event_id_column. There is no need to specify event_suffix if the
+        # event_id_column is the only common column name between EventData and ItemView.
+        columns_excluding_event_id = filter_columns(columns_to_join, [left_on])
+        renamed_event_view_columns = append_rsuffix_to_columns(
+            columns_excluding_event_id, event_suffix
+        )
+        left_output_columns = renamed_event_view_columns
+
+        repeated_column_names = sorted(set(right_output_columns).intersection(left_output_columns))
+        if repeated_column_names:
+            raise RepeatedColumnNamesError(
+                f"Duplicate column names {repeated_column_names} found between EventData and"
+                f" ItemView. Consider setting the event_suffix parameter to disambiguate the"
+                f" resulting columns."
+            )
+
+        return JoinNodeParameters(
+            left_on=left_on,
+            right_on=right_on,
+            left_input_columns=columns_excluding_event_id,
+            left_output_columns=left_output_columns,
+            right_input_columns=right_input_columns,
+            right_output_columns=right_output_columns,
+            join_type="inner",
+            metadata=JoinEventDataAttributesMetadata(
+                columns=columns_to_join,
+                event_suffix=event_suffix,
+            ),
+        )
+
+    @classmethod
+    def join_event_view_columns(
+        cls,
+        graph: Union[QueryGraph, GraphNode],
+        item_view_node: Node,
+        item_view_columns_info: List[ColumnInfo],
+        item_view_event_id_column: str,
+        event_view_node: Node,
+        event_view_columns_info: List[ColumnInfo],
+        event_view_event_id_column: str,
+        event_suffix: Optional[str],
+        columns_to_join: List[str],
+    ) -> Tuple[Node, List[ColumnInfo], JoinNodeParameters]:
+        """
+        Join EventView columns to ItemView
+
+        Parameters
+        ----------
+        graph: Union[QueryGraph, GraphNode]
+            QueryGraph or GraphNode to add the join operation to
+        item_view_node: Node
+            ItemView node
+        item_view_columns_info: List[ColumnInfo]
+            ItemView columns info
+        item_view_event_id_column: str
+            ItemView event_id_column name
+        event_view_node: Node
+            EventView node
+        event_view_columns_info: List[ColumnInfo]
+            EventView columns info
+        event_view_event_id_column: str
+            EventView event_id_column name
+        event_suffix: Optional[str]
+            Suffix to append to joined EventView columns
+        columns_to_join: List[str]
+            List of columns to join from EventView
+
+        Returns
+        -------
+        Tuple[Node, List[ColumnInfo], JoinNodeParameters]
+        """
+        join_parameters = cls._prepare_join_with_event_view_columns_parameters(
+            item_view_columns=[col.name for col in item_view_columns_info],
+            item_view_event_id_column=item_view_event_id_column,
+            event_view_columns=[col.name for col in event_view_columns_info],
+            event_view_event_id_column=event_view_event_id_column,
+            columns_to_join=columns_to_join,
+            event_suffix=event_suffix,
+        )
+        node = graph.add_operation(
+            node_type=NodeType.JOIN,
+            node_params=join_parameters.dict(),
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[event_view_node, item_view_node],
+        )
+        # Construct new columns_info
+        renamed_event_view_columns = join_parameters.left_output_columns
+        joined_columns_info = combine_column_info_of_views(
+            item_view_columns_info,
+            append_rsuffix_to_column_info(event_view_columns_info, rsuffix=event_suffix),
+            filter_set=set(renamed_event_view_columns),
+        )
+        return node, joined_columns_info, join_parameters
+
+    def construct_item_view_graph_node(
+        self,
+        item_data_node: InputNode,
+        columns_to_join: List[str],
+        event_view_node: Node,
+        event_view_columns_info: List[ColumnInfo],
+        event_view_event_id_column: str,
+        event_suffix: Optional[str],
+        drop_column_names: List[str],
+        metadata: ItemViewMetadata,
+    ) -> Tuple[GraphNode, List[ColumnInfo], str]:
+        """
+        Construct ItemView graph node
+
+        Parameters
+        ----------
+        item_data_node: InputNode
+            Item data node
+        columns_to_join: List[str]
+            List of columns to join from EventView
+        event_view_node: Node
+            EventView node
+        event_view_columns_info: List[ColumnInfo]
+            EventView columns info
+        event_view_event_id_column: str
+            EventView event_id_column name
+        event_suffix: Optional[str]
+            Suffix to append to joined EventView columns
+        drop_column_names: List[str]
+            List of columns to drop from the item data
+        metadata: ItemViewMetadata
+            Metadata to add to the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo], str]
+        """
+        view_graph_node, proxy_input_nodes = self.construct_view_graph_node(
+            graph_node_type=GraphNodeType.ITEM_VIEW,
+            data_node=item_data_node,
+            other_input_nodes=[event_view_node],
+            drop_column_names=drop_column_names,
+            metadata=metadata,
+        )
+        (  # pylint: disable=unbalanced-tuple-unpacking
+            proxy_item_data_node,
+            proxy_event_view_node,
+        ) = proxy_input_nodes
+        item_view_columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
+        _, columns_info, join_parameters = self.join_event_view_columns(
+            graph=view_graph_node,
+            item_view_node=proxy_item_data_node,
+            item_view_columns_info=item_view_columns_info,
+            item_view_event_id_column=self.event_id_column,
+            event_view_node=proxy_event_view_node,
+            event_view_columns_info=event_view_columns_info,
+            event_view_event_id_column=event_view_event_id_column,
+            columns_to_join=columns_to_join,
+            event_suffix=event_suffix,
+        )
+
+        # left output columns is the renamed event timestamp column
+        # (see `columns` parameter in above `_join_event_data_attributes` method)
+        renamed_event_timestamp_column = join_parameters.left_output_columns[0]
+        return view_graph_node, columns_info, renamed_event_timestamp_column
+
 
 class DimensionTableData(BaseTableData):
     """DimensionTableData class"""
@@ -113,6 +343,50 @@ class DimensionTableData(BaseTableData):
                 **self._get_common_input_node_parameters(),
             },
         )
+
+    def construct_dimension_view_graph_node(
+        self,
+        dimension_data_node: InputNode,
+        drop_column_names: List[str],
+        metadata: ViewMetadata,
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Construct DimensionView graph node
+
+        Parameters
+        ----------
+        dimension_data_node: InputNode
+            Dimension data node
+        drop_column_names: List[str]
+            List of columns to drop from the dimension data
+        metadata: ViewMetadata
+            Metadata to add to the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
+        """
+        view_graph_node, _ = self.construct_view_graph_node(
+            graph_node_type=GraphNodeType.DIMENSION_VIEW,
+            data_node=dimension_data_node,
+            other_input_nodes=[],
+            drop_column_names=drop_column_names,
+            metadata=metadata,
+        )
+        columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
+        return view_graph_node, columns_info
+
+
+@dataclass
+class ChangeViewColumnNames:
+    """
+    Representation of column names to use in the change view
+    """
+
+    previous_tracked_column_name: str
+    new_tracked_column_name: str
+    previous_valid_from_column_name: str
+    new_valid_from_column_name: str
 
 
 class SCDTableData(BaseTableData):
@@ -144,6 +418,251 @@ class SCDTableData(BaseTableData):
                 **self._get_common_input_node_parameters(),
             },
         )
+
+    def construct_scd_view_graph_node(
+        self,
+        scd_data_node: InputNode,
+        drop_column_names: List[str],
+        metadata: ViewMetadata,
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Construct SCDView graph node
+
+        Parameters
+        ----------
+        scd_data_node: InputNode
+            Slowly changing dimension data node
+        drop_column_names: List[str]
+            List of columns to drop from the SCD data
+        metadata: ViewMetadata
+            Metadata to add to the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
+        """
+        view_graph_node, _ = self.construct_view_graph_node(
+            graph_node_type=GraphNodeType.SCD_VIEW,
+            data_node=scd_data_node,
+            other_input_nodes=[],
+            drop_column_names=drop_column_names,
+            metadata=metadata,
+        )
+        columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
+        return view_graph_node, columns_info
+
+    @staticmethod
+    def get_new_column_names(
+        tracked_column: str,
+        timestamp_column: str,
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]],
+    ) -> ChangeViewColumnNames:
+        """
+        Helper method to return the tracked column names.
+
+        Parameters
+        ----------
+        tracked_column: str
+            column we want to track
+        timestamp_column: str
+            column denoting the timestamp
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]]
+            Optional prefixes where each element indicates the prefix to add to the new column names for the name of
+            the column that we want to track. The first prefix will be used for the old, and the second for the new.
+            Pass a value of None instead of a string to indicate that the column name will be prefixed with the default
+            values of "past_", and "new_". At least one of the values must not be None. If two values are provided,
+            they must be different.
+
+        Returns
+        -------
+        ChangeViewColumnNames
+            column names to use in the change view
+        """
+        old_prefix = "past_"
+        new_prefix = "new_"
+        if prefixes is not None:
+            if prefixes[0] is not None:
+                old_prefix = prefixes[0]
+            if prefixes[1] is not None:
+                new_prefix = prefixes[1]
+
+        past_col_name = f"{old_prefix}{tracked_column}"
+        new_col_name = f"{new_prefix}{tracked_column}"
+        past_timestamp_col_name = f"{old_prefix}{timestamp_column}"
+        new_timestamp_col_name = f"{new_prefix}{timestamp_column}"
+        return ChangeViewColumnNames(
+            previous_tracked_column_name=past_col_name,
+            new_tracked_column_name=new_col_name,
+            previous_valid_from_column_name=past_timestamp_col_name,
+            new_valid_from_column_name=new_timestamp_col_name,
+        )
+
+    def _add_change_view_operations(
+        self,
+        view_graph_node: GraphNode,
+        track_changes_column: str,
+        proxy_input_nodes: List[Node],
+        column_names: ChangeViewColumnNames,
+    ) -> GraphNode:
+        # subset the columns we need
+        col_name_to_proj_node: Dict[str, Node] = {}
+        assert self.effective_timestamp_column is not None
+        proj_names = [
+            self.effective_timestamp_column,
+            self.natural_key_column,
+            self.effective_timestamp_column,
+            track_changes_column,
+        ]
+        cleaned_data_node = view_graph_node.output_node
+        for col_name in proj_names:
+            col_name_to_proj_node[col_name] = view_graph_node.add_operation(
+                node_type=NodeType.PROJECT,
+                node_params={"columns": [col_name]},
+                node_output_type=NodeOutputType.SERIES,
+                input_nodes=[cleaned_data_node],
+            )
+
+        new_past_col_name_triples = [
+            (
+                column_names.new_valid_from_column_name,
+                column_names.previous_valid_from_column_name,
+                self.effective_timestamp_column,
+            ),
+            (
+                column_names.new_tracked_column_name,
+                column_names.previous_tracked_column_name,
+                track_changes_column,
+            ),
+        ]
+        frame_node = proxy_input_nodes[0]
+        for new_col_name, past_col_name, col_name in new_past_col_name_triples:
+            proj_node = col_name_to_proj_node[col_name]
+            # change_view[new_ts_col] = change_view[effective_timestamp_column]
+            # change_view[new_col_name] = change_view[track_changes_column]
+            frame_node = view_graph_node.add_operation(
+                node_type=NodeType.ASSIGN,
+                node_params={"name": new_col_name},
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[frame_node, proj_node],
+            )
+
+            # change_view[past_ts_col] = change_view[effective_timestamp_column].lag(natural_key_column)
+            # change_view[past_col_name] = change_view[track_changes_column].lag(natural_key_column)
+            lag_node = view_graph_node.add_operation(
+                node_type=NodeType.LAG,
+                node_params={
+                    "entity_columns": [self.natural_key_column],
+                    "timestamp_column": self.effective_timestamp_column,
+                    "offset": 1,
+                },
+                node_output_type=NodeOutputType.SERIES,
+                input_nodes=[
+                    proj_node,
+                    col_name_to_proj_node[self.natural_key_column],
+                    col_name_to_proj_node[self.effective_timestamp_column],
+                ],
+            )
+            frame_node = view_graph_node.add_operation(
+                node_type=NodeType.ASSIGN,
+                node_params={"name": past_col_name},
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[frame_node, lag_node],
+            )
+
+        # select the 5 cols we want to present
+        view_graph_node.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={
+                "columns": [
+                    self.natural_key_column,
+                    column_names.new_valid_from_column_name,
+                    column_names.new_tracked_column_name,
+                    column_names.previous_valid_from_column_name,
+                    column_names.previous_tracked_column_name,
+                ]
+            },
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[frame_node],
+        )
+        return view_graph_node
+
+    def _prepare_change_view_columns_info(
+        self,
+        column_names: ChangeViewColumnNames,
+        track_changes_column: str,
+    ) -> List[ColumnInfo]:
+        time_col_info, track_col_info, natural_key_col_info = None, None, None
+        for col in self.columns_info:
+            if col.name == self.natural_key_column:
+                natural_key_col_info = col
+            if col.name == self.effective_timestamp_column:
+                time_col_info = col
+            if col.name == track_changes_column:
+                track_col_info = col
+
+        assert time_col_info, f"{self.effective_timestamp_column} is not in columns_info"
+        assert track_col_info, f"{track_changes_column} is not in columns_info"
+        assert natural_key_col_info, f"{self.natural_key_column} is not in columns_info"
+        return [
+            natural_key_col_info,
+            ColumnInfo(**{**time_col_info.dict(), "name": column_names.new_valid_from_column_name}),
+            ColumnInfo(
+                name=column_names.previous_valid_from_column_name, dtype=time_col_info.dtype
+            ),
+            ColumnInfo(**{**track_col_info.dict(), "name": column_names.new_tracked_column_name}),
+            ColumnInfo(name=column_names.previous_tracked_column_name, dtype=track_col_info.dtype),
+        ]
+
+    def construct_change_view_graph_node(
+        self,
+        scd_data_node: InputNode,
+        track_changes_column: str,
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]],
+        drop_column_names: List[str],
+        metadata: ChangeViewMetadata,
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Construct a graph node for a change view.
+
+        Parameters
+        ----------
+        scd_data_node: InputNode
+            Slowly changing dimension data node
+        track_changes_column: str
+            Column name of the column that tracks changes
+        prefixes: Tuple[Optional[str], Optional[str]]
+            Prefixes for the new and previous columns
+        drop_column_names: List[str]
+            Column names to drop from the slow changing dimension data
+        metadata: ChangeViewMetadata
+            Metadata for the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
+        """
+        view_graph_node, proxy_input_nodes = self.construct_view_graph_node(
+            graph_node_type=GraphNodeType.CHANGE_VIEW,
+            data_node=scd_data_node,
+            other_input_nodes=[],
+            drop_column_names=drop_column_names,
+            metadata=metadata,
+        )
+        column_names = self.get_new_column_names(
+            tracked_column=track_changes_column,
+            timestamp_column=self.effective_timestamp_column,
+            prefixes=prefixes,
+        )
+        view_graph_node = self._add_change_view_operations(
+            view_graph_node=view_graph_node,
+            track_changes_column=track_changes_column,
+            proxy_input_nodes=proxy_input_nodes,
+            column_names=column_names,
+        )
+        columns_info = self._prepare_change_view_columns_info(
+            column_names=column_names, track_changes_column=track_changes_column
+        )
+        return view_graph_node, columns_info
 
 
 if TYPE_CHECKING:

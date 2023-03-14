@@ -21,7 +21,7 @@ from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 from collections import defaultdict
 
 from bson import json_util
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import Field, root_validator, validator
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -144,7 +144,7 @@ class BaseColumn(FeatureByteBaseModel):
             node_kwargs["node_names"].add(graph_node_name)
             node_kwargs["node_name"] = graph_node_name
             if hasattr(self, "transforms"):
-                node_kwargs["transforms"] = [graph_node_transform]
+                node_kwargs["transforms"] = [graph_node_transform] if graph_node_transform else []
         return self.clone(**node_kwargs, **kwargs)
 
 
@@ -222,6 +222,9 @@ class BaseDerivedColumn(BaseColumn):
                 transforms.extend(column.transforms)
             else:
                 col_map = cls.insert_column(col_map, column)
+
+        # remove empty transforms
+        transforms = [transform for transform in transforms if transform]
         return list(col_map.values()), transforms, node_names
 
     @classmethod
@@ -494,20 +497,18 @@ class OperationStructure(FeatureByteBaseModel):
         """
         return [col for col in self.columns if isinstance(col, SourceDataColumn)]
 
-    def get_column_node_name(self, column_name: str) -> str:
+    @property
+    def output_column_names(self) -> List[str]:
         """
-        Retrieve node_name based on given column
-
-        Parameters
-        ----------
-        column_name: str
-            Column name
+        List of output column names
 
         Returns
         -------
-        str
+        List[str]
         """
-        return next(col.node_name for col in self.columns if col.name == column_name)
+        if self.output_category == NodeOutputCategory.VIEW:
+            return [col.name for col in self.columns if col.name]
+        return [agg.name for agg in self.aggregations if agg.name]
 
     @validator("columns", "aggregations")
     @classmethod
@@ -577,20 +578,32 @@ class OperationStructure(FeatureByteBaseModel):
         )
 
 
-class OperationStructureBranchState(BaseModel):
+class OperationStructureBranchState:
     """OperationStructureBranchState class"""
 
-    visited_node_types: Set[NodeType] = Field(default_factory=set)
+    def __init__(self, visited_node_types: Optional[Set[NodeType]] = None):
+        if visited_node_types is None:
+            visited_node_types = set()
+        self.visited_node_types = visited_node_types
 
 
-class OperationStructureInfo(BaseModel):
+class OperationStructureInfo:
     """OperationStructureInfo class"""
 
-    operation_structure_map: Dict[str, OperationStructure] = Field(default_factory=dict)
-    edges_map: DefaultDict[str, Set[str]] = Field(default_factory=lambda: defaultdict(set))
-    proxy_input_operation_structures: List[OperationStructure] = Field(default_factory=list)
-
-    @validator("edges_map")
-    @classmethod
-    def _construct_defaultdict(cls, value: Dict[str, Any]) -> DefaultDict[str, Set[str]]:
-        return defaultdict(set, value)
+    def __init__(
+        self,
+        operation_structure_map: Optional[Dict[str, OperationStructure]] = None,
+        edges_map: Optional[DefaultDict[str, Set[str]]] = None,
+        proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
+        keep_all_source_columns: bool = False,
+        **kwargs: Any,
+    ):
+        _ = kwargs
+        if edges_map is None:
+            edges_map = defaultdict(set)
+        else:
+            edges_map = defaultdict(set, edges_map)
+        self.operation_structure_map = operation_structure_map or {}
+        self.edges_map = edges_map
+        self.proxy_input_operation_structures = proxy_input_operation_structures or []
+        self.keep_all_source_columns = keep_all_source_columns

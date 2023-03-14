@@ -1,8 +1,9 @@
 import pandas as pd
+import pytest
 
 from featurebyte import (
+    AggFunc,
     DisguisedValueImputation,
-    EventView,
     FeatureList,
     ItemView,
     MissingValueImputation,
@@ -12,6 +13,7 @@ from featurebyte import (
 )
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_data_update_critical_data_info(event_data):
     """Test EventData with critical data info preview & feature preview"""
     # add critical data info to amount column & check data preview
@@ -57,7 +59,7 @@ def test_event_data_update_critical_data_info(event_data):
     assert event_data.frame.node.type == "input"
 
     # create feature group & preview
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
 
     # check equality between cleaning data's vs view's preview, sample & describe operations
     view_df = event_view.preview()
@@ -98,7 +100,7 @@ def test_event_data_update_critical_data_info(event_data):
         },
     )
     feat_preview_df = feature_group.preview(
-        point_in_time_and_serving_name={"POINT_IN_TIME": "2001-01-14", "cust_id": 938}
+        observation_set=pd.DataFrame([{"POINT_IN_TIME": "2001-01-14", "cust_id": 938}])
     )
     assert list(feat_preview_df.columns) == ["POINT_IN_TIME", "cust_id", "COUNT_2h", "COUNT_24h"]
     assert feat_preview_df.COUNT_2h.iloc[0] == 0
@@ -120,11 +122,8 @@ def test_event_data_update_critical_data_info(event_data):
     event_data.TRANSACTION_ID.update_critical_data_info(cleaning_operations=[])
     event_data.CUST_ID.update_critical_data_info(cleaning_operations=[])
 
-    # check event_view node after removing all cleaning operations
-    event_view = EventView.from_event_data(event_data)
-    assert event_view.node.type == "input"
 
-
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_data_update_critical_data_info(item_data):
     """Test ItemData with critical data info preview & feature preview"""
     # add critical data info to item_type column & check data preview
@@ -143,15 +142,17 @@ def test_item_data_update_critical_data_info(item_data):
         feature_names=["count_12h"],
     )["count_12h"]
     window_preview_df = window_feature.preview(
-        {"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}
+        pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}])
     )
     assert window_preview_df.count_12h.iloc[0] == '{\n  "type_84": 1\n}'
 
     feature = item_view.groupby("order_id").aggregate(
-        method="count",
+        method=AggFunc.COUNT,
         feature_name="order_size",
     )
-    preview_df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T236"})
+    preview_df = feature.preview(
+        pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T236"}])
+    )
     assert preview_df["order_size"].iloc[0] == 6
 
     # check historical request
@@ -175,4 +176,3 @@ def test_item_data_update_critical_data_info(item_data):
 
     # remove critical data info
     item_data["item_type"].update_critical_data_info(cleaning_operations=[])
-    assert item_data.frame.node.type == "input"

@@ -12,7 +12,7 @@ from pandas import DataFrame
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, SavableApiObject
+from featurebyte.api.api_object import ApiObject, ForeignKeyMapping, SavableApiObject
 from featurebyte.api.database_table import AbstractTableData, DatabaseTable
 from featurebyte.api.entity import Entity
 from featurebyte.common.doc_util import FBAutoDoc
@@ -25,9 +25,11 @@ from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.critical_data_info import CleaningOperation, CriticalDataInfo
+from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.cleaning_operation import CleaningOperation
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
@@ -40,7 +42,7 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Column"])
+    __fbautodoc__ = FBAutoDoc(section=["Column"], proxy_class="featurebyte.DataColumn")
 
     # pydantic instance variable (public)
     name: str
@@ -213,7 +215,7 @@ class DataListMixin(ApiObject):
     _list_schema = TabularDataModel
     _list_fields = ["name", "type", "status", "entities", "created_at"]
     _list_foreign_keys = [
-        ("columns_info.entity_id", Entity, "entities"),
+        ForeignKeyMapping("columns_info.entity_id", Entity, "entities"),
     ]
 
     @classmethod
@@ -239,15 +241,28 @@ class DataListMixin(ApiObject):
         return data_list
 
 
-class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrMixin):
+class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrMixin):
     """
     Base class for all Data objects
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(
+        section=["Data"],
+        proxy_class="featurebyte.Data",
+    )
 
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
     # pydantic instance variable (internal use)
     internal_record_creation_date_column: Optional[str] = Field(alias="record_creation_date_column")
+
+    @property
+    def table_data(self) -> BaseTableData:
+        try:
+            return self._table_data_class(**self.cached_model.json_dict())
+        except RecordRetrievalException:
+            return self._table_data_class(**self.json_dict())
 
     @property
     def columns_info(self) -> List[ColumnInfo]:

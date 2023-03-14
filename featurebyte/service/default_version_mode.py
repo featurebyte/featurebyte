@@ -25,13 +25,19 @@ class DefaultVersionModeService(BaseService):
     through FeatureReadinessService.
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
-        super().__init__(user, persistent)
-        self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
-        self.feature_readiness_service = FeatureReadinessService(user=user, persistent=persistent)
-        self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent
-        )
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        workspace_id: ObjectId,
+        feature_namespace_service: FeatureNamespaceService,
+        feature_readiness_service: FeatureReadinessService,
+        feature_list_namespace_service: FeatureListNamespaceService,
+    ):
+        super().__init__(user, persistent, workspace_id)
+        self.feature_namespace_service = feature_namespace_service
+        self.feature_readiness_service = feature_readiness_service
+        self.feature_list_namespace_service = feature_list_namespace_service
 
     async def update_feature_namespace(
         self,

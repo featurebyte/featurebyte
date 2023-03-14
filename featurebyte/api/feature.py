@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import Any, ClassVar, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 import time
 from http import HTTPStatus
@@ -13,8 +13,9 @@ from bson import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, SavableApiObject
+from featurebyte.api.api_object import ApiObject, ForeignKeyMapping, SavableApiObject
 from featurebyte.api.base_data import DataApiObject
+from featurebyte.api.data import Data
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
@@ -22,16 +23,15 @@ from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
-from featurebyte.common.utils import dataframe_from_json
+from featurebyte.common.utils import CodeStr, dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
-from featurebyte.core.series import Series
+from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
@@ -44,9 +44,11 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.feature_job_setting import DataFeatureJobSetting
+from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
 from featurebyte.query_graph.node.generic import (
     AliasNode,
-    GroupbyNode,
+    GroupByNode,
     ItemGroupbyNode,
     ProjectNode,
 )
@@ -56,7 +58,8 @@ from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 
 class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     """
-    FeatureNamespace class
+    FeatureNamespace represents a Feature set, in which all the features in the set have the same name. The different
+    elements typically refer to different versions of a Feature.
     """
 
     # class variables
@@ -74,8 +77,8 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
         "created_at",
     ]
     _list_foreign_keys = [
-        ("entity_ids", Entity, "entities"),
-        ("tabular_data_ids", DataApiObject, "data"),
+        ForeignKeyMapping("entity_ids", Entity, "entities"),
+        ForeignKeyMapping("tabular_data_ids", DataApiObject, "data"),
     ]
 
     @property
@@ -212,8 +215,8 @@ class Feature(
         "created_at",
     ]
     _list_foreign_keys = [
-        ("entity_ids", Entity, "entities"),
-        ("tabular_data_ids", DataApiObject, "data"),
+        ForeignKeyMapping("entity_ids", Entity, "entities"),
+        ForeignKeyMapping("tabular_data_ids", DataApiObject, "data"),
     ]
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
@@ -236,6 +239,28 @@ class Feature(
                 feature_store_id = TabularSource(**tabular_source).feature_store_id
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
+
+    @classmethod
+    def get(cls, name: str, version: Optional[str] = None) -> Feature:
+        """
+        Get a feature by name and version
+
+        Parameters
+        ----------
+        name: str
+            Feature name
+        version: Optional[str]
+            Feature version, if None, the default version will be returned
+
+        Returns
+        -------
+        Feature
+            Feature object
+        """
+        if version is None:
+            feature_namespace = FeatureNamespace.get(name=name)
+            return cls.get_by_id(id=feature_namespace.default_feature_id)
+        return cls._get(name=name, other_params={"version": version})
 
     @classmethod
     def list(
@@ -404,7 +429,7 @@ class Feature(
         """
         entity_ids: list[str] = []
         for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY):
-            entity_ids.extend(cast(GroupbyNode, node).parameters.keys)
+            entity_ids.extend(cast(GroupByNode, node).parameters.keys)
         for node in self.graph.iterate_nodes(
             target_node=self.node, node_type=NodeType.ITEM_GROUPBY
         ):
@@ -525,14 +550,39 @@ class Feature(
         operation_structure = self.extract_operation_structure()
         return operation_structure.is_time_based
 
-    def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
+    @property
+    def definition(self) -> str:
+        """
+        Display feature definition string of this feature.
+
+        Returns
+        -------
+        str
+        """
+        try:
+            # retrieve all the data used to construct this feature
+            data_id_to_doc = {
+                data_id: Data.get_by_id(data_id).dict() for data_id in self.tabular_data_ids
+            }
+        except RecordRetrievalException:
+            # data used to construct this feature has not been saved
+            data_id_to_doc = {}
+        return CodeStr(
+            self._generate_code(
+                to_format=True, to_use_saved_data=True, data_id_to_info=data_id_to_doc
+            )
+        )
+
+    def binary_op_series_params(
+        self, other: Scalar | FrozenSeries | ScalarSequence
+    ) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
 
         Parameters
         ----------
-        other: other: Scalar | Series | ScalarSequence
+        other: other: Scalar | FrozenSeries | ScalarSequence
             Other object
 
         Returns
@@ -541,7 +591,7 @@ class Feature(
         """
         tabular_data_ids = set(self.tabular_data_ids)
         entity_ids = set(self.entity_ids)
-        if isinstance(other, Series):
+        if isinstance(other, FrozenSeries):
             tabular_data_ids = tabular_data_ids.union(getattr(other, "tabular_data_ids", []))
             entity_ids = entity_ids.union(getattr(other, "entity_ids", []))
         return {"tabular_data_ids": sorted(tabular_data_ids), "entity_ids": sorted(entity_ids)}
@@ -564,18 +614,19 @@ class Feature(
         return FeatureModel(**feature_dict)
 
     @typechecked
+    @enforce_observation_set_row_order
     def preview(
         self,
-        point_in_time_and_serving_name: Dict[str, Any],
+        observation_set: pd.DataFrame,
     ) -> pd.DataFrame:
         """
         Preview a Feature
 
         Parameters
         ----------
-        point_in_time_and_serving_name : Dict[str, Any]
-            Dictionary consisting the point in time and serving names based on which the feature
-            preview will be computed
+        observation_set : pd.DataFrame
+            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
+            as well as columns with serving names for all entities used by features in the feature list.
 
         Returns
         -------
@@ -592,12 +643,11 @@ class Feature(
         tic = time.time()
 
         feature = self._get_pruned_feature_model()
-
         payload = FeaturePreview(
             feature_store_name=self.feature_store.name,
             graph=feature.graph,
             node_name=feature.node_name,
-            point_in_time_and_serving_name=point_in_time_and_serving_name,
+            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
         )
 
         client = Configurations().get_client()
@@ -608,17 +658,23 @@ class Feature(
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return dataframe_from_json(result)
+        return dataframe_from_json(result)  # pylint: disable=no-member
 
     @typechecked
-    def create_new_version(self, feature_job_setting: FeatureJobSetting) -> Feature:
+    def create_new_version(
+        self,
+        data_feature_job_settings: Optional[List[DataFeatureJobSetting]] = None,
+        data_cleaning_operations: Optional[List[DataCleaningOperation]] = None,
+    ) -> Feature:
         """
-        Create new feature version
+        Create new feature version from the current one.
 
         Parameters
         ----------
-        feature_job_setting: FeatureJobSetting
-            New feature job setting
+        data_feature_job_settings: Optional[List[DataFeatureJobSetting]]
+            List of data feature job settings to be applied to the feature
+        data_cleaning_operations: Optional[List[DataCleaningOperation]]
+            List of data cleaning operations to be applied to the feature
 
         Returns
         -------
@@ -627,14 +683,64 @@ class Feature(
         Raises
         ------
         RecordCreationException
-            When failed to save a new version
+            When failed to save a new version, e.g. when the feature is exactly the same as the current one
+
+        Examples
+        --------
+
+        Create a new version of a feature with different feature job setting
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature.create_new_version(
+        ...   data_feature_job_settings=[
+        ...     fb.DataFeatureJobSetting(
+        ...       data_name="some_event_data_name",
+        ...       feature_job_setting=fb.FeatureJobSetting(
+        ...         blind_spot="10m",
+        ...         frequency="30m",
+        ...         time_modulo_frequency="5m",
+        ...       )
+        ...     )
+        ...   ]
+        ... )  # doctest: +SKIP
+
+
+        Create a new version of a feature with data cleaning operations
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature.create_new_version(
+        ...   data_cleaning_operations=[
+        ...     fb.DataCleaningOperation(
+        ...       data_name="some_event_data_name",
+        ...       column_cleaning_operations=[
+        ...         fb.ColumnCleaningOperation(
+        ...           column_name="some_column_name",
+        ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+        ...         )
+        ...       ],
+        ...     )
+        ...   ]
+        ... )  # doctest: +SKIP
+
         """
         client = Configurations().get_client()
         response = client.post(
             url=self._route,
             json={
                 "source_feature_id": str(self.id),
-                "feature_job_setting": feature_job_setting.dict(),
+                "data_feature_job_settings": [
+                    data_feature_job_setting.dict()
+                    for data_feature_job_setting in data_feature_job_settings
+                ]
+                if data_feature_job_settings
+                else None,
+                "data_cleaning_operations": [
+                    clean_ops.dict() for clean_ops in data_cleaning_operations
+                ]
+                if data_cleaning_operations
+                else None,
             },
         )
         if response.status_code != HTTPStatus.CREATED:
@@ -646,7 +752,9 @@ class Feature(
 
     @typechecked
     def update_readiness(
-        self, readiness: Literal[tuple(FeatureReadiness)]  # type: ignore[misc]
+        self,
+        readiness: Literal[tuple(FeatureReadiness)],  # type: ignore[misc]
+        ignore_guardrails: bool = False,
     ) -> None:
         """
         Update feature readiness
@@ -655,8 +763,15 @@ class Feature(
         ----------
         readiness: Literal[tuple(FeatureReadiness)]
             Feature readiness level
+        ignore_guardrails: bool
+            Allow a user to specify if they want to  ignore any guardrails when updating this feature. This should
+            currently only apply of the FeatureReadiness value is being updated to PRODUCTION_READY. This should
+            be a no-op for all other scenarios.
         """
-        self.update(update_payload={"readiness": str(readiness)}, allow_update_local=False)
+        self.update(
+            update_payload={"readiness": str(readiness), "ignore_guardrails": ignore_guardrails},
+            allow_update_local=False,
+        )
 
     @typechecked
     def update_default_version_mode(
@@ -674,6 +789,16 @@ class Feature(
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
             allow_update_local=False,
         )
+
+    def as_default_version(self) -> None:
+        """
+        Set the feature as default version
+        """
+        self.feature_namespace.update(
+            update_payload={"default_feature_id": self.id},
+            allow_update_local=False,
+        )
+        assert self.feature_namespace.default_feature_id == self.id
 
     @property
     def sql(self) -> str:
@@ -708,14 +833,14 @@ class Feature(
         )
 
     def validate_isin_operation(
-        self, other: Union[Series, Sequence[Union[bool, int, float, str]]]
+        self, other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
     ) -> None:
         """
         Validates whether a feature is a lookup feature
 
         Parameters
         ----------
-        other: Union[Series, Sequence[Union[bool, int, float, str]]]
+        other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
             other
         """
         assert_is_lookup_feature(self.node_types_lineage)

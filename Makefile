@@ -1,48 +1,53 @@
 #* Variables
 MAKE := make
-EXECUTABLES = poetry docker
 PYLINT_DISABLE := too-few-public-methods
 PYLINT_DISABLE_FOR_TESTS := redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code
-POETRY_ENV_PIP := $(shell poetry env info --path)/bin/pip
 PERMISSIVE_LICENSES := "\
-	Public Domain;\
-	MIT;\
-	MIT License;\
-	BSD License;\
-	ISC;\
-	ISC License (ISCL);\
-	Python Software Foundation License;\
-	Apache Software License;\
 	Apache License 2.0;\
-	Mozilla Public License 2.0 (MPL 2.0);\
-	MPL-2.0;\
+	Apache License, Version 2.0;\
+	Apache Software License;\
+	BSD;\
+	BSD License;\
 	Historical Permission Notice and Disclaimer (HPND);\
+	GNU General Public License v2 (GPLv2);\
+	ISC License (ISCL);\
+	ISC;\
+	MIT License;\
+	MIT;\
+	MPL-2.0;\
+	Mozilla Public License 2.0 (MPL 2.0);\
+	Public Domain;\
+	Python Software Foundation License;\
+	The Unlicense (Unlicense);\
 "
 
 .PHONY: init
-.PHONY: install install-databricks-sql-connector
+.PHONY: install
 .PHONY: format
 .PHONY: lint lint-style lint-type lint-safety lint-requirements-txt
 .PHONY: test test-setup test-teardown
 .PHONY: docs docs-build
-.PHONY: beta-start beta-bundle beta-stop beta-build beta-bundle-publish
+.PHONY: docker-build
 .PHONY: clean
 
 #* Initialize
 init: install
-	$(foreach exec,$(EXECUTABLES),\
-        $(if $(shell which $(exec)),,$(error "Missing $(exec) in $$PATH, $(exec) is required for development")))
 	poetry run pre-commit install
 
 #* Installation
-install:
+build-hive-udf-jar:
+	cd hive-udf && ./gradlew test && ./gradlew shadowJar
+	rm -f featurebyte/sql/spark/*.jar
+	cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
+
+install: build-hive-udf-jar
 	poetry install -n --sync --extras=server
 
 #* Formatters
 format:
 	poetry run pyupgrade --py38-plus **/*.py
 	poetry run isort .
-	poetry run black . --extend-exclude=docker
+	poetry run black .
 	poetry run toml-sort --all --in-place pyproject.toml poetry.lock
 
 #* Linting
@@ -55,63 +60,61 @@ lint-style:
 	poetry run pylint --disable=${PYLINT_DISABLE} --rcfile pyproject.toml featurebyte
 	poetry run pylint --disable=${PYLINT_DISABLE_FOR_TESTS} --rcfile pyproject.toml tests
 
-	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
+	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" ! -path "featurebyte/__main__.py" ! -path "featurebyte/datasets/*" | xargs poetry run darglint --verbosity 2
 	find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
 
 lint-type:
 	poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
 
-lint-requirements-txt:
-	poetry export --without-hashes > requirements.txt
-
-lint-safety: | lint-requirements-txt
-	# Exporting dependencies to requirements.txt
-	poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
-	poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5
+lint-safety:
+	poetry run pip-licenses --packages $(shell poetry export --without-hashes --without-urls --extras server | cut -d '=' -f1 | xargs) --allow-only=${PERMISSIVE_LICENSES}
+	poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5 --ignore-vul GHSA-74m5-2c7w-9w3x
 	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
-test: test-setup
-	poetry run pytest --timeout=240 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
+test:
+	${MAKE} build-hive-udf-jar
+	${MAKE} test-setup
+	${MAKE} test-unit
+	${MAKE} test-integration-all
+	${MAKE} test-merge
 	${MAKE} test-teardown
 
+test-unit:
+	poetry run pytest --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
+
+test-integration-all:
+	${MAKE} test-integration-snowflake
+	${MAKE} test-integration-spark
+
+test-integration-snowflake:
+	poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
+
+test-integration-spark:
+	poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
+
+test-merge:
+	echo "coverage: platform" > pytest-coverage.txt
+	poetry run coverage combine
+	poetry run coverage report >> pytest-coverage.txt
+	poetry run junitparser merge pytest.xml.* pytest.xml
+
 test-setup:
-	cd .github/mongoreplicaset && docker compose up -d
+	bash scripts/test-setup.sh
 
 test-teardown:
-	cd .github/mongoreplicaset && docker compose down
+	cd docker/test && docker compose down
 
 test-routes:
 	uvicorn featurebyte.app:app --reload
 
-#* Docker
-beta-start: beta-build
-	cd docker/dev && docker compose -f docker-compose.yml up
-	$(MAKE) beta-stop
-
-beta-stop:
-	cd docker/dev && docker compose -f docker-compose.yml down
-	-docker container rm mongo-rs featurebyte-server featurebyte-docs
-
-beta-build:
+docker-build: | build-hive-udf-jar
 	poetry build
-	docker buildx build -f docker/Dockerfile -t "featurebyte-beta:latest" --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" .
+	docker buildx build . -f docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" -t featurebyte-server:latest
 
-beta-bundle:
-	-mkdir featurebyte_beta
-	# Copy dependencies over to bundled folder
-	cp docker/docker-compose.yml       featurebyte_beta/docker-compose.yml
-	cp docker/start.py                 featurebyte_beta/start.py
-	cp docker/stop.py                  featurebyte_beta/stop.py
-
-
-	@test -s featurebyte_beta/creds.json.b64 || echo "Credential file is missing at featurebyte_beta/creds.json.b64"
-	@test -s featurebyte_beta/creds.json.b64 || echo 'create the file with contents: $$(echo "_json_base_64:$$(cat SERVICE_ACCOUNT_FILE | base64)" | base64)'
-	@test -s featurebyte_beta/creds.json.b64 || exit 1
-
-	# Compress with tar.gz and zip
-	tar czvf featurebyte_beta.tar.gz featurebyte_beta/
-	zip -9 featurebyte_beta.zip -r featurebyte_beta/
+docker-dev: | docker-build
+	poetry run featurebyte start --local
+	poetry run featurebyte start spark --local
 
 #* Cleaning
 clean:
@@ -122,3 +125,5 @@ clean:
 #* Api documentation
 docs:
 	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs serve --config-file mkdocs.yaml --no-livereload
+docs-reload:
+	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs serve --config-file mkdocs.yaml

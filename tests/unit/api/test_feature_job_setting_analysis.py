@@ -14,8 +14,8 @@ from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.util.helper import patch_import_package
 
 
@@ -117,6 +117,7 @@ def test_info(saved_analysis):
             "frequency": "180s",
             "time_modulo_frequency": "61s",
         },
+        "workspace_name": "default",
     }
 
 

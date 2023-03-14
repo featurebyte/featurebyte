@@ -4,14 +4,18 @@ Test functions in migration/run.py
 import glob
 import json
 import os
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
 from bson import ObjectId, json_util
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
-from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
+from featurebyte.migration.model import (
+    MigrationMetadata,
+    SchemaMetadataCreate,
+    SchemaMetadataUpdate,
+)
 from featurebyte.migration.run import (
     _extract_migrate_method_marker,
     _extract_migrate_methods,
@@ -21,6 +25,7 @@ from featurebyte.migration.run import (
     run_migration,
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.service.entity import EntityService
@@ -54,7 +59,9 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 @pytest.mark.asyncio
 async def test_migrate_method_generator(user, persistent):
     """Test migrate method generator"""
-    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
+    schema_metadata_service = SchemaMetadataService(
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -97,7 +104,9 @@ async def test_migrate_method_generator(user, persistent):
 @pytest.mark.asyncio
 async def test_migrate_method_generator__exclude_warehouse(user, persistent):
     """Test migrate method generator with include_data_warehouse_migrations=False"""
-    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
+    schema_metadata_service = SchemaMetadataService(
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -128,7 +137,7 @@ async def migration_check_user_persistent_fixture(test_dir, persistent):
 @pytest.mark.asyncio
 async def test_post_migration_sanity_check(persistent, user):
     """Test post_migration_sanity_check"""
-    service = EntityService(user=user, persistent=persistent)
+    service = EntityService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
     docs = []
     for i in range(20):
         doc = await service.create_document(
@@ -144,7 +153,7 @@ async def test_post_migration_sanity_check(persistent, user):
     ) as mock_call:
         await post_migration_sanity_check(service)
 
-    docs = sorted(docs, key=lambda d: d.created_at, reverse=True)
+    docs = sorted(docs, key=lambda d: d.id, reverse=True)
     step_size = len(docs) // 5
     called_document_ids = [
         call_args.kwargs["document_id"] for call_args in mock_call.call_args_list
@@ -157,9 +166,14 @@ async def test_post_migration_sanity_check(persistent, user):
 async def test_run_migration(migration_check_persistent, user):
     """Test run migration function"""
     persistent = migration_check_persistent
-    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
-    schema_metadata = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
+    schema_metadata_service = SchemaMetadataService(
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
+    schema_metadata = await schema_metadata_service.create_document(
+        SchemaMetadataCreate(
+            name=MigrationMetadata.SCHEMA_METADATA.value,
+            version=1,  # skip version 1 since tabular_data collection exists
+        )
     )
 
     # perform migration on testing samples to check the migration logic
@@ -186,17 +200,19 @@ async def test_run_migration(migration_check_persistent, user):
             description = marker.description
 
         docs = await service.list_documents()
-        assert docs["total"] > 0
+        assert docs["total"] > 0, service
 
         # check that must be at least 3 records in the audit docs
         max_audit_record_nums = 0
         for doc in docs["data"]:
             audit_docs = await service.list_document_audits(document_id=doc["_id"])
             max_audit_record_nums = max(max_audit_record_nums, audit_docs["total"])
-        assert max_audit_record_nums > 1
+        assert max_audit_record_nums > 1, service
 
     # check version in schema_metadata after migration
-    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
+    schema_metadata_service = SchemaMetadataService(
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -221,7 +237,9 @@ async def test_data_warehouse_migration_get_session(
 
     get_credential_func = AsyncMock()
     warehouse_migration = DataWarehouseMigrationMixin(
-        user=user, persistent=migration_check_persistent
+        user=user,
+        persistent=migration_check_persistent,
+        workspace_id=DEFAULT_WORKSPACE_ID,
     )
     warehouse_migration.set_credential_callback(get_credential=get_credential_func)
 
