@@ -11,13 +11,14 @@ from featurebyte.service.validator.production_ready_validator import ProductionR
 
 
 @pytest.fixture(name="production_ready_validator")
-def production_ready_validator_fixture(feature_namespace_service, version_service):
+def production_ready_validator_fixture(feature_namespace_service, version_service, feature_service):
     """
     Get production ready validator
     """
     return ProductionReadyValidator(
         feature_namespace_service=feature_namespace_service,
         version_service=version_service,
+        feature_service=feature_service,
     )
 
 
@@ -164,14 +165,12 @@ async def test_assert_no_other_production_ready_feature__no_error_if_promoted_fe
     production_ready_validator, production_ready_feature
 ):
     """
-    Test that assert throws an error if there are other production ready features with the same name.
-
+    Test that assert does not throw an error if the feature that is already production ready is the same as the
+    feature that is _being_ promoted to production ready.
     """
-    with pytest.raises(ValueError) as exc:
-        await production_ready_validator._assert_no_other_production_ready_feature(
-            production_ready_feature.id, production_ready_feature.name
-        )
-    assert "Found another feature version that is already" in str(exc)
+    await production_ready_validator._assert_no_other_production_ready_feature(
+        production_ready_feature.id, production_ready_feature.name
+    )
 
 
 @pytest.mark.asyncio
