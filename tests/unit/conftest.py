@@ -286,7 +286,7 @@ def snowflake_database_table_fixture(
     snowflake_feature_store,
 ):
     """
-    DatabaseTable object fixture
+    SourceTable object fixture
     """
     _ = snowflake_connector, snowflake_execute_query
     snowflake_table = snowflake_feature_store.get_table(
@@ -303,7 +303,7 @@ def snowflake_database_table_item_data_fixture(
     snowflake_connector, snowflake_execute_query, snowflake_feature_store
 ):
     """
-    DatabaseTable object fixture for ItemTable (using config object)
+    SourceTable object fixture for ItemTable (using config object)
     """
     _ = snowflake_connector, snowflake_execute_query
     yield snowflake_feature_store.get_table(
@@ -318,7 +318,7 @@ def snowflake_database_table_scd_data_fixture(
     snowflake_connector, snowflake_execute_query, snowflake_feature_store
 ):
     """
-    DatabaseTable object fixture for SlowlyChangingData (using config object)
+    SourceTable object fixture for SlowlyChangingData (using config object)
     """
     _ = snowflake_connector, snowflake_execute_query
     yield snowflake_feature_store.get_table(
@@ -333,7 +333,7 @@ def snowflake_database_table_item_data_same_event_id_fixture(
     snowflake_connector, snowflake_execute_query, snowflake_feature_store
 ):
     """
-    DatabaseTable object fixture for ItemTable (same event_id_column with EventData)
+    SourceTable object fixture for ItemTable (same event_id_column with EventData)
     """
     _ = snowflake_connector, snowflake_execute_query
     yield snowflake_feature_store.get_table(

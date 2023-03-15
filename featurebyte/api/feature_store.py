@@ -10,7 +10,7 @@ from http import HTTPStatus
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
-from featurebyte.api.database_table import DatabaseTable
+from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
@@ -201,7 +201,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         table_name: str,
         database_name: Optional[str] = None,
         schema_name: Optional[str] = None,
-    ) -> DatabaseTable:
+    ) -> SourceTable:
         """
         Get table from the feature store
 
@@ -216,9 +216,9 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
         Returns
         -------
-        DatabaseTable
+        SourceTable
         """
-        return DatabaseTable(
+        return SourceTable(
             feature_store=self,
             tabular_source=TabularSource(
                 feature_store_id=self.id,

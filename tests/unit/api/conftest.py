@@ -64,7 +64,7 @@ def snowflake_database_table_fixture(
     snowflake_connector, snowflake_execute_query, snowflake_feature_store
 ):
     """
-    DatabaseTable object fixture (using config object)
+    SourceTable object fixture (using config object)
     """
     _ = snowflake_connector, snowflake_execute_query
     yield snowflake_feature_store.get_table(

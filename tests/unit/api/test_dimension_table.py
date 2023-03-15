@@ -9,11 +9,11 @@ from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models import DimensionDataModel
-from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
 
-class TestDimensionDataTestSuite(BaseDataTestSuite):
+class TestDimensionTableTestSuite(BaseTableTestSuite):
 
     data_type = DataType.DIMENSION_DATA
     col = "col_int"

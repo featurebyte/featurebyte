@@ -10,11 +10,12 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.scd_data import SCDDataModel
-from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
 
-class TestSlowChangingDataTestSuite(BaseDataTestSuite):
+class TestSCDTableTestSuite(BaseTableTestSuite):
+    """Test SCDTableTestSuite"""
 
     data_type = DataType.SCD_DATA
     col = "col_int"

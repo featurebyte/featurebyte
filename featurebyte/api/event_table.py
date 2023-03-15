@@ -13,8 +13,8 @@ from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_table import SourceTableApiObject
-from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
+from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
@@ -224,7 +224,7 @@ class EventTable(SourceTableApiObject):
     @typechecked
     def from_tabular_source(
         cls,
-        tabular_source: DatabaseTable,
+        tabular_source: SourceTable,
         name: str,
         event_timestamp_column: str,
         event_id_column: str,
@@ -236,7 +236,7 @@ class EventTable(SourceTableApiObject):
 
         Parameters
         ----------
-        tabular_source: DatabaseTable
+        tabular_source: SourceTable
             DatabaseTable object constructed from FeatureStore
         name: str
             Event data name

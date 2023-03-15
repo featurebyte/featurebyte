@@ -10,7 +10,7 @@ from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_table import SourceTableApiObject
-from featurebyte.api.database_table import DatabaseTable
+from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
@@ -353,7 +353,7 @@ class SCDTable(SourceTableApiObject):
     @typechecked
     def from_tabular_source(
         cls,
-        tabular_source: DatabaseTable,
+        tabular_source: SourceTable,
         name: str,
         natural_key_column: str,
         effective_timestamp_column: str,
@@ -368,7 +368,7 @@ class SCDTable(SourceTableApiObject):
 
         Parameters
         ----------
-        tabular_source: DatabaseTable
+        tabular_source: SourceTable
             DatabaseTable object constructed from FeatureStore
         name: str
             SlowlyChanging data name

@@ -26,7 +26,7 @@ from featurebyte.models.event_data import EventDataModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 from featurebyte.schema.task import Task, TaskStatus
-from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -223,7 +223,7 @@ def test_deserialization__column_name_not_found(
     assert 'Column "some_timestamp_column" not found in the table!' in str(exc.value)
 
 
-class TestEventDataTestSuite(BaseDataTestSuite):
+class TestEventTableTestSuite(BaseTableTestSuite):
 
     data_type = DataType.EVENT_DATA
     col = "col_int"
@@ -694,7 +694,7 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     assert expected_msg in str(exc.value)
 
 
-@patch("featurebyte.api.database_table.logger")
+@patch("featurebyte.api.source_table.logger")
 @patch("featurebyte.service.session_manager.SessionManager.get_session")
 def test_get_event_data__schema_has_been_changed(mock_get_session, mock_logger, saved_event_data):
     """
@@ -702,7 +702,7 @@ def test_get_event_data__schema_has_been_changed(mock_get_session, mock_logger, 
     """
     recent_schema = {"column": "INT"}
     mock_get_session.return_value.list_table_schema.return_value = recent_schema
-    event_data = EventTable.get_by_id(saved_event_data.id)
+    _ = EventTable.get_by_id(saved_event_data.id)
     assert mock_logger.warning.call_args.args[0] == "Table schema has been changed."
 
     # this is ok as additional column should not break backward compatibility

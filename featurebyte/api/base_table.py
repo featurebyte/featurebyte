@@ -13,8 +13,8 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping, SavableApiObject
-from featurebyte.api.database_table import AbstractTableData, DatabaseTable
 from featurebyte.api.entity import Entity
+from featurebyte.api.source_table import AbstractTableData, SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
@@ -313,7 +313,7 @@ class SourceTableApiObject(AbstractTableData, TableListMixin, SavableApiObject, 
     @typechecked
     def create(
         cls: Type[SourceTableApiObjectT],
-        tabular_source: DatabaseTable,
+        tabular_source: SourceTable,
         name: str,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
@@ -324,7 +324,7 @@ class SourceTableApiObject(AbstractTableData, TableListMixin, SavableApiObject, 
 
         Parameters
         ----------
-        tabular_source: DatabaseTable
+        tabular_source: SourceTable
             DatabaseTable object constructed from FeatureStore
         name: str
             Object name

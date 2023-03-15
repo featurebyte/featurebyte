@@ -344,7 +344,7 @@ class InputNode(BaseNode):
 
     # class variable
     _data_to_data_class_enum: ClassVar[Dict[TableDataType, ClassEnum]] = {
-        TableDataType.GENERIC: ClassEnum.DATABASE_TABLE,
+        TableDataType.GENERIC: ClassEnum.SOURCE_TABLE,
         TableDataType.EVENT_DATA: ClassEnum.EVENT_TABLE,
         TableDataType.ITEM_DATA: ClassEnum.ITEM_TABLE,
         TableDataType.DIMENSION_DATA: ClassEnum.DIMENSION_TABLE,

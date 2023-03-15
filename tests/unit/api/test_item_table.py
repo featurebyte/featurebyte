@@ -21,7 +21,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -216,7 +216,7 @@ def test_deserialization__column_name_not_found(
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
 
-class TestItemTableTestSuite(BaseDataTestSuite):
+class TestItemTableTestSuite(BaseTableTestSuite):
 
     data_type = DataType.ITEM_DATA
     col = "event_id_col"

@@ -207,7 +207,7 @@ class ClassEnum(Enum):
     TABULAR_SOURCE = ("featurebyte.query_graph.model.common_table", "TabularSource")
 
     # data
-    DATABASE_TABLE = ("featurebyte.api.database_table", "DatabaseTable")
+    SOURCE_TABLE = ("featurebyte.api.source_table", "SourceTable")
     EVENT_TABLE = ("featurebyte", "EventTable")
     ITEM_TABLE = ("featurebyte", "ItemTable")
     DIMENSION_TABLE = ("featurebyte", "DimensionTable")

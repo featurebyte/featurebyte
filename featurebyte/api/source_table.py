@@ -1,5 +1,5 @@
 """
-DatabaseTable class
+SourceTable class
 """
 from __future__ import annotations
 
@@ -337,9 +337,9 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         """
 
 
-class DatabaseTable(AbstractTableData):
+class SourceTable(AbstractTableData):
     """
-    DatabaseTable class to preview table
+    SourceTable class to preview table
     """
 
     _table_data_class: ClassVar[Type[AllTableDataT]] = GenericTableData

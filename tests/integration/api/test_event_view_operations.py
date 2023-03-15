@@ -9,7 +9,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import AggFunc, EventTable, FeatureJobSetting, FeatureList, SourceType, to_timedelta
+from featurebyte import (
+    AggFunc,
+    EventTable,
+    FeatureJobSetting,
+    FeatureList,
+    SourceType,
+    to_timedelta,
+)
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.node.schema import ColumnSpec

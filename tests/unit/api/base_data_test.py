@@ -21,9 +21,9 @@ class DataType(StrEnum):
     SCD_DATA = "SlowlyChangingData"
 
 
-class BaseDataTestSuite:
+class BaseTableTestSuite:
     """
-    BaseViewTestSuite contains common view tests
+    BaseTableTestSuite contains common tests for api table objects.
     """
 
     data_type: DataType = ""

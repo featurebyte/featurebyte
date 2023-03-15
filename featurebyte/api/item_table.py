@@ -10,8 +10,8 @@ from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_table import SourceTableApiObject
-from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.event_table import EventTable
+from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import join_tabular_data_ids
 from featurebyte.common.validator import construct_data_model_root_validator
@@ -136,7 +136,7 @@ class ItemTable(SourceTableApiObject):
             event_join_column_names=event_join_column_names,
         )
 
-        event_data = EventData.get_by_id(self.event_data_id)
+        event_data = EventTable.get_by_id(self.event_data_id)
         event_view = event_data.get_view(
             drop_column_names=event_drop_column_names,
             column_cleaning_operations=event_column_cleaning_operations,
@@ -267,7 +267,7 @@ class ItemTable(SourceTableApiObject):
     @typechecked
     def from_tabular_source(
         cls,
-        tabular_source: DatabaseTable,
+        tabular_source: SourceTable,
         name: str,
         event_id_column: str,
         item_id_column: str,
@@ -280,7 +280,7 @@ class ItemTable(SourceTableApiObject):
 
         Parameters
         ----------
-        tabular_source: DatabaseTable
+        tabular_source: SourceTable
             DatabaseTable object constructed from FeatureStore
         name: str
             Item data name
