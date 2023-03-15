@@ -26,11 +26,9 @@ class ProductionReadyValidator:
 
     def __init__(
         self,
-        feature_namespace_service: FeatureNamespaceService,
         version_service: VersionService,
         feature_service: FeatureService,
     ):
-        self.feature_namespace_service = feature_namespace_service
         self.version_service = version_service
         self.feature_service = feature_service
 
@@ -135,30 +133,19 @@ class ProductionReadyValidator:
         ValueError
             raised when there is another feature version with the same name that is production ready
         """
-        results = await self.feature_namespace_service.list_documents(
-            query_filter={"name": feature_name}
-        )
+        results = await self.feature_service.list_documents(query_filter={"name": feature_name})
         for feature in results["data"]:
             if feature["readiness"] == FeatureReadiness.PRODUCTION_READY:
-                # Find feature version that is production ready
-                for feature_id in feature["feature_ids"]:
-                    feature_version = await self.feature_service.get_document(feature_id)
-                    # If the version we are promoting is already production ready, we can return and skip this
-                    # validation.
-                    if (
-                        feature_version.readiness == FeatureReadiness.PRODUCTION_READY
-                        and promoted_feature_id == feature_id
-                    ):
-                        return
-
                 feature_id = feature["_id"]
-                if feature_id != promoted_feature_id:
-                    raise ValueError(
-                        f"Found another feature version that is already PRODUCTION_READY. Please deprecate the feature "
-                        f"{feature_name} with ID {feature_id} first before promoting the promoted version as there can "
-                        "only be one feature version that is production ready at any point in time. We are unable to "
-                        f"promote the feature with ID {promoted_feature_id} right now."
-                    )
+                # If the version we are promoting is already production ready, we can return and skip this validation.
+                if promoted_feature_id == feature_id:
+                    return
+                raise ValueError(
+                    f"Found another feature version that is already PRODUCTION_READY. Please deprecate the feature "
+                    f"{feature_name} with ID {feature_id} first before promoting the promoted version as there can "
+                    "only be one feature version that is production ready at any point in time. We are unable to "
+                    f"promote the feature with ID {promoted_feature_id} right now."
+                )
 
     @staticmethod
     def _get_feature_job_setting_from_groupby_node(node: Node) -> FeatureJobSetting:
