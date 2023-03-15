@@ -387,3 +387,38 @@ def test_activate():
     # switch to default catalog
     Catalog.activate("default")
     assert Entity.list()["name"].tolist() == []
+
+
+def _assert_function_is_not_called_from_active_catalog(function):
+    """
+    Assert that the function is not called from an active catalog.
+
+    We verify this by calling the function and making sure that it raises an error. This makes an assumption that the
+    currently active catalog is not the catalog that this function is being invoked from.
+    """
+    with pytest.raises(ValueError) as exc:
+        function()
+    assert "Catalog is not active" in str(exc.value)
+
+
+def _get_list_functions():
+    all_functions = dir(Catalog)
+    return [f for f in all_functions if f.startswith("list_")]
+
+
+@pytest.mark.parametrize("list_function", _get_list_functions())
+def test_list_functions_are_called_from_active_catalog(list_function):
+    """
+    Test that list_<x> functions are called from the active catalog.
+    """
+    credit_card_catalog = Catalog.create("creditcard")
+    grocery_catalog = Catalog.create(name="grocery")
+
+    _assert_function_is_not_called_from_active_catalog(getattr(credit_card_catalog, list_function))
+
+    # Verify no error
+    grocery_catalog.list_features()
+
+    # Switch to credit card, verify no error.
+    credit_card_catalog = Catalog.activate("creditcard")
+    credit_card_catalog.list_features()

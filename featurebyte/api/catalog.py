@@ -29,6 +29,22 @@ from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
 
 
+def check_is_active_catalog(func):
+    """
+    Decorator to check if the catalog is active before calling the function.
+    """
+
+    def _decorator(self, *args, **kwargs):
+        if self.id != get_active_catalog_id():
+            raise ValueError(
+                f"Catalog is not active. Please activate the catalog first before trying to call "
+                f"{func.__name__} on it."
+            )
+        return func(self, *args, **kwargs)
+
+    return _decorator
+
+
 @typechecked
 class Catalog(CatalogModel, SavableApiObject):
     """
@@ -148,6 +164,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return self._get_audit_history(field_name="name")
 
+    @check_is_active_catalog
     def list_features(
         self,
         include_id: Optional[bool] = False,
@@ -178,6 +195,7 @@ class Catalog(CatalogModel, SavableApiObject):
             include_id=include_id, feature_list_id=feature_list_id, entity=entity, data=data
         )
 
+    @check_is_active_catalog
     def list_feature_namespaces(
         self,
         include_id: Optional[bool] = False,
@@ -203,6 +221,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureNamespace.list(include_id=include_id, entity=entity, data=data)
 
+    @check_is_active_catalog
     def list_feature_list_namespaces(
         self,
         include_id: Optional[bool] = False,
@@ -228,6 +247,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureListNamespace.list(include_id=include_id, entity=entity, data=data)
 
+    @check_is_active_catalog
     def list_feature_lists(
         self,
         include_id: Optional[bool] = False,
@@ -247,6 +267,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureList.list_versions(include_id=include_id)
 
+    @check_is_active_catalog
     def list_tables(
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -267,6 +288,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return Table.list(include_id=include_id, entity=entity)
 
+    @check_is_active_catalog
     def list_dimension_tables(
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -287,6 +309,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return DimensionTable.list(include_id=include_id, entity=entity)
 
+    @check_is_active_catalog
     def list_item_tables(
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -307,6 +330,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return ItemTable.list(include_id=include_id, entity=entity)
 
+    @check_is_active_catalog
     def list_event_tables(
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -327,6 +351,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return EventTable.list(include_id=include_id, entity=entity)
 
+    @check_is_active_catalog
     def list_scd_tables(
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -347,6 +372,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return SCDTable.list(include_id=include_id, entity=entity)
 
+    @check_is_active_catalog
     def list_relationships(
         self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
@@ -391,6 +417,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return Relationship.list(include_id=include_id, relationship_type=relationship_type)
 
+    @check_is_active_catalog
     def list_feature_job_setting_analyses(
         self,
         include_id: Optional[bool] = False,
@@ -413,6 +440,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureJobSettingAnalysis.list(include_id=include_id, event_data_id=event_data_id)
 
+    @check_is_active_catalog
     def list_feature_stores(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved feature stores
@@ -429,6 +457,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureStore.list(include_id=include_id)
 
+    @check_is_active_catalog
     def list_entities(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved entities
@@ -445,6 +474,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return Entity.list(include_id=include_id)
 
+    @check_is_active_catalog
     def list_periodic_tasks(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved periodic tasks
