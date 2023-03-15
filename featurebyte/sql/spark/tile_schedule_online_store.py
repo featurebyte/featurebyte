@@ -8,7 +8,11 @@ from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.spark.common import construct_create_delta_table_query, retry_sql
+from featurebyte.sql.spark.common import (
+    CACHE_TABLE_PLACEHOLDER,
+    construct_create_delta_table_query,
+    retry_sql_with_cache,
+)
 
 
 class TileScheduleOnlineStore(BaseModel):
@@ -102,12 +106,9 @@ class TileScheduleOnlineStore(BaseModel):
 
                 # check whether feature value column exists, if not add the new column
                 cols_df = await self._spark.execute_query(f"SHOW COLUMNS IN {fs_table}")
-                col_exists = False
-                if cols_df is not None:
-                    for _, row in cols_df.iterrows():
-                        if f_name == row["col_name"]:
-                            col_exists = True
-                            break
+                col_exists = (
+                    False if cols_df is None else cols_df["col_name"].str.contains(f_name).any()
+                )
 
                 if not col_exists:
                     await self._spark.execute_query(
@@ -130,7 +131,7 @@ class TileScheduleOnlineStore(BaseModel):
                     on_condition_str = "true"
                     values_args = f"b.`{f_name}`"
                 merge_sql = f"""
-                    merge into {fs_table} a using ({f_sql}) b
+                    merge into {fs_table} a using ({CACHE_TABLE_PLACEHOLDER}) b
                         on {on_condition_str}
                         when matched then
                             update set a.{f_name} = b.{f_name}
@@ -138,4 +139,6 @@ class TileScheduleOnlineStore(BaseModel):
                             insert ({entities_fname_str})
                                 values ({values_args})
                 """
-                await retry_sql(self._spark, merge_sql)
+                await retry_sql_with_cache(
+                    session=self._spark, sql=merge_sql, cached_select_sql=f_sql
+                )

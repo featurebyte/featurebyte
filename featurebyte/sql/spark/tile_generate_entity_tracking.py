@@ -8,7 +8,7 @@ from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.spark.common import construct_create_delta_table_query, retry_sql
+from featurebyte.sql.spark.common import construct_create_delta_table_query, retry_sql_with_cache
 
 
 class TileGenerateEntityTracking(BaseModel):
@@ -78,4 +78,6 @@ class TileGenerateEntityTracking(BaseModel):
                         insert ({escaped_entity_column_names_str}, {self.tile_last_start_date_column})
                             values ({entity_insert_cols_str}, b.{self.tile_last_start_date_column})
             """
-            await retry_sql(self._spark, merge_sql)
+            await retry_sql_with_cache(
+                session=self._spark, sql=merge_sql, cached_select_sql=self.entity_table
+            )
