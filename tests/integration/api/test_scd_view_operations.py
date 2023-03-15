@@ -62,7 +62,7 @@ def expected_dataframe_scd_join(transaction_data_upper_case, scd_dataframe):
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_scd_join_small(session, feature_store, source_type):
+async def test_scd_join_small(session, data_source, source_type):
     """
     Self-contained test case to test SCD with small datasets
     """
@@ -105,7 +105,7 @@ async def test_scd_join_small(session, feature_store, source_type):
     await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
     await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
     event_view = EventTable.from_tabular_source(
-        tabular_source=feature_store.get_table(
+        tabular_source=data_source.get_table(
             table_name=f"{table_prefix}_EVENT",
             database_name=session.database_name,
             schema_name=session.schema_name,
@@ -115,7 +115,7 @@ async def test_scd_join_small(session, feature_store, source_type):
         event_timestamp_column="ts",
     ).get_view()
     scd_view = SCDTable.from_tabular_source(
-        tabular_source=feature_store.get_table(
+        tabular_source=data_source.get_table(
             table_name=f"{table_prefix}_SCD",
             database_name=session.database_name,
             schema_name=session.schema_name,

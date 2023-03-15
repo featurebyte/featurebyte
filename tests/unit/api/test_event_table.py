@@ -276,26 +276,8 @@ class TestEventTableTestSuite(BaseTableTestSuite):
     """
 
 
-def test_event_data__save__feature_store_not_saved_exception(snowflake_event_data):
-    """
-    Test save event data failure due to feature store object not saved
-    """
-
-    with pytest.raises(RecordCreationException) as exc:
-        snowflake_event_data.save()
-    feature_store_id = snowflake_event_data.feature_store.id
-    expect_msg = (
-        f'FeatureStore (id: "{feature_store_id}") not found. '
-        f"Please save the FeatureStore object first."
-    )
-    assert expect_msg in str(exc.value)
-
-
-def test_info__event_data_without_record_creation_date(
-    snowflake_feature_store, snowflake_database_table
-):
+def test_info__event_data_without_record_creation_date(snowflake_database_table):
     """Test info on event data with record creation date is None"""
-    snowflake_feature_store.save()
     event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
@@ -668,14 +650,13 @@ def test_update_record_creation_date_column__saved_object(saved_event_data):
     assert expected_msg in str(exc.value)
 
 
-def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_config_path_env):
+def test_get_event_data(snowflake_event_data, mock_config_path_env):
     """
     Test EventData.get function
     """
     _ = mock_config_path_env
 
     # create event data & save to persistent
-    snowflake_feature_store.save()
     snowflake_event_data.save()
 
     # load the event data from the persistent

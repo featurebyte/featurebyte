@@ -3,28 +3,22 @@ FeatureStore class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, cast
-
-from http import HTTPStatus
-
-from typeguard import typechecked
+from typing import Any, Optional
 
 from featurebyte.api.api_object import SavableApiObject
-from featurebyte.api.source_table import SourceTable
+from featurebyte.api.data_source import DataSource
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
+from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
 
 class FeatureStore(FeatureStoreModel, SavableApiObject):
     """
-    FeatureStore class
+    FeatureStore class to represent a feature store in FeatureByte.
+    This class is used to manage a feature store in FeatureByte.
     """
 
     # documentation metadata
@@ -55,7 +49,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         credentials: Optional[Credential] = None,
     ) -> FeatureStore:
         """
-        Create will return a new instance of a feature store.
+        Save and return a new instance of a feature store.
         We prefer to use this over the default constructor of `FeatureStore` because
         we want to perform some additional validation checks.
         Note that this function should only be called once for a specific set of details.
@@ -80,20 +74,20 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         --------
         Create a feature store housed in a Snowflake database
 
-        >>> import featurebyte as fb
-        >>> fb.FeatureStore.create(  # doctest: +SKIP
+        >>> from featurebyte import *
+        >>> FeatureStore.create(  # doctest: +SKIP
         ...     name="Snowflake Feature Store",
-        ...     source_type=fb.SourceType.SNOWFLAKE,
-        ...     details=fb.SnowflakeDetails(
+        ...     source_type=SourceType.SNOWFLAKE,
+        ...     details=SnowflakeDetails(
         ...         account="xxx.us-central1.gcp",
         ...         warehouse="COMPUTE_WH",
         ...         database="FEATUREBYTE",
         ...         sf_schema="FEATURESTORE",
         ...     ),
-        ...     credentials=fb.Credential(
+        ...     credentials=Credential(
         ...         name="Snowflake Feature Store",
         ...         credential_type="USERNAME_PASSWORD",
-        ...         credential=fb.UsernamePasswordCredential(
+        ...         credential=UsernamePasswordCredential(
         ...             username="username",
         ...             password="password"
         ...         )
@@ -101,7 +95,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         ... )
 
         List created feature stores
-        >>> fb.FeatureStore.list()  # doctest: +SKIP
+        >>> FeatureStore.list()  # doctest: +SKIP
                               name       type              created_at
         0  Snowflake Feature Store  snowflake 2023-01-04 12:16:51.811
 
@@ -113,119 +107,13 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         feature_store.save()
         return feature_store
 
-    @typechecked
-    def list_databases(self) -> List[str]:
+    def get_data_source(self) -> DataSource:
         """
-        List databases accessible by the feature store
+        Get the data source associated with the feature store
 
         Returns
         -------
-        List[str]
-            List of databases
-
-        Raises
-        ------
-        RecordRetrievalException
-            Failed to retrieve database list
+        DataSource
+            DataSource object
         """
-        client = Configurations().get_client()
-        response = client.post(url="/feature_store/database", json=self.json_dict())
-        if response.status_code == HTTPStatus.OK:
-            return cast(List[str], response.json())
-        raise RecordRetrievalException(response)
-
-    @typechecked
-    def list_schemas(self, database_name: Optional[str] = None) -> List[str]:
-        """
-        List schemas in the database
-
-        Parameters
-        ----------
-        database_name: Optional[str]
-            Database name
-
-        Returns
-        -------
-        list schemas
-
-        Raises
-        ------
-        RecordRetrievalException
-            Failed to retrieve database schema list
-        """
-        client = Configurations().get_client()
-        response = client.post(
-            url=f"/feature_store/schema?database_name={database_name}", json=self.json_dict()
-        )
-        if response.status_code == HTTPStatus.OK:
-            return cast(List[str], response.json())
-        raise RecordRetrievalException(response)
-
-    @typechecked
-    def list_tables(
-        self,
-        database_name: Optional[str] = None,
-        schema_name: Optional[str] = None,
-    ) -> List[str]:
-        """
-        List tables in the schema
-
-        Parameters
-        ----------
-        database_name: Optional[str]
-            Database name
-        schema_name: Optional[str]
-            Schema name
-
-        Returns
-        -------
-        list tables
-
-        Raises
-        ------
-        RecordRetrievalException
-            Failed to retrieve database table list
-        """
-        client = Configurations().get_client()
-        response = client.post(
-            url=f"/feature_store/table?database_name={database_name}&schema_name={schema_name}",
-            json=self.json_dict(),
-        )
-        if response.status_code == HTTPStatus.OK:
-            return cast(List[str], response.json())
-        raise RecordRetrievalException(response)
-
-    @typechecked
-    def get_table(
-        self,
-        table_name: str,
-        database_name: Optional[str] = None,
-        schema_name: Optional[str] = None,
-    ) -> SourceTable:
-        """
-        Get table from the feature store
-
-        Parameters
-        ----------
-        table_name: str
-            Table name
-        database_name: Optional[str]
-            Database name
-        schema_name: Optional[str]
-            Schema name
-
-        Returns
-        -------
-        SourceTable
-        """
-        return SourceTable(
-            feature_store=self,
-            tabular_source=TabularSource(
-                feature_store_id=self.id,
-                table_details=TableDetails(
-                    database_name=database_name,
-                    schema_name=schema_name,
-                    table_name=table_name,
-                ),
-            ),
-        )
+        return DataSource(feature_store_model=self)

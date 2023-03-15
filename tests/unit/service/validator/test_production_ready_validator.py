@@ -58,7 +58,6 @@ def format_exception_string_for_comparison(exception_str: str) -> str:
 @pytest.mark.asyncio
 async def test_validate(
     production_ready_validator,
-    snowflake_feature_store,
     snowflake_event_data_with_entity,
     feature_group_feature_job_setting,
 ):
@@ -66,7 +65,6 @@ async def test_validate(
     Test the validate method returns an error when there are differences.
     """
     # Generate a feature
-    snowflake_feature_store.save()
     snowflake_event_data_with_entity.save()
     snowflake_event_data_with_entity.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
@@ -175,7 +173,6 @@ async def test_assert_no_other_production_ready_feature__no_error_if_promoted_fe
 @pytest.mark.asyncio
 async def test_get_feature_job_setting_diffs__settings_differ(
     production_ready_validator,
-    snowflake_feature_store,
     snowflake_event_data_with_entity,
     feature_group_feature_job_setting,
     source_version_creator,
@@ -185,7 +182,6 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     Test _check_feature_job_setting_match returns a dictionary when the settings differ
     """
     # update event data w/ a feature job setting
-    snowflake_feature_store.save()
     snowflake_event_data_with_entity.save()
     snowflake_event_data_with_entity.update_default_feature_job_setting(
         FeatureJobSetting(**feature_group_feature_job_setting)
@@ -232,7 +228,6 @@ async def test_get_feature_job_setting_diffs__settings_differ(
 
 @pytest.mark.asyncio
 async def test_validate__no_diff_in_feature_should_return_none(
-    snowflake_feature_store,
     snowflake_event_data_with_entity,
     production_ready_validator,
     feature_group_feature_job_setting,
@@ -241,7 +236,6 @@ async def test_validate__no_diff_in_feature_should_return_none(
     Test validate - no diff returns None
     """
     # Create a feature that has same feature job setting and cleaning operations as it's data source
-    snowflake_feature_store.save()
     snowflake_event_data_with_entity.save()
     snowflake_event_data_with_entity.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)

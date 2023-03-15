@@ -22,7 +22,10 @@ def caplog_handle_fixture(caplog: LogCaptureFixture):
     """
     handler_id = logger.add(caplog.handler, level="DEBUG", format="{message}")
     yield caplog
-    logger.remove(handler_id)
+    try:
+        logger.remove(handler_id)
+    except ValueError:
+        pass
 
 
 @pytest.fixture(name="session_manager")
@@ -52,7 +55,7 @@ def sqlite_feature_store_fixture(config):
 @patch("featurebyte.session.sqlite.sqlite3", Mock())
 @pytest.mark.asyncio
 async def test_session_manager__get_cached_properly(
-    snowflake_feature_store,
+    snowflake_feature_store_params,
     sqlite_feature_store,
     snowflake_execute_query,
     session_manager,
@@ -75,6 +78,7 @@ async def test_session_manager__get_cached_properly(
         return total, latest_message
 
     # retrieve data source session for the first time
+    snowflake_feature_store = FeatureStore(**snowflake_feature_store_params, type="snowflake")
     _ = await session_manager.get_session(snowflake_feature_store)
     count, msg = count_create_session_logs()
     assert count == 1

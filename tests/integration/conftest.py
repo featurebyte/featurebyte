@@ -345,13 +345,20 @@ def feature_store_fixture(
     Feature store fixture
     """
     _ = mock_get_persistent
-    feature_store = FeatureStore(
+    feature_store = FeatureStore.create(
         name=feature_store_name,
-        type=source_type,
+        source_type=source_type,
         details=feature_store_details,
     )
-    feature_store.save()
     yield feature_store
+
+
+@pytest.fixture(name="data_source", scope="session")
+def data_source_fixture(feature_store):
+    """
+    Data source fixture
+    """
+    return feature_store.get_data_source()
 
 
 @pytest.fixture(name="mock_config_path_env", scope="session")
@@ -991,13 +998,13 @@ def status_entity_fixture():
     return entity
 
 
-def create_transactions_event_data_from_feature_store(
-    feature_store, database_name, schema_name, table_name, event_data_name
+def create_transactions_event_data_from_data_source(
+    data_source, database_name, schema_name, table_name, event_data_name
 ):
     """
     Helper function to create an EventData with the given feature store
     """
-    available_tables = feature_store.list_tables(
+    available_tables = data_source.list_tables(
         database_name=database_name,
         schema_name=schema_name,
     )
@@ -1005,7 +1012,7 @@ def create_transactions_event_data_from_feature_store(
     available_tables = [x.upper() for x in available_tables]
     assert table_name.upper() in available_tables
 
-    database_table = feature_store.get_table(
+    database_table = data_source.get_table(
         database_name=database_name,
         schema_name=schema_name,
         table_name=table_name,
@@ -1013,7 +1020,7 @@ def create_transactions_event_data_from_feature_store(
     expected_dtypes = pd.Series(
         {
             "ËVENT_TIMESTAMP": "TIMESTAMP_TZ"
-            if feature_store.type == SourceType.SNOWFLAKE
+            if data_source.type == SourceType.SNOWFLAKE
             else "TIMESTAMP",
             "CREATED_AT": "INT",
             "CUST_ID": "INT",
@@ -1056,7 +1063,7 @@ def event_data_name_fixture(source_type):
 @pytest.fixture(name="event_data", scope="session")
 def event_data_fixture(
     session,
-    feature_store,
+    data_source,
     event_data_name,
     user_entity,
     product_action_entity,
@@ -1070,8 +1077,8 @@ def event_data_fixture(
     _ = product_action_entity
     _ = customer_entity
     _ = order_entity
-    event_data = create_transactions_event_data_from_feature_store(
-        feature_store,
+    event_data = create_transactions_event_data_from_data_source(
+        data_source=data_source,
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="TEST_TABLE",
@@ -1091,7 +1098,7 @@ def item_data_name_fixture(source_type):
 @pytest.fixture(name="item_data", scope="session")
 def item_data_fixture(
     session,
-    feature_store,
+    data_source,
     item_data_name,
     event_data,
     order_entity,
@@ -1100,7 +1107,7 @@ def item_data_fixture(
     """
     Fixture for an ItemTable in integration tests
     """
-    database_table = feature_store.get_table(
+    database_table = data_source.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="ITEM_DATA_TABLE",
@@ -1130,7 +1137,7 @@ def dimension_data_name_fixture(source_type):
 @pytest.fixture(name="dimension_data", scope="session")
 def dimension_data_fixture(
     session,
-    feature_store,
+    data_source,
     dimension_data_table_name,
     dimension_data_name,
     item_entity,
@@ -1138,7 +1145,7 @@ def dimension_data_fixture(
     """
     Fixture for a DimensionTable in integration tests
     """
-    database_table = feature_store.get_table(
+    database_table = data_source.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name=dimension_data_table_name,
@@ -1157,13 +1164,13 @@ def dimension_data_fixture(
 @pytest.fixture(name="scd_data_tabular_source", scope="session")
 def scd_data_tabular_source_fixture(
     session,
-    feature_store,
+    data_source,
     scd_data_table_name,
 ):
     """
     Fixture for scd data tabular source
     """
-    database_table = feature_store.get_table(
+    database_table = data_source.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name=scd_data_table_name,

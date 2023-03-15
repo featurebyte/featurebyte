@@ -809,11 +809,8 @@ class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
         """
         Event data response fixture
         """
+        _ = snowflake_feature_store
         test_api_client, _ = test_api_client_persistent
-
-        response = test_api_client.post("/feature_store", json=snowflake_feature_store.json_dict())
-        assert response.status_code == HTTPStatus.CREATED
-
         payload = self.data_create_schema_class(**data_model_dict).json_dict()
         payload["columns_info"] = columns_info
         response = test_api_client.post(self.base_route, json=payload)

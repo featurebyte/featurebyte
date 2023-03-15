@@ -67,7 +67,6 @@ def deprecated_feature_fixture(feature_group):
 def single_feat_flist_fixture(production_ready_feature):
     """Feature list with a single feature"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
-    production_ready_feature.feature_store.save()
     return flist
 
 
@@ -77,7 +76,6 @@ def test_feature_list_creation__success(
 ):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
-    production_ready_feature.feature_store.save(conflict_resolution="retrieve")
 
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
@@ -421,16 +419,14 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
 
 @pytest.fixture(name="saved_feature_list")
 def saved_feature_list_fixture(
-    snowflake_feature_store,
     snowflake_event_data,
     float_feature,
 ):
     """
     Saved feature list fixture
     """
-    snowflake_feature_store.save()
     snowflake_event_data.save()
-    assert float_feature.tabular_source.feature_store_id == snowflake_feature_store.id
+    assert float_feature.tabular_source.feature_store_id == snowflake_event_data.feature_store.id
     feature_list = FeatureList([float_feature], name="my_feature_list")
     assert feature_list.saved is False
     feature_list_id_before = feature_list.id
@@ -672,7 +668,6 @@ def test_get_historical_feature_sql(saved_feature_list):
 
 
 def test_feature_list__feature_list_saving_in_bad_state(
-    snowflake_feature_store,
     snowflake_event_data,
     production_ready_feature,
     draft_feature,
@@ -680,7 +675,6 @@ def test_feature_list__feature_list_saving_in_bad_state(
     deprecated_feature,
 ):
     """Test feature list saving in bad state due to some feature has been saved (when the feature id is the same)"""
-    snowflake_feature_store.save()
     snowflake_event_data.save()
 
     # create a feature list
@@ -719,7 +713,6 @@ def test_feature_list__feature_list_saving_in_bad_state(
 
 
 def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different(
-    snowflake_feature_store,
     snowflake_event_data,
     feature_group,
     production_ready_feature,
@@ -728,7 +721,6 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
     deprecated_feature,
 ):
     """Test feature list saving in bad state due to some feature has been saved (when the feature id is different)"""
-    snowflake_feature_store.save()
     snowflake_event_data.save()
 
     # save the feature outside the feature list
@@ -760,14 +752,12 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
 
 @pytest.fixture(name="feature_list")
 def feature_list_fixture(
-    snowflake_feature_store,
     snowflake_event_data,
     production_ready_feature,
     draft_feature,
     quarantine_feature,
     deprecated_feature,
 ):
-    snowflake_feature_store.save()
     snowflake_event_data.save()
 
     # create a feature list

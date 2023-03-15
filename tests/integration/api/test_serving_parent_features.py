@@ -8,7 +8,7 @@ from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest_asyncio.fixture(name="feature_list_with_child_entities", scope="session")
-async def feature_list_with_child_entities_fixture(session, feature_store):
+async def feature_list_with_child_entities_fixture(session, data_source):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
     """
@@ -64,7 +64,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     country_entity.save()
 
     event_data = EventTable.from_tabular_source(
-        tabular_source=feature_store.get_table(
+        tabular_source=data_source.get_table(
             table_name=f"{table_prefix}_EVENT",
             database_name=session.database_name,
             schema_name=session.schema_name,
@@ -78,7 +78,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     event_data["cust_id"].as_entity(customer_entity.name)
 
     scd_data = SCDTable.from_tabular_source(
-        tabular_source=feature_store.get_table(
+        tabular_source=data_source.get_table(
             table_name=f"{table_prefix}_SCD",
             database_name=session.database_name,
             schema_name=session.schema_name,
@@ -93,7 +93,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     scd_data["scd_city"].as_entity(city_entity.name)
 
     dimension_data_1 = DimensionTable.from_tabular_source(
-        tabular_source=feature_store.get_table(
+        tabular_source=data_source.get_table(
             table_name=f"{table_prefix}_DIMENSION_1",
             database_name=session.database_name,
             schema_name=session.schema_name,
@@ -106,7 +106,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     dimension_data_1["state"].as_entity(state_entity.name)
 
     dimension_data_2 = DimensionTable.from_tabular_source(
-        tabular_source=feature_store.get_table(
+        tabular_source=data_source.get_table(
             table_name=f"{table_prefix}_DIMENSION_2",
             database_name=session.database_name,
             schema_name=session.schema_name,
