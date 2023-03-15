@@ -430,7 +430,7 @@ def test_get_change_view__keep_record_creation_timestamp_column(
     snowflake_scd_data, mock_api_object_cache
 ):
     """
-    Test create ChangeView using record creation date column as track changes column
+    Test create ChangeView using record creation timestamp column as track changes column
     """
     snowflake_scd_data.update_record_creation_timestamp_column("created_at")
     assert snowflake_scd_data.record_creation_timestamp_column == "created_at"

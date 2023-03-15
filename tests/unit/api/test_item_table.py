@@ -320,7 +320,7 @@ def test_event_data__record_creation_exception(snowflake_item_data):
 def test_update_record_creation_timestamp_column__unsaved_object(
     snowflake_item_data, mock_api_object_cache
 ):
-    """Test update record creation date column (unsaved ItemTable)"""
+    """Test update record creation timestamp column (unsaved ItemTable)"""
     _ = mock_api_object_cache
     assert snowflake_item_data.record_creation_timestamp_column is None
     snowflake_item_data.update_record_creation_timestamp_column("created_at")
@@ -328,7 +328,7 @@ def test_update_record_creation_timestamp_column__unsaved_object(
 
 
 def test_update_record_creation_timestamp_column__saved_object(saved_item_data):
-    """Test update record creation date column (saved ItemTable)"""
+    """Test update record creation timestamp column (saved ItemTable)"""
     saved_item_data.update_record_creation_timestamp_column("created_at")
     assert saved_item_data.record_creation_timestamp_column == "created_at"
 

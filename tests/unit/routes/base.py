@@ -937,7 +937,7 @@ class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
         data_response,
     ):
         """
-        Update Event Data record creation date column
+        Update Event Data record creation timestamp column
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()

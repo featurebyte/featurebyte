@@ -294,7 +294,7 @@ def test_event_data__save__feature_store_not_saved_exception(snowflake_event_dat
 def test_info__event_data_without_record_creation_date(
     snowflake_feature_store, snowflake_database_table
 ):
-    """Test info on event data with record creation date is None"""
+    """Test info on event data with record creation timestamp is None"""
     snowflake_feature_store.save()
     event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
@@ -639,7 +639,7 @@ async def test_update_default_job_setting__feature_job_setting_analysis_failure(
 
 
 def test_update_record_creation_timestamp_column__unsaved_object(snowflake_database_table):
-    """Test update record creation date column (unsaved event data)"""
+    """Test update record creation timestamp column (unsaved event data)"""
     event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="event_data",
@@ -652,7 +652,7 @@ def test_update_record_creation_timestamp_column__unsaved_object(snowflake_datab
 
 
 def test_update_record_creation_timestamp_column__saved_object(saved_event_data):
-    """Test update record creation date column (saved event data)"""
+    """Test update record creation timestamp column (saved event data)"""
     saved_event_data.update_record_creation_timestamp_column("created_at")
     assert saved_event_data.record_creation_timestamp_column == "created_at"
 
