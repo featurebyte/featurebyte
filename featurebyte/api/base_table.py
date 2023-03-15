@@ -292,7 +292,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def record_creation_timestamp_column(self) -> Optional[str]:
         """
-        Record creation date column name
+        Record creation timestamp column name
 
         Returns
         -------
@@ -328,7 +328,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         name: str
             Object name
         record_creation_timestamp_column: str
-            Record creation datetime column from the given tabular source
+            Record creation timestamp column from the given tabular source
         _id: Optional[ObjectId]
             Identity value for constructed object
         **kwargs: Any
@@ -425,12 +425,12 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         self, record_creation_timestamp_column: str
     ) -> None:
         """
-        Update record creation date column
+        Update record creation timestamp column
 
         Parameters
         ----------
         record_creation_timestamp_column: str
-            Record creation date column used to perform feature job setting analysis
+            Record creation timestamp column used to perform feature job setting analysis
         """
         self.update(
             update_payload={"record_creation_timestamp_column": record_creation_timestamp_column},

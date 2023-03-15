@@ -124,7 +124,7 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocume
     status: DataStatus
         Data status
     record_creation_timestamp_column: Optional[str]
-        Record creation date column name
+        Record creation timestamp column name
     """
 
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)

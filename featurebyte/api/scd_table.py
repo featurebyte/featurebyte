@@ -101,7 +101,7 @@ class SCDTable(TableApiObject):
         ----------
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
-            from the data and the record creation date column will be dropped
+            from the table and the record creation timestamp column will be dropped
         drop_column_names: Optional[List[str]]
             List of column names to drop (manual mode only)
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
@@ -192,7 +192,7 @@ class SCDTable(TableApiObject):
             they must be different.
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
-            from the data and the record creation date column will be dropped
+            from the table and the record creation timestamp column will be dropped
         drop_column_names: Optional[List[str]]
             List of column names to drop (manual mode only)
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
@@ -386,7 +386,7 @@ class SCDTable(TableApiObject):
         current_flag_column: Optional[str]
             Column to indicates whether the keys are for the current data point
         record_creation_timestamp_column: str
-            Record creation datetime column from the given tabular source
+            Record creation timestamp column from the given tabular source
         _id: Optional[ObjectId]
             Identity value for constructed object
 

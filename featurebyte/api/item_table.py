@@ -110,7 +110,7 @@ class ItemTable(TableApiObject):
             A suffix to append on to the columns from the EventData
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
-            from the data, the record creation date column will be dropped and the columns to join from the
+            from the table, the record creation timestamp column will be dropped and the columns to join from the
             EventView will be automatically selected
         drop_column_names: Optional[List[str]]
             List of column names to drop for the ItemView (manual mode only)
@@ -294,7 +294,7 @@ class ItemTable(TableApiObject):
         event_data_name: str
             Name of the EventTable associated with this ItemTable
         record_creation_timestamp_column: Optional[str]
-            Record creation datetime column from the given tabular source
+            Record creation timestamp column from the given tabular source
         _id: Optional[ObjectId]
             Identity value for constructed object
 
