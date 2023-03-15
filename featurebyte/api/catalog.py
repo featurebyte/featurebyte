@@ -29,22 +29,22 @@ from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
 
 
-def check_is_active_catalog(func: Callable[[Any, Any, Any], Any]) -> Callable[[Any, Any, Any], Any]:
+def check_is_active_catalog(func: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
     """
     Decorator to check if the catalog is active before calling the function.
 
     Parameters
     ----------
-    func: Callable[[Any, Any, Any], Any]
+    func: Callable[[Any, Any], Any]
         Function to decorate
 
     Returns
     -------
-    Callable[[Any, Any, Any], Any]
+    Callable[[Any, Any], Any]
         Decorated function
     """
 
-    def _decorator(self, *args, **kwargs) -> Any:
+    def _decorator(self, *args: Any, **kwargs: Any) -> Any:
         if self.id != get_active_catalog_id():
             raise ValueError(
                 f"Catalog is not active. Please activate the catalog first before trying to call "
