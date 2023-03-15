@@ -39,7 +39,7 @@ def check_is_active_catalog(catalog_id: ObjectId) -> None:
         Catalog ID
     """
     if catalog_id != get_active_catalog_id():
-        raise ValueError(f"Catalog is not active. Please activate the catalog first.")
+        raise ValueError("Catalog is not active. Please activate the catalog first.")
 
 
 @typechecked
