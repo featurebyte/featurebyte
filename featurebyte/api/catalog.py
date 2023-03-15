@@ -60,6 +60,10 @@ class Catalog(CatalogModel, SavableApiObject):
         ----------
         name: str
             Name of catalog to activate
+
+        Returns
+        -------
+        Catalog
         """
         catalog = cls.get(name)
         activate_catalog(catalog.id)
