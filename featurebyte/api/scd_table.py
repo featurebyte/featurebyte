@@ -47,7 +47,7 @@ class SCDTable(TableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Data"], proxy_class="featurebyte.SCDTable")
+    __fbautodoc__ = FBAutoDoc(section=["Table"], proxy_class="featurebyte.SCDTable")
 
     # class variables
     _route = "/scd_data"
