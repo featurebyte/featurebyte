@@ -67,7 +67,7 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache):
     expected_view_columns_info = [
         col
         for col in snowflake_event_data.columns_info
-        if col.name != snowflake_event_data.record_creation_date_column
+        if col.name != snowflake_event_data.record_creation_timestamp_column
     ]
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
     assert event_view_first.row_index_lineage == snowflake_event_data.frame.row_index_lineage
@@ -85,7 +85,7 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache):
     expected_view_columns_info = [
         col
         for col in snowflake_event_data.columns_info
-        if col.name != snowflake_event_data.record_creation_date_column
+        if col.name != snowflake_event_data.record_creation_timestamp_column
     ]
     assert event_view_second.columns_info == expected_view_columns_info
     assert event_view_second.default_feature_job_setting == FeatureJobSetting(
@@ -173,7 +173,7 @@ def test_event_view_column_lag(
         data_id_to_info={
             snowflake_event_data.id: {
                 "name": snowflake_event_data.name,
-                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
             }
         },
     )
@@ -269,7 +269,7 @@ def test_event_view_groupby__prune(
         data_id_to_info={
             snowflake_event_data_with_entity.id: {
                 "name": snowflake_event_data_with_entity.name,
-                "record_creation_date_column": snowflake_event_data_with_entity.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_event_data_with_entity.record_creation_timestamp_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail during GroupBy construction
                 "columns_info": event_data_columns_info,
@@ -663,14 +663,14 @@ def test_add_feature(
         data_id_to_info={
             snowflake_event_data.id: {
                 "name": snowflake_event_data.name,
-                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in GroupBy construction
                 "columns_info": event_data_columns_info,
             },
             snowflake_item_data.id: {
                 "name": snowflake_item_data.name,
-                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_item_data.record_creation_timestamp_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in GroupBy construction
                 "columns_info": item_data_columns_info,

@@ -62,7 +62,7 @@ def test_auto_view_mode(snowflake_scd_data_with_imputation):
 
     # check view graph metadata
     metadata = snowflake_change_view.node.parameters.metadata
-    assert snowflake_scd_data_with_imputation.record_creation_date_column is None
+    assert snowflake_scd_data_with_imputation.record_creation_timestamp_column is None
     assert metadata.view_mode == "auto"
     assert metadata.drop_column_names == []
     assert metadata.column_cleaning_operations == [
@@ -85,7 +85,7 @@ def test_auto_view_mode(snowflake_scd_data_with_imputation):
         data_id_to_info={
             snowflake_scd_data_with_imputation.id: {
                 "name": snowflake_scd_data_with_imputation.name,
-                "record_creation_date_column": snowflake_scd_data_with_imputation.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_scd_data_with_imputation.record_creation_timestamp_column,
             }
         },
     )
@@ -118,7 +118,7 @@ def test_manual_view_mode(snowflake_scd_data_with_imputation):
         data_id_to_info={
             snowflake_scd_data_with_imputation.id: {
                 "name": snowflake_scd_data_with_imputation.name,
-                "record_creation_date_column": snowflake_scd_data_with_imputation.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_scd_data_with_imputation.record_creation_timestamp_column,
             }
         },
     )
@@ -426,16 +426,16 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
     assert tile_infos[0].sql == expected
 
 
-def test_get_change_view__keep_record_creation_date_column(
+def test_get_change_view__keep_record_creation_timestamp_column(
     snowflake_scd_data, mock_api_object_cache
 ):
     """
     Test create ChangeView using record creation date column as track changes column
     """
-    snowflake_scd_data.update_record_creation_date_column("created_at")
-    assert snowflake_scd_data.record_creation_date_column == "created_at"
+    snowflake_scd_data.update_record_creation_timestamp_column("created_at")
+    assert snowflake_scd_data.record_creation_timestamp_column == "created_at"
     change_view = snowflake_scd_data.get_change_view(
-        track_changes_column=snowflake_scd_data.record_creation_date_column
+        track_changes_column=snowflake_scd_data.record_creation_timestamp_column
     )
     expected_sql = textwrap.dedent(
         """
@@ -461,7 +461,7 @@ def test_get_change_view__keep_record_creation_date_column(
         cleaning_operations=[MissingValueImputation(imputed_value="2020-01-01")]
     )
     change_view = snowflake_scd_data.get_change_view(
-        track_changes_column=snowflake_scd_data.record_creation_date_column
+        track_changes_column=snowflake_scd_data.record_creation_timestamp_column
     )
     expected_sql = textwrap.dedent(
         """

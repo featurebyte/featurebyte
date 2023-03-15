@@ -70,7 +70,7 @@ class EventDataModel(EventTableData, DataModel):
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
                 ("event_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
                 ("event_id_column", DBVarType.supported_id_types()),
             ],
         )

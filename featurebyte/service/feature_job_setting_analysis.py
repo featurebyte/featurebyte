@@ -67,7 +67,7 @@ class FeatureJobSettingAnalysisService(
             catalog_id=self.catalog_id,
         )
         event_data = await event_data_service.get_document(document_id=data.event_data_id)
-        if not event_data.record_creation_date_column:
+        if not event_data.record_creation_timestamp_column:
             raise DocumentError("Creation date column is not available for the event data.")
 
         return FeatureJobSettingAnalysisTaskPayload(

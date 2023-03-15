@@ -75,7 +75,10 @@ class SCDTable(TableApiObject):
         construct_data_model_root_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
-                ("internal_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                (
+                    "internal_record_creation_timestamp_column",
+                    DBVarType.supported_timestamp_types(),
+                ),
                 ("internal_natural_key_column", DBVarType.supported_id_types()),
                 ("internal_effective_timestamp_column", DBVarType.supported_timestamp_types()),
                 ("internal_surrogate_key_column", DBVarType.supported_id_types()),
@@ -123,8 +126,8 @@ class SCDTable(TableApiObject):
         #    | InputNode + --> | GraphNode(type:scd_view) +
         #    +-----------+     +--------------------------+
         drop_column_names = drop_column_names or []
-        if view_mode == ViewMode.AUTO and self.record_creation_date_column:
-            drop_column_names.append(self.record_creation_date_column)
+        if view_mode == ViewMode.AUTO and self.record_creation_timestamp_column:
+            drop_column_names.append(self.record_creation_timestamp_column)
 
         data_node = self.frame.node  # pylint: disable=duplicate-code
         assert isinstance(data_node, InputNode)
@@ -223,10 +226,10 @@ class SCDTable(TableApiObject):
         drop_column_names = drop_column_names or []
         if (
             view_mode == ViewMode.AUTO
-            and self.record_creation_date_column
-            and self.record_creation_date_column != track_changes_column
+            and self.record_creation_timestamp_column
+            and self.record_creation_timestamp_column != track_changes_column
         ):
-            drop_column_names.append(self.record_creation_date_column)
+            drop_column_names.append(self.record_creation_timestamp_column)
 
         data_node = self.frame.node  # pylint disable=duplicate-code
         assert isinstance(data_node, InputNode)
@@ -360,7 +363,7 @@ class SCDTable(TableApiObject):
         end_timestamp_column: Optional[str] = None,
         surrogate_key_column: Optional[str] = None,
         current_flag_column: Optional[str] = None,
-        record_creation_date_column: Optional[str] = None,
+        record_creation_timestamp_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> SCDTable:
         """
@@ -382,7 +385,7 @@ class SCDTable(TableApiObject):
             Surrogate key column from the given tabular source
         current_flag_column: Optional[str]
             Column to indicates whether the keys are for the current data point
-        record_creation_date_column: str
+        record_creation_timestamp_column: str
             Record creation datetime column from the given tabular source
         _id: Optional[ObjectId]
             Identity value for constructed object
@@ -407,7 +410,7 @@ class SCDTable(TableApiObject):
         ...    end_timestamp_column="END_AT",
         ...    surrogate_key_column="ID",
         ...    current_flag_column="IS_CURRENT",
-        ...    record_creation_date_column="RECORD_AVAILABLE_AT",
+        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
         ... )
 
         Get information about the SCDTable
@@ -417,7 +420,7 @@ class SCDTable(TableApiObject):
         return super().create(
             tabular_source=tabular_source,
             name=name,
-            record_creation_date_column=record_creation_date_column,
+            record_creation_timestamp_column=record_creation_timestamp_column,
             _id=_id,
             natural_key_column=natural_key_column,
             surrogate_key_column=surrogate_key_column,

@@ -80,7 +80,7 @@ def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_data, entity_
         data_id_to_info={
             snowflake_scd_data.id: {
                 "name": snowflake_scd_data.name,
-                "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_scd_data.record_creation_timestamp_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail during aggregate_asat
                 "columns_info": scd_data_columns_info,

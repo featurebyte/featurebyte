@@ -72,7 +72,7 @@
     ],
     "dimension_id_column": "col_int",
     "name": "sf_dimension_data",
-    "record_creation_date_column": "created_at",
+    "record_creation_timestamp_column": "created_at",
     "tabular_source": {
         "feature_store_id": "63ff1a9c5631c515f17fc66e",
         "table_details": {

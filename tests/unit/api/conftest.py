@@ -87,7 +87,7 @@ def snowflake_event_data_fixture(
         name="sf_event_data",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
         _id=snowflake_event_data_id,
     )
 

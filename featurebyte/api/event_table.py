@@ -76,7 +76,10 @@ class EventTable(TableApiObject):
         construct_data_model_root_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
-                ("internal_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                (
+                    "internal_record_creation_timestamp_column",
+                    DBVarType.supported_timestamp_types(),
+                ),
                 ("internal_event_timestamp_column", DBVarType.supported_timestamp_types()),
                 ("internal_event_id_column", DBVarType.supported_id_types()),
             ],
@@ -120,8 +123,8 @@ class EventTable(TableApiObject):
         #    | InputNode + --> | GraphNode(type:event_view) +
         #    +-----------+     +----------------------------+
         drop_column_names = drop_column_names or []
-        if view_mode == ViewMode.AUTO and self.record_creation_date_column:
-            drop_column_names.append(self.record_creation_date_column)
+        if view_mode == ViewMode.AUTO and self.record_creation_timestamp_column:
+            drop_column_names.append(self.record_creation_timestamp_column)
 
         data_node = self.frame.node
         assert isinstance(data_node, InputNode)
@@ -228,7 +231,7 @@ class EventTable(TableApiObject):
         name: str,
         event_timestamp_column: str,
         event_id_column: str,
-        record_creation_date_column: Optional[str] = None,
+        record_creation_timestamp_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> EventTable:
         """
@@ -244,7 +247,7 @@ class EventTable(TableApiObject):
             Event ID column from the given tabular source
         event_timestamp_column: str
             Event timestamp column from the given tabular source
-        record_creation_date_column: str
+        record_creation_timestamp_column: str
             Record creation datetime column from the given tabular source
         _id: Optional[ObjectId]
             Identity value for constructed object
@@ -267,7 +270,7 @@ class EventTable(TableApiObject):
         ...    ),
         ...    event_id_column="TRANSACTIONID",
         ...    event_timestamp_column="TIMESTAMP",
-        ...    record_creation_date_column="RECORD_AVAILABLE_AT",
+        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
         ... )
 
         Get information about the EventTable
@@ -278,7 +281,7 @@ class EventTable(TableApiObject):
         'updated_at': '2022-11-14T12:15:59.707000',
         'status': 'DRAFT',
         'event_timestamp_column': 'TIMESTAMP',
-        'record_creation_date_column': 'RECORD_AVAILABLE_AT',
+        'record_creation_timestamp_column': 'RECORD_AVAILABLE_AT',
         'table_details': {'database_name': 'DEMO',
         'schema_name': 'CREDIT_CARD',
         'table_name': 'TRANSACTIONS'},
@@ -300,7 +303,7 @@ class EventTable(TableApiObject):
         return super().create(
             tabular_source=tabular_source,
             name=name,
-            record_creation_date_column=record_creation_date_column,
+            record_creation_timestamp_column=record_creation_timestamp_column,
             _id=_id,
             event_timestamp_column=event_timestamp_column,
             event_id_column=event_id_column,

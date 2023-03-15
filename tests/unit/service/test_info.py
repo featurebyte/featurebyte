@@ -98,7 +98,7 @@ async def test_get_event_data_info(info_service, event_data, entity):
         status="DRAFT",
         event_timestamp_column="event_timestamp",
         event_id_column="col_int",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
         table_details=TableDetails(
             database_name="sf_database",
             schema_name="sf_schema",
@@ -151,7 +151,7 @@ async def test_get_item_data_info(info_service, item_data, event_data):
         event_id_column="event_id_col",
         item_id_column="item_id_col",
         event_data_name="sf_event_data",
-        record_creation_date_column=None,
+        record_creation_timestamp_column=None,
         table_details=TableDetails(
             database_name="sf_database",
             schema_name="sf_schema",
@@ -191,7 +191,7 @@ async def test_get_dimension_data_info(info_service, dimension_data):
         name="sf_dimension_data",
         status="DRAFT",
         dimension_id_column="col_int",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
         table_details=TableDetails(
             database_name="sf_database",
             schema_name="sf_schema",
@@ -233,7 +233,7 @@ async def test_get_scd_data_info(info_service, scd_data):
     expected_info = SCDDataInfo(
         name="sf_scd_data",
         status="DRAFT",
-        record_creation_date_column=None,
+        record_creation_timestamp_column=None,
         current_flag_column="is_active",
         natural_key_column="col_text",
         surrogate_key_column="col_int",

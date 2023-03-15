@@ -399,7 +399,7 @@ def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_
         name="sf_event_data",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
         _id=snowflake_event_data_id,
     )
     assert event_data.frame.node.parameters.id == event_data.id
@@ -413,7 +413,7 @@ def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimensi
         tabular_source=snowflake_database_table,
         name="sf_dimension_data",
         dimension_id_column="col_int",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
         _id=snowflake_dimension_data_id,
     )
     assert dimension_data.frame.node.parameters.id == dimension_data.id

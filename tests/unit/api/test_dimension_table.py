@@ -146,7 +146,7 @@ def dimension_data_dict_fixture(snowflake_database_table):
             },
         ],
         "dimension_id_column": "col_int",
-        "record_creation_date_column": "created_at",
+        "record_creation_timestamp_column": "created_at",
         "created_at": None,
         "updated_at": None,
         "user_id": None,
@@ -161,7 +161,7 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
         tabular_source=snowflake_database_table,
         name="sf_dimension_data",
         dimension_id_column="col_int",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
     )
 
     # check that node parameter is set properly
@@ -183,7 +183,7 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
             tabular_source=snowflake_database_table,
             name=123,
             dimension_id_column="col_int",
-            record_creation_date_column=345,
+            record_creation_timestamp_column=345,
         )
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
@@ -198,7 +198,7 @@ def test_from_tabular_source__duplicated_record(saved_dimension_data, snowflake_
             tabular_source=snowflake_database_table,
             name="sf_dimension_data",
             dimension_id_column="col_int",
-            record_creation_date_column="created_at",
+            record_creation_timestamp_column="created_at",
         )
     assert (
         'DimensionTable (dimension_data.name: "sf_dimension_data") exists in saved record.'
@@ -216,7 +216,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
                 tabular_source=snowflake_database_table,
                 name="sf_dimension_data",
                 dimension_id_column="col_int",
-                record_creation_date_column="created_at",
+                record_creation_timestamp_column="created_at",
             )
 
 
@@ -227,7 +227,7 @@ def assert_info_helper(dimension_data_info):
     assert dimension_data_info["dimension_id_column"] == "col_int"
     assert dimension_data_info["entities"] == []
     assert dimension_data_info["name"] == "sf_dimension_data"
-    assert dimension_data_info["record_creation_date_column"] == "created_at"
+    assert dimension_data_info["record_creation_timestamp_column"] == "created_at"
     assert dimension_data_info["status"] == "DRAFT"
 
 
@@ -246,7 +246,7 @@ def test_info(saved_dimension_data):
 def test_accessing_dimension_data_attributes(snowflake_dimension_data):
     """Test accessing event data object attributes"""
     assert snowflake_dimension_data.saved is False
-    assert snowflake_dimension_data.record_creation_date_column == "created_at"
+    assert snowflake_dimension_data.record_creation_timestamp_column == "created_at"
     assert snowflake_dimension_data.dimension_id_column == "col_int"
 
 
@@ -254,17 +254,17 @@ def test_accessing_saved_dimension_data_attributes(saved_dimension_data):
     """Test accessing event data object attributes"""
     assert saved_dimension_data.saved
     assert isinstance(saved_dimension_data.cached_model, DimensionDataModel)
-    assert saved_dimension_data.record_creation_date_column == "created_at"
+    assert saved_dimension_data.record_creation_timestamp_column == "created_at"
     assert saved_dimension_data.dimension_id_column == "col_int"
 
     # check synchronization
     cloned = DimensionTable.get_by_id(id=saved_dimension_data.id)
-    assert cloned.record_creation_date_column == "created_at"
-    saved_dimension_data.update_record_creation_date_column(
-        record_creation_date_column="event_timestamp"
+    assert cloned.record_creation_timestamp_column == "created_at"
+    saved_dimension_data.update_record_creation_timestamp_column(
+        record_creation_timestamp_column="event_timestamp"
     )
-    assert saved_dimension_data.record_creation_date_column == "event_timestamp"
-    assert cloned.record_creation_date_column == "event_timestamp"
+    assert saved_dimension_data.record_creation_timestamp_column == "event_timestamp"
+    assert cloned.record_creation_timestamp_column == "event_timestamp"
 
 
 def test_sdk_code_generation(snowflake_database_table, update_fixtures):
@@ -273,7 +273,7 @@ def test_sdk_code_generation(snowflake_database_table, update_fixtures):
         tabular_source=snowflake_database_table,
         name="sf_dimension_data",
         dimension_id_column="col_int",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
     )
     check_sdk_code_generation(
         dimension_data.frame,

@@ -37,7 +37,7 @@ scd_table = SCDTable(
         ColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
         ColumnInfo(name="cust_id", dtype="INT"),
     ],
-    record_creation_date_column=None,
+    record_creation_timestamp_column=None,
     natural_key_column="col_text",
     effective_timestamp_column="effective_timestamp",
     end_timestamp_column="end_timestamp",

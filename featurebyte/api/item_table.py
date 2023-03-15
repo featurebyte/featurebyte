@@ -81,7 +81,10 @@ class ItemTable(TableApiObject):
         construct_data_model_root_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
-                ("internal_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                (
+                    "internal_record_creation_timestamp_column",
+                    DBVarType.supported_timestamp_types(),
+                ),
                 ("internal_event_id_column", DBVarType.supported_id_types()),
                 ("internal_item_id_column", DBVarType.supported_id_types()),
             ],
@@ -157,8 +160,8 @@ class ItemTable(TableApiObject):
         event_column_cleaning_operations = event_column_cleaning_operations or []
         event_join_column_names = event_join_column_names or [event_view.timestamp_column]
         if view_mode == ViewMode.AUTO:
-            if self.record_creation_date_column:
-                drop_column_names.append(self.record_creation_date_column)
+            if self.record_creation_timestamp_column:
+                drop_column_names.append(self.record_creation_timestamp_column)
 
             event_view_param_metadata = event_view.node.parameters.metadata  # type: ignore
             event_join_column_names = [event_view.timestamp_column] + event_view.entity_columns
@@ -272,7 +275,7 @@ class ItemTable(TableApiObject):
         event_id_column: str,
         item_id_column: str,
         event_data_name: str,
-        record_creation_date_column: Optional[str] = None,
+        record_creation_timestamp_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> ItemTable:
         """
@@ -290,7 +293,7 @@ class ItemTable(TableApiObject):
             Item ID column from the given tabular source
         event_data_name: str
             Name of the EventTable associated with this ItemTable
-        record_creation_date_column: Optional[str]
+        record_creation_timestamp_column: Optional[str]
             Record creation datetime column from the given tabular source
         _id: Optional[ObjectId]
             Identity value for constructed object
@@ -318,7 +321,7 @@ class ItemTable(TableApiObject):
         ...    event_id_column="ORDER_ID",
         ...    item_id_column="ITEM_ID",
         ...    event_data_name="Order List",
-        ...    record_creation_date_column="RECORD_AVAILABLE_AT",
+        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
         ... )
 
         Get information about the ItemTable
@@ -332,7 +335,7 @@ class ItemTable(TableApiObject):
         return super().create(
             tabular_source=tabular_source,
             name=name,
-            record_creation_date_column=record_creation_date_column,
+            record_creation_timestamp_column=record_creation_timestamp_column,
             _id=_id,
             event_id_column=event_id_column,
             item_id_column=item_id_column,

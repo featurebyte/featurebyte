@@ -83,7 +83,7 @@ def get_scd_data_model_fixture(snowflake_feature_store, scd_columns_info):
             ),
         },
         columns_info=scd_columns_info,
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
         created_at=arbitrary_test_date_time,
         status=DataStatus.PUBLISHED,
         natural_key_column="natural_id",
@@ -105,7 +105,7 @@ def get_base_expected_scd_data_model(scd_data_model, scd_columns_info):
         "columns_info": scd_columns_info,
         "id": scd_data_model.id,
         "name": "my_scd_data",
-        "record_creation_date_column": "created_at",
+        "record_creation_timestamp_column": "created_at",
         "status": "PUBLISHED",
         "tabular_source": {
             "feature_store_id": scd_data_model.tabular_source.feature_store_id,

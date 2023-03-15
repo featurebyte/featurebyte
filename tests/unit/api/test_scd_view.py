@@ -124,11 +124,11 @@ def test_event_view_join_scd_view(
         data_id_to_info={
             snowflake_scd_data.id: {
                 "name": snowflake_scd_data.name,
-                "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_scd_data.record_creation_timestamp_column,
             },
             snowflake_event_data.id: {
                 "name": snowflake_event_data.name,
-                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
             },
         },
     )
@@ -172,7 +172,7 @@ def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
         data_id_to_info={
             snowflake_scd_data.id: {
                 "name": snowflake_scd_data.name,
-                "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_scd_data.record_creation_timestamp_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in as_features method
                 "columns_info": scd_data_columns_info,
@@ -234,7 +234,7 @@ def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity)
         data_id_to_info={
             snowflake_scd_data.id: {
                 "name": snowflake_scd_data.name,
-                "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_scd_data.record_creation_timestamp_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in as_features method
                 "columns_info": scd_data_columns_info,

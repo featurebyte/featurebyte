@@ -33,7 +33,7 @@ item_table = ItemTable(
         ColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
         ColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
     ],
-    record_creation_date_column=None,
+    record_creation_timestamp_column=None,
     item_id_column="item_id_col",
     event_id_column="event_id_col",
     event_data_id=ObjectId("{event_data_id}"),

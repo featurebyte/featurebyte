@@ -55,7 +55,7 @@ def get_dimension_data_model_fixture(snowflake_feature_store, dimension_columns_
             ),
         },
         columns_info=dimension_columns_info,
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
         created_at=arbitrary_test_date_time,
         status=DataStatus.PUBLISHED,
         dimension_id_column="dimension_id",
@@ -73,7 +73,7 @@ def get_base_expected_dimension_data_model(dimension_data_model, dimension_colum
         "columns_info": dimension_columns_info,
         "id": dimension_data_model.id,
         "name": "my_dimension_data",
-        "record_creation_date_column": "created_at",
+        "record_creation_timestamp_column": "created_at",
         "status": "PUBLISHED",
         "tabular_source": {
             "feature_store_id": dimension_data_model.tabular_source.feature_store_id,

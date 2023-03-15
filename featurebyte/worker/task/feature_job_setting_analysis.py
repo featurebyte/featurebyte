@@ -71,7 +71,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             database_type=feature_store.type,
             event_data_name=event_data.name,
             table_details=event_data.tabular_source.table_details.dict(),
-            creation_date_column=event_data.record_creation_date_column,
+            creation_date_column=event_data.record_creation_timestamp_column,
             event_timestamp_column=event_data.event_timestamp_column,
             sql_query_func=db_session.execute_query,
         )

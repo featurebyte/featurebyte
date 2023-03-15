@@ -32,7 +32,7 @@ class DimensionDataModel(DimensionTableData, DataModel):
         construct_data_model_root_validator(
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
-                ("record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
                 ("dimension_id_column", DBVarType.supported_id_types()),
             ],
         )

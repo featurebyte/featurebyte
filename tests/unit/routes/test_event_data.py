@@ -109,7 +109,7 @@ class TestEventDataApi(BaseDataApiTestSuite):
             "columns_info": cols_info,
             "event_id_column": "event_id",
             "event_timestamp_column": "event_date",
-            "record_creation_date_column": "created_at",
+            "record_creation_timestamp_column": "created_at",
             "default_feature_job_setting": {
                 "blind_spot": "10m",
                 "frequency": "30m",
@@ -143,7 +143,7 @@ class TestEventDataApi(BaseDataApiTestSuite):
                 "frequency": "30m",
                 "time_modulo_frequency": "5m",
             },
-            "record_creation_date_column": "created_at",
+            "record_creation_timestamp_column": "created_at",
         }
 
     def test_update_success(
@@ -302,7 +302,7 @@ class TestEventDataApi(BaseDataApiTestSuite):
         expected_info_response = {
             "name": "sf_event_data",
             "event_timestamp_column": "event_timestamp",
-            "record_creation_date_column": "created_at",
+            "record_creation_timestamp_column": "created_at",
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",

@@ -67,7 +67,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
         columns_info=columns_info,
         event_id_column="event_id",
         event_timestamp_column="event_date",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
         default_feature_job_setting=feature_job_setting,
         created_at=datetime.datetime(2022, 2, 1),
         status=DataStatus.PUBLISHED,
@@ -87,7 +87,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
         "event_id_column": "event_id",
         "id": event_data.id,
         "name": "my_event_data",
-        "record_creation_date_column": "created_at",
+        "record_creation_timestamp_column": "created_at",
         "status": "PUBLISHED",
         "tabular_source": {
             "feature_store_id": event_data.tabular_source.feature_store_id,

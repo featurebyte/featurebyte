@@ -111,9 +111,9 @@ class BaseViewTestSuite:
         # check view graph metadata
         metadata = view.node.parameters.metadata
         expected_drop_column_names = []
-        if data_under_test_with_imputation.record_creation_date_column:
+        if data_under_test_with_imputation.record_creation_timestamp_column:
             expected_drop_column_names.append(
-                data_under_test_with_imputation.record_creation_date_column
+                data_under_test_with_imputation.record_creation_timestamp_column
             )
         assert metadata.view_mode == "auto"
         assert metadata.drop_column_names == expected_drop_column_names
@@ -148,7 +148,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test_with_imputation.id: {
                     "name": data_under_test_with_imputation.name,
-                    "record_creation_date_column": data_under_test_with_imputation.record_creation_date_column,
+                    "record_creation_timestamp_column": data_under_test_with_imputation.record_creation_timestamp_column,
                 }
             },
         )
@@ -187,7 +187,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test_with_imputation.id: {
                     "name": data_under_test_with_imputation.name,
-                    "record_creation_date_column": data_under_test_with_imputation.record_creation_date_column,
+                    "record_creation_timestamp_column": data_under_test_with_imputation.record_creation_timestamp_column,
                 }
             },
         )
@@ -251,7 +251,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
                 }
             },
         )
@@ -274,7 +274,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
                 }
             },
         )
@@ -311,7 +311,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
                 }
             },
         )
@@ -338,7 +338,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
                 }
             },
         )
@@ -372,7 +372,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
                 }
             },
         )
@@ -434,7 +434,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
                 }
             },
         )
