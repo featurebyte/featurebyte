@@ -3,7 +3,7 @@ Catalog module
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
 
 import pandas as pd
 from bson import ObjectId
@@ -29,9 +29,19 @@ from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
 
 
-def check_is_active_catalog(func):
+def check_is_active_catalog(func: Callable) -> Callable:
     """
     Decorator to check if the catalog is active before calling the function.
+
+    Parameters
+    ----------
+    func: Callable
+        Function to decorate
+
+    Returns
+    -------
+    Callable
+        Decorated function
     """
 
     def _decorator(self, *args, **kwargs):
