@@ -4,19 +4,20 @@ Test production ready validator
 import textwrap
 
 import pytest
+from bson import ObjectId
 
 from featurebyte import DimensionView, Feature, FeatureJobSetting, MissingValueImputation
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
 @pytest.fixture(name="production_ready_validator")
-def production_ready_validator_fixture(feature_namespace_service, version_service):
+def production_ready_validator_fixture(version_service, feature_service):
     """
     Get production ready validator
     """
     return ProductionReadyValidator(
-        feature_namespace_service=feature_namespace_service,
         version_service=version_service,
+        feature_service=feature_service,
     )
 
 
@@ -138,7 +139,9 @@ async def test_assert_no_other_production_ready_feature__does_not_exist(producti
 
     sum_30m is the name of the production_ready_feature used in the next test.
     """
-    await production_ready_validator._assert_no_other_production_ready_feature("sum_30m")
+    await production_ready_validator._assert_no_other_production_ready_feature(
+        ObjectId(), "sum_30m"
+    )
 
 
 @pytest.mark.asyncio
@@ -151,9 +154,22 @@ async def test_assert_no_other_production_ready_feature__exists(
     """
     with pytest.raises(ValueError) as exc:
         await production_ready_validator._assert_no_other_production_ready_feature(
-            production_ready_feature.name
+            ObjectId(), production_ready_feature.name
         )
     assert "Found another feature version that is already" in str(exc)
+
+
+@pytest.mark.asyncio
+async def test_assert_no_other_production_ready_feature__no_error_if_promoted_feature_is_currently_prod_ready(
+    production_ready_validator, production_ready_feature
+):
+    """
+    Test that assert does not throw an error if the feature that is already production ready is the same as the
+    feature that is _being_ promoted to production ready.
+    """
+    await production_ready_validator._assert_no_other_production_ready_feature(
+        production_ready_feature.id, production_ready_feature.name
+    )
 
 
 @pytest.mark.asyncio
