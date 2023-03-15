@@ -24,7 +24,6 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.table import Table
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import activate_catalog, get_active_catalog_id
-from featurebyte.logger import logger
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
@@ -53,7 +52,7 @@ class Catalog(CatalogModel, SavableApiObject):
         return data.json_dict()
 
     @classmethod
-    def activate_catalog(cls, name: str) -> None:
+    def activate(cls, name: str) -> Catalog:
         """
         Activate catalog by name
 
@@ -61,8 +60,14 @@ class Catalog(CatalogModel, SavableApiObject):
         ----------
         name: str
             Name of catalog to activate
+
+        Returns
+        -------
+        Catalog
         """
-        cls.get(name).activate()
+        catalog = cls.get(name)
+        activate_catalog(catalog.id)
+        return catalog
 
     @classmethod
     def create(
@@ -98,7 +103,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         catalog = Catalog(name=name)
         catalog.save()
-        catalog.activate()
+        activate_catalog(catalog.id)
         return catalog
 
     @classmethod
@@ -120,13 +125,6 @@ class Catalog(CatalogModel, SavableApiObject):
         item_list["active"] = item_list.id == get_active_catalog_id()
 
         return item_list
-
-    def activate(self) -> None:
-        """
-        Activate catalog
-        """
-        activate_catalog(self.id)
-        logger.debug(f"Current catalog is now: {self.name}")
 
     def update_name(self, name: str) -> None:
         """

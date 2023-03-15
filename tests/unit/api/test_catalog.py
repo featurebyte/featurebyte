@@ -3,8 +3,13 @@ Unit test for Catalog class
 """
 from __future__ import annotations
 
+from typing import Any, Callable, Optional
+
+from dataclasses import dataclass
 from datetime import datetime
+from inspect import signature
 from unittest import mock
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -12,13 +17,142 @@ import pytest
 from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
 
+from featurebyte import (
+    DimensionTable,
+    EventTable,
+    Feature,
+    FeatureJobSettingAnalysis,
+    FeatureList,
+    FeatureStore,
+    ItemTable,
+    PeriodicTask,
+    Relationship,
+    SCDTable,
+    Table,
+)
+from featurebyte.api.api_object import ApiObject, SavableApiObject
+from featurebyte.api.base_table import TableApiObject, TableListMixin
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.entity import Entity
+from featurebyte.api.feature import FeatureNamespace
+from featurebyte.api.feature_job import FeatureJobMixin
+from featurebyte.api.feature_list import FeatureListNamespace
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
     RecordUpdateException,
 )
+
+
+@dataclass
+class ListMethodMetadata:
+    """
+    Data class to keep track of list methods to test.
+    """
+
+    # Catalog method to test
+    catalog_method: Callable
+    # API object which has the list method we delegate to
+    class_object: Any
+    # List method override if we don't delegate to a `list` method.
+    list_method_override: Optional[str] = None
+    # List method to patch
+    list_method_to_patch: Optional[str] = None
+
+
+def get_methods_to_test():
+    return [
+        ListMethodMetadata(Catalog.list_features, Feature, "_list_versions", "list_versions"),
+        ListMethodMetadata(Catalog.list_feature_namespaces, FeatureNamespace),
+        ListMethodMetadata(Catalog.list_feature_list_namespaces, FeatureListNamespace),
+        ListMethodMetadata(
+            Catalog.list_feature_lists, FeatureList, "_list_versions", "list_versions"
+        ),
+        ListMethodMetadata(Catalog.list_tables, Table),
+        ListMethodMetadata(Catalog.list_dimension_tables, DimensionTable),
+        ListMethodMetadata(Catalog.list_item_tables, ItemTable),
+        ListMethodMetadata(Catalog.list_event_tables, EventTable),
+        ListMethodMetadata(Catalog.list_scd_tables, SCDTable),
+        ListMethodMetadata(Catalog.list_relationships, Relationship),
+        ListMethodMetadata(Catalog.list_feature_job_setting_analyses, FeatureJobSettingAnalysis),
+        ListMethodMetadata(Catalog.list_feature_stores, FeatureStore),
+        ListMethodMetadata(Catalog.list_entities, Entity),
+        ListMethodMetadata(Catalog.list_periodic_tasks, PeriodicTask),
+        ListMethodMetadata(Catalog.list_catalogs, Catalog),
+    ]
+
+
+@pytest.fixture(name="methods_to_test")
+def methods_to_test_fixture():
+    return get_methods_to_test()
+
+
+def _inheritors(class_obj):
+    """
+    Helper method to find all children of a class.
+    """
+    subclasses = set()
+    work = [class_obj]
+    while work:
+        parent = work.pop()
+        for child in parent.__subclasses__():
+            if child not in subclasses:
+                subclasses.add(child)
+                work.append(child)
+    return subclasses
+
+
+def test_all_list_methods_are_exposed_in_catalog(methods_to_test):
+    """
+    Test that all inherited list methods are exposed in catalog.
+
+    This will help to ensure that new API objects that have a list method are added to the Catalog.
+    If we don't want to add them, we can add them to the excluded_children set.
+    """
+    api_object_children = _inheritors(ApiObject)
+    excluded_children = {SavableApiObject, TableListMixin, FeatureJobMixin, TableApiObject}
+    assert len(api_object_children) == len(methods_to_test) + len(excluded_children)
+
+    for method_item in methods_to_test:
+        delegated_class = method_item.class_object
+        assert delegated_class in api_object_children
+
+
+@pytest.mark.parametrize(
+    "method_item",
+    get_methods_to_test(),
+)
+def test_list_methods_have_same_parameters_as_delegated_list_method_call(method_item):
+    """
+    Test catalog list methods have same parameters as underlying methods.
+    This will help to ensure that the Catalog list APIs are consistent with their API object List methods.
+    """
+    catalog_list_method, underlying_class = method_item.catalog_method, method_item.class_object
+    # Check that the signatures match
+    catalog_list_method_signature = signature(catalog_list_method)
+    underlying_class_method = underlying_class.list
+    if method_item.list_method_override:
+        underlying_class_method = getattr(underlying_class, method_item.list_method_override)
+    underlying_class_list_method_signature = signature(underlying_class_method)
+    assert (
+        catalog_list_method_signature.parameters.keys()
+        == underlying_class_list_method_signature.parameters.keys()
+    ), f"catalog method: {catalog_list_method}, underlying_class {underlying_class}"
+
+
+@pytest.mark.parametrize(
+    "method_item",
+    get_methods_to_test(),
+)
+def test_list_methods_call_the_correct_delegated_method(method_item):
+    """
+    Test catalog list methods call the correct delegated method.
+    """
+    # Assert that the delegated list method is called
+    method_name = method_item.list_method_to_patch or "list"
+    with patch.object(method_item.class_object, method_name) as mocked_list:
+        method_item.catalog_method()
+        mocked_list.assert_called()
 
 
 @pytest.fixture(name="catalog")
@@ -226,30 +360,30 @@ def test_get_catalog():
     assert "Failed to list /catalog." in str(exc.value)
 
     # activate a catalog
-    Catalog.activate_catalog(creditcard_catalog.name)
+    Catalog.activate(creditcard_catalog.name)
     assert (Catalog.list()["active"] == [False, True, False, False]).all()
 
 
-def test_activate_catalog():
+def test_activate():
     """
     Test Catalog.activate
     """
     # create catalogs & save to persistent
-    grocery_catalog = Catalog.create(name="grocery")
-    creditcard_catalog = Catalog.create(name="creditcard")
+    Catalog.create(name="grocery")
+    Catalog.create(name="creditcard")
 
     # create entity in grocery catalog
-    grocery_catalog.activate()
+    grocery_catalog = Catalog.activate("grocery")
     assert Catalog.get_active() == grocery_catalog
     Entity(name="GroceryCustomer", serving_names=["cust_id"]).save()
     assert Entity.list()["name"].tolist() == ["GroceryCustomer"]
 
     # create entity in creditcard catalog with same serving_names
-    Catalog.activate_catalog("creditcard")
+    creditcard_catalog = Catalog.activate("creditcard")
     assert Catalog.get_active() == creditcard_catalog
     Entity(name="CreditCardCustomer", serving_names=["cust_id"]).save()
     assert Entity.list()["name"].tolist() == ["CreditCardCustomer"]
 
     # switch to default catalog
-    Catalog.activate_catalog("default")
+    Catalog.activate("default")
     assert Entity.list()["name"].tolist() == []

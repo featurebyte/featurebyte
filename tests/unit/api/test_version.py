@@ -18,13 +18,11 @@ from featurebyte.schema.feature_list import FeatureVersionInfo
 
 @pytest.fixture(name="feature_group")
 def feature_group_fixture(
-    snowflake_feature_store,
     snowflake_event_data_with_entity,
 ):
     """
     Feature group fixture
     """
-    snowflake_feature_store.save()
     snowflake_event_data_with_entity.save()
 
     event_view = snowflake_event_data_with_entity.get_view()

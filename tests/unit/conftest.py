@@ -136,10 +136,11 @@ def mock_snowflake_connector():
 
 
 @pytest.fixture(name="snowflake_execute_query")
-def mock_snowflake_execute_query():
+def mock_snowflake_execute_query(snowflake_connector):
     """
     Mock execute_query in featurebyte.session.snowflake.SnowflakeSession class
     """
+    _ = snowflake_connector
 
     def side_effect(query):
         query_map = {
@@ -262,34 +263,48 @@ def mock_snowflake_execute_query():
         yield mock_execute_query
 
 
-@pytest.fixture(name="snowflake_feature_store")
-def snowflake_feature_store_fixture():
+@pytest.fixture(name="snowflake_feature_store_params")
+def snowflake_feature_store_params_fixture():
     """
-    Snowflake database source fixture
+    Snowflake database source params fixture
     """
-    return FeatureStore(
-        name="sf_featurestore",
-        type="snowflake",
-        details=SnowflakeDetails(
+    return {
+        "name": "sf_featurestore",
+        "source_type": "snowflake",
+        "details": SnowflakeDetails(
             account="sf_account",
             warehouse="sf_warehouse",
             sf_schema="sf_schema",
             database="sf_database",
         ),
-    )
+    }
+
+
+@pytest.fixture(name="snowflake_feature_store")
+def snowflake_feature_store_fixture(snowflake_feature_store_params, snowflake_execute_query):
+    """
+    Snowflake database source fixture
+    """
+    _ = snowflake_execute_query
+    return FeatureStore.create(**snowflake_feature_store_params)
+
+
+@pytest.fixture(name="snowflake_data_source")
+def snowflake_data_source_fixture(snowflake_feature_store):
+    """
+    Snowflake data source fixture
+    """
+    return snowflake_feature_store.get_data_source()
 
 
 @pytest.fixture(name="snowflake_database_table")
 def snowflake_database_table_fixture(
-    snowflake_connector,
-    snowflake_execute_query,
-    snowflake_feature_store,
+    snowflake_data_source,
 ):
     """
     SourceTable object fixture
     """
-    _ = snowflake_connector, snowflake_execute_query
-    snowflake_table = snowflake_feature_store.get_table(
+    snowflake_table = snowflake_data_source.get_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",
@@ -299,14 +314,11 @@ def snowflake_database_table_fixture(
 
 
 @pytest.fixture(name="snowflake_database_table_item_data")
-def snowflake_database_table_item_data_fixture(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store
-):
+def snowflake_database_table_item_data_fixture(snowflake_data_source):
     """
     SourceTable object fixture for ItemTable (using config object)
     """
-    _ = snowflake_connector, snowflake_execute_query
-    yield snowflake_feature_store.get_table(
+    yield snowflake_data_source.get_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="items_table",
@@ -314,14 +326,11 @@ def snowflake_database_table_item_data_fixture(
 
 
 @pytest.fixture(name="snowflake_database_table_scd_data")
-def snowflake_database_table_scd_data_fixture(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store
-):
+def snowflake_database_table_scd_data_fixture(snowflake_data_source):
     """
     SourceTable object fixture for SlowlyChangingData (using config object)
     """
-    _ = snowflake_connector, snowflake_execute_query
-    yield snowflake_feature_store.get_table(
+    yield snowflake_data_source.get_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="scd_table",
@@ -329,14 +338,11 @@ def snowflake_database_table_scd_data_fixture(
 
 
 @pytest.fixture(name="snowflake_database_table_item_data_same_event_id")
-def snowflake_database_table_item_data_same_event_id_fixture(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store
-):
+def snowflake_database_table_item_data_same_event_id_fixture(snowflake_data_source):
     """
     SourceTable object fixture for ItemTable (same event_id_column with EventData)
     """
-    _ = snowflake_connector, snowflake_execute_query
-    yield snowflake_feature_store.get_table(
+    yield snowflake_data_source.get_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="items_table_same_event_id",
@@ -448,7 +454,6 @@ def snowflake_scd_data_with_entity_fixture(snowflake_scd_data, cust_id_entity):
 
 @pytest.fixture(name="snowflake_item_data")
 def snowflake_item_data_fixture(
-    snowflake_feature_store,
     snowflake_database_table_item_data,
     mock_get_persistent,
     snowflake_item_data_id,
@@ -458,8 +463,6 @@ def snowflake_item_data_fixture(
     Snowflake ItemTable object fixture
     """
     _ = mock_get_persistent
-    if not snowflake_feature_store.saved:
-        snowflake_feature_store.save()
     snowflake_event_data.save()
     item_data = ItemTable.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
@@ -711,12 +714,11 @@ def production_ready_feature_fixture(feature_group):
 
 @pytest.fixture(name="feature_with_cleaning_operations")
 def feature_with_cleaning_operations_fixture(
-    snowflake_event_data, cust_id_entity, feature_group_feature_job_setting, snowflake_feature_store
+    snowflake_event_data, cust_id_entity, feature_group_feature_job_setting
 ):
     """
     Fixture to get a feature with cleaning operations
     """
-    snowflake_feature_store.save()
     snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
     snowflake_event_data.save()
     snowflake_event_data["col_float"].update_critical_data_info(

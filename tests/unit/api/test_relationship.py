@@ -21,13 +21,10 @@ def relationship_info_service_fixture(app_container):
 
 
 @pytest.fixture(name="persistable_relationship_info")
-def persistable_relationship_info_fixture(
-    relationship_info_service, snowflake_feature_store, snowflake_event_data
-):
+def persistable_relationship_info_fixture(relationship_info_service, snowflake_event_data):
     """
     Get a callback function that will persist a relationship info.
     """
-    snowflake_feature_store.save()
     cust_entity = Entity(name="customer", serving_names=["cust_id"])
     cust_entity.save()
     user_entity = Entity(name="user", serving_names=["user_id"])

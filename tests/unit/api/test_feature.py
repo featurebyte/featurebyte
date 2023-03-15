@@ -236,7 +236,6 @@ def test_feature_to_json(float_feature):
 
 @pytest.fixture(name="saved_feature")
 def saved_feature_fixture(
-    snowflake_feature_store,
     snowflake_event_data,
     float_feature,
 ):
@@ -244,7 +243,6 @@ def saved_feature_fixture(
     Saved feature fixture
     """
     event_data_id_before = snowflake_event_data.id
-    snowflake_feature_store.save()
     snowflake_event_data.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(
             blind_spot="10m", frequency="30m", time_modulo_frequency="5m"

@@ -48,7 +48,8 @@ def test_list_databases(snowflake_connector, snowflake_execute_query, snowflake_
     Test list_databases return expected results
     """
     _ = snowflake_connector, snowflake_execute_query
-    output = snowflake_feature_store.list_databases()
+    data_source = snowflake_feature_store.get_data_source()
+    output = data_source.list_databases()
     assert output == ["sf_database"]
 
 
@@ -57,7 +58,8 @@ def test_list_schema(snowflake_connector, snowflake_execute_query, snowflake_fea
     Test test_list_schema return expected results
     """
     _ = snowflake_connector, snowflake_execute_query
-    output = snowflake_feature_store.list_schemas(database_name="sf_database")
+    data_source = snowflake_feature_store.get_data_source()
+    output = data_source.list_schemas(database_name="sf_database")
     assert output == ["sf_schema"]
 
 
@@ -66,9 +68,8 @@ def test_list_tables(snowflake_connector, snowflake_execute_query, snowflake_fea
     Test list_tables return expected results
     """
     _ = snowflake_connector, snowflake_execute_query
-    output = snowflake_feature_store.list_tables(
-        database_name="sf_database", schema_name="sf_schema"
-    )
+    data_source = snowflake_feature_store.get_data_source()
+    output = data_source.list_tables(database_name="sf_database", schema_name="sf_schema")
     assert output == ["sf_table", "sf_view"]
 
 
@@ -79,7 +80,8 @@ def test__getitem__retrieve_database_table(
     Test retrieval database table by indexing
     """
     _ = snowflake_connector, snowflake_execute_query
-    database_table = snowflake_feature_store.get_table(
+    data_source = snowflake_feature_store.get_data_source()
+    database_table = data_source.get_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",
@@ -116,25 +118,15 @@ async def saved_snowflake_feature_store_fixture(
     """
     _ = snowflake_connector, snowflake_execute_query
 
-    # before save
-    assert snowflake_feature_store.created_at is None
-    feature_store_id = snowflake_feature_store.id
     persistent = mock_get_persistent.return_value
-    docs, cnt = await persistent.find(collection_name="feature_store", query_filter={})
-    assert cnt == 0 and docs == []
-    assert snowflake_feature_store.saved is False
-
-    # after save
-    snowflake_feature_store.save()
     assert snowflake_feature_store.saved is True
-    assert snowflake_feature_store.id == feature_store_id
     assert snowflake_feature_store.created_at is not None
     docs, cnt = await persistent.find(collection_name="feature_store", query_filter={})
     assert cnt == 1
     assert (
         docs[0].items()
         >= {
-            "_id": feature_store_id,
+            "_id": snowflake_feature_store.id,
             "name": snowflake_feature_store.name,
             "created_at": snowflake_feature_store.created_at,
             "type": "snowflake",
@@ -174,14 +166,14 @@ def test_save__duplicate_record_exception(saved_snowflake_feature_store):
     assert expected_msg in str(exc.value)
 
 
-def test_save__unexpected_creation_exception(snowflake_feature_store):
+def test_save__unexpected_creation_exception(snowflake_feature_store_params):
     """
     Test unexpected feature store creation exception
     """
     # check unexpected creation exception
     with pytest.raises(RecordCreationException):
         with patch("featurebyte.api.api_object.Configurations"):
-            snowflake_feature_store.save()
+            FeatureStore.create(**snowflake_feature_store_params)
 
 
 def test_get(saved_snowflake_feature_store):

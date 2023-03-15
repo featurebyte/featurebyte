@@ -274,7 +274,9 @@ def get_object_class_from_function_call(
 
 VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
 RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
-StatementT = Union[StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]]
+StatementT = Union[  # pylint: disable=invalid-name
+    StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]
+]
 
 
 class CodeGenerationConfig(BaseModel):
