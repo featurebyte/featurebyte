@@ -1,5 +1,5 @@
 """
-Unit test for DatabaseTable
+Unit test for SourceTable
 """
 import pandas as pd
 
@@ -9,7 +9,7 @@ from tests.util.helper import check_sdk_code_generation
 
 def test_database_table(snowflake_database_table, expected_snowflake_table_preview_query):
     """
-    Test DatabaseTable preview functionality
+    Test SourceTable preview functionality
     """
     assert snowflake_database_table.preview_sql() == expected_snowflake_table_preview_query
     expected_dtypes = pd.Series(
@@ -47,7 +47,7 @@ def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     check_sdk_code_generation(
         snowflake_database_table.frame,
         to_use_saved_data=False,
-        fixture_path="tests/fixtures/sdk_code/generic_data.py",
+        fixture_path="tests/fixtures/sdk_code/generic_table.py",
         update_fixtures=update_fixtures,
         data_id=None,
     )

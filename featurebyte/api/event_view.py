@@ -37,7 +37,7 @@ class EventViewColumn(LaggableViewColumn):
 
 class EventView(View, GroupByMixin):
     """
-    EventViews allow users to transform EventData to support the data preparation necessary before creating features.
+    EventViews allow users to transform EventTable to support the data preparation necessary before creating features.
     """
 
     # documentation metadata

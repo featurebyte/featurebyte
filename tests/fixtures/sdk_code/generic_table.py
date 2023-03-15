@@ -2,12 +2,12 @@
 from bson import ObjectId
 from featurebyte import FeatureStore
 from featurebyte import SnowflakeDetails
-from featurebyte.api.database_table import DatabaseTable
+from featurebyte.api.source_table import SourceTable
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 
-data = DatabaseTable(
+data = SourceTable(
     name="data",
     feature_store=FeatureStore(
         name="sf_featurestore",

@@ -2,10 +2,10 @@
 from bson import ObjectId
 from featurebyte import ColumnCleaningOperation
 from featurebyte import MissingValueImputation
-from featurebyte import SlowlyChangingData
+from featurebyte import SCDTable
 
-slowly_changing_data = SlowlyChangingData.get_by_id(ObjectId("{data_id}"))
-change_view = slowly_changing_data.get_change_view(
+scd_table = SCDTable.get_by_id(ObjectId("{data_id}"))
+change_view = scd_table.get_change_view(
     track_changes_column="col_int",
     default_feature_job_setting=None,
     prefixes=None,

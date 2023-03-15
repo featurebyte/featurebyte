@@ -70,12 +70,12 @@ def test_get_view__auto_join_columns(
     snowflake_item_data_id,
 ):
     """
-    Test ItemView automatically joins timestamp column and entity columns from related EventData
+    Test ItemView automatically joins timestamp column and entity columns from related EventTable
     """
     view = snowflake_item_data.get_view(event_suffix="_event_table")
     view_dict = view.dict()
 
-    # Check node is a join node which will make event timestamp and EventData entities available
+    # Check node is a join node which will make event timestamp and EventTable entities available
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict == {
         "name": "graph_2",
@@ -246,7 +246,7 @@ def test_has_event_timestamp_column(snowflake_item_view):
 
 def test_default_feature_job_setting(snowflake_item_view, snowflake_event_data):
     """
-    Test that ItemView inherits the same feature job setting from the EventData
+    Test that ItemView inherits the same feature job setting from the EventTable
     """
     assert (
         snowflake_item_view.default_feature_job_setting
@@ -278,7 +278,7 @@ def test_join_event_data_attributes__more_columns(
     snowflake_item_data_id,
 ):
     """
-    Test joining more columns from EventData after creating ItemView
+    Test joining more columns from EventTable after creating ItemView
     """
     view = snowflake_item_view
     view.join_event_data_attributes(["col_float"])
@@ -587,7 +587,7 @@ def test_item_view_groupby__event_data_column(snowflake_item_view, groupby_featu
             feature_job_setting=groupby_feature_job_setting,
         )["item_amount_sum_24h"]
     assert str(exc.value) == (
-        "Columns imported from EventData and their derivatives should be aggregated in EventView"
+        "Columns imported from EventTable and their derivatives should be aggregated in EventView"
     )
 
 
@@ -609,7 +609,7 @@ def test_item_view_groupby__event_data_column_derived(
             feature_job_setting=groupby_feature_job_setting,
         )["item_amount_sum_24h"]
     assert str(exc.value) == (
-        "Columns imported from EventData and their derivatives should be aggregated in EventView"
+        "Columns imported from EventTable and their derivatives should be aggregated in EventView"
     )
 
 

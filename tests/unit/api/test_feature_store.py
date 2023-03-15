@@ -9,8 +9,8 @@ import pytest
 import pytest_asyncio
 from pandas.testing import assert_frame_equal
 
-from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.source_table import SourceTable
 from featurebyte.enum import SourceType
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
@@ -84,7 +84,7 @@ def test__getitem__retrieve_database_table(
         schema_name="sf_schema",
         table_name="sf_table",
     )
-    assert isinstance(database_table, DatabaseTable)
+    assert isinstance(database_table, SourceTable)
 
 
 def test_info(saved_snowflake_feature_store):

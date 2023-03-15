@@ -17,16 +17,16 @@ from snowflake.connector.constants import QueryStatus
 
 from featurebyte import FeatureJobSetting, MissingValueImputation, SnowflakeDetails
 from featurebyte.api.api_object import ApiObject
-from featurebyte.api.dimension_data import DimensionData
+from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_data import EventData
+from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import DefaultVersionMode, Feature
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
-from featurebyte.api.item_data import ItemData
-from featurebyte.api.scd_data import SlowlyChangingData
+from featurebyte.api.item_table import ItemTable
+from featurebyte.api.scd_table import SCDTable
 from featurebyte.app import User, app
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import AggFunc, DBVarType, InternalName
@@ -286,7 +286,7 @@ def snowflake_database_table_fixture(
     snowflake_feature_store,
 ):
     """
-    DatabaseTable object fixture
+    SourceTable object fixture
     """
     _ = snowflake_connector, snowflake_execute_query
     snowflake_table = snowflake_feature_store.get_table(
@@ -303,7 +303,7 @@ def snowflake_database_table_item_data_fixture(
     snowflake_connector, snowflake_execute_query, snowflake_feature_store
 ):
     """
-    DatabaseTable object fixture for ItemData (using config object)
+    SourceTable object fixture for ItemTable (using config object)
     """
     _ = snowflake_connector, snowflake_execute_query
     yield snowflake_feature_store.get_table(
@@ -318,7 +318,7 @@ def snowflake_database_table_scd_data_fixture(
     snowflake_connector, snowflake_execute_query, snowflake_feature_store
 ):
     """
-    DatabaseTable object fixture for SlowlyChangingData (using config object)
+    SourceTable object fixture for SlowlyChangingData (using config object)
     """
     _ = snowflake_connector, snowflake_execute_query
     yield snowflake_feature_store.get_table(
@@ -333,7 +333,7 @@ def snowflake_database_table_item_data_same_event_id_fixture(
     snowflake_connector, snowflake_execute_query, snowflake_feature_store
 ):
     """
-    DatabaseTable object fixture for ItemData (same event_id_column with EventData)
+    SourceTable object fixture for ItemTable (same event_id_column with EventData)
     """
     _ = snowflake_connector, snowflake_execute_query
     yield snowflake_feature_store.get_table(
@@ -394,7 +394,7 @@ def transaction_entity_id_fixture():
 @pytest.fixture(name="snowflake_event_data")
 def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_id):
     """EventData object fixture"""
-    event_data = EventData.from_tabular_source(
+    event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
         event_id_column="col_int",
@@ -409,7 +409,7 @@ def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_
 @pytest.fixture(name="snowflake_dimension_data")
 def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimension_data_id):
     """DimensionData object fixture"""
-    dimension_data = DimensionData.from_tabular_source(
+    dimension_data = DimensionTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_dimension_data",
         dimension_id_column="col_int",
@@ -423,7 +423,7 @@ def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimensi
 @pytest.fixture(name="snowflake_scd_data")
 def snowflake_scd_data_fixture(snowflake_database_table_scd_data, snowflake_scd_data_id):
     """SlowlyChangingData object fixture"""
-    scd_data = SlowlyChangingData.from_tabular_source(
+    scd_data = SCDTable.from_tabular_source(
         tabular_source=snowflake_database_table_scd_data,
         name="sf_scd_data",
         natural_key_column="col_text",
@@ -455,13 +455,13 @@ def snowflake_item_data_fixture(
     snowflake_event_data,
 ):
     """
-    Snowflake ItemData object fixture
+    Snowflake ItemTable object fixture
     """
     _ = mock_get_persistent
     if not snowflake_feature_store.saved:
         snowflake_feature_store.save()
     snowflake_event_data.save()
-    item_data = ItemData.from_tabular_source(
+    item_data = ItemTable.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
         name="sf_item_data",
         event_id_column="event_id_col",
@@ -482,13 +482,13 @@ def snowflake_item_data_same_event_id_fixture(
     snowflake_item_data,
 ):
     """
-    Snowflake ItemData object fixture (same event_id_column as EventData)
+    Snowflake ItemTable object fixture (same event_id_column as EventData)
     """
     _ = mock_get_persistent
     _ = snowflake_item_data
     event_id_column = "col_int"
     assert snowflake_event_data.event_id_column == event_id_column
-    yield ItemData.from_tabular_source(
+    yield ItemTable.from_tabular_source(
         tabular_source=snowflake_database_table_item_data_same_event_id,
         name="sf_item_data_2",
         event_id_column=event_id_column,
@@ -740,10 +740,10 @@ def get_non_time_based_feature_fixture(snowflake_item_data, transaction_entity):
     """
     Get a non-time-based feature.
 
-    This is a non-time-based feature as it is built from ItemData.
+    This is a non-time-based feature as it is built from ItemTable.
     """
     snowflake_item_data.event_id_col.as_entity(transaction_entity.name)
-    item_data = ItemData(**{**snowflake_item_data.json_dict(), "item_id_column": "event_id_col"})
+    item_data = ItemTable(**{**snowflake_item_data.json_dict(), "item_id_column": "event_id_col"})
     item_view = item_data.get_view(event_suffix="_event_table")
     return item_view.groupby("event_id_col").aggregate(
         value_column="item_amount",

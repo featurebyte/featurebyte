@@ -5,7 +5,7 @@ import textwrap
 
 import pytest
 
-from featurebyte.api.base_data import DataColumn
+from featurebyte.api.base_table import TableColumn
 from featurebyte.enum import StrEnum
 from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 
@@ -21,9 +21,9 @@ class DataType(StrEnum):
     SCD_DATA = "SlowlyChangingData"
 
 
-class BaseDataTestSuite:
+class BaseTableTestSuite:
     """
-    BaseViewTestSuite contains common view tests
+    BaseTableTestSuite contains common tests for api table objects.
     """
 
     data_type: DataType = ""
@@ -87,7 +87,7 @@ class BaseDataTestSuite:
         )
 
         # check __getattr__ is working properly
-        assert isinstance(data_under_test[self.col], DataColumn)
+        assert isinstance(data_under_test[self.col], TableColumn)
 
         # when accessing the `columns` attribute, make sure we retrieve it properly
         assert set(data_under_test.columns) == self.expected_columns

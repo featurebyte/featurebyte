@@ -14,12 +14,12 @@ from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping, SavableApiObject
-from featurebyte.api.base_data import DataApiObject
-from featurebyte.api.data import Data
+from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
+from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
@@ -78,7 +78,7 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", DataApiObject, "data"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "data"),
     ]
 
     @property
@@ -216,7 +216,7 @@ class Feature(
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", DataApiObject, "data"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "data"),
     ]
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
@@ -562,7 +562,7 @@ class Feature(
         try:
             # retrieve all the data used to construct this feature
             data_id_to_doc = {
-                data_id: Data.get_by_id(data_id).dict() for data_id in self.tabular_data_ids
+                data_id: Table.get_by_id(data_id).dict() for data_id in self.tabular_data_ids
             }
         except RecordRetrievalException:
             # data used to construct this feature has not been saved

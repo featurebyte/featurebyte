@@ -1,5 +1,5 @@
 """
-Unit test for ItemData class
+Unit test for ItemTable class
 """
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from unittest.mock import Mock, patch
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.api.base_data import DataColumn
+from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
-from featurebyte.api.item_data import ItemData
+from featurebyte.api.item_table import ItemTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -21,13 +21,13 @@ from featurebyte.exception import (
 )
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture(name="item_data_dict")
 def item_data_dict_fixture(snowflake_database_table_item_data):
-    """ItemData in serialized dictionary format"""
+    """ItemTable in serialized dictionary format"""
     return {
         "columns_info": [
             {
@@ -96,9 +96,9 @@ def item_data_dict_fixture(snowflake_database_table_item_data):
 
 def test_from_tabular_source(snowflake_database_table_item_data, item_data_dict, saved_event_data):
     """
-    Test ItemData creation using tabular source
+    Test ItemTable creation using tabular source
     """
-    item_data = ItemData.from_tabular_source(
+    item_data = ItemTable.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
         name="sf_item_data",
         event_id_column="event_id_col",
@@ -121,7 +121,7 @@ def test_from_tabular_source(snowflake_database_table_item_data, item_data_dict,
 
     # user input validation
     with pytest.raises(TypeError) as exc:
-        ItemData.from_tabular_source(
+        ItemTable.from_tabular_source(
             tabular_source=snowflake_database_table_item_data,
             name=123,
             event_id_column="event_id_col",
@@ -135,27 +135,27 @@ def test_from_tabular_source__duplicated_record(
     saved_item_data, snowflake_database_table_item_data
 ):
     """
-    Test ItemData creation failure due to duplicated event data name
+    Test ItemTable creation failure due to duplicated event data name
     """
     _ = saved_item_data
     with pytest.raises(DuplicatedRecordException) as exc:
-        ItemData.from_tabular_source(
+        ItemTable.from_tabular_source(
             tabular_source=snowflake_database_table_item_data,
             name="sf_item_data",
             event_id_column="event_id_col",
             item_id_column="item_id_col",
             event_data_name="sf_event_data",
         )
-    assert 'ItemData (item_data.name: "sf_item_data") exists in saved record.' in str(exc.value)
+    assert 'ItemTable (item_data.name: "sf_item_data") exists in saved record.' in str(exc.value)
 
 
 def test_from_tabular_source__retrieval_exception(snowflake_database_table_item_data):
     """
-    Test ItemData creation failure due to retrieval exception
+    Test ItemTable creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.base_data.Configurations"):
-            ItemData.from_tabular_source(
+        with patch("featurebyte.api.base_table.Configurations"):
+            ItemTable.from_tabular_source(
                 tabular_source=snowflake_database_table_item_data,
                 name="sf_item_data",
                 event_id_column="event_id_col",
@@ -168,21 +168,21 @@ def test_from_tabular_source__event_data_without_event_id_column(
     snowflake_database_table_item_data,
 ):
     """
-    Test attempting to create ItemData using old EventData without event_id_column
+    Test attempting to create ItemTable using old EventData without event_id_column
 
     Can probably be removed once DEV-556 is resolved
     """
-    with patch("featurebyte.api.item_data.EventData") as patched_cls:
+    with patch("featurebyte.api.item_table.EventTable") as patched_cls:
         patched_cls.get.return_value = Mock(event_id_column=None)
         with pytest.raises(ValueError) as exc:
-            _ = ItemData.from_tabular_source(
+            _ = ItemTable.from_tabular_source(
                 tabular_source=snowflake_database_table_item_data,
                 name="sf_item_data",
                 event_id_column="event_id_col",
                 item_id_column="item_id_col",
                 event_data_name="sf_event_data",
             )
-        assert str(exc.value) == "EventData without event_id_column is not supported"
+        assert str(exc.value) == "EventTable without event_id_column is not supported"
 
 
 def test_deserialization(
@@ -192,12 +192,12 @@ def test_deserialization(
     expected_item_data_table_preview_query,
 ):
     """
-    Test deserialize ItemData dictionary
+    Test deserialize ItemTable dictionary
     """
     _ = snowflake_execute_query
     # setup proper configuration to deserialize the event data object
     item_data_dict["feature_store"] = snowflake_feature_store
-    item_data = ItemData.parse_obj(item_data_dict)
+    item_data = ItemTable.parse_obj(item_data_dict)
     assert item_data.preview_sql() == expected_item_data_table_preview_query
 
 
@@ -206,17 +206,17 @@ def test_deserialization__column_name_not_found(
     item_data_dict, snowflake_feature_store, snowflake_execute_query, column_name
 ):
     """
-    Test column not found during deserialize ItemData
+    Test column not found during deserialize ItemTable
     """
     _ = snowflake_execute_query
     item_data_dict["feature_store"] = snowflake_feature_store
     item_data_dict[column_name] = "some_random_name"
     with pytest.raises(ValueError) as exc:
-        ItemData.parse_obj(item_data_dict)
+        ItemTable.parse_obj(item_data_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
 
-class TestItemDataTestSuite(BaseDataTestSuite):
+class TestItemTableTestSuite(BaseTableTestSuite):
 
     data_type = DataType.ITEM_DATA
     col = "event_id_col"
@@ -262,7 +262,7 @@ class TestItemDataTestSuite(BaseDataTestSuite):
 
 def test_item_data_column__as_entity(snowflake_item_data, mock_api_object_cache):
     """
-    Test setting a column in the ItemData as entity
+    Test setting a column in the ItemTable as entity
     """
     _ = mock_api_object_cache
 
@@ -274,7 +274,7 @@ def test_item_data_column__as_entity(snowflake_item_data, mock_api_object_cache)
     entity.save()
 
     item_id_col = snowflake_item_data.item_id_col
-    assert isinstance(item_id_col, DataColumn)
+    assert isinstance(item_id_col, TableColumn)
     snowflake_item_data.item_id_col.as_entity("item")
     assert snowflake_item_data.item_id_col.info.entity_id == entity.id
 
@@ -298,18 +298,18 @@ def test_item_data_column__as_entity(snowflake_item_data, mock_api_object_cache)
 
 def test_item_data__save__exceptions(saved_item_data):
     """
-    Test save ItemData failure due to conflict
+    Test save ItemTable failure due to conflict
     """
     # test duplicated record exception when record exists
     with pytest.raises(ObjectHasBeenSavedError) as exc:
         saved_item_data.save()
-    expected_msg = f'ItemData (id: "{saved_item_data.id}") has been saved before.'
+    expected_msg = f'ItemTable (id: "{saved_item_data.id}") has been saved before.'
     assert expected_msg in str(exc.value)
 
 
 def test_event_data__record_creation_exception(snowflake_item_data):
     """
-    Test save ItemData failure due to conflict
+    Test save ItemTable failure due to conflict
     """
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
@@ -320,7 +320,7 @@ def test_event_data__record_creation_exception(snowflake_item_data):
 def test_update_record_creation_date_column__unsaved_object(
     snowflake_item_data, mock_api_object_cache
 ):
-    """Test update record creation date column (unsaved ItemData)"""
+    """Test update record creation date column (unsaved ItemTable)"""
     _ = mock_api_object_cache
     assert snowflake_item_data.record_creation_date_column is None
     snowflake_item_data.update_record_creation_date_column("created_at")
@@ -328,7 +328,7 @@ def test_update_record_creation_date_column__unsaved_object(
 
 
 def test_update_record_creation_date_column__saved_object(saved_item_data):
-    """Test update record creation date column (saved ItemData)"""
+    """Test update record creation date column (saved ItemTable)"""
     saved_item_data.update_record_creation_date_column("created_at")
     assert saved_item_data.record_creation_date_column == "created_at"
 
@@ -349,20 +349,21 @@ def test_update_record_creation_date_column__saved_object(saved_item_data):
 
 def test_get_item_data(saved_item_data, snowflake_item_data):
     """
-    Test ItemData.get function
+    Test ItemTable.get function
     """
 
     # load the event data from the persistent
-    loaded_data = ItemData.get(saved_item_data.name)
+    loaded_data = ItemTable.get(saved_item_data.name)
     assert loaded_data.saved is True
     assert loaded_data == snowflake_item_data
-    assert ItemData.get_by_id(id=loaded_data.id) == snowflake_item_data
+    assert ItemTable.get_by_id(id=loaded_data.id) == snowflake_item_data
 
     with pytest.raises(RecordRetrievalException) as exc:
-        ItemData.get("unknown_item_data")
+        ItemTable.get("unknown_item_data")
 
     expected_msg = (
-        'ItemData (name: "unknown_item_data") not found. ' "Please save the ItemData object first."
+        'ItemTable (name: "unknown_item_data") not found. '
+        "Please save the ItemTable object first."
     )
     assert expected_msg in str(exc.value)
 
@@ -371,7 +372,7 @@ def test_inherit_default_feature_job_setting(
     snowflake_database_table_item_data, item_data_dict, saved_event_data
 ):
     """
-    Test ItemData inherits the same default feature job setting from EventData
+    Test ItemTable inherits the same default feature job setting from EventData
     """
     feature_job_setting = FeatureJobSetting(
         blind_spot="1m30s",
@@ -379,7 +380,7 @@ def test_inherit_default_feature_job_setting(
         time_modulo_frequency="2m",
     )
     saved_event_data.update_default_feature_job_setting(feature_job_setting=feature_job_setting)
-    item_data = ItemData.from_tabular_source(
+    item_data = ItemTable.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
         name="sf_item_data",
         event_id_column="event_id_col",
@@ -392,10 +393,10 @@ def test_inherit_default_feature_job_setting(
 def test_list_filter(saved_item_data):
     """Test filters in list"""
     # test filter by entity
-    feature_list = ItemData.list(entity="item")
+    feature_list = ItemTable.list(entity="item")
     assert feature_list.shape[0] == 1
 
-    feature_list = ItemData.list(entity="other_entity", include_id=True)
+    feature_list = ItemTable.list(entity="other_entity", include_id=True)
     assert feature_list.shape[0] == 0
 
 
@@ -441,7 +442,7 @@ def test_accessing_saved_item_data_attributes(saved_item_data):
     # check synchronization
     entity = Entity(name="item_type", serving_names=["item_type"])
     entity.save()
-    cloned = ItemData.get_by_id(id=saved_item_data.id)
+    cloned = ItemTable.get_by_id(id=saved_item_data.id)
     assert cloned["item_type"].info.entity_id is None
     saved_item_data["item_type"].as_entity(entity.name)
     assert saved_item_data["item_type"].info.entity_id == entity.id
@@ -456,7 +457,7 @@ def test_accessing_saved_item_data_attributes(saved_item_data):
 
 def test_sdk_code_generation(snowflake_database_table_item_data, saved_event_data, update_fixtures):
     """Check SDK code generation for unsaved data"""
-    item_data = ItemData.from_tabular_source(
+    item_data = ItemTable.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
         name="sf_item_data",
         event_id_column="event_id_col",
@@ -466,7 +467,7 @@ def test_sdk_code_generation(snowflake_database_table_item_data, saved_event_dat
     check_sdk_code_generation(
         item_data.frame,
         to_use_saved_data=False,
-        fixture_path="tests/fixtures/sdk_code/item_data.py",
+        fixture_path="tests/fixtures/sdk_code/item_table.py",
         update_fixtures=update_fixtures,
         data_id=item_data.id,
         event_data_id=saved_event_data.id,
@@ -478,7 +479,7 @@ def test_sdk_code_generation_on_saved_data(saved_item_data, update_fixtures):
     check_sdk_code_generation(
         saved_item_data.frame,
         to_use_saved_data=True,
-        fixture_path="tests/fixtures/sdk_code/saved_item_data.py",
+        fixture_path="tests/fixtures/sdk_code/saved_item_table.py",
         update_fixtures=update_fixtures,
         data_id=saved_item_data.id,
     )

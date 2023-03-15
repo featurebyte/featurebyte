@@ -30,7 +30,7 @@ class ItemViewColumn(ViewColumn):
 
 class ItemView(View, GroupByMixin):
     """
-    ItemViews allow users to transform ItemData to support the data preparation necessary before creating features.
+    ItemViews allow users to transform ItemTable to support the data preparation necessary before creating features.
 
     When an ItemView is created, the event_timestamp and the entities of the event data the item data is associated
     with are automatically added. Users can join more columns from the event data if desired.
@@ -70,14 +70,14 @@ class ItemView(View, GroupByMixin):
         event_suffix: Optional[str] = None,
     ) -> None:
         """
-        Join additional attributes from the related EventData
+        Join additional attributes from the related EventTable
 
         Parameters
         ----------
         columns : list[str]
-            List of column names to include from the EventData
+            List of column names to include from the EventTable
         event_suffix : Optional[str]
-            A suffix to append on to the columns from the EventData
+            A suffix to append on to the columns from the EventTable
         """
         assert self.event_view.event_id_column, "event_id_column is not set"
         (node, joined_columns_info, join_parameters,) = ItemTableData.join_event_view_columns(
@@ -187,9 +187,9 @@ class ItemView(View, GroupByMixin):
         """
         Check whether aggregation parameters are valid for ItemView
 
-        Columns imported from the EventData or their derivatives can not be aggregated per an entity
-        inherited from the EventData. Those features should be engineered directly from the
-        EventData.
+        Columns imported from the EventTable or their derivatives can not be aggregated per an entity
+        inherited from the EventTable. Those features should be engineered directly from the
+        EventTable.
 
         Parameters
         ----------
@@ -201,8 +201,8 @@ class ItemView(View, GroupByMixin):
         Raises
         ------
         ValueError
-            If aggregation is using an EventData derived column and the groupby key is an Entity
-            from EventData
+            If aggregation is using an EventTable derived column and the groupby key is an Entity
+            from EventTable
         """
         if self.event_id_column not in keys:
             raise ValueError(
@@ -236,13 +236,13 @@ class ItemView(View, GroupByMixin):
         columns_to_check = [*keys, value_column]
         if self._are_columns_derived_only_from_event_data(columns_to_check):
             raise ValueError(
-                "Columns imported from EventData and their derivatives should be aggregated in"
+                "Columns imported from EventTable and their derivatives should be aggregated in"
                 " EventView"
             )
 
     def _are_columns_derived_only_from_event_data(self, column_names: List[str]) -> bool:
         """
-        Check if column is derived using only EventData's columns
+        Check if column is derived using only EventTable's columns
 
         Parameters
         ----------

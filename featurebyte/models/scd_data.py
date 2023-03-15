@@ -20,6 +20,7 @@ from featurebyte.query_graph.node.nested import ChangeViewMetadata, ViewMetadata
 class SCDDataModel(SCDTableData, DataModel):
     """
     Model for Slowly Changing Dimension Type 2 Data entity
+
     natural_key_column: str
         The column for the natural key (key for which there is one unique active record) in the DWH.
     surrogate_key_column: str

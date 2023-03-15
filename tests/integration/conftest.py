@@ -29,12 +29,12 @@ from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
 from featurebyte import DatabricksDetails, FeatureJobSetting, SnowflakeDetails
-from featurebyte.api.dimension_data import DimensionData
+from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_data import EventData
+from featurebyte.api.event_table import EventTable
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.item_data import ItemData
-from featurebyte.api.scd_data import SlowlyChangingData
+from featurebyte.api.item_table import ItemTable
+from featurebyte.api.scd_table import SCDTable
 from featurebyte.app import app
 from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.config import Configurations
@@ -645,13 +645,13 @@ async def datasets_registration_helper_fixture(
 
     helper = DatasetsRegistrationHelper()
 
-    # EventData table
+    # Event table
     helper.add_table("TEST_TABLE", transaction_data_upper_case)
 
-    # ItemData table
+    # Item table
     helper.add_table("ITEM_DATA_TABLE", items_dataframe)
 
-    # DimensionData table
+    # Dimension table
     helper.add_table(dimension_data_table_name, dimension_dataframe)
 
     # SCD table
@@ -1025,7 +1025,7 @@ def create_transactions_event_data_from_feature_store(
         }
     )
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)
-    event_data = EventData.from_tabular_source(
+    event_data = EventTable.from_tabular_source(
         tabular_source=database_table,
         name=event_data_name,
         event_id_column="TRANSACTION_ID",
@@ -1041,7 +1041,7 @@ def create_transactions_event_data_from_feature_store(
     event_data["PRODUCT_ACTION"].as_entity("ProductAction")
     event_data["CUST_ID"].as_entity("Customer")
     event_data.save()
-    event_data = EventData.get(event_data_name)
+    event_data = EventTable.get(event_data_name)
     return event_data
 
 
@@ -1083,7 +1083,7 @@ def event_data_fixture(
 @pytest.fixture(name="item_data_name", scope="session")
 def item_data_name_fixture(source_type):
     """
-    Fixture for the ItemData name
+    Fixture for the ItemTable name
     """
     return f"{source_type}_item_data"
 
@@ -1098,14 +1098,14 @@ def item_data_fixture(
     item_entity,
 ):
     """
-    Fixture for an ItemData in integration tests
+    Fixture for an ItemTable in integration tests
     """
     database_table = feature_store.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="ITEM_DATA_TABLE",
     )
-    item_data = ItemData.from_tabular_source(
+    item_data = ItemTable.from_tabular_source(
         tabular_source=database_table,
         name=item_data_name,
         event_id_column="order_id",
@@ -1113,7 +1113,7 @@ def item_data_fixture(
         event_data_name=event_data.name,
     )
     item_data.save()
-    item_data = ItemData.get(item_data_name)
+    item_data = ItemTable.get(item_data_name)
     item_data["order_id"].as_entity(order_entity.name)
     item_data["item_id"].as_entity(item_entity.name)
     return item_data
@@ -1122,7 +1122,7 @@ def item_data_fixture(
 @pytest.fixture(name="dimension_data_name", scope="session")
 def dimension_data_name_fixture(source_type):
     """
-    Fixture for the DimensionData name
+    Fixture for the DimensionTable name
     """
     return f"{source_type}_dimension_data"
 
@@ -1136,20 +1136,20 @@ def dimension_data_fixture(
     item_entity,
 ):
     """
-    Fixture for a DimensionData in integration tests
+    Fixture for a DimensionTable in integration tests
     """
     database_table = feature_store.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name=dimension_data_table_name,
     )
-    dimension_data = DimensionData.from_tabular_source(
+    dimension_data = DimensionTable.from_tabular_source(
         tabular_source=database_table,
         name=dimension_data_name,
         dimension_id_column="item_id",
     )
     dimension_data.save()
-    dimension_data = DimensionData.get(dimension_data_name)
+    dimension_data = DimensionTable.get(dimension_data_name)
     dimension_data["item_id"].as_entity(item_entity.name)
     return dimension_data
 
@@ -1189,7 +1189,7 @@ def scd_data_fixture(
     """
     Fixture for a SlowlyChangingData in integration tests
     """
-    data = SlowlyChangingData.from_tabular_source(
+    data = SCDTable.from_tabular_source(
         tabular_source=scd_data_tabular_source,
         name=scd_data_name,
         natural_key_column="User ID",
@@ -1197,7 +1197,7 @@ def scd_data_fixture(
         surrogate_key_column="ID",
     )
     data.save()
-    data = SlowlyChangingData.get(scd_data_name)
+    data = SCDTable.get(scd_data_name)
     data["User ID"].as_entity(user_entity.name)
     data["User Status"].as_entity(status_entity.name)
     return data

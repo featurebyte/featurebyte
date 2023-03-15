@@ -1,5 +1,5 @@
 """
-EventData class
+EventTable class
 """
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.base_data import DataApiObject
-from featurebyte.api.database_table import DatabaseTable
+from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
+from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
@@ -33,9 +33,9 @@ if TYPE_CHECKING:
     from featurebyte.api.event_view import EventView
 
 
-class EventData(DataApiObject):
+class EventTable(TableApiObject):
     """
-    EventData is an object connected with an event table in the data warehouse. These tables must have the following
+    EventTable is an object connected with an event table in the data warehouse. These tables must have the following
     properties:\n
     - and an event_id column as a primary key\n
     - an event timestamp
@@ -45,14 +45,14 @@ class EventData(DataApiObject):
     - the semantic of the data field
     - critical data information on the data quality that requires cleaning before feature engineering.
 
-    Before registering a new EventData, users are asked to set the default for the FeatureJob scheduling for features
-    that will be extracted from the EventData.
+    Before registering a new EventTable, users are asked to set the default for the FeatureJob scheduling for features
+    that will be extracted from the EventTable.
 
-    To build features, users create Event Views from EventData.
+    To build features, users create Event Views from EventTable.
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Data"], proxy_class="featurebyte.EventData")
+    __fbautodoc__ = FBAutoDoc(section=["Table"], proxy_class="featurebyte.EventTable")
 
     # class variables
     _route = "/event_data"
@@ -173,7 +173,7 @@ class EventData(DataApiObject):
     @property
     def event_timestamp_column(self) -> str:
         """
-        Event timestamp column name of the EventData
+        Event timestamp column name of the EventTable
 
         Returns
         -------
@@ -187,7 +187,7 @@ class EventData(DataApiObject):
     @property
     def event_id_column(self) -> Optional[str]:
         """
-        Event ID column name of the EventData associated with the ItemData
+        Event ID column name of the EventTable associated with the ItemTable
 
         Returns
         -------
@@ -201,7 +201,7 @@ class EventData(DataApiObject):
     @property
     def timestamp_column(self) -> Optional[str]:
         """
-        Timestamp column name of the EventData
+        Timestamp column name of the EventTable
 
         Returns
         -------
@@ -224,19 +224,19 @@ class EventData(DataApiObject):
     @typechecked
     def from_tabular_source(
         cls,
-        tabular_source: DatabaseTable,
+        tabular_source: SourceTable,
         name: str,
         event_timestamp_column: str,
         event_id_column: str,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
-    ) -> EventData:
+    ) -> EventTable:
         """
-        Create EventData object from tabular source
+        Create EventTable object from tabular source
 
         Parameters
         ----------
-        tabular_source: DatabaseTable
+        tabular_source: SourceTable
             DatabaseTable object constructed from FeatureStore
         name: str
             Event data name
@@ -251,14 +251,14 @@ class EventData(DataApiObject):
 
         Returns
         -------
-        EventData
+        EventTable
 
         Examples
         --------
 
-        Create EventData from a table in the feature store
+        Create EventTable from a table in the feature store
 
-        >>> credit_card_transactions = EventData.from_tabular_source(  # doctest: +SKIP
+        >>> credit_card_transactions = EventTable.from_tabular_source(  # doctest: +SKIP
         ...    name="Credit Card Transactions",
         ...    tabular_source=feature_store.get_table(
         ...      database_name="DEMO",
@@ -270,7 +270,7 @@ class EventData(DataApiObject):
         ...    record_creation_date_column="RECORD_AVAILABLE_AT",
         ... )
 
-        Get information about the EventData
+        Get information about the EventTable
 
         >>> credit_card_transactions.info(verbose=True)  # doctest: +SKIP
         {'name': 'CCDEMOTRANSACTIONS',

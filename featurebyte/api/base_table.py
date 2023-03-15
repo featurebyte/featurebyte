@@ -13,8 +13,8 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping, SavableApiObject
-from featurebyte.api.database_table import AbstractTableData, DatabaseTable
 from featurebyte.api.entity import Entity
+from featurebyte.api.source_table import AbstractTableData, SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
@@ -36,18 +36,18 @@ from featurebyte.query_graph.node.cleaning_operation import (
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
-DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
+SourceTableApiObjectT = TypeVar("SourceTableApiObjectT", bound="TableApiObject")
 TableDataT = TypeVar("TableDataT", bound=BaseTableData)
 
 
-class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
+class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     """
-    DataColumn class that is used to set metadata such as Entity column. It holds a reference to its
-    parent, which is a data object (e.g. EventData)
+    TableColumn class that is used to set metadata such as Entity column. It holds a reference to its
+    parent, which is a data object (e.g. EventTable)
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Column"], proxy_class="featurebyte.DataColumn")
+    __fbautodoc__ = FBAutoDoc(section=["Column"], proxy_class="featurebyte.TableColumn")
 
     # pydantic instance variable (public)
     name: str
@@ -137,7 +137,7 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         Add missing value imputation & negative value imputation operations to a data column
 
         >>> import featurebyte as fb
-        >>> event_data = fb.EventData.get("Credit Card Transactions")  # doctest: +SKIP
+        >>> event_data = fb.EventTable.get("Credit Card Transactions")  # doctest: +SKIP
         >>> event_data["AMOUNT"].update_critical_data_info(  # doctest: +SKIP
         ...    cleaning_operations=[
         ...        fb.MissingValueImputation(imputed_value=0),
@@ -211,9 +211,9 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
 
 
-class DataListMixin(ApiObject):
+class TableListMixin(ApiObject):
     """
-    Mixin to implement data source list function
+    Mixin to implement source table list function
     """
 
     _route = "/tabular_data"
@@ -246,16 +246,13 @@ class DataListMixin(ApiObject):
         return data_list
 
 
-class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrMixin):
+class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAttrMixin):
     """
-    Base class for all Data objects
+    Base class for all Table objects
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        section=["Data"],
-        proxy_class="featurebyte.Data",
-    )
+    __fbautodoc__ = FBAutoDoc(section=["Table"], proxy_class="featurebyte.Table")
 
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
@@ -312,19 +309,19 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
     @classmethod
     @typechecked
     def create(
-        cls: Type[DataApiObjectT],
-        tabular_source: DatabaseTable,
+        cls: Type[SourceTableApiObjectT],
+        tabular_source: SourceTable,
         name: str,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
         **kwargs: Any,
-    ) -> DataApiObjectT:
+    ) -> SourceTableApiObjectT:
         """
-        Create derived instances of DataApiObject from tabular source
+        Create derived instances of TableApiObject from tabular source
 
         Parameters
         ----------
-        tabular_source: DatabaseTable
+        tabular_source: SourceTable
             DatabaseTable object constructed from FeatureStore
         name: str
             Object name
@@ -333,11 +330,11 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
         _id: Optional[ObjectId]
             Identity value for constructed object
         **kwargs: Any
-            Additional parameters specific to variants of DataApiObject
+            Additional parameters specific to variants of TableApiObject
 
         Returns
         -------
-        DataApiObjectT
+        SourceTableApiObjectT
 
         Raises
         ------
@@ -393,7 +390,7 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
         return {"feature_store": self.feature_store}
 
     @typechecked
-    def __getitem__(self, item: str) -> DataColumn:
+    def __getitem__(self, item: str) -> TableColumn:
         """
         Retrieve column from the table
 
@@ -404,7 +401,7 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
 
         Returns
         -------
-        DataColumn
+        TableColumn
 
         Raises
         ------
@@ -417,7 +414,7 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
                 info = col
         if info is None:
             raise KeyError(f'Column "{item}" does not exist!')
-        output = DataColumn(name=item)
+        output = TableColumn(name=item)
         output.set_parent(self)
         return output
 

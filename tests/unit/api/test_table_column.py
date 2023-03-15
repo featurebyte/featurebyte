@@ -5,7 +5,7 @@ import textwrap
 
 import pytest
 
-from featurebyte.api.base_data import DataColumn
+from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.exception import RecordRetrievalException
@@ -29,7 +29,7 @@ def test_data_column__as_entity(snowflake_event_data, mock_api_object_cache):
     entity.save()
 
     col_int = snowflake_event_data.col_int
-    assert isinstance(col_int, DataColumn)
+    assert isinstance(col_int, TableColumn)
     snowflake_event_data.col_int.as_entity("customer")
 
     # check event data column's info attribute & event data's columns_info

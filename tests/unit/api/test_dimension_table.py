@@ -5,15 +5,15 @@ from unittest.mock import patch
 
 import pytest
 
-from featurebyte.api.dimension_data import DimensionData
+from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models import DimensionDataModel
-from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
 
-class TestDimensionDataTestSuite(BaseDataTestSuite):
+class TestDimensionTableTestSuite(BaseTableTestSuite):
 
     data_type = DataType.DIMENSION_DATA
     col = "col_int"
@@ -157,7 +157,7 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
     """
     Test DimensionData creation using tabular source
     """
-    dimension_data = DimensionData.from_tabular_source(
+    dimension_data = DimensionTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_dimension_data",
         dimension_id_column="col_int",
@@ -179,7 +179,7 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
 
     # user input validation
     with pytest.raises(TypeError) as exc:
-        DimensionData.from_tabular_source(
+        DimensionTable.from_tabular_source(
             tabular_source=snowflake_database_table,
             name=123,
             dimension_id_column="col_int",
@@ -194,14 +194,14 @@ def test_from_tabular_source__duplicated_record(saved_dimension_data, snowflake_
     """
     _ = saved_dimension_data
     with pytest.raises(DuplicatedRecordException) as exc:
-        DimensionData.from_tabular_source(
+        DimensionTable.from_tabular_source(
             tabular_source=snowflake_database_table,
             name="sf_dimension_data",
             dimension_id_column="col_int",
             record_creation_date_column="created_at",
         )
     assert (
-        'DimensionData (dimension_data.name: "sf_dimension_data") exists in saved record.'
+        'DimensionTable (dimension_data.name: "sf_dimension_data") exists in saved record.'
         in str(exc.value)
     )
 
@@ -211,8 +211,8 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
     Test DimensionData creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.base_data.Configurations"):
-            DimensionData.from_tabular_source(
+        with patch("featurebyte.api.base_table.Configurations"):
+            DimensionTable.from_tabular_source(
                 tabular_source=snowflake_database_table,
                 name="sf_dimension_data",
                 dimension_id_column="col_int",
@@ -258,7 +258,7 @@ def test_accessing_saved_dimension_data_attributes(saved_dimension_data):
     assert saved_dimension_data.dimension_id_column == "col_int"
 
     # check synchronization
-    cloned = DimensionData.get_by_id(id=saved_dimension_data.id)
+    cloned = DimensionTable.get_by_id(id=saved_dimension_data.id)
     assert cloned.record_creation_date_column == "created_at"
     saved_dimension_data.update_record_creation_date_column(
         record_creation_date_column="event_timestamp"
@@ -269,7 +269,7 @@ def test_accessing_saved_dimension_data_attributes(saved_dimension_data):
 
 def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     """Check SDK code generation for unsaved data"""
-    dimension_data = DimensionData.from_tabular_source(
+    dimension_data = DimensionTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_dimension_data",
         dimension_id_column="col_int",
@@ -278,7 +278,7 @@ def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     check_sdk_code_generation(
         dimension_data.frame,
         to_use_saved_data=False,
-        fixture_path="tests/fixtures/sdk_code/dimension_data.py",
+        fixture_path="tests/fixtures/sdk_code/dimension_table.py",
         update_fixtures=update_fixtures,
         data_id=dimension_data.id,
     )
@@ -289,7 +289,7 @@ def test_sdk_code_generation_on_saved_data(saved_dimension_data, update_fixtures
     check_sdk_code_generation(
         saved_dimension_data.frame,
         to_use_saved_data=True,
-        fixture_path="tests/fixtures/sdk_code/saved_dimension_data.py",
+        fixture_path="tests/fixtures/sdk_code/saved_dimension_table.py",
         update_fixtures=update_fixtures,
         data_id=saved_dimension_data.id,
     )

@@ -1,11 +1,10 @@
 """
 Test view class
 """
-from typing import Dict, List, Tuple
+from typing import List
 
 import pytest
 from bson import ObjectId
-from pydantic import StrictStr
 
 from featurebyte.api.view import View, ViewColumn
 from featurebyte.enum import DBVarType, SourceType

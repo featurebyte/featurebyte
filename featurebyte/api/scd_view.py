@@ -26,7 +26,7 @@ class SlowlyChangingViewColumn(ViewColumn):
 
 class SlowlyChangingView(View, GroupByMixin):
     """
-    SlowlyChangingView's allow users to transform Slowly Changing Dimension Data.
+    SlowlyChangingViews allow users to transform SCDTable
 
     Transformations supported are the same as for EventView or ItemView except for lag that is not supported.
     """

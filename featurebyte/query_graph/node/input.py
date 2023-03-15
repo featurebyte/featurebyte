@@ -199,7 +199,7 @@ class EventDataInputNodeParameters(BaseInputNodeParameters):
 
     @property
     def variable_name_prefix(self) -> str:
-        return "event_data"
+        return "event_table"
 
     def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -216,7 +216,7 @@ class EventDataInputNodeParameters(BaseInputNodeParameters):
         if self.id:
             data_name = data_id_to_info.get(self.id, {}).get("name")
             if data_name:
-                output = CommentStr(f'event_data name: "{data_name}"')
+                output = CommentStr(f'event_table name: "{data_name}"')
         return output
 
 
@@ -231,7 +231,7 @@ class ItemDataInputNodeParameters(BaseInputNodeParameters):
 
     @property
     def variable_name_prefix(self) -> str:
-        return "item_data"
+        return "item_table"
 
     def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -251,7 +251,7 @@ class ItemDataInputNodeParameters(BaseInputNodeParameters):
             event_data_name = data_id_to_info.get(self.event_data_id, {}).get("name")
             if data_name and event_data_name:
                 output = CommentStr(
-                    f'item_data name: "{data_name}", event_data name: "{event_data_name}"'
+                    f'item_table name: "{data_name}", event_table name: "{event_data_name}"'
                 )
         return output
 
@@ -265,7 +265,7 @@ class DimensionDataInputNodeParameters(BaseInputNodeParameters):
 
     @property
     def variable_name_prefix(self) -> str:
-        return "dimension_data"
+        return "dimension_table"
 
     def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -281,7 +281,7 @@ class DimensionDataInputNodeParameters(BaseInputNodeParameters):
         if self.id:
             data_name = data_id_to_info.get(self.id, {}).get("name")
             if data_name:
-                output = CommentStr(f'dimension_data name: "{data_name}"')
+                output = CommentStr(f'dimension_table name: "{data_name}"')
         return output
 
 
@@ -302,7 +302,7 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
 
     @property
     def variable_name_prefix(self) -> str:
-        return "slowly_changing_data"
+        return "scd_table"
 
     def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -322,7 +322,7 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
         if self.id:
             data_name = data_id_to_info.get(self.id, {}).get("name")
             if data_name:
-                output = CommentStr(f'scd_data name: "{data_name}"')
+                output = CommentStr(f'scd_table name: "{data_name}"')
         return output
 
 
@@ -344,11 +344,11 @@ class InputNode(BaseNode):
 
     # class variable
     _data_to_data_class_enum: ClassVar[Dict[TableDataType, ClassEnum]] = {
-        TableDataType.GENERIC: ClassEnum.DATABASE_TABLE,
-        TableDataType.EVENT_DATA: ClassEnum.EVENT_DATA,
-        TableDataType.ITEM_DATA: ClassEnum.ITEM_DATA,
-        TableDataType.DIMENSION_DATA: ClassEnum.DIMENSION_DATA,
-        TableDataType.SCD_DATA: ClassEnum.SCD_DATA,
+        TableDataType.GENERIC: ClassEnum.SOURCE_TABLE,
+        TableDataType.EVENT_DATA: ClassEnum.EVENT_TABLE,
+        TableDataType.ITEM_DATA: ClassEnum.ITEM_TABLE,
+        TableDataType.DIMENSION_DATA: ClassEnum.DIMENSION_TABLE,
+        TableDataType.SCD_DATA: ClassEnum.SCD_TABLE,
     }
 
     @root_validator(pre=True)
