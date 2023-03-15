@@ -12,17 +12,13 @@ from bson import ObjectId
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
-from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_table import EventTable
 from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.item_table import ItemTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
-from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.table import Table
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import activate_catalog, get_active_catalog_id
@@ -314,90 +310,6 @@ class Catalog(CatalogModel, SavableApiObject):
         return Table.list(include_id=include_id, entity=entity)
 
     @update_and_reset_catalog
-    def list_dimension_tables(
-        self, include_id: Optional[bool] = False, entity: Optional[str] = None
-    ) -> pd.DataFrame:
-        """
-        List saved dimension table sources
-
-        Parameters
-        ----------
-        include_id: Optional[bool]
-            Whether to include id in the list
-        entity: Optional[str]
-            Name of entity used to filter results
-
-        Returns
-        -------
-        DataFrame
-            Table of dimension table sources
-        """
-        return DimensionTable.list(include_id=include_id, entity=entity)
-
-    @update_and_reset_catalog
-    def list_item_tables(
-        self, include_id: Optional[bool] = False, entity: Optional[str] = None
-    ) -> pd.DataFrame:
-        """
-        List saved item table sources
-
-        Parameters
-        ----------
-        include_id: Optional[bool]
-            Whether to include id in the list
-        entity: Optional[str]
-            Name of entity used to filter results
-
-        Returns
-        -------
-        DataFrame
-            Table of item table sources
-        """
-        return ItemTable.list(include_id=include_id, entity=entity)
-
-    @update_and_reset_catalog
-    def list_event_tables(
-        self, include_id: Optional[bool] = False, entity: Optional[str] = None
-    ) -> pd.DataFrame:
-        """
-        List saved event table sources
-
-        Parameters
-        ----------
-        include_id: Optional[bool]
-            Whether to include id in the list
-        entity: Optional[str]
-            Name of entity used to filter results
-
-        Returns
-        -------
-        DataFrame
-            Table of event table sources
-        """
-        return EventTable.list(include_id=include_id, entity=entity)
-
-    @update_and_reset_catalog
-    def list_scd_tables(
-        self, include_id: Optional[bool] = False, entity: Optional[str] = None
-    ) -> pd.DataFrame:
-        """
-        List saved SCD table sources
-
-        Parameters
-        ----------
-        include_id: Optional[bool]
-            Whether to include id in the list
-        entity: Optional[str]
-            Name of entity used to filter results
-
-        Returns
-        -------
-        DataFrame
-            Table of SCD table sources
-        """
-        return SCDTable.list(include_id=include_id, entity=entity)
-
-    @update_and_reset_catalog
     def list_relationships(
         self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
@@ -515,3 +427,177 @@ class Catalog(CatalogModel, SavableApiObject):
             Table of periodic tasks
         """
         return PeriodicTask.list(include_id=include_id)
+
+    @update_and_reset_catalog
+    def get_feature(self, name: str, version: Optional[str] = None) -> Feature:
+        """
+        Get a feature by name and version
+
+        Parameters
+        ----------
+        name: str
+            Feature name
+        version: Optional[str]
+            Feature version, if None, the default version will be returned
+
+        Returns
+        -------
+        Feature
+            Feature object
+        """
+        return Feature.get(name=name, version=version)
+
+    @update_and_reset_catalog
+    def get_feature_namespace(self, name: str) -> FeatureNamespace:
+        """
+        Get a feature namespace by name
+
+        Parameters
+        ----------
+        name: str
+            Feature namespace name
+
+        Returns
+        -------
+        FeatureNamespace
+            Feature namespace object
+        """
+        return FeatureNamespace.get(name=name)
+
+    @update_and_reset_catalog
+    def get_feature_list_namespace(self, name: str) -> FeatureListNamespace:
+        """
+        Get a feature list namespace by name
+
+        Parameters
+        ----------
+        name: str
+            Feature list namespace name
+
+        Returns
+        -------
+        FeatureListNamespace
+            Feature list namespace object
+        """
+        return FeatureListNamespace.get(name=name)
+
+    @update_and_reset_catalog
+    def get_feature_list(self, name: str, version: Optional[str] = None) -> FeatureList:
+        """
+        Get feature list by name
+
+        Parameters
+        ----------
+        name: str
+            Feature list name
+        version: Optional[str]
+            Version of the feature list, if None, the default version will be returned
+
+        Returns
+        -------
+        FeatureList
+            Feature list object
+        """
+        return FeatureList.get(name=name, version=version)
+
+    @update_and_reset_catalog
+    def get_table(self, name: str) -> Any:
+        """
+        Get table by name
+
+        Parameters
+        ----------
+        name: str
+            Table name
+
+        Returns
+        -------
+        Any
+            Retrieved source table
+        """
+        return Table.get(name=name)
+
+    @update_and_reset_catalog
+    def get_relationship(self, name: str) -> Relationship:
+        """
+        Get relationship by name
+
+        Parameters
+        ----------
+        name: str
+            Relationship name
+
+        Returns
+        -------
+        Relationship
+            Relationship object
+        """
+        return Relationship.get(name=name)
+
+    @update_and_reset_catalog
+    def get_feature_job_setting_analysis(self, name: str) -> FeatureJobSettingAnalysis:
+        """
+        Get feature job setting analysis by name
+
+        Parameters
+        ----------
+        name: str
+            Feature job setting analysis name
+
+        Returns
+        -------
+        FeatureJobSettingAnalysis
+            Feature job setting analysis object
+        """
+        return FeatureJobSettingAnalysis.get(name=name)
+
+    @update_and_reset_catalog
+    def get_feature_store(self, name: str) -> FeatureStore:
+        """
+        Get feature store by name
+
+        Parameters
+        ----------
+        name: str
+            Feature store name
+
+        Returns
+        -------
+        FeatureStore
+            Feature store object
+        """
+        return FeatureStore.get(name=name)
+
+    @update_and_reset_catalog
+    def get_entity(self, name: str) -> Entity:
+        """
+        Get entity by name
+
+        Parameters
+        ----------
+        name: str
+            Entity name
+
+        Returns
+        -------
+        Entity
+            Entity object
+        """
+        return Entity.get(name=name)
+
+    @update_and_reset_catalog
+    def get_periodic_task(self, name: str) -> PeriodicTask:
+        """
+        Get periodic task by name
+
+        Parameters
+        ----------
+        name: str
+            Periodic task name
+
+        Returns
+        -------
+        PeriodicTask
+            Periodic task object
+        """
+        return PeriodicTask.get(name=name)
