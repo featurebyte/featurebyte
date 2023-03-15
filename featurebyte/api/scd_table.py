@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.base_table import SourceTableApiObject
+from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from featurebyte.api.scd_view import SlowlyChangingView
 
 
-class SCDTable(SourceTableApiObject):
+class SCDTable(TableApiObject):
     """
     SCDTable is a data source object connected with a Slowly Changing Dimension table of Type 2 in
     the data warehouse that has:\n

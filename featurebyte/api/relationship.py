@@ -8,7 +8,7 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
-from featurebyte.api.base_table import SourceTableApiObject
+from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
@@ -58,10 +58,8 @@ class Relationship(ApiObject):
     _list_foreign_keys = [
         ForeignKeyMapping("primary_entity_id", Entity, "primary_entity"),
         ForeignKeyMapping("related_entity_id", Entity, "related_entity"),
-        ForeignKeyMapping("primary_data_source_id", SourceTableApiObject, "primary_data_source"),
-        ForeignKeyMapping(
-            "primary_data_source_id", SourceTableApiObject, "primary_data_type", "type"
-        ),
+        ForeignKeyMapping("primary_data_source_id", TableApiObject, "primary_data_source"),
+        ForeignKeyMapping("primary_data_source_id", TableApiObject, "primary_data_type", "type"),
     ]
 
     # pydantic instance variable (internal use)

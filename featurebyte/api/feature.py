@@ -14,7 +14,7 @@ from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping, SavableApiObject
-from featurebyte.api.base_table import SourceTableApiObject
+from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
@@ -78,7 +78,7 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", SourceTableApiObject, "data"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "data"),
     ]
 
     @property
@@ -216,7 +216,7 @@ class Feature(
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", SourceTableApiObject, "data"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "data"),
     ]
 
     def _get_init_params_from_object(self) -> dict[str, Any]:

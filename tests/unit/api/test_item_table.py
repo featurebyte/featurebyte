@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.api.base_table import SourceTableColumn
+from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.item_table import ItemTable
 from featurebyte.enum import TableDataType
@@ -274,7 +274,7 @@ def test_item_data_column__as_entity(snowflake_item_data, mock_api_object_cache)
     entity.save()
 
     item_id_col = snowflake_item_data.item_id_col
-    assert isinstance(item_id_col, SourceTableColumn)
+    assert isinstance(item_id_col, TableColumn)
     snowflake_item_data.item_id_col.as_entity("item")
     assert snowflake_item_data.item_id_col.info.entity_id == entity.id
 

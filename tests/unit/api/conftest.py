@@ -9,7 +9,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte.api.base_table import SourceTableColumn
+from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.item_table import ItemTable
@@ -222,7 +222,7 @@ def saved_item_data_fixture(snowflake_feature_store, snowflake_item_data, item_e
     assert isinstance(snowflake_item_data.tabular_source.feature_store_id, ObjectId)
 
     item_id_col = snowflake_item_data.item_id_col
-    assert isinstance(item_id_col, SourceTableColumn)
+    assert isinstance(item_id_col, TableColumn)
     snowflake_item_data.item_id_col.as_entity(item_entity.name)
     assert snowflake_item_data.item_id_col.info.entity_id == item_entity.id
 

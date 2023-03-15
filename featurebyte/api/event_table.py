@@ -12,7 +12,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.base_table import SourceTableApiObject
+from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from featurebyte.api.event_view import EventView
 
 
-class EventTable(SourceTableApiObject):
+class EventTable(TableApiObject):
     """
     EventTable is an object connected with an event table in the data warehouse. These tables must have the following
     properties:\n

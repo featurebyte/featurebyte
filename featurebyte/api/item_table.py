@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.base_table import SourceTableApiObject
+from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from featurebyte.api.item_view import ItemView
 
 
-class ItemTable(SourceTableApiObject):
+class ItemTable(TableApiObject):
     """
     ItemTable is an object connected with an item table that has a ‘one to many’ relationship with an event table.
     Example:\n

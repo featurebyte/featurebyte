@@ -5,7 +5,7 @@ import textwrap
 
 import pytest
 
-from featurebyte.api.base_table import SourceTableColumn
+from featurebyte.api.base_table import TableColumn
 from featurebyte.enum import StrEnum
 from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 
@@ -87,7 +87,7 @@ class BaseTableTestSuite:
         )
 
         # check __getattr__ is working properly
-        assert isinstance(data_under_test[self.col], SourceTableColumn)
+        assert isinstance(data_under_test[self.col], TableColumn)
 
         # when accessing the `columns` attribute, make sure we retrieve it properly
         assert set(data_under_test.columns) == self.expected_columns

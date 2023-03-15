@@ -11,7 +11,7 @@ import yaml
 from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 
-from featurebyte.api.base_table import SourceTableApiObject
+from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -151,7 +151,7 @@ def config_fixture(test_api_client):
         ItemTable,
         DimensionTable,
         SCDTable,
-        SourceTableApiObject,
+        TableApiObject,
         Feature,
         FeatureList,
     ],

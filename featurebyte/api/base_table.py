@@ -36,18 +36,18 @@ from featurebyte.query_graph.node.cleaning_operation import (
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
-SourceTableApiObjectT = TypeVar("SourceTableApiObjectT", bound="SourceTableApiObject")
+SourceTableApiObjectT = TypeVar("SourceTableApiObjectT", bound="TableApiObject")
 TableDataT = TypeVar("TableDataT", bound=BaseTableData)
 
 
-class SourceTableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
+class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     """
-    SourceTableColumn class that is used to set metadata such as Entity column. It holds a reference to its
+    TableColumn class that is used to set metadata such as Entity column. It holds a reference to its
     parent, which is a data object (e.g. EventTable)
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Column"], proxy_class="featurebyte.SourceTableColumn")
+    __fbautodoc__ = FBAutoDoc(section=["Column"], proxy_class="featurebyte.TableColumn")
 
     # pydantic instance variable (public)
     name: str
@@ -246,16 +246,13 @@ class TableListMixin(ApiObject):
         return data_list
 
 
-class SourceTableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAttrMixin):
+class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAttrMixin):
     """
-    Base class for all Data objects
+    Base class for all Table objects
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        section=["Data"],
-        proxy_class="featurebyte.Data",
-    )
+    __fbautodoc__ = FBAutoDoc(section=["Table"], proxy_class="featurebyte.Table")
 
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
@@ -320,7 +317,7 @@ class SourceTableApiObject(AbstractTableData, TableListMixin, SavableApiObject, 
         **kwargs: Any,
     ) -> SourceTableApiObjectT:
         """
-        Create derived instances of SourceTableApiObject from tabular source
+        Create derived instances of TableApiObject from tabular source
 
         Parameters
         ----------
@@ -333,7 +330,7 @@ class SourceTableApiObject(AbstractTableData, TableListMixin, SavableApiObject, 
         _id: Optional[ObjectId]
             Identity value for constructed object
         **kwargs: Any
-            Additional parameters specific to variants of SourceTableApiObject
+            Additional parameters specific to variants of TableApiObject
 
         Returns
         -------
@@ -393,7 +390,7 @@ class SourceTableApiObject(AbstractTableData, TableListMixin, SavableApiObject, 
         return {"feature_store": self.feature_store}
 
     @typechecked
-    def __getitem__(self, item: str) -> SourceTableColumn:
+    def __getitem__(self, item: str) -> TableColumn:
         """
         Retrieve column from the table
 
@@ -404,7 +401,7 @@ class SourceTableApiObject(AbstractTableData, TableListMixin, SavableApiObject, 
 
         Returns
         -------
-        SourceTableColumn
+        TableColumn
 
         Raises
         ------
@@ -417,7 +414,7 @@ class SourceTableApiObject(AbstractTableData, TableListMixin, SavableApiObject, 
                 info = col
         if info is None:
             raise KeyError(f'Column "{item}" does not exist!')
-        output = SourceTableColumn(name=item)
+        output = TableColumn(name=item)
         output.set_parent(self)
         return output
 
