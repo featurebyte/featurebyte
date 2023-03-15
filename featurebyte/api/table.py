@@ -1,5 +1,5 @@
 """
-SourceTable class
+Table class
 """
 from __future__ import annotations
 
@@ -17,15 +17,15 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.tabular_data import TabularDataModel
 
 
-class SourceTable(TabularDataModel, TableListMixin):
+class Table(TabularDataModel, TableListMixin):
     """
-    SourceTable class
+    Table class
     """
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["SourceTable"],
-        proxy_class="featurebyte.SourceTable",
+        section=["Table"],
+        proxy_class="featurebyte.Table",
     )
 
     # class variables

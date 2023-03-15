@@ -16,7 +16,7 @@ from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.scd_view import SlowlyChangingView
-from featurebyte.api.source_table import SourceTable
+from featurebyte.api.table import Table
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations
 from featurebyte.core.series import Series
@@ -49,7 +49,7 @@ __all__ = [
     "ChangeView",
     "Credential",
     "Configurations",
-    "SourceTable",
+    "Table",
     "DimensionTable",
     "DimensionView",
     "Entity",

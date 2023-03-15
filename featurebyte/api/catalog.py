@@ -21,7 +21,7 @@ from featurebyte.api.item_table import ItemTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_table import SCDTable
-from featurebyte.api.source_table import SourceTable
+from featurebyte.api.table import Table
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.logger import logger
@@ -268,7 +268,7 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Dataframe of tables
         """
-        return SourceTable.list(include_id=include_id, entity=entity)
+        return Table.list(include_id=include_id, entity=entity)
 
     @staticmethod
     def list_dimension_tables(

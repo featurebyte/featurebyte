@@ -19,7 +19,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
-from featurebyte.api.source_table import SourceTable
+from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
@@ -562,7 +562,7 @@ class Feature(
         try:
             # retrieve all the data used to construct this feature
             data_id_to_doc = {
-                data_id: SourceTable.get_by_id(data_id).dict() for data_id in self.tabular_data_ids
+                data_id: Table.get_by_id(data_id).dict() for data_id in self.tabular_data_ids
             }
         except RecordRetrievalException:
             # data used to construct this feature has not been saved

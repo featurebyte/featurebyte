@@ -44,7 +44,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.source_table import SourceTable
+from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
@@ -1173,7 +1173,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             for entity in info["entities"]
         }
         for tabular_source in info["tabular_data"]:
-            data = SourceTable.get(tabular_source["name"])
+            data = Table.get(tabular_source["name"])
             entity_columns = [
                 column for column in data.columns_info if column.entity_id in entities
             ]
