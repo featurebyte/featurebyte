@@ -153,8 +153,8 @@ def _get_data_layout() -> List[DocLayoutItem]:
             "featurebyte.Data.primary_key_columns",
         ),
         DocLayoutItem(
-            [DATA, INFO, "featurebyte.Data.record_creation_date_column"],
-            "featurebyte.Data.record_creation_date_column",
+            [DATA, INFO, "featurebyte.Data.record_creation_timestamp_column"],
+            "featurebyte.Data.record_creation_timestamp_column",
         ),
         DocLayoutItem([DATA, INFO, "featurebyte.Data.saved"], "featurebyte.Data.saved"),
         DocLayoutItem([DATA, INFO, "featurebyte.Data.status"], "featurebyte.Data.status"),
@@ -199,9 +199,9 @@ def _get_data_layout() -> List[DocLayoutItem]:
             [DATA, TYPE, "featurebyte.SlowlyChangingData"], "featurebyte.SlowlyChangingData"
         ),
         DocLayoutItem(
-            [DATA, UPDATE, "featurebyte.Data.update_record_creation_date_column"],
+            [DATA, UPDATE, "featurebyte.Data.update_record_creation_timestamp_column"],
             "",
-            "featurebyte.api.base_data.DataApiObject.update_record_creation_date_column.md",
+            "featurebyte.api.base_data.DataApiObject.update_record_creation_timestamp_column.md",
         ),  # TODO: this is technically not correct?
     ]
 

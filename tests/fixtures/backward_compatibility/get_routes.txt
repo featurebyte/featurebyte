@@ -1,5 +1,4 @@
 /catalog
-/status
 /context
 /dimension_data
 /entity
@@ -11,9 +10,10 @@
 /feature_namespace
 /feature_store
 /item_data
+/periodic_task
 /relationship_info
 /scd_data
 /semantic
+/status
 /tabular_data
 /task
-/periodic_task

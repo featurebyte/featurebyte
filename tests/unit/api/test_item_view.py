@@ -233,7 +233,7 @@ def test_get_view__auto_join_columns(
         LIMIT 10
         """
     ).strip()
-    assert snowflake_item_data.record_creation_date_column is None
+    assert snowflake_item_data.record_creation_timestamp_column is None
     assert preview_sql == expected_sql
 
 
@@ -551,11 +551,11 @@ def test_item_view_groupby__item_data_column(
         data_id_to_info={
             snowflake_item_data.id: {
                 "name": snowflake_item_data.name,
-                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_item_data.record_creation_timestamp_column,
             },
             snowflake_event_data.id: {
                 "name": snowflake_event_data.name,
-                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
             },
         },
     )
@@ -638,7 +638,7 @@ def test_item_view_groupby__event_data_column_derived_mixed(
         data_id_to_info={
             snowflake_item_data.id: {
                 "name": snowflake_item_data.name,
-                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_item_data.record_creation_timestamp_column,
             }
         },
     )
@@ -667,7 +667,7 @@ def test_item_view_groupby__no_value_column(snowflake_item_view, snowflake_item_
         data_id_to_info={
             snowflake_item_data.id: {
                 "name": snowflake_item_data.name,
-                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_item_data.record_creation_timestamp_column,
             }
         },
     )
@@ -720,12 +720,12 @@ def test_item_view_groupby__event_id_column(
         data_id_to_info={
             snowflake_event_data.id: {
                 "name": snowflake_event_data.name,
-                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
                 "columns_info": event_data_columns_info,
             },
             snowflake_item_data.id: {
                 "name": snowflake_item_data.name,
-                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_item_data.record_creation_timestamp_column,
                 "columns_info": item_data_columns_info,
             },
         },
@@ -932,7 +932,7 @@ def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtu
         data_id_to_info={
             saved_item_data.id: {
                 "name": saved_item_data.name,
-                "record_creation_date_column": saved_item_data.record_creation_date_column,
+                "record_creation_timestamp_column": saved_item_data.record_creation_timestamp_column,
             }
         },
     )

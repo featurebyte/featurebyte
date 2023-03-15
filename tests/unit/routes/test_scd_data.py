@@ -102,7 +102,7 @@ class TestSCDDataApi(BaseDataApiTestSuite):
             "name": "订单表",
             "tabular_source": tabular_source,
             "columns_info": cols_info,
-            "record_creation_date_column": "created_at",
+            "record_creation_timestamp_column": "created_at",
             "status": "PUBLISHED",
             "user_id": str(user_id),
             "natural_key_column": "natural_id",
@@ -130,7 +130,7 @@ class TestSCDDataApi(BaseDataApiTestSuite):
         SCD data update dict object
         """
         return {
-            "record_creation_date_column": "created_at",
+            "record_creation_timestamp_column": "created_at",
             "natural_key_column": "natural_id",
             "surrogate_key_column": "surrogate_id",
             "effective_timestamp_column": "effective_at",
@@ -149,7 +149,7 @@ class TestSCDDataApi(BaseDataApiTestSuite):
         )
         expected_info_response = {
             "name": "sf_scd_data",
-            "record_creation_date_column": None,
+            "record_creation_timestamp_column": None,
             "current_flag_column": "is_active",
             "effective_timestamp_column": "effective_timestamp",
             "end_timestamp_column": "end_timestamp",

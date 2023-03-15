@@ -111,7 +111,7 @@ def event_data_dict_fixture(snowflake_database_table):
         ],
         "event_timestamp_column": "event_timestamp",
         "event_id_column": "col_int",
-        "record_creation_date_column": "created_at",
+        "record_creation_timestamp_column": "created_at",
         "default_feature_job_setting": None,
         "created_at": None,
         "updated_at": None,
@@ -128,7 +128,7 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
         name="sf_event_data",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
     )
 
     # check that node parameter is set properly
@@ -151,7 +151,7 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
             name=123,
             event_id_column="col_int",
             event_timestamp_column=234,
-            record_creation_date_column=345,
+            record_creation_timestamp_column=345,
         )
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
@@ -167,7 +167,7 @@ def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_data
             name="sf_event_data",
             event_id_column="col_int",
             event_timestamp_column="event_timestamp",
-            record_creation_date_column="created_at",
+            record_creation_timestamp_column="created_at",
         )
     assert 'EventTable (event_data.name: "sf_event_data") exists in saved record.' in str(exc.value)
 
@@ -183,7 +183,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
                 name="sf_event_data",
                 event_id_column="col_int",
                 event_timestamp_column="event_timestamp",
-                record_creation_date_column="created_at",
+                record_creation_timestamp_column="created_at",
             )
 
 
@@ -211,12 +211,12 @@ def test_deserialization__column_name_not_found(
     """
     _ = snowflake_execute_query
     event_data_dict["feature_store"] = snowflake_feature_store
-    event_data_dict["record_creation_date_column"] = "some_random_name"
+    event_data_dict["record_creation_timestamp_column"] = "some_random_name"
     with pytest.raises(ValueError) as exc:
         EventTable.parse_obj(event_data_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
-    event_data_dict["record_creation_date_column"] = "created_at"
+    event_data_dict["record_creation_timestamp_column"] = "created_at"
     event_data_dict["event_timestamp_column"] = "some_timestamp_column"
     with pytest.raises(ValueError) as exc:
         EventTable.parse_obj(event_data_dict)
@@ -277,7 +277,7 @@ class TestEventTableTestSuite(BaseTableTestSuite):
 
 
 def test_info__event_data_without_record_creation_date(snowflake_database_table):
-    """Test info on event data with record creation date is None"""
+    """Test info on event data with record creation timestamp is None"""
     event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
@@ -300,7 +300,7 @@ def test_info(saved_event_data, cust_id_entity):
     expected_info = {
         "name": "sf_event_data",
         "event_timestamp_column": "event_timestamp",
-        "record_creation_date_column": "created_at",
+        "record_creation_timestamp_column": "created_at",
         "default_feature_job_setting": None,
         "status": "DRAFT",
         "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}],
@@ -532,7 +532,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis_no_creat
     """
     Update default feature job setting using feature job analysis
     """
-    mock_get_document.return_value = Mock(record_creation_date_column=None)
+    mock_get_document.return_value = Mock(record_creation_timestamp_column=None)
 
     with pytest.raises(RecordCreationException) as exc:
         saved_event_data.initialize_default_feature_job_setting()
@@ -620,32 +620,32 @@ async def test_update_default_job_setting__feature_job_setting_analysis_failure(
     assert "ValueError: Event Data not found" in str(exc.value)
 
 
-def test_update_record_creation_date_column__unsaved_object(snowflake_database_table):
-    """Test update record creation date column (unsaved event data)"""
+def test_update_record_creation_timestamp_column__unsaved_object(snowflake_database_table):
+    """Test update record creation timestamp column (unsaved event data)"""
     event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="event_data",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
     )
-    assert event_data.record_creation_date_column is None
-    event_data.update_record_creation_date_column("created_at")
-    assert event_data.record_creation_date_column == "created_at"
+    assert event_data.record_creation_timestamp_column is None
+    event_data.update_record_creation_timestamp_column("created_at")
+    assert event_data.record_creation_timestamp_column == "created_at"
 
 
-def test_update_record_creation_date_column__saved_object(saved_event_data):
-    """Test update record creation date column (saved event data)"""
-    saved_event_data.update_record_creation_date_column("created_at")
-    assert saved_event_data.record_creation_date_column == "created_at"
+def test_update_record_creation_timestamp_column__saved_object(saved_event_data):
+    """Test update record creation timestamp column (saved event data)"""
+    saved_event_data.update_record_creation_timestamp_column("created_at")
+    assert saved_event_data.record_creation_timestamp_column == "created_at"
 
     # check that validation logic works
     with pytest.raises(RecordUpdateException) as exc:
-        saved_event_data.update_record_creation_date_column("random_column_name")
+        saved_event_data.update_record_creation_timestamp_column("random_column_name")
     expected_msg = 'Column "random_column_name" not found in the table! (type=value_error)'
     assert expected_msg in str(exc.value)
 
     with pytest.raises(RecordUpdateException) as exc:
-        saved_event_data.update_record_creation_date_column("col_float")
+        saved_event_data.update_record_creation_timestamp_column("col_float")
     expected_msg = "Column \"col_float\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
     assert expected_msg in str(exc.value)
 
@@ -857,7 +857,7 @@ def test_default_feature_job_setting_history(saved_event_data):
         "event_id_column",
         "event_timestamp_column",
         "name",
-        "record_creation_date_column",
+        "record_creation_timestamp_column",
         "status",
         "tabular_source.feature_store_id",
         "tabular_source.table_details.database_name",
@@ -954,7 +954,7 @@ def test_event_data__entity_relation_auto_tagging(saved_event_data):
 def test_accessing_event_data_attributes(snowflake_event_data):
     """Test accessing event data object attributes"""
     assert snowflake_event_data.saved is False
-    assert snowflake_event_data.record_creation_date_column == "created_at"
+    assert snowflake_event_data.record_creation_timestamp_column == "created_at"
     assert snowflake_event_data.default_feature_job_setting is None
     assert snowflake_event_data.event_timestamp_column == "event_timestamp"
     assert snowflake_event_data.event_id_column == "col_int"
@@ -965,7 +965,7 @@ def test_accessing_saved_event_data_attributes(saved_event_data):
     """Test accessing event data object attributes"""
     assert saved_event_data.saved
     assert isinstance(saved_event_data.cached_model, EventDataModel)
-    assert saved_event_data.record_creation_date_column == "created_at"
+    assert saved_event_data.record_creation_timestamp_column == "created_at"
     assert saved_event_data.default_feature_job_setting is None
     assert saved_event_data.event_timestamp_column == "event_timestamp"
     assert saved_event_data.event_id_column == "col_int"
@@ -989,7 +989,7 @@ def test_sdk_code_generation(snowflake_database_table, update_fixtures):
         name="sf_event_data",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
     )
     check_sdk_code_generation(
         event_data.frame,

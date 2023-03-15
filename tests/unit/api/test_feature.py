@@ -1150,7 +1150,7 @@ def test_feature_create_new_version__multiple_event_data(
         name="another_event_data",
         event_id_column="col_int",
         event_timestamp_column="effective_timestamp",
-        record_creation_date_column="end_timestamp",
+        record_creation_timestamp_column="end_timestamp",
     )
     another_event_data.save()
 

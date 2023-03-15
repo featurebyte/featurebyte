@@ -301,7 +301,7 @@ class CodeGenerationConfig(BaseModel):
     feature_store_id: PydanticObjectId = Field(default_factory=ObjectId)
     feature_store_name: str = Field(default="feature_store")
 
-    # data ID to data info (name, record_creation_date_column, etc)
+    # data ID to data info (name, record_creation_timestamp_column, etc)
     data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]] = Field(default_factory=dict)
 
     # output variable name used to store the final output

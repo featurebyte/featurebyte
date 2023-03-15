@@ -162,7 +162,7 @@ def scd_data_dict_fixture(snowflake_database_table_scd_data):
         "effective_timestamp_column": "effective_timestamp",
         "end_timestamp_column": "end_timestamp",
         "current_flag": "is_active",
-        "record_creation_date_column": "created_at",
+        "record_creation_timestamp_column": "created_at",
         "created_at": None,
         "updated_at": None,
         "user_id": None,
@@ -181,7 +181,7 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
         effective_timestamp_column="effective_timestamp",
         end_timestamp_column="end_timestamp",
         current_flag_column="is_active",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
     )
 
     # check that node parameter is set properly
@@ -208,7 +208,7 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
             effective_timestamp_column="effective_timestamp",
             end_timestamp_column="end_timestamp",
             current_flag_column="is_current",
-            record_creation_date_column=345,
+            record_creation_timestamp_column=345,
         )
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
@@ -227,7 +227,7 @@ def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_dat
             effective_timestamp_column="effective_timestamp",
             end_timestamp_column="end_timestamp",
             current_flag_column="is_active",
-            record_creation_date_column="created_at",
+            record_creation_timestamp_column="created_at",
         )
     assert 'SCDTable (scd_data.name: "sf_scd_data") exists in saved record.' in str(exc.value)
 
@@ -246,7 +246,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table_scd_d
                 effective_timestamp_column="effective_timestamp",
                 end_timestamp_column="end_timestamp",
                 current_flag_column="is_active",
-                record_creation_date_column="created_at",
+                record_creation_timestamp_column="created_at",
             )
 
 
@@ -305,7 +305,7 @@ def test_scd_data__entity_relation_auto_tagging(saved_scd_data):
 def test_accessing_scd_data_attributes(snowflake_scd_data):
     """Test accessing event data object attributes"""
     assert snowflake_scd_data.saved is False
-    assert snowflake_scd_data.record_creation_date_column is None
+    assert snowflake_scd_data.record_creation_timestamp_column is None
     assert snowflake_scd_data.natural_key_column == "col_text"
     assert snowflake_scd_data.effective_timestamp_column == "effective_timestamp"
     assert snowflake_scd_data.surrogate_key_column == "col_int"
@@ -318,7 +318,7 @@ def test_accessing_saved_scd_data_attributes(saved_scd_data):
     """Test accessing event data object attributes"""
     assert saved_scd_data.saved
     assert isinstance(saved_scd_data.cached_model, SCDDataModel)
-    assert saved_scd_data.record_creation_date_column is None
+    assert saved_scd_data.record_creation_timestamp_column is None
     assert saved_scd_data.natural_key_column == "col_text"
     assert saved_scd_data.effective_timestamp_column == "effective_timestamp"
     assert saved_scd_data.surrogate_key_column == "col_int"
@@ -328,12 +328,12 @@ def test_accessing_saved_scd_data_attributes(saved_scd_data):
 
     # check synchronization
     cloned = SCDTable.get_by_id(id=saved_scd_data.id)
-    assert cloned.record_creation_date_column is None
-    saved_scd_data.update_record_creation_date_column(
-        record_creation_date_column="effective_timestamp"
+    assert cloned.record_creation_timestamp_column is None
+    saved_scd_data.update_record_creation_timestamp_column(
+        record_creation_timestamp_column="effective_timestamp"
     )
-    assert saved_scd_data.record_creation_date_column == "effective_timestamp"
-    assert cloned.record_creation_date_column == "effective_timestamp"
+    assert saved_scd_data.record_creation_timestamp_column == "effective_timestamp"
+    assert cloned.record_creation_timestamp_column == "effective_timestamp"
 
 
 def test_sdk_code_generation(snowflake_database_table_scd_data, update_fixtures):
@@ -346,7 +346,7 @@ def test_sdk_code_generation(snowflake_database_table_scd_data, update_fixtures)
         effective_timestamp_column="effective_timestamp",
         end_timestamp_column="end_timestamp",
         current_flag_column="is_active",
-        record_creation_date_column="created_at",
+        record_creation_timestamp_column="created_at",
     )
     check_sdk_code_generation(
         scd_data.frame,

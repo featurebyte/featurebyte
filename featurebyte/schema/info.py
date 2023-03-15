@@ -168,7 +168,7 @@ class DataInfo(DataBriefInfo, BaseInfo):
     Data info schema
     """
 
-    record_creation_date_column: Optional[str]
+    record_creation_timestamp_column: Optional[str]
     table_details: TableDetails
     entities: EntityBriefInfoList
     semantics: List[str]

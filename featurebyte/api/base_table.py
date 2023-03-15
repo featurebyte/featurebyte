@@ -257,7 +257,9 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
     # pydantic instance variable (internal use)
-    internal_record_creation_date_column: Optional[str] = Field(alias="record_creation_date_column")
+    internal_record_creation_timestamp_column: Optional[str] = Field(
+        alias="record_creation_timestamp_column"
+    )
 
     @property
     def table_data(self) -> BaseTableData:
@@ -288,18 +290,18 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
             return DataStatus.DRAFT
 
     @property
-    def record_creation_date_column(self) -> Optional[str]:
+    def record_creation_timestamp_column(self) -> Optional[str]:
         """
-        Record creation date column name
+        Record creation timestamp column name
 
         Returns
         -------
         Optional[str]
         """
         try:
-            return self.cached_model.record_creation_date_column  # pylint: disable=no-member
+            return self.cached_model.record_creation_timestamp_column  # pylint: disable=no-member
         except RecordRetrievalException:
-            return self.internal_record_creation_date_column
+            return self.internal_record_creation_timestamp_column
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None
@@ -312,7 +314,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         cls: Type[SourceTableApiObjectT],
         tabular_source: SourceTable,
         name: str,
-        record_creation_date_column: Optional[str] = None,
+        record_creation_timestamp_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
         **kwargs: Any,
     ) -> SourceTableApiObjectT:
@@ -325,8 +327,8 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
             DatabaseTable object constructed from FeatureStore
         name: str
             Object name
-        record_creation_date_column: str
-            Record creation datetime column from the given tabular source
+        record_creation_timestamp_column: str
+            Record creation timestamp column from the given tabular source
         _id: Optional[ObjectId]
             Identity value for constructed object
         **kwargs: Any
@@ -363,7 +365,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
             name=name,
             tabular_source=tabular_source.tabular_source,
             columns_info=tabular_source.columns_info,
-            record_creation_date_column=record_creation_date_column,
+            record_creation_timestamp_column=record_creation_timestamp_column,
             graph=graph,
             node_name=inserted_node.name,
             **kwargs,
@@ -419,17 +421,19 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         return output
 
     @typechecked
-    def update_record_creation_date_column(self, record_creation_date_column: str) -> None:
+    def update_record_creation_timestamp_column(
+        self, record_creation_timestamp_column: str
+    ) -> None:
         """
-        Update record creation date column
+        Update record creation timestamp column
 
         Parameters
         ----------
-        record_creation_date_column: str
-            Record creation date column used to perform feature job setting analysis
+        record_creation_timestamp_column: str
+            Record creation timestamp column used to perform feature job setting analysis
         """
         self.update(
-            update_payload={"record_creation_date_column": record_creation_date_column},
+            update_payload={"record_creation_timestamp_column": record_creation_timestamp_column},
             allow_update_local=True,
             add_internal_prefix=True,
         )

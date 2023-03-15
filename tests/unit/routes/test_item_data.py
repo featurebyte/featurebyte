@@ -139,7 +139,7 @@ class TestItemDataApi(BaseDataApiTestSuite):
         )
         expected_info_response = {
             "name": "sf_item_data",
-            "record_creation_date_column": None,
+            "record_creation_timestamp_column": None,
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",

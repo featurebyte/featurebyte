@@ -106,7 +106,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
             "name": "订单表",
             "tabular_source": tabular_source,
             "columns_info": cols_info,
-            "record_creation_date_column": "created_at",
+            "record_creation_timestamp_column": "created_at",
             "status": "PUBLISHED",
             "user_id": str(user_id),
             "dimension_id_column": "dimension_id",  # this value needs to match the column name used in test data
@@ -130,7 +130,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
         Dimension data update dict object
         """
         return {
-            "record_creation_date_column": "created_at",
+            "record_creation_timestamp_column": "created_at",
         }
 
     @pytest.mark.asyncio
@@ -144,7 +144,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
         )
         expected_info_response = {
             "name": "sf_dimension_data",
-            "record_creation_date_column": "created_at",
+            "record_creation_timestamp_column": "created_at",
             "dimension_id_column": "col_int",
             "table_details": {
                 "database_name": "sf_database",

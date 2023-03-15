@@ -26,7 +26,7 @@ class DataCreate(FeatureByteBaseModel):
     name: StrictStr
     tabular_source: TabularSource
     columns_info: List[ColumnInfo]
-    record_creation_date_column: Optional[StrictStr]
+    record_creation_timestamp_column: Optional[StrictStr]
 
     # pydantic validators
     _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
@@ -39,7 +39,7 @@ class DataUpdate(FeatureByteBaseModel):
 
     columns_info: Optional[List[ColumnInfo]]
     status: Optional[DataStatus]
-    record_creation_date_column: Optional[StrictStr]
+    record_creation_timestamp_column: Optional[StrictStr]
 
     # pydantic validators
     _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)

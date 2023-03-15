@@ -123,12 +123,12 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocume
         List of event data columns
     status: DataStatus
         Data status
-    record_creation_date_column: Optional[str]
-        Record creation date column name
+    record_creation_timestamp_column: Optional[str]
+        Record creation timestamp column name
     """
 
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
-    record_creation_date_column: Optional[StrictStr]
+    record_creation_timestamp_column: Optional[StrictStr]
     _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
     @property

@@ -232,7 +232,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         await persistent.update_one(
             collection_name="tabular_data",
             query_filter={},
-            update={"$set": {"record_creation_date_column": None}},
+            update={"$set": {"record_creation_timestamp_column": None}},
             user_id=None,
         )
 

@@ -203,7 +203,7 @@ class EventDataInputNodeParameters(BaseInputNodeParameters):
 
     def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "record_creation_date_column": data_info.get("record_creation_date_column"),
+            "record_creation_timestamp_column": data_info.get("record_creation_timestamp_column"),
             "event_id_column": self.id_column,
             "event_timestamp_column": self.timestamp_column,
             "_id": ClassEnum.OBJECT_ID(self.id),
@@ -235,7 +235,7 @@ class ItemDataInputNodeParameters(BaseInputNodeParameters):
 
     def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "record_creation_date_column": data_info.get("record_creation_date_column"),
+            "record_creation_timestamp_column": data_info.get("record_creation_timestamp_column"),
             "item_id_column": self.id_column,
             "event_id_column": self.event_id_column,
             "event_data_id": ClassEnum.OBJECT_ID(self.event_data_id),
@@ -269,7 +269,7 @@ class DimensionDataInputNodeParameters(BaseInputNodeParameters):
 
     def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "record_creation_date_column": data_info.get("record_creation_date_column"),
+            "record_creation_timestamp_column": data_info.get("record_creation_timestamp_column"),
             "dimension_id_column": self.id_column,
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
@@ -306,7 +306,7 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
 
     def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "record_creation_date_column": data_info.get("record_creation_date_column"),
+            "record_creation_timestamp_column": data_info.get("record_creation_timestamp_column"),
             "natural_key_column": self.natural_key_column,
             "effective_timestamp_column": self.effective_timestamp_column,
             "end_timestamp_column": self.end_timestamp_column,

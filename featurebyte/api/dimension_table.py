@@ -55,7 +55,10 @@ class DimensionTable(TableApiObject):
         construct_data_model_root_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
-                ("internal_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                (
+                    "internal_record_creation_timestamp_column",
+                    DBVarType.supported_timestamp_types(),
+                ),
                 ("internal_dimension_id_column", DBVarType.supported_id_types()),
             ],
         )
@@ -74,7 +77,7 @@ class DimensionTable(TableApiObject):
         ----------
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
-            from the data and the record creation date column will be dropped
+            from the table and the record creation timestamp column will be dropped
         drop_column_names: Optional[List[str]]
             List of column names to drop (manual mode only)
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
@@ -99,8 +102,8 @@ class DimensionTable(TableApiObject):
         #    | InputNode + --> | GraphNode(type:dimension_view) +
         #    +-----------+     +--------------------------------+
         drop_column_names = drop_column_names or []
-        if view_mode == ViewMode.AUTO and self.record_creation_date_column:
-            drop_column_names.append(self.record_creation_date_column)
+        if view_mode == ViewMode.AUTO and self.record_creation_timestamp_column:
+            drop_column_names.append(self.record_creation_timestamp_column)
 
         data_node = self.frame.node
         assert isinstance(data_node, InputNode)
@@ -156,7 +159,7 @@ class DimensionTable(TableApiObject):
         tabular_source: SourceTable,
         name: str,
         dimension_id_column: str,
-        record_creation_date_column: Optional[str] = None,
+        record_creation_timestamp_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> DimensionTable:
         """
@@ -170,8 +173,8 @@ class DimensionTable(TableApiObject):
             Dimension data name
         dimension_id_column: str
             Dimension data ID column from the given tabular source
-        record_creation_date_column: str
-            Record creation datetime column from the given tabular source
+        record_creation_timestamp_column: str
+            Record creation timestamp column from the given tabular source
         _id: Optional[ObjectId]
             Identity value for constructed object
 
@@ -191,7 +194,7 @@ class DimensionTable(TableApiObject):
         ...      table_name="POSTAL_CODES"
         ...    ),
         ...    dimension_id_column="POSTAL_CODE_ID",
-        ...    record_creation_date_column="RECORD_AVAILABLE_AT",
+        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
         ... )
 
         Get information about the DimensionTable
@@ -201,7 +204,7 @@ class DimensionTable(TableApiObject):
         return super().create(
             tabular_source=tabular_source,
             name=name,
-            record_creation_date_column=record_creation_date_column,
+            record_creation_timestamp_column=record_creation_timestamp_column,
             _id=_id,
             dimension_id_column=dimension_id_column,
         )

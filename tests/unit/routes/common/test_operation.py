@@ -48,7 +48,7 @@ def input_dict_fixture():
     return {
         "name": "event_data",
         "event_timestamp_column": "event_timestamp",
-        "record_creation_date_column": "created_at",
+        "record_creation_timestamp_column": "created_at",
         "columns_info": [
             {"name": "event_timestamp", "dtype": "timestamp"},
             {"name": "created_at", "dtype": "timestamp"},

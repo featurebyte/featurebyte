@@ -82,7 +82,7 @@
     "end_timestamp_column": "end_timestamp",
     "name": "sf_scd_data",
     "natural_key_column": "col_text",
-    "record_creation_date_column": null,
+    "record_creation_timestamp_column": null,
     "surrogate_key_column": "col_int",
     "tabular_source": {
         "feature_store_id": "63ff1a9c5631c515f17fc66e",

@@ -705,7 +705,7 @@ class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
         """Parametrize fixture at runtime"""
         base_update_unprocessable_payload_expected_detail_pairs = [
             (
-                {"record_creation_date_column": "non-exist-columns"},
+                {"record_creation_timestamp_column": "non-exist-columns"},
                 (
                     f"1 validation error for {self.class_name}Model\n"
                     "__root__\n  "
@@ -713,7 +713,7 @@ class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
                 ),
             ),
             (
-                {"record_creation_date_column": "item_id"},
+                {"record_creation_timestamp_column": "item_id"},
                 (
                     f"1 validation error for {self.class_name}Model\n"
                     f"__root__\n  "
@@ -934,19 +934,19 @@ class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
         data_response,
     ):
         """
-        Update Event Data record creation date column
+        Update Event Data record creation timestamp column
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
 
         update_response = test_api_client.patch(
             f"{self.base_route}/{response_dict['_id']}",
-            json={"record_creation_date_column": "another_created_at"},
+            json={"record_creation_timestamp_column": "another_created_at"},
         )
         update_response_dict = update_response.json()
         expected_response = {
             **response_dict,
-            "record_creation_date_column": "another_created_at",
+            "record_creation_timestamp_column": "another_created_at",
         }
         expected_response.pop("updated_at")
         assert update_response_dict.items() > expected_response.items()

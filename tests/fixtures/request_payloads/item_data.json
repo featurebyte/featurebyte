@@ -53,7 +53,7 @@
     "event_id_column": "event_id_col",
     "item_id_column": "item_id_col",
     "name": "sf_item_data",
-    "record_creation_date_column": null,
+    "record_creation_timestamp_column": null,
     "tabular_source": {
         "feature_store_id": "63ff1a9c5631c515f17fc66e",
         "table_details": {

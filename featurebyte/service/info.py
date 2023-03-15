@@ -247,7 +247,7 @@ class InfoService(BaseService):
             "name": data_document.name,
             "created_at": data_document.created_at,
             "updated_at": data_document.updated_at,
-            "record_creation_date_column": data_document.record_creation_date_column,
+            "record_creation_timestamp_column": data_document.record_creation_timestamp_column,
             "table_details": data_document.tabular_source.table_details,
             "status": data_document.status,
             "entities": EntityBriefInfoList.from_paginated_data(entities),
