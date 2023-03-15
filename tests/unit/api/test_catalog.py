@@ -37,6 +37,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import FeatureNamespace
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_list import FeatureListNamespace
+from featurebyte.config import reset_to_default_catalog
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
@@ -363,6 +364,7 @@ def test_get_catalog():
     # activate a catalog
     Catalog.activate(creditcard_catalog.name)
     assert (Catalog.list()["active"] == [False, True, False, False]).all()
+    reset_to_default_catalog()
 
 
 def test_activate():
@@ -386,7 +388,7 @@ def test_activate():
     assert Entity.list()["name"].tolist() == ["CreditCardCustomer"]
 
     # switch to default catalog
-    Catalog.activate("default")
+    reset_to_default_catalog()
     assert Entity.list()["name"].tolist() == []
 
 
@@ -423,3 +425,5 @@ def test_list_functions_are_called_from_active_catalog(list_function):
     # Switch to credit card, verify no error.
     credit_card_catalog = Catalog.activate("creditcard")
     credit_card_catalog.list_features()
+
+    reset_to_default_catalog()
