@@ -78,7 +78,6 @@ def get_methods_to_test():
         ListMethodMetadata(Catalog.list_feature_stores, FeatureStore),
         ListMethodMetadata(Catalog.list_entities, Entity),
         ListMethodMetadata(Catalog.list_periodic_tasks, PeriodicTask),
-        ListMethodMetadata(Catalog.list_catalogs, Catalog),
     ]
 
 
@@ -110,7 +109,7 @@ def test_all_list_methods_are_exposed_in_catalog(methods_to_test):
     If we don't want to add them, we can add them to the excluded_children set.
     """
     api_object_children = _inheritors(ApiObject)
-    excluded_children = {SavableApiObject, TableListMixin, FeatureJobMixin, TableApiObject}
+    excluded_children = {SavableApiObject, TableListMixin, FeatureJobMixin, TableApiObject, Catalog}
     assert len(api_object_children) == len(methods_to_test) + len(excluded_children)
 
     for method_item in methods_to_test:
@@ -134,10 +133,10 @@ def test_list_methods_have_same_parameters_as_delegated_list_method_call(method_
     if method_item.list_method_override:
         underlying_class_method = getattr(underlying_class, method_item.list_method_override)
     underlying_class_list_method_signature = signature(underlying_class_method)
-    assert (
-        catalog_list_method_signature.parameters.keys()
-        == underlying_class_list_method_signature.parameters.keys()
-    ), f"catalog method: {catalog_list_method}, underlying_class {underlying_class}"
+    assert [*catalog_list_method_signature.parameters.keys()] == [
+        "self",
+        *underlying_class_list_method_signature.parameters.keys(),
+    ], f"catalog method: {catalog_list_method}, underlying_class {underlying_class}"
 
 
 @pytest.mark.parametrize(
@@ -150,8 +149,10 @@ def test_list_methods_call_the_correct_delegated_method(method_item):
     """
     # Assert that the delegated list method is called
     method_name = method_item.list_method_to_patch or "list"
+    catalog = Catalog.create("random")
     with patch.object(method_item.class_object, method_name) as mocked_list:
-        method_item.catalog_method()
+        catalog_method_to_call = getattr(catalog, method_item.catalog_method.__name__)
+        catalog_method_to_call()
         mocked_list.assert_called()
 
 
@@ -320,10 +321,10 @@ def test_get_catalog():
             Catalog.get("anything")
     assert "Failed to retrieve the specified object." in str(exc.value)
 
+    # default catalog is created automatically
+    default_catalog = Catalog.activate("default")
     # test list catalog names
     catalog_list = Catalog.list()
-    # default catalog is created automatically
-    default_catalog = Catalog.get("default")
     expected_catalog_list = pd.DataFrame(
         {
             "name": [
