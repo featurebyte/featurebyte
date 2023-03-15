@@ -29,9 +29,9 @@ if TYPE_CHECKING:
 
 class DimensionTable(TableApiObject):
     """
-    Dimension Data is a data source object connected with a Dimension table in the data warehouse that has static data.
+    Dimension Table is a data source object connected with a Dimension table in the data warehouse that has static data.
 
-    To build features, users create Dimension Views from Dimension Data
+    To build features, users create Dimension Views from Dimension Table
     """
 
     # documentation metadata

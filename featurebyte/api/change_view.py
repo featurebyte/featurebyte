@@ -30,15 +30,15 @@ class ChangeViewColumn(LaggableViewColumn):
 
 class ChangeView(View, GroupByMixin):
     """
-    ChangeView is used to capture changes in slowly changing data in an easy manner. This is useful as changes in
-    SCD data may constitute powerful features such as:\n
+    ChangeView is used to capture changes in SCDTable in an easy manner. This is useful as changes in
+    SCDTable may constitute powerful features such as:\n
     - how many times has a customer moved in the past 6 months?\n
     - if they moved the past 6 months, where did they use to live?\n
     - did they get divorced recently?\n
     - did they have any new kids in the family?\n
     - do they have a new job?
 
-    To support such important features, users can create a Change View from SCD Data.
+    To support such important features, users can create a Change View from SCDTable.
 
     This new view tracks all changes for a given column. The resulting view has 5 columns:\n
     - past_valid_from_timestamp\n
@@ -49,7 +49,7 @@ class ChangeView(View, GroupByMixin):
     - new_NAME_OF_COLUMN: value of the column after the change
 
     To create this Change View, Users need to provide:\n
-    - the name of the SCD data\n
+    - the name of the SCD table\n
     - the name of the SCD column for which they want to track changes
 
     Optionally, the default Feature Job Setting for the View. If non is provided, we will default to once a day, at the
