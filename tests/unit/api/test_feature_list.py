@@ -10,7 +10,6 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import (
     BaseFeatureGroup,
@@ -18,7 +17,6 @@ from featurebyte.api.feature_list import (
     FeatureList,
     FeatureListNamespace,
 )
-from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import InternalName
 from featurebyte.exception import (
@@ -364,7 +362,7 @@ def test_feature_group__setitem__with_series_not_allowed(production_ready_featur
     """
     Test that FeatureGroup.__setitem__ for a series is not allowed.
     """
-    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    scd_view = saved_scd_data.get_view()
     series = scd_view["col_int"]
     feature_group = FeatureGroup([production_ready_feature])
     with pytest.raises(TypeError) as exc:
@@ -1168,7 +1166,7 @@ def test_get_feature_jobs_status_feature_without_tile(
     mock_execute_query.return_value = feature_job_logs[:0]
     saved_scd_data["col_text"].as_entity(cust_id_entity.name)
     snowflake_event_data.save()
-    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    scd_view = saved_scd_data.get_view()
     feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
     feature_list = FeatureList([feature, float_feature], name="FeatureList")
     feature_list.save()

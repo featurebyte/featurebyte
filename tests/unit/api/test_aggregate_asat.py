@@ -5,7 +5,6 @@ import pytest
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
-from featurebyte.api.scd_view import SlowlyChangingView
 from tests.util.helper import check_sdk_code_generation, get_node
 
 
@@ -24,7 +23,7 @@ def scd_view_with_entity(snowflake_scd_data, entity_col_int):
     Entity(name="col_text_entity", serving_names=["col_text"]).save()
     snowflake_scd_data["col_text"].as_entity("col_text_entity")
     snowflake_scd_data["col_int"].as_entity("col_int_entity")
-    return SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    return snowflake_scd_data.get_view()
 
 
 def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_data, entity_col_int):

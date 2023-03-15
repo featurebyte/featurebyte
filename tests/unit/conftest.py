@@ -15,7 +15,7 @@ from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
-from featurebyte import FeatureJobSetting, ItemView, MissingValueImputation, SnowflakeDetails
+from featurebyte import FeatureJobSetting, MissingValueImputation, SnowflakeDetails
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
@@ -744,7 +744,7 @@ def get_non_time_based_feature_fixture(snowflake_item_data, transaction_entity):
     """
     snowflake_item_data.event_id_col.as_entity(transaction_entity.name)
     item_data = ItemData(**{**snowflake_item_data.json_dict(), "item_id_column": "event_id_col"})
-    item_view = ItemView.from_item_data(item_data, event_suffix="_event_table")
+    item_view = item_data.get_view(event_suffix="_event_table")
     return item_view.groupby("event_id_col").aggregate(
         value_column="item_amount",
         method=AggFunc.SUM,

@@ -9,16 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import (
-    AggFunc,
-    EventData,
-    FeatureJobSetting,
-    FeatureList,
-    ItemView,
-    SlowlyChangingView,
-    SourceType,
-    to_timedelta,
-)
+from featurebyte import AggFunc, EventData, FeatureJobSetting, FeatureList, SourceType, to_timedelta
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.node.schema import ColumnSpec
@@ -973,7 +964,7 @@ def get_non_time_based_feature_fixture(item_data):
 
     This is a non-time-based feature as it is built from ItemData.
     """
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
     return item_view.groupby("order_id").aggregate(
         method=AggFunc.COUNT,
         feature_name="non_time_count_feature",
@@ -1033,7 +1024,7 @@ def test_add_feature_on_view_with_join(event_view, scd_data, non_time_based_feat
     Test add feature when the input EventView involves a join
     """
     # update the view with a join first
-    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    scd_view = scd_data.get_view()
     event_view.join(scd_view)
     original_column_names = [col.name for col in event_view.columns_info]
 

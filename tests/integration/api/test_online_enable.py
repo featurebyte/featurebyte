@@ -3,7 +3,7 @@ Integration test for online enabling features
 """
 import pytest
 
-from featurebyte import FeatureList, ItemView
+from featurebyte import FeatureList
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
@@ -66,7 +66,7 @@ async def test_online_enable_non_time_aware_feature(item_data, config):
     """
     Test online enabling a non-time aware feature
     """
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
     feature = item_view.groupby("order_id").aggregate(
         method="count", feature_name="my_item_feature_for_online_enable_test"
     )

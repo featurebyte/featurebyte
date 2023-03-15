@@ -3,7 +3,7 @@ DataColumn class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Type, TypeVar, cast
+from typing import Any, ClassVar, List, Optional, Tuple, Type, TypeVar, cast
 
 from http import HTTPStatus
 
@@ -18,6 +18,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
+from featurebyte.enum import ViewMode
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DataStatus, FeatureStoreModel
@@ -29,10 +30,14 @@ from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.cleaning_operation import CleaningOperation
+from featurebyte.query_graph.node.cleaning_operation import (
+    CleaningOperation,
+    ColumnCleaningOperation,
+)
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
+TableDataT = TypeVar("TableDataT", bound=BaseTableData)
 
 
 class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
@@ -431,3 +436,68 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
             allow_update_local=True,
             add_internal_prefix=True,
         )
+
+    @staticmethod
+    def _validate_view_mode_params(
+        view_mode: ViewMode,
+        drop_column_names: Optional[List[str]],
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]],
+        event_drop_column_names: Optional[List[str]] = None,
+        event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
+        event_join_column_names: Optional[List[str]] = None,
+    ) -> None:
+        """
+        Validate parameters passed from_*_data method
+
+        Parameters
+        ----------
+        view_mode: ViewMode
+            ViewMode
+        drop_column_names: Optional[List[str]]
+            List of column names to drop
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
+            List of column cleaning operations
+        event_drop_column_names: Optional[List[str]]
+            List of event column names to drop
+        event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
+            List of event column cleaning operations
+        event_join_column_names: Optional[List[str]]
+            List of event join column names
+
+        Raises
+        ------
+        ValueError
+            If any of the parameters are passed in auto mode
+        """
+        manual_mode_only_params = {
+            "drop_column_names": drop_column_names,
+            "column_cleaning_operations": column_cleaning_operations,
+            "event_drop_column_names": event_drop_column_names,
+            "event_column_cleaning_operations": event_column_cleaning_operations,
+            "event_join_column_names": event_join_column_names,
+        }
+        non_empty_params = [name for name, value in manual_mode_only_params.items() if value]
+        if view_mode == ViewMode.AUTO and any(non_empty_params):
+            params = ", ".join(non_empty_params)
+            is_or_are = "is" if len(non_empty_params) == 1 else "are"
+            raise ValueError(f"{params} {is_or_are} only supported in manual mode")
+
+    @staticmethod
+    def _prepare_table_data_and_column_cleaning_operations(
+        table_data: TableDataT,
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]],
+        view_mode: ViewMode,
+    ) -> Tuple[TableDataT, List[ColumnCleaningOperation]]:
+        column_cleaning_operations = column_cleaning_operations or []
+        if view_mode == ViewMode.MANUAL:
+            table_data = table_data.clone(column_cleaning_operations=column_cleaning_operations)
+        else:
+            column_cleaning_operations = [
+                ColumnCleaningOperation(
+                    column_name=col.name,
+                    cleaning_operations=col.critical_data_info.cleaning_operations,
+                )
+                for col in table_data.columns_info
+                if col.critical_data_info and col.critical_data_info.cleaning_operations
+            ]
+        return table_data, column_cleaning_operations

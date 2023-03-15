@@ -28,7 +28,7 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
-from featurebyte import DatabricksDetails, DimensionView, FeatureJobSetting, SnowflakeDetails
+from featurebyte import DatabricksDetails, FeatureJobSetting, SnowflakeDetails
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -1208,7 +1208,7 @@ def dimension_view_fixture(dimension_data):
     """
     Fixture for a DimensionView
     """
-    return DimensionView.from_dimension_data(dimension_data)
+    return dimension_data.get_view()
 
 
 @pytest.fixture(name="get_cred")

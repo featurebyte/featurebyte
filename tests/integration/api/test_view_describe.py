@@ -4,10 +4,6 @@ Test API View objects describe function
 import pandas as pd
 from pandas.testing import assert_series_equal
 
-from featurebyte.api.dimension_view import DimensionView
-from featurebyte.api.item_view import ItemView
-from featurebyte.api.scd_view import SlowlyChangingView
-
 
 def _to_utc_no_offset(date):
     """
@@ -123,7 +119,7 @@ def test_item_view_describe(item_data):
     """
     Test describe for ItemView
     """
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
 
     describe_df = item_view.describe()
     assert describe_df.columns.tolist() == [
@@ -170,7 +166,7 @@ def test_dimension_view_describe(dimension_data):
     """
     Test sample for DimensionView
     """
-    dimension_view = DimensionView.from_dimension_data(dimension_data)
+    dimension_view = dimension_data.get_view()
     describe_df = dimension_view.describe()
     assert describe_df.columns.tolist() == [
         "created_at",
@@ -196,7 +192,7 @@ def test_scd_view_describe(scd_data):
     """
     Test sample for DimensionView
     """
-    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    scd_view = scd_data.get_view()
     describe_df = scd_view.describe()
     assert describe_df.columns.tolist() == [
         "Effective Timestamp",

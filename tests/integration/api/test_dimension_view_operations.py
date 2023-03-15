@@ -5,7 +5,7 @@ Integration tests related to DimensionView
 import pandas as pd
 import pytest
 
-from featurebyte import Feature, ItemView
+from featurebyte import Feature
 from featurebyte.common.typing import is_scalar_nan
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
@@ -27,7 +27,7 @@ def count_item_type_dictionary_feature_fixture(item_data):
 
     Feature is grouped by ORDER_ID, with ITEM_TYPE as their category.
     """
-    item_data = ItemView.from_item_data(item_data)
+    item_data = item_data.get_view()
     return item_data.groupby("order_id", category="item_type").aggregate(
         method="count",
         feature_name="COUNT_ITEM_TYPE",

@@ -10,14 +10,10 @@ from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.api.base_data import DataColumn
-from featurebyte.api.change_view import ChangeView
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
-from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
-from featurebyte.api.item_view import ItemView
-from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.models.feature_store import DataStatus
 
 
@@ -254,7 +250,7 @@ def snowflake_item_view_fixture(snowflake_item_data):
     """
     ItemView fixture
     """
-    item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
+    item_view = snowflake_item_data.get_view(event_suffix="_event_table")
     yield item_view
 
 
@@ -263,7 +259,7 @@ def snowflake_dimension_view_fixture(snowflake_dimension_data):
     """
     DimensionView fixture
     """
-    dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    dimension_view = snowflake_dimension_data.get_view()
     yield dimension_view
 
 
@@ -272,7 +268,7 @@ def snowflake_slowly_changing_view_fixture(snowflake_scd_data):
     """
     SlowlyChangingView fixture
     """
-    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    scd_view = snowflake_scd_data.get_view()
     yield scd_view
 
 
@@ -281,7 +277,7 @@ def snowflake_change_view(snowflake_scd_data):
     """
     ChangeView fixture
     """
-    change_view = ChangeView.from_slowly_changing_data(snowflake_scd_data, "col_int")
+    change_view = snowflake_scd_data.get_change_view("col_int")
     yield change_view
 
 

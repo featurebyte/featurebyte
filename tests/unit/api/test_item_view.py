@@ -35,7 +35,6 @@ class TestItemView(BaseViewTestSuite):
     protected_columns = ["event_id_col", "item_id_col", "event_timestamp"]
     view_type = ViewType.ITEM_VIEW
     col = "item_amount"
-    factory_method = ItemView.from_item_data
     view_class = ItemView
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
@@ -65,7 +64,7 @@ class TestItemView(BaseViewTestSuite):
         return
 
 
-def test_from_item_data__auto_join_columns(
+def test_get_view__auto_join_columns(
     snowflake_item_data,
     snowflake_event_data_id,
     snowflake_item_data_id,
@@ -73,7 +72,7 @@ def test_from_item_data__auto_join_columns(
     """
     Test ItemView automatically joins timestamp column and entity columns from related EventData
     """
-    view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
+    view = snowflake_item_data.get_view(event_suffix="_event_table")
     view_dict = view.dict()
 
     # Check node is a join node which will make event timestamp and EventData entities available
@@ -424,7 +423,7 @@ def test_join_event_data_attributes__missing_required_event_suffix(snowflake_ite
     Test when event_suffix is required but not provided
     """
     with pytest.raises(RepeatedColumnNamesError) as exc:
-        ItemView.from_item_data(snowflake_item_data)
+        snowflake_item_data.get_view()
     assert "Duplicate column names ['event_timestamp'] found" in str(exc.value)
 
 
@@ -444,7 +443,7 @@ def test_item_view__item_data_same_event_id_column_as_event_data(
     Test creating ItemView when ItemData has the same event_id_column as EventData
     """
     # No need to specify event_suffix
-    item_view = ItemView.from_item_data(snowflake_item_data_same_event_id)
+    item_view = snowflake_item_data_same_event_id.get_view()
     assert item_view.timestamp_column == "event_timestamp"
 
     view_dict = item_view.dict()
@@ -681,7 +680,7 @@ def test_item_view_groupby__event_id_column(
     Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
     """
     snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
+    snowflake_item_view = snowflake_item_data.get_view(event_suffix="_event_table")
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
         method=AggFunc.COUNT,
         feature_name="order_size",
@@ -748,7 +747,7 @@ def test_validate_simple_aggregate_parameters(snowflake_item_data, transaction_e
     """
     snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
     snowflake_item_data["item_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
+    snowflake_item_view = snowflake_item_data.get_view(event_suffix="_event_table")
 
     # no error expected as other_col is not from event data
     group_by = snowflake_item_view.groupby("event_id_col")
@@ -775,7 +774,7 @@ def test_validate_aggregate_over_parameters(snowflake_item_data, transaction_ent
     """
     snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
     snowflake_item_data["item_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
+    snowflake_item_view = snowflake_item_data.get_view(event_suffix="_event_table")
 
     # no error expected as other_col is not from event data
     group_by = snowflake_item_view.groupby("item_id_col")
@@ -802,7 +801,7 @@ def test_validate_aggregate_over_parameters(snowflake_item_data, transaction_ent
 def non_time_based_saved_feature_fixture(saved_item_data, transaction_entity):
     """Non-time-based saved feature fixture"""
     saved_item_data["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = ItemView.from_item_data(saved_item_data, event_suffix="_event_table")
+    snowflake_item_view = saved_item_data.get_view(event_suffix="_event_table")
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
         method="count",
         feature_name="order_size",
@@ -896,7 +895,7 @@ def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtu
     """
     Test calling as_feature() from ItemView column
     """
-    view = ItemView.from_item_data(saved_item_data, event_suffix="_event_data")
+    view = saved_item_data.get_view(event_suffix="_event_data")
     feature = view["item_amount"].as_feature("ItemAmountFeature")
     assert feature.name == "ItemAmountFeature"
     assert feature.dtype == DBVarType.FLOAT
@@ -982,7 +981,7 @@ def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtu
 def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
-    item_view = ItemView.from_item_data(saved_item_data, event_suffix="_event_data")
+    item_view = saved_item_data.get_view(event_suffix="_event_data")
     check_sdk_code_generation(
         item_view,
         to_use_saved_data=to_use_saved_data,
@@ -993,8 +992,7 @@ def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures)
     )
 
     # add some cleaning operations during view construction
-    item_view = ItemView.from_item_data(
-        saved_item_data,
+    item_view = saved_item_data.get_view(
         event_suffix="_event_data",
         view_mode="manual",
         column_cleaning_operations=[

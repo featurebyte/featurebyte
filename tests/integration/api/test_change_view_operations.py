@@ -8,7 +8,6 @@ import pandas as pd
 import pytest
 
 from featurebyte import AggFunc, FeatureList
-from featurebyte.api.change_view import ChangeView
 
 
 @pytest.fixture
@@ -28,7 +27,7 @@ def test_change_view(scd_data):
     """
     Test change view operations
     """
-    change_view = ChangeView.from_slowly_changing_data(scd_data, "User Status")
+    change_view = scd_data.get_change_view("User Status")
 
     # assert initialization
     assert len(change_view.columns_info) == 5
@@ -64,7 +63,7 @@ def test_change_view__feature_no_entity(scd_data):
     """
     Test change view operations
     """
-    change_view = ChangeView.from_slowly_changing_data(scd_data, "User Status")
+    change_view = scd_data.get_change_view("User Status")
 
     # assert that we can get features
     expected = {
