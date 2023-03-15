@@ -226,30 +226,30 @@ def test_get_catalog():
     assert "Failed to list /catalog." in str(exc.value)
 
     # activate a catalog
-    Catalog.activate_catalog(creditcard_catalog.name)
+    Catalog.activate(creditcard_catalog.name)
     assert (Catalog.list()["active"] == [False, True, False, False]).all()
 
 
-def test_activate_catalog():
+def test_activate():
     """
     Test Catalog.activate
     """
     # create catalogs & save to persistent
-    grocery_catalog = Catalog.create(name="grocery")
-    creditcard_catalog = Catalog.create(name="creditcard")
+    Catalog.create(name="grocery")
+    Catalog.create(name="creditcard")
 
     # create entity in grocery catalog
-    grocery_catalog.activate()
+    grocery_catalog = Catalog.activate("grocery")
     assert Catalog.get_active() == grocery_catalog
     Entity(name="GroceryCustomer", serving_names=["cust_id"]).save()
     assert Entity.list()["name"].tolist() == ["GroceryCustomer"]
 
     # create entity in creditcard catalog with same serving_names
-    Catalog.activate_catalog("creditcard")
+    creditcard_catalog = Catalog.activate("creditcard")
     assert Catalog.get_active() == creditcard_catalog
     Entity(name="CreditCardCustomer", serving_names=["cust_id"]).save()
     assert Entity.list()["name"].tolist() == ["CreditCardCustomer"]
 
     # switch to default catalog
-    Catalog.activate_catalog("default")
+    Catalog.activate("default")
     assert Entity.list()["name"].tolist() == []
