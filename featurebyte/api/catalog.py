@@ -148,8 +148,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return self._get_audit_history(field_name="name")
 
-    @staticmethod
     def list_features(
+        self,
         include_id: Optional[bool] = False,
         feature_list_id: Optional[ObjectId] = None,
         entity: Optional[str] = None,
@@ -178,8 +178,8 @@ class Catalog(CatalogModel, SavableApiObject):
             include_id=include_id, feature_list_id=feature_list_id, entity=entity, data=data
         )
 
-    @staticmethod
     def list_feature_namespaces(
+        self,
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
         data: Optional[str] = None,
@@ -203,8 +203,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureNamespace.list(include_id=include_id, entity=entity, data=data)
 
-    @staticmethod
     def list_feature_list_namespaces(
+        self,
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
         data: Optional[str] = None,
@@ -228,8 +228,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureListNamespace.list(include_id=include_id, entity=entity, data=data)
 
-    @staticmethod
     def list_feature_lists(
+        self,
         include_id: Optional[bool] = False,
     ) -> pd.DataFrame:
         """
@@ -247,9 +247,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureList.list_versions(include_id=include_id)
 
-    @staticmethod
     def list_tables(
-        include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List saved tables
@@ -268,9 +267,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return Table.list(include_id=include_id, entity=entity)
 
-    @staticmethod
     def list_dimension_tables(
-        include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List saved dimension table sources
@@ -289,9 +287,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return DimensionTable.list(include_id=include_id, entity=entity)
 
-    @staticmethod
     def list_item_tables(
-        include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List saved item table sources
@@ -310,9 +307,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return ItemTable.list(include_id=include_id, entity=entity)
 
-    @staticmethod
     def list_event_tables(
-        include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List saved event table sources
@@ -331,9 +327,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return EventTable.list(include_id=include_id, entity=entity)
 
-    @staticmethod
     def list_scd_tables(
-        include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List saved SCD table sources
@@ -352,9 +347,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return SCDTable.list(include_id=include_id, entity=entity)
 
-    @staticmethod
     def list_relationships(
-        include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
+        self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
         """
         List all relationships that exist in your FeatureByte instance, or filtered by relationship type.
@@ -397,8 +391,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return Relationship.list(include_id=include_id, relationship_type=relationship_type)
 
-    @staticmethod
     def list_feature_job_setting_analyses(
+        self,
         include_id: Optional[bool] = False,
         event_data_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
@@ -419,25 +413,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureJobSettingAnalysis.list(include_id=include_id, event_data_id=event_data_id)
 
-    @staticmethod
-    def list_catalogs(include_id: Optional[bool] = False) -> pd.DataFrame:
-        """
-        List saved catalogs
-
-        Parameters
-        ----------
-        include_id: Optional[bool]
-            Whether to include id in the list
-
-        Returns
-        -------
-        pd.DataFrame
-            Table of catalogs
-        """
-        return Catalog.list(include_id=include_id)
-
-    @staticmethod
-    def list_feature_stores(include_id: Optional[bool] = False) -> pd.DataFrame:
+    def list_feature_stores(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved feature stores
 
@@ -453,8 +429,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureStore.list(include_id=include_id)
 
-    @staticmethod
-    def list_entities(include_id: Optional[bool] = False) -> pd.DataFrame:
+    def list_entities(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved entities
 
@@ -470,8 +445,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return Entity.list(include_id=include_id)
 
-    @staticmethod
-    def list_periodic_tasks(include_id: Optional[bool] = False) -> pd.DataFrame:
+    def list_periodic_tasks(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved periodic tasks
 
