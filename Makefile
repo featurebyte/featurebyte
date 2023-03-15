@@ -93,6 +93,9 @@ test-integration-snowflake:
 test-integration-spark:
 	poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
 
+test-docs:
+	poetry run pytest --timeout=240 featurebyte
+
 test-merge:
 	echo "coverage: platform" > pytest-coverage.txt
 	poetry run coverage combine
@@ -115,6 +118,10 @@ docker-build: | build-hive-udf-jar
 docker-dev: | docker-build
 	poetry run featurebyte start --local
 	poetry run featurebyte start spark --local
+
+docker-dev-stop:
+	poetry run featurebyte stop
+	poetry run featurebyte stop spark
 
 #* Cleaning
 clean:

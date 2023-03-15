@@ -161,16 +161,16 @@ class Relationship(ApiObject):
         --------
         Enable a relationship
 
-        >>> import featurebyte as fb
+        >>> import featurebyte as fb  # doctest: +SKIP
         >>> relationship = fb.Relationship.get_by_id(<relationship_id>)  # doctest: +SKIP
-        >>> relationship.enable(True)
+        >>> relationship.enable(True)  # doctest: +SKIP
 
 
         Disable a relationship
 
-        >>> import featurebyte as fb
+        >>> import featurebyte as fb  # doctest: +SKIP
         >>> relationship = fb.Relationship.get_by_id(<relationship_id>)  # doctest: +SKIP
-        >>> relationship.enable(False)
+        >>> relationship.enable(False)  # doctest: +SKIP
         """
 
         payload = RelationshipInfoUpdate(

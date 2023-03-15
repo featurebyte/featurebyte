@@ -36,7 +36,7 @@ class HiveConnection(Connection):
     @typechecked
     def __init__(  # pylint: disable=too-many-arguments
         self: Any,
-        host: Optional[str] = "localhost",
+        host: Optional[str] = "127.0.0.1",
         port: Optional[int] = 10000,
         http_path: Optional[str] = "cliservice",
         scheme: Optional[str] = None,

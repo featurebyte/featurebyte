@@ -46,7 +46,7 @@ messages = {
             """
             [bold green]Featurebyte application started successfully![/]
 
-            API server now running at: [cyan underline]http://localhost:8088[/].
+            API server now running at: [cyan underline]http://127.0.0.1:8088[/].
             You can now use the featurebyte SDK with the API server.
             """
         ),
