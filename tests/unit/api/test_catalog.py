@@ -138,11 +138,11 @@ def test_all_methods_are_exposed_in_catalog(method_list):
     api_object_children = _inheritors(ApiObject)
     excluded_children = {
         Catalog,  # accessible as part of Catalog.get
-        DimensionTable,  # accessible as part of Table.get
-        EventTable,  # accessible as part of Table.get
+        DimensionTable,  # accessible as part of catalog.(list|get)_table
+        EventTable,  # accessible as part of catalog.(list|get)_table
         FeatureJobMixin,
-        ItemTable,  # accessible as part of Table.get
-        SCDTable,  # accessible as part of Table.get
+        ItemTable,  # accessible as part of catalog.(list|get)_table
+        SCDTable,  # accessible as part of catalog.(list|get)_table
         SavableApiObject,
         TableApiObject,
         TableListMixin,
