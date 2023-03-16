@@ -175,6 +175,17 @@ def test_methods_have_same_parameters_as_delegated_method_call(method_item):
     ], f"catalog method: {catalog_list_method_name}, underlying_class {underlying_class}"
 
 
+def _invoke_method(catalog: Catalog, method_item: MethodMetadata):
+    """
+    Helper method to invoke the catalog method of the method item.
+    """
+    catalog_method_to_call = getattr(catalog, method_item.catalog_method_name)
+    if method_item.class_method_delegated == "get":
+        catalog_method_to_call("random_name")
+    else:
+        catalog_method_to_call()
+
+
 @pytest.mark.parametrize("method_item", catalog_get_and_list_methods())
 def test_methods_call_the_correct_delegated_method(method_item):
     """
@@ -184,11 +195,7 @@ def test_methods_call_the_correct_delegated_method(method_item):
     method_name = method_item.delegated_method_to_patch or method_item.class_method_delegated
     catalog = Catalog.get("default")
     with patch.object(method_item.class_object, method_name) as mocked_list:
-        catalog_method_to_call = getattr(catalog, method_item.catalog_method_name)
-        if method_item.class_method_delegated == "get":
-            catalog_method_to_call("random_name")
-        else:
-            catalog_method_to_call()
+        _invoke_method(catalog, method_item)
         mocked_list.assert_called()
 
 
@@ -430,37 +437,30 @@ def test_activate():
     "method_item",
     [
         *catalog_list_methods_to_test_list(),
-        # *catalog_get_methods_to_test_list() todo: fix
+        *catalog_get_methods_to_test_list(),
     ],
 )
 def test_functions_are_called_from_active_catalog(method_item):
     """
     Test that catalog_obj.(list|get)_<x> functions are able to be called from the active, or inactive catalog.
     """
-    credit_card_catalog = Catalog.create("creditcard")
-    grocery_catalog = Catalog.create(name="grocery")
+    method_name = method_item.delegated_method_to_patch or method_item.class_method_delegated
+    with patch.object(method_item.class_object, method_name):
+        credit_card_catalog = Catalog.create("creditcard")
+        grocery_catalog = Catalog.create(name="grocery")
 
-    credit_card_catalog_function_to_invoke = getattr(
-        credit_card_catalog, method_item.catalog_method_name
-    )
-    # Verify that there's no error even though the credit card catalog is not the current active catalog.
-    # Also verify that there's no change in the global activate catalog_id.
-    assert get_active_catalog_id() == grocery_catalog.id
-    if method_item.class_method_delegated == "get":
-        credit_card_catalog_function_to_invoke("random_name")
-    else:
-        credit_card_catalog_function_to_invoke()
+        # Verify that there's no error even though the credit card catalog is not the current active catalog.
+        # Also verify that there's no change in the global activate catalog_id.
+        assert get_active_catalog_id() == grocery_catalog.id
+        _invoke_method(credit_card_catalog, method_item)
 
-    assert get_active_catalog_id() == grocery_catalog.id
+        assert get_active_catalog_id() == grocery_catalog.id
 
-    # Switch to credit card, verify no error.
-    credit_card_catalog = Catalog.activate("creditcard")
-    assert get_active_catalog_id() == credit_card_catalog.id
-    if method_item.class_method_delegated == "get":
-        credit_card_catalog_function_to_invoke("random_name")
-    else:
-        credit_card_catalog_function_to_invoke()
-    assert get_active_catalog_id() == credit_card_catalog.id
+        # Switch to credit card, verify no error.
+        credit_card_catalog = Catalog.activate("creditcard")
+        assert get_active_catalog_id() == credit_card_catalog.id
+        _invoke_method(credit_card_catalog, method_item)
+        assert get_active_catalog_id() == credit_card_catalog.id
 
 
 def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors():
