@@ -103,6 +103,12 @@ def catalog_get_methods_to_test_list():
     ]
 
 
+def catalog_create_methods_to_test_list():
+    return [
+        MethodMetadata("create_entity", Entity, "create"),
+    ]
+
+
 def test_all_relevant_methods_are_in_list():
     """
     Test that all the relevant get and list methods in the catalog class are in these lists above.
@@ -121,17 +127,18 @@ def test_all_relevant_methods_are_in_list():
     for method in catalog_get_methods_to_test_list():
         assert method.catalog_method_name in get_methods
 
+    # Verify all relevant create methods are present
+    create_methods = {method for method in methods if method.startswith("create_")}
+    assert len(create_methods) == len(catalog_create_methods_to_test_list())
+    for method in catalog_create_methods_to_test_list():
+        assert method.catalog_method_name in create_methods
 
-def catalog_get_and_list_methods():
+
+def catalog_get_list_and_create_methods():
     return [
         *catalog_list_methods_to_test_list(),
         *catalog_get_methods_to_test_list(),
-    ]
-
-
-def catalog_create_methods_to_test_list():
-    return [
-        MethodMetadata(Catalog.create_entity, Entity, "create"),
+        *catalog_create_methods_to_test_list(),
     ]
 
 
@@ -181,10 +188,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
 
 @pytest.mark.parametrize(
     "method_item",
-    [
-        *catalog_get_and_list_methods(),
-        *catalog_create_methods_to_test_list(),
-    ],
+    catalog_get_list_and_create_methods(),
 )
 def test_methods_have_same_parameters_as_delegated_method_call(method_item):
     """
@@ -213,16 +217,15 @@ def _invoke_method(catalog: Catalog, method_item: MethodMetadata):
     catalog_method_to_call = getattr(catalog, method_item.catalog_method_name)
     if method_item.class_method_delegated == "get":
         catalog_method_to_call("random_name")
+    elif method_item.class_method_delegated == "create":
+        catalog_method_to_call("random_name", [])
     else:
         catalog_method_to_call()
 
 
 @pytest.mark.parametrize(
     "method_item",
-    [
-        *catalog_get_and_list_methods(),
-        *catalog_create_methods_to_test_list(),
-    ],
+    catalog_get_list_and_create_methods(),
 )
 def test_methods_call_the_correct_delegated_method(method_item):
     """
@@ -472,7 +475,7 @@ def test_activate():
 
 @pytest.mark.parametrize(
     "method_item",
-    catalog_get_and_list_methods(),
+    catalog_get_list_and_create_methods(),
 )
 def test_functions_are_called_from_active_catalog(method_item):
     """
