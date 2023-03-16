@@ -9,6 +9,7 @@ from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.data_source import DataSource
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import SourceType
+from featurebyte.exception import DuplicatedRecordException
 from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
@@ -74,31 +75,26 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         --------
         Create a feature store housed in a Snowflake database
 
-        >>> from featurebyte import *
-        >>> FeatureStore.create(  # doctest: +SKIP
-        ...     name="Snowflake Feature Store",
-        ...     source_type=SourceType.SNOWFLAKE,
-        ...     details=SnowflakeDetails(
-        ...         account="xxx.us-central1.gcp",
-        ...         warehouse="COMPUTE_WH",
-        ...         database="FEATUREBYTE",
-        ...         sf_schema="FEATURESTORE",
-        ...     ),
-        ...     credentials=Credential(
-        ...         name="Snowflake Feature Store",
-        ...         credential_type="USERNAME_PASSWORD",
-        ...         credential=UsernamePasswordCredential(
-        ...             username="username",
-        ...             password="password"
-        ...         )
+        >>> import featurebyte as fb
+        >>> fb.FeatureStore.get_or_create(  # doctest: +SKIP
+        ...     name="Spark Feature Store",
+        ...     source_type=SourceType.SPARK,
+        ...     details=SparkDetails(
+        ...         host="spark-thrift",
+        ...         http_path="cliservice",
+        ...         port=10000,
+        ...         storage_type="file",
+        ...         storage_url="/data/staging/featurebyte",
+        ...         storage_spark_url="file:///opt/spark/data/staging/featurebyte",
+        ...         featurebyte_catalog="spark_catalog",
+        ...         featurebyte_schema="playground",
         ...     )
         ... )
 
         List created feature stores
         >>> FeatureStore.list()  # doctest: +SKIP
-                              name       type              created_at
-        0  Snowflake Feature Store  snowflake 2023-01-04 12:16:51.811
-
+                          name   type              created_at
+        0  Spark Feature Store  spark 2023-01-04 12:16:51.811
         """
         # Construct object, and save to persistent layer.
         feature_store = FeatureStore(
@@ -106,6 +102,48 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         )
         feature_store.save()
         return feature_store
+
+    @classmethod
+    def get_or_create(
+        cls,
+        name: str,
+        source_type: SourceType,
+        details: DatabaseDetails,
+        credentials: Optional[Credential] = None,
+    ) -> FeatureStore:
+        """
+        Save and return a new instance of a feature store. If a feature store with the same name already exists,
+        return that feature store instead.
+
+        Parameters
+        ----------
+        name: str
+            feature store name
+        source_type: SourceType
+            type of feature store
+        details: DatabaseDetails
+            details of the database we want to connect to
+        credentials: Optional[Credential]
+            Credentials for the data warehouse. If there are already credentials in your configuration file,
+            these will be ignored.
+
+        Returns
+        -------
+        FeatureStore
+
+        See Also
+        --------
+        FeatureStore.create
+        """
+        try:
+            return FeatureStore.create(
+                name=name,
+                source_type=source_type,
+                details=details,
+                credentials=credentials,
+            )
+        except DuplicatedRecordException:
+            return FeatureStore.get(name=name)
 
     def get_data_source(self) -> DataSource:
         """

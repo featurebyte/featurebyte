@@ -1,7 +1,7 @@
 """
 Featurebyte CLI tools
 """
-from typing import Generator, List
+from typing import Generator, List, Optional
 
 import os
 import sys
@@ -14,6 +14,7 @@ from python_on_whales.docker_client import DockerClient
 from rich.align import Align
 from rich.console import Console
 from rich.panel import Panel
+from rich.status import Status
 from rich.table import Table
 from rich.text import Text
 
@@ -128,17 +129,23 @@ def get_service_names(app_name: ApplicationName) -> List[str]:
     raise ValueError("Not a valid application name")
 
 
-def __setup_network() -> None:
+def __setup_network(verbose: Optional[bool] = True) -> None:
     """
     Setup docker network
+
+    Parameters
+    ----------
+    verbose: Optional[bool]
+        Print network status
     """
     client = DockerClient()
     networks = client.network.list()
-    if "featurebyte" in map(lambda x: x.name, networks):
-        console.print(Text("featurebyte", style="cyan") + Text(" network already exists"))
-    else:
-        console.print(Text("featurebyte", style="cyan") + Text(" network creating"))
-        DockerClient().network.create("featurebyte", driver="bridge")
+    if verbose:
+        if "featurebyte" in map(lambda x: x.name, networks):
+            console.print(Text("featurebyte", style="cyan") + Text(" network already exists"))
+        else:
+            console.print(Text("featurebyte", style="cyan") + Text(" network creating"))
+            DockerClient().network.create("featurebyte", driver="bridge")
 
 
 def print_logs(app_name: ApplicationName, service_name: str, tail: int) -> None:
@@ -210,7 +217,8 @@ def __delete_docker_backup() -> None:
 
 def start_app(
     app_name: ApplicationName,
-    local: bool
+    local: bool,
+    verbose: Optional[bool] = True,
 ) -> None:
     """
     Start application
@@ -221,9 +229,11 @@ def start_app(
         Name of application to start
     local : bool
         Do not pull new images from registry
+    verbose : Optional[bool]
+        Print verbose output
     """
     try:
-        __setup_network()
+        __setup_network(verbose=verbose)
         __backup_docker_conf()
         __use_docker_svc_account()
         with get_docker_client(app_name) as docker:
@@ -233,7 +243,7 @@ def start_app(
             docker.compose.up(services=get_service_names(app_name), detach=True)
 
             # Wait for all services to be healthy
-            with console.status("Waiting for services to be healthy...") as spinner_status:
+            def _wait_for_healthy(spinner_status: Optional[Status] = None) -> None:
                 while True:
                     unhealthy_containers = []
                     for container in docker.compose.ps():
@@ -247,16 +257,25 @@ def start_app(
                         + Text(", ").join(map(lambda s: Text(s, style="red"), unhealthy_containers))
                         + Text("] are unhealthy", style="None")
                     )
-                    spinner_status.update(statuses)
+                    if spinner_status:
+                        spinner_status.update(statuses)
                     time.sleep(5)
+
+            if verbose:
+                with console.status("Waiting for services to be healthy...") as spinner_status:
+                    _wait_for_healthy(spinner_status)
+                console.print(Panel(Align.left(messages[app_name]["start"]), title=app_name.value, width=120))
+            else:
+                _wait_for_healthy()
+
     finally:
         __restore_docker_conf()
         __delete_docker_backup()
-    console.print(Panel(Align.left(messages[app_name]["start"]), title=app_name.value, width=120))
 
 
 def stop_app(
-    app_name: ApplicationName
+    app_name: ApplicationName,
+    verbose: Optional[bool] = True,
 ) -> None:
     """
     Stop application
@@ -265,10 +284,13 @@ def stop_app(
     ----------
     app_name : ApplicationName
         Name of application to stop
+    verbose : Optional[bool]
+        Print verbose output
     """
     with get_docker_client(app_name) as docker:
         docker.compose.down()
-    console.print(Panel(Align.left(messages[app_name]["stop"]), title=app_name.value, width=120))
+    if verbose:
+        console.print(Panel(Align.left(messages[app_name]["stop"]), title=app_name.value, width=120))
 
 
 def get_status() -> None:

@@ -1,6 +1,8 @@
 """
 CLI tools for managing sample datasets
 """
+from typing import Optional
+
 import base64
 import os
 import re
@@ -28,7 +30,9 @@ app = typer.Typer(
 
 @app.command(name="list")
 def list_datasets() -> None:
-    """List datasets available"""
+    """
+    List datasets available
+    """
     table = Table(title="Sample Datasets")
     table.add_column("Name", justify="left", style="cyan")
     table.add_column("Url", justify="left")
@@ -48,7 +52,7 @@ def list_datasets() -> None:
 
 
 @app.command(name="import")
-def import_dataset(dataset_name: str) -> None:
+def import_dataset(dataset_name: str, verbose: Optional[bool] = True) -> None:
     """
     Import dataset to local Spark database. Ensure local Spark app is running.
     """
@@ -82,11 +86,13 @@ def import_dataset(dataset_name: str) -> None:
             with tempfile.TemporaryDirectory() as tempdir:
                 # download tar file
                 local_path = os.path.join(tempdir, "data.tar.gz")
-                console.print(f"Downloading data from: {url} -> {local_path}")
+                if verbose:
+                    console.print(f"Downloading data from: {url} -> {local_path}")
                 request.urlretrieve(url, local_path)  # nosec
 
                 # extracting files to staging location
-                console.print(f"Extracting files to staging location: {local_staging_path}")
+                if verbose:
+                    console.print(f"Extracting files to staging location: {local_staging_path}")
                 with tarfile.open(local_path) as file_obj:
                     file_obj.extractall(
                         local_staging_path,
@@ -97,12 +103,15 @@ def import_dataset(dataset_name: str) -> None:
                     )
 
         sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")
-        for line in DockerClient().execute(  # type:ignore
-            container="featurebyte-server",
-            command=["python", "-m", "featurebyte.datasets.__main__", sql_b64],
-            tty=True,
-        ):
-            console.print(line)
+        params = {
+            "container": "featurebyte-server",
+            "command": ["python", "-m", "featurebyte.datasets.__main__", sql_b64],
+        }
+        if verbose:
+            for line in DockerClient().execute(**params, tty=True):  # type:ignore
+                console.print(line)
+        else:
+            DockerClient().execute(**params)  # type:ignore
 
 
 if __name__ == "__main__":

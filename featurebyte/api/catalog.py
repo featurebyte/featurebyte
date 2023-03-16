@@ -22,6 +22,7 @@ from featurebyte.api.relationship import Relationship
 from featurebyte.api.table import Table
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import activate_catalog, get_active_catalog_id
+from featurebyte.exception import DuplicatedRecordException
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
@@ -127,13 +128,13 @@ class Catalog(CatalogModel, SavableApiObject):
         --------
         Create a new catalog
 
-        >>> from featurebyte import Catalog
-        >>> Catalog.create(  # doctest: +SKIP
+        >>> import featurebyte as fb
+        >>> fb.Catalog.create(  # doctest: +SKIP
         ...     name="My Catalog"
         ... )
 
         List catalogs
-        >>> Catalog.list()  # doctest: +SKIP
+        >>> fb.Catalog.list()  # doctest: +SKIP
                                   id	             name	             created_at	active
         0	63ef2ca50523266031b728dd	     My Catalog	2023-02-17 07:28:37.368   True
         1	63eda344d0313fb925f7883a	          default	2023-02-17 07:03:26.267	 False
@@ -142,6 +143,32 @@ class Catalog(CatalogModel, SavableApiObject):
         catalog.save()
         activate_catalog(catalog.id)
         return catalog
+
+    @classmethod
+    def get_or_create(
+        cls,
+        name: str,
+    ) -> Catalog:
+        """
+        Create and activate catalog
+
+        Parameters
+        ----------
+        name: str
+            feature store name
+
+        Returns
+        -------
+        Catalog
+
+        See Also
+        --------
+        Catalog.create
+        """
+        try:
+            return Catalog.create(name=name)
+        except DuplicatedRecordException:
+            return Catalog.get(name=name)
 
     @classmethod
     def get_active(cls) -> Catalog:
