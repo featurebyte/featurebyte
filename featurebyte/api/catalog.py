@@ -492,3 +492,177 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         check_is_active_catalog(self.id)
         return PeriodicTask.list(include_id=include_id)
+
+    def get_feature(self, name: str, version: Optional[str] = None) -> Feature:
+        """
+        Get a feature by name and version
+
+        Parameters
+        ----------
+        name: str
+            Feature name
+        version: Optional[str]
+            Feature version, if None, the default version will be returned
+
+        Returns
+        -------
+        Feature
+            Feature object
+        """
+        check_is_active_catalog(self.id)
+        return Feature.get(name=name, version=version)
+
+    def get_feature_namespace(self, name: str) -> FeatureNamespace:
+        """
+        Get a feature namespace by name
+
+        Parameters
+        ----------
+        name: str
+            Feature namespace name
+
+        Returns
+        -------
+        FeatureNamespace
+            Feature namespace object
+        """
+        check_is_active_catalog(self.id)
+        return FeatureNamespace.get(name=name)
+
+    def get_feature_list_namespace(self, name: str) -> FeatureListNamespace:
+        """
+        Get a feature list namespace by name
+
+        Parameters
+        ----------
+        name: str
+            Feature list namespace name
+
+        Returns
+        -------
+        FeatureListNamespace
+            Feature list namespace object
+        """
+        check_is_active_catalog(self.id)
+        return FeatureListNamespace.get(name=name)
+
+    def get_feature_list(self, name: str, version: Optional[str] = None) -> FeatureList:
+        """
+        Get feature list by name
+
+        Parameters
+        ----------
+        name: str
+            Feature list name
+        version: Optional[str]
+            Version of the feature list, if None, the default version will be returned
+
+        Returns
+        -------
+        FeatureList
+            Feature list object
+        """
+        check_is_active_catalog(self.id)
+        return FeatureList.get(name=name, version=version)
+
+    def get_table(self, name: str) -> Table:
+        """
+        Get table by name
+
+        Parameters
+        ----------
+        name: str
+            Table name
+
+        Returns
+        -------
+        Table
+            Table object
+        """
+        check_is_active_catalog(self.id)
+        return Table.get(name=name)
+
+    def get_relationship(self, name: str) -> Relationship:
+        """
+        Get relationship by name
+
+        Parameters
+        ----------
+        name: str
+            Relationship name
+
+        Returns
+        -------
+        Relationship
+            Relationship object
+        """
+        check_is_active_catalog(self.id)
+        return Relationship.get(name=name)
+
+    def get_feature_job_setting_analysis(self, name: str) -> FeatureJobSettingAnalysis:
+        """
+        Get feature job setting analysis by name
+
+        Parameters
+        ----------
+        name: str
+            Feature job setting analysis name
+
+        Returns
+        -------
+        FeatureJobSettingAnalysis
+            Feature job setting analysis object
+        """
+        check_is_active_catalog(self.id)
+        return FeatureJobSettingAnalysis.get(name=name)
+
+    def get_feature_store(self, name: str) -> FeatureStore:
+        """
+        Get feature store by name
+
+        Parameters
+        ----------
+        name: str
+            Feature store name
+
+        Returns
+        -------
+        FeatureStore
+            Feature store object
+        """
+        check_is_active_catalog(self.id)
+        return FeatureStore.get(name=name)
+
+    def get_entity(self, name: str) -> Entity:
+        """
+        Get entity by name
+
+        Parameters
+        ----------
+        name: str
+            Entity name
+
+        Returns
+        -------
+        Entity
+            Entity object
+        """
+        check_is_active_catalog(self.id)
+        return Entity.get(name=name)
+
+    def get_periodic_task(self, name: str) -> PeriodicTask:
+        """
+        Get periodic task by name
+
+        Parameters
+        ----------
+        name: str
+            Periodic task name
+
+        Returns
+        -------
+        PeriodicTask
+            Periodic task object
+        """
+        check_is_active_catalog(self.id)
+        return PeriodicTask.get(name=name)

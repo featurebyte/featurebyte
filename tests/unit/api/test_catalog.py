@@ -46,45 +46,63 @@ from featurebyte.exception import (
 
 
 @dataclass
-class ListMethodMetadata:
+class MethodMetadata:
     """
     Data class to keep track of list methods to test.
     """
 
     # Catalog method to test
     catalog_method: Callable
-    # API object which has the list method we delegate to
+    # API object which has the method (eg. list/get) we delegate to
     class_object: Any
-    # List method override if we don't delegate to a `list` method.
-    list_method_override: Optional[str] = None
-    # List method to patch
-    list_method_to_patch: Optional[str] = None
+    # Method override if we don't delegate to a standardized method (eg. list/get).
+    method_override: Optional[str] = None
+    # Method to patch
+    method_to_patch: Optional[str] = None
 
 
-def get_methods_to_test():
+def catalog_list_methods_to_test_list():
     return [
-        ListMethodMetadata(Catalog.list_features, Feature, "_list_versions", "list_versions"),
-        ListMethodMetadata(Catalog.list_feature_namespaces, FeatureNamespace),
-        ListMethodMetadata(Catalog.list_feature_list_namespaces, FeatureListNamespace),
-        ListMethodMetadata(
-            Catalog.list_feature_lists, FeatureList, "_list_versions", "list_versions"
-        ),
-        ListMethodMetadata(Catalog.list_tables, Table),
-        ListMethodMetadata(Catalog.list_dimension_tables, DimensionTable),
-        ListMethodMetadata(Catalog.list_item_tables, ItemTable),
-        ListMethodMetadata(Catalog.list_event_tables, EventTable),
-        ListMethodMetadata(Catalog.list_scd_tables, SCDTable),
-        ListMethodMetadata(Catalog.list_relationships, Relationship),
-        ListMethodMetadata(Catalog.list_feature_job_setting_analyses, FeatureJobSettingAnalysis),
-        ListMethodMetadata(Catalog.list_feature_stores, FeatureStore),
-        ListMethodMetadata(Catalog.list_entities, Entity),
-        ListMethodMetadata(Catalog.list_periodic_tasks, PeriodicTask),
+        MethodMetadata(Catalog.list_features, Feature, "_list_versions", "list_versions"),
+        MethodMetadata(Catalog.list_feature_namespaces, FeatureNamespace),
+        MethodMetadata(Catalog.list_feature_list_namespaces, FeatureListNamespace),
+        MethodMetadata(Catalog.list_feature_lists, FeatureList, "_list_versions", "list_versions"),
+        MethodMetadata(Catalog.list_tables, Table),
+        MethodMetadata(Catalog.list_dimension_tables, DimensionTable),
+        MethodMetadata(Catalog.list_item_tables, ItemTable),
+        MethodMetadata(Catalog.list_event_tables, EventTable),
+        MethodMetadata(Catalog.list_scd_tables, SCDTable),
+        MethodMetadata(Catalog.list_relationships, Relationship),
+        MethodMetadata(Catalog.list_feature_job_setting_analyses, FeatureJobSettingAnalysis),
+        MethodMetadata(Catalog.list_feature_stores, FeatureStore),
+        MethodMetadata(Catalog.list_entities, Entity),
+        MethodMetadata(Catalog.list_periodic_tasks, PeriodicTask),
     ]
 
 
-@pytest.fixture(name="methods_to_test")
-def methods_to_test_fixture():
-    return get_methods_to_test()
+def catalog_get_methods_to_test_list():
+    return [
+        MethodMetadata(Catalog.get_feature, Feature),
+        MethodMetadata(Catalog.get_feature_namespace, FeatureNamespace),
+        MethodMetadata(Catalog.get_feature_list_namespace, FeatureListNamespace),
+        MethodMetadata(Catalog.get_feature_list, FeatureList),
+        MethodMetadata(Catalog.get_table, Table),
+        MethodMetadata(Catalog.get_relationship, Relationship),
+        MethodMetadata(Catalog.get_feature_job_setting_analysis, FeatureJobSettingAnalysis),
+        MethodMetadata(Catalog.get_feature_store, FeatureStore),
+        MethodMetadata(Catalog.get_entity, Entity),
+        MethodMetadata(Catalog.get_periodic_task, PeriodicTask),
+    ]
+
+
+@pytest.fixture(name="catalog_list_methods_to_test")
+def catalog_list_methods_to_test_fixture():
+    return catalog_list_methods_to_test_list()
+
+
+@pytest.fixture(name="catalog_get_methods_to_test")
+def catalog_get_methods_to_test_fixture():
+    return catalog_get_methods_to_test_list()
 
 
 def _inheritors(class_obj):
@@ -102,7 +120,7 @@ def _inheritors(class_obj):
     return subclasses
 
 
-def test_all_list_methods_are_exposed_in_catalog(methods_to_test):
+def test_all_list_methods_are_exposed_in_catalog(catalog_list_methods_to_test):
     """
     Test that all inherited list methods are exposed in catalog.
 
@@ -111,16 +129,16 @@ def test_all_list_methods_are_exposed_in_catalog(methods_to_test):
     """
     api_object_children = _inheritors(ApiObject)
     excluded_children = {SavableApiObject, TableListMixin, FeatureJobMixin, TableApiObject, Catalog}
-    assert len(api_object_children) == len(methods_to_test) + len(excluded_children)
+    assert len(api_object_children) == len(catalog_list_methods_to_test) + len(excluded_children)
 
-    for method_item in methods_to_test:
+    for method_item in catalog_list_methods_to_test:
         delegated_class = method_item.class_object
         assert delegated_class in api_object_children
 
 
 @pytest.mark.parametrize(
     "method_item",
-    get_methods_to_test(),
+    catalog_list_methods_to_test_list(),
 )
 def test_list_methods_have_same_parameters_as_delegated_list_method_call(method_item):
     """
@@ -131,8 +149,8 @@ def test_list_methods_have_same_parameters_as_delegated_list_method_call(method_
     # Check that the signatures match
     catalog_list_method_signature = signature(catalog_list_method)
     underlying_class_method = underlying_class.list
-    if method_item.list_method_override:
-        underlying_class_method = getattr(underlying_class, method_item.list_method_override)
+    if method_item.method_override:
+        underlying_class_method = getattr(underlying_class, method_item.method_override)
     underlying_class_list_method_signature = signature(underlying_class_method)
     assert [*catalog_list_method_signature.parameters.keys()] == [
         "self",
@@ -142,19 +160,84 @@ def test_list_methods_have_same_parameters_as_delegated_list_method_call(method_
 
 @pytest.mark.parametrize(
     "method_item",
-    get_methods_to_test(),
+    catalog_list_methods_to_test_list(),
 )
 def test_list_methods_call_the_correct_delegated_method(method_item):
     """
     Test catalog list methods call the correct delegated method.
     """
     # Assert that the delegated list method is called
-    method_name = method_item.list_method_to_patch or "list"
+    method_name = method_item.method_to_patch or "list"
     catalog = Catalog.create("random")
     with patch.object(method_item.class_object, method_name) as mocked_list:
         catalog_method_to_call = getattr(catalog, method_item.catalog_method.__name__)
         catalog_method_to_call()
         mocked_list.assert_called()
+
+
+def test_all_get_methods_are_exposed_in_catalog(catalog_get_methods_to_test):
+    """
+    Test that all inherited get methods are exposed in catalog.
+
+    This will help to ensure that new API objects that have a get method are added to the Catalog.
+    If we don't want to add them, we can add them to the excluded_children set.
+    """
+    api_object_children = _inheritors(ApiObject)
+    excluded_children = {
+        Catalog,  # accessible as part of Catalog.get
+        DimensionTable,  # accessible as part of Table.get
+        EventTable,  # accessible as part of Table.get
+        FeatureJobMixin,
+        ItemTable,  # accessible as part of Table.get
+        SCDTable,  # accessible as part of Table.get
+        SavableApiObject,
+        TableApiObject,
+        TableListMixin,
+    }
+    assert len(api_object_children) == len(catalog_get_methods_to_test) + len(excluded_children)
+
+    for method_item in catalog_get_methods_to_test:
+        delegated_class = method_item.class_object
+        assert delegated_class in api_object_children
+
+
+@pytest.mark.parametrize(
+    "method_item",
+    catalog_get_methods_to_test_list(),
+)
+def test_get_methods_have_same_parameters_as_delegated_get_method_call(method_item):
+    """
+    Test catalog get methods have same parameters as underlying methods.
+    This will help to ensure that the Catalog `get_*` APIs are consistent with their API object `get` methods.
+    """
+    catalog_get_method, underlying_class = method_item.catalog_method, method_item.class_object
+    # Check that the signatures match
+    catalog_get_method_signature = signature(catalog_get_method)
+    underlying_class_method = underlying_class.get
+    if method_item.method_override:
+        underlying_class_method = getattr(underlying_class, method_item.method_override)
+    underlying_class_get_method_signature = signature(underlying_class_method)
+    assert [*catalog_get_method_signature.parameters.keys()] == [
+        "self",
+        *underlying_class_get_method_signature.parameters.keys(),
+    ], f"catalog method: {catalog_get_method}, underlying_class {underlying_class}"
+
+
+@pytest.mark.parametrize(
+    "method_item",
+    catalog_get_methods_to_test_list(),
+)
+def test_get_methods_call_the_correct_delegated_method(method_item):
+    """
+    Test catalog get methods call the correct delegated method.
+    """
+    # Assert that the delegated get method is called
+    method_name = method_item.method_to_patch or "get"
+    catalog = Catalog.create("random")
+    with patch.object(method_item.class_object, method_name) as mocked_get:
+        catalog_method_to_call = getattr(catalog, method_item.catalog_method.__name__)
+        catalog_method_to_call("random_name")
+        mocked_get.assert_called()
 
 
 @pytest.fixture(name="catalog")
