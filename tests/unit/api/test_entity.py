@@ -343,3 +343,50 @@ async def test_add_and_remove_parent(mongo_persistent, insert_tabular_data_helpe
     entity_b_response = response[1]
     assert entity_b_response["name"] == "entity_b"
     assert_entity_has_number_of_parents(entity_b_response, 0)
+
+
+def test_create():
+    """
+    Test Entity.create
+    """
+    entity_name = "random_entity"
+    # Verify entity doesn't exist first
+    with pytest.raises(RecordRetrievalException) as exc:
+        Entity.get(entity_name)
+    assert "Please save the Entity object first." in str(exc)
+
+    # Create entity
+    entity = Entity.create(entity_name, serving_names=["random_entity_serving_name"])
+    assert entity.name == entity_name
+
+    # Test that entity exists
+    entity_retrieved = Entity.get(entity_name)
+    assert entity_retrieved.id == entity.id
+    assert entity_retrieved.name == entity.name
+
+
+def test_get_or_create():
+    """
+    Test get_or_create
+    """
+    entity_name = "random_entity"
+    # Verify entity doesn't exist first
+    with pytest.raises(RecordRetrievalException) as exc:
+        Entity.get(entity_name)
+    assert "Please save the Entity object first." in str(exc)
+
+    # Create entity with get_or_create
+    entity = Entity.get_or_create(entity_name, serving_names=["random_entity_serving_name"])
+    assert entity.name == entity_name
+
+    # Test that entity exists after calling get_or_create once
+    entity_retrieved = Entity.get(entity_name)
+    assert entity_retrieved.id == entity.id
+    assert entity_retrieved.name == entity.name
+
+    # Call get_or_create again - verify that there's no error and entity is retrieved.
+    # Also show that if we're just doing the `get` in get or create, the serving_names passed in is irrelevant.
+    entity_retrieved = Entity.get_or_create(entity_name, serving_names=[])
+    assert entity_retrieved.id == entity.id
+    assert entity_retrieved.name == entity.name
+    assert entity_retrieved.serving_names == ["random_entity_serving_name"]
