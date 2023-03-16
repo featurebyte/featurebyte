@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional
 
+from functools import wraps
+
 import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
@@ -27,6 +29,45 @@ from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
+
+
+def update_and_reset_catalog(func: Any) -> Any:
+    """
+    Decorator to update the catalog and reset it back to original state if needed.
+
+    If the calling catalog object has the same ID as the global state, we will just call the function that is being
+    decorated.
+    If not, this decorator will temporarily update the global catalog state to the catalog_id of the calling catalog
+    object, call the decorated function, and then reset the state back.
+
+    This is useful as an intermediate state for us to support a catalog object oriented syntax, while still maintaining
+    a global state for the catalog ID at the implementation level.
+
+    Parameters
+    ----------
+    func: Any
+        Function to decorate
+
+    Returns
+    -------
+    Any
+    """
+
+    @wraps(func)
+    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        active_catalog_id = get_active_catalog_id()
+        # If the catalog is already active, just call the function
+        if self.id == active_catalog_id:
+            return func(self, *args, **kwargs)
+        # Activate catalog of object
+        activate_catalog(self.id)
+        try:
+            return func(self, *args, **kwargs)
+        finally:
+            # Reset catalog back to original state
+            activate_catalog(active_catalog_id)
+
+    return wrapper
 
 
 @typechecked
@@ -101,7 +142,7 @@ class Catalog(CatalogModel, SavableApiObject):
         0	63ef2ca50523266031b728dd	     My Catalog	2023-02-17 07:28:37.368   True
         1	63eda344d0313fb925f7883a	          default	2023-02-17 07:03:26.267	 False
         """
-        catalog = Catalog(name=name)
+        catalog = cls(name=name)
         catalog.save()
         activate_catalog(catalog.id)
         return catalog
@@ -148,8 +189,9 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return self._get_audit_history(field_name="name")
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_features(
+        self,
         include_id: Optional[bool] = False,
         feature_list_id: Optional[ObjectId] = None,
         entity: Optional[str] = None,
@@ -178,8 +220,9 @@ class Catalog(CatalogModel, SavableApiObject):
             include_id=include_id, feature_list_id=feature_list_id, entity=entity, data=data
         )
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_feature_namespaces(
+        self,
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
         data: Optional[str] = None,
@@ -203,8 +246,9 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureNamespace.list(include_id=include_id, entity=entity, data=data)
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_feature_list_namespaces(
+        self,
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
         data: Optional[str] = None,
@@ -228,8 +272,9 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureListNamespace.list(include_id=include_id, entity=entity, data=data)
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_feature_lists(
+        self,
         include_id: Optional[bool] = False,
     ) -> pd.DataFrame:
         """
@@ -247,9 +292,9 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureList.list_versions(include_id=include_id)
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_tables(
-        include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List saved tables
@@ -268,9 +313,9 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return Table.list(include_id=include_id, entity=entity)
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_dimension_tables(
-        include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List saved dimension table sources
@@ -289,9 +334,9 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return DimensionTable.list(include_id=include_id, entity=entity)
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_item_tables(
-        include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List saved item table sources
@@ -310,9 +355,9 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return ItemTable.list(include_id=include_id, entity=entity)
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_event_tables(
-        include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List saved event table sources
@@ -331,9 +376,9 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return EventTable.list(include_id=include_id, entity=entity)
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_scd_tables(
-        include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List saved SCD table sources
@@ -352,9 +397,9 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return SCDTable.list(include_id=include_id, entity=entity)
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_relationships(
-        include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
+        self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
         """
         List all relationships that exist in your FeatureByte instance, or filtered by relationship type.
@@ -397,8 +442,9 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return Relationship.list(include_id=include_id, relationship_type=relationship_type)
 
-    @staticmethod
+    @update_and_reset_catalog
     def list_feature_job_setting_analyses(
+        self,
         include_id: Optional[bool] = False,
         event_data_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
@@ -419,25 +465,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureJobSettingAnalysis.list(include_id=include_id, event_data_id=event_data_id)
 
-    @staticmethod
-    def list_catalogs(include_id: Optional[bool] = False) -> pd.DataFrame:
-        """
-        List saved catalogs
-
-        Parameters
-        ----------
-        include_id: Optional[bool]
-            Whether to include id in the list
-
-        Returns
-        -------
-        pd.DataFrame
-            Table of catalogs
-        """
-        return Catalog.list(include_id=include_id)
-
-    @staticmethod
-    def list_feature_stores(include_id: Optional[bool] = False) -> pd.DataFrame:
+    @update_and_reset_catalog
+    def list_feature_stores(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved feature stores
 
@@ -453,8 +482,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return FeatureStore.list(include_id=include_id)
 
-    @staticmethod
-    def list_entities(include_id: Optional[bool] = False) -> pd.DataFrame:
+    @update_and_reset_catalog
+    def list_entities(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved entities
 
@@ -470,8 +499,8 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return Entity.list(include_id=include_id)
 
-    @staticmethod
-    def list_periodic_tasks(include_id: Optional[bool] = False) -> pd.DataFrame:
+    @update_and_reset_catalog
+    def list_periodic_tasks(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved periodic tasks
 
