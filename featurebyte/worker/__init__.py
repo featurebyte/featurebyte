@@ -73,6 +73,11 @@ celery.conf.task_track_started = True
 
 # task queues and routing
 celery.conf.task_routes = {"worker.*": "celery"}
+celery.conf.broker_transport_options = {
+    "priority_steps": list(range(3)),
+    "sep": ":",
+    "queue_order_strategy": "priority",
+}
 
 # task tombstones options
 celery.conf.result_extended = True

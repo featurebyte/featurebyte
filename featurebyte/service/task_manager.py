@@ -228,6 +228,7 @@ class TaskManager(AbstractTaskManager):
             args=[],
             kwargs=payload.json_dict(),
             start_after=start_after,
+            queue="celery:1",
         )
         periodic_task_service = PeriodicTaskService(
             user=self.user,
