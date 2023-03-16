@@ -66,13 +66,6 @@ def activate_catalog(catalog_id: ObjectId) -> None:
     ACTIVE_CATALOG_ID = catalog_id
 
 
-def reset_to_default_catalog() -> None:
-    """
-    Reset to default catalog. This should mostly just be used for test to reset the catalog to default state.
-    """
-    activate_catalog(DEFAULT_CATALOG_ID)
-
-
 class LogLevel(StrEnum):
     """
     Log levels

@@ -37,12 +37,13 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import FeatureNamespace
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_list import FeatureListNamespace
-from featurebyte.config import get_active_catalog_id, reset_to_default_catalog
+from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
     RecordUpdateException,
 )
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 
 
 @pytest.fixture(autouse=True)
@@ -51,7 +52,8 @@ def reset_catalog():
     Reset back to default catalog after every test.
     """
     yield
-    reset_to_default_catalog()
+
+    activate_catalog(DEFAULT_CATALOG_ID)
 
 
 @dataclass
@@ -397,7 +399,7 @@ def test_activate():
     assert Entity.list()["name"].tolist() == ["CreditCardCustomer"]
 
     # switch to default catalog
-    reset_to_default_catalog()
+    activate_catalog(DEFAULT_CATALOG_ID)
     assert Entity.list()["name"].tolist() == []
 
 
