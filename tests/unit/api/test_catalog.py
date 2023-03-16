@@ -37,7 +37,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import FeatureNamespace
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_list import FeatureListNamespace
-from featurebyte.config import get_active_catalog_id, reset_to_default_catalog
+from featurebyte.config import activate_catalog, get_active_catalog_id, reset_to_default_catalog
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
@@ -427,13 +427,31 @@ def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors():
     Verify that the catalog state doesn't change if the wrapped function errors.
     """
 
-    @update_and_reset_catalog
-    def test():
-        raise Exception("test")
+    class TestCatalogError(Exception):
+        """
+        Internal test catalog exception class.
+        """
 
-    catalog_a = Catalog.create("catalog_a")
-    catalog_b = Catalog.create("catalog_b")
+    class TestCatalog(Catalog):
+        """
+        Internal test catalog class.
+        """
+
+        @update_and_reset_catalog
+        def throw_error_function(self):
+            """
+            Internal test function that throws an error.
+
+            Raises
+            ------
+            TestCatalogError
+            """
+            raise TestCatalogError("test")
+
+    catalog_a = TestCatalog.create("catalog_a")
+    assert get_active_catalog_id() == catalog_a.id
+    catalog_b = TestCatalog.create("catalog_b")
     assert get_active_catalog_id() == catalog_b.id
-    with pytest.raises(Exception):
-        catalog_a.test()
+    with pytest.raises(TestCatalogError):
+        catalog_a.throw_error_function()
     assert get_active_catalog_id() == catalog_b.id

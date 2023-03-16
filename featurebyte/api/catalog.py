@@ -136,7 +136,7 @@ class Catalog(CatalogModel, SavableApiObject):
         0	63ef2ca50523266031b728dd	     My Catalog	2023-02-17 07:28:37.368   True
         1	63eda344d0313fb925f7883a	          default	2023-02-17 07:03:26.267	 False
         """
-        catalog = Catalog(name=name)
+        catalog = cls(name=name)
         catalog.save()
         activate_catalog(catalog.id)
         return catalog
