@@ -16,7 +16,7 @@ from featurebyte.tile.spark_tile import TileManagerSpark
 def tile_manager_from_session(
     session: BaseSession,
     task_manager: Optional[TaskManager] = None,
-    use_snowflake_scheduling: Optional[bool] = True,
+    use_snowflake_scheduling: Optional[bool] = False,
 ) -> BaseTileManager:
     """
     Derive implementing TileManager instance based on input sessions
