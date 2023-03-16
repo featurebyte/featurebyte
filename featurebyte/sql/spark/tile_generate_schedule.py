@@ -70,7 +70,10 @@ class TileGenerateSchedule(TileCommon):
             registry_last_tile_start_ts = registry_df["LAST_TILE_START_DATE_ONLINE"].iloc[0]
             logger.info(f"Last tile start date from registry - {registry_last_tile_start_ts}")
 
-            if registry_last_tile_start_ts < tile_start_ts_str:
+            if (
+                registry_last_tile_start_ts is not None
+                and registry_last_tile_start_ts < tile_start_ts_str
+            ):
                 logger.info(
                     f"Use last tile start date from registry - {registry_last_tile_start_ts} instead of {tile_start_ts_str}"
                 )
