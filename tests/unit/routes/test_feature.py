@@ -100,8 +100,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         ),
         (
             {**payload, "_id": object_id, "name": "random_name", "tabular_data_ids": [object_id]},
-            f'TabularData (id: "{object_id}") not found. '
-            f"Please save the TabularData object first.",
+            f'Table (id: "{object_id}") not found. Please save the Table object first.',
         ),
         (
             {**payload, "_id": object_id, "name": "random_name"},
@@ -131,7 +130,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_data", "event_data"),
+            ("event_table", "event_table"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -377,7 +376,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_data", "event_data"),
+            ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
             ("feature", "feature_sum_2h"),
             ("feature_list", "feature_list_multi"),

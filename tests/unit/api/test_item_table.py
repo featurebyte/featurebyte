@@ -19,7 +19,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.item_data import ItemDataModel
+from featurebyte.models.item_table import ItemTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
@@ -168,7 +168,7 @@ def test_from_tabular_source__event_data_without_event_id_column(
     snowflake_database_table_item_data,
 ):
     """
-    Test attempting to create ItemTable using old EventData without event_id_column
+    Test attempting to create ItemTable using old EventTable without event_id_column
 
     Can probably be removed once DEV-556 is resolved
     """
@@ -372,7 +372,7 @@ def test_inherit_default_feature_job_setting(
     snowflake_database_table_item_data, item_data_dict, saved_event_data
 ):
     """
-    Test ItemTable inherits the same default feature job setting from EventData
+    Test ItemTable inherits the same default feature job setting from EventTable
     """
     feature_job_setting = FeatureJobSetting(
         blind_spot="1m30s",
@@ -434,7 +434,7 @@ def test_accessing_item_data_attributes(snowflake_item_data):
 def test_accessing_saved_item_data_attributes(saved_item_data):
     """Test accessing event data object attributes"""
     assert saved_item_data.saved
-    assert isinstance(saved_item_data.cached_model, ItemDataModel)
+    assert isinstance(saved_item_data.cached_model, ItemTableModel)
     assert saved_item_data.record_creation_timestamp_column is None
     assert saved_item_data.event_id_column == "event_id_col"
     assert saved_item_data.item_id_column == "item_id_col"

@@ -148,8 +148,8 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         assert response.status_code == HTTPStatus.CREATED
 
         # save event data
-        payload = self.load_payload("tests/fixtures/request_payloads/event_data.json")
-        response = api_client.post("/event_data", params={"catalog_id": catalog_id}, json=payload)
+        payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+        response = api_client.post("/event_table", params={"catalog_id": catalog_id}, json=payload)
         assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):
@@ -172,7 +172,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
             response.json()["detail"]
-            == 'EventData (id: "63030c9eb9150a577ebb61fb") not found. Please save the EventData object first.'
+            == 'EventTable (id: "63030c9eb9150a577ebb61fb") not found. Please save the EventTable object first.'
         )
 
     @pytest.mark.asyncio
@@ -230,7 +230,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
 
         # remove event data creation date column
         await persistent.update_one(
-            collection_name="tabular_data",
+            collection_name="table",
             query_filter={},
             update={"$set": {"record_creation_timestamp_column": None}},
             user_id=None,

@@ -21,8 +21,8 @@ from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
 from featurebyte.enum import ViewMode
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import DataStatus, FeatureStoreModel
-from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.models.feature_store import FeatureStoreModel, TableStatus
+from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
@@ -137,8 +137,8 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         Add missing value imputation & negative value imputation operations to a data column
 
         >>> import featurebyte as fb
-        >>> event_data = fb.EventTable.get("Credit Card Transactions")  # doctest: +SKIP
-        >>> event_data["AMOUNT"].update_critical_data_info(  # doctest: +SKIP
+        >>> event_table = fb.EventTable.get("Credit Card Transactions")  # doctest: +SKIP
+        >>> event_table["AMOUNT"].update_critical_data_info(  # doctest: +SKIP
         ...    cleaning_operations=[
         ...        fb.MissingValueImputation(imputed_value=0),
         ...        fb.ValueBeyondEndpointImputation(
@@ -149,7 +149,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
 
         Check the column info to confirm that critical data info is updated
 
-        >>> event_data["AMOUNT"].info.dict()  # doctest: +SKIP
+        >>> event_table["AMOUNT"].info.dict()  # doctest: +SKIP
         {'critical_data_info': {'cleaning_operations': [{'imputed_value': 0,
                                                  'type': 'missing'},
                                                 {'end_point': 0,
@@ -216,8 +216,8 @@ class TableListMixin(ApiObject):
     Mixin to implement source table list function
     """
 
-    _route = "/tabular_data"
-    _list_schema = TabularDataModel
+    _route = "/table"
+    _list_schema = ProxyTableModel
     _list_fields = ["name", "type", "status", "entities", "created_at"]
     _list_foreign_keys = [
         ForeignKeyMapping("columns_info.entity_id", Entity, "entities"),
@@ -276,18 +276,18 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
             return self.internal_columns_info
 
     @property
-    def status(self) -> DataStatus:
+    def status(self) -> TableStatus:
         """
         Data status
 
         Returns
         -------
-        DataStatus
+        TableStatus
         """
         try:
             return self.cached_model.status  # pylint: disable=no-member
         except RecordRetrievalException:
-            return DataStatus.DRAFT
+            return TableStatus.DRAFT
 
     @property
     def record_creation_timestamp_column(self) -> Optional[str]:

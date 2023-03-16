@@ -139,7 +139,7 @@ def add_class_to_doc_group(doc_groups, autodoc_config, menu_section, class_obj):
     # proxy class is used for two purposes:
     #
     # 1. document a shorter path to access a class
-    #    e.g. featurebyte.api.event_data.EventData -> featurebyte.EventData
+    #    e.g. featurebyte.api.event_table.EventData -> featurebyte.EventData
     #    proxy_class="featurebyte.EventData"
     #    EventData is documented with the proxy path
     #    EventData.{property} is documented with the proxy path

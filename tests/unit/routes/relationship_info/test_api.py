@@ -83,7 +83,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         """
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
-            ("event_data", "event_data"),
+            ("event_table", "event_table"),
             ("entity", "entity"),
             ("entity", "entity_transaction"),
             ("entity", "entity_user"),

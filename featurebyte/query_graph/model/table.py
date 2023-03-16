@@ -151,7 +151,7 @@ class ItemTableData(BaseTableData):
     ) -> JoinNodeParameters:
         for col in columns_to_join:
             if col not in event_view_columns:
-                raise ValueError(f"Column does not exist in EventData: {col}")
+                raise ValueError(f"Column does not exist in EventTable: {col}")
 
         # ItemData columns
         right_on = item_view_event_id_column

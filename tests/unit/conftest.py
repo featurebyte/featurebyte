@@ -340,7 +340,7 @@ def snowflake_database_table_scd_data_fixture(snowflake_data_source):
 @pytest.fixture(name="snowflake_database_table_item_data_same_event_id")
 def snowflake_database_table_item_data_same_event_id_fixture(snowflake_data_source):
     """
-    SourceTable object fixture for ItemTable (same event_id_column with EventData)
+    SourceTable object fixture for ItemTable (same event_id_column with EventTable)
     """
     yield snowflake_data_source.get_table(
         database_name="sf_database",
@@ -399,7 +399,7 @@ def transaction_entity_id_fixture():
 
 @pytest.fixture(name="snowflake_event_data")
 def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_id):
-    """EventData object fixture"""
+    """EventTable object fixture"""
     event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
@@ -414,7 +414,7 @@ def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_
 
 @pytest.fixture(name="snowflake_dimension_data")
 def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimension_data_id):
-    """DimensionData object fixture"""
+    """DimensionTable object fixture"""
     dimension_data = DimensionTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_dimension_data",
@@ -485,7 +485,7 @@ def snowflake_item_data_same_event_id_fixture(
     snowflake_item_data,
 ):
     """
-    Snowflake ItemTable object fixture (same event_id_column as EventData)
+    Snowflake ItemTable object fixture (same event_id_column as EventTable)
     """
     _ = mock_get_persistent
     _ = snowflake_item_data
@@ -586,7 +586,7 @@ def snowflake_event_view_fixture(
     snowflake_event_data, snowflake_feature_store_details_dict, snowflake_table_details_dict
 ):
     """
-    EventData object fixture
+    EventTable object fixture
     """
     event_view = snowflake_event_data.get_view()
     assert isinstance(event_view, EventView)
@@ -594,7 +594,7 @@ def snowflake_event_view_fixture(
         name="input_2",
         type=NodeType.INPUT,
         parameters={
-            "type": "event_data",
+            "type": "event_table",
             "id": snowflake_event_data.id,
             "columns": [
                 "col_int",
@@ -1025,10 +1025,10 @@ def api_object_to_id_fixture():
     object_names = [
         "entity",
         "feature_store",
-        "event_data",
-        "item_data",
-        "dimension_data",
-        "scd_data",
+        "event_table",
+        "item_table",
+        "dimension_table",
+        "scd_table",
         "feature_sum_30m",
         "feature_sum_2h",
         "feature_iet",
@@ -1137,10 +1137,10 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (cust_id_entity, "entity"),
             (transaction_entity, "entity_transaction"),
             (snowflake_feature_store, "feature_store"),
-            (snowflake_event_data, "event_data"),
-            (snowflake_item_data, "item_data"),
-            (snowflake_dimension_data, "dimension_data"),
-            (snowflake_scd_data, "scd_data"),
+            (snowflake_event_data, "event_table"),
+            (snowflake_item_data, "item_table"),
+            (snowflake_dimension_data, "dimension_table"),
+            (snowflake_scd_data, "scd_table"),
             (feature_sum_30m, "feature_sum_30m"),
             (feature_sum_2h, "feature_sum_2h"),
             (non_time_based_feature, "feature_non_time_based"),

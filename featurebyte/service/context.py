@@ -14,7 +14,7 @@ from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, 
 from featurebyte.schema.context import ContextCreate, ContextUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
-from featurebyte.service.tabular_data import DataService
+from featurebyte.service.table import TableService
 
 
 class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpdate]):
@@ -66,7 +66,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         DocumentUpdateError
             When the context view is not a proper context view (frame, view and has all required entities)
         """
-        data_service = DataService(
+        data_service = TableService(
             user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
         )
 

@@ -86,7 +86,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_data", "event_data"),
+            ("event_table", "event_table"),
             ("feature", "feature_sum_2h"),
             ("feature", "feature_sum_30m"),
         ]
@@ -121,7 +121,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_data", "event_data"),
+            ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
             ("feature_list", "feature_list_single"),
         ]

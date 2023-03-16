@@ -86,7 +86,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_data", "event_data"),
+            ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
         ]
         for api_object, filename in api_object_filename_pairs:
@@ -240,10 +240,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         Test feature list with different feature stores
         """
         test_api_client, _ = test_api_client_persistent
-        # create feature_store, event_data & feature
+        # create feature_store, event_table & feature
         self.setup_creation_route(api_client=test_api_client)
 
-        # create another feature_store, event_data & feature with different feature_store
+        # create another feature_store, event_table & feature with different feature_store
         feature_store = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
         feature_store["_id"] = str(ObjectId())
         feature_store["name"] = f'new_{feature_store["name"]}'
@@ -251,7 +251,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             key: f"{value}_1" for key, value in feature_store["details"].items()
         }
 
-        event_data = self.load_payload("tests/fixtures/request_payloads/event_data.json")
+        event_data = self.load_payload("tests/fixtures/request_payloads/event_table.json")
         event_data["_id"] = str(ObjectId())
         event_data["name"] = f'new_{event_data["name"]}'
         tabular_source = {
@@ -265,7 +265,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         payload_api_object_pairs = [
             (feature_store, "feature_store"),
-            (event_data, "event_data"),
+            (event_data, "event_table"),
             (feature, "feature"),
         ]
         for payload, api_object in payload_api_object_pairs:
@@ -284,7 +284,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         Test feature list with different feature stores
         """
         test_api_client, _ = test_api_client_persistent
-        # create feature_store, event_data & feature
+        # create feature_store, event_table & feature
         self.setup_creation_route(api_client=test_api_client)
 
         # create another feature with the same name

@@ -18,7 +18,7 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
 )
-from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
@@ -83,24 +83,24 @@ class EntityBriefInfoList(FeatureByteBaseModel):
         return EntityBriefInfoList(__root__=entity_project.project(paginated_data))
 
 
-class DataBriefInfo(BaseBriefInfo):
+class TableBriefInfo(BaseBriefInfo):
     """
-    Data brief info schema
+    Table brief info schema
     """
 
-    status: DataStatus
+    status: TableStatus
     catalog_name: str
 
 
-class DataBriefInfoList(FeatureByteBaseModel):
+class TableBriefInfoList(FeatureByteBaseModel):
     """
-    Paginated list of data brief info
+    Paginated list of table brief info
     """
 
-    __root__: List[DataBriefInfo]
+    __root__: List[TableBriefInfo]
 
     @classmethod
-    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> DataBriefInfoList:
+    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> TableBriefInfoList:
         """
         Construct data brief info list from paginated data
 
@@ -111,21 +111,21 @@ class DataBriefInfoList(FeatureByteBaseModel):
 
         Returns
         -------
-        DataBriefInfoList
+        TableBriefInfoList
         """
         data_project = DictProject(rule=("data", ["name", "status", "catalog_name"]))
-        return DataBriefInfoList(__root__=data_project.project(paginated_data))
+        return TableBriefInfoList(__root__=data_project.project(paginated_data))
 
 
-class EventDataBriefInfoList(FeatureByteBaseModel):
+class EventTableBriefInfoList(FeatureByteBaseModel):
     """
-    Paginated list of event data brief info
+    Paginated list of event table brief info
     """
 
-    __root__: List[DataBriefInfo]
+    __root__: List[TableBriefInfo]
 
     @classmethod
-    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventDataBriefInfoList:
+    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventTableBriefInfoList:
         """
         Construct event data brief info list from paginated data
 
@@ -136,15 +136,15 @@ class EventDataBriefInfoList(FeatureByteBaseModel):
 
         Returns
         -------
-        EventDataBriefInfoList
+        EventTableBriefInfoList
         """
         event_data_project = DictProject(rule=("data", ["name", "status"]))
-        return EventDataBriefInfoList(__root__=event_data_project.project(paginated_data))
+        return EventTableBriefInfoList(__root__=event_data_project.project(paginated_data))
 
 
-class DataColumnInfo(FeatureByteBaseModel):
+class TableColumnInfo(FeatureByteBaseModel):
     """
-    EventDataColumnInfo for storing column information
+    TableColumnInfo for storing column information
 
     name: str
         Column name
@@ -163,7 +163,7 @@ class DataColumnInfo(FeatureByteBaseModel):
     critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
 
 
-class DataInfo(DataBriefInfo, BaseInfo):
+class TableInfo(TableBriefInfo, BaseInfo):
     """
     Data info schema
     """
@@ -173,12 +173,12 @@ class DataInfo(DataBriefInfo, BaseInfo):
     entities: EntityBriefInfoList
     semantics: List[str]
     column_count: int
-    columns_info: Optional[List[DataColumnInfo]]
+    columns_info: Optional[List[TableColumnInfo]]
 
 
-class EventDataInfo(DataInfo):
+class EventTableInfo(TableInfo):
     """
-    EventData info schema
+    EventTable info schema
     """
 
     event_timestamp_column: str
@@ -186,9 +186,9 @@ class EventDataInfo(DataInfo):
     default_feature_job_setting: Optional[FeatureJobSetting]
 
 
-class ItemDataInfo(DataInfo):
+class ItemTableInfo(TableInfo):
     """
-    ItemData info schema
+    ItemTable info schema
     """
 
     event_id_column: str
@@ -196,17 +196,17 @@ class ItemDataInfo(DataInfo):
     event_data_name: str
 
 
-class DimensionDataInfo(DataInfo):
+class DimensionTableInfo(TableInfo):
     """
-    DimensionData info schema
+    DimensionTable info schema
     """
 
     dimension_id_column: str
 
 
-class SCDDataInfo(DataInfo):
+class SCDTableInfo(TableInfo):
     """
-    Slow Changing Dimension Data info schema
+    SCDTable info schema
     """
 
     natural_key_column: str
@@ -222,7 +222,7 @@ class NamespaceInfo(BaseInfo):
     """
 
     entities: EntityBriefInfoList
-    tabular_data: DataBriefInfoList
+    tabular_data: TableBriefInfoList
     default_version_mode: DefaultVersionMode
     version_count: int
     catalog_name: str

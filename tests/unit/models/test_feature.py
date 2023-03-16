@@ -58,7 +58,7 @@ def test_feature_model(feature_model_dict, test_dir, api_object_to_id):
         "deployed_feature_list_ids": [],
         "dtype": "FLOAT",
         "entity_ids": [ObjectId(api_object_to_id["entity"])],
-        "tabular_data_ids": [ObjectId(api_object_to_id["event_data"])],
+        "tabular_data_ids": [ObjectId(api_object_to_id["event_table"])],
         "feature_list_ids": [],
         "feature_namespace_id": feature_dict["feature_namespace_id"],
         "graph": {

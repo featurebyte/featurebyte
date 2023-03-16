@@ -13,7 +13,7 @@ from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.item_table import ItemTable
-from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.feature_store import TableStatus
 
 
 @pytest.fixture()
@@ -76,7 +76,7 @@ def snowflake_event_data_fixture(
     snowflake_database_table, mock_get_persistent, snowflake_event_data_id
 ):
     """
-    Snowflake EventData object fixture (using config object)
+    Snowflake EventTable object fixture (using config object)
     """
     _ = mock_get_persistent
     yield EventTable.from_tabular_source(
@@ -99,7 +99,7 @@ def saved_event_data_fixture(snowflake_event_data):
     snowflake_event_data.save()
     assert snowflake_event_data.saved is True
     assert snowflake_event_data.id == previous_id
-    assert snowflake_event_data.status == DataStatus.DRAFT
+    assert snowflake_event_data.status == TableStatus.DRAFT
     assert isinstance(snowflake_event_data.created_at, datetime)
     assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
 
@@ -130,7 +130,7 @@ def saved_dimension_data_fixture(snowflake_dimension_data):
     snowflake_dimension_data.save()
     assert snowflake_dimension_data.saved is True
     assert snowflake_dimension_data.id == previous_id
-    assert snowflake_dimension_data.status == DataStatus.DRAFT
+    assert snowflake_dimension_data.status == TableStatus.DRAFT
     assert isinstance(snowflake_dimension_data.created_at, datetime)
     assert isinstance(snowflake_dimension_data.tabular_source.feature_store_id, ObjectId)
 
@@ -147,7 +147,7 @@ def saved_scd_data_fixture(snowflake_scd_data):
     snowflake_scd_data.save()
     assert snowflake_scd_data.saved is True
     assert snowflake_scd_data.id == previous_id
-    assert snowflake_scd_data.status == DataStatus.DRAFT
+    assert snowflake_scd_data.status == TableStatus.DRAFT
     assert isinstance(snowflake_scd_data.created_at, datetime)
     assert isinstance(snowflake_scd_data.tabular_source.feature_store_id, ObjectId)
 
@@ -211,7 +211,7 @@ def saved_item_data_fixture(snowflake_feature_store, snowflake_item_data, item_e
     snowflake_item_data.save()
     assert snowflake_item_data.saved is True
     assert snowflake_item_data.id == previous_id
-    assert snowflake_item_data.status == DataStatus.DRAFT
+    assert snowflake_item_data.status == TableStatus.DRAFT
     assert isinstance(snowflake_item_data.created_at, datetime)
     assert isinstance(snowflake_item_data.tabular_source.feature_store_id, ObjectId)
 
@@ -279,7 +279,7 @@ def snowflake_event_view_fixture(
     snowflake_event_data, config, arbitrary_default_feature_job_setting
 ):
     """
-    EventData object fixture
+    EventTable object fixture
     """
     _ = config
     snowflake_event_data.update_default_feature_job_setting(

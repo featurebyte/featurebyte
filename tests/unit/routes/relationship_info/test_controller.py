@@ -12,7 +12,7 @@ from featurebyte import Entity
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.relationship import RelationshipType
-from featurebyte.schema.event_data import EventDataCreate
+from featurebyte.schema.event_table import EventTableCreate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 
@@ -87,20 +87,20 @@ async def test_validate_relationship_info_create__tabular_data_id_error_thrown(
         await relationship_info_controller._validate_relationship_info_create(
             relationship_info_create
         )
-    assert "Please save the TabularData object first" in str(exc)
+    assert "Please save the Table object first" in str(exc)
 
 
 @pytest_asyncio.fixture(name="event_data")
 async def event_data_fixture(app_container):
     """
-    Create event_data fixture
+    Create event_table fixture
     """
-    fixture_path = os.path.join("tests/fixtures/request_payloads/event_data.json")
+    fixture_path = os.path.join("tests/fixtures/request_payloads/event_table.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
-        event_data = await app_container.event_data_service.create_document(
-            data=EventDataCreate(**payload)
+        event_data = await app_container.event_table_service.create_document(
+            data=EventTableCreate(**payload)
         )
         yield event_data
 

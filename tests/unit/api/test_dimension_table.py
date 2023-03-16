@@ -8,7 +8,7 @@ import pytest
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
-from featurebyte.models import DimensionDataModel
+from featurebyte.models import DimensionTableModel
 from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
@@ -68,7 +68,7 @@ class TestDimensionTableTestSuite(BaseTableTestSuite):
 
 @pytest.fixture(name="dimension_data_dict")
 def dimension_data_dict_fixture(snowflake_database_table):
-    """DimensionData in serialized dictionary format"""
+    """DimensionTable in serialized dictionary format"""
     return {
         "type": TableDataType.DIMENSION_DATA,
         "name": "sf_dimension_data",
@@ -155,7 +155,7 @@ def dimension_data_dict_fixture(snowflake_database_table):
 
 def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
     """
-    Test DimensionData creation using tabular source
+    Test DimensionTable creation using tabular source
     """
     dimension_data = DimensionTable.from_tabular_source(
         tabular_source=snowflake_database_table,
@@ -190,7 +190,7 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
 
 def test_from_tabular_source__duplicated_record(saved_dimension_data, snowflake_database_table):
     """
-    Test DimensionData creation failure due to duplicated dimension data name
+    Test DimensionTable creation failure due to duplicated dimension data name
     """
     _ = saved_dimension_data
     with pytest.raises(DuplicatedRecordException) as exc:
@@ -208,7 +208,7 @@ def test_from_tabular_source__duplicated_record(saved_dimension_data, snowflake_
 
 def test_from_tabular_source__retrieval_exception(snowflake_database_table):
     """
-    Test DimensionData creation failure due to retrieval exception
+    Test DimensionTable creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.base_table.Configurations"):
@@ -253,7 +253,7 @@ def test_accessing_dimension_data_attributes(snowflake_dimension_data):
 def test_accessing_saved_dimension_data_attributes(saved_dimension_data):
     """Test accessing event data object attributes"""
     assert saved_dimension_data.saved
-    assert isinstance(saved_dimension_data.cached_model, DimensionDataModel)
+    assert isinstance(saved_dimension_data.cached_model, DimensionTableModel)
     assert saved_dimension_data.record_creation_timestamp_column == "created_at"
     assert saved_dimension_data.dimension_id_column == "col_int"
 

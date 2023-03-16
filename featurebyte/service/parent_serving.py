@@ -16,7 +16,7 @@ from featurebyte.models.parent_serving import JoinStep
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity import EntityService
-from featurebyte.service.tabular_data import DataService
+from featurebyte.service.table import TableService
 
 
 class ParentEntityLookupService(BaseService):
@@ -31,7 +31,7 @@ class ParentEntityLookupService(BaseService):
         persistent: Persistent,
         catalog_id: ObjectId,
         entity_service: EntityService,
-        data_service: DataService,
+        data_service: TableService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.entity_service = entity_service

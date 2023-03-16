@@ -109,7 +109,7 @@ def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
     df = (item_view_filtered["item_type_upper"] + "_ABC").preview()
     assert (df.iloc[:, 0] == "TYPE_42_ABC").all()
 
-    # Join additional columns from EventData
+    # Join additional columns from EventTable
     item_view_filtered.join_event_data_attributes(["SESSION_ID"])
     df = item_view_filtered.preview(500)
     assert df["SESSION_ID"].notnull().all()

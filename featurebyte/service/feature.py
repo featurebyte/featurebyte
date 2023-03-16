@@ -26,7 +26,7 @@ from featurebyte.schema.feature_namespace import (
 )
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.tabular_data import DataService
+from featurebyte.service.table import TableService
 from featurebyte.service.view_construction import ViewConstructionService
 
 
@@ -139,7 +139,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             await self._check_document_unique_constraints(document=document)
 
             # check whether data has been saved at persistent storage
-            data_service = DataService(
+            data_service = TableService(
                 user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
             )
             for tabular_data_id in data.tabular_data_ids:

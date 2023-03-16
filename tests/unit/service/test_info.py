@@ -12,7 +12,7 @@ from featurebyte import (
     MissingValueImputation,
 )
 from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
-from featurebyte.models.dimension_data import DimensionDataModel
+from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.node.schema import SnowflakeDetails, TableDetails
 from featurebyte.schema.feature import (
@@ -24,20 +24,20 @@ from featurebyte.schema.feature import (
     VersionComparison,
 )
 from featurebyte.schema.info import (
-    DataBriefInfo,
-    DataColumnInfo,
-    DimensionDataInfo,
+    DimensionTableInfo,
     EntityBriefInfo,
     EntityInfo,
-    EventDataInfo,
+    EventTableInfo,
     FeatureInfo,
     FeatureListBriefInfo,
     FeatureListInfo,
     FeatureListNamespaceInfo,
     FeatureNamespaceInfo,
     FeatureStoreInfo,
-    ItemDataInfo,
-    SCDDataInfo,
+    ItemTableInfo,
+    SCDTableInfo,
+    TableBriefInfo,
+    TableColumnInfo,
 )
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.service.info import InfoService
@@ -92,8 +92,8 @@ async def test_get_entity_info(info_service, entity):
 @pytest.mark.asyncio
 async def test_get_event_data_info(info_service, event_data, entity):
     """Test get_event_data_info"""
-    info = await info_service.get_event_data_info(document_id=event_data.id, verbose=False)
-    expected_info = EventDataInfo(
+    info = await info_service.get_event_table_info(document_id=event_data.id, verbose=False)
+    expected_info = EventTableInfo(
         name="sf_event_data",
         status="DRAFT",
         event_timestamp_column="event_timestamp",
@@ -119,22 +119,22 @@ async def test_get_event_data_info(info_service, event_data, entity):
     )
     assert info == expected_info
 
-    info = await info_service.get_event_data_info(document_id=event_data.id, verbose=True)
-    assert info == EventDataInfo(
+    info = await info_service.get_event_table_info(document_id=event_data.id, verbose=True)
+    assert info == EventTableInfo(
         **{
             **expected_info.dict(),
             "columns_info": [
-                DataColumnInfo(name="col_int", dtype="INT", entity=entity.name),
-                DataColumnInfo(name="col_float", dtype="FLOAT"),
-                DataColumnInfo(name="col_char", dtype="CHAR"),
-                DataColumnInfo(name="col_text", dtype="VARCHAR"),
-                DataColumnInfo(name="col_binary", dtype="BINARY"),
-                DataColumnInfo(name="col_boolean", dtype="BOOL"),
-                DataColumnInfo(
+                TableColumnInfo(name="col_int", dtype="INT", entity=entity.name),
+                TableColumnInfo(name="col_float", dtype="FLOAT"),
+                TableColumnInfo(name="col_char", dtype="CHAR"),
+                TableColumnInfo(name="col_text", dtype="VARCHAR"),
+                TableColumnInfo(name="col_binary", dtype="BINARY"),
+                TableColumnInfo(name="col_boolean", dtype="BOOL"),
+                TableColumnInfo(
                     name="event_timestamp", dtype="TIMESTAMP_TZ", semantic="event_timestamp"
                 ),
-                DataColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
-                DataColumnInfo(name="cust_id", dtype="INT", entity=entity.name),
+                TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
+                TableColumnInfo(name="cust_id", dtype="INT", entity=entity.name),
             ],
         }
     )
@@ -144,8 +144,8 @@ async def test_get_event_data_info(info_service, event_data, entity):
 async def test_get_item_data_info(info_service, item_data, event_data):
     """Test get_item_data_info"""
     _ = event_data
-    info = await info_service.get_item_data_info(document_id=item_data.id, verbose=False)
-    expected_info = ItemDataInfo(
+    info = await info_service.get_item_table_info(document_id=item_data.id, verbose=False)
+    expected_info = ItemTableInfo(
         name="sf_item_data",
         status="DRAFT",
         event_id_column="event_id_col",
@@ -167,17 +167,17 @@ async def test_get_item_data_info(info_service, item_data, event_data):
     )
     assert info == expected_info
 
-    info = await info_service.get_item_data_info(document_id=item_data.id, verbose=True)
-    assert info == ItemDataInfo(
+    info = await info_service.get_item_table_info(document_id=item_data.id, verbose=True)
+    assert info == ItemTableInfo(
         **{
             **expected_info.dict(),
             "columns_info": [
-                DataColumnInfo(name="event_id_col", dtype="INT"),
-                DataColumnInfo(name="item_id_col", dtype="VARCHAR"),
-                DataColumnInfo(name="item_type", dtype="VARCHAR"),
-                DataColumnInfo(name="item_amount", dtype="FLOAT"),
-                DataColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
-                DataColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
+                TableColumnInfo(name="event_id_col", dtype="INT"),
+                TableColumnInfo(name="item_id_col", dtype="VARCHAR"),
+                TableColumnInfo(name="item_type", dtype="VARCHAR"),
+                TableColumnInfo(name="item_amount", dtype="FLOAT"),
+                TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
+                TableColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
             ],
         }
     )
@@ -186,8 +186,8 @@ async def test_get_item_data_info(info_service, item_data, event_data):
 @pytest.mark.asyncio
 async def test_get_dimension_data_info(info_service, dimension_data):
     """Test get_dimension_data_info"""
-    info = await info_service.get_dimension_data_info(document_id=dimension_data.id, verbose=False)
-    expected_info = DimensionDataInfo(
+    info = await info_service.get_dimension_table_info(document_id=dimension_data.id, verbose=False)
+    expected_info = DimensionTableInfo(
         name="sf_dimension_data",
         status="DRAFT",
         dimension_id_column="col_int",
@@ -207,20 +207,20 @@ async def test_get_dimension_data_info(info_service, dimension_data):
     )
     assert info == expected_info
 
-    info = await info_service.get_dimension_data_info(document_id=dimension_data.id, verbose=True)
-    assert info == DimensionDataInfo(
+    info = await info_service.get_dimension_table_info(document_id=dimension_data.id, verbose=True)
+    assert info == DimensionTableInfo(
         **{
             **expected_info.dict(),
             "columns_info": [
-                DataColumnInfo(name="col_int", dtype="INT"),
-                DataColumnInfo(name="col_float", dtype="FLOAT"),
-                DataColumnInfo(name="col_char", dtype="CHAR"),
-                DataColumnInfo(name="col_text", dtype="VARCHAR"),
-                DataColumnInfo(name="col_binary", dtype="BINARY"),
-                DataColumnInfo(name="col_boolean", dtype="BOOL"),
-                DataColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
-                DataColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
-                DataColumnInfo(name="cust_id", dtype="INT"),
+                TableColumnInfo(name="col_int", dtype="INT"),
+                TableColumnInfo(name="col_float", dtype="FLOAT"),
+                TableColumnInfo(name="col_char", dtype="CHAR"),
+                TableColumnInfo(name="col_text", dtype="VARCHAR"),
+                TableColumnInfo(name="col_binary", dtype="BINARY"),
+                TableColumnInfo(name="col_boolean", dtype="BOOL"),
+                TableColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
+                TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
+                TableColumnInfo(name="cust_id", dtype="INT"),
             ],
         }
     )
@@ -229,8 +229,8 @@ async def test_get_dimension_data_info(info_service, dimension_data):
 @pytest.mark.asyncio
 async def test_get_scd_data_info(info_service, scd_data):
     """Test get_scd_data_info"""
-    info = await info_service.get_scd_data_info(document_id=scd_data.id, verbose=False)
-    expected_info = SCDDataInfo(
+    info = await info_service.get_scd_table_info(document_id=scd_data.id, verbose=False)
+    expected_info = SCDTableInfo(
         name="sf_scd_data",
         status="DRAFT",
         record_creation_timestamp_column=None,
@@ -254,21 +254,21 @@ async def test_get_scd_data_info(info_service, scd_data):
     )
     assert info == expected_info
 
-    info = await info_service.get_scd_data_info(document_id=scd_data.id, verbose=True)
-    assert info == SCDDataInfo(
+    info = await info_service.get_scd_table_info(document_id=scd_data.id, verbose=True)
+    assert info == SCDTableInfo(
         **{
             **expected_info.dict(),
             "columns_info": [
-                DataColumnInfo(name="col_int", dtype="INT"),
-                DataColumnInfo(name="col_float", dtype="FLOAT"),
-                DataColumnInfo(name="is_active", dtype="BOOL"),
-                DataColumnInfo(name="col_text", dtype="VARCHAR"),
-                DataColumnInfo(name="col_binary", dtype="BINARY"),
-                DataColumnInfo(name="col_boolean", dtype="BOOL"),
-                DataColumnInfo(name="effective_timestamp", dtype="TIMESTAMP_TZ"),
-                DataColumnInfo(name="end_timestamp", dtype="TIMESTAMP_TZ"),
-                DataColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
-                DataColumnInfo(name="cust_id", dtype="INT"),
+                TableColumnInfo(name="col_int", dtype="INT"),
+                TableColumnInfo(name="col_float", dtype="FLOAT"),
+                TableColumnInfo(name="is_active", dtype="BOOL"),
+                TableColumnInfo(name="col_text", dtype="VARCHAR"),
+                TableColumnInfo(name="col_binary", dtype="BINARY"),
+                TableColumnInfo(name="col_boolean", dtype="BOOL"),
+                TableColumnInfo(name="effective_timestamp", dtype="TIMESTAMP_TZ"),
+                TableColumnInfo(name="end_timestamp", dtype="TIMESTAMP_TZ"),
+                TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
+                TableColumnInfo(name="cust_id", dtype="INT"),
             ],
         }
     )
@@ -318,7 +318,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
+        tabular_data=[TableBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -429,7 +429,7 @@ def expected_feature_iet_info_fixture(feature_iet):
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
+        tabular_data=[TableBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -524,7 +524,7 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
+        tabular_data=[TableBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -550,7 +550,7 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
+        tabular_data=[TableBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -595,7 +595,7 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
+        tabular_data=[TableBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -619,7 +619,7 @@ def test_get_main_data(info_service, item_data, event_data, dimension_data):
     new_columns_info = []
     for i, col in enumerate(dimension_data.columns_info):
         new_columns_info.append({**col.dict(), "entity_id": ObjectId() if i == 0 else None})
-    dimension_data_with_entity = DimensionDataModel(
+    dimension_data_with_entity = DimensionTableModel(
         **{**dimension_data.dict(), "columns_info": new_columns_info}
     )
     assert (

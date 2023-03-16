@@ -15,14 +15,14 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.scd_data import SCDDataModel
+from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, SCDTableData
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ChangeViewMetadata, ViewMetadata
-from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
+from featurebyte.schema.scd_table import SCDTableCreate, SCDTableUpdate
 
 if TYPE_CHECKING:
     from featurebyte.api.change_view import ChangeView
@@ -50,10 +50,10 @@ class SCDTable(TableApiObject):
     __fbautodoc__ = FBAutoDoc(section=["Table"], proxy_class="featurebyte.SCDTable")
 
     # class variables
-    _route = "/scd_data"
-    _update_schema_class = SCDDataUpdate
-    _create_schema_class = SCDDataCreate
-    _get_schema = SCDDataModel
+    _route = "/scd_table"
+    _update_schema_class = SCDTableUpdate
+    _create_schema_class = SCDTableCreate
+    _get_schema = SCDTableModel
     _table_data_class: ClassVar[Type[AllTableDataT]] = SCDTableData
 
     # pydantic instance variable (public)

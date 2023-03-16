@@ -85,8 +85,8 @@ class TestContextApi(BaseCatalogApiTestSuite):
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("item_data", "item_data"),
-            ("event_data", "event_data"),
+            ("item_table", "item_table"),
+            ("event_table", "event_table"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -105,8 +105,8 @@ class TestContextApi(BaseCatalogApiTestSuite):
 
     @pytest.fixture(name="input_event_data_node")
     def input_event_data_node_fixture(self):
-        """Input event_data node of a graph"""
-        event_data_payload = self.load_payload("tests/fixtures/request_payloads/event_data.json")
+        """Input event_table node of a graph"""
+        event_data_payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
         return {
             "name": "input_1",
             "type": "input",

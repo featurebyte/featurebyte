@@ -21,7 +21,7 @@ from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
 )
-from featurebyte.service.event_data import EventDataService
+from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.manager import SessionManager
@@ -44,7 +44,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         persistent = self.get_persistent()
 
         # retrieve event data
-        event_data_service = EventDataService(
+        event_data_service = EventTableService(
             user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
         )
         event_data = await event_data_service.get_document(document_id=payload.event_data_id)

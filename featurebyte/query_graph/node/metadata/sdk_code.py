@@ -60,7 +60,7 @@ class ValueStr(str):
 class VariableNameStr(str):
     """
     VariableNameStr class is used to represent variable name string in the code. It also includes
-    indexed variable, for example: `event_data`, `event_data['timestamp']`.
+    indexed variable, for example: `event_table`, `event_table['timestamp']`.
     """
 
     def as_input(self) -> str:
@@ -77,7 +77,7 @@ class VariableNameStr(str):
 class ExpressionStr(str):
     """
     ExpressionStr class is used to represent a combination of operations, variables, or values that will
-    produce a result when evaluated, for example: `event_data['quantity'] * event_data['price_per_unit']`.
+    produce a result when evaluated, for example: `event_table['quantity'] * event_table['price_per_unit']`.
     """
 
     def as_input(self) -> str:
@@ -94,7 +94,7 @@ class ExpressionStr(str):
 class StatementStr(str):
     """
     StatementStr class is used to represent an instruction that performs specific task, for example:
-    `event_data['rate'] = 1.34`, `col = event_view["amount"]`.
+    `event_table['rate'] = 1.34`, `col = event_view["amount"]`.
     """
 
 

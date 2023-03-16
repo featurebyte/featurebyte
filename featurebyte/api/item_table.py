@@ -18,14 +18,14 @@ from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.item_data import ItemDataModel
+from featurebyte.models.item_table import ItemTableModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, ItemTableData
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ItemViewMetadata
-from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
+from featurebyte.schema.item_table import ItemTableCreate, ItemTableUpdate
 
 if TYPE_CHECKING:
     from featurebyte.api.item_view import ItemView
@@ -59,10 +59,10 @@ class ItemTable(TableApiObject):
     __fbautodoc__ = FBAutoDoc(section=["Table"], proxy_class="featurebyte.ItemTable")
 
     # class variables
-    _route = "/item_data"
-    _update_schema_class = ItemDataUpdate
-    _create_schema_class = ItemDataCreate
-    _get_schema = ItemDataModel
+    _route = "/item_table"
+    _update_schema_class = ItemTableUpdate
+    _create_schema_class = ItemTableCreate
+    _get_schema = ItemTableModel
     _table_data_class: ClassVar[Type[AllTableDataT]] = ItemTableData
 
     # pydantic instance variable (public)
@@ -107,7 +107,7 @@ class ItemTable(TableApiObject):
         Parameters
         ----------
         event_suffix : Optional[str]
-            A suffix to append on to the columns from the EventData
+            A suffix to append on to the columns from the EventTable
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
             from the table, the record creation timestamp column will be dropped and the columns to join from the

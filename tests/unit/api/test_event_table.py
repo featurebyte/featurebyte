@@ -1,5 +1,5 @@
 """
-Unit test for EventData class
+Unit test for EventTable class
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.event_data import EventDataModel
+from featurebyte.models.event_table import EventTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 from featurebyte.schema.task import Task, TaskStatus
@@ -32,7 +32,7 @@ from tests.util.helper import check_sdk_code_generation
 
 @pytest.fixture(name="event_data_dict")
 def event_data_dict_fixture(snowflake_database_table):
-    """EventData in serialized dictionary format"""
+    """EventTable in serialized dictionary format"""
     return {
         "type": "event_data",
         "name": "sf_event_data",
@@ -121,7 +121,7 @@ def event_data_dict_fixture(snowflake_database_table):
 
 def test_from_tabular_source(snowflake_database_table, event_data_dict):
     """
-    Test EventData creation using tabular source
+    Test EventTable creation using tabular source
     """
     event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
@@ -158,7 +158,7 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
 
 def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_database_table):
     """
-    Test EventData creation failure due to duplicated event data name
+    Test EventTable creation failure due to duplicated event data name
     """
     _ = saved_event_data
     with pytest.raises(DuplicatedRecordException) as exc:
@@ -174,7 +174,7 @@ def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_data
 
 def test_from_tabular_source__retrieval_exception(snowflake_database_table):
     """
-    Test EventData creation failure due to retrieval exception
+    Test EventTable creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.base_table.Configurations"):
@@ -423,7 +423,7 @@ def test_update_default_job_setting(snowflake_event_data, config, mock_api_objec
 
     # make sure the event data is not saved
     client = config.get_client()
-    response = client.get(url=f"/event_data/{snowflake_event_data.id}")
+    response = client.get(url=f"/event_table/{snowflake_event_data.id}")
     assert response.status_code == 404
     assert snowflake_event_data.saved is False
 
@@ -466,7 +466,7 @@ def test_update_default_job_setting__saved_event_data(
         blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
     )
     client = config.get_client()
-    response = client.get(url=f"/event_data/{saved_event_data.id}")
+    response = client.get(url=f"/event_table/{saved_event_data.id}")
     assert response.status_code == 200
     assert response.json()["default_feature_job_setting"] == {
         "blind_spot": "1m30s",
@@ -523,7 +523,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis(
     assert saved_event_data.default_feature_job_setting == analysis.get_recommendation.return_value
 
 
-@patch("featurebyte.service.feature_job_setting_analysis.EventDataService.get_document")
+@patch("featurebyte.service.feature_job_setting_analysis.EventTableService.get_document")
 def test_update_default_feature_job_setting__using_feature_job_analysis_no_creation_date_col(
     mock_get_document,
     saved_event_data,
@@ -584,7 +584,7 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure__event
     """
     with pytest.raises(RecordCreationException) as exc:
         snowflake_event_data.initialize_default_feature_job_setting()
-    expected_msg = f'EventData (id: "{snowflake_event_data.id}") not found. Please save the EventData object first.'
+    expected_msg = f'EventTable (id: "{snowflake_event_data.id}") not found. Please save the EventTable object first.'
     assert expected_msg in str(exc)
 
 
@@ -624,7 +624,7 @@ def test_update_record_creation_timestamp_column__unsaved_object(snowflake_datab
     """Test update record creation timestamp column (unsaved event data)"""
     event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
-        name="event_data",
+        name="event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
     )
@@ -652,7 +652,7 @@ def test_update_record_creation_timestamp_column__saved_object(saved_event_data)
 
 def test_get_event_data(snowflake_event_data, mock_config_path_env):
     """
-    Test EventData.get function
+    Test EventTable.get function
     """
     _ = mock_config_path_env
 
@@ -921,7 +921,7 @@ def test_list_feature_job_setting_analysis(mock_list, saved_event_data):
     Test list_feature_job_setting_analysis
     """
     output = saved_event_data.list_feature_job_setting_analysis()
-    mock_list.assert_called_once_with(event_data_id=saved_event_data.id)
+    mock_list.assert_called_once_with(event_table_id=saved_event_data.id)
     assert output == mock_list.return_value
 
 
@@ -964,7 +964,7 @@ def test_accessing_event_data_attributes(snowflake_event_data):
 def test_accessing_saved_event_data_attributes(saved_event_data):
     """Test accessing event data object attributes"""
     assert saved_event_data.saved
-    assert isinstance(saved_event_data.cached_model, EventDataModel)
+    assert isinstance(saved_event_data.cached_model, EventTableModel)
     assert saved_event_data.record_creation_timestamp_column == "created_at"
     assert saved_event_data.default_feature_job_setting is None
     assert saved_event_data.event_timestamp_column == "event_timestamp"

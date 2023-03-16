@@ -66,8 +66,8 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
         ]
 
 
-class DataStatus(OrderedStrEnum):
-    """Data status"""
+class TableStatus(OrderedStrEnum):
+    """Table status"""
 
     DEPRECATED = "DEPRECATED"
     DRAFT = "DRAFT"
@@ -113,21 +113,21 @@ class ConstructGraphMixin:
         return graph, inserted_input_node
 
 
-class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocumentModel, ABC):
+class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocumentModel, ABC):
     """
-    DataModel schema
+    TableModel schema
 
     tabular_source : TabularSource
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
-        List of event data columns
-    status: DataStatus
-        Data status
+        List of table column information
+    status: TableStatus
+        Table status
     record_creation_timestamp_column: Optional[str]
         Record creation timestamp column name
     """
 
-    status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
+    status: TableStatus = Field(default=TableStatus.DRAFT, allow_mutation=False)
     record_creation_timestamp_column: Optional[StrictStr]
     _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
@@ -201,7 +201,7 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocume
         MongoDB settings
         """
 
-        collection_name: str = "tabular_data"
+        collection_name: str = "table"
         unique_constraints: List[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),

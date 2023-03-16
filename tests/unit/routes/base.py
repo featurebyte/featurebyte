@@ -14,7 +14,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
-from featurebyte.schema.tabular_data import DataCreate
+from featurebyte.schema.table import TableCreate
 
 
 class BaseApiTestSuite:
@@ -107,7 +107,8 @@ class BaseApiTestSuite:
     @property
     def id_field_name(self):
         """ID field name in the url"""
-        return self.base_route.lstrip("/") + "_id"
+        base_name = self.base_route.lstrip("/")
+        return f"{base_name}_id"
 
     def pytest_generate_tests(self, metafunc):
         """Parametrize fixture at runtime"""
@@ -693,12 +694,12 @@ class BaseCatalogRelationshipApiTestSuite(BaseRelationshipApiTestSuite, BaseCata
     """
 
 
-class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
+class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
     """
-    BaseDataApiTestSuite contains tests related to data service
+    BaseTableApiTestSuite contains tests related to data service
     """
 
-    data_create_schema_class = DataCreate
+    data_create_schema_class = TableCreate
     update_unprocessable_payload_expected_detail_pairs = []
 
     def pytest_generate_tests(self, metafunc):
@@ -1017,18 +1018,18 @@ class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         success_response_dict = create_success_response.json()
 
-        # check that tabular_data route can be used to retrieve the created data
-        response = test_api_client.get(f"/tabular_data/{success_response_dict['_id']}")
+        # check that table route can be used to retrieve the created data
+        response = test_api_client.get(f"/table/{success_response_dict['_id']}")
         assert response.json() == success_response_dict
 
     def test_tabular_data_list_200(
         self, test_api_client_persistent, create_multiple_success_responses
     ):
-        """Test tabular_data list (success, multiple)"""
+        """Test table list (success, multiple)"""
         # test with default params
         test_api_client, _ = test_api_client_persistent
         _ = create_multiple_success_responses
-        response = test_api_client.get("/tabular_data")
+        response = test_api_client.get("/table")
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
         expected_paginated_info = {"page": 1, "page_size": 10, "total": 3}
@@ -1045,7 +1046,7 @@ class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
 
         # test with pagination parameters (page 1)
         response_with_params = test_api_client.get(
-            "/tabular_data",
+            "/table",
             params={"sort_dir": "asc", "sort_by": "name", "page_size": 2, "page": 1},
         )
         assert response_with_params.status_code == HTTPStatus.OK
@@ -1059,7 +1060,7 @@ class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
 
         # test with pagination parameters (page 2)
         response_with_params = test_api_client.get(
-            "/tabular_data",
+            "/table",
             params={"sort_dir": "asc", "sort_by": "name", "page_size": 2, "page": 2},
         )
         assert response_with_params.status_code == HTTPStatus.OK
@@ -1070,21 +1071,15 @@ class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
 
         # test sort_by with some random unknown column name
         # should not throw error, just that the sort_by param has no real effect since column not found
-        response_with_params = test_api_client.get(
-            "/tabular_data", params={"sort_by": "random_name"}
-        )
+        response_with_params = test_api_client.get("/table", params={"sort_by": "random_name"})
         assert response_with_params.status_code == HTTPStatus.OK
 
         # test name parameter
-        response_with_params = test_api_client.get(
-            "/tabular_data", params={"name": expected_names[1]}
-        )
+        response_with_params = test_api_client.get("/table", params={"name": expected_names[1]})
         assert response_with_params.status_code == HTTPStatus.OK
         response_with_params_names = [elem["name"] for elem in response_with_params.json()["data"]]
         assert response_with_params_names == [expected_names[1]]
 
         # test bench_size_boundary
-        response_page_size_boundary = test_api_client.get(
-            "/tabular_data", params={"page_size": 100}
-        )
+        response_page_size_boundary = test_api_client.get("/table", params={"page_size": 100})
         assert response_page_size_boundary.status_code == HTTPStatus.OK

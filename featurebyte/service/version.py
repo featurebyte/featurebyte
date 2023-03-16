@@ -30,7 +30,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.tabular_data import DataService
+from featurebyte.service.table import TableService
 from featurebyte.service.view_construction import ViewConstructionService
 
 
@@ -41,7 +41,7 @@ class VersionService(BaseService):
 
     def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
         super().__init__(user, persistent, catalog_id)
-        self.data_service = DataService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.data_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
         self.feature_service = FeatureService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
