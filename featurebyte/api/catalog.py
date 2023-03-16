@@ -162,6 +162,24 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return self._get_audit_history(field_name="name")
 
+    def create_entity(self, name: str, serving_names: List[str]) -> Entity:
+        """
+        Create entity
+
+        Parameters
+        ----------
+        name: str
+            Entity name
+        serving_names: List[str]
+            Names of the serving columns
+
+        Returns
+        -------
+        Entity
+        """
+        check_is_active_catalog(self.id)
+        return Entity.create(name=name, serving_names=serving_names)
+
     def list_features(
         self,
         include_id: Optional[bool] = False,

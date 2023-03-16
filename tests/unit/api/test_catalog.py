@@ -94,6 +94,12 @@ def catalog_get_methods_to_test_list():
     ]
 
 
+def catalog_create_methods_to_test_list():
+    return [
+        MethodMetadata(Catalog.create_entity, Entity, "create"),
+    ]
+
+
 def _inheritors(class_obj):
     """
     Helper method to find all children of a class.
@@ -144,7 +150,11 @@ def test_all_methods_are_exposed_in_catalog(methods_to_test):
 
 @pytest.mark.parametrize(
     "method_item",
-    [*catalog_list_methods_to_test_list(), *catalog_get_methods_to_test_list()],
+    [
+        *catalog_list_methods_to_test_list(),
+        *catalog_get_methods_to_test_list(),
+        *catalog_create_methods_to_test_list(),
+    ],
 )
 def test_methods_have_same_parameters_as_delegated_method_call(method_item):
     """
@@ -164,7 +174,11 @@ def test_methods_have_same_parameters_as_delegated_method_call(method_item):
 
 @pytest.mark.parametrize(
     "method_item",
-    [*catalog_list_methods_to_test_list(), *catalog_get_methods_to_test_list()],
+    [
+        *catalog_list_methods_to_test_list(),
+        *catalog_get_methods_to_test_list(),
+        *catalog_create_methods_to_test_list(),
+    ],
 )
 def test_methods_call_the_correct_delegated_method(method_item):
     """
@@ -178,6 +192,9 @@ def test_methods_call_the_correct_delegated_method(method_item):
         if method_name == "get":
             # get methods have a required parameter
             catalog_method_to_call("random_name")
+        elif method_name == "create":
+            # create methods have a required parameter
+            catalog_method_to_call("random_name", [])
         else:
             catalog_method_to_call()
         mocked_delegated_method.assert_called()
