@@ -10,6 +10,7 @@ from pydantic import Field
 
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
+from featurebyte.sql.spark.common import retry_sql
 from featurebyte.sql.spark.tile_common import TileCommon
 from featurebyte.sql.spark.tile_generate import TileGenerate
 from featurebyte.sql.spark.tile_monitor import TileMonitor
@@ -83,7 +84,7 @@ class TileGenerateSchedule(TileCommon):
 
         insert_sql = audit_insert_sql.replace("<STATUS>", "STARTED").replace("<MESSAGE>", "")
         logger.debug(insert_sql)
-        await self._spark.execute_query(insert_sql)
+        await retry_sql(self._spark, insert_sql)
 
         tile_start_ts_str = tile_start_ts.strftime("%Y-%m-%d %H:%M:%S")
         tile_end_ts_str = tile_end_ts.strftime("%Y-%m-%d %H:%M:%S")
@@ -178,10 +179,10 @@ class TileGenerateSchedule(TileCommon):
                     "<MESSAGE>", message
                 )
                 logger.error("fail_insert_sql: ", ex_insert_sql)
-                await self._spark.execute_query(ex_insert_sql)
+                await retry_sql(self._spark, ex_insert_sql)
                 raise exception
 
             success_code = spec["status"]["success"]
             insert_sql = audit_insert_sql.replace("<STATUS>", success_code).replace("<MESSAGE>", "")
             logger.info("success_insert_sql: ", insert_sql)
-            await self._spark.execute_query(insert_sql)
+            await retry_sql(self._spark, insert_sql)
