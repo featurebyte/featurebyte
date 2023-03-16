@@ -3,7 +3,7 @@ Unit test for Catalog class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -37,7 +37,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import FeatureNamespace
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_list import FeatureListNamespace
-from featurebyte.config import reset_to_default_catalog
+from featurebyte.config import get_active_catalog_id, reset_to_default_catalog
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
@@ -52,33 +52,32 @@ class ListMethodMetadata:
     """
 
     # Catalog method to test
-    catalog_method: Callable
+    catalog_method_name: str
     # API object which has the list method we delegate to
     class_object: Any
-    # List method override if we don't delegate to a `list` method.
-    list_method_override: Optional[str] = None
-    # List method to patch
-    list_method_to_patch: Optional[str] = None
+    # Method we delegate to (eg. list)
+    class_method_delegated: str = None
+    # Method to patch. We might need to patch if we do some descriptor overrides so that we can get the right
+    # method to compare signatures with.
+    delegated_method_to_patch: Optional[str] = None
 
 
 def get_methods_to_test():
     return [
-        ListMethodMetadata(Catalog.list_features, Feature, "_list_versions", "list_versions"),
-        ListMethodMetadata(Catalog.list_feature_namespaces, FeatureNamespace),
-        ListMethodMetadata(Catalog.list_feature_list_namespaces, FeatureListNamespace),
-        ListMethodMetadata(
-            Catalog.list_feature_lists, FeatureList, "_list_versions", "list_versions"
-        ),
-        ListMethodMetadata(Catalog.list_tables, Table),
-        ListMethodMetadata(Catalog.list_dimension_tables, DimensionTable),
-        ListMethodMetadata(Catalog.list_item_tables, ItemTable),
-        ListMethodMetadata(Catalog.list_event_tables, EventTable),
-        ListMethodMetadata(Catalog.list_scd_tables, SCDTable),
-        ListMethodMetadata(Catalog.list_relationships, Relationship),
-        ListMethodMetadata(Catalog.list_feature_job_setting_analyses, FeatureJobSettingAnalysis),
-        ListMethodMetadata(Catalog.list_feature_stores, FeatureStore),
-        ListMethodMetadata(Catalog.list_entities, Entity),
-        ListMethodMetadata(Catalog.list_periodic_tasks, PeriodicTask),
+        ListMethodMetadata("list_features", Feature, "_list_versions", "list_versions"),
+        ListMethodMetadata("list_feature_namespaces", FeatureNamespace, "list"),
+        ListMethodMetadata("list_feature_list_namespaces", FeatureListNamespace, "list"),
+        ListMethodMetadata("list_feature_lists", FeatureList, "_list_versions", "list_versions"),
+        ListMethodMetadata("list_tables", Table, "list"),
+        ListMethodMetadata("list_dimension_tables", DimensionTable, "list"),
+        ListMethodMetadata("list_item_tables", ItemTable, "list"),
+        ListMethodMetadata("list_event_tables", EventTable, "list"),
+        ListMethodMetadata("list_scd_tables", SCDTable, "list"),
+        ListMethodMetadata("list_relationships", Relationship, "list"),
+        ListMethodMetadata("list_feature_job_setting_analyses", FeatureJobSettingAnalysis, "list"),
+        ListMethodMetadata("list_feature_stores", FeatureStore, "list"),
+        ListMethodMetadata("list_entities", Entity, "list"),
+        ListMethodMetadata("list_periodic_tasks", PeriodicTask, "list"),
     ]
 
 
@@ -127,17 +126,19 @@ def test_list_methods_have_same_parameters_as_delegated_list_method_call(method_
     Test catalog list methods have same parameters as underlying methods.
     This will help to ensure that the Catalog list APIs are consistent with their API object List methods.
     """
-    catalog_list_method, underlying_class = method_item.catalog_method, method_item.class_object
+    catalog = Catalog.create("random")
+    catalog_list_method_name, underlying_class = (
+        method_item.catalog_method_name,
+        method_item.class_object,
+    )
     # Check that the signatures match
-    catalog_list_method_signature = signature(catalog_list_method)
-    underlying_class_method = underlying_class.list
-    if method_item.list_method_override:
-        underlying_class_method = getattr(underlying_class, method_item.list_method_override)
+    catalog_method = getattr(catalog, catalog_list_method_name)
+    catalog_list_method_signature = signature(catalog_method)
+    underlying_class_method = getattr(underlying_class, method_item.class_method_delegated)
     underlying_class_list_method_signature = signature(underlying_class_method)
     assert [*catalog_list_method_signature.parameters.keys()] == [
-        "self",
         *underlying_class_list_method_signature.parameters.keys(),
-    ], f"catalog method: {catalog_list_method}, underlying_class {underlying_class}"
+    ], f"catalog method: {catalog_list_method_name}, underlying_class {underlying_class}"
 
 
 @pytest.mark.parametrize(
@@ -149,10 +150,10 @@ def test_list_methods_call_the_correct_delegated_method(method_item):
     Test catalog list methods call the correct delegated method.
     """
     # Assert that the delegated list method is called
-    method_name = method_item.list_method_to_patch or "list"
+    method_name = method_item.delegated_method_to_patch or "list"
     catalog = Catalog.create("random")
     with patch.object(method_item.class_object, method_name) as mocked_list:
-        catalog_method_to_call = getattr(catalog, method_item.catalog_method.__name__)
+        catalog_method_to_call = getattr(catalog, method_item.catalog_method_name)
         catalog_method_to_call()
         mocked_list.assert_called()
 
@@ -392,38 +393,30 @@ def test_activate():
     assert Entity.list()["name"].tolist() == []
 
 
-def _assert_function_is_not_called_from_active_catalog(function):
-    """
-    Assert that the function is not called from an active catalog.
-
-    We verify this by calling the function and making sure that it raises an error. This makes an assumption that the
-    currently active catalog is not the catalog that this function is being invoked from.
-    """
-    with pytest.raises(ValueError) as exc:
-        function()
-    assert "Catalog is not active" in str(exc.value)
-
-
 def _get_list_functions():
     all_functions = dir(Catalog)
     return [f for f in all_functions if f.startswith("list_")]
 
 
 @pytest.mark.parametrize("list_function", _get_list_functions())
-def test_list_functions_are_called_from_active_catalog(list_function):
+def test_catalog_obj_list_functions_produces_no_errors(list_function):
     """
-    Test that list_<x> functions are called from the active catalog.
+    Test that catalog_obj.list_<x> functions are able to be called from the active, or inactive catalog.
     """
     credit_card_catalog = Catalog.create("creditcard")
     grocery_catalog = Catalog.create(name="grocery")
 
-    _assert_function_is_not_called_from_active_catalog(getattr(credit_card_catalog, list_function))
-
-    # Verify no error
-    grocery_catalog.list_features()
+    credit_card_catalog_list_function_to_invoke = getattr(credit_card_catalog, list_function)
+    # Verify that there's no error even though the credit card catalog is not the current active catalog.
+    # Also verify that there's no change in the global activate catalog_id.
+    assert get_active_catalog_id() == grocery_catalog.id
+    credit_card_catalog_list_function_to_invoke()
+    assert get_active_catalog_id() == grocery_catalog.id
 
     # Switch to credit card, verify no error.
     credit_card_catalog = Catalog.activate("creditcard")
-    credit_card_catalog.list_features()
+    assert get_active_catalog_id() == credit_card_catalog.id
+    credit_card_catalog_list_function_to_invoke()
+    assert get_active_catalog_id() == credit_card_catalog.id
 
     reset_to_default_catalog()

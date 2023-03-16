@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional
 
+from inspect import signature
+
 import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
@@ -29,22 +31,37 @@ from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
 
 
-def check_is_active_catalog(catalog_id: ObjectId) -> None:
+def update_and_reset_catalog(func: Any) -> Any:
     """
-    Decorator to check if the catalog is active before calling the function.
+    Decorator to update the catalog and reset it back to original state if needed.
 
-    Parameters
-    ----------
-    catalog_id: ObjectId
-        Catalog ID
+    If the calling catalog object has the same ID as the global state, we will just call the function that is being
+    decorated.
+    If not, this decorator will temporarily update the global catalog state to the catalog_id of the calling catalog
+    object, call the decorated function, and then reset the state back.
 
-    Raises
-    ------
-    ValueError
-        If catalog is not active
+    This is useful as an intermediate state for us to support a catalog object oriented syntax, while still maintaining
+    a global state for the catalog ID at the implementation level.
     """
-    if catalog_id != get_active_catalog_id():
-        raise ValueError("Catalog is not active. Please activate the catalog first.")
+    original_signature = signature(func)
+
+    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        active_catalog_id = get_active_catalog_id()
+        # If the catalog is already active, just call the function
+        if self.id == active_catalog_id:
+            return func(self, *args, **kwargs)
+        # Activate catalog of object
+        activate_catalog(self.id)
+        try:
+            return func(self, *args, **kwargs)
+        finally:
+            # Reset catalog back to original state
+            activate_catalog(active_catalog_id)
+
+    # Perform some metadata updates on the decorated function so that we can do some inspection in tests.
+    wrapper.__signature__ = original_signature
+    wrapper.__name__ = func.__name__
+    return wrapper
 
 
 @typechecked
@@ -166,6 +183,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         return self._get_audit_history(field_name="name")
 
+    @update_and_reset_catalog
     def list_features(
         self,
         include_id: Optional[bool] = False,
@@ -192,11 +210,11 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Table of features
         """
-        check_is_active_catalog(self.id)
         return Feature.list_versions(
             include_id=include_id, feature_list_id=feature_list_id, entity=entity, data=data
         )
 
+    @update_and_reset_catalog
     def list_feature_namespaces(
         self,
         include_id: Optional[bool] = False,
@@ -220,9 +238,9 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Table of feature namespaces
         """
-        check_is_active_catalog(self.id)
         return FeatureNamespace.list(include_id=include_id, entity=entity, data=data)
 
+    @update_and_reset_catalog
     def list_feature_list_namespaces(
         self,
         include_id: Optional[bool] = False,
@@ -246,9 +264,9 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Table of feature list namespaces
         """
-        check_is_active_catalog(self.id)
         return FeatureListNamespace.list(include_id=include_id, entity=entity, data=data)
 
+    @update_and_reset_catalog
     def list_feature_lists(
         self,
         include_id: Optional[bool] = False,
@@ -266,9 +284,9 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Table of feature lists
         """
-        check_is_active_catalog(self.id)
         return FeatureList.list_versions(include_id=include_id)
 
+    @update_and_reset_catalog
     def list_tables(
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -287,9 +305,9 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Dataframe of tables
         """
-        check_is_active_catalog(self.id)
         return Table.list(include_id=include_id, entity=entity)
 
+    @update_and_reset_catalog
     def list_dimension_tables(
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -308,9 +326,9 @@ class Catalog(CatalogModel, SavableApiObject):
         DataFrame
             Table of dimension table sources
         """
-        check_is_active_catalog(self.id)
         return DimensionTable.list(include_id=include_id, entity=entity)
 
+    @update_and_reset_catalog
     def list_item_tables(
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -329,9 +347,9 @@ class Catalog(CatalogModel, SavableApiObject):
         DataFrame
             Table of item table sources
         """
-        check_is_active_catalog(self.id)
         return ItemTable.list(include_id=include_id, entity=entity)
 
+    @update_and_reset_catalog
     def list_event_tables(
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -350,9 +368,9 @@ class Catalog(CatalogModel, SavableApiObject):
         DataFrame
             Table of event table sources
         """
-        check_is_active_catalog(self.id)
         return EventTable.list(include_id=include_id, entity=entity)
 
+    @update_and_reset_catalog
     def list_scd_tables(
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -371,9 +389,9 @@ class Catalog(CatalogModel, SavableApiObject):
         DataFrame
             Table of SCD table sources
         """
-        check_is_active_catalog(self.id)
         return SCDTable.list(include_id=include_id, entity=entity)
 
+    @update_and_reset_catalog
     def list_relationships(
         self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
@@ -416,9 +434,9 @@ class Catalog(CatalogModel, SavableApiObject):
         >>> import featurebyte as fb
         >>> fb.Relationship.list(relationship_type="child_parent")  # doctest: +SKIP
         """
-        check_is_active_catalog(self.id)
         return Relationship.list(include_id=include_id, relationship_type=relationship_type)
 
+    @update_and_reset_catalog
     def list_feature_job_setting_analyses(
         self,
         include_id: Optional[bool] = False,
@@ -439,9 +457,9 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Table of feature job setting analysis
         """
-        check_is_active_catalog(self.id)
         return FeatureJobSettingAnalysis.list(include_id=include_id, event_data_id=event_data_id)
 
+    @update_and_reset_catalog
     def list_feature_stores(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved feature stores
@@ -456,9 +474,9 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Table of feature stores
         """
-        check_is_active_catalog(self.id)
         return FeatureStore.list(include_id=include_id)
 
+    @update_and_reset_catalog
     def list_entities(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved entities
@@ -473,9 +491,9 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Table of entities
         """
-        check_is_active_catalog(self.id)
         return Entity.list(include_id=include_id)
 
+    @update_and_reset_catalog
     def list_periodic_tasks(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved periodic tasks
@@ -490,5 +508,4 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Table of periodic tasks
         """
-        check_is_active_catalog(self.id)
         return PeriodicTask.list(include_id=include_id)
