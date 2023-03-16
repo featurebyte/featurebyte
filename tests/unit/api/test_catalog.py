@@ -454,10 +454,7 @@ def test_activate():
 
 @pytest.mark.parametrize(
     "method_item",
-    [
-        *catalog_list_methods_to_test_list(),
-        *catalog_get_methods_to_test_list(),
-    ],
+    catalog_get_and_list_methods(),
 )
 def test_functions_are_called_from_active_catalog(method_item):
     """
