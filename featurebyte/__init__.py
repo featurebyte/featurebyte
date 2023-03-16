@@ -1,4 +1,6 @@
 """Python Library for FeatureOps"""
+from typing import Optional
+
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.dimension_table import DimensionTable
@@ -21,6 +23,9 @@ from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations
 from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
+from featurebyte.docker.manager import ApplicationName
+from featurebyte.docker.manager import start_app as _start_app
+from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import AggFunc, SourceType, StorageType
 from featurebyte.models.credential import Credential, UsernamePasswordCredential
 from featurebyte.models.feature import DefaultVersionMode
@@ -42,6 +47,25 @@ from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDeta
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
+
+
+def start(local: Optional[bool] = False) -> None:
+    """
+    Start featurebyte application
+
+    Parameters
+    ----------
+    local : Optional[bool]
+        Do not pull new images from registry, by default False
+    """
+    _start_app(ApplicationName.FEATUREBYTE, local)
+
+
+def stop() -> None:
+    """
+    Stop featurebyte application
+    """
+    _stop_app(ApplicationName.FEATUREBYTE)
 
 
 __all__ = [
@@ -90,4 +114,7 @@ __all__ = [
     "ColumnCleaningOperation",
     "DataCleaningOperation",
     "PeriodicTask",
+    # services
+    "start",
+    "stop",
 ]
