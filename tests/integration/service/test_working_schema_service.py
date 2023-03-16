@@ -87,9 +87,7 @@ def periodic_service_fixture(user, persistent):
     """
     Fixture for DataWarehouseMigrationServiceV8
     """
-    service = PeriodicTaskService(
-        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
-    )
+    service = PeriodicTaskService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
     return service
 
 

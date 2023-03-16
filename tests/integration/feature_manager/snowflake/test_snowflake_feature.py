@@ -15,7 +15,7 @@ from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
@@ -63,7 +63,7 @@ def snowflake_feature_manager_no_sf_scheduling_fixture(extended_feature_model, p
     task_manager = TaskManager(
         user=User(id=extended_feature_model.user_id),
         persistent=persistent,
-        workspace_id=DEFAULT_WORKSPACE_ID,
+        catalog_id=DEFAULT_CATALOG_ID,
     )
     feature_manager._tile_manager._task_manager = task_manager
 
