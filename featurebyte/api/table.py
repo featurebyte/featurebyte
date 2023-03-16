@@ -14,10 +14,10 @@ from featurebyte.api.item_table import ItemTable
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
-from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.models.proxy_table import ProxyTableModel
 
 
-class Table(TabularDataModel, TableListMixin):
+class Table(ProxyTableModel, TableListMixin):
     """
     Table class
     """
@@ -29,7 +29,7 @@ class Table(TabularDataModel, TableListMixin):
     )
 
     # class variables
-    _get_schema = TabularDataModel
+    _get_schema = ProxyTableModel
 
     _data_type_to_cls_mapping = {
         TableDataType.EVENT_DATA: EventTable,

@@ -95,7 +95,7 @@ class PreviewService(BaseService):
         self, preview: FeatureStorePreview, limit: int, get_credential: Any
     ) -> dict[str, Any]:
         """
-        Preview a QueryObject that is not a Feature (e.g. SourceTable, EventData, EventView, etc)
+        Preview a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
         Parameters
         ----------
@@ -127,7 +127,7 @@ class PreviewService(BaseService):
         self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
     ) -> dict[str, Any]:
         """
-        Sample a QueryObject that is not a Feature (e.g. SourceTable, EventData, EventView, etc)
+        Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
         Parameters
         ----------
@@ -168,7 +168,7 @@ class PreviewService(BaseService):
         self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
     ) -> dict[str, Any]:
         """
-        Sample a QueryObject that is not a Feature (e.g. SourceTable, EventData, EventView, etc)
+        Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
         Parameters
         ----------

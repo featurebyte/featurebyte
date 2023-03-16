@@ -15,13 +15,13 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.dimension_data import DimensionDataModel
+from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.table import AllTableDataT, DimensionTableData
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ViewMetadata
-from featurebyte.schema.dimension_data import DimensionDataCreate, DimensionDataUpdate
+from featurebyte.schema.dimension_table import DimensionTableCreate, DimensionTableUpdate
 
 if TYPE_CHECKING:
     from featurebyte.api.dimension_view import DimensionView
@@ -38,10 +38,10 @@ class DimensionTable(TableApiObject):
     __fbautodoc__ = FBAutoDoc(section=["Table"], proxy_class="featurebyte.DimensionTable")
 
     # class variables
-    _route = "/dimension_data"
-    _update_schema_class = DimensionDataUpdate
-    _create_schema_class = DimensionDataCreate
-    _get_schema = DimensionDataModel
+    _route = "/dimension_table"
+    _update_schema_class = DimensionTableUpdate
+    _create_schema_class = DimensionTableCreate
+    _get_schema = DimensionTableModel
     _table_data_class: ClassVar[Type[AllTableDataT]] = DimensionTableData
 
     # pydantic instance variable (public)

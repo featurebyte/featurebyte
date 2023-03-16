@@ -268,8 +268,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         """Payload for data sample"""
         _ = create_success_response
         test_api_client, _ = test_api_client_persistent
-        payload = self.load_payload("tests/fixtures/request_payloads/event_data.json")
-        response = test_api_client.post("/event_data", json=payload)
+        payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+        response = test_api_client.post("/event_table", json=payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
 
         data_response_dict = response.json()

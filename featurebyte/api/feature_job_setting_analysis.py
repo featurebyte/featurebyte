@@ -36,7 +36,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     _list_fields = [
         "id",
         "created_at",
-        "event_data",
+        "event_table",
         "analysis_start",
         "analysis_date",
         "frequency",
@@ -44,7 +44,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         "blind_spot",
     ]
     _list_foreign_keys = [
-        ForeignKeyMapping("event_data_id", TableApiObject, "event_data"),
+        ForeignKeyMapping("event_data_id", TableApiObject, "event_table"),
     ]
 
     @classmethod
@@ -57,7 +57,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
 
         return pd.concat(
             [
-                records[["id", "created_at", "event_data"]],
+                records[["id", "created_at", "event_table"]],
                 analysis_options,
                 recommendation,
             ],
@@ -68,7 +68,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     def list(
         cls,
         include_id: Optional[bool] = False,
-        event_data_id: Optional[ObjectId] = None,
+        event_table_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
         """
         List saved features
@@ -77,7 +77,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         ----------
         include_id: Optional[bool]
             Whether to include id in the list
-        event_data_id: Optional[ObjectId]
+        event_table_id: Optional[ObjectId]
             Event data id used to filter results
 
         Returns
@@ -86,8 +86,8 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
             Table of features
         """
         params = {}
-        if event_data_id:
-            params = {"event_data_id": str(event_data_id)}
+        if event_table_id:
+            params = {"event_table_id": str(event_table_id)}
         return cls._list(include_id=include_id, params=params)
 
     @typechecked

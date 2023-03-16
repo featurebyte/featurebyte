@@ -433,14 +433,14 @@ def test_join_event_data_attributes__invalid_columns(snowflake_item_view):
     """
     with pytest.raises(ValueError) as exc:
         snowflake_item_view.join_event_data_attributes(["non_existing_column"])
-    assert str(exc.value) == "Column does not exist in EventData: non_existing_column"
+    assert str(exc.value) == "Column does not exist in EventTable: non_existing_column"
 
 
 def test_item_view__item_data_same_event_id_column_as_event_data(
     snowflake_item_data_same_event_id, snowflake_event_data
 ):
     """
-    Test creating ItemView when ItemData has the same event_id_column as EventData
+    Test creating ItemView when ItemTable has the same event_id_column as EventTable
     """
     # No need to specify event_suffix
     item_view = snowflake_item_data_same_event_id.get_view()
@@ -521,7 +521,7 @@ def test_item_view_groupby__item_data_column(
     snowflake_item_view, snowflake_item_data, snowflake_event_data
 ):
     """
-    Test aggregating a column from ItemData using an EventData entity is allowed
+    Test aggregating a column from ItemTable using an EventTable entity is allowed
     """
     feature_job_setting = {
         "blind_spot": "30m",
@@ -575,7 +575,7 @@ def get_groupby_feature_job_setting_fixture():
 
 def test_item_view_groupby__event_data_column(snowflake_item_view, groupby_feature_job_setting):
     """
-    Test aggregating an EventData column using EventData entity is not allowed
+    Test aggregating an EventTable column using EventTable entity is not allowed
     """
     snowflake_item_view.join_event_data_attributes(["col_float"])
     with pytest.raises(ValueError) as exc:
@@ -595,7 +595,7 @@ def test_item_view_groupby__event_data_column_derived(
     snowflake_item_view, groupby_feature_job_setting
 ):
     """
-    Test aggregating a column derived from EventData column using EventData entity is not allowed
+    Test aggregating a column derived from EventTable column using EventTable entity is not allowed
     """
     snowflake_item_view.join_event_data_attributes(["col_float"])
     snowflake_item_view["col_float_v2"] = (snowflake_item_view["col_float"] + 123) - 45
@@ -617,7 +617,7 @@ def test_item_view_groupby__event_data_column_derived_mixed(
     snowflake_item_view, snowflake_item_data, groupby_feature_job_setting
 ):
     """
-    Test aggregating a column derived from both EventData and ItemData is allowed
+    Test aggregating a column derived from both EventTable and ItemTable is allowed
     """
     snowflake_item_view.join_event_data_attributes(["col_float"])
     snowflake_item_view["new_col"] = (
@@ -646,7 +646,7 @@ def test_item_view_groupby__event_data_column_derived_mixed(
 
 def test_item_view_groupby__no_value_column(snowflake_item_view, snowflake_item_data):
     """
-    Test count aggregation without value_column using EventData entity is allowed
+    Test count aggregation without value_column using EventTable entity is allowed
     """
     feature_job_setting = {
         "blind_spot": "30m",
@@ -1032,7 +1032,7 @@ def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures)
 
 def test_join_event_data_attributes__with_multiple_assignments(snowflake_item_view):
     """
-    Test joining more columns from EventData after creating ItemView with multiple assignments
+    Test joining more columns from EventTable after creating ItemView with multiple assignments
     """
     view = snowflake_item_view
 

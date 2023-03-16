@@ -7,7 +7,6 @@ import pytest
 
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_view import EventView
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.cleaning_operation import (
@@ -81,7 +80,7 @@ def test_data_column__as_entity__saved_data(saved_event_data, config, mock_api_o
 
     # check that the column entity map is saved to persistent
     client = config.get_client()
-    response = client.get(url=f"/event_data/{saved_event_data.id}")
+    response = client.get(url=f"/event_table/{saved_event_data.id}")
     response_dict = response.json()
     has_col_int_column = False
     for col in response_dict["columns_info"]:

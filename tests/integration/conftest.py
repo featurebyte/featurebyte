@@ -265,17 +265,17 @@ def source_type_fixture(request):
     Example 1
     ---------
 
-    def my_test(event_data):
-        # event_data will be instantiated using Snowflake, Spark, ... etc. my_test will be executed
-        # multiple times, each time with an EventData from a different source.
+    def my_test(event_table):
+        # event_table will be instantiated using Snowflake, Spark, ... etc. my_test will be executed
+        # multiple times, each time with an EventTable from a different source.
         ...
 
     Example 2
     ----------
 
     @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-    def my_test(event_data):
-        # event_data will be instantiated using Snowflake as the source and my_test only runs once
+    def my_test(event_table):
+        # event_table will be instantiated using Snowflake as the source and my_test only runs once
         ...
 
     """
@@ -1002,7 +1002,7 @@ def create_transactions_event_data_from_data_source(
     data_source, database_name, schema_name, table_name, event_data_name
 ):
     """
-    Helper function to create an EventData with the given feature store
+    Helper function to create an EventTable with the given feature store
     """
     available_tables = data_source.list_tables(
         database_name=database_name,
@@ -1055,7 +1055,7 @@ def create_transactions_event_data_from_data_source(
 @pytest.fixture(name="event_data_name", scope="session")
 def event_data_name_fixture(source_type):
     """
-    Fixture for the EventData name
+    Fixture for the EventTable name
     """
     return f"{source_type}_event_data"
 
@@ -1071,7 +1071,7 @@ def event_data_fixture(
     order_entity,
 ):
     """
-    Fixture for an EventData in integration tests
+    Fixture for an EventTable in integration tests
     """
     _ = user_entity
     _ = product_action_entity

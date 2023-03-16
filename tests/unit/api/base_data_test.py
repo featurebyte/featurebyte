@@ -15,10 +15,10 @@ class DataType(StrEnum):
     Data API object types
     """
 
-    ITEM_DATA = "ItemData"
-    EVENT_DATA = "EventData"
-    DIMENSION_DATA = "DimensionData"
-    SCD_DATA = "SlowlyChangingData"
+    ITEM_DATA = "ItemTable"
+    EVENT_DATA = "EventTable"
+    DIMENSION_DATA = "DimensionTable"
+    SCD_DATA = "SCDTable"
 
 
 class BaseTableTestSuite:

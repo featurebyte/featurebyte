@@ -109,7 +109,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_data", "event_data"),
+            ("event_table", "event_table"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -128,7 +128,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_data", "event_data"),
+            ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
         ]
         for api_object, filename in api_object_filename_pairs:

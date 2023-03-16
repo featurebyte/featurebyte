@@ -26,7 +26,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     DataCleaningOperation,
     MissingValueImputation,
 )
-from featurebyte.schema.event_data import EventDataServiceUpdate
+from featurebyte.schema.event_table import EventTableServiceUpdate
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
@@ -719,7 +719,7 @@ async def test_create_new_feature_version_using_source_settings(
 
     await event_data_service.update_document(
         document_id=event_data.id,
-        data=EventDataServiceUpdate(
+        data=EventTableServiceUpdate(
             default_feature_job_setting=FeatureJobSetting(
                 blind_spot="1h", frequency="2h", time_modulo_frequency="30m"
             ),

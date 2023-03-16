@@ -9,7 +9,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
-from featurebyte.models.scd_data import SCDDataModel
+from featurebyte.models.scd_table import SCDTableModel
 from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
@@ -73,7 +73,7 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
 
 @pytest.fixture(name="scd_data_dict")
 def scd_data_dict_fixture(snowflake_database_table_scd_data):
-    """SCDData in serialized dictionary format"""
+    """SCDTable in serialized dictionary format"""
     return {
         "type": TableDataType.SCD_DATA,
         "name": "sf_scd_data",
@@ -171,7 +171,7 @@ def scd_data_dict_fixture(snowflake_database_table_scd_data):
 
 def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
     """
-    Test SCDData creation using tabular source
+    Test SCDTable creation using tabular source
     """
     scd_data = SCDTable.from_tabular_source(
         tabular_source=snowflake_database_table_scd_data,
@@ -216,7 +216,7 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
 @pytest.mark.usefixtures("saved_scd_data")
 def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_data):
     """
-    Test SCDData creation failure due to duplicated dimension data name
+    Test SCDTable creation failure due to duplicated dimension data name
     """
     with pytest.raises(DuplicatedRecordException) as exc:
         SCDTable.from_tabular_source(
@@ -234,7 +234,7 @@ def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_dat
 
 def test_from_tabular_source__retrieval_exception(snowflake_database_table_scd_data):
     """
-    Test SCDData creation failure due to retrieval exception
+    Test SCDTable creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.base_table.Configurations"):
@@ -317,7 +317,7 @@ def test_accessing_scd_data_attributes(snowflake_scd_data):
 def test_accessing_saved_scd_data_attributes(saved_scd_data):
     """Test accessing event data object attributes"""
     assert saved_scd_data.saved
-    assert isinstance(saved_scd_data.cached_model, SCDDataModel)
+    assert isinstance(saved_scd_data.cached_model, SCDTableModel)
     assert saved_scd_data.record_creation_timestamp_column is None
     assert saved_scd_data.natural_key_column == "col_text"
     assert saved_scd_data.effective_timestamp_column == "effective_timestamp"

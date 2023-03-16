@@ -19,7 +19,7 @@ from featurebyte.exception import RecordRetrievalException
 
 def test_get_event_data(saved_event_data, snowflake_event_data):
     """
-    Test Table.get function to retrieve EventData
+    Test Table.get function to retrieve EventTable
     """
     # load the event data from the persistent
     loaded_event_data = Table.get(snowflake_event_data.name)
@@ -77,7 +77,7 @@ def test_get_scd_data(saved_scd_data, snowflake_scd_data):
 
 def test_get_dimension_data(saved_dimension_data, snowflake_dimension_data):
     """
-    Test Table.get function to retrieve DimensionData
+    Test Table.get function to retrieve DimensionTable
     """
     # load the dimension data from the persistent
     loaded_scd_data = Table.get(snowflake_dimension_data.name)
@@ -121,7 +121,7 @@ def test_update__schema_validation(saved_event_data, mock_api_client_fixture):
     # patch event data columns_info call
     assert mock_request.call_args_list[api_count + 1][0][0] == "PATCH"
     assert mock_request.call_args_list[api_count + 1][0][1].endswith(
-        f"/event_data/{saved_event_data.id}"
+        f"/event_table/{saved_event_data.id}"
     )
 
     # check the case when there is an additional post call
@@ -129,9 +129,9 @@ def test_update__schema_validation(saved_event_data, mock_api_client_fixture):
     # use .columns to make sure actual call happens (due to proxy object)
     _ = EventTable.get(name=saved_event_data.name).columns
     assert mock_request.call_count == api_count + 3
-    # get event_data
+    # get event_table
     assert mock_request.call_args_list[api_count][0][0] == "GET"
-    assert mock_request.call_args_list[api_count][0][1].endswith("/event_data")
+    assert mock_request.call_args_list[api_count][0][1].endswith("/event_table")
     # get feature store
     assert mock_request.call_args_list[api_count + 1][0][0] == "GET"
     assert mock_request.call_args_list[api_count + 1][0][1].endswith(

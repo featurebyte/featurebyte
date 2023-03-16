@@ -446,7 +446,7 @@ class Catalog(CatalogModel, SavableApiObject):
     def list_feature_job_setting_analyses(
         self,
         include_id: Optional[bool] = False,
-        event_data_id: Optional[ObjectId] = None,
+        event_table_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
         """
         List saved feature job setting analyses
@@ -455,15 +455,15 @@ class Catalog(CatalogModel, SavableApiObject):
         ----------
         include_id: Optional[bool]
             Whether to include id in the list
-        event_data_id: Optional[ObjectId]
-            Event data id used to filter results
+        event_table_id: Optional[ObjectId]
+            EventTable id used to filter results
 
         Returns
         -------
         pd.DataFrame
             Table of feature job setting analysis
         """
-        return FeatureJobSettingAnalysis.list(include_id=include_id, event_data_id=event_data_id)
+        return FeatureJobSettingAnalysis.list(include_id=include_id, event_table_id=event_table_id)
 
     @update_and_reset_catalog
     def list_feature_stores(self, include_id: Optional[bool] = False) -> pd.DataFrame:

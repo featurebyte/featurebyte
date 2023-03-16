@@ -269,7 +269,7 @@ def get_insert_tabular_data_helper_fixture(mongo_persistent):
         }
         user_id = ObjectId()
         _ = await persistent.insert_one(
-            collection_name="tabular_data", document=test_document, user_id=user_id
+            collection_name="table", document=test_document, user_id=user_id
         )
 
     return insert

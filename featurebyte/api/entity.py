@@ -89,7 +89,7 @@ class Entity(EntityModel, SavableApiObject):
         """
 
         client = Configurations().get_client()
-        response = client.get("/tabular_data", params={"name": relation_dataset_name})
+        response = client.get("/table", params={"name": relation_dataset_name})
         assert response.status_code == HTTPStatus.OK
         json_response = response.json()
         data_response = json_response["data"]

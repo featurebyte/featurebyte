@@ -18,7 +18,7 @@ from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisTaskPayload,
 )
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.event_data import EventDataService
+from featurebyte.service.event_table import EventTableService
 
 
 class FeatureJobSettingAnalysisService(
@@ -61,7 +61,7 @@ class FeatureJobSettingAnalysisService(
         )
 
         # check that event data exists
-        event_data_service = EventDataService(
+        event_data_service = EventTableService(
             user=self.user,
             persistent=self.persistent,
             catalog_id=self.catalog_id,

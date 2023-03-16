@@ -19,28 +19,28 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.schema.context import ContextCreate
-from featurebyte.schema.dimension_data import DimensionDataCreate
+from featurebyte.schema.dimension_table import DimensionTableCreate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
-from featurebyte.schema.event_data import EventDataCreate, EventDataServiceUpdate
+from featurebyte.schema.event_table import EventTableCreate, EventTableServiceUpdate
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
-from featurebyte.schema.item_data import ItemDataCreate
-from featurebyte.schema.scd_data import SCDDataCreate
+from featurebyte.schema.item_table import ItemTableCreate
+from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.service.context import ContextService
-from featurebyte.service.data_update import DataUpdateService
-from featurebyte.service.dimension_data import DimensionDataService
+from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
-from featurebyte.service.event_data import EventDataService
+from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.item_data import ItemDataService
-from featurebyte.service.scd_data import SCDDataService
+from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.table_update import TableUpdateService
 from featurebyte.service.version import VersionService
 
 
@@ -93,26 +93,26 @@ def context_service_fixture(user, persistent):
 
 @pytest.fixture(name="event_data_service")
 def event_data_service_fixture(user, persistent):
-    """EventData service"""
-    return EventDataService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    """EventTable service"""
+    return EventTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="item_data_service")
 def item_data_service_fixture(user, persistent):
-    """ItemData service"""
-    return ItemDataService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    """ItemTable service"""
+    return ItemTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="dimension_data_service")
 def dimension_data_service_fixture(user, persistent):
-    """DimensionData service"""
-    return DimensionDataService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    """DimensionTable service"""
+    return DimensionTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="scd_data_service")
 def scd_data_service_fixture(user, persistent):
-    """SCDData service"""
-    return SCDDataService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    """SCDTable service"""
+    return SCDTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="feature_namespace_service")
@@ -141,10 +141,10 @@ def feature_list_service_fixture(user, persistent):
     return FeatureListService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
-@pytest.fixture(name="data_update_service")
-def data_update_service_fixture(user, persistent):
-    """DataUpdateService fixture"""
-    return DataUpdateService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+@pytest.fixture(name="table_update_service")
+def table_update_service_fixture(user, persistent):
+    """TableUpdateService fixture"""
+    return TableUpdateService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="feature_readiness_service")
@@ -274,20 +274,20 @@ async def context_fixture(test_dir, context_service, feature_store, entity):
 @pytest.fixture(name="event_data_factory")
 def event_data_factory_fixture(test_dir, feature_store, event_data_service, semantic_service):
     """
-    EventData factory returns a function that can be used to create EventData models.
+    EventTable factory returns a function that can be used to create EventTable models.
     """
     _ = feature_store
 
     async def factory(
         remove_feature_job_setting: Optional[bool] = False,
     ):
-        fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
+        fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_table.json")
         with open(fixture_path, encoding="utf") as fhandle:
             payload = json.loads(fhandle.read())
             payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
             if remove_feature_job_setting:
                 payload["default_feature_job_setting"] = None
-            event_data = await event_data_service.create_document(data=EventDataCreate(**payload))
+            event_data = await event_data_service.create_document(data=EventTableCreate(**payload))
             event_timestamp = await semantic_service.get_or_create_document(
                 name=SemanticType.EVENT_TIMESTAMP
             )
@@ -300,7 +300,7 @@ def event_data_factory_fixture(test_dir, feature_store, event_data_service, sema
 
             event_data = await event_data_service.update_document(
                 document_id=event_data.id,
-                data=EventDataServiceUpdate(columns_info=columns_info),
+                data=EventTableServiceUpdate(columns_info=columns_info),
                 return_document=True,
             )
             return event_data
@@ -310,45 +310,45 @@ def event_data_factory_fixture(test_dir, feature_store, event_data_service, sema
 
 @pytest_asyncio.fixture(name="event_data")
 async def event_data_fixture(event_data_factory):
-    """EventData model"""
+    """EventTable model"""
     return await event_data_factory()
 
 
 @pytest_asyncio.fixture(name="item_data")
 async def item_data_fixture(test_dir, feature_store, item_data_service):
-    """ItemData model"""
+    """ItemTable model"""
     _ = feature_store
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/item_data.json")
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/item_table.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_item_table"
-        item_data = await item_data_service.create_document(data=ItemDataCreate(**payload))
+        item_data = await item_data_service.create_document(data=ItemTableCreate(**payload))
         return item_data
 
 
 @pytest_asyncio.fixture(name="dimension_data")
 async def dimension_data_fixture(test_dir, feature_store, dimension_data_service):
-    """DimensionData model"""
+    """DimensionTable model"""
     _ = feature_store
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/dimension_data.json")
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/dimension_table.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_dimension_table"
         item_data = await dimension_data_service.create_document(
-            data=DimensionDataCreate(**payload)
+            data=DimensionTableCreate(**payload)
         )
         return item_data
 
 
 @pytest_asyncio.fixture(name="scd_data")
 async def scd_data_fixture(test_dir, feature_store, scd_data_service):
-    """SCDData model"""
+    """SCDTable model"""
     _ = feature_store
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/scd_data.json")
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/scd_table.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_scd_table"
-        scd_data = await scd_data_service.create_document(data=SCDDataCreate(**payload))
+        scd_data = await scd_data_service.create_document(data=SCDTableCreate(**payload))
         return scd_data
 
 
@@ -540,9 +540,9 @@ async def setup_for_feature_readiness_fixture(
 
 
 async def create_event_data_with_entities(data_name, test_dir, event_data_service, columns):
-    """Helper function to create an EventData with provided columns and entities"""
+    """Helper function to create an EventTable with provided columns and entities"""
 
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_table.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
 
@@ -562,7 +562,7 @@ async def create_event_data_with_entities(data_name, test_dir, event_data_servic
     payload["columns_info"] = _update_columns_info(payload["columns_info"])
     payload["name"] = data_name
 
-    event_data = await event_data_service.create_document(data=EventDataCreate(**payload))
+    event_data = await event_data_service.create_document(data=EventTableCreate(**payload))
     return event_data
 
 

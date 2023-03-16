@@ -10,7 +10,7 @@ from bson import ObjectId
 from featurebyte import MissingValueImputation
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
-from featurebyte.models import DimensionDataModel
+from featurebyte.models import DimensionTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
@@ -114,7 +114,7 @@ def input_node_fixture(global_graph, input_details):
 
 @pytest.fixture(name="item_data_input_details")
 def item_data_input_details_fixture(input_details):
-    """Similar to input_details but for an ItemData table"""
+    """Similar to input_details but for an ItemTable table"""
     input_details = copy.deepcopy(input_details)
     input_details["table_details"]["table_name"] = "item_table"
     return input_details
@@ -122,7 +122,7 @@ def item_data_input_details_fixture(input_details):
 
 @pytest.fixture(name="item_data_input_node")
 def item_data_input_node_fixture(global_graph, item_data_input_details):
-    """Fixture of an input node representing an ItemData"""
+    """Fixture of an input node representing an ItemTable"""
     node_params = {
         "type": "item_data",
         "columns": [
@@ -181,7 +181,7 @@ def dimension_data_input_details_fixture(input_details):
 
 @pytest.fixture(name="dimension_data_input_node")
 def dimension_data_input_node_fixture(global_graph, dimension_data_input_details):
-    """Fixture of a DimensionData input node"""
+    """Fixture of a DimensionTable input node"""
     node_params = {
         "type": "dimension_data",
         "columns": [
@@ -202,7 +202,7 @@ def dimension_data_input_node_fixture(global_graph, dimension_data_input_details
 
 @pytest.fixture(name="event_data_input_node")
 def event_data_input_node_fixture(global_graph, input_details):
-    """Fixture of an EventData input node"""
+    """Fixture of an EventTable input node"""
     # pylint: disable=duplicate-code
     node_params = {
         "type": "event_data",
@@ -482,7 +482,7 @@ def item_data_join_event_data_node_fixture(
     join_node_params,
 ):
     """
-    Fixture of a join node that joins EventData columns into ItemView. Result of:
+    Fixture of a join node that joins EventTable columns into ItemView. Result of:
 
     item_view.join_event_data_attributes()
     """
@@ -698,7 +698,7 @@ def scd_join_node_fixture(
     scd_data_input_node,
 ):
     """
-    Fixture of a join node that performs an SCD join between EventData and DimensionData
+    Fixture of a join node that performs an SCD join between EventTable and DimensionTable
     """
     node_params = {
         "left_on": "cust_id",
@@ -792,7 +792,7 @@ def lookup_feature_node_fixture(global_graph, projected_lookup_features):
 @pytest.fixture(name="event_lookup_node")
 def event_lookup_node_fixture(global_graph, event_data_input_node, entity_id):
     """
-    Fixture of a lookup feature node from EventData
+    Fixture of a lookup feature node from EventTable
     """
     node_params = {
         "input_column_names": ["order_method"],
@@ -814,7 +814,7 @@ def event_lookup_node_fixture(global_graph, event_data_input_node, entity_id):
 @pytest.fixture(name="event_lookup_feature_node")
 def event_lookup_feature_node_fixture(global_graph, event_lookup_node):
     """
-    Fixture of a lookup feature from EventData
+    Fixture of a lookup feature from EventTable
     """
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -1230,8 +1230,8 @@ def query_graph_with_cleaning_ops_and_groupby_fixture(
 @pytest.fixture(name="parent_serving_preparation")
 def parent_serving_preparation_fixture():
 
-    with open("tests/fixtures/request_payloads/dimension_data.json") as f:
-        data_model = DimensionDataModel(**json.load(f))
+    with open("tests/fixtures/request_payloads/dimension_table.json") as f:
+        data_model = DimensionTableModel(**json.load(f))
 
     with open("tests/fixtures/request_payloads/feature_store.json") as f:
         feature_store_details = FeatureStoreDetails(**json.load(f))

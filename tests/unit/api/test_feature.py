@@ -354,8 +354,8 @@ def test_feature_save__exception_due_to_event_data_not_saved(float_feature, snow
     with pytest.raises(RecordCreationException) as exc:
         float_feature.save()
     expected_msg = (
-        f'TabularData (id: "{snowflake_event_data.id}") not found. '
-        f"Please save the TabularData object first."
+        f'Table (id: "{snowflake_event_data.id}") not found. '
+        f"Please save the Table object first."
     )
     assert expected_msg in str(exc.value)
 

@@ -130,7 +130,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
     route_fixture_path_pairs = [
         ("/entity", "entity.json"),
         ("/feature_store", "feature_store.json"),
-        ("/event_data", "event_data.json"),
+        ("/event_table", "event_table.json"),
     ]
     base_path = os.path.join(test_dir, "fixtures/request_payloads")
     for route, fixture_path in route_fixture_path_pairs:
@@ -139,7 +139,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
             response = client.post(route, json=payload)
             assert response.status_code == 201
 
-            if route == "/event_data":
+            if route == "/event_table":
                 column_specs = [ColumnSpec(**col_info) for col_info in payload["columns_info"]]
                 mock_list_columns.return_value = column_specs
 
@@ -969,7 +969,7 @@ def get_non_time_based_feature_fixture(item_data):
     """
     Get a non-time-based feature.
 
-    This is a non-time-based feature as it is built from ItemData.
+    This is a non-time-based feature as it is built from ItemTable.
     """
     item_view = item_data.get_view()
     return item_view.groupby("order_id").aggregate(

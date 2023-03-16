@@ -23,7 +23,7 @@ from featurebyte.query_graph.node.nested import (
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.service.base_service import BaseService
-from featurebyte.service.tabular_data import DataService
+from featurebyte.service.table import TableService
 
 
 class ViewConstructionService(BaseService):
@@ -34,7 +34,7 @@ class ViewConstructionService(BaseService):
 
     def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
         super().__init__(user, persistent, catalog_id)
-        self.data_service = DataService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.data_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
 
     @staticmethod
     def _get_additional_keyword_parameters_pairs(

@@ -19,14 +19,14 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import InvalidSettingsError, RecordRetrievalException
-from featurebyte.models.event_data import EventDataModel
+from featurebyte.models.event_table import EventTableModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, EventTableData
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ViewMetadata
-from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
+from featurebyte.schema.event_table import EventTableCreate, EventTableUpdate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 
 if TYPE_CHECKING:
@@ -55,10 +55,10 @@ class EventTable(TableApiObject):
     __fbautodoc__ = FBAutoDoc(section=["Table"], proxy_class="featurebyte.EventTable")
 
     # class variables
-    _route = "/event_data"
-    _update_schema_class = EventDataUpdate
-    _create_schema_class = EventDataCreate
-    _get_schema = EventDataModel
+    _route = "/event_table"
+    _update_schema_class = EventTableUpdate
+    _create_schema_class = EventTableCreate
+    _get_schema = EventTableModel
     _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
 
     # pydantic instance variable (public)
@@ -162,7 +162,7 @@ class EventTable(TableApiObject):
     @property
     def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
         """
-        Default feature job setting of the EventData
+        Default feature job setting of the EventTable
 
         Returns
         -------
@@ -403,4 +403,4 @@ class EventTable(TableApiObject):
         Optional[DataFrame]
             Table of feature job analysis
         """
-        return FeatureJobSettingAnalysis.list(event_data_id=self.id)
+        return FeatureJobSettingAnalysis.list(event_table_id=self.id)

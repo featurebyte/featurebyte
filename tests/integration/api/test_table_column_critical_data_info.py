@@ -14,7 +14,7 @@ from featurebyte import (
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_data_update_critical_data_info(event_data):
-    """Test EventData with critical data info preview & feature preview"""
+    """Test EventTable with critical data info preview & feature preview"""
     # add critical data info to amount column & check data preview
     original_df = event_data.preview()
 
@@ -124,7 +124,7 @@ def test_event_data_update_critical_data_info(event_data):
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_data_update_critical_data_info(item_data):
-    """Test ItemData with critical data info preview & feature preview"""
+    """Test ItemTable with critical data info preview & feature preview"""
     # add critical data info to item_type column & check data preview
     assert item_data.frame.node.type == "input"
     item_data["item_type"].update_critical_data_info(
