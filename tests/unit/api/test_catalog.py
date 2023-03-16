@@ -32,7 +32,7 @@ from featurebyte import (
 )
 from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.base_table import TableApiObject, TableListMixin
-from featurebyte.api.catalog import Catalog
+from featurebyte.api.catalog import Catalog, update_and_reset_catalog
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import FeatureNamespace
 from featurebyte.api.feature_job import FeatureJobMixin
@@ -420,3 +420,20 @@ def test_catalog_obj_list_functions_produces_no_errors(list_function):
     assert get_active_catalog_id() == credit_card_catalog.id
 
     reset_to_default_catalog()
+
+
+def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors():
+    """
+    Verify that the catalog state doesn't change if the wrapped function errors.
+    """
+
+    @update_and_reset_catalog
+    def test():
+        raise Exception("test")
+
+    catalog_a = Catalog.create("catalog_a")
+    catalog_b = Catalog.create("catalog_b")
+    assert get_active_catalog_id() == catalog_b.id
+    with pytest.raises(Exception):
+        catalog_a.test()
+    assert get_active_catalog_id() == catalog_b.id
