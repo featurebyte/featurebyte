@@ -827,7 +827,7 @@ def tile_manager(session):
     """
     Tile Manager fixture
     """
-    return tile_manager_from_session(session=session)
+    return tile_manager_from_session(session=session, use_snowflake_scheduling=True)
 
 
 @pytest.fixture(name="feature_model_dict")

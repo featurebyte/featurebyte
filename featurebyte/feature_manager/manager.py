@@ -42,7 +42,11 @@ class FeatureManager(BaseModel):
     _adapter: BaseAdapter = PrivateAttr()
 
     def __init__(
-        self, session: BaseSession, task_manager: Optional[TaskManager] = None, **kw: Any
+        self,
+        session: BaseSession,
+        task_manager: Optional[TaskManager] = None,
+        use_snowflake_scheduling: Optional[bool] = False,
+        **kw: Any,
     ) -> None:
         """
         Custom constructor for TileSnowflake to instantiate a datasource session
@@ -53,13 +57,19 @@ class FeatureManager(BaseModel):
             input session for datasource
         task_manager: Optional[TaskManager]
             input task manager
+        use_snowflake_scheduling: Optional[bool]
+            whether to use snowflake scheduling
         kw: Any
             constructor arguments
         """
         super().__init__(**kw)
         self._session = session
         self._adapter = get_sql_adapter(session.source_type)
-        self._tile_manager = tile_manager_from_session(session, task_manager)
+        self._tile_manager = tile_manager_from_session(
+            session=session,
+            task_manager=task_manager,
+            use_snowflake_scheduling=use_snowflake_scheduling,
+        )
 
     async def online_enable(
         self, feature_spec: OnlineFeatureSpec, schedule_time: datetime = datetime.utcnow()

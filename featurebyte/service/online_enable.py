@@ -141,7 +141,9 @@ class OnlineEnableService(BaseService):
 
     @staticmethod
     async def update_data_warehouse_with_session(
-        session: BaseSession, feature: FeatureModel, task_manager: Optional[TaskManager] = None
+        session: BaseSession,
+        feature: FeatureModel,
+        task_manager: Optional[TaskManager] = None,
     ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
