@@ -638,11 +638,20 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def abs(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Computes the absolute value of the current Series
+        Compute the absolute numeric value of each element
 
         Returns
         -------
         FrozenSeriesT
+
+        Examples
+        --------
+
+        Compute absolute values for a column in a view:
+
+        >>> import featurebyte as fb  # doctest: +SKIP
+        ... view = fb.Catalog.get_data("GROCERYITEMS").get_view()
+        ... column = view["DISCOUNT"].abs()
         """
         return series_unary_operation(
             input_series=self,
