@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional
 
-from inspect import signature
+from functools import wraps
 
 import pandas as pd
 from bson import ObjectId
@@ -52,8 +52,8 @@ def update_and_reset_catalog(func: Any) -> Any:
     -------
     Any
     """
-    original_signature = signature(func)
 
+    @wraps(func)
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
         active_catalog_id = get_active_catalog_id()
         # If the catalog is already active, just call the function
@@ -67,9 +67,6 @@ def update_and_reset_catalog(func: Any) -> Any:
             # Reset catalog back to original state
             activate_catalog(active_catalog_id)
 
-    # Perform some metadata updates on the decorated function so that we can do some inspection in tests.
-    wrapper.__signature__ = original_signature  # type: ignore[attr-defined]
-    wrapper.__name__ = func.__name__
     return wrapper
 
 
