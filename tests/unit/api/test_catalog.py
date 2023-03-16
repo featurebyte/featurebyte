@@ -103,6 +103,25 @@ def catalog_get_methods_to_test_list():
     ]
 
 
+def test_all_relevant_methods_are_in_list():
+    """
+    Test that all the relevant get and list methods in the catalog class are in these lists above.
+    """
+    methods = dir(Catalog)
+    # Verify all list methods are present
+    list_methods = {method for method in methods if method.startswith("list_")}
+    assert len(list_methods) == len(catalog_list_methods_to_test_list())
+    for method in catalog_list_methods_to_test_list():
+        assert method.catalog_method_name in list_methods
+
+    # Verify all relevant get methods are present
+    get_methods = {method for method in methods if method.startswith("get_")}
+    excluded_methods = {"get_by_id", "get_active"}
+    assert len(get_methods) - len(excluded_methods) == len(catalog_get_methods_to_test_list())
+    for method in catalog_get_methods_to_test_list():
+        assert method.catalog_method_name in get_methods
+
+
 def catalog_get_and_list_methods():
     return [
         *catalog_list_methods_to_test_list(),
@@ -160,7 +179,7 @@ def test_methods_have_same_parameters_as_delegated_method_call(method_item):
     Test catalog methods have same parameters as underlying methods.
     This will help to ensure that the Catalog APIs are consistent with their delegated API object methods.
     """
-    catalog = Catalog.get("default")
+    catalog = Catalog.get_active()
     catalog_list_method_name, underlying_class = (
         method_item.catalog_method_name,
         method_item.class_object,
@@ -193,7 +212,7 @@ def test_methods_call_the_correct_delegated_method(method_item):
     """
     # Assert that the delegated list method is called
     method_name = method_item.delegated_method_to_patch or method_item.class_method_delegated
-    catalog = Catalog.get("default")
+    catalog = Catalog.get_active()
     with patch.object(method_item.class_object, method_name) as mocked_list:
         _invoke_method(catalog, method_item)
         mocked_list.assert_called()
