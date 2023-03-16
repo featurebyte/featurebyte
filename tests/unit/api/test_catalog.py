@@ -56,9 +56,10 @@ class MethodMetadata:
     # API object which has the method (eg. list/get) we delegate to
     class_object: Any
     # Method we delegate to (eg. list/get)
-    method_delegated: Optional[str] = None
-    # Method to patch
-    method_to_patch: Optional[str] = None
+    class_method_delegated: str
+    # Method to patch. We might need to patch if we do some descriptor overrides so that we can get the right
+    # method to compare signatures with.
+    delegated_method_to_patch: Optional[str] = None
 
 
 def catalog_list_methods_to_test_list():
@@ -153,7 +154,7 @@ def test_methods_have_same_parameters_as_delegated_method_call(method_item):
     catalog_method, underlying_class = method_item.catalog_method, method_item.class_object
     # Check that the signatures match
     catalog_method_signature = signature(catalog_method)
-    underlying_class_method = getattr(underlying_class, method_item.method_delegated)
+    underlying_class_method = getattr(underlying_class, method_item.class_method_delegated)
     underlying_class_method_signature = signature(underlying_class_method)
     assert [*catalog_method_signature.parameters.keys()] == [
         "self",
@@ -170,7 +171,7 @@ def test_methods_call_the_correct_delegated_method(method_item):
     Test catalog methods call the correct delegated method.
     """
     # Assert that the delegated method is called
-    method_name = method_item.method_to_patch or method_item.method_delegated
+    method_name = method_item.delegated_method_to_patch or method_item.class_method_delegated
     catalog = Catalog.create("random")
     with patch.object(method_item.class_object, method_name) as mocked_delegated_method:
         catalog_method_to_call = getattr(catalog, method_item.catalog_method.__name__)
