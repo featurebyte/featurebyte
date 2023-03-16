@@ -430,7 +430,7 @@ async def test_schema_initializer__dont_reinitialize(
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA "
             "( WORKING_SCHEMA_VERSION INT, MIGRATION_VERSION INT, FEATURE_STORE_ID VARCHAR, "
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() ) AS "
-            "SELECT 0 AS WORKING_SCHEMA_VERSION, 8 AS MIGRATION_VERSION, NULL AS FEATURE_STORE_ID, "
+            "SELECT 0 AS WORKING_SCHEMA_VERSION, 3 AS MIGRATION_VERSION, NULL AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         ),
     ]
@@ -723,7 +723,7 @@ async def test_create_metadata_table(
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
             ") AS "
             "SELECT 0 AS WORKING_SCHEMA_VERSION, "
-            "8 AS MIGRATION_VERSION, "
+            "3 AS MIGRATION_VERSION, "
             "NULL AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         ),

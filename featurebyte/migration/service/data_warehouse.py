@@ -137,7 +137,7 @@ class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
         # migrate all records and audit records
         await self.migrate_all_records(version=migration_version)
 
-    @migrate(version=6, description="Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table")
+    @migrate(version=1, description="Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table")
     async def add_tile_value_types_column(self) -> None:
         """
         Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table
@@ -145,7 +145,7 @@ class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
         await self._add_tile_value_types_column(migration_version=6)
 
     @migrate(
-        version=7,
+        version=2,
         description="Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table (fix session uses wrong user ID issue)",
     )
     async def add_tile_value_types_column_again(self) -> None:
@@ -219,7 +219,7 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
     2. Fix jobs scheduling bug caused by tile_id collision
     """
 
-    @migrate(version=8, description="Reset working schema from scratch")
+    @migrate(version=3, description="Reset working schema from scratch")
     async def reset_working_schema(self, query_filter: Optional[dict[str, Any]] = None) -> None:
         """
         Reset working schema from scratch

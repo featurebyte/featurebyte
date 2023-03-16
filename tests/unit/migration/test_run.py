@@ -169,11 +169,8 @@ async def test_run_migration(migration_check_persistent, user):
     schema_metadata_service = SchemaMetadataService(
         user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
-    schema_metadata = await schema_metadata_service.create_document(
-        SchemaMetadataCreate(
-            name=MigrationMetadata.SCHEMA_METADATA.value,
-            version=1,  # skip version 1 since tabular_data collection exists
-        )
+    schema_metadata = await schema_metadata_service.get_or_create_document(
+        name=MigrationMetadata.SCHEMA_METADATA.value
     )
 
     # perform migration on testing samples to check the migration logic
