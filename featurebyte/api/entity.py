@@ -3,7 +3,7 @@ Entity class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List
 
 from http import HTTPStatus
 
@@ -69,6 +69,26 @@ class Entity(EntityModel, SavableApiObject):
         list[dict[str, Any]]
         """
         return self._get_audit_history(field_name="name")
+
+    @classmethod
+    def create(cls, name: str, serving_names: List[str]) -> Entity:
+        """
+        Create new entity
+
+        Parameters
+        ----------
+        name: str
+            Entity name
+        serving_names: List[str]
+            Names of the serving columns
+
+        Returns
+        -------
+        Entity
+        """
+        entity = Entity(name=name, serving_names=serving_names)
+        entity.save()
+        return entity
 
     @typechecked
     def add_parent(self, parent_entity_name: str, relation_dataset_name: str) -> None:

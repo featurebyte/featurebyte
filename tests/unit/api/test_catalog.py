@@ -129,6 +129,12 @@ def catalog_get_and_list_methods():
     ]
 
 
+def catalog_create_methods_to_test_list():
+    return [
+        MethodMetadata(Catalog.create_entity, Entity, "create"),
+    ]
+
+
 def _inheritors(class_obj):
     """
     Helper method to find all children of a class.
@@ -173,7 +179,13 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         assert delegated_class in api_object_children
 
 
-@pytest.mark.parametrize("method_item", catalog_get_and_list_methods())
+@pytest.mark.parametrize(
+    "method_item",
+    [
+        *catalog_get_and_list_methods(),
+        *catalog_create_methods_to_test_list(),
+    ],
+)
 def test_methods_have_same_parameters_as_delegated_method_call(method_item):
     """
     Test catalog methods have same parameters as underlying methods.
@@ -205,7 +217,13 @@ def _invoke_method(catalog: Catalog, method_item: MethodMetadata):
         catalog_method_to_call()
 
 
-@pytest.mark.parametrize("method_item", catalog_get_and_list_methods())
+@pytest.mark.parametrize(
+    "method_item",
+    [
+        *catalog_get_and_list_methods(),
+        *catalog_create_methods_to_test_list(),
+    ],
+)
 def test_methods_call_the_correct_delegated_method(method_item):
     """
     Test catalog methods call the correct delegated method.
