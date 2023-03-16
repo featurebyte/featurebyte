@@ -32,7 +32,7 @@ class TileGenerateSchedule(TileCommon):
     agg_id: str
     job_schedule_ts: str = Field(default=datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals,too-many-statements
     async def execute(self) -> None:
         """
         Execute tile generate schedule operation
@@ -43,21 +43,38 @@ class TileGenerateSchedule(TileCommon):
             Related exception from the triggered stored procedures if it fails
         """
 
-        tile_end_ts = dateutil.parser.isoparse(self.job_schedule_ts)
+        last_tile_end_ts = dateutil.parser.isoparse(self.job_schedule_ts)
         cron_residue_seconds = self.tile_modulo_frequency_second % 60
-        tile_end_ts = tile_end_ts.replace(second=cron_residue_seconds)
-        tile_end_ts = tile_end_ts - timedelta(seconds=self.blind_spot_second)
+        last_tile_end_ts = last_tile_end_ts.replace(second=cron_residue_seconds)
+        last_tile_end_ts = last_tile_end_ts - timedelta(seconds=self.blind_spot_second)
+        date_format = "%Y-%m-%d %H:%M:%S"
 
         tile_type = self.tile_type.upper()
         lookback_period = self.frequency_minute * (self.monitor_periods + 1)
         tile_id = self.tile_id.upper()
 
+        tile_end_ts = last_tile_end_ts
         if tile_type == "OFFLINE":
             lookback_period = self.offline_period_minute
             tile_end_ts = tile_end_ts - timedelta(minutes=lookback_period)
 
         tile_start_ts = tile_end_ts - timedelta(minutes=lookback_period)
-        monitor_end_ts = tile_end_ts - timedelta(minutes=self.frequency_minute)
+        tile_start_ts_str = tile_start_ts.strftime(date_format)
+
+        # use the last_tile_start_date from tile registry as tile_start_ts_str
+        registry_df = await self._spark.execute_query(
+            f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}'"
+        )
+        if registry_df is not None and len(registry_df) > 0:
+            registry_last_tile_start_ts = registry_df["LAST_TILE_START_DATE_ONLINE"].iloc[0]
+            logger.info(f"Last tile start date from registry - {registry_last_tile_start_ts}")
+            if registry_last_tile_start_ts == tile_start_ts_str:
+                logger.warning(
+                    f"Duplicate job - {registry_last_tile_start_ts} is the same as {tile_start_ts_str}"
+                )
+                return
+            tile_start_ts_str = registry_last_tile_start_ts
+            logger.info(f"Use last tile start date from registry - {tile_start_ts_str}")
 
         session_id = f"{tile_id}|{datetime.now()}"
         audit_insert_sql = f"""INSERT INTO TILE_JOB_MONITOR
@@ -86,20 +103,20 @@ class TileGenerateSchedule(TileCommon):
         logger.debug(insert_sql)
         await retry_sql(self._spark, insert_sql)
 
-        tile_start_ts_str = tile_start_ts.strftime("%Y-%m-%d %H:%M:%S")
-        tile_end_ts_str = tile_end_ts.strftime("%Y-%m-%d %H:%M:%S")
-        monitor_tile_end_ts_str = monitor_end_ts.strftime("%Y-%m-%d %H:%M:%S")
+        monitor_end_ts = tile_end_ts - timedelta(minutes=self.frequency_minute)
+        monitor_tile_end_ts_str = monitor_end_ts.strftime(date_format)
 
         monitor_input_sql = self.sql.replace(
             f"{self.tile_start_date_placeholder}", "'" + tile_start_ts_str + "'"
         ).replace(f"{self.tile_end_date_placeholder}", "'" + monitor_tile_end_ts_str + "'")
 
+        tile_end_ts_str = tile_end_ts.strftime(date_format)
         generate_input_sql = self.sql.replace(
             f"{self.tile_start_date_placeholder}", "'" + tile_start_ts_str + "'"
         ).replace(f"{self.tile_end_date_placeholder}", "'" + tile_end_ts_str + "'")
 
         last_tile_start_ts = tile_end_ts - timedelta(minutes=self.frequency_minute)
-        last_tile_start_str = last_tile_start_ts.strftime("%Y-%m-%d %H:%M:%S")
+        last_tile_start_str = last_tile_start_ts.strftime(date_format)
 
         tile_monitor_ins = TileMonitor(
             spark_session=self._spark,
@@ -135,7 +152,7 @@ class TileGenerateSchedule(TileCommon):
         tile_online_store_ins = TileScheduleOnlineStore(
             spark_session=self._spark,
             agg_id=self.agg_id,
-            job_schedule_ts_str=self.job_schedule_ts,
+            job_schedule_ts_str=last_tile_end_ts.strftime(date_format),
         )
 
         step_specs: List[Dict[str, Any]] = [

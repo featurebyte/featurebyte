@@ -291,7 +291,6 @@ class BaseTileManager(BaseModel, ABC):
                 tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
                 monitor_periods=monitor_periods,
                 agg_id=tile_spec.aggregation_id,
-                job_schedule_ts=next_job_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             )
 
             interval_seconds = (
