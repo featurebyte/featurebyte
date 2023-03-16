@@ -37,12 +37,21 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import FeatureNamespace
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_list import FeatureListNamespace
-from featurebyte.config import activate_catalog, get_active_catalog_id, reset_to_default_catalog
+from featurebyte.config import get_active_catalog_id, reset_to_default_catalog
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
     RecordUpdateException,
 )
+
+
+@pytest.fixture(autouse=True)
+def reset_catalog():
+    """
+    Reset back to default catalog after every test.
+    """
+    yield
+    reset_to_default_catalog()
 
 
 @dataclass
@@ -365,7 +374,6 @@ def test_get_catalog():
     # activate a catalog
     Catalog.activate(creditcard_catalog.name)
     assert (Catalog.list()["active"] == [False, True, False, False]).all()
-    reset_to_default_catalog()
 
 
 def test_activate():
@@ -418,8 +426,6 @@ def test_catalog_obj_list_functions_produces_no_errors(list_function):
     assert get_active_catalog_id() == credit_card_catalog.id
     credit_card_catalog_list_function_to_invoke()
     assert get_active_catalog_id() == credit_card_catalog.id
-
-    reset_to_default_catalog()
 
 
 def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors():

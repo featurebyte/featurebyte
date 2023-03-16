@@ -68,7 +68,7 @@ def update_and_reset_catalog(func: Any) -> Any:
             activate_catalog(active_catalog_id)
 
     # Perform some metadata updates on the decorated function so that we can do some inspection in tests.
-    wrapper.__signature__ = original_signature
+    wrapper.__signature__ = original_signature  # type: ignore[attr-defined]
     wrapper.__name__ = func.__name__
     return wrapper
 
