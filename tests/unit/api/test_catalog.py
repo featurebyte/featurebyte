@@ -68,10 +68,6 @@ def catalog_list_methods_to_test_list():
         MethodMetadata(Catalog.list_feature_list_namespaces, FeatureListNamespace),
         MethodMetadata(Catalog.list_feature_lists, FeatureList, "_list_versions", "list_versions"),
         MethodMetadata(Catalog.list_tables, Table),
-        MethodMetadata(Catalog.list_dimension_tables, DimensionTable),
-        MethodMetadata(Catalog.list_item_tables, ItemTable),
-        MethodMetadata(Catalog.list_event_tables, EventTable),
-        MethodMetadata(Catalog.list_scd_tables, SCDTable),
         MethodMetadata(Catalog.list_relationships, Relationship),
         MethodMetadata(Catalog.list_feature_job_setting_analyses, FeatureJobSettingAnalysis),
         MethodMetadata(Catalog.list_feature_stores, FeatureStore),
@@ -128,7 +124,17 @@ def test_all_list_methods_are_exposed_in_catalog(catalog_list_methods_to_test):
     If we don't want to add them, we can add them to the excluded_children set.
     """
     api_object_children = _inheritors(ApiObject)
-    excluded_children = {SavableApiObject, TableListMixin, FeatureJobMixin, TableApiObject, Catalog}
+    excluded_children = {
+        Catalog,  # accessible as part of Catalog.get
+        DimensionTable,  # accessible as part of Table.get
+        EventTable,  # accessible as part of Table.get
+        FeatureJobMixin,
+        ItemTable,  # accessible as part of Table.get
+        SCDTable,  # accessible as part of Table.get
+        SavableApiObject,
+        TableApiObject,
+        TableListMixin,
+    }
     assert len(api_object_children) == len(catalog_list_methods_to_test) + len(excluded_children)
 
     for method_item in catalog_list_methods_to_test:
