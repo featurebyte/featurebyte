@@ -643,15 +643,22 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Returns
         -------
         FrozenSeriesT
+            Column or Feature with absolute values
 
         Examples
         --------
-
         Compute absolute values for a column in a view:
 
-        >>> import featurebyte as fb  # doctest: +SKIP
-        ... view = fb.Catalog.get_data("GROCERYITEMS").get_view()
-        ... column = view["DISCOUNT"].abs()
+        >>> import featurebyte as fb
+        >>> view = fb.ItemTable.get("GROCERYITEMS").get_view()
+        >>> column = view["DISCOUNT"].abs()
+
+
+        Compute absolute values for a feature:
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("GROCERYITEMS_DISCOUNT")
+        >>> feature_abs = feature.abs()
         """
         return series_unary_operation(
             input_series=self,
@@ -814,9 +821,11 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         >>> lookup_feature.isin([1, 2, 3]) # doctest: +SKIP
 
+
         Check to see if a lookup feature values are the keys of a dictionary feature
 
         >>> lookup_feature.isin(dictionary_feature) # doctest: +SKIP
+
 
         Check to see if the values in a series are of values [True, False]
 
