@@ -60,6 +60,7 @@ class TileGenerateSchedule(TileCommon):
 
         tile_start_ts = tile_end_ts - timedelta(minutes=lookback_period)
         tile_start_ts_str = tile_start_ts.strftime(date_format)
+        monitor_tile_start_ts_str = tile_start_ts_str
 
         # use the last_tile_start_date from tile registry as tile_start_ts_str
         registry_df = await self._spark.execute_query(
@@ -107,7 +108,7 @@ class TileGenerateSchedule(TileCommon):
         monitor_tile_end_ts_str = monitor_end_ts.strftime(date_format)
 
         monitor_input_sql = self.sql.replace(
-            f"{self.tile_start_date_placeholder}", "'" + tile_start_ts_str + "'"
+            f"{self.tile_start_date_placeholder}", "'" + monitor_tile_start_ts_str + "'"
         ).replace(f"{self.tile_end_date_placeholder}", "'" + monitor_tile_end_ts_str + "'")
 
         tile_end_ts_str = tile_end_ts.strftime(date_format)
