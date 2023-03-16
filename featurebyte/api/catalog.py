@@ -477,7 +477,7 @@ class Catalog(CatalogModel, SavableApiObject):
         check_is_active_catalog(self.id)
         return FeatureList.get(name=name, version=version)
 
-    def get_table(self, name: str) -> Table:
+    def get_table(self, name: str) -> Any:
         """
         Get table by name
 
@@ -488,8 +488,8 @@ class Catalog(CatalogModel, SavableApiObject):
 
         Returns
         -------
-        Table
-            Table object
+        Any
+            Retrieved source table
         """
         check_is_active_catalog(self.id)
         return Table.get(name=name)
