@@ -42,6 +42,15 @@ def update_and_reset_catalog(func: Any) -> Any:
 
     This is useful as an intermediate state for us to support a catalog object oriented syntax, while still maintaining
     a global state for the catalog ID at the implementation level.
+
+    Parameters
+    ----------
+    func: Any
+        Function to decorate
+
+    Returns
+    -------
+    Any
     """
     original_signature = signature(func)
 
