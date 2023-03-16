@@ -62,20 +62,19 @@ class TileGenerateSchedule(TileCommon):
         tile_start_ts_str = tile_start_ts.strftime(date_format)
         monitor_tile_start_ts_str = tile_start_ts_str
 
-        # use the last_tile_start_date from tile registry as tile_start_ts_str
+        # use the last_tile_start_date from tile registry as tile_start_ts_str if it is earlier than tile_start_ts_str
         registry_df = await self._spark.execute_query(
             f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}'"
         )
         if registry_df is not None and len(registry_df) > 0:
             registry_last_tile_start_ts = registry_df["LAST_TILE_START_DATE_ONLINE"].iloc[0]
             logger.info(f"Last tile start date from registry - {registry_last_tile_start_ts}")
-            if registry_last_tile_start_ts == tile_start_ts_str:
-                logger.warning(
-                    f"Duplicate job - {registry_last_tile_start_ts} is the same as {tile_start_ts_str}"
+
+            if registry_last_tile_start_ts < tile_start_ts_str:
+                logger.info(
+                    f"Use last tile start date from registry - {registry_last_tile_start_ts} instead of {tile_start_ts_str}"
                 )
-                return
-            tile_start_ts_str = registry_last_tile_start_ts
-            logger.info(f"Use last tile start date from registry - {tile_start_ts_str}")
+                tile_start_ts_str = registry_last_tile_start_ts
 
         session_id = f"{tile_id}|{datetime.now()}"
         audit_insert_sql = f"""INSERT INTO TILE_JOB_MONITOR

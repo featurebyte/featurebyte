@@ -186,7 +186,7 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
-    tile_monitor = 10
+    tile_monitor = 2
     tile_end_ts = "2022-06-05T23:58:00Z"
 
     entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
@@ -213,7 +213,7 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
         tile_start_date_column=InternalName.TILE_START_DATE,
         tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
         tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
-        monitor_periods=10,
+        monitor_periods=tile_monitor,
         agg_id=agg_id,
         job_schedule_ts=tile_end_ts,
     )
@@ -228,7 +228,16 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
     )
     assert result["LAST_TILE_START_DATE_ONLINE"].iloc[0] == "2022-06-05 23:53:00"
 
-    # subsequent call with the same LAST_TILE_START_DATE_ONLINE will just stop
-    with mock.patch("featurebyte.sql.spark.tile_generate.TileGenerate") as mock_tile_generate:
-        await tile_schedule_ins.execute()
-        assert mock_tile_generate.call_count == 0
+    # test for LAST_TILE_START_DATE_ONLINE earlier than tile_start_date
+    await session.execute_query(
+        f"UPDATE TILE_REGISTRY SET LAST_TILE_START_DATE_ONLINE = '2022-06-05 23:33:00' WHERE TILE_ID = '{tile_id}'"
+    )
+    await tile_schedule_ins.execute()
+    sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
+    result = await session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 5
+
+    result = await session.execute_query(
+        f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
+    )
+    assert result["LAST_TILE_START_DATE_ONLINE"].iloc[0] == "2022-06-05 23:53:00"
