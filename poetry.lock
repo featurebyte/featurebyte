@@ -4,7 +4,7 @@
 server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo"]
 
 [metadata]
-content-hash = "948fbe3f8eb35937aed72f87d2315f5e611b7352bae7abbf717b5ea0b2d1f713"
+content-hash = "cb28ff3f9c7c1c9e7aed62af610098427e8a8a02b06f68c3e175320dab7874e8"
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
 
@@ -1034,13 +1034,13 @@ url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featureby
 category = "main"
 description = "Free utilities from FeatureByte"
 files = [
-    {file = "featurebyte_freeware-0.1.10-py3-none-any.whl", hash = "sha256:2e63222e324c60494b9e39befc835fcbe5bf4e211c9d3c3d192512764a29e27d"},
-    {file = "featurebyte_freeware-0.1.10.tar.gz", hash = "sha256:9feacc013bb334aa3cabdcc59ebecee8e557bc931a7e1d94c35870bf788a4b89"},
+    {file = "featurebyte_freeware-0.1.11-py3-none-any.whl", hash = "sha256:f15e0d21f219c0954067aeb0d81a1fec07db6347ceb03ae0fde76e9766fc3447"},
+    {file = "featurebyte_freeware-0.1.11.tar.gz", hash = "sha256:a7102a52dc13a1abbfd65bcf12f1909b8694c05985a55448af5db36850b70a7a"},
 ]
 name = "featurebyte-freeware"
 optional = false
 python-versions = ">=3.8,<3.11"
-version = "0.1.10"
+version = "0.1.11"
 
 [package.dependencies]
 Jinja2 = ">=3.1.2,<4.0.0"

@@ -44,17 +44,17 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         persistent = self.get_persistent()
 
         # retrieve event data
-        event_data_service = EventTableService(
+        event_table_service = EventTableService(
             user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
         )
-        event_data = await event_data_service.get_document(document_id=payload.event_data_id)
+        event_table = await event_table_service.get_document(document_id=payload.event_data_id)
 
         # retrieve feature store
         feature_store_service = FeatureStoreService(
             user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
         )
         feature_store = await feature_store_service.get_document(
-            document_id=event_data.tabular_source.feature_store_id
+            document_id=event_table.tabular_source.feature_store_id
         )
 
         # establish database session
@@ -69,10 +69,10 @@ class FeatureJobSettingAnalysisTask(BaseTask):
 
         event_dataset = EventDataset(
             database_type=feature_store.type,
-            event_data_name=event_data.name,
-            table_details=event_data.tabular_source.table_details.dict(),
-            creation_date_column=event_data.record_creation_timestamp_column,
-            event_timestamp_column=event_data.event_timestamp_column,
+            event_table_name=event_table.name,
+            table_details=event_table.tabular_source.table_details.dict(),
+            creation_date_column=event_table.record_creation_timestamp_column,
+            event_timestamp_column=event_table.event_timestamp_column,
             sql_query_func=db_session.execute_query,
         )
 
