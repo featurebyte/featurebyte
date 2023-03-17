@@ -667,16 +667,26 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute absolute values for a Column in a View:
 
-        >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYCUSTOMER").get_view()
-        >>> column = view["Longitude"].abs()
+        >>> view["LongitudeAbs"] = view["Longitude"].abs()
+        >>> view.preview(5).filter(regex="Longitude")
+            Longitude  LongitudeAbs
+        0  -1.563748      1.563748
+        1   2.178242      2.178242
+        2   1.941437      1.941437
+        3   5.386148      5.386148
+        4   2.403298      2.403298
 
 
         Compute absolute values for a Feature:
 
-        >>> import featurebyte as fb
         >>> feature = fb.Feature.get("StateCentroidLongitude")
         >>> feature_abs = feature.abs()
+        >>> feature_abs.name = "StateCentroidLongitudeAbs"
+        >>> preview_params = pd.DataFrame([{"POINT_IN_TIME": "2023-01-01" , "FRENCHSTATE": "Aquitaine"}])
+        >>> fb.FeatureGroup([feature, feature_abs]).preview(preview_params)
+          POINT_IN_TIME FRENCHSTATE  StateCentroidLongitude  StateCentroidLongitudeAbs
+        0    2023-01-01   Aquitaine               -0.711901                   0.711901
         """
         return series_unary_operation(
             input_series=self,
