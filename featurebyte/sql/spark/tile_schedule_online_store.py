@@ -3,6 +3,8 @@ Tile Generate online store Job Script for SP_TILE_SCHEDULE_ONLINE_STORE
 """
 from typing import Any
 
+from datetime import datetime
+
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 
@@ -11,6 +13,7 @@ from featurebyte.session.base import BaseSession
 from featurebyte.sql.spark.common import (
     CACHE_TABLE_PLACEHOLDER,
     construct_create_delta_table_query,
+    retry_sql,
     retry_sql_with_cache,
 )
 
@@ -85,6 +88,7 @@ class TileScheduleOnlineStore(BaseModel):
             logger.debug(f"fs_table_exist_flag: {fs_table_exist_flag}")
 
             entities_fname_str = ", ".join([f"`{col}`" for col in entity_columns + [f_name]])
+            current_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
@@ -93,6 +97,12 @@ class TileScheduleOnlineStore(BaseModel):
                 )
                 await self._spark.execute_query(create_sql)
 
+                await self._spark.execute_query(
+                    f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT STRING"
+                )
+                await self._spark.execute_query(
+                    f"UPDATE {fs_table} SET UPDATED_AT = '{current_ts}'"
+                )
             else:
                 # feature store table already exists, insert records with the input feature sql
                 entity_insert_cols = []
@@ -115,14 +125,6 @@ class TileScheduleOnlineStore(BaseModel):
                         f"ALTER TABLE {fs_table} ADD COLUMN {f_name} {f_value_type}"
                     )
 
-                # TODO: local spark does not support update subquery
-                # remove feature values for entities that are not in entity universe
-                # remove_values_sql = f"""
-                #     update {fs_table} a set a.{f_name} = NULL
-                #         WHERE NOT EXISTS
-                #         (select * from ({f_sql}) b WHERE {entity_filter_cols_str})
-                # """
-
                 # update or insert feature values for entities that are in entity universe
                 if entity_columns:
                     on_condition_str = entity_filter_cols_str
@@ -130,15 +132,23 @@ class TileScheduleOnlineStore(BaseModel):
                 else:
                     on_condition_str = "true"
                     values_args = f"b.`{f_name}`"
+
+                # update or insert feature values for entities that are in entity universe
                 merge_sql = f"""
                     merge into {fs_table} a using ({CACHE_TABLE_PLACEHOLDER}) b
                         on {on_condition_str}
                         when matched then
-                            update set a.{f_name} = b.{f_name}
+                            update set a.{f_name} = b.{f_name}, a.UPDATED_AT = '{current_ts}'
                         when not matched then
-                            insert ({entities_fname_str})
-                                values ({values_args})
+                            insert ({entities_fname_str}, UPDATED_AT)
+                                values ({values_args}, '{current_ts}')
                 """
                 await retry_sql_with_cache(
                     session=self._spark, sql=merge_sql, cached_select_sql=f_sql
                 )
+
+                # remove feature values for entities that are not in entity universe
+                remove_values_sql = (
+                    f"UPDATE {fs_table} SET {f_name} = NULL WHERE UPDATED_AT < '{current_ts}'"
+                )
+                await retry_sql(session=self._spark, sql=remove_values_sql)
