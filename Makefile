@@ -94,7 +94,7 @@ test-integration-spark:
 	poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
 
 test-docs:
-	python scripts/test-docs-setup.py
+	poetry run python scripts/test-docs-setup.py
 	poetry run pytest --timeout=240 featurebyte
 
 test-merge:

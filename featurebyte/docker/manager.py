@@ -134,23 +134,17 @@ def get_service_names(app_name: ApplicationName) -> List[str]:
     raise ValueError("Not a valid application name")
 
 
-def __setup_network(verbose: Optional[bool] = True) -> None:
+def __setup_network() -> None:
     """
     Setup docker network
-
-    Parameters
-    ----------
-    verbose: Optional[bool]
-        Print network status
     """
     client = DockerClient()
     networks = client.network.list()
-    if verbose:
-        if "featurebyte" in map(lambda x: x.name, networks):
-            console.print(Text("featurebyte", style="cyan") + Text(" network already exists"))
-        else:
-            console.print(Text("featurebyte", style="cyan") + Text(" network creating"))
-            DockerClient().network.create("featurebyte", driver="bridge")
+    if "featurebyte" in map(lambda x: x.name, networks):
+        logger.debug("featurebyte network already exists")
+    else:
+        logger.debug("featurebyte network creating")
+        DockerClient().network.create("featurebyte", driver="bridge")
 
 
 def print_logs(app_name: ApplicationName, service_name: str, tail: int) -> None:
@@ -223,7 +217,7 @@ def __delete_docker_backup() -> None:
 def start_app(
     app_name: ApplicationName,
     local: bool,
-    verbose: Optional[bool] = True,
+    verbose: bool = True,
 ) -> None:
     """
     Start application
@@ -234,11 +228,11 @@ def start_app(
         Name of application to start
     local : bool
         Do not pull new images from registry
-    verbose : Optional[bool]
+    verbose : bool
         Print verbose output
     """
     try:
-        __setup_network(verbose=verbose)
+        __setup_network()
         __backup_docker_conf()
         __use_docker_svc_account()
         with get_docker_client(app_name) as docker:

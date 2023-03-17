@@ -73,7 +73,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
         See Also
         --------
-        FeatureStore.get_or_create
+        - [FeatureStore.create](/reference/featurebyte.api.feature_store.FeatureStore.get_or_create/): Get or create FeatureStore
         """
         # Construct object, and save to persistent layer.
         feature_store = FeatureStore(
@@ -129,17 +129,13 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         ...         featurebyte_schema="playground",
         ...     )
         ... )
-        >>> feature_store.name
-        'playground'
-
-        List created feature stores
-        >>> FeatureStore.list()  # doctest: +SKIP
-                  name   type              created_at
-        0   playground  spark 2023-03-16 09:22:23.755
+        >>> FeatureStore.list()[["name", "type"]]
+                  name   type
+        0   playground  spark
 
         See Also
         --------
-        FeatureStore.create
+        - [FeatureStore.create](/reference/featurebyte.api.feature_store.FeatureStore.create/): Create FeatureStore
         """
         try:
             return FeatureStore.get(name=name)

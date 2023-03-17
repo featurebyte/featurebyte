@@ -698,6 +698,10 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
             "featurebyte.FeatureStore.create",
         ),
         DocLayoutItem(
+            [FEATURE_STORE, CREATE, "featurebyte.FeatureStore.get_or_create"],
+            "featurebyte.FeatureStore.get_or_create",
+        ),
+        DocLayoutItem(
             [FEATURE_STORE, CREATE, "featurebyte.FeatureStore.save"],
             "featurebyte.FeatureStore.save",
         ),
@@ -1155,6 +1159,10 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, CATALOG, "featurebyte.Catalog.list"], "featurebyte.Catalog.list"),
         DocLayoutItem(
             [CATALOG, CREATE, "featurebyte.Catalog.create"], "featurebyte.Catalog.create"
+        ),
+        DocLayoutItem(
+            [CATALOG, CREATE, "featurebyte.Catalog.get_or_create"],
+            "featurebyte.Catalog.get_or_create",
         ),
         DocLayoutItem([CATALOG, CREATE, "featurebyte.Catalog.save"], "featurebyte.Catalog.save"),
         DocLayoutItem(

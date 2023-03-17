@@ -126,7 +126,7 @@ class Catalog(CatalogModel, SavableApiObject):
 
         See Also
         --------
-        Catalog.get_or_create
+        - [Catalog.get_or_create](/reference/featurebyte.api.catalog.Catalog.get_or_create/): Get or create Catalog
         """
         catalog = cls(name=name)
         catalog.save()
@@ -156,17 +156,14 @@ class Catalog(CatalogModel, SavableApiObject):
 
         >>> import featurebyte as fb
         >>> catalog = fb.Catalog.get_or_create("grocery")
-        >>> catalog.name
-        'grocery'
-
-        List catalogs
-        >>> fb.Catalog.list()  # doctest: +SKIP
-            name              created_at  active
-         grocery 2023-03-15 15:45:06.551   False
+        >>> fb.Catalog.list()[["name", "active"]]
+              name  active
+        0  grocery   False
+        1  default    True
 
         See Also
         --------
-        Catalog.create
+        - [Catalog.create](/reference/featurebyte.api.catalog.Catalog.create/): Create Catalog
         """
         try:
             return Catalog.get(name=name)
