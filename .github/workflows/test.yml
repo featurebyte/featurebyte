@@ -304,6 +304,10 @@ jobs:
         if: always()
         run: |
           find ~/.featurebyte/data/spark/staging/playground
+          docker exec --user runner spark-thrift id
+          docker exec spark-thrift ls -l /opt/spark/data
+          docker exec spark-thrift ls -l /opt/spark/data/staging
+          docker exec --user runner featurebyte-server id
           docker exec featurebyte-server ls -l /data/staging
           docker exec featurebyte-server ls -l /data/staging/playground
   validate:
