@@ -1,6 +1,7 @@
 """
 Series class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, Callable, Literal, Optional, Sequence, Type, TypeVar, Union
