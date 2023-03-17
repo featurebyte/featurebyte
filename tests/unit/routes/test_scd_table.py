@@ -26,7 +26,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
     base_route = "/scd_table"
     data_create_schema_class = SCDTableCreate
     payload = BaseTableApiTestSuite.load_payload("tests/fixtures/request_payloads/scd_table.json")
-    document_name = "sf_scd_data"
+    document_name = "sf_scd_table"
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
@@ -127,7 +127,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
     @pytest.fixture(name="data_update_dict")
     def data_update_dict_fixture(self):
         """
-        SCD data update dict object
+        SCD table update dict object
         """
         return {
             "record_creation_timestamp_column": "created_at",
@@ -148,7 +148,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
         expected_info_response = {
-            "name": "sf_scd_data",
+            "name": self.document_name,
             "record_creation_timestamp_column": None,
             "current_flag_column": "is_active",
             "effective_timestamp_column": "effective_timestamp",

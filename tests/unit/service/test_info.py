@@ -6,21 +6,21 @@ from bson import ObjectId
 
 from featurebyte import (
     ColumnCleaningOperation,
-    DataCleaningOperation,
     Entity,
     FeatureJobSetting,
     MissingValueImputation,
+    TableCleaningOperation,
 )
 from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.node.schema import SnowflakeDetails, TableDetails
 from featurebyte.schema.feature import (
-    DataCleaningOperationComparison,
-    DataFeatureJobSettingComparison,
     FeatureBriefInfo,
     FeatureNewVersionCreate,
     ReadinessComparison,
+    TableCleaningOperationComparison,
+    TableFeatureJobSettingComparison,
     VersionComparison,
 )
 from featurebyte.schema.info import (
@@ -90,11 +90,11 @@ async def test_get_entity_info(info_service, entity):
 
 
 @pytest.mark.asyncio
-async def test_get_event_data_info(info_service, event_data, entity):
-    """Test get_event_data_info"""
-    info = await info_service.get_event_table_info(document_id=event_data.id, verbose=False)
+async def test_get_event_table_info(info_service, event_table, entity):
+    """Test get_event_table_info"""
+    info = await info_service.get_event_table_info(document_id=event_table.id, verbose=False)
     expected_info = EventTableInfo(
-        name="sf_event_data",
+        name="sf_event_table",
         status="DRAFT",
         event_timestamp_column="event_timestamp",
         event_id_column="col_int",
@@ -119,12 +119,12 @@ async def test_get_event_data_info(info_service, event_data, entity):
     )
     assert info == expected_info
 
-    info = await info_service.get_event_table_info(document_id=event_data.id, verbose=True)
+    info = await info_service.get_event_table_info(document_id=event_table.id, verbose=True)
     assert info == EventTableInfo(
         **{
             **expected_info.dict(),
             "columns_info": [
-                TableColumnInfo(name="col_int", dtype="INT", entity=entity.name),
+                TableColumnInfo(name="col_int", dtype="INT"),
                 TableColumnInfo(name="col_float", dtype="FLOAT"),
                 TableColumnInfo(name="col_char", dtype="CHAR"),
                 TableColumnInfo(name="col_text", dtype="VARCHAR"),
@@ -141,16 +141,16 @@ async def test_get_event_data_info(info_service, event_data, entity):
 
 
 @pytest.mark.asyncio
-async def test_get_item_data_info(info_service, item_data, event_data):
-    """Test get_item_data_info"""
-    _ = event_data
-    info = await info_service.get_item_table_info(document_id=item_data.id, verbose=False)
+async def test_get_item_table_info(info_service, item_table, event_table):
+    """Test get_item_table_info"""
+    _ = event_table
+    info = await info_service.get_item_table_info(document_id=item_table.id, verbose=False)
     expected_info = ItemTableInfo(
-        name="sf_item_data",
+        name="sf_item_table",
         status="DRAFT",
         event_id_column="event_id_col",
         item_id_column="item_id_col",
-        event_data_name="sf_event_data",
+        event_table_name="sf_event_table",
         record_creation_timestamp_column=None,
         table_details=TableDetails(
             database_name="sf_database",
@@ -167,7 +167,7 @@ async def test_get_item_data_info(info_service, item_data, event_data):
     )
     assert info == expected_info
 
-    info = await info_service.get_item_table_info(document_id=item_data.id, verbose=True)
+    info = await info_service.get_item_table_info(document_id=item_table.id, verbose=True)
     assert info == ItemTableInfo(
         **{
             **expected_info.dict(),
@@ -184,11 +184,13 @@ async def test_get_item_data_info(info_service, item_data, event_data):
 
 
 @pytest.mark.asyncio
-async def test_get_dimension_data_info(info_service, dimension_data):
-    """Test get_dimension_data_info"""
-    info = await info_service.get_dimension_table_info(document_id=dimension_data.id, verbose=False)
+async def test_get_dimension_table_info(info_service, dimension_table):
+    """Test get_dimension_table_info"""
+    info = await info_service.get_dimension_table_info(
+        document_id=dimension_table.id, verbose=False
+    )
     expected_info = DimensionTableInfo(
-        name="sf_dimension_data",
+        name="sf_dimension_table",
         status="DRAFT",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
@@ -207,7 +209,7 @@ async def test_get_dimension_data_info(info_service, dimension_data):
     )
     assert info == expected_info
 
-    info = await info_service.get_dimension_table_info(document_id=dimension_data.id, verbose=True)
+    info = await info_service.get_dimension_table_info(document_id=dimension_table.id, verbose=True)
     assert info == DimensionTableInfo(
         **{
             **expected_info.dict(),
@@ -227,11 +229,11 @@ async def test_get_dimension_data_info(info_service, dimension_data):
 
 
 @pytest.mark.asyncio
-async def test_get_scd_data_info(info_service, scd_data):
-    """Test get_scd_data_info"""
-    info = await info_service.get_scd_table_info(document_id=scd_data.id, verbose=False)
+async def test_get_scd_table_info(info_service, scd_table):
+    """Test get_scd_table_info"""
+    info = await info_service.get_scd_table_info(document_id=scd_table.id, verbose=False)
     expected_info = SCDTableInfo(
-        name="sf_scd_data",
+        name="sf_scd_table",
         status="DRAFT",
         record_creation_timestamp_column=None,
         current_flag_column="is_active",
@@ -254,7 +256,7 @@ async def test_get_scd_data_info(info_service, scd_data):
     )
     assert info == expected_info
 
-    info = await info_service.get_scd_table_info(document_id=scd_data.id, verbose=True)
+    info = await info_service.get_scd_table_info(document_id=scd_table.id, verbose=True)
     assert info == SCDTableInfo(
         **{
             **expected_info.dict(),
@@ -282,12 +284,12 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
     )
     expected_metadata = {
         "main_data": {
-            "name": "sf_event_data",
-            "data_type": "event_data",
+            "name": "sf_event_table",
+            "table_type": "event_table",
             "id": feature_namespace.tabular_data_ids[0],
         },
         "input_columns": {
-            "Input0": {"data": "sf_event_data", "column_name": "col_float", "semantic": None}
+            "Input0": {"data": "sf_event_table", "column_name": "col_float", "semantic": None}
         },
         "derived_columns": {},
         "aggregations": {
@@ -303,9 +305,9 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         },
         "post_aggregation": None,
     }
-    data_feature_job_setting = [
+    table_feature_job_setting = [
         {
-            "data_name": "sf_event_data",
+            "table_name": "sf_event_table",
             "feature_job_setting": {
                 "blind_spot": "600s",
                 "frequency": "1800s",
@@ -318,7 +320,9 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[TableBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
+        tabular_data=[
+            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -328,9 +332,9 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
             default=production_ready_feature.version.to_str(),
         ),
         readiness=ReadinessComparison(this="PRODUCTION_READY", default="PRODUCTION_READY"),
-        data_cleaning_operation=DataCleaningOperationComparison(this=[], default=[]),
-        data_feature_job_setting=DataFeatureJobSettingComparison(
-            this=data_feature_job_setting, default=data_feature_job_setting
+        table_cleaning_operation=TableCleaningOperationComparison(this=[], default=[]),
+        table_feature_job_setting=TableFeatureJobSettingComparison(
+            this=table_feature_job_setting, default=table_feature_job_setting
         ),
         metadata=expected_metadata,
         created_at=feature_namespace.created_at,
@@ -368,17 +372,17 @@ def expected_feature_iet_info_fixture(feature_iet):
     }
     expected_metadata = {
         "main_data": {
-            "name": "sf_event_data",
-            "data_type": "event_data",
+            "name": "sf_event_table",
+            "table_type": "event_table",
             "id": feature_iet.tabular_data_ids[0],
         },
         "input_columns": {
             "Input0": {
-                "data": "sf_event_data",
+                "data": "sf_event_table",
                 "column_name": "event_timestamp",
                 "semantic": "event_timestamp",
             },
-            "Input1": {"data": "sf_event_data", "column_name": "cust_id", "semantic": None},
+            "Input1": {"data": "sf_event_table", "column_name": "cust_id", "semantic": None},
         },
         "derived_columns": {
             "X0": {
@@ -416,8 +420,8 @@ def expected_feature_iet_info_fixture(feature_iet):
             "transforms": ["mul(value=-1)", "div", "add(value=0.1)", "log", "add"],
         },
     }
-    data_feature_job_setting = {
-        "data_name": "sf_event_data",
+    table_feature_job_setting = {
+        "table_name": "sf_event_table",
         "feature_job_setting": {
             "blind_spot": "10800s",
             "frequency": "21600s",
@@ -429,7 +433,9 @@ def expected_feature_iet_info_fixture(feature_iet):
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[TableBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
+        tabular_data=[
+            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -439,11 +445,11 @@ def expected_feature_iet_info_fixture(feature_iet):
             default=feature_iet.version.to_str(),
         ),
         readiness=ReadinessComparison(this="DRAFT", default="DRAFT"),
-        data_feature_job_setting={
-            "this": [data_feature_job_setting, data_feature_job_setting],
-            "default": [data_feature_job_setting, data_feature_job_setting],
+        table_feature_job_setting={
+            "this": [table_feature_job_setting, table_feature_job_setting],
+            "default": [table_feature_job_setting, table_feature_job_setting],
         },
-        data_cleaning_operation={"this": [], "default": []},
+        table_cleaning_operation={"this": [], "default": []},
         metadata=expected_metadata,
         created_at=feature_iet.created_at,
         updated_at=feature_iet.updated_at,
@@ -473,9 +479,9 @@ async def test_get_feature_info__complex_feature_with_cdi(
     new_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature_iet.id,
-            data_cleaning_operations=[
-                DataCleaningOperation(
-                    data_name="sf_event_data",
+            table_cleaning_operations=[
+                TableCleaningOperation(
+                    table_name="sf_event_table",
                     column_cleaning_operations=[
                         ColumnCleaningOperation(
                             column_name="cust_id",
@@ -493,10 +499,10 @@ async def test_get_feature_info__complex_feature_with_cdi(
         **expected_feature_iet_info.dict(),
         "created_at": info.created_at,
         "updated_at": info.updated_at,
-        "data_cleaning_operation": {
+        "table_cleaning_operation": {
             "this": [
                 {
-                    "data_name": "sf_event_data",
+                    "table_name": "sf_event_table",
                     "column_cleaning_operations": [
                         {
                             "column_name": "cust_id",
@@ -524,7 +530,9 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[TableBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
+        tabular_data=[
+            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -550,7 +558,9 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[TableBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
+        tabular_data=[
+            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -595,7 +605,9 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[TableBriefInfo(name="sf_event_data", status="DRAFT", catalog_name="default")],
+        tabular_data=[
+            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -614,29 +626,29 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
     assert info == expected_info
 
 
-def test_get_main_data(info_service, item_data, event_data, dimension_data):
+def test_get_main_data(info_service, item_table, event_table, dimension_table):
     """Test _get_main_data logic"""
     new_columns_info = []
-    for i, col in enumerate(dimension_data.columns_info):
+    for i, col in enumerate(dimension_table.columns_info):
         new_columns_info.append({**col.dict(), "entity_id": ObjectId() if i == 0 else None})
-    dimension_data_with_entity = DimensionTableModel(
-        **{**dimension_data.dict(), "columns_info": new_columns_info}
+    dimension_table_with_entity = DimensionTableModel(
+        **{**dimension_table.dict(), "columns_info": new_columns_info}
     )
     assert (
         info_service._get_main_data(
-            [item_data, event_data, dimension_data, dimension_data_with_entity]
+            [item_table, event_table, dimension_table, dimension_table_with_entity]
         )
-        == item_data
+        == item_table
     )
     assert (
-        info_service._get_main_data([event_data, dimension_data, dimension_data_with_entity])
-        == event_data
+        info_service._get_main_data([event_table, dimension_table, dimension_table_with_entity])
+        == event_table
     )
     assert (
-        info_service._get_main_data([dimension_data, dimension_data_with_entity])
-        == dimension_data_with_entity
+        info_service._get_main_data([dimension_table, dimension_table_with_entity])
+        == dimension_table_with_entity
     )
-    assert info_service._get_main_data([dimension_data]) == dimension_data
+    assert info_service._get_main_data([dimension_table]) == dimension_table
 
 
 @pytest.fixture(name="transaction_entity")
@@ -651,7 +663,7 @@ def transaction_entity_fixture():
 
 @pytest.mark.asyncio
 async def test_get_relationship_info_info(
-    relationship_info_service, info_service, event_data, entity, transaction_entity
+    relationship_info_service, info_service, event_table, entity, transaction_entity
 ):
     """
     Test get relationship info info
@@ -664,7 +676,7 @@ async def test_get_relationship_info_info(
             relationship_type=relationship_type,
             primary_entity_id=entity.id,
             related_entity_id=transaction_entity.id,
-            primary_data_source_id=event_data.id,
+            primary_data_source_id=event_table.id,
             is_enabled=True,
             updated_by=PydanticObjectId(ObjectId()),
         )
@@ -673,5 +685,5 @@ async def test_get_relationship_info_info(
     assert relationship_info.relationship_type == relationship_type
     assert relationship_info.primary_entity_name == "customer"
     assert relationship_info.related_entity_name == "transaction"
-    assert relationship_info.data_source_name == "sf_event_data"
+    assert relationship_info.data_source_name == "sf_event_table"
     assert relationship_info.updated_by == "default user"

@@ -209,7 +209,7 @@ def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
     assert output.nodes_map["groupby_1"].parameters.tile_id == expected_tile_id
 
     # check that tile id is different if regenerate_groupby_hash=True
-    expected_tile_id = "TILE_F3600_M1800_B900_B0C4FEC926625091C00D634AF8F7D03EA464918C"
+    expected_tile_id = "TILE_F3600_M1800_B900_CC01E1AC06B80B2F6F4D8FA20AA73F8F4D6E8468"
     output, _ = query_graph_with_groupby.reconstruct(
         node_name_to_replacement_node={}, regenerate_groupby_hash=True
     )
@@ -277,8 +277,8 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     groupby_node = add_pruning_sensitive_operation(
         graph=graph, node_cls=GroupByNode, node_params=groupby_node_params, input_node=node_input
     )
-    tile_id = "TILE_F3600_M1800_B900_EC6D76DA23C191C86A5DCF6D5777C82C92C34930"
-    aggregation_id = "sum_a73868167cb600aedfaf16dee4559ad29681e63e"
+    tile_id = "TILE_F3600_M1800_B900_5634D1ED93AC01BE6B85305C981C8FA24B504FF8"
+    aggregation_id = "sum_4da7881cf93520070719bc58d040456d4b96f606"
     assert groupby_node.parameters.tile_id == tile_id
     assert groupby_node.parameters.aggregation_id == aggregation_id
 
@@ -293,8 +293,8 @@ def test_query_graph__add_groupby_operation_with_graph_node(
     groupby_node = add_pruning_sensitive_operation(
         graph=graph, node_cls=GroupByNode, node_params=groupby_node_params, input_node=graph_node
     )
-    tile_id = "TILE_F3600_M1800_B900_B0C4FEC926625091C00D634AF8F7D03EA464918C"
-    aggregation_id = "sum_aca8e1c2bca28b4e16e7267f1bbafa698b125c03"
+    tile_id = "TILE_F3600_M1800_B900_CC01E1AC06B80B2F6F4D8FA20AA73F8F4D6E8468"
+    aggregation_id = "sum_1147e0f46db4ca1f592453505c9799fdfa1079b1"
     assert groupby_node.parameters.tile_id == tile_id
     assert groupby_node.parameters.aggregation_id == aggregation_id
 
@@ -305,7 +305,7 @@ def test_query_graph__representation():
     graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
-            "type": "event_data",
+            "type": "event_table",
             "id": ObjectId("633844bd416657bb96c96d3f"),
             "columns": [{"name": "column", "dtype": "INT"}],
             "table_details": {
@@ -356,7 +356,7 @@ def test_query_graph__representation():
                                 "sf_schema": "public"
                             }
                         },
-                        "type": "event_data",
+                        "type": "event_table",
                         "id": "633844bd416657bb96c96d3f",
                         "timestamp_column": null,
                         "id_column": null

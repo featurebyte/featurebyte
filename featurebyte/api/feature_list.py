@@ -394,13 +394,13 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         "deployed",
         "readiness_frac",
         "online_frac",
-        "data",
+        "table",
         "entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", TableApiObject, "data"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "table"),
     ]
 
     @property
@@ -507,7 +507,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         entity: Optional[str]
             Name of entity used to filter results
         data: Optional[str]
-            Name of data used to filter results
+            Name of table used to filter results
 
         Returns
         -------
@@ -521,7 +521,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             ]
         if data:
             feature_lists = feature_lists[
-                feature_lists.data.apply(lambda data_list: data in data_list)
+                feature_lists.table.apply(lambda data_list: data in data_list)
             ]
         return feature_lists
 
@@ -848,7 +848,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         entity: Optional[str]
             Name of entity used to filter results
         data: Optional[str]
-            Name of data used to filter results
+            Name of table used to filter results
 
         Returns
         -------
@@ -868,7 +868,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         entity: Optional[str]
             Name of entity used to filter results
         data: Optional[str]
-            Name of data used to filter results
+            Name of table used to filter results
 
         Returns
         -------
@@ -892,7 +892,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
             as well as columns with serving names for all entities used by features in the feature list.
         serving_names_mapping : Optional[Dict[str, str]]
-            Optional serving names mapping if the training events data has different serving name
+            Optional serving names mapping if the training events table has different serving name
             columns than those defined in Entities. Mapping from original serving name to new
             serving name.
 
@@ -941,7 +941,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
             as well as columns with serving names for all entities used by features in the feature list.
         serving_names_mapping : Optional[Dict[str, str]]
-            Optional serving names mapping if the training events data has different serving name
+            Optional serving names mapping if the training events table has different serving name
             columns than those defined in Entities. Mapping from original serving name to new
             serving name.
         max_batch_size: int

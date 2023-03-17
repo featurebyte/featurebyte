@@ -126,7 +126,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
 
 class MissingValueImputation(BaseCleaningOperation):
     """
-    MissingValueImputation class is used to impute the missing value of a data column.
+    MissingValueImputation class is used to impute the missing value of a table column.
 
     imputed_value: OptionalScalar
         Value to replace missing value
@@ -159,7 +159,7 @@ class MissingValueImputation(BaseCleaningOperation):
 
 class DisguisedValueImputation(BaseCleaningOperation):
     """
-    DisguisedValueImputation class is used to impute the disguised value of a data column.
+    DisguisedValueImputation class is used to impute the disguised value of a table column.
 
     disguised_values: List[OptionalScalar]
         List of disguised values
@@ -197,7 +197,7 @@ class DisguisedValueImputation(BaseCleaningOperation):
 
 class UnexpectedValueImputation(BaseCleaningOperation):
     """
-    UnexpectedValueImputation class is used to impute the unexpected value of a data column.
+    UnexpectedValueImputation class is used to impute the unexpected value of a table column.
     Note that this imputation operation will not impute missing value.
 
     expected_values: List[OptionalScalar]
@@ -353,12 +353,12 @@ class ColumnCleaningOperation(FeatureByteBaseModel):
     cleaning_operations: Sequence[CleaningOperation]
 
 
-class DataCleaningOperation(FeatureByteBaseModel):
+class TableCleaningOperation(FeatureByteBaseModel):
     """
-    DataCleaningOperation schema
+    TableCleaningOperation schema
     """
 
-    data_name: str
+    table_name: str
     column_cleaning_operations: List[ColumnCleaningOperation]
 
     # pydantic validators

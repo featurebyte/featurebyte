@@ -143,14 +143,14 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
                 column_specs = [ColumnSpec(**col_info) for col_info in payload["columns_info"]]
                 mock_list_columns.return_value = column_specs
 
-    event_data = EventTable.get_by_id(id=response.json()["_id"])
-    event_data.update_default_feature_job_setting(
+    event_table = EventTable.get_by_id(id=response.json()["_id"])
+    event_table.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(
             blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
         )
     )
-    event_data.cust_id.as_entity("customer")
-    event_view = event_data.get_view()
+    event_table.cust_id.as_entity("customer")
+    event_view = event_table.get_view()
     feature_group = event_view.groupby("cust_id").aggregate_over(
         method="count",
         windows=["2h", "24h"],
@@ -172,9 +172,9 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
 
 
 @pytest.fixture(name="event_view")
-def event_view_fixture(event_data):
+def event_view_fixture(event_table):
     # create event view
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     assert event_view.columns == [
         "ËVENT_TIMESTAMP",
         "CREATED_AT",
@@ -665,7 +665,7 @@ def test_get_historical_features(feature_group, feature_group_per_category):
         dict_like_columns=["COUNT_BY_ACTION_24h"],
     )
 
-    # Test again using the same feature list and data but with serving names mapping
+    # Test again using the same feature list and table but with serving names mapping
     _test_get_historical_features_with_serving_names(
         feature_list, df_training_events, df_historical_expected
     )
@@ -678,7 +678,7 @@ def _test_get_historical_features_with_serving_names(
 
     mapping = {"üser id": "new_user id"}
 
-    # Instead of providing the default serving name "user id", provide "new_user id" in data
+    # Instead of providing the default serving name "user id", provide "new_user id" in table
     df_training_events = df_training_events.rename(mapping, axis=1)
     df_historical_expected = df_historical_expected.rename(mapping, axis=1)
     assert "new_user id" in df_training_events
@@ -965,13 +965,13 @@ def check_day_of_week_counts(event_view, preview_param, source_type):
 
 
 @pytest.fixture(name="non_time_based_feature")
-def get_non_time_based_feature_fixture(item_data):
+def get_non_time_based_feature_fixture(item_table):
     """
     Get a non-time-based feature.
 
     This is a non-time-based feature as it is built from ItemTable.
     """
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
     return item_view.groupby("order_id").aggregate(
         method=AggFunc.COUNT,
         feature_name="non_time_count_feature",
@@ -979,7 +979,7 @@ def get_non_time_based_feature_fixture(item_data):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_add_feature(event_view, non_time_based_feature, scd_data):
+def test_add_feature(event_view, non_time_based_feature, scd_table):
     """
     Test add feature
     """
@@ -1026,12 +1026,12 @@ def test_add_feature(event_view, non_time_based_feature, scd_data):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_add_feature_on_view_with_join(event_view, scd_data, non_time_based_feature):
+def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_feature):
     """
     Test add feature when the input EventView involves a join
     """
     # update the view with a join first
-    scd_view = scd_data.get_view()
+    scd_view = scd_table.get_view()
     event_view.join(scd_view)
     original_column_names = [col.name for col in event_view.columns_info]
 
@@ -1057,13 +1057,13 @@ def test_add_feature_on_view_with_join(event_view, scd_data, non_time_based_feat
     # check pruning behaviour
     item_data_table_name = "ITEM_DATA_TABLE"
 
-    # 1. transaction_count requires referencing item data table
+    # 1. transaction_count requires referencing item table
     view_subset = event_view[["transaction_count"]]
     sql = view_subset.preview_sql()
     assert item_data_table_name in sql
     assert view_subset.preview().columns.tolist() == view_subset.columns
 
-    # 2. "User Status New" only requires scd data table but not item data
+    # 2. "User Status New" only requires scd table but not item table
     view_subset = event_view[["User Status New"]]
     sql = view_subset.preview_sql()
     assert item_data_table_name not in sql

@@ -20,7 +20,7 @@ from featurebyte.query_graph.node.schema import TableDetails
 
 class DataSource:
     """
-    DataSource class to represent a data source in FeatureByte.
+    DataSource class to represent a table source in FeatureByte.
     """
 
     def __init__(self, feature_store_model: FeatureStoreModel):
@@ -29,7 +29,7 @@ class DataSource:
     @property
     def type(self) -> SourceType:
         """
-        Get data source type
+        Get table source type
 
         Returns
         -------
@@ -41,7 +41,7 @@ class DataSource:
     @typechecked
     def list_databases(self) -> List[str]:
         """
-        List databases in a data source
+        List databases in a table source
 
         Returns
         -------

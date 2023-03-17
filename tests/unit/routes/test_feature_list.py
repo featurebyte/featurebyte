@@ -54,7 +54,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         ),
         (
             payload_multi,
-            'Feature (id: "63ff1a9d5631c515f17fc67f") not found. Please save the Feature object first.',
+            'Feature (id: "6414004bc6834e5117ec1571") not found. Please save the Feature object first.',
         ),
         (
             {**payload, "feature_ids": []},
@@ -207,9 +207,9 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "/feature",
             json={
                 "source_feature_id": feature_id,
-                "data_feature_job_settings": [
+                "table_feature_job_settings": [
                     {
-                        "data_name": "sf_event_data",
+                        "table_name": "sf_event_table",
                         "feature_job_setting": {
                             "blind_spot": "1d",
                             "frequency": "1d",
@@ -337,9 +337,9 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "/feature",
             json={
                 "source_feature_id": feature_id,
-                "data_feature_job_settings": [
+                "table_feature_job_settings": [
                     {
-                        "data_name": "sf_event_data",
+                        "table_name": "sf_event_table",
                         "feature_job_setting": {
                             "blind_spot": "1d",
                             "frequency": "1d",
@@ -454,7 +454,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
             "tabular_data": [
-                {"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
             ],
             "default_version_mode": "AUTO",
             "version_count": 1,
@@ -493,7 +493,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
             "tabular_data": [
-                {"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
             ],
             "default_version_mode": "AUTO",
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
@@ -629,7 +629,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" AS "sum_30m"\n'
+            'SELECT\n  "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 

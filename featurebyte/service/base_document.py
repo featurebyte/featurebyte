@@ -58,7 +58,7 @@ class BaseDocumentService(
         """
         Activate use of raw query filter.
         This should be used ONLY when there is need to access all documents regardless of catalog membership.
-        Valid use cases are data migration or data restoration.
+        Valid use cases are table migration or table restoration.
         """
         logger.warning(RAW_QUERY_FILTER_WARNING)
         self._allow_to_use_raw_query_filter = True
@@ -743,7 +743,7 @@ class BaseDocumentService(
         data: DocumentUpdateSchema
             Document update payload object
         exclude_none: bool
-            Whether to exclude None value(s) from the data
+            Whether to exclude None value(s) from the table
         document: Optional[Document]
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool

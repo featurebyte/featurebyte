@@ -7,8 +7,8 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 
-data = SourceTable(
-    name="data",
+table = SourceTable(
+    name="table",
     feature_store=FeatureStore(
         name="sf_featurestore",
         type="snowflake",
@@ -37,4 +37,4 @@ data = SourceTable(
         ColumnInfo(name="cust_id", dtype="INT"),
     ],
 )
-output = data
+output = table

@@ -236,9 +236,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             f"{self.base_route}",
             json={
                 "source_feature_id": create_response_dict["_id"],
-                "data_feature_job_settings": [
+                "table_feature_job_settings": [
                     {
-                        "data_name": "sf_event_data",
+                        "table_name": "sf_event_table",
                         "feature_job_setting": {
                             "blind_spot": "1d",
                             "frequency": "1d",
@@ -246,9 +246,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                         },
                     }
                 ],
-                "data_cleaning_operations": [
+                "table_cleaning_operations": [
                     {
-                        "data_name": "sf_event_data",
+                        "table_name": "sf_event_table",
                         "column_cleaning_operations": column_cleaning_operations,
                     }
                 ],
@@ -266,7 +266,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert parameters["frequency"] == 86400
         assert parameters["blind_spot"] == 86400
 
-        # check that the data cleaning operations are applied
+        # check that the table cleaning operations are applied
         graph_node = graph.get_node_by_name("graph_1")
         assert (
             graph_node.parameters.metadata.column_cleaning_operations == column_cleaning_operations
@@ -297,8 +297,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             f"{self.base_route}",
             json={
                 "source_feature_id": create_response_dict["_id"],
-                "data_cleaning_operations": [
-                    {"data_name": "random_data", "column_cleaning_operations": []}
+                "table_cleaning_operations": [
+                    {"table_name": "random_data", "column_cleaning_operations": []}
                 ],
             },
         )
@@ -306,7 +306,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         response_dict = response.json()
         expected_msg = (
-            "Data cleaning operation(s) does not result a new feature version. "
+            "Table cleaning operation(s) does not result a new feature version. "
             "This is because the new feature version is the same as the source feature."
         )
         assert response_dict["detail"] == expected_msg
@@ -321,9 +321,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             f"{self.base_route}",
             json={
                 "source_feature_id": create_response_dict["_id"],
-                "data_feature_job_settings": [
+                "table_feature_job_settings": [
                     {
-                        "data_name": "sf_event_data",
+                        "table_name": "sf_event_table",
                         "feature_job_setting": {
                             "blind_spot": "1d",
                             "frequency": "1d",
@@ -453,7 +453,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
             "tabular_data": [
-                {"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
             ],
             "dtype": "FLOAT",
             "default_version_mode": "AUTO",
@@ -569,7 +569,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/sql", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" AS "sum_30m"\n'
+            'SELECT\n  "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 

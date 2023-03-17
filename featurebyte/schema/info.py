@@ -25,10 +25,10 @@ from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.feature import (
-    DataCleaningOperationComparison,
-    DataFeatureJobSettingComparison,
     FeatureBriefInfoList,
     ReadinessComparison,
+    TableCleaningOperationComparison,
+    TableFeatureJobSettingComparison,
     VersionComparison,
 )
 from featurebyte.schema.feature_list import ProductionReadyFractionComparison
@@ -102,7 +102,7 @@ class TableBriefInfoList(FeatureByteBaseModel):
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> TableBriefInfoList:
         """
-        Construct data brief info list from paginated data
+        Construct table brief info list from paginated data
 
         Parameters
         ----------
@@ -127,7 +127,7 @@ class EventTableBriefInfoList(FeatureByteBaseModel):
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventTableBriefInfoList:
         """
-        Construct event data brief info list from paginated data
+        Construct event table brief info list from paginated data
 
         Parameters
         ----------
@@ -193,7 +193,7 @@ class ItemTableInfo(TableInfo):
 
     event_id_column: str
     item_id_column: str
-    event_data_name: str
+    event_table_name: str
 
 
 class DimensionTableInfo(TableInfo):
@@ -245,8 +245,8 @@ class FeatureInfo(FeatureNamespaceInfo):
     dtype: DBVarType
     version: VersionComparison
     readiness: ReadinessComparison
-    data_feature_job_setting: DataFeatureJobSettingComparison
-    data_cleaning_operation: DataCleaningOperationComparison
+    table_feature_job_setting: TableFeatureJobSettingComparison
+    table_cleaning_operation: TableCleaningOperationComparison
     versions_info: Optional[FeatureBriefInfoList]
     metadata: Any
 
@@ -330,7 +330,7 @@ class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
     """
 
     created_at: datetime
-    event_data_name: str
+    event_table_name: str
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
     recommendation: FeatureJobSetting

@@ -63,10 +63,10 @@ class BaseViewTestSuite:
     @pytest.fixture(name="data_under_test")
     def get_data_under_test_fixture(self, request):
         data_type_map = {
-            ViewType.DIMENSION_VIEW: "snowflake_dimension_data",
-            ViewType.EVENT_VIEW: "snowflake_event_data",
-            ViewType.ITEM_VIEW: "snowflake_item_data",
-            ViewType.SLOWLY_CHANGING_VIEW: "snowflake_scd_data",
+            ViewType.DIMENSION_VIEW: "snowflake_dimension_table",
+            ViewType.EVENT_VIEW: "snowflake_event_table",
+            ViewType.ITEM_VIEW: "snowflake_item_table",
+            ViewType.SLOWLY_CHANGING_VIEW: "snowflake_scd_table",
         }
         if self.view_type not in data_type_map:
             pytest.fail(
@@ -85,7 +85,7 @@ class BaseViewTestSuite:
         data_under_test[self.col].update_critical_data_info(
             cleaning_operations=[MissingValueImputation(imputed_value=-1)]
         )
-        time.sleep(1)  # wait for 1 second to ensure that the data is updated
+        time.sleep(1)  # wait for 1 second to ensure that the table is updated
         assert len(data_under_test[self.col].info.critical_data_info.cleaning_operations) == 1
         return data_under_test
 
@@ -123,7 +123,7 @@ class BaseViewTestSuite:
                 "cleaning_operations": [{"imputed_value": -1, "type": "missing"}],
             }
         ]
-        assert metadata.data_id == data_under_test_with_imputation.id
+        assert metadata.table_id == data_under_test_with_imputation.id
 
         # check that cleaning graph is created
         nested_graph = view.node.parameters.graph
@@ -145,7 +145,7 @@ class BaseViewTestSuite:
         check_sdk_code_generation(
             view,
             to_use_saved_data=False,
-            data_id_to_info={
+            table_id_to_info={
                 data_under_test_with_imputation.id: {
                     "name": data_under_test_with_imputation.name,
                     "record_creation_timestamp_column": data_under_test_with_imputation.record_creation_timestamp_column,
@@ -171,7 +171,7 @@ class BaseViewTestSuite:
         assert metadata.view_mode == "manual"
         assert metadata.drop_column_names == []
         assert metadata.column_cleaning_operations == []
-        assert metadata.data_id == data_under_test_with_imputation.id
+        assert metadata.table_id == data_under_test_with_imputation.id
 
         # check that there is no cleaning graph
         nested_graph = view.node.parameters.graph
@@ -184,7 +184,7 @@ class BaseViewTestSuite:
         check_sdk_code_generation(
             view,
             to_use_saved_data=False,
-            data_id_to_info={
+            table_id_to_info={
                 data_under_test_with_imputation.id: {
                     "name": data_under_test_with_imputation.name,
                     "record_creation_timestamp_column": data_under_test_with_imputation.record_creation_timestamp_column,
@@ -248,7 +248,7 @@ class BaseViewTestSuite:
         check_sdk_code_generation(
             view_under_test,
             to_use_saved_data=False,
-            data_id_to_info={
+            table_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
                     "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
@@ -271,7 +271,7 @@ class BaseViewTestSuite:
         check_sdk_code_generation(
             view_under_test,
             to_use_saved_data=False,
-            data_id_to_info={
+            table_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
                     "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
@@ -308,7 +308,7 @@ class BaseViewTestSuite:
         check_sdk_code_generation(
             cust_id,
             to_use_saved_data=False,
-            data_id_to_info={
+            table_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
                     "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
@@ -335,7 +335,7 @@ class BaseViewTestSuite:
         check_sdk_code_generation(
             subset_cols,
             to_use_saved_data=False,
-            data_id_to_info={
+            table_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
                     "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
@@ -369,7 +369,7 @@ class BaseViewTestSuite:
         check_sdk_code_generation(
             row_subset,
             to_use_saved_data=False,
-            data_id_to_info={
+            table_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
                     "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
@@ -431,7 +431,7 @@ class BaseViewTestSuite:
         check_sdk_code_generation(
             output,
             to_use_saved_data=False,
-            data_id_to_info={
+            table_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
                     "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,

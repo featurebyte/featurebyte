@@ -265,7 +265,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
     def data_sample_payload_fixture(
         self, test_api_client_persistent, create_success_response, snowflake_feature_store_params
     ):
-        """Payload for data sample"""
+        """Payload for table sample"""
         _ = create_success_response
         test_api_client, _ = test_api_client_persistent
         payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
@@ -334,7 +334,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         ).json_dict()
 
     def test_sample_200(self, test_api_client_persistent, data_sample_payload, mock_get_session):
-        """Test data sample (success)"""
+        """Test table sample (success)"""
         test_api_client, _ = test_api_client_persistent
 
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
@@ -370,7 +370,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         )
 
     def test_sample_422__no_timestamp_column(self, test_api_client_persistent, data_sample_payload):
-        """Test data sample no timestamp column"""
+        """Test table sample no timestamp column"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.post(
             "/feature_store/sample",
@@ -395,7 +395,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
     def test_sample_422__invalid_timestamp_range(
         self, test_api_client_persistent, data_sample_payload
     ):
-        """Test data sample no timestamp column"""
+        """Test table sample no timestamp column"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.post(
             "/feature_store/sample",
@@ -419,7 +419,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
     def test_description_200(
         self, test_api_client_persistent, data_sample_payload, mock_get_session, update_fixtures
     ):
-        """Test data description (success)"""
+        """Test table description (success)"""
         test_api_client, _ = test_api_client_persistent
 
         expected_df = pd.DataFrame(
@@ -528,7 +528,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
     def test_description_200_numeric_only(
         self, test_api_client_persistent, data_sample_payload, mock_get_session
     ):
-        """Test data description with numeric columns only (success)"""
+        """Test table description with numeric columns only (success)"""
         test_api_client, _ = test_api_client_persistent
 
         expected_df = pd.DataFrame(
@@ -579,7 +579,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
     def test_sample_empty_table(
         self, test_api_client_persistent, data_sample_payload, mock_get_session
     ):
-        """Test data sample works with empty table"""
+        """Test table sample works with empty table"""
         test_api_client, _ = test_api_client_persistent
 
         expected_df = pd.DataFrame({"a": ["a"]})[:0]

@@ -12,8 +12,8 @@ from featurebyte.query_graph.node.input import InputNode
 from featurebyte.schema.context import ContextCreate, ContextUpdate
 
 
-@pytest.fixture(name="input_event_data_node")
-def input_event_data_node_fixture(event_data):
+@pytest.fixture(name="input_event_table_node")
+def input_event_table_node_fixture(event_table):
     """Input event_table node of a graph"""
     return {
         "name": "input_1",
@@ -40,7 +40,7 @@ def input_event_data_node_fixture(event_data):
                 },
                 "type": "snowflake",
             },
-            "id": event_data.id,
+            "id": event_table.id,
             "id_column": "col_int",
             "table_details": {
                 "database_name": "sf_database",
@@ -48,13 +48,13 @@ def input_event_data_node_fixture(event_data):
                 "table_name": "sf_table",
             },
             "timestamp_column": "event_timestamp",
-            "type": "event_data",
+            "type": "event_table",
         },
     }
 
 
-@pytest.fixture(name="input_item_data_node")
-def input_item_data_node_fixture(item_data, event_data):
+@pytest.fixture(name="input_item_table_node")
+def input_item_table_node_fixture(item_table, event_table):
     """Input item_table node of a graph"""
     return {
         "name": "input_2",
@@ -77,33 +77,33 @@ def input_item_data_node_fixture(item_data, event_data):
                 },
                 "type": "snowflake",
             },
-            "id": item_data.id,
+            "id": item_table.id,
             "id_column": "item_id_col",
-            "event_data_id": event_data.id,
+            "event_table_id": event_table.id,
             "event_id_column": "event_id_col",
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
                 "table_name": "items_table",
             },
-            "type": "item_data",
+            "type": "item_table",
         },
     }
 
 
-@pytest.fixture(name="generic_table_node")
-def generic_table_node_fixture(input_event_data_node):
+@pytest.fixture(name="source_table_node")
+def generic_table_node_fixture(input_event_table_node):
     """Input generic table node"""
-    input_event_data_node["parameters"]["id"] = None
-    input_event_data_node["parameters"]["type"] = "generic"
-    return InputNode(**input_event_data_node).dict()
+    input_event_table_node["parameters"]["id"] = None
+    input_event_table_node["parameters"]["type"] = "source_table"
+    return InputNode(**input_event_table_node).dict()
 
 
-@pytest.fixture(name="invalid_input_event_data_node")
-def invalid_input_event_data_node_fixture(input_event_data_node, item_data):
+@pytest.fixture(name="invalid_input_event_table_node")
+def invalid_input_event_table_node_fixture(input_event_table_node, item_table):
     """Input generic table node"""
-    input_event_data_node["parameters"]["id"] = item_data.id
-    return input_event_data_node
+    input_event_table_node["parameters"]["id"] = item_table.id
+    return input_event_table_node
 
 
 @pytest.fixture(name="join_node")
@@ -123,7 +123,7 @@ def join_node_fixture():
             "join_type": "inner",
             "scd_parameters": None,
             "metadata": {
-                "type": "join_event_data_attributes",
+                "type": "join_event_table_attributes",
                 "columns": ["item_type", "item_amount"],
                 "event_suffix": None,
             },
@@ -132,21 +132,21 @@ def join_node_fixture():
 
 
 @pytest.fixture(name="view_graph")
-def view_graph_fixture(input_event_data_node, input_item_data_node, join_node):
+def view_graph_fixture(input_event_table_node, input_item_table_node, join_node):
     """View graph fixture"""
     return {
-        "nodes": [input_event_data_node, input_item_data_node, join_node],
+        "nodes": [input_event_table_node, input_item_table_node, join_node],
         "edges": [
-            {"source": input_event_data_node["name"], "target": join_node["name"]},
-            {"source": input_item_data_node["name"], "target": join_node["name"]},
+            {"source": input_event_table_node["name"], "target": join_node["name"]},
+            {"source": input_item_table_node["name"], "target": join_node["name"]},
         ],
     }
 
 
 @pytest.fixture(name="generic_view_graph")
-def generic_view_graph_fixture(generic_table_node):
+def generic_view_graph_fixture(source_table_node):
     """View graph (generic table) fixture"""
-    return {"nodes": [generic_table_node]}
+    return {"nodes": [source_table_node]}
 
 
 def test_context_creation__success(context, entity, user):
@@ -260,15 +260,15 @@ async def test_context_update__validation_error_unsaved_table(
 
 @pytest.mark.asyncio
 async def test_context_update__validation_error_column_not_found(
-    context_service, context, invalid_input_event_data_node
+    context_service, context, invalid_input_event_table_node
 ):
-    """Check that context update validation error due to column not found in the persisted data"""
+    """Check that context update validation error due to column not found in the persisted table"""
     with pytest.raises(DocumentUpdateError) as exc:
         await context_service.update_document(
             document_id=context.id,
             data=ContextUpdate(
-                graph={"nodes": [invalid_input_event_data_node]}, node_name="input_1"
+                graph={"nodes": [invalid_input_event_table_node]}, node_name="input_1"
             ),
         )
-    expected_error = 'Column "col_int" not found in table "sf_item_data".'
+    expected_error = 'Column "col_int" not found in table "sf_item_table".'
     assert expected_error in str(exc.value)

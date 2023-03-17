@@ -31,7 +31,7 @@ def test_database_table(snowflake_database_table, expected_snowflake_table_previ
 def test_database_table_node_parameters(snowflake_database_table):
     """Test database table node parameters"""
     node_params = snowflake_database_table.frame.node.parameters
-    assert node_params.type == TableDataType.GENERIC
+    assert node_params.type == TableDataType.SOURCE_TABLE
 
 
 def test_database_table_get_input_node(snowflake_database_table):
@@ -39,17 +39,17 @@ def test_database_table_get_input_node(snowflake_database_table):
     pruned_graph, mapped_node = snowflake_database_table.frame.extract_pruned_graph_and_node()
     input_node_dict = pruned_graph.get_input_node(mapped_node.name).dict()
     assert input_node_dict["name"] == "input_1"
-    assert input_node_dict["parameters"]["type"] == "generic"
+    assert input_node_dict["parameters"]["type"] == "source_table"
 
 
 def test_sdk_code_generation(snowflake_database_table, update_fixtures):
-    """Check SDK code generation for unsaved data"""
+    """Check SDK code generation for unsaved table"""
     check_sdk_code_generation(
         snowflake_database_table.frame,
         to_use_saved_data=False,
         fixture_path="tests/fixtures/sdk_code/generic_table.py",
         update_fixtures=update_fixtures,
-        data_id=None,
+        table_id=None,
     )
 
     # check that unsaved & saved version generate the same result for generic table

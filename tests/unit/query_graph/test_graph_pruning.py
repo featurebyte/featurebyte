@@ -172,7 +172,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     global_graph, event_data_input_node, item_data_input_node, groupby_node_params
 ):
     """Test join node parameters pruning"""
-    # construct a join node to join an item data & an event data (with a redundant column)
+    # construct a join node to join an item table & an event table (with a redundant column)
     proj_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["order_id"]},
@@ -228,7 +228,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
             "node_name": "join_1",
             "node_names": {"join_1", "input_2"},
             "tabular_data_id": None,
-            "tabular_data_type": "item_data",
+            "tabular_data_type": "item_table",
             "type": "source",
             "dtype": "VARCHAR",
             "filter": False,
@@ -312,7 +312,7 @@ def test_join_is_prunable(
     global_graph, event_data_input_node, item_data_input_node, groupby_node_params
 ):
     """Test join node parameters pruning"""
-    # construct a join node to join an item data & an event data (with a redundant column)
+    # construct a join node to join an item table & an event table (with a redundant column)
     join_node_parameters = {
         "left_on": "order_id",
         "right_on": "order_id",

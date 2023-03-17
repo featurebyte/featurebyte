@@ -68,12 +68,12 @@ class ProductionReadyValidator:
                 # We can return here since there are no changes in the feature version.
                 return
             feature_job_setting_diff = (
-                await self._get_feature_job_setting_diffs_data_source_vs_promoted_feature(
+                await self._get_feature_job_setting_diffs_table_source_vs_promoted_feature(
                     source_feature.node, source_feature.graph, promoted_feature_graph
                 )
             )
             cleaning_ops_diff = (
-                await self._get_cleaning_operations_diff_data_source_vs_promoted_feature(
+                await self._get_cleaning_operations_diff_table_source_vs_promoted_feature(
                     source_feature.graph, promoted_feature_graph
                 )
             )
@@ -109,7 +109,7 @@ class ProductionReadyValidator:
             diff_format_dict["cleaning_operations"] = cleaning_ops_diff
         raise ValueError(
             "Discrepancies found between the promoted feature version you are trying to promote to "
-            "PRODUCTION_READY, and the input data.\n"
+            "PRODUCTION_READY, and the input table.\n"
             f"{diff_format_dict}\n"
             "Please fix these issues first before trying to promote your feature to PRODUCTION_READY."
         )
@@ -173,20 +173,20 @@ class ProductionReadyValidator:
         )
 
     @staticmethod
-    async def _get_feature_job_setting_diffs_data_source_vs_promoted_feature(
-        data_source_node: Node,
-        data_source_graph: QueryGraph,
+    async def _get_feature_job_setting_diffs_table_source_vs_promoted_feature(
+        table_source_node: Node,
+        table_source_graph: QueryGraph,
         promoted_feature_graph: QueryGraphModel,
     ) -> Dict[str, Any]:
         """
-        Get feature job setting diffs between the feature version created from source data, and the promoted feature
+        Get feature job setting diffs between the feature version created from source table, and the promoted feature
         version that the user is trying to promote to PRODUCTION_READY.
 
         Parameters
         ----------
-        data_source_node: Node
+        table_source_node: Node
             source node
-        data_source_graph: QueryGraph
+        table_source_graph: QueryGraph
             source graph
         promoted_feature_graph: QueryGraphModel
             promoted graph
@@ -196,8 +196,8 @@ class ProductionReadyValidator:
         Dict[str, Any]
             feature job setting diffs
         """
-        for current_node in data_source_graph.iterate_nodes(
-            target_node=data_source_node, node_type=NodeType.GROUPBY
+        for current_node in table_source_graph.iterate_nodes(
+            target_node=table_source_node, node_type=NodeType.GROUPBY
         ):
             # Get corresponding group by node in promoted graph
             promoted_group_by_node = promoted_feature_graph.get_node_by_name(current_node.name)
@@ -238,16 +238,16 @@ class ProductionReadyValidator:
         view_metadata = parameters.metadata
         return view_metadata.column_cleaning_operations
 
-    async def _get_cleaning_operations_diff_data_source_vs_promoted_feature(
-        self, data_source_feature_graph: QueryGraph, promoted_feature_graph: QueryGraphModel
+    async def _get_cleaning_operations_diff_table_source_vs_promoted_feature(
+        self, table_source_feature_graph: QueryGraph, promoted_feature_graph: QueryGraphModel
     ) -> Dict[str, Any]:
         """
-        Get cleaning operation diffs between the feature version created from source data, and the promoted feature
+        Get cleaning operation diffs between the feature version created from source table, and the promoted feature
         version that the user is trying to promote to PRODUCTION_READY.
 
         Parameters
         ----------
-        data_source_feature_graph: QueryGraph
+        table_source_feature_graph: QueryGraph
             source graph
         promoted_feature_graph: QueryGraphModel
             promoted graph
@@ -257,7 +257,7 @@ class ProductionReadyValidator:
         Dict[str, Any]
             returns a dictionary with the difference in values in the cleaning operations
         """
-        for view_graph_node in data_source_feature_graph.iterate_sorted_graph_nodes(
+        for view_graph_node in table_source_feature_graph.iterate_sorted_graph_nodes(
             graph_node_types=GraphNodeType.view_graph_node_types()
         ):
             # get node from promoted graph

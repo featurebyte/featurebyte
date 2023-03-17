@@ -102,19 +102,19 @@ async def test_feature_list_deployed(
               SELECT
                 REQ."cust_id",
                 REQ."POINT_IN_TIME",
-                "T0"."agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" AS "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4"
+                "T0"."agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
               FROM ONLINE_REQUEST_TABLE AS REQ
               LEFT JOIN (
                 SELECT
                   "cust_id" AS "cust_id",
-                  "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4"
+                  "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
                 FROM online_store_ff698d3d3703c3afda95ec949ba386a02c6bd61d
               ) AS T0
                 ON REQ."cust_id" = T0."cust_id"
             )
             SELECT
               AGG."cust_id",
-              "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" AS "sum_30m"
+              "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "sum_30m"
             FROM _FB_AGGREGATED AS AGG
             """
         ).strip()

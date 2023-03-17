@@ -65,7 +65,7 @@ async def list_feature_job_setting_analysis(
     """
     params = {}
     if event_table_id:
-        params["query_filter"] = {"event_data_id": event_table_id}
+        params["query_filter"] = {"event_table_id": event_table_id}
 
     controller = request.state.app_container.feature_job_setting_analysis_controller
     analysis_list: FeatureJobSettingAnalysisList = await controller.list(

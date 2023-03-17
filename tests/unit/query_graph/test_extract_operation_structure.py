@@ -371,14 +371,14 @@ def test_extract_operation__groupby(query_graph_with_groupby):
 
 @pytest.fixture(name="order_id_source_data")
 def order_id_source_data_fixture():
-    """Order id source data"""
+    """Order id source table"""
     return {
         "name": "order_id",
         "dtype": "INT",
         "filter": False,
         "node_names": {"input_1"},
         "node_name": "input_1",
-        "tabular_data_type": "item_data",
+        "tabular_data_type": "item_table",
         "tabular_data_id": None,
         "type": "source",
     }
@@ -914,7 +914,7 @@ def test_extract_operation_structure__groupby_on_event_timestamp_columns(
             "node_name": "input_1",
             "node_names": {"input_1"},
             "tabular_data_id": None,
-            "tabular_data_type": "event_data",
+            "tabular_data_type": "event_table",
             "type": "source",
         },
         "dtype": "TIMESTAMP",
@@ -933,7 +933,7 @@ def test_extract_operation_structure__groupby_on_event_timestamp_columns(
             "node_name": "input_1",
             "node_names": {"input_1"},
             "tabular_data_id": None,
-            "tabular_data_type": "event_data",
+            "tabular_data_type": "event_table",
             "type": "source",
         }
     ]
@@ -956,7 +956,7 @@ def test_extract_operation_structure__graph_node_row_index_lineage(
         "node_name": "input_1",
         "filter": False,
         "tabular_data_id": None,
-        "tabular_data_type": "event_data",
+        "tabular_data_type": "event_table",
         "type": "source",
     }
     assert op_struct.columns == [
@@ -978,7 +978,7 @@ def test_extract_operation_structure__graph_node_row_index_lineage(
                     "node_name": "graph_1",
                     "filter": False,
                     "tabular_data_id": None,
-                    "tabular_data_type": "event_data",
+                    "tabular_data_type": "event_table",
                     "type": "source",
                 }
             ],

@@ -65,7 +65,7 @@ def test_window_function(global_graph, input_node):
     """Test tile sql when window function is involved
 
     Note that the tile start and end date filters are applied on a nested subquery containing the
-    window expression, not on the same select statement. This is so that the data required by
+    window expression, not on the same select statement. This is so that the table required by
     the window expression is not filtered prematurely.
     """
     graph = global_graph
@@ -164,7 +164,7 @@ def test_window_function(global_graph, input_node):
             DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          COUNT(*) AS value_count_f9ad71eb434db8e4f1ff25e45a2c27133f4a4b4a
+          COUNT(*) AS value_count_8993ef6979471d1101f5b0ef345c1c144695cc87
         FROM (
           SELECT
             *,

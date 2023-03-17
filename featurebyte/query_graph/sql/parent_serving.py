@@ -96,20 +96,20 @@ def _get_lookup_spec_from_join_step(
 ) -> LookupSpec:
 
     # Set up data specific parameters
-    if join_step.data.type == TableDataType.SCD_DATA:
-        scd_parameters = SCDLookupParameters(**join_step.data.dict())
+    if join_step.table.type == TableDataType.SCD_TABLE:
+        scd_parameters = SCDLookupParameters(**join_step.table.dict())
     else:
         scd_parameters = None
 
-    if join_step.data.type == TableDataType.EVENT_DATA:
-        event_parameters = EventLookupParameters(**join_step.data.dict())
+    if join_step.table.type == TableDataType.EVENT_TABLE:
+        event_parameters = EventLookupParameters(**join_step.table.dict())
     else:
         event_parameters = None
 
     # Get the sql expression for the data
     graph = QueryGraph()
     input_node = graph.add_node(
-        node=join_step.data.construct_input_node(feature_store_details=feature_store_details),
+        node=join_step.table.construct_input_node(feature_store_details=feature_store_details),
         input_nodes=[],
     )
     sql_operation_graph = SQLOperationGraph(

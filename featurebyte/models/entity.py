@@ -37,14 +37,14 @@ class ParentEntity(Parent):
     """
     Model for parent entity
 
-    data_type: TableDataType
-        Type of data provided for constructing the entity relationship mapping
-    data_id: PydanticObjectId
-        ID of data provided for constructing the entity relationship mapping
+    table_type: TableDataType
+        Type of table provided for constructing the entity relationship mapping
+    table_id: PydanticObjectId
+        ID of table provided for constructing the entity relationship mapping
     """
 
-    data_type: TableDataType
-    data_id: PydanticObjectId
+    table_type: TableDataType
+    table_id: PydanticObjectId
 
 
 class EntityRelationship(CatalogRelationship):
@@ -75,9 +75,9 @@ class EntityModel(EntityRelationship):
     updated_at: datetime
         Datetime when the Entity object was last updated
     tabular_data_ids: List[PydanticObjectId]
-        ID of data with columns associated to the entity
+        ID of table with columns associated to the entity
     primary_tabular_data_ids: List[PydanticObjectId]
-        ID of data with primary key columns associated to the entity
+        ID of table with primary key columns associated to the entity
     """
 
     serving_names: List[StrictStr] = Field(allow_mutation=False)
@@ -89,7 +89,7 @@ class EntityModel(EntityRelationship):
     @root_validator(pre=True)
     @classmethod
     def _validate_tabular_data_ids(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # DEV-752: track data ids in entity model
+        # DEV-752: track table ids in entity model
         values["tabular_data_ids"] = values.get("tabular_data_ids", [])
         values["primary_tabular_data_ids"] = values.get("primary_tabular_data_ids", [])
         return values

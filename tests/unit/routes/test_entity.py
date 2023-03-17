@@ -53,8 +53,8 @@ class TestEntityApi(BaseCatalogRelationshipApiTestSuite):
         (
             {
                 "id": str(unknown_id),
-                "data_type": "event_data",
-                "data_id": str(ObjectId()),
+                "table_type": "event_table",
+                "table_id": str(ObjectId()),
             },
             f'Entity (id: "{unknown_id}") not found. Please save the Entity object first.',
         )
@@ -97,8 +97,8 @@ class TestEntityApi(BaseCatalogRelationshipApiTestSuite):
     @staticmethod
     def prepare_parent_payload(payload):
         """Create parent payload"""
-        payload["data_type"] = "event_data"
-        payload["data_id"] = str(ObjectId())
+        payload["table_type"] = "event_table"
+        payload["table_id"] = str(ObjectId())
         return payload
 
     def test_update_200(self, create_success_response, test_api_client_persistent):

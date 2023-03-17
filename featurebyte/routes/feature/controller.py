@@ -253,7 +253,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
         self, feature_id: ObjectId, hour_limit: int, get_credential: Any
     ) -> dict[str, Any]:
         """
-        Retrieve data preview for query graph node
+        Retrieve table preview for query graph node
 
         Parameters
         ----------

@@ -17,7 +17,7 @@ arbitrary_test_date_time = datetime.datetime(2022, 2, 1)
 
 @pytest.fixture(name="scd_columns_info")
 def get_scd_columns_info():
-    """Fixture to get a some SCD data columns info"""
+    """Fixture to get a some SCDTable columns info"""
     return [
         {
             "name": "col",
@@ -71,11 +71,11 @@ def get_scd_columns_info():
     ]
 
 
-@pytest.fixture(name="scd_data_model")
-def get_scd_data_model_fixture(snowflake_feature_store, scd_columns_info):
-    """Fixture to get a base SCD data model"""
+@pytest.fixture(name="scd_table_model")
+def get_scd_table_model_fixture(snowflake_feature_store, scd_columns_info):
+    """Fixture to get a base SCDTable model"""
     return SCDTableModel(
-        name="my_scd_data",
+        name="my_scd_table",
         tabular_source={
             "feature_store_id": snowflake_feature_store.id,
             "table_details": TableDetails(
@@ -94,21 +94,21 @@ def get_scd_data_model_fixture(snowflake_feature_store, scd_columns_info):
     )
 
 
-@pytest.fixture(name="expected_scd_data_model")
-def get_base_expected_scd_data_model(scd_data_model, scd_columns_info):
-    """Fixture to get a base expected SCD data JSON"""
+@pytest.fixture(name="expected_scd_table_model")
+def get_base_expected_scd_table_model(scd_table_model, scd_columns_info):
+    """Fixture to get a base expected SCDTable JSON"""
     return {
-        "type": "scd_data",
+        "type": "scd_table",
         "user_id": None,
         "created_at": arbitrary_test_date_time,
         "updated_at": None,
         "columns_info": scd_columns_info,
-        "id": scd_data_model.id,
-        "name": "my_scd_data",
+        "id": scd_table_model.id,
+        "name": "my_scd_table",
         "record_creation_timestamp_column": "created_at",
         "status": "PUBLISHED",
         "tabular_source": {
-            "feature_store_id": scd_data_model.tabular_source.feature_store_id,
+            "feature_store_id": scd_table_model.tabular_source.feature_store_id,
             "table_details": {
                 "database_name": "database",
                 "schema_name": "schema",
@@ -124,13 +124,13 @@ def get_base_expected_scd_data_model(scd_data_model, scd_columns_info):
     }
 
 
-def test_scd_data_model(scd_data_model, expected_scd_data_model):
+def test_scd_table_model(scd_table_model, expected_scd_table_model):
     """Test creation, serialization and deserialization of SCDTable"""
     # rename current_flag to current_flag_column (check the model handle it properly)
-    assert scd_data_model.dict() == expected_scd_data_model
-    scd_data_json = scd_data_model.json(by_alias=True)
-    scd_data_loaded = SCDTableModel.parse_raw(scd_data_json)
-    assert scd_data_loaded == scd_data_model
+    assert scd_table_model.dict() == expected_scd_table_model
+    scd_table_json = scd_table_model.json(by_alias=True)
+    scd_table_loaded = SCDTableModel.parse_raw(scd_table_json)
+    assert scd_table_loaded == scd_table_model
 
 
 def assert_missing_column(exc_info: ExceptionInfo):
@@ -143,12 +143,12 @@ def assert_missing_column(exc_info: ExceptionInfo):
 
 
 @pytest.mark.parametrize("column", ["natural_key_column"])
-def test_missing_scd_data_id_column_errors(expected_scd_data_model, column):
-    """Test missing column validation on SCD data models"""
+def test_missing_scd_table_id_column_errors(expected_scd_table_model, column):
+    """Test missing column validation on SCDTable models"""
     # Remove the `column` so that we can test the missing column validation
-    expected_scd_data_model.pop(column)
+    expected_scd_table_model.pop(column)
     with pytest.raises(ValidationError) as exc_info:
-        SCDTableModel.parse_obj(expected_scd_data_model)
+        SCDTableModel.parse_obj(expected_scd_table_model)
     assert_missing_column(exc_info)
 
 
@@ -161,10 +161,10 @@ def assert_type_error(exc_info: ExceptionInfo, expected_type: str):
     assert error["type"] == f"type_error.{expected_type}"
 
 
-def test_incorrect_scd_data_id_type_errors(expected_scd_data_model):
-    """Test type validation on SCD data id column"""
+def test_incorrect_scd_table_id_type_errors(expected_scd_table_model):
+    """Test type validation on SCDTable id column"""
     # Update type to non str
-    expected_scd_data_model["natural_key_column"] = arbitrary_test_date_time
+    expected_scd_table_model["natural_key_column"] = arbitrary_test_date_time
     with pytest.raises(ValidationError) as exc_info:
-        SCDTableModel.parse_obj(expected_scd_data_model)
+        SCDTableModel.parse_obj(expected_scd_table_model)
     assert_type_error(exc_info, "str")

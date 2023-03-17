@@ -140,7 +140,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
                     "table_name": "sf_table",
                 },
                 "timestamp_column": "event_timestamp",
-                "type": "event_data",
+                "type": "event_table",
             },
         }
 

@@ -63,7 +63,7 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     country_entity = Entity(name=f"{table_prefix}_country", serving_names=["country_id"])
     country_entity.save()
 
-    event_data = EventTable.from_tabular_source(
+    event_table = EventTable.from_tabular_source(
         tabular_source=data_source.get_table(
             table_name=f"{table_prefix}_EVENT",
             database_name=session.database_name,
@@ -73,11 +73,11 @@ async def feature_list_with_child_entities_fixture(session, data_source):
         event_id_column="event_id",
         event_timestamp_column="ts",
     )
-    event_data.save()
-    event_data["event_id"].as_entity(event_entity.name)
-    event_data["cust_id"].as_entity(customer_entity.name)
+    event_table.save()
+    event_table["event_id"].as_entity(event_entity.name)
+    event_table["cust_id"].as_entity(customer_entity.name)
 
-    scd_data = SCDTable.from_tabular_source(
+    scd_table = SCDTable.from_tabular_source(
         tabular_source=data_source.get_table(
             table_name=f"{table_prefix}_SCD",
             database_name=session.database_name,
@@ -88,11 +88,11 @@ async def feature_list_with_child_entities_fixture(session, data_source):
         effective_timestamp_column="effective_ts",
         surrogate_key_column="scd_cust_id",
     )
-    scd_data.save()
-    scd_data["scd_cust_id"].as_entity(customer_entity.name)
-    scd_data["scd_city"].as_entity(city_entity.name)
+    scd_table.save()
+    scd_table["scd_cust_id"].as_entity(customer_entity.name)
+    scd_table["scd_city"].as_entity(city_entity.name)
 
-    dimension_data_1 = DimensionTable.from_tabular_source(
+    dimension_table_1 = DimensionTable.from_tabular_source(
         tabular_source=data_source.get_table(
             table_name=f"{table_prefix}_DIMENSION_1",
             database_name=session.database_name,
@@ -101,11 +101,11 @@ async def feature_list_with_child_entities_fixture(session, data_source):
         name=f"{table_prefix}_dimension_data_1",
         dimension_id_column="city",
     )
-    dimension_data_1.save()
-    dimension_data_1["city"].as_entity(city_entity.name)
-    dimension_data_1["state"].as_entity(state_entity.name)
+    dimension_table_1.save()
+    dimension_table_1["city"].as_entity(city_entity.name)
+    dimension_table_1["state"].as_entity(state_entity.name)
 
-    dimension_data_2 = DimensionTable.from_tabular_source(
+    dimension_table_2 = DimensionTable.from_tabular_source(
         tabular_source=data_source.get_table(
             table_name=f"{table_prefix}_DIMENSION_2",
             database_name=session.database_name,
@@ -114,11 +114,11 @@ async def feature_list_with_child_entities_fixture(session, data_source):
         name=f"{table_prefix}_dimension_data_2",
         dimension_id_column="state",
     )
-    dimension_data_2.save()
-    dimension_data_2["state"].as_entity(state_entity.name)
-    dimension_data_2["country"].as_entity(country_entity.name)
+    dimension_table_2.save()
+    dimension_table_2["state"].as_entity(state_entity.name)
+    dimension_table_2["country"].as_entity(country_entity.name)
 
-    dimension_view = dimension_data_2.get_view()
+    dimension_view = dimension_table_2.get_view()
     feature = dimension_view["country"].as_feature("Country Name")
 
     feature_list = FeatureList([feature], name=f"{table_prefix}_feature_list")
@@ -146,7 +146,7 @@ async def feature_list_with_child_entities_fixture(session, data_source):
 )
 def test_preview(feature_list_with_child_entities, point_in_time, provided_entity, expected):
     """
-    Test serving parent features requiring multiple joins with different types of data
+    Test serving parent features requiring multiple joins with different types of table
     """
     preview_params = {"POINT_IN_TIME": point_in_time, **provided_entity}
     expected = pd.Series(

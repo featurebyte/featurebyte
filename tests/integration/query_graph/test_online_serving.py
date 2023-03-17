@@ -16,11 +16,11 @@ from tests.util.helper import fb_assert_frame_equal
 
 
 @pytest.fixture(name="features", scope="session")
-def features_fixture(event_data, source_type):
+def features_fixture(event_table, source_type):
     """
     Fixture for feature
     """
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     event_view["ÀMOUNT"].fillna(0)  # pylint: disable=no-member
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",

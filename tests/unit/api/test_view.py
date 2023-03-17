@@ -275,7 +275,7 @@ def test_get_join_keys__error_if_no_key_found():
 @pytest.fixture(name="generic_input_node_params")
 def get_generic_input_node_params_fixture():
     node_params = {
-        "type": "generic",
+        "type": "source_table",
         "columns": ["random_column"],
         "table_details": {
             "database_name": "db",
@@ -376,8 +376,8 @@ def test_join__left_join(generic_input_node_params, join_type_param):
         "type": "join",
     }
     assert view_dict["graph"]["edges"] == [
-        {"source": "input_2", "target": "join_1"},
         {"source": "input_1", "target": "join_1"},
+        {"source": "input_2", "target": "join_1"},
     ]
 
 

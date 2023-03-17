@@ -44,12 +44,12 @@ class ItemTable(TableApiObject):
     To register a new ItemTable, users are asked to provide:\n
     - the name of the column of the item id\n
     - the name of the column of the event id\n
-    - the name of the event data it is related to
+    - the name of the event table it is related to
 
-    The ItemTable inherits the default FeatureJob setting of the Event data.
+    The ItemTable inherits the default FeatureJob setting of the Event table.
 
-    Like for Event Data, users are strongly encouraged to annotate the data by tagging entities and defining:\n
-    - the semantic of the data field\n
+    Like for Event Data, users are strongly encouraged to annotate the table by tagging entities and defining:\n
+    - the semantic of the table field\n
     - critical data information on the data quality that requires cleaning before feature engineering
 
     To create features from an ItemTable, users create an ItemView.
@@ -66,8 +66,8 @@ class ItemTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = ItemTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
-    event_data_id: PydanticObjectId = Field(allow_mutation=False)
+    type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
+    event_table_id: PydanticObjectId = Field(allow_mutation=False)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         exclude=True, allow_mutation=False
     )
@@ -139,15 +139,15 @@ class ItemTable(TableApiObject):
             event_join_column_names=event_join_column_names,
         )
 
-        event_data = EventTable.get_by_id(self.event_data_id)
-        event_view = event_data.get_view(
+        event_table = EventTable.get_by_id(self.event_table_id)
+        event_view = event_table.get_view(
             drop_column_names=event_drop_column_names,
             column_cleaning_operations=event_column_cleaning_operations,
             view_mode=view_mode,
         )
         assert event_view.event_id_column, "event_id_column is not set"
 
-        # construct view graph node for item data, the final graph looks like:
+        # construct view graph node for item table, the final graph looks like:
         #     +-----------------------+    +----------------------------+
         #     | InputNode(type:event) | -->| GraphNode(type:event_view) | ---+
         #     +-----------------------+    +----------------------------+    |
@@ -186,7 +186,7 @@ class ItemTable(TableApiObject):
             columns_info,
             timestamp_column,
         ) = item_table_data.construct_item_view_graph_node(
-            item_data_node=data_node,
+            item_table_node=data_node,
             columns_to_join=event_join_column_names,
             event_view_node=event_view.node,
             event_view_columns_info=event_view.columns_info,
@@ -198,11 +198,11 @@ class ItemTable(TableApiObject):
                 view_mode=view_mode,
                 drop_column_names=drop_column_names,
                 column_cleaning_operations=column_cleaning_operations,
-                data_id=data_node.parameters.id,
+                table_id=data_node.parameters.id,
                 event_drop_column_names=event_drop_column_names,
                 event_column_cleaning_operations=event_column_cleaning_operations,
                 event_join_column_names=event_join_column_names,
-                event_data_id=event_data.id,
+                event_table_id=event_table.id,
             ),
         )
         inserted_graph_node = GlobalQueryGraph().add_node(
@@ -216,7 +216,7 @@ class ItemTable(TableApiObject):
             tabular_data_ids=join_tabular_data_ids([self.id], event_view.tabular_data_ids),
             event_id_column=self.event_id_column,
             item_id_column=self.item_id_column,
-            event_data_id=self.event_data_id,
+            event_table_id=self.event_table_id,
             default_feature_job_setting=self.default_feature_job_setting,
             event_view=event_view,
             timestamp_column_name=timestamp_column,
@@ -225,14 +225,14 @@ class ItemTable(TableApiObject):
     @root_validator(pre=True)
     @classmethod
     def _set_default_feature_job_setting(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "event_data_id" in values:
-            event_data_id = values["event_data_id"]
+        if "event_table_id" in values:
+            event_table_id = values["event_table_id"]
             try:
                 default_feature_job_setting = EventTable.get_by_id(
-                    event_data_id
+                    event_table_id
                 ).default_feature_job_setting
             except RecordRetrievalException:
-                # Typically this shouldn't happen since event_data_id should be available if the
+                # Typically this shouldn't happen since event_table_id should be available if the
                 # ItemTable was instantiated correctly. Currently, this occurs only in tests.
                 return values
             values["default_feature_job_setting"] = default_feature_job_setting
@@ -274,7 +274,7 @@ class ItemTable(TableApiObject):
         name: str,
         event_id_column: str,
         item_id_column: str,
-        event_data_name: str,
+        event_table_name: str,
         record_creation_timestamp_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> ItemTable:
@@ -286,12 +286,12 @@ class ItemTable(TableApiObject):
         tabular_source: SourceTable
             DatabaseTable object constructed from FeatureStore
         name: str
-            Item data name
+            Item table name
         event_id_column: str
             Event ID column from the given tabular source
         item_id_column: str
             Item ID column from the given tabular source
-        event_data_name: str
+        event_table_name: str
             Name of the EventTable associated with this ItemTable
         record_creation_timestamp_column: Optional[str]
             Record creation timestamp column from the given tabular source
@@ -320,7 +320,7 @@ class ItemTable(TableApiObject):
         ...    ),
         ...    event_id_column="ORDER_ID",
         ...    item_id_column="ITEM_ID",
-        ...    event_data_name="Order List",
+        ...    event_table_name="Order List",
         ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
         ... )
 
@@ -328,10 +328,10 @@ class ItemTable(TableApiObject):
 
         >>> order_items.info(verbose=True)  # doctest: +SKIP
         """
-        event_table = EventTable.get(event_data_name)
+        event_table = EventTable.get(event_table_name)
         if event_table.event_id_column is None:
             raise ValueError("EventTable without event_id_column is not supported")
-        event_data_id = event_table.id
+        event_table_id = event_table.id
         return super().create(
             tabular_source=tabular_source,
             name=name,
@@ -339,5 +339,5 @@ class ItemTable(TableApiObject):
             _id=_id,
             event_id_column=event_id_column,
             item_id_column=item_id_column,
-            event_data_id=event_data_id,
+            event_table_id=event_table_id,
         )

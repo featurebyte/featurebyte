@@ -28,7 +28,7 @@ def query_graph():
 def node_input_fixture(graph):
     """Fixture for a generic input node"""
     node_params = {
-        "type": "event_data",
+        "type": "event_table",
         "columns": ["ts", "cust_id", "a", "b"],
         "timestamp_column": "ts",
         "table_details": {
@@ -298,7 +298,7 @@ def test_graph_interpreter_on_demand_tile_gen(
 ):
     """Test tile building SQL with on-demand tile generation
 
-    Note that the input table query contains a inner-join with an entity table to filter only data
+    Note that the input table query contains a inner-join with an entity table to filter only table
     belonging to specific entity IDs and date range
     """
     interpreter = GraphInterpreter(query_graph_with_groupby, SourceType.SNOWFLAKE)
@@ -317,8 +317,8 @@ def test_graph_interpreter_on_demand_tile_gen(
             DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489,
-          COUNT("a") AS count_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489
+          SUM("a") AS sum_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65,
+          COUNT("a") AS count_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65
         FROM (
           SELECT
             *,
@@ -391,7 +391,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
 
-    aggregation_id = "658906478ded8ef60deb5e8aca90f8ef7d06c2c6"
+    aggregation_id = "c736c6a01f518c42567e72c90f6070173fa8b0ee"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -504,8 +504,8 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
             DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489,
-          COUNT("a") AS count_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489
+          SUM("a") AS sum_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65,
+          COUNT("a") AS count_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65
         FROM (
           SELECT
             *,
@@ -545,7 +545,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     assert sql == expected
 
     # Check required tile 2 (groupby keys: biz_id)
-    aggregation_id = "875069c3061f4fbb8c0e49a0a927676315f07a46"
+    aggregation_id = "6e33dd8addc3595450df495cd997ffd55efad68c"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
     sql = info.sql
@@ -575,7 +575,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
             DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "biz_id",
-          SUM("a") AS value_sum_875069c3061f4fbb8c0e49a0a927676315f07a46
+          SUM("a") AS value_sum_{aggregation_id}
         FROM (
           SELECT
             *,
@@ -1023,8 +1023,8 @@ def test_databricks_source(query_graph_with_groupby):
         SELECT
           TO_TIMESTAMP(UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           `cust_id`,
-          SUM(`a`) AS sum_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489,
-          COUNT(`a`) AS count_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489
+          SUM(`a`) AS sum_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65,
+          COUNT(`a`) AS count_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65
         FROM (
           SELECT
             *,
@@ -1075,7 +1075,7 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
         SELECT
           __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          value_latest_088635a8a233d93984ceb9acdaa23eaa1460f338
+          value_latest_b956ae318e1a8832a8c6193e7a8fff7b0824d2d1
         FROM (
           SELECT
             TO_TIMESTAMP(
@@ -1083,7 +1083,7 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
             ) AS __FB_TILE_START_DATE_COLUMN,
             "cust_id",
             ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_088635a8a233d93984ceb9acdaa23eaa1460f338
+            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_b956ae318e1a8832a8c6193e7a8fff7b0824d2d1
           FROM (
             SELECT
               *,

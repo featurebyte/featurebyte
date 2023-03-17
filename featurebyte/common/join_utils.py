@@ -132,14 +132,14 @@ def join_tabular_data_ids(
     data_ids_a: List[PydanticObjectId], data_ids_b: List[PydanticObjectId]
 ) -> List[PydanticObjectId]:
     """
-    Joins two list of data IDs.
+    Joins two list of table IDs.
 
     Parameters
     ----------
     data_ids_a: List[PydanticObjectId]
-        data IDs A
+        table IDs A
     data_ids_b: List[PydanticObjectId]
-        data IDs B
+        table IDs B
 
     Returns
     -------

@@ -147,7 +147,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         )
         assert response.status_code == HTTPStatus.CREATED
 
-        # save event data
+        # save event table
         payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
         response = api_client.post("/event_table", params={"catalog_id": catalog_id}, json=payload)
         assert response.status_code == HTTPStatus.CREATED
@@ -163,11 +163,11 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
 
     def test_create_event_data_not_found(self, test_api_client_persistent):
         """
-        Create request for non-existent event data
+        Create request for non-existent event table
         """
         test_api_client, _ = test_api_client_persistent
         payload = self.payload.copy()
-        payload["event_data_id"] = str(ObjectId("63030c9eb9150a577ebb61fb"))
+        payload["event_table_id"] = str(ObjectId("63030c9eb9150a577ebb61fb"))
         response = test_api_client.post(f"{self.base_route}", json=payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
@@ -178,7 +178,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
     @pytest.mark.asyncio
     async def test_storage(self, create_success_response, storage):
         """
-        Check data from analysis uploaded to storage
+        Check table from analysis uploaded to storage
         """
         response_dict = create_success_response.json()
         feature_job_setting_analysis_id = response_dict["_id"]
@@ -223,12 +223,12 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
     @pytest.mark.asyncio
     async def test_create_event_data_no_creation_date(self, test_api_client_persistent):
         """
-        Create request for event data with no creation date column
+        Create request for event table with no creation date column
         """
         test_api_client, persistent = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
-        # remove event data creation date column
+        # remove event table creation date column
         await persistent.update_one(
             collection_name="table",
             query_filter={},
@@ -240,7 +240,8 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         response = test_api_client.post(f"{self.base_route}", json=payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
-            response.json()["detail"] == "Creation date column is not available for the event data."
+            response.json()["detail"]
+            == "Creation date column is not available for the event table."
         )
 
     @pytest.mark.asyncio
@@ -248,7 +249,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         self, mock_analysis, test_api_client_persistent
     ):
         """
-        Create request for event data with overly high update frequency
+        Create request for event table with overly high update frequency
         """
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)

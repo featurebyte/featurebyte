@@ -47,7 +47,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         event_table_service = EventTableService(
             user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
         )
-        event_table = await event_table_service.get_document(document_id=payload.event_data_id)
+        event_table = await event_table_service.get_document(document_id=payload.event_table_id)
 
         # retrieve feature store
         feature_store_service = FeatureStoreService(
@@ -87,7 +87,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             _id=payload.output_document_id,
             user_id=payload.user_id,
             name=payload.name,
-            event_data_id=payload.event_data_id,
+            event_table_id=payload.event_table_id,
             analysis_options=analysis.analysis_options,
             analysis_parameters=analysis.analysis_parameters,
             analysis_result=analysis.analysis_result,
@@ -127,7 +127,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         """
         Execute the task
         """
-        self.update_progress(percent=0, message="Preparing data")
+        self.update_progress(percent=0, message="Preparing table")
         payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
         persistent = self.get_persistent()
 

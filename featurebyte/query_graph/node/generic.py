@@ -658,7 +658,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
 
 
 class SCDBaseParameters(BaseModel):
-    """Parameters common to SCD data"""
+    """Parameters common to SCD table"""
 
     effective_timestamp_column: InColumnStr
     natural_key_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: should be compulsory
@@ -687,7 +687,7 @@ class SCDLookupParameters(SCDBaseParameters):
 
 
 class EventLookupParameters(BaseModel):
-    """Parameters for EventData lookup"""
+    """Parameters for EventTable lookup"""
 
     event_timestamp_column: InColumnStr
 
@@ -809,10 +809,10 @@ class JoinMetadata(BaseModel):
     rsuffix: str
 
 
-class JoinEventDataAttributesMetadata(BaseModel):
-    """Metadata to track `item_view.join_event_data_attributes(...)` operation"""
+class JoinEventTableAttributesMetadata(BaseModel):
+    """Metadata to track `item_view.join_event_table_attributes(...)` operation"""
 
-    type: str = Field("join_event_data_attributes", const=True)
+    type: str = Field("join_event_table_attributes", const=True)
     columns: List[str]
     event_suffix: Optional[str]
 
@@ -828,7 +828,7 @@ class JoinNodeParameters(BaseModel):
     right_output_columns: List[OutColumnStr]
     join_type: Literal["left", "inner"]
     scd_parameters: Optional[SCDJoinParameters]
-    metadata: Optional[Union[JoinMetadata, JoinEventDataAttributesMetadata]] = Field(
+    metadata: Optional[Union[JoinMetadata, JoinEventTableAttributesMetadata]] = Field(
         default=None
     )  # DEV-556: should be compulsory
 
@@ -913,7 +913,7 @@ class JoinNode(BasePrunableNode):
             right_avail_columns,
         )
         metadata = node_params.get("metadata") or {}
-        if metadata.get("type") == "join_event_data_attributes":
+        if metadata.get("type") == "join_event_table_attributes":
             node_params["metadata"]["columns"] = [
                 col for col in node_params["metadata"]["columns"] if col in left_avail_columns
             ]
@@ -1007,7 +1007,7 @@ class JoinNode(BasePrunableNode):
         else:
             var_name = right_var_name
             statement = StatementStr(
-                f"{var_name}.join_event_data_attributes("
+                f"{var_name}.join_event_table_attributes("
                 f"columns={ValueStr.create(self.parameters.metadata.columns)}, "
                 f"event_suffix={ValueStr.create(self.parameters.metadata.event_suffix)})"
             )

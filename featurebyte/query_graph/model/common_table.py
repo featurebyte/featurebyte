@@ -39,14 +39,14 @@ TableDataT = TypeVar("TableDataT", bound="BaseTableData")
 
 
 class BaseTableData(FeatureByteBaseModel):
-    """Base data model used to capture input node info"""
+    """Base table model used to capture input node info"""
 
     type: Literal[
-        TableDataType.GENERIC,
-        TableDataType.EVENT_DATA,
-        TableDataType.ITEM_DATA,
-        TableDataType.DIMENSION_DATA,
-        TableDataType.SCD_DATA,
+        TableDataType.SOURCE_TABLE,
+        TableDataType.EVENT_TABLE,
+        TableDataType.ITEM_TABLE,
+        TableDataType.DIMENSION_TABLE,
+        TableDataType.SCD_TABLE,
     ]
     columns_info: List[ColumnInfo]
     tabular_source: TabularSource
@@ -59,7 +59,7 @@ class BaseTableData(FeatureByteBaseModel):
         table_type = cls.__fields__["type"]
         if repr(table_type.type_).startswith("typing.Literal"):
             DATA_TABLES.append(cls)
-        if table_type.default != TableDataType.GENERIC:
+        if table_type.default != TableDataType.SOURCE_TABLE:
             SPECIFIC_DATA_TABLES.append(cls)
 
     @property
@@ -83,7 +83,7 @@ class BaseTableData(FeatureByteBaseModel):
         self: TableDataT, column_cleaning_operations: List[ColumnCleaningOperation]
     ) -> TableDataT:
         """
-        Create a new table data with the specified column cleaning operations
+        Create a new table with the specified column cleaning operations
 
         Parameters
         ----------
@@ -256,8 +256,8 @@ class BaseTableData(FeatureByteBaseModel):
         metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[Node]]:
         """
-        Construct view graph node from table data. The output of any view should be a single graph node
-        that is based on a single data node and optionally other input node(s). By using graph node, we can add
+        Construct view graph node from table. The output of any view should be a single graph node
+        that is based on a single table node and optionally other input node(s). By using graph node, we can add
         some metadata to the node to help with the SDK code reconstruction from the graph. Note that introducing
         a graph node does not change the tile & aggregation hash ID if the final flatten graph is the same. Metadata
         added to the graph node also won't affect the tile & aggregation hash ID.
@@ -326,7 +326,8 @@ class BaseTableData(FeatureByteBaseModel):
     @abstractmethod
     def primary_key_columns(self) -> List[str]:
         """
-        List of primary key columns of the table data
+        List of primary key columns of the table
+
         Returns
         -------
         List[str]
@@ -335,7 +336,7 @@ class BaseTableData(FeatureByteBaseModel):
     @abstractmethod
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         """
-        Construct input node based on data info
+        Construct input node based on table info
 
         Parameters
         ----------

@@ -18,13 +18,13 @@ from featurebyte.exception import (
 from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import (
-    DataFeatureJobSetting,
     FeatureJobSetting,
+    TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
-    DataCleaningOperation,
     MissingValueImputation,
+    TableCleaningOperation,
 )
 from featurebyte.schema.event_table import EventTableServiceUpdate
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
@@ -40,21 +40,21 @@ def test_feature_new_version_create_schema_validation():
     with pytest.raises(ValidationError) as exc:
         FeatureNewVersionCreate(
             source_feature_id=ObjectId(),
-            data_cleaning_operations=[
-                DataCleaningOperation(data_name="dup_data_name", column_cleaning_operations=[]),
-                DataCleaningOperation(data_name="dup_data_name", column_cleaning_operations=[]),
+            table_cleaning_operations=[
+                TableCleaningOperation(table_name="dup_data_name", column_cleaning_operations=[]),
+                TableCleaningOperation(table_name="dup_data_name", column_cleaning_operations=[]),
             ],
         )
 
-    expected_error = 'Name "dup_data_name" is duplicated (field: data_name).'
+    expected_error = 'Name "dup_data_name" is duplicated (field: table_name).'
     assert expected_error in str(exc.value)
 
     with pytest.raises(ValidationError) as exc:
         FeatureNewVersionCreate(
             source_feature_id=ObjectId(),
-            data_cleaning_operations=[
-                DataCleaningOperation(
-                    data_name="data_name",
+            table_cleaning_operations=[
+                TableCleaningOperation(
+                    table_name="table_name",
                     column_cleaning_operations=[
                         ColumnCleaningOperation(column_name="dup_col_name", cleaning_operations=[]),
                         ColumnCleaningOperation(column_name="dup_col_name", cleaning_operations=[]),
@@ -75,9 +75,9 @@ async def test_create_new_feature_version(
     version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature.id,
-            data_feature_job_settings=[
-                DataFeatureJobSetting(
-                    data_name="sf_event_data",
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name="sf_event_table",
                     feature_job_setting=FeatureJobSetting(
                         blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
                     ),
@@ -104,8 +104,8 @@ async def test_create_new_feature_version(
         "blind_spot": 600,
         "time_modulo_frequency": 300,
         "frequency": 1800,
-        "tile_id": "TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817",
-        "aggregation_id": "sum_60e19c3e160be7db3a64f2a828c1c7929543abb4",
+        "tile_id": "TILE_F1800_M300_B600_B839AFCB06ADBAEDCA89907891465110B151C88E",
+        "aggregation_id": "sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f",
     }
 
     new_parameters = version.graph.get_node_by_name("groupby_1").parameters
@@ -114,8 +114,8 @@ async def test_create_new_feature_version(
         "blind_spot": 86400,
         "time_modulo_frequency": 3600,
         "frequency": 86400,
-        "tile_id": "TILE_F86400_M3600_B86400_AEA0B3C1AB23571D22B2280D44878244BE758181",
-        "aggregation_id": "sum_c7b86857737ce503c31f94a87b112f2193c9a02a",
+        "tile_id": "TILE_F86400_M3600_B86400_DD01A201F3ED9B76C48601738AF0FB838BD72BAE",
+        "aggregation_id": "sum_f30c4f20742cfa8786972e3013061cb03c56764b",
     }
 
     # compare edges & other nodes
@@ -148,7 +148,7 @@ async def test_create_new_feature_version(
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_version__document_error(version_service, feature, event_data):
+async def test_create_new_feature_version__document_error(version_service, feature, event_table):
     """Test create new feature version (document error due to no change is detected)"""
     # check no feature job settings
     with pytest.raises(DocumentError) as exc:
@@ -159,10 +159,10 @@ async def test_create_new_feature_version__document_error(version_service, featu
     expected_msg = "No change detected on the new feature version."
     assert expected_msg in str(exc.value)
 
-    # check with empty data cleaning operations
+    # check with empty table cleaning operations
     with pytest.raises(DocumentError) as exc:
         await version_service.create_new_feature_version(
-            data=FeatureNewVersionCreate(source_feature_id=feature.id, data_cleaning_operations=[])
+            data=FeatureNewVersionCreate(source_feature_id=feature.id, table_cleaning_operations=[])
         )
 
     assert expected_msg in str(exc.value)
@@ -175,9 +175,9 @@ async def test_create_new_feature_version__document_error(version_service, featu
         await version_service.create_new_feature_version(
             data=FeatureNewVersionCreate(
                 source_feature_id=feature.id,
-                data_feature_job_settings=[
-                    DataFeatureJobSetting(
-                        data_name=event_data.name, feature_job_setting=same_feature_job_setting
+                table_feature_job_settings=[
+                    TableFeatureJobSetting(
+                        table_name=event_table.name, feature_job_setting=same_feature_job_setting
                     )
                 ],
             ),
@@ -189,10 +189,10 @@ async def test_create_new_feature_version__document_error(version_service, featu
     )
     assert expected_msg in str(exc.value)
 
-    # check data cleaning operations with no effect in feature value derivation
+    # check table cleaning operations with no effect in feature value derivation
     no_effect_data_cleaning_operations = [
-        DataCleaningOperation(
-            data_name=event_data.name,
+        TableCleaningOperation(
+            table_name=event_table.name,
             column_cleaning_operations=[
                 ColumnCleaningOperation(
                     column_name="col_int",  # column is not used in this feature
@@ -205,30 +205,30 @@ async def test_create_new_feature_version__document_error(version_service, featu
         await version_service.create_new_feature_version(
             data=FeatureNewVersionCreate(
                 source_feature_id=feature.id,
-                data_cleaning_operations=no_effect_data_cleaning_operations,
+                table_cleaning_operations=no_effect_data_cleaning_operations,
             )
         )
 
-    expected_msg = "Data cleaning operation(s) does not result a new feature version."
+    expected_msg = "Table cleaning operation(s) does not result a new feature version."
     assert expected_msg in str(exc.value)
 
-    # check feature job setting and data cleaning operations with no effect in feature value derivation
+    # check feature job setting and table cleaning operations with no effect in feature value derivation
     with pytest.raises(DocumentError) as exc:
         await version_service.create_new_feature_version(
             data=FeatureNewVersionCreate(
                 source_feature_id=feature.id,
-                data_feature_job_settings=[
-                    DataFeatureJobSetting(
-                        data_name=event_data.name,
+                table_feature_job_settings=[
+                    TableFeatureJobSetting(
+                        table_name=event_table.name,
                         feature_job_setting=same_feature_job_setting,
                     )
                 ],
-                data_cleaning_operations=no_effect_data_cleaning_operations,
+                table_cleaning_operations=no_effect_data_cleaning_operations,
             )
         )
 
     expected_msg = (
-        "Feature job setting and data cleaning operation(s) do not result a new feature version."
+        "Feature job setting and table cleaning operation(s) do not result a new feature version."
     )
     assert expected_msg in str(exc.value)
 
@@ -310,7 +310,7 @@ async def test_create_new_feature_list_version__document_error__unexpected_featu
 @pytest.mark.asyncio
 async def test_create_new_feature_list_version__auto_mode(
     version_service,
-    event_data,
+    event_table,
     feature,
     feature_sum_2h,
     feature_list_multi,
@@ -320,9 +320,9 @@ async def test_create_new_feature_list_version__auto_mode(
     new_feat_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature.id,
-            data_feature_job_settings=[
-                DataFeatureJobSetting(
-                    data_name=event_data.name,
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name=event_table.name,
                     feature_job_setting=FeatureJobSetting(
                         blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
                     ),
@@ -358,7 +358,7 @@ async def test_create_new_feature_list_version__auto_mode(
 @pytest.mark.asyncio
 async def test_create_new_feature_list_version__manual_mode(
     version_service,
-    event_data,
+    event_table,
     feature,
     feature_sum_2h,
     feature_list_multi,
@@ -368,9 +368,9 @@ async def test_create_new_feature_list_version__manual_mode(
     new_feat_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature_sum_2h.id,
-            data_feature_job_settings=[
-                DataFeatureJobSetting(
-                    data_name=event_data.name,
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name=event_table.name,
                     feature_job_setting=FeatureJobSetting(
                         blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
                     ),
@@ -412,7 +412,7 @@ async def test_create_new_feature_list_version__manual_mode(
 @pytest.mark.asyncio
 async def test_create_new_feature_list_version__semi_auto_mode(
     version_service,
-    event_data,
+    event_table,
     feature,
     feature_sum_2h,
     feature_list_multi,
@@ -422,9 +422,9 @@ async def test_create_new_feature_list_version__semi_auto_mode(
     new_feat_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature_sum_2h.id,
-            data_feature_job_settings=[
-                DataFeatureJobSetting(
-                    data_name=event_data.name,
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name=event_table.name,
                     feature_job_setting=FeatureJobSetting(
                         blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
                     ),
@@ -461,10 +461,10 @@ async def test_create_new_feature_list_version__semi_auto_mode(
     assert expected_msg in str(exc.value)
 
 
-def create_data_cleaning_operations(data_name, column_names):
-    """Create data cleaning operations ofr a given data and column"""
-    return DataCleaningOperation(
-        data_name=data_name,
+def create_table_cleaning_operations(data_name, column_names):
+    """Create table cleaning operations ofr a given table and column"""
+    return TableCleaningOperation(
+        table_name=data_name,
         column_cleaning_operations=[
             ColumnCleaningOperation(
                 column_name=column_name,
@@ -478,16 +478,16 @@ def create_data_cleaning_operations(data_name, column_names):
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_version__with_event_data_cleaning_operations(
-    version_service, feature, event_data
+async def test_create_new_feature_version__with_event_table_cleaning_operations(
+    version_service, feature, event_table
 ):
-    """Test create new feature version with event data cleaning operations"""
-    _ = event_data
+    """Test create new feature version with event table cleaning operations"""
+    _ = event_table
     version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature.id,
-            data_cleaning_operations=[
-                create_data_cleaning_operations(event_data.name, ["col_float"])
+            table_cleaning_operations=[
+                create_table_cleaning_operations(event_table.name, ["col_float"])
             ],
         )
     )
@@ -529,67 +529,67 @@ async def test_create_new_feature_version__with_event_data_cleaning_operations(
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_version__document_error_with_item_data_cleaning_operations(
-    version_service, feature_non_time_based, event_data, item_data
+async def test_create_new_feature_version__document_error_with_item_table_cleaning_operations(
+    version_service, feature_non_time_based, event_table, item_table
 ):
-    """Test create new feature version with event data cleaning operations (document error)"""
-    # create a new feature version with irrelevant data cleaning operations
+    """Test create new feature version with event table cleaning operations (document error)"""
+    # create a new feature version with irrelevant table cleaning operations
     # feature_non_time_based has the following definition:
     # feat = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     #     value_column="item_amount",
     #     method="sum",
     #     feature_name="non_time_time_sum_amount_feature",
     #     skip_fill_na=True,
-    event_data_columns = ["col_float", "col_char", "col_text"]
-    item_data_columns = ["item_id_col", "item_type"]
+    event_table_columns = ["col_float", "col_char", "col_text"]
+    item_table_columns = ["item_id_col", "item_type"]
     with pytest.raises(DocumentError) as exc:
         await version_service.create_new_feature_version(
             data=FeatureNewVersionCreate(
                 source_feature_id=feature_non_time_based.id,
-                data_cleaning_operations=[
-                    create_data_cleaning_operations(event_data.name, event_data_columns),
-                    create_data_cleaning_operations(item_data.name, item_data_columns),
+                table_cleaning_operations=[
+                    create_table_cleaning_operations(event_table.name, event_table_columns),
+                    create_table_cleaning_operations(item_table.name, item_table_columns),
                 ],
             )
         )
-    expected_msg = "Data cleaning operation(s) does not result a new feature version."
+    expected_msg = "Table cleaning operation(s) does not result a new feature version."
     assert expected_msg in str(exc.value)
 
 
 @pytest.fixture(name="event_metadata")
-def event_metadata_fixture(event_data):
+def event_metadata_fixture(event_table):
     """Event metadata"""
     return {
         "view_mode": "auto",
         "drop_column_names": ["created_at"],
         "column_cleaning_operations": [],
-        "data_id": event_data.id,
+        "table_id": event_table.id,
     }
 
 
 @pytest.fixture(name="item_metadata")
-def item_metadata_fixture(item_data, event_metadata, event_data):
+def item_metadata_fixture(item_table, event_metadata, event_table):
     """Item metadata"""
     return {
         "view_mode": "auto",
         "drop_column_names": [],
         "column_cleaning_operations": [],
-        "data_id": item_data.id,
+        "table_id": item_table.id,
         "event_suffix": "_event_table",
         "event_drop_column_names": event_metadata["drop_column_names"],
         "event_column_cleaning_operations": event_metadata["column_cleaning_operations"],
-        "event_data_id": event_data.id,
+        "event_table_id": event_table.id,
         "event_join_column_names": ["event_timestamp", "col_int", "cust_id"],
     }
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "data_cleaning_operations, expected_event_metadata, expected_item_metadata",
+    "table_cleaning_operations, expected_event_metadata, expected_item_metadata",
     [
-        # case 1: update item data only
+        # case 1: update item table only
         (
-            [create_data_cleaning_operations("sf_item_data", ["item_amount"])],
+            [create_table_cleaning_operations("sf_item_table", ["item_amount"])],
             {},  # no change in event metadata
             {
                 "column_cleaning_operations": [
@@ -600,9 +600,9 @@ def item_metadata_fixture(item_data, event_metadata, event_data):
                 ],
             },
         ),
-        # case 2: update event data only
+        # case 2: update event table only
         (
-            [create_data_cleaning_operations("sf_event_data", ["col_int"])],
+            [create_table_cleaning_operations("sf_event_table", ["col_int"])],
             {
                 "column_cleaning_operations": [
                     {
@@ -620,11 +620,11 @@ def item_metadata_fixture(item_data, event_metadata, event_data):
                 ],
             },
         ),
-        # case 3: update event data & item data cleaning operations
+        # case 3: update event table & item table cleaning operations
         (
             [
-                create_data_cleaning_operations("sf_event_data", ["col_int"]),
-                create_data_cleaning_operations("sf_item_data", ["item_amount"]),
+                create_table_cleaning_operations("sf_event_table", ["col_int"]),
+                create_table_cleaning_operations("sf_item_table", ["item_amount"]),
             ],
             {
                 "column_cleaning_operations": [
@@ -656,21 +656,21 @@ async def test_create_new_feature_version__with_non_time_based_feature(
     feature_non_time_based,
     event_metadata,
     item_metadata,
-    data_cleaning_operations,
+    table_cleaning_operations,
     expected_event_metadata,
     expected_item_metadata,
 ):
-    """Test create new feature version with event data cleaning operations"""
+    """Test create new feature version with event table cleaning operations"""
     event_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_1")
     item_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_2")
     assert event_view_graph_node.parameters.metadata == event_metadata
     assert item_view_graph_node.parameters.metadata == item_metadata
 
-    # create a new feature version with relevant data cleaning operations
+    # create a new feature version with relevant table cleaning operations
     new_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature_non_time_based.id,
-            data_cleaning_operations=data_cleaning_operations,
+            table_cleaning_operations=table_cleaning_operations,
         )
     )
 
@@ -696,7 +696,7 @@ async def test_create_new_feature_version__with_non_time_based_feature(
 
 @pytest.mark.asyncio
 async def test_create_new_feature_version_using_source_settings(
-    version_service, event_data_service, feature, event_data
+    version_service, event_table_service, feature, event_table
 ):
     """Test create new feature version using source settings"""
     # check current feature settings
@@ -708,17 +708,17 @@ async def test_create_new_feature_version_using_source_settings(
     assert group_by_params.frequency == 1800
     assert group_by_params.time_modulo_frequency == 300
 
-    # prepare event data before create new version from source settings
+    # prepare event table before create new version from source settings
     columns_info_with_cdi = []
-    for col in event_data.columns_info:
+    for col in event_table.columns_info:
         if col.name == "col_float":
             col.critical_data_info = CriticalDataInfo(
                 cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
             )
         columns_info_with_cdi.append(col)
 
-    await event_data_service.update_document(
-        document_id=event_data.id,
+    await event_table_service.update_document(
+        document_id=event_table.id,
         data=EventTableServiceUpdate(
             default_feature_job_setting=FeatureJobSetting(
                 blind_spot="1h", frequency="2h", time_modulo_frequency="30m"
@@ -727,7 +727,7 @@ async def test_create_new_feature_version_using_source_settings(
         ),
     )
 
-    # create new version from source settings & check the feature job setting & data cleaning operations
+    # create new version from source settings & check the feature job setting & table cleaning operations
     new_version = await version_service.create_new_feature_version_using_source_settings(
         document_id=feature.id
     )
@@ -759,12 +759,12 @@ async def test_create_new_feature_version_using_source_settings__no_changes_thro
 
 @pytest.mark.asyncio
 async def test_create_new_feature_version_using_source_settings__no_changes_in_fjs_throws_error(
-    version_service, event_data_factory, feature_factory
+    version_service, event_table_factory, feature_factory
 ):
     """
     Test that creating a new feature version using source that doesn't have a feature job setting will throw an error.
     """
-    await event_data_factory(True)
+    await event_table_factory(True)
     feature = await feature_factory()
 
     with pytest.raises(NoFeatureJobSettingInSourceError) as exc:

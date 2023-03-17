@@ -91,26 +91,26 @@ def context_service_fixture(user, persistent):
     return ContextService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
-@pytest.fixture(name="event_data_service")
-def event_data_service_fixture(user, persistent):
+@pytest.fixture(name="event_table_service")
+def event_table_service_fixture(user, persistent):
     """EventTable service"""
     return EventTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
-@pytest.fixture(name="item_data_service")
-def item_data_service_fixture(user, persistent):
+@pytest.fixture(name="item_table_service")
+def item_table_service_fixture(user, persistent):
     """ItemTable service"""
     return ItemTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
-@pytest.fixture(name="dimension_data_service")
-def dimension_data_service_fixture(user, persistent):
+@pytest.fixture(name="dimension_table_service")
+def dimension_table_service_fixture(user, persistent):
     """DimensionTable service"""
     return DimensionTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
-@pytest.fixture(name="scd_data_service")
-def scd_data_service_fixture(user, persistent):
+@pytest.fixture(name="scd_table_service")
+def scd_table_service_fixture(user, persistent):
     """SCDTable service"""
     return SCDTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
@@ -271,8 +271,8 @@ async def context_fixture(test_dir, context_service, feature_store, entity):
         return context
 
 
-@pytest.fixture(name="event_data_factory")
-def event_data_factory_fixture(test_dir, feature_store, event_data_service, semantic_service):
+@pytest.fixture(name="event_table_factory")
+def event_table_factory_fixture(test_dir, feature_store, event_table_service, semantic_service):
     """
     EventTable factory returns a function that can be used to create EventTable models.
     """
@@ -287,69 +287,71 @@ def event_data_factory_fixture(test_dir, feature_store, event_data_service, sema
             payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
             if remove_feature_job_setting:
                 payload["default_feature_job_setting"] = None
-            event_data = await event_data_service.create_document(data=EventTableCreate(**payload))
+            event_table = await event_table_service.create_document(
+                data=EventTableCreate(**payload)
+            )
             event_timestamp = await semantic_service.get_or_create_document(
                 name=SemanticType.EVENT_TIMESTAMP
             )
             columns_info = []
-            for col in event_data.columns_info:
+            for col in event_table.columns_info:
                 col_dict = col.dict()
                 if col.name == "event_timestamp":
                     col_dict["semantic_id"] = event_timestamp.id
                 columns_info.append(col_dict)
 
-            event_data = await event_data_service.update_document(
-                document_id=event_data.id,
+            event_table = await event_table_service.update_document(
+                document_id=event_table.id,
                 data=EventTableServiceUpdate(columns_info=columns_info),
                 return_document=True,
             )
-            return event_data
+            return event_table
 
     return factory
 
 
-@pytest_asyncio.fixture(name="event_data")
-async def event_data_fixture(event_data_factory):
+@pytest_asyncio.fixture(name="event_table")
+async def event_table_fixture(event_table_factory):
     """EventTable model"""
-    return await event_data_factory()
+    return await event_table_factory()
 
 
-@pytest_asyncio.fixture(name="item_data")
-async def item_data_fixture(test_dir, feature_store, item_data_service):
+@pytest_asyncio.fixture(name="item_table")
+async def item_table_fixture(test_dir, feature_store, item_table_service):
     """ItemTable model"""
     _ = feature_store
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/item_table.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_item_table"
-        item_data = await item_data_service.create_document(data=ItemTableCreate(**payload))
-        return item_data
+        item_table = await item_table_service.create_document(data=ItemTableCreate(**payload))
+        return item_table
 
 
-@pytest_asyncio.fixture(name="dimension_data")
-async def dimension_data_fixture(test_dir, feature_store, dimension_data_service):
+@pytest_asyncio.fixture(name="dimension_table")
+async def dimension_table_fixture(test_dir, feature_store, dimension_table_service):
     """DimensionTable model"""
     _ = feature_store
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/dimension_table.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_dimension_table"
-        item_data = await dimension_data_service.create_document(
+        dimension_table = await dimension_table_service.create_document(
             data=DimensionTableCreate(**payload)
         )
-        return item_data
+        return dimension_table
 
 
-@pytest_asyncio.fixture(name="scd_data")
-async def scd_data_fixture(test_dir, feature_store, scd_data_service):
+@pytest_asyncio.fixture(name="scd_table")
+async def scd_table_fixture(test_dir, feature_store, scd_table_service):
     """SCDTable model"""
     _ = feature_store
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/scd_table.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_scd_table"
-        scd_data = await scd_data_service.create_document(data=SCDTableCreate(**payload))
-        return scd_data
+        scd_table = await scd_table_service.create_document(data=SCDTableCreate(**payload))
+        return scd_table
 
 
 @pytest.fixture(name="feature_factory")
@@ -358,7 +360,7 @@ def feature_factory_fixture(test_dir, feature_service):
     Feature factory
 
     Note that this will only create the feature, and might throw an error if used alone. You'll need to make sure that
-    you've created the event data and entity models first.
+    you've created the event table and entity models first.
     """
 
     async def factory():
@@ -372,16 +374,16 @@ def feature_factory_fixture(test_dir, feature_service):
 
 
 @pytest_asyncio.fixture(name="feature")
-async def feature_fixture(event_data, entity, feature_factory):
+async def feature_fixture(event_table, entity, feature_factory):
     """Feature model"""
-    _ = event_data, entity
+    _ = event_table, entity
     return await feature_factory()
 
 
 @pytest_asyncio.fixture(name="feature_iet")
-async def feature_iet_fixture(test_dir, event_data, entity, feature_service):
+async def feature_iet_fixture(test_dir, event_table, entity, feature_service):
     """Feature model (IET feature)"""
-    _ = event_data, entity
+    _ = event_table, entity
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_iet.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
@@ -391,10 +393,10 @@ async def feature_iet_fixture(test_dir, event_data, entity, feature_service):
 
 @pytest_asyncio.fixture(name="feature_non_time_based")
 async def feature_non_time_based_fixture(
-    test_dir, event_data, item_data, entity_transaction, feature_service
+    test_dir, event_table, item_table, entity_transaction, feature_service
 ):
     """Feature model (non-time-based feature)"""
-    _ = event_data, item_data, entity_transaction
+    _ = event_table, item_table, entity_transaction
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_non_time_based.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
@@ -539,7 +541,7 @@ async def setup_for_feature_readiness_fixture(
     yield new_feature_id, new_flist.id
 
 
-async def create_event_data_with_entities(data_name, test_dir, event_data_service, columns):
+async def create_event_table_with_entities(data_name, test_dir, event_table_service, columns):
     """Helper function to create an EventTable with provided columns and entities"""
 
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_table.json")
@@ -562,8 +564,8 @@ async def create_event_data_with_entities(data_name, test_dir, event_data_servic
     payload["columns_info"] = _update_columns_info(payload["columns_info"])
     payload["name"] = data_name
 
-    event_data = await event_data_service.create_document(data=EventTableCreate(**payload))
-    return event_data
+    event_table = await event_table_service.create_document(data=EventTableCreate(**payload))
+    return event_table
 
 
 @pytest_asyncio.fixture(name="entity_a")
@@ -611,9 +613,9 @@ async def entity_e_fixture(entity_service):
     return entity_e
 
 
-async def create_data_and_add_parent(
+async def create_table_and_add_parent(
     test_dir,
-    event_data_service,
+    event_table_service,
     entity_service,
     child_entity,
     parent_entity,
@@ -621,19 +623,19 @@ async def create_data_and_add_parent(
     parent_column,
 ):
     """
-    Helper function to create data and add a relationship between two entities
+    Helper function to create table and add a relationship between two entities
     """
-    data = await create_event_data_with_entities(
+    table = await create_event_table_with_entities(
         f"{parent_entity.name}_is_parent_of_{child_entity.name}_data",
         test_dir,
-        event_data_service,
+        event_table_service,
         [(child_column, child_entity.id), (parent_column, parent_entity.id)],
     )
     parents = (await entity_service.get_document(child_entity.id)).parents
-    parents += [ParentEntity(id=parent_entity.id, data_type=data.type, data_id=data.id)]
+    parents += [ParentEntity(id=parent_entity.id, table_type=table.type, table_id=table.id)]
     update_parents = EntityServiceUpdate(parents=parents)
     await entity_service.update_document(child_entity.id, update_parents)
-    return data
+    return table
 
 
 @pytest_asyncio.fixture(name="b_is_parent_of_a")
@@ -641,7 +643,7 @@ async def b_is_parent_of_a_fixture(
     entity_a,
     entity_b,
     entity_service,
-    event_data_service,
+    event_table_service,
     test_dir,
     feature_store,
 ):
@@ -649,9 +651,9 @@ async def b_is_parent_of_a_fixture(
     Fixture to make B a parent of A
     """
     _ = feature_store
-    return await create_data_and_add_parent(
+    return await create_table_and_add_parent(
         test_dir,
-        event_data_service,
+        event_table_service,
         entity_service,
         child_entity=entity_a,
         parent_entity=entity_b,
@@ -665,7 +667,7 @@ async def c_is_parent_of_b_fixture(
     entity_b,
     entity_c,
     entity_service,
-    event_data_service,
+    event_table_service,
     test_dir,
     feature_store,
 ):
@@ -673,9 +675,9 @@ async def c_is_parent_of_b_fixture(
     Fixture to make C a parent of B
     """
     _ = feature_store
-    return await create_data_and_add_parent(
+    return await create_table_and_add_parent(
         test_dir,
-        event_data_service,
+        event_table_service,
         entity_service,
         child_entity=entity_b,
         parent_entity=entity_c,
@@ -689,7 +691,7 @@ async def d_is_parent_of_b_fixture(
     entity_b,
     entity_d,
     entity_service,
-    event_data_service,
+    event_table_service,
     test_dir,
     feature_store,
 ):
@@ -697,9 +699,9 @@ async def d_is_parent_of_b_fixture(
     Fixture to make D a parent of B
     """
     _ = feature_store
-    return await create_data_and_add_parent(
+    return await create_table_and_add_parent(
         test_dir,
-        event_data_service,
+        event_table_service,
         entity_service,
         child_entity=entity_b,
         parent_entity=entity_d,
@@ -713,7 +715,7 @@ async def d_is_parent_of_c_fixture(
     entity_c,
     entity_d,
     entity_service,
-    event_data_service,
+    event_table_service,
     test_dir,
     feature_store,
 ):
@@ -721,9 +723,9 @@ async def d_is_parent_of_c_fixture(
     Fixture to make D a parent of C
     """
     _ = feature_store
-    return await create_data_and_add_parent(
+    return await create_table_and_add_parent(
         test_dir,
-        event_data_service,
+        event_table_service,
         entity_service,
         child_entity=entity_c,
         parent_entity=entity_d,
@@ -738,7 +740,7 @@ async def e_is_parent_of_c_and_d_fixture(
     entity_d,
     entity_e,
     entity_service,
-    event_data_service,
+    event_table_service,
     test_dir,
     feature_store,
 ):
@@ -746,18 +748,18 @@ async def e_is_parent_of_c_and_d_fixture(
     Fixture to make E a parent of C and D
     """
     _ = feature_store
-    await create_data_and_add_parent(
+    await create_table_and_add_parent(
         test_dir,
-        event_data_service,
+        event_table_service,
         entity_service,
         child_entity=entity_c,
         parent_entity=entity_e,
         child_column="c",
         parent_column="e",
     )
-    await create_data_and_add_parent(
+    await create_table_and_add_parent(
         test_dir,
-        event_data_service,
+        event_table_service,
         entity_service,
         child_entity=entity_d,
         parent_entity=entity_e,

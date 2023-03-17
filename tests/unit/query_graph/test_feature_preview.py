@@ -449,6 +449,6 @@ def test_get_feature_preview_sql__with_parent_serving_preparation(
     )
     assert_equal_with_expected_fixture(
         preview_sql,
-        "tests/fixtures/expected_preview_sql_with_parent_serving_prepration.sql",
+        "tests/fixtures/expected_preview_sql_with_parent_serving_preparation.sql",
         update_fixture=update_fixtures,
     )

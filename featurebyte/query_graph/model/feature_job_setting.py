@@ -123,10 +123,10 @@ class FeatureJobSetting(FeatureByteBaseModel):
         return self.to_seconds() == other.to_seconds()
 
 
-class DataFeatureJobSetting(FeatureByteBaseModel):
+class TableFeatureJobSetting(FeatureByteBaseModel):
     """
     Data feature job setting schema
     """
 
-    data_name: str
+    table_name: str
     feature_job_setting: FeatureJobSetting

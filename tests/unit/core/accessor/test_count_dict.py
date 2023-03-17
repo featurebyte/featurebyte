@@ -29,7 +29,7 @@ from tests.util.helper import check_sdk_code_generation, get_node
     ],
 )
 def test_transformation(
-    snowflake_event_data,
+    snowflake_event_table,
     count_per_category_feature,
     method,
     method_kwargs,
@@ -45,17 +45,17 @@ def test_transformation(
     assert new_feature.entity_ids == count_per_category_feature.entity_ids
 
     # check SDK code generation
-    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
+    event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         new_feature,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_event_data.id: {
-                "name": snowflake_event_data.name,
-                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
-                # since the data is not saved, we need to pass in the columns info
+        table_id_to_info={
+            snowflake_event_table.id: {
+                "name": snowflake_event_table.name,
+                "record_creation_timestamp_column": snowflake_event_table.record_creation_timestamp_column,
+                # since the table is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail during GroupBy construction
-                "columns_info": event_data_columns_info,
+                "columns_info": event_table_columns_info,
             }
         },
     )
@@ -69,7 +69,7 @@ def test_non_supported_feature_type(bool_feature):
 
 
 def test_cosine_similarity(
-    snowflake_event_data, count_per_category_feature, count_per_category_feature_2h
+    snowflake_event_table, count_per_category_feature, count_per_category_feature_2h
 ):
     """
     Test cosine_similarity operation
@@ -93,17 +93,17 @@ def test_cosine_similarity(
     }
 
     # check SDK code generation
-    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
+    event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         result,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_event_data.id: {
-                "name": snowflake_event_data.name,
-                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
-                # since the data is not saved, we need to pass in the columns info
+        table_id_to_info={
+            snowflake_event_table.id: {
+                "name": snowflake_event_table.name,
+                "record_creation_timestamp_column": snowflake_event_table.record_creation_timestamp_column,
+                # since the table is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail during GroupBy construction
-                "columns_info": event_data_columns_info,
+                "columns_info": event_table_columns_info,
             }
         },
     )
@@ -144,12 +144,12 @@ def test_get_value_from_dictionary__validation_fails(float_feature, count_per_ca
 
 
 def test_get_value_from_dictionary__success(
-    snowflake_event_data, count_per_category_feature, sum_per_category_feature
+    snowflake_event_table, count_per_category_feature, sum_per_category_feature
 ):
     """Test get_value method"""
     # count don't have parent column & sum has parent column,
     # use different aggregation methods to cover both cases
-    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
+    event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
     for per_cat_feat in [count_per_category_feature, sum_per_category_feature]:
         # check the count_dict has a proper dtype
         count_dict_op_struct = per_cat_feat.graph.extract_operation_structure(
@@ -178,13 +178,13 @@ def test_get_value_from_dictionary__success(
         check_sdk_code_generation(
             result,
             to_use_saved_data=False,
-            data_id_to_info={
-                snowflake_event_data.id: {
-                    "name": snowflake_event_data.name,
-                    "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
-                    # since the data is not saved, we need to pass in the columns info
+            table_id_to_info={
+                snowflake_event_table.id: {
+                    "name": snowflake_event_table.name,
+                    "record_creation_timestamp_column": snowflake_event_table.record_creation_timestamp_column,
+                    # since the table is not saved, we need to pass in the columns info
                     # otherwise, entity id will be missing and code generation will fail during GroupBy construction
-                    "columns_info": event_data_columns_info,
+                    "columns_info": event_table_columns_info,
                 }
             },
         )

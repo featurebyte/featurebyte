@@ -10,22 +10,22 @@ from featurebyte.common.model_util import get_version
 from featurebyte.exception import RecordUpdateException
 from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.model.feature_job_setting import (
-    DataFeatureJobSetting,
     FeatureJobSetting,
+    TableFeatureJobSetting,
 )
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 
 @pytest.fixture(name="feature_group")
 def feature_group_fixture(
-    snowflake_event_data_with_entity,
+    snowflake_event_table_with_entity,
 ):
     """
     Feature group fixture
     """
-    snowflake_event_data_with_entity.save()
+    snowflake_event_table_with_entity.save()
 
-    event_view = snowflake_event_data_with_entity.get_view()
+    event_view = snowflake_event_table_with_entity.get_view()
     feature_group = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
@@ -57,15 +57,15 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     amt_sum_30m = feature_list["amt_sum_30m"]
     assert amt_sum_30m.feature_namespace.default_feature_id == amt_sum_30m.id
     amt_sum_30m_v1 = amt_sum_30m.create_new_version(
-        data_feature_job_settings=[
-            DataFeatureJobSetting(
-                data_name="sf_event_data",
+        table_feature_job_settings=[
+            TableFeatureJobSetting(
+                table_name="sf_event_table",
                 feature_job_setting=FeatureJobSetting(
                     blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
                 ),
             )
         ],
-        data_cleaning_operations=None,
+        table_cleaning_operations=None,
     )
     assert amt_sum_30m_v1.version.to_str() == f"{get_version()}_1"
     assert amt_sum_30m.feature_namespace.default_feature_id == amt_sum_30m_v1.id
@@ -126,15 +126,15 @@ def test_feature_list__as_default_version(feature_group):
 
     # create new feature version
     feature_list["amt_sum_30m"].create_new_version(
-        data_feature_job_settings=[
-            DataFeatureJobSetting(
-                data_name="sf_event_data",
+        table_feature_job_settings=[
+            TableFeatureJobSetting(
+                table_name="sf_event_table",
                 feature_job_setting=FeatureJobSetting(
                     blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
                 ),
             )
         ],
-        data_cleaning_operations=None,
+        table_cleaning_operations=None,
     )
 
     # create new feature list version

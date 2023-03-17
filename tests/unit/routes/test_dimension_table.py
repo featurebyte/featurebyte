@@ -28,7 +28,7 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
     payload = BaseTableApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/dimension_table.json"
     )
-    document_name = "sf_dimension_data"
+    document_name = "sf_dimension_table"
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
@@ -109,7 +109,7 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
             "record_creation_timestamp_column": "created_at",
             "status": "PUBLISHED",
             "user_id": str(user_id),
-            "dimension_id_column": "dimension_id",  # this value needs to match the column name used in test data
+            "dimension_id_column": "dimension_id",  # this value needs to match the column name used in test table
         }
         dimension_table_data = DimensionTableData(**dimension_data_dict)
         input_node = dimension_table_data.construct_input_node(
@@ -127,7 +127,7 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
     @pytest.fixture(name="data_update_dict")
     def data_update_dict_fixture(self):
         """
-        Dimension data update dict object
+        Dimension table update dict object
         """
         return {
             "record_creation_timestamp_column": "created_at",
@@ -143,7 +143,7 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
         expected_info_response = {
-            "name": "sf_dimension_data",
+            "name": self.document_name,
             "record_creation_timestamp_column": "created_at",
             "dimension_id_column": "col_int",
             "table_details": {

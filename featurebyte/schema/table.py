@@ -34,7 +34,7 @@ class TableCreate(FeatureByteBaseModel):
 
 class TableUpdate(FeatureByteBaseModel):
     """
-    Update data payload schema
+    Update table payload schema
     """
 
     columns_info: Optional[List[ColumnInfo]]
@@ -61,7 +61,7 @@ class TableList(PaginationMixin):
     @property
     def entity_ids(self) -> List[PydanticObjectId]:
         """
-        List of entity IDs in the data model list
+        List of entity IDs in the table model list
 
         Returns
         -------
@@ -75,7 +75,7 @@ class TableList(PaginationMixin):
     @property
     def semantic_ids(self) -> List[PydanticObjectId]:
         """
-        List of semantic IDs in the data model list
+        List of semantic IDs in the table model list
 
         Returns
         -------

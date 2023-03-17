@@ -19,7 +19,7 @@ async def test_schema_initializer(config, feature_store):
     assert isinstance(session, SnowflakeSession)
     initializer = SnowflakeSchemaInitializer(session)
 
-    # query for the data in the metadata schema table
+    # query for the table in the metadata schema table
     get_version_query = "SELECT * FROM METADATA_SCHEMA"
     results = await session.execute_query(get_version_query)
 

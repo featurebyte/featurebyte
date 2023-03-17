@@ -12,7 +12,7 @@ from tests.integration.api.feature_preview_utils import (
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_lookup_features_same_column_name(dimension_view, item_data):
+def test_lookup_features_same_column_name(dimension_view, item_table):
     """
     Test lookup features with same column name
     """
@@ -20,7 +20,7 @@ def test_lookup_features_same_column_name(dimension_view, item_data):
     dimension_feature = dimension_view["item_type"].as_feature("ItemTypeFeatureDimensionView")
 
     # create lookup feature B from different table, but has same column name
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
     item_feature = item_view["item_type"].as_feature("ItemTypeFeatureItemView")
 
     # create lookup feature C using A and B
@@ -102,12 +102,12 @@ def check_lookup_feature_is_time_aware(
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_event_view_lookup_features(event_data, transaction_data_upper_case):
+def test_event_view_lookup_features(event_table, transaction_data_upper_case):
     """
     Test lookup features from EventView are time based
     """
     check_lookup_feature_is_time_aware(
-        view=event_data.get_view(),
+        view=event_table.get_view(),
         df=transaction_data_upper_case,
         primary_key_column="TRANSACTION_ID",
         primary_key_value="T42",
@@ -118,12 +118,12 @@ def test_event_view_lookup_features(event_data, transaction_data_upper_case):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_item_view_lookup_features(item_data, expected_joined_event_item_dataframe):
+def test_item_view_lookup_features(item_table, expected_joined_event_item_dataframe):
     """
     Test lookup features from ItemView are time based
     """
     check_lookup_feature_is_time_aware(
-        view=item_data.get_view(),
+        view=item_table.get_view(),
         df=expected_joined_event_item_dataframe,
         primary_key_column="item_id",
         primary_key_value="item_42",

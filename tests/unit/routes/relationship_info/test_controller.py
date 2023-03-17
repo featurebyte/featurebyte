@@ -82,7 +82,7 @@ async def test_validate_relationship_info_create__tabular_data_id_error_thrown(
     """
     _ = entities
 
-    # Try to create relationship info again - expect a different error from missing data source
+    # Try to create relationship info again - expect a different error from missing table source
     with pytest.raises(DocumentNotFoundError) as exc:
         await relationship_info_controller._validate_relationship_info_create(
             relationship_info_create
@@ -90,7 +90,7 @@ async def test_validate_relationship_info_create__tabular_data_id_error_thrown(
     assert "Please save the Table object first" in str(exc)
 
 
-@pytest_asyncio.fixture(name="event_data")
+@pytest_asyncio.fixture(name="event_table")
 async def event_data_fixture(app_container):
     """
     Create event_table fixture
@@ -119,7 +119,7 @@ async def feature_store_fixture(app_container):
 
 @pytest.mark.asyncio
 async def test_validate_relationship_info_create__no_error_thrown(
-    relationship_info_controller, relationship_info_create, entities, feature_store, event_data
+    relationship_info_controller, relationship_info_create, entities, feature_store, event_table
 ):
     """
     Test validate_relationship_info_create
@@ -130,6 +130,6 @@ async def test_validate_relationship_info_create__no_error_thrown(
     create_dict = relationship_info_create.dict()
     create_dict[
         "primary_data_source_id"
-    ] = event_data.id  # update data source ID to a valid data ID
+    ] = event_table.id  # update table source ID to a valid table ID
     relationship_info_create = RelationshipInfoCreate(**create_dict)
     await relationship_info_controller._validate_relationship_info_create(relationship_info_create)

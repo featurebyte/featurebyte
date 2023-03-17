@@ -2,5 +2,5 @@
 from bson import ObjectId
 from featurebyte import EventTable
 
-event_table = EventTable.get_by_id(ObjectId("{data_id}"))
+event_table = EventTable.get_by_id(ObjectId("{table_id}"))
 output = event_table

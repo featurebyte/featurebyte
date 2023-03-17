@@ -151,7 +151,7 @@ class ViewMetadata(BaseModel):
     view_mode: ViewMode
     drop_column_names: List[str]
     column_cleaning_operations: List[ColumnCleaningOperation]
-    data_id: PydanticObjectId
+    table_id: PydanticObjectId
 
     def clone(
         self: ViewMetadataT,
@@ -285,7 +285,7 @@ class ItemViewMetadata(ViewMetadata):
     event_drop_column_names: List[str]
     event_column_cleaning_operations: List[ColumnCleaningOperation]
     event_join_column_names: List[str]
-    event_data_id: PydanticObjectId
+    event_table_id: PydanticObjectId
 
 
 class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):

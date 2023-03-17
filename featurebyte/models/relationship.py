@@ -57,7 +57,7 @@ class RelationshipType(StrEnum):
 
 class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
     """
-    Relationship info data model.
+    Relationship info table model.
 
     This differs from the Relationship class above, in that each relationship is stored as a separate document.
     The Relationship class above stores all relationships for a given child in a single document.

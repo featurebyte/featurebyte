@@ -43,7 +43,7 @@ TableDataT = TypeVar("TableDataT", bound=BaseTableData)
 class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     """
     TableColumn class that is used to set metadata such as Entity column. It holds a reference to its
-    parent, which is a data object (e.g. EventTable)
+    parent, which is a table object (e.g. EventTable)
     """
 
     # documentation metadata
@@ -79,7 +79,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     def _prepare_columns_info(self, column_info: ColumnInfo) -> List[ColumnInfo]:
         """
         Prepare columns info attribute of the update payload. The output of this function is used as part of the
-        data update route payload.
+        table update route payload.
 
         Parameters
         ----------
@@ -124,7 +124,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     @typechecked
     def update_critical_data_info(self, cleaning_operations: List[CleaningOperation]) -> None:
         """
-        Update critical data info of the data column
+        Update critical data info of the table column
 
         Parameters
         ----------
@@ -134,7 +134,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         Examples
         --------
 
-        Add missing value imputation & negative value imputation operations to a data column
+        Add missing value imputation & negative value imputation operations to a table column
 
         >>> import featurebyte as fb
         >>> event_table = fb.EventTable.get("Credit Card Transactions")  # doctest: +SKIP
@@ -147,7 +147,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         ...    ]
         ... )
 
-        Check the column info to confirm that critical data info is updated
+        Check the column info to confirm that critical table info is updated
 
         >>> event_table["AMOUNT"].info.dict()  # doctest: +SKIP
         {'critical_data_info': {'cleaning_operations': [{'imputed_value': 0,
@@ -226,7 +226,7 @@ class TableListMixin(ApiObject):
     @classmethod
     def list(cls, include_id: Optional[bool] = False, entity: Optional[str] = None) -> DataFrame:
         """
-        List saved data sources
+        List saved table sources
 
         Parameters
         ----------
@@ -238,7 +238,7 @@ class TableListMixin(ApiObject):
         Returns
         -------
         DataFrame
-            Table of data sources
+            Table of table sources
         """
         data_list = super().list(include_id=include_id)
         if entity:

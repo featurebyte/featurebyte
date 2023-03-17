@@ -32,10 +32,10 @@ class Table(ProxyTableModel, TableListMixin):
     _get_schema = ProxyTableModel
 
     _data_type_to_cls_mapping = {
-        TableDataType.EVENT_DATA: EventTable,
-        TableDataType.ITEM_DATA: ItemTable,
-        TableDataType.SCD_DATA: SCDTable,
-        TableDataType.DIMENSION_DATA: DimensionTable,
+        TableDataType.EVENT_TABLE: EventTable,
+        TableDataType.ITEM_TABLE: ItemTable,
+        TableDataType.SCD_TABLE: SCDTable,
+        TableDataType.DIMENSION_TABLE: DimensionTable,
     }
 
     @classmethod
@@ -70,7 +70,7 @@ class Table(ProxyTableModel, TableListMixin):
         Returns
         -------
         Any
-            Retrieved data source
+            Retrieved table source
         """
         data = cls._get_by_id(id)
         data_class = cls._data_type_to_cls_mapping[data.type]

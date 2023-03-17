@@ -85,20 +85,20 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         return list(out)
 
     @property
-    def event_data_ids(self) -> List[str]:
+    def event_table_ids(self) -> List[str]:
         """
-        derived event_data_ids from graph
+        derived event_table_ids from graph
 
         Returns
         -------
-            derived event_data_ids
+            derived event_table_ids
         """
         output = []
         for input_node in self.feature.graph.iterate_nodes(
             target_node=self.feature.node, node_type=NodeType.INPUT
         ):
             input_node2 = cast(InputNode, input_node)
-            if input_node2.parameters.type == TableDataType.EVENT_DATA:
+            if input_node2.parameters.type == TableDataType.EVENT_TABLE:
                 e_id = input_node2.parameters.id
                 if e_id:
                     output.append(str(e_id))
@@ -119,7 +119,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     @property
     def value_type(self) -> str:
         """
-        Feature value's data type (e.g. VARCHAR)
+        Feature value's table type (e.g. VARCHAR)
 
         Returns
         -------

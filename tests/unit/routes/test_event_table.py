@@ -27,23 +27,24 @@ class TestEventTableApi(BaseTableApiTestSuite):
     base_route = "/event_table"
     data_create_schema_class = EventTableCreate
     payload = BaseTableApiTestSuite.load_payload("tests/fixtures/request_payloads/event_table.json")
+    document_name = "sf_event_table"
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
             f'{class_name} (id: "{payload["_id"]}") already exists. '
-            f'Get the existing object by `{class_name}.get(name="sf_event_data")`.',
+            f'Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            f'{class_name} (name: "sf_event_data") already exists. '
-            f'Get the existing object by `{class_name}.get(name="sf_event_data")`.',
+            f'{class_name} (name: "{document_name}") already exists. '
+            f'Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
         (
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
             f"{class_name} (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
             "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'}}\") "
-            f'already exists. Get the existing object by `{class_name}.get(name="sf_event_data")`.',
+            f'already exists. Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
@@ -135,7 +136,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
     @pytest.fixture(name="data_update_dict")
     def data_update_dict_fixture(self):
         """
-        Event data update dict object
+        Event table update dict object
         """
         return {
             "default_feature_job_setting": {
@@ -300,7 +301,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
         expected_info_response = {
-            "name": "sf_event_data",
+            "name": self.document_name,
             "event_timestamp_column": "event_timestamp",
             "record_creation_timestamp_column": "created_at",
             "table_details": {

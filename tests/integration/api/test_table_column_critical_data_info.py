@@ -13,13 +13,13 @@ from featurebyte import (
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_event_data_update_critical_data_info(event_data):
+def test_event_data_update_critical_data_info(event_table):
     """Test EventTable with critical data info preview & feature preview"""
-    # add critical data info to amount column & check data preview
-    original_df = event_data.preview()
+    # add critical data info to amount column & check table preview
+    original_df = event_table.preview()
 
-    # check data column preview
-    amount = event_data["ÀMOUNT"].preview()
+    # check table column preview
+    amount = event_table["ÀMOUNT"].preview()
     pd.testing.assert_frame_equal(original_df[["ÀMOUNT"]], amount)
 
     assert original_df["ÀMOUNT"].isnull().sum() == 2
@@ -32,46 +32,46 @@ def test_event_data_update_critical_data_info(event_data):
         "àdd",
         "nan",
     }
-    assert event_data.frame.node.type == "input"
-    event_data["ÀMOUNT"].update_critical_data_info(
+    assert event_table.frame.node.type == "input"
+    event_table["ÀMOUNT"].update_critical_data_info(
         cleaning_operations=[
             MissingValueImputation(imputed_value=0.0),
             ValueBeyondEndpointImputation(type="less_than", end_point=0.0, imputed_value=0.0),
         ]
     )
-    event_data.SESSION_ID.update_critical_data_info(
+    event_table.SESSION_ID.update_critical_data_info(
         cleaning_operations=[DisguisedValueImputation(disguised_values=[979], imputed_value=None)]
     )
-    event_data.PRODUCT_ACTION.update_critical_data_info(
+    event_table.PRODUCT_ACTION.update_critical_data_info(
         cleaning_operations=[
             UnexpectedValueImputation(
                 expected_values=["detail", "purchase", "rëmove"], imputed_value="missing"
             ),
         ]
     )
-    event_data.TRANSACTION_ID.update_critical_data_info(
+    event_table.TRANSACTION_ID.update_critical_data_info(
         cleaning_operations=[StringValueImputation(imputed_value=0)]
     )
-    event_data.CUST_ID.update_critical_data_info(
+    event_table.CUST_ID.update_critical_data_info(
         cleaning_operations=[StringValueImputation(imputed_value=0)]
     )
-    assert event_data.frame.node.type == "input"
+    assert event_table.frame.node.type == "input"
 
     # create feature group & preview
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
 
-    # check equality between cleaning data's vs view's preview, sample & describe operations
+    # check equality between cleaning table's vs view's preview, sample & describe operations
     view_df = event_view.preview()
-    clean_df = event_data.preview(after_cleaning=True)
+    clean_df = event_table.preview(after_cleaning=True)
     pd.testing.assert_frame_equal(view_df, clean_df)
 
     view_sample_df = event_view.sample()
-    clean_sample_df = event_data.sample(after_cleaning=True)
+    clean_sample_df = event_table.sample(after_cleaning=True)
     pd.testing.assert_frame_equal(view_sample_df, clean_sample_df)
 
-    # check describe operation between post-clean event data & event view
+    # check describe operation between post-clean event table & event view
     view_describe_df = event_view.describe()
-    clean_describe_df = event_data.describe(after_cleaning=True)
+    clean_describe_df = event_table.describe(after_cleaning=True)
     pd.testing.assert_frame_equal(view_describe_df, clean_describe_df)
 
     assert view_df["ÀMOUNT"].isnull().sum() == 0
@@ -115,26 +115,26 @@ def test_event_data_update_critical_data_info(event_data):
     pd.testing.assert_frame_equal(feat_preview_df, hist_feat, check_dtype=False)
 
     # remove critical data info
-    event_data["ÀMOUNT"].update_critical_data_info(cleaning_operations=[])
-    event_data.SESSION_ID.update_critical_data_info(cleaning_operations=[])
-    event_data.PRODUCT_ACTION.update_critical_data_info(cleaning_operations=[])
-    event_data.TRANSACTION_ID.update_critical_data_info(cleaning_operations=[])
-    event_data.CUST_ID.update_critical_data_info(cleaning_operations=[])
+    event_table["ÀMOUNT"].update_critical_data_info(cleaning_operations=[])
+    event_table.SESSION_ID.update_critical_data_info(cleaning_operations=[])
+    event_table.PRODUCT_ACTION.update_critical_data_info(cleaning_operations=[])
+    event_table.TRANSACTION_ID.update_critical_data_info(cleaning_operations=[])
+    event_table.CUST_ID.update_critical_data_info(cleaning_operations=[])
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_item_data_update_critical_data_info(item_data):
+def test_item_data_update_critical_data_info(item_table):
     """Test ItemTable with critical data info preview & feature preview"""
-    # add critical data info to item_type column & check data preview
-    assert item_data.frame.node.type == "input"
-    item_data["item_type"].update_critical_data_info(
+    # add critical data info to item_type column & check table preview
+    assert item_table.frame.node.type == "input"
+    item_table["item_type"].update_critical_data_info(
         cleaning_operations=[MissingValueImputation(imputed_value="missing_item")]
     )
-    assert item_data.frame.node.type == "input"
-    _ = item_data.preview()
+    assert item_table.frame.node.type == "input"
+    _ = item_table.preview()
 
     # check feature & preview
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
     window_feature = item_view.groupby("ÜSER ID", category="item_type").aggregate_over(
         method="count",
         windows=["12h"],
@@ -174,4 +174,4 @@ def test_item_data_update_critical_data_info(item_data):
     ]
 
     # remove critical data info
-    item_data["item_type"].update_critical_data_info(cleaning_operations=[])
+    item_table["item_type"].update_critical_data_info(cleaning_operations=[])

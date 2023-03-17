@@ -58,7 +58,7 @@ def test_get_join_column(snowflake_dimension_view):
     assert column == "col_int"
 
 
-def test_join_same_rsuffix_multiple_times(snowflake_dimension_view, snowflake_dimension_data):
+def test_join_same_rsuffix_multiple_times(snowflake_dimension_view, snowflake_dimension_table):
     """
     Test scenario where rsuffix didn't help to resolve repeated columns issue
     """
@@ -79,10 +79,10 @@ def test_join_same_rsuffix_multiple_times(snowflake_dimension_view, snowflake_di
     check_sdk_code_generation(
         snowflake_dimension_view,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_dimension_data.id: {
-                "name": snowflake_dimension_data.name,
-                "record_creation_timestamp_column": snowflake_dimension_data.record_creation_timestamp_column,
+        table_id_to_info={
+            snowflake_dimension_table.id: {
+                "name": snowflake_dimension_table.name,
+                "record_creation_timestamp_column": snowflake_dimension_table.record_creation_timestamp_column,
             }
         },
     )
@@ -90,14 +90,14 @@ def test_join_same_rsuffix_multiple_times(snowflake_dimension_view, snowflake_di
 
 @pytest.fixture
 def snowflake_dimension_view_with_entity(
-    snowflake_dimension_data, cust_id_entity, mock_api_object_cache
+    snowflake_dimension_table, cust_id_entity, mock_api_object_cache
 ):
     """
     Fixture of a DimensionView with entity tagged
     """
     _ = mock_api_object_cache
-    snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
-    view = snowflake_dimension_data.get_view()
+    snowflake_dimension_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_dimension_table.get_view()
     return view
 
 
@@ -142,7 +142,7 @@ def test_as_features__primary_key_not_entity(snowflake_dimension_view, mock_api_
 
 
 def test_as_features__with_primary_key_column(
-    snowflake_dimension_view_with_entity, snowflake_dimension_data, cust_id_entity
+    snowflake_dimension_view_with_entity, snowflake_dimension_table, cust_id_entity
 ):
     """
     Test calling as_features() when including primary column works correctly
@@ -193,25 +193,25 @@ def test_as_features__with_primary_key_column(
     }
 
     # check SDK code generation
-    dimension_data_columns_info = snowflake_dimension_data.dict(by_alias=True)["columns_info"]
+    dimension_table_columns_info = snowflake_dimension_table.dict(by_alias=True)["columns_info"]
     for feature_name in feature_names:
         check_sdk_code_generation(
             feature_group[feature_name],
             to_use_saved_data=False,
-            data_id_to_info={
-                snowflake_dimension_data.id: {
-                    "name": snowflake_dimension_data.name,
-                    "record_creation_timestamp_column": snowflake_dimension_data.record_creation_timestamp_column,
-                    # since the data is not saved, we need to pass in the columns info
+            table_id_to_info={
+                snowflake_dimension_table.id: {
+                    "name": snowflake_dimension_table.name,
+                    "record_creation_timestamp_column": snowflake_dimension_table.record_creation_timestamp_column,
+                    # since the table is not saved, we need to pass in the columns info
                     # otherwise, entity id will be missing and code generation will fail in as_features method
-                    "columns_info": dimension_data_columns_info,
+                    "columns_info": dimension_table_columns_info,
                 }
             },
         )
 
 
 def test_as_features__offset_provided_but_ignored(
-    snowflake_dimension_view_with_entity, snowflake_dimension_data, cust_id_entity
+    snowflake_dimension_view_with_entity, snowflake_dimension_table, cust_id_entity
 ):
     """
     Test as_features() when offset is provided but ignored
@@ -223,17 +223,17 @@ def test_as_features__offset_provided_but_ignored(
     )
 
     # check SDK code generation
-    dimension_data_columns_info = snowflake_dimension_data.dict(by_alias=True)["columns_info"]
+    dimension_table_columns_info = snowflake_dimension_table.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         feature_group["col_float"],
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_dimension_data.id: {
-                "name": snowflake_dimension_data.name,
-                "record_creation_timestamp_column": snowflake_dimension_data.record_creation_timestamp_column,
-                # since the data is not saved, we need to pass in the columns info
+        table_id_to_info={
+            snowflake_dimension_table.id: {
+                "name": snowflake_dimension_table.name,
+                "record_creation_timestamp_column": snowflake_dimension_table.record_creation_timestamp_column,
+                # since the table is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in as_features method
-                "columns_info": dimension_data_columns_info,
+                "columns_info": dimension_table_columns_info,
             }
         },
     )
@@ -259,7 +259,7 @@ def test_as_feature__special_column(snowflake_dimension_view_with_entity):
 
 
 def test_as_feature_same_column_name(
-    snowflake_dimension_view_with_entity, snowflake_scd_data, cust_id_entity
+    snowflake_dimension_view_with_entity, snowflake_scd_table, cust_id_entity
 ):
     """
     Test lookup features with same column name
@@ -268,8 +268,8 @@ def test_as_feature_same_column_name(
         "FloatFeatureDimensionView"
     )
 
-    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
-    scd_view = snowflake_scd_data.get_view()
+    snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
+    scd_view = snowflake_scd_table.get_view()
     feature_b = scd_view["col_float"].as_feature("FloatFeatureSCDView", offset="7d")
 
     new_feature = feature_b == feature_a
@@ -375,14 +375,14 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
     )
 
 
-def test_sdk_code_generation(saved_dimension_data, update_fixtures):
+def test_sdk_code_generation(saved_dimension_table, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
-    dimension_view = saved_dimension_data.get_view()
+    dimension_view = saved_dimension_table.get_view()
     check_sdk_code_generation(
         dimension_view,
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/dimension_view.py",
         update_fixtures=update_fixtures,
-        data_id=saved_dimension_data.id,
+        table_id=saved_dimension_table.id,
     )

@@ -49,18 +49,18 @@
             "semantic_id": null
         }
     ],
-    "event_data_id": "6337f9651050ee7d5980660d",
     "event_id_column": "event_id_col",
+    "event_table_id": "6337f9651050ee7d5980660d",
     "item_id_column": "item_id_col",
-    "name": "sf_item_data",
+    "name": "sf_item_table",
     "record_creation_timestamp_column": null,
     "tabular_source": {
-        "feature_store_id": "63ff1a9c5631c515f17fc66e",
+        "feature_store_id": "6414004ac6834e5117ec155c",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "items_table"
         }
     },
-    "type": "item_data"
+    "type": "item_table"
 }

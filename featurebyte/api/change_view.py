@@ -138,12 +138,12 @@ class ChangeView(View, GroupByMixin):
 
         Checks
         - column is not empty
-        - column is a column in the scd data table
+        - column is a column in the scd table
 
         Parameters
         ----------
         scd_data: SCDTable
-            data to create view from
+            table to create view from
         track_changes_column: str
             column to track changes for
         prefixes: Optional[Tuple[Optional[str], Optional[str]]]

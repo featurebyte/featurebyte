@@ -16,17 +16,17 @@ def entity_col_int():
 
 
 @pytest.fixture
-def scd_view_with_entity(snowflake_scd_data, entity_col_int):
+def scd_view_with_entity(snowflake_scd_table, entity_col_int):
     """
     Fixture for an SlowlyChangingView with entity configured
     """
     Entity(name="col_text_entity", serving_names=["col_text"]).save()
-    snowflake_scd_data["col_text"].as_entity("col_text_entity")
-    snowflake_scd_data["col_int"].as_entity("col_int_entity")
-    return snowflake_scd_data.get_view()
+    snowflake_scd_table["col_text"].as_entity("col_text_entity")
+    snowflake_scd_table["col_int"].as_entity("col_int_entity")
+    return snowflake_scd_table.get_view()
 
 
-def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_data, entity_col_int):
+def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_table, entity_col_int):
     """
     Test valid usage of aggregate_asat
     """
@@ -73,17 +73,17 @@ def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_data, entity_
     ]
 
     # check SDK code generation
-    scd_data_columns_info = snowflake_scd_data.dict(by_alias=True)["columns_info"]
+    scd_table_columns_info = snowflake_scd_table.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_scd_data.id: {
-                "name": snowflake_scd_data.name,
-                "record_creation_timestamp_column": snowflake_scd_data.record_creation_timestamp_column,
-                # since the data is not saved, we need to pass in the columns info
+        table_id_to_info={
+            snowflake_scd_table.id: {
+                "name": snowflake_scd_table.name,
+                "record_creation_timestamp_column": snowflake_scd_table.record_creation_timestamp_column,
+                # since the table is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail during aggregate_asat
-                "columns_info": scd_data_columns_info,
+                "columns_info": scd_table_columns_info,
             }
         },
     )

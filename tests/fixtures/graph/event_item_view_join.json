@@ -75,7 +75,7 @@
                         "sf_schema": "sf_schema"
                     }
                 },
-                "type": "event_data",
+                "type": "event_table",
                 "timestamp": "EVENT_TIMESTAMP",
                 "id": {
                     "$oid": "637381c2dc0ff623b713f0aa"
@@ -106,7 +106,7 @@
                         "sf_schema": "sf_schema"
                     }
                 },
-                "type": "item_data",
+                "type": "item_table",
                 "id": {
                     "$oid": "637381c5dc0ff623b713f0b1"
                 }

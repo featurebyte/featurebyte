@@ -26,23 +26,24 @@ class TestItemTableApi(BaseTableApiTestSuite):
     base_route = "/item_table"
     data_create_schema_class = ItemTableCreate
     payload = BaseTableApiTestSuite.load_payload("tests/fixtures/request_payloads/item_table.json")
+    document_name = "sf_item_table"
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
             f'{class_name} (id: "{payload["_id"]}") already exists. '
-            f'Get the existing object by `{class_name}.get(name="sf_item_data")`.',
+            f'Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            f'{class_name} (name: "sf_item_data") already exists. '
-            f'Get the existing object by `{class_name}.get(name="sf_item_data")`.',
+            f'{class_name} (name: "{document_name}") already exists. '
+            f'Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
         (
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
             f"{class_name} (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
             "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'items_table'}}\") "
-            f'already exists. Get the existing object by `{class_name}.get(name="sf_item_data")`.',
+            f'already exists. Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
@@ -79,7 +80,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
             "columns_info": columns_info,
             "event_id_column": "event_id",
             "item_id_column": "item_id",
-            "event_data_id": str(ObjectId()),
+            "event_table_id": str(ObjectId()),
             "status": "PUBLISHED",
             "user_id": str(user_id),
         }
@@ -98,7 +99,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
 
     @pytest.fixture(name="data_update_dict")
     def data_update_dict_fixture(self):
-        """Item data update dict object"""
+        """Item table update dict object"""
         return {"status": "PUBLISHED"}
 
     @pytest.mark.asyncio
@@ -122,7 +123,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""
-        # save event data first so that it can be referenced in get_item_data_info
+        # save event table first so that it can be referenced in get_item_data_info
         test_api_client, _ = test_api_client_persistent
         payload = BaseTableApiTestSuite.load_payload(
             "tests/fixtures/request_payloads/event_table.json"
@@ -130,7 +131,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
         response = test_api_client.post("/event_table", json=payload)
         assert response.status_code == HTTPStatus.CREATED
 
-        # test item data info
+        # test item table info
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
@@ -138,7 +139,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
         expected_info_response = {
-            "name": "sf_item_data",
+            "name": self.document_name,
             "record_creation_timestamp_column": None,
             "table_details": {
                 "database_name": "sf_database",
@@ -149,7 +150,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
             "entities": [],
             "semantics": ["item_id"],
             "column_count": 6,
-            "event_data_name": "sf_event_data",
+            "event_table_name": "sf_event_table",
             "catalog_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text

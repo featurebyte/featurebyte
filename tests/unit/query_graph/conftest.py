@@ -36,7 +36,7 @@ def input_details_fixture(request):
     (not API objects).
 
     To obtain query graph fixtures with a different source type, indirect parametrize this fixture
-    with the data source type name ("snowflake" or "databricks"). Parametrization of this fixture is
+    with the table source type name ("snowflake" or "databricks"). Parametrization of this fixture is
     optional; the default value is "snowflake".
     """
     kind = "snowflake"
@@ -93,7 +93,7 @@ def input_node_fixture(global_graph, input_details):
     """Fixture of a query with some operations ready to run groupby"""
     # pylint: disable=duplicate-code
     node_params = {
-        "type": "event_data",
+        "type": "event_table",
         "columns": [
             {"name": "ts", "dtype": DBVarType.TIMESTAMP},
             {"name": "cust_id", "dtype": DBVarType.INT},
@@ -124,7 +124,7 @@ def item_data_input_details_fixture(input_details):
 def item_data_input_node_fixture(global_graph, item_data_input_details):
     """Fixture of an input node representing an ItemTable"""
     node_params = {
-        "type": "item_data",
+        "type": "item_table",
         "columns": [
             {"name": "order_id", "dtype": DBVarType.INT},
             {"name": "item_id", "dtype": DBVarType.INT},
@@ -154,7 +154,7 @@ def scd_data_input_details_fixture(input_details):
 def scd_data_input_node_fixture(global_graph, scd_data_input_details):
     """Fixture of an SlowlyChangingView input node"""
     node_params = {
-        "type": "scd_data",
+        "type": "scd_table",
         "columns": [
             {"name": "effective_ts", "dtype": DBVarType.TIMESTAMP},
             {"name": "cust_id", "dtype": DBVarType.INT},
@@ -183,7 +183,7 @@ def dimension_data_input_details_fixture(input_details):
 def dimension_data_input_node_fixture(global_graph, dimension_data_input_details):
     """Fixture of a DimensionTable input node"""
     node_params = {
-        "type": "dimension_data",
+        "type": "dimension_table",
         "columns": [
             {"name": "cust_id", "dtype": DBVarType.INT},
             {"name": "cust_value_1", "dtype": DBVarType.FLOAT},
@@ -205,7 +205,7 @@ def event_data_input_node_fixture(global_graph, input_details):
     """Fixture of an EventTable input node"""
     # pylint: disable=duplicate-code
     node_params = {
-        "type": "event_data",
+        "type": "event_table",
         "columns": [
             {"name": "ts", "dtype": DBVarType.TIMESTAMP},
             {"name": "cust_id", "dtype": DBVarType.INT},
@@ -381,7 +381,7 @@ def groupby_node_aggregation_id_fixture(query_graph_with_groupby):
     """Groupby node the aggregation id (without aggregation method part)"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     aggregation_id = groupby_node.parameters.aggregation_id.split("_")[1]
-    assert aggregation_id == "833762b783166cd0980c65b9e3f3c7c6b9dcd489"
+    assert aggregation_id == "47938f0bfcde2a5c7d483ce1926aa72900653d65"
     return aggregation_id
 
 
@@ -484,7 +484,7 @@ def item_data_join_event_data_node_fixture(
     """
     Fixture of a join node that joins EventTable columns into ItemView. Result of:
 
-    item_view.join_event_data_attributes()
+    item_view.join_event_table_attributes()
     """
     node = global_graph.add_operation(
         node_type=NodeType.JOIN,
@@ -498,7 +498,7 @@ def item_data_join_event_data_node_fixture(
 @pytest.fixture(name="item_data_joined_event_data_feature_node")
 def item_data_joined_event_data_feature_node_fixture(global_graph, item_data_join_event_data_node):
     """
-    Fixture of a feature using item data joined with event data as input
+    Fixture of a feature using item table joined with event table as input
     """
     node_params = {
         "keys": ["cust_id"],
@@ -997,7 +997,7 @@ def aggregate_asat_feature_node_fixture(global_graph, scd_data_input_node):
 @pytest.fixture(name="event_data_table_details")
 def get_event_data_table_details_fixture():
     """
-    Get event data table details fixture
+    Get event table details fixture
     """
     return TableDetails(
         database_name="db",
@@ -1016,7 +1016,7 @@ def query_graph_single_node(
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
-            "type": "event_data",
+            "type": "event_table",
             "columns": [{"name": "column", "dtype": "FLOAT"}],
             "table_details": event_data_table_details.dict(),
             "feature_store_details": snowflake_feature_store_details_dict,
@@ -1034,7 +1034,7 @@ def query_graph_single_node(
             "name": "input_1",
             "type": "input",
             "parameters": {
-                "type": "event_data",
+                "type": "event_table",
                 "columns": [{"name": "column", "dtype": "FLOAT"}],
                 "table_details": event_data_table_details.dict(),
                 "feature_store_details": snowflake_feature_store_details_dict,
@@ -1154,7 +1154,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
     node = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
-            "type": "generic",
+            "type": "source_table",
             "columns": columns_info,
             "timestamp": "VALUE",
             "table_details": {
@@ -1239,7 +1239,7 @@ def parent_serving_preparation_fixture():
     parent_serving_preparation = ParentServingPreparation(
         join_steps=[
             {
-                "data": data_model,
+                "table": data_model,
                 "parent_key": "col_int",
                 "parent_serving_name": "COL_INT",
                 "child_key": "col_text",

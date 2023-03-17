@@ -38,7 +38,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             user_id=None,
         )
 
-        # save event data
+        # save event table
         payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
         await persistent.insert_one(
             collection_name=EventTableModel.collection_name(),
@@ -87,7 +87,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
 
         payload = FeatureJobSettingAnalysisTask.payload_class(**self.payload)
         assert result.user_id == payload.user_id
-        assert result.event_data_id == expected.event_data_id
+        assert result.event_table_id == expected.event_table_id
         assert result.analysis_options == expected.analysis_options
         assert result.analysis_parameters == expected.analysis_parameters
         assert result.analysis_result == expected.analysis_result
@@ -121,7 +121,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         # execute task with payload
         event_data_id = ObjectId()
         payload = copy.deepcopy(self.payload)
-        payload["event_data_id"] = event_data_id
+        payload["event_table_id"] = event_data_id
         with pytest.raises(DocumentNotFoundError) as excinfo:
             await self.execute_task(
                 task_class=self.task_class,

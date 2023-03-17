@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 class SCDTable(TableApiObject):
     """
-    SCDTable is a data source object connected with a Slowly Changing Dimension table of Type 2 in
+    SCDTable is a table source object connected with a Slowly Changing Dimension table of Type 2 in
     the data warehouse that has:\n
     - a natural key (key for which there is one unique active record)\n
     - a surrogate key (the primary key of the SCD)\n
@@ -57,7 +57,7 @@ class SCDTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = SCDTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
 
     # pydantic instance variable (internal use)
     internal_natural_key_column: StrictStr = Field(alias="natural_key_column")
@@ -121,7 +121,7 @@ class SCDTable(TableApiObject):
             column_cleaning_operations=column_cleaning_operations,
         )
 
-        # The input of view graph node is the data node. The final graph looks like this:
+        # The input of view graph node is the table node. The final graph looks like this:
         #    +-----------+     +--------------------------+
         #    | InputNode + --> | GraphNode(type:scd_view) +
         #    +-----------+     +--------------------------+
@@ -143,13 +143,13 @@ class SCDTable(TableApiObject):
         )
 
         view_graph_node, columns_info = scd_table_data.construct_scd_view_graph_node(
-            scd_data_node=data_node,
+            scd_table_node=data_node,
             drop_column_names=drop_column_names,
             metadata=ViewMetadata(
                 view_mode=view_mode,
                 drop_column_names=drop_column_names,
                 column_cleaning_operations=column_cleaning_operations,
-                data_id=data_node.parameters.id,
+                table_id=data_node.parameters.id,
             ),
         )
         inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
@@ -176,7 +176,7 @@ class SCDTable(TableApiObject):
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> ChangeView:
         """
-        Create a change view from SCD data.
+        Create a change view from SCD table.
 
         Parameters
         ----------
@@ -213,7 +213,7 @@ class SCDTable(TableApiObject):
             column_cleaning_operations=column_cleaning_operations,
         )
 
-        # construct change view graph node from the scd data, the final graph looks like:
+        # construct change view graph node from the scd table, the final graph looks like:
         #       +---------------------+    +-----------------------------+
         #       | InputNode(type:scd) | -->| GraphNode(type:change_view) |
         #       +---------------------+    +-----------------------------+
@@ -245,7 +245,7 @@ class SCDTable(TableApiObject):
         )
 
         view_graph_node, columns_info = scd_table_data.construct_change_view_graph_node(
-            scd_data_node=data_node,
+            scd_table_node=data_node,
             track_changes_column=track_changes_column,
             prefixes=prefixes,
             drop_column_names=drop_column_names,
@@ -256,7 +256,7 @@ class SCDTable(TableApiObject):
                 view_mode=view_mode,
                 drop_column_names=drop_column_names,
                 column_cleaning_operations=column_cleaning_operations,
-                data_id=self.id,
+                table_id=self.id,
             ),
         )
         inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
@@ -374,7 +374,7 @@ class SCDTable(TableApiObject):
         tabular_source: SourceTable
             DatabaseTable object constructed from FeatureStore
         name: str
-            SlowlyChanging data name
+            SlowlyChanging table name
         natural_key_column: str
             Natural key column from the given tabular source
         effective_timestamp_column: str
@@ -384,7 +384,7 @@ class SCDTable(TableApiObject):
         surrogate_key_column: Optional[str]
             Surrogate key column from the given tabular source
         current_flag_column: Optional[str]
-            Column to indicates whether the keys are for the current data point
+            Column to indicates whether the keys are for the current table point
         record_creation_timestamp_column: str
             Record creation timestamp column from the given tabular source
         _id: Optional[ObjectId]

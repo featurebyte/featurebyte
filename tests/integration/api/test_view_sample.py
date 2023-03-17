@@ -8,23 +8,23 @@ from pydantic.error_wrappers import ValidationError
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_event_data_sample(event_data):
+def test_event_table_sample(event_table):
     """
-    Test event data sample & event data column sample
+    Test event table sample & event table column sample
     """
-    event_data_df = event_data.sample()
+    event_data_df = event_table.sample()
     ts_col = "ËVENT_TIMESTAMP"
-    ev_ts = event_data[ts_col].sample()
+    ev_ts = event_table[ts_col].sample()
     pd.testing.assert_frame_equal(event_data_df[[ts_col]], ev_ts)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_event_view_sample(event_data):
+def test_event_view_sample(event_table):
     """
     Test sample for EventView
     """
     sample_kwargs = {"size": 10, "seed": 1234}
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     sample_df = event_view.sample(**sample_kwargs)
     assert sample_df.columns.tolist() == [
         "ËVENT_TIMESTAMP",
@@ -48,11 +48,11 @@ def test_event_view_sample(event_data):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_event_view_sample_seed(event_data):
+def test_event_view_sample_seed(event_table):
     """
     Test sample for EventView using a different seed
     """
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     sample_df = event_view.sample(size=10, seed=4321)
     assert sample_df.shape == (10, 8)
     assert sample_df["ËVENT_TIMESTAMP"].min() == pd.Timestamp("2001-01-01 22:23:02.000349+22:00")
@@ -60,11 +60,11 @@ def test_event_view_sample_seed(event_data):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_event_view_sample_with_date_range(event_data):
+def test_event_view_sample_with_date_range(event_table):
     """
     Test sample for EventView with date range
     """
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     sample_params = {
         "size": 15,
         "seed": 1234,
@@ -81,11 +81,11 @@ def test_event_view_sample_with_date_range(event_data):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_item_view_sample(item_data):
+def test_item_view_sample(item_table):
     """
     Test sample for ItemView
     """
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
     sample_df = item_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
         "ËVENT_TIMESTAMP",
@@ -103,11 +103,11 @@ def test_item_view_sample(item_data):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_item_view_sample_with_date_range(item_data):
+def test_item_view_sample_with_date_range(item_table):
     """
     Test sample for ItemView with date range
     """
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
     sample_params = {
         "size": 15,
         "seed": 1234,
@@ -124,11 +124,11 @@ def test_item_view_sample_with_date_range(item_data):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_dimension_view_sample(dimension_data):
+def test_dimension_view_sample(dimension_table):
     """
     Test sample for DimensionView
     """
-    dimension_view = dimension_data.get_view()
+    dimension_view = dimension_table.get_view()
     sample_df = dimension_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
         "created_at",
@@ -141,11 +141,11 @@ def test_dimension_view_sample(dimension_data):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_dimension_view_sample_with_date_range(dimension_data):
+def test_dimension_view_sample_with_date_range(dimension_table):
     """
     Test sample for DimensionView with date range
     """
-    dimension_view = dimension_data.get_view()
+    dimension_view = dimension_table.get_view()
     with pytest.raises(ValidationError) as exc:
         dimension_view.sample(
             size=15, seed=1234, from_timestamp="2001-10-10", to_timestamp="2001-10-14"
