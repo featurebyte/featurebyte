@@ -16,22 +16,22 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from tests.unit.routes.base import BaseCatalogApiTestSuite
+from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
-class TestFeatureApi(BaseCatalogApiTestSuite):
+class TestFeatureApi(BaseWorkspaceApiTestSuite):
     """
     TestFeatureApi class
     """
 
     class_name = "Feature"
     base_route = "/feature"
-    payload = BaseCatalogApiTestSuite.load_payload(
+    payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_sum_30m.json"
     )
-    namespace_payload = BaseCatalogApiTestSuite.load_payload(
+    namespace_payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_namespace.json"
     )
     object_id = str(ObjectId())
@@ -100,7 +100,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         ),
         (
             {**payload, "_id": object_id, "name": "random_name", "tabular_data_ids": [object_id]},
-            f'Table (id: "{object_id}") not found. Please save the Table object first.',
+            f'TabularData (id: "{object_id}") not found. '
+            f"Please save the TabularData object first.",
         ),
         (
             {**payload, "_id": object_id, "name": "random_name"},
@@ -123,19 +124,19 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         ),
     ]
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_table", "event_table"),
+            ("event_data", "event_data"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(
-                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
+                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
             )
             assert response.status_code == HTTPStatus.CREATED
 
@@ -376,7 +377,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_table", "event_table"),
+            ("event_data", "event_data"),
             ("feature", "feature_sum_30m"),
             ("feature", "feature_sum_2h"),
             ("feature_list", "feature_list_multi"),
@@ -450,17 +451,17 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         expected_info_response = {
             "name": "sum_30m",
             "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
             ],
             "tabular_data": [
-                {"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
             ],
             "dtype": "FLOAT",
             "default_version_mode": "AUTO",
             "version_count": 1,
             "readiness": {"this": "DRAFT", "default": "DRAFT"},
             "version": {"this": version, "default": version},
-            "catalog_name": "default",
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

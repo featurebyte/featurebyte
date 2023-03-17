@@ -145,7 +145,7 @@ class FeatureExecutionPlan:
         self,
         request_table_name: str,
         request_table_columns: list[str],
-    ) -> tuple[expressions.Select, list[str]]:
+    ) -> expressions.Select:
         """
         Construct updated request table with parent entities added
 
@@ -158,16 +158,16 @@ class FeatureExecutionPlan:
 
         Returns
         -------
-        tuple[expressions.Select, List[str]]
+        expressions.Select
         """
         assert self.parent_serving_preparation is not None
-        table_expr, new_columns = construct_request_table_with_parent_entities(
+        table_expr = construct_request_table_with_parent_entities(
             request_table_name=request_table_name,
             request_table_columns=request_table_columns,
             join_steps=self.parent_serving_preparation.join_steps,
             feature_store_details=self.parent_serving_preparation.feature_store_details,
         )
-        return table_expr, new_columns
+        return table_expr
 
     def construct_combined_aggregation_cte(
         self,
@@ -225,7 +225,7 @@ class FeatureExecutionPlan:
         request_table_columns: Optional[list[str]],
         exclude_post_aggregation: bool,
         agg_result_names: list[str],
-        exclude_columns: set[str],
+        exclude_columns: Optional[set[str]] = None,
     ) -> expressions.Select:
         """Construct SQL code for post-aggregation that transforms aggregated results to features
 
@@ -246,15 +246,18 @@ class FeatureExecutionPlan:
             output columns directly. Intended to be used by online store pre-computation.
         agg_result_names: bool
             Names of the aggregated columns. Used when excluded_post_aggregation is True.
-        exclude_columns: set[str]
-            Exclude these columns from the output. This is currently used when generating feature
-            retrieval sql for online requests where we want to exclude the internally added point in
-            time column from the final output.
+        exclude_columns: Optional[set[str]]
+            When provided, exclude these columns from the output. This is currently used when
+            generating feature retrieval sql for online requests where we want to exclude the
+            internally added point in time column from the final output.
 
         Returns
         -------
         str
         """
+        if exclude_columns is None:
+            exclude_columns = set()
+
         columns: list[expressions.Expression | str] = []
         if exclude_post_aggregation:
             for agg_result_name in agg_result_names:
@@ -315,21 +318,13 @@ class FeatureExecutionPlan:
             assert isinstance(prior_cte_statements, list)
             cte_statements.extend(prior_cte_statements)
 
-        if exclude_columns is None:
-            exclude_columns = set()
-
         if self.parent_serving_preparation is not None:
-            (
-                updated_request_table_expr,
-                new_columns,
-            ) = self.construct_request_table_with_parent_entities(
+            updated_request_table_expr = self.construct_request_table_with_parent_entities(
                 request_table_name=request_table_name,
                 request_table_columns=request_table_columns,
             )
             request_table_name = "JOINED_PARENTS_" + request_table_name
             cte_statements.append((request_table_name, updated_request_table_expr))
-            request_table_columns = request_table_columns + list(new_columns)
-            exclude_columns.update(new_columns)
 
         for aggregator in self.iter_aggregators():
             cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))

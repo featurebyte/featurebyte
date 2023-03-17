@@ -328,7 +328,7 @@ class TileManagerSnowflake(BaseTileManager):
         else:
             sql = await super()._schedule_tiles_custom(
                 tile_spec=tile_spec,
-                tile_type=TileType.OFFLINE,
+                tile_type=TileType.ONLINE,
                 next_job_time=next_job_time,
                 offline_minutes=offline_minutes,
             )

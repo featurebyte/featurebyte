@@ -10,21 +10,21 @@ import pytest_asyncio
 from bson import ObjectId
 from requests import Response
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from tests.unit.routes.base import BaseCatalogApiTestSuite
+from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
-class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
+class TestFeatureNamespaceApi(BaseWorkspaceApiTestSuite):
     """
     TestFeatureNamespaceApi
     """
 
     class_name = "FeatureNamespace"
     base_route = "/feature_namespace"
-    payload = BaseCatalogApiTestSuite.load_payload(
+    payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_namespace.json"
     )
     create_conflict_payload_expected_detail_pairs = []
@@ -52,7 +52,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         user = Mock()
         user.id = user_id
         feature_namespace_service = FeatureNamespaceService(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
         )
         document = await feature_namespace_service.create_document(
             data=FeatureNamespaceCreate(**self.payload)
@@ -75,12 +75,12 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         """Test creation (success) ID is None"""
 
     @pytest.mark.skip("POST method not exposed")
-    def test_create_201_non_default_catalog(
+    def test_create_201_non_default_workspace(
         self,
-        catalog_id,
-        create_success_response_non_default_catalog,
+        workspace_id,
+        create_success_response_non_default_workspace,
     ):
-        """Test creation (success) in non default catalog"""
+        """Test creation (success) in non default workspace"""
 
     @pytest_asyncio.fixture
     async def create_multiple_success_responses(
@@ -91,7 +91,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         user = Mock()
         user.id = user_id
         feature_namespace_service = FeatureNamespaceService(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
         )
         output = []
         for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
@@ -109,7 +109,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_table", "event_table"),
+            ("event_data", "event_data"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -128,7 +128,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_table", "event_table"),
+            ("event_data", "event_data"),
             ("feature", "feature_sum_30m"),
         ]
         for api_object, filename in api_object_filename_pairs:
@@ -248,16 +248,16 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             "created_at": response_dict["created_at"],
             "updated_at": None,
             "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
             ],
             "tabular_data": [
-                {"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
             ],
             "default_version_mode": "AUTO",
             "default_feature_id": response_dict["default_feature_id"],
             "dtype": "FLOAT",
             "version_count": 1,
-            "catalog_name": "default",
+            "workspace_name": "default",
         }
 
         verbose_response = test_api_client.get(
@@ -266,15 +266,15 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         assert verbose_response.status_code == HTTPStatus.OK, verbose_response.text
 
     @pytest_asyncio.fixture
-    async def create_success_response_non_default_catalog(
-        self, test_api_client_persistent, user_id, catalog_id
+    async def create_success_response_non_default_workspace(
+        self, test_api_client_persistent, user_id, workspace_id
     ):  # pylint: disable=arguments-differ
-        """Create object with non default catalog"""
+        """Create object with non default workspace"""
         _, persistent = test_api_client_persistent
         user = Mock()
         user.id = user_id
         feature_namespace_service = FeatureNamespaceService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
         document = await feature_namespace_service.create_document(
             data=FeatureNamespaceCreate(**self.payload)

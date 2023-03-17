@@ -6,6 +6,10 @@ import pytest
 from pandas.testing import assert_series_equal
 from pydantic.error_wrappers import ValidationError
 
+from featurebyte.api.dimension_view import DimensionView
+from featurebyte.api.event_view import EventView
+from featurebyte.api.item_view import ItemView
+
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_data_sample(event_data):
@@ -24,7 +28,7 @@ def test_event_view_sample(event_data):
     Test sample for EventView
     """
     sample_kwargs = {"size": 10, "seed": 1234}
-    event_view = event_data.get_view()
+    event_view = EventView.from_event_data(event_data)
     sample_df = event_view.sample(**sample_kwargs)
     assert sample_df.columns.tolist() == [
         "ËVENT_TIMESTAMP",
@@ -52,7 +56,7 @@ def test_event_view_sample_seed(event_data):
     """
     Test sample for EventView using a different seed
     """
-    event_view = event_data.get_view()
+    event_view = EventView.from_event_data(event_data)
     sample_df = event_view.sample(size=10, seed=4321)
     assert sample_df.shape == (10, 8)
     assert sample_df["ËVENT_TIMESTAMP"].min() == pd.Timestamp("2001-01-01 22:23:02.000349+22:00")
@@ -64,7 +68,7 @@ def test_event_view_sample_with_date_range(event_data):
     """
     Test sample for EventView with date range
     """
-    event_view = event_data.get_view()
+    event_view = EventView.from_event_data(event_data)
     sample_params = {
         "size": 15,
         "seed": 1234,
@@ -85,7 +89,7 @@ def test_item_view_sample(item_data):
     """
     Test sample for ItemView
     """
-    item_view = item_data.get_view()
+    item_view = ItemView.from_item_data(item_data)
     sample_df = item_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
         "ËVENT_TIMESTAMP",
@@ -107,7 +111,7 @@ def test_item_view_sample_with_date_range(item_data):
     """
     Test sample for ItemView with date range
     """
-    item_view = item_data.get_view()
+    item_view = ItemView.from_item_data(item_data)
     sample_params = {
         "size": 15,
         "seed": 1234,
@@ -128,7 +132,7 @@ def test_dimension_view_sample(dimension_data):
     """
     Test sample for DimensionView
     """
-    dimension_view = dimension_data.get_view()
+    dimension_view = DimensionView.from_dimension_data(dimension_data)
     sample_df = dimension_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
         "created_at",
@@ -145,7 +149,7 @@ def test_dimension_view_sample_with_date_range(dimension_data):
     """
     Test sample for DimensionView with date range
     """
-    dimension_view = dimension_data.get_view()
+    dimension_view = DimensionView.from_dimension_data(dimension_data)
     with pytest.raises(ValidationError) as exc:
         dimension_view.sample(
             size=15, seed=1234, from_timestamp="2001-10-10", to_timestamp="2001-10-14"

@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 import pytz
 
+from featurebyte import EventView, ItemView
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
@@ -20,7 +21,7 @@ def test_lookup_features_same_column_name(dimension_view, item_data):
     dimension_feature = dimension_view["item_type"].as_feature("ItemTypeFeatureDimensionView")
 
     # create lookup feature B from different table, but has same column name
-    item_view = item_data.get_view()
+    item_view = ItemView.from_item_data(item_data)
     item_feature = item_view["item_type"].as_feature("ItemTypeFeatureItemView")
 
     # create lookup feature C using A and B
@@ -107,7 +108,7 @@ def test_event_view_lookup_features(event_data, transaction_data_upper_case):
     Test lookup features from EventView are time based
     """
     check_lookup_feature_is_time_aware(
-        view=event_data.get_view(),
+        view=EventView.from_event_data(event_data),
         df=transaction_data_upper_case,
         primary_key_column="TRANSACTION_ID",
         primary_key_value="T42",
@@ -123,7 +124,7 @@ def test_item_view_lookup_features(item_data, expected_joined_event_item_datafra
     Test lookup features from ItemView are time based
     """
     check_lookup_feature_is_time_aware(
-        view=item_data.get_view(),
+        view=ItemView.from_item_data(item_data),
         df=expected_joined_event_item_dataframe,
         primary_key_column="item_id",
         primary_key_value="item_42",

@@ -8,7 +8,7 @@ from bson import ObjectId
 
 from featurebyte import SourceType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.service.task_manager import TaskManager
@@ -102,7 +102,7 @@ async def tile_manager_fixture(session, tile_spec, feature, persistent):
     assert session.source_type == "spark"
 
     task_manager = TaskManager(
-        user=User(id=feature.user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=User(id=feature.user_id), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
     )
     yield TileManagerSpark(session=session, task_manager=task_manager)
 

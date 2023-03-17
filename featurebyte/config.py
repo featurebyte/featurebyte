@@ -18,7 +18,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import get_version
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
 
 # data source to credential mapping
@@ -27,7 +27,7 @@ Credentials = Dict[str, Optional[Credential]]
 # default local location
 DEFAULT_HOME_PATH: Path = Path.home().joinpath(".featurebyte")
 
-ACTIVE_CATALOG_ID: ObjectId = DEFAULT_CATALOG_ID
+ACTIVE_WORKSPACE_ID: ObjectId = DEFAULT_WORKSPACE_ID
 
 
 def get_home_path() -> Path:
@@ -42,28 +42,28 @@ def get_home_path() -> Path:
     return Path(os.environ.get("FEATUREBYTE_HOME", str(DEFAULT_HOME_PATH)))
 
 
-def get_active_catalog_id() -> ObjectId:
+def get_active_workspace_id() -> ObjectId:
     """
-    Get active catalog id
+    Get active workspace id
 
     Returns
     -------
     ObjectId
     """
-    return ACTIVE_CATALOG_ID
+    return ACTIVE_WORKSPACE_ID
 
 
-def activate_catalog(catalog_id: ObjectId) -> None:
+def activate_workspace(workspace_id: ObjectId) -> None:
     """
-    Set active catalog
+    Set active workspace
 
     Parameters
     ----------
-    catalog_id: ObjectId
-        Catalog ID to set as active
+    workspace_id: ObjectId
+        Workspace ID to set as active
     """
-    global ACTIVE_CATALOG_ID  # pylint: disable=global-statement
-    ACTIVE_CATALOG_ID = catalog_id
+    global ACTIVE_WORKSPACE_ID  # pylint: disable=global-statement
+    ACTIVE_WORKSPACE_ID = workspace_id
 
 
 class LogLevel(StrEnum):
@@ -198,7 +198,7 @@ class APIClient(BaseAPIClient):
         """
         try:
             params = kwargs.get("params", {})
-            params["catalog_id"] = str(get_active_catalog_id())
+            params["workspace_id"] = str(get_active_workspace_id())
             kwargs["params"] = params
             return super().request(
                 method,
@@ -245,7 +245,7 @@ class Configurations:
                 "# featurebyte configuration\n\n"
                 "profile:\n"
                 "  - name: local\n"
-                "    api_url: http://127.0.0.1:8088\n\n"
+                "    api_url: http://localhost:8088\n\n"
                 "logging:\n"
                 "  level: INFO\n"
             )

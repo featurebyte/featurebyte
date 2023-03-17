@@ -19,7 +19,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -153,7 +153,6 @@ def test_entity_update_name(entity):
             ("UPDATE", 'update: "customer"', "name", "customer", "Customer"),
             ("UPDATE", 'update: "customer"', "updated_at", None, entity.updated_at.isoformat()),
             ("INSERT", 'insert: "customer"', "ancestor_ids", np.nan, []),
-            ("INSERT", 'insert: "customer"', "catalog_id", np.nan, str(DEFAULT_CATALOG_ID)),
             ("INSERT", 'insert: "customer"', "created_at", np.nan, entity.created_at.isoformat()),
             ("INSERT", 'insert: "customer"', "name", np.nan, "customer"),
             ("INSERT", 'insert: "customer"', "parents", np.nan, []),
@@ -162,6 +161,7 @@ def test_entity_update_name(entity):
             ("INSERT", 'insert: "customer"', "tabular_data_ids", np.nan, []),
             ("INSERT", 'insert: "customer"', "updated_at", np.nan, None),
             ("INSERT", 'insert: "customer"', "user_id", np.nan, None),
+            ("INSERT", 'insert: "customer"', "workspace_id", np.nan, str(DEFAULT_WORKSPACE_ID)),
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
@@ -265,11 +265,11 @@ def get_insert_tabular_data_helper_fixture(mongo_persistent):
             "columns_info": [ColumnInfo(name=col_name, dtype=DBVarType.INT).json_dict()],
             "dimension_id_column": col_name,
             "version": {"name": "name_val", "suffix": None},
-            "catalog_id": DEFAULT_CATALOG_ID,
+            "workspace_id": DEFAULT_WORKSPACE_ID,
         }
         user_id = ObjectId()
         _ = await persistent.insert_one(
-            collection_name="table", document=test_document, user_id=user_id
+            collection_name="tabular_data", document=test_document, user_id=user_id
         )
 
     return insert
@@ -343,50 +343,3 @@ async def test_add_and_remove_parent(mongo_persistent, insert_tabular_data_helpe
     entity_b_response = response[1]
     assert entity_b_response["name"] == "entity_b"
     assert_entity_has_number_of_parents(entity_b_response, 0)
-
-
-def test_create():
-    """
-    Test Entity.create
-    """
-    entity_name = "random_entity"
-    # Verify entity doesn't exist first
-    with pytest.raises(RecordRetrievalException) as exc:
-        Entity.get(entity_name)
-    assert "Please save the Entity object first." in str(exc)
-
-    # Create entity
-    entity = Entity.create(entity_name, serving_names=["random_entity_serving_name"])
-    assert entity.name == entity_name
-
-    # Test that entity exists
-    entity_retrieved = Entity.get(entity_name)
-    assert entity_retrieved.id == entity.id
-    assert entity_retrieved.name == entity.name
-
-
-def test_get_or_create():
-    """
-    Test get_or_create
-    """
-    entity_name = "random_entity"
-    # Verify entity doesn't exist first
-    with pytest.raises(RecordRetrievalException) as exc:
-        Entity.get(entity_name)
-    assert "Please save the Entity object first." in str(exc)
-
-    # Create entity with get_or_create
-    entity = Entity.get_or_create(entity_name, serving_names=["random_entity_serving_name"])
-    assert entity.name == entity_name
-
-    # Test that entity exists after calling get_or_create once
-    entity_retrieved = Entity.get(entity_name)
-    assert entity_retrieved.id == entity.id
-    assert entity_retrieved.name == entity.name
-
-    # Call get_or_create again - verify that there's no error and entity is retrieved.
-    # Also show that if we're just doing the `get` in get or create, the serving_names passed in is irrelevant.
-    entity_retrieved = Entity.get_or_create(entity_name, serving_names=[])
-    assert entity_retrieved.id == entity.id
-    assert entity_retrieved.name == entity.name
-    assert entity_retrieved.serving_names == ["random_entity_serving_name"]

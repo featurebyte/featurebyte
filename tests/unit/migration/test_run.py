@@ -25,7 +25,7 @@ from featurebyte.migration.run import (
     run_migration,
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.service.entity import EntityService
@@ -60,7 +60,7 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 async def test_migrate_method_generator(user, persistent):
     """Test migrate method generator"""
     schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
     )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
@@ -105,7 +105,7 @@ async def test_migrate_method_generator(user, persistent):
 async def test_migrate_method_generator__exclude_warehouse(user, persistent):
     """Test migrate method generator with include_data_warehouse_migrations=False"""
     schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
     )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
@@ -137,7 +137,7 @@ async def migration_check_user_persistent_fixture(test_dir, persistent):
 @pytest.mark.asyncio
 async def test_post_migration_sanity_check(persistent, user):
     """Test post_migration_sanity_check"""
-    service = EntityService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    service = EntityService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
     docs = []
     for i in range(20):
         doc = await service.create_document(
@@ -167,10 +167,13 @@ async def test_run_migration(migration_check_persistent, user):
     """Test run migration function"""
     persistent = migration_check_persistent
     schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
     )
-    schema_metadata = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
+    schema_metadata = await schema_metadata_service.create_document(
+        SchemaMetadataCreate(
+            name=MigrationMetadata.SCHEMA_METADATA.value,
+            version=1,  # skip version 1 since tabular_data collection exists
+        )
     )
 
     # perform migration on testing samples to check the migration logic
@@ -208,7 +211,7 @@ async def test_run_migration(migration_check_persistent, user):
 
     # check version in schema_metadata after migration
     schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
     )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
@@ -236,7 +239,7 @@ async def test_data_warehouse_migration_get_session(
     warehouse_migration = DataWarehouseMigrationMixin(
         user=user,
         persistent=migration_check_persistent,
-        catalog_id=DEFAULT_CATALOG_ID,
+        workspace_id=DEFAULT_WORKSPACE_ID,
     )
     warehouse_migration.set_credential_callback(get_credential=get_credential_func)
 

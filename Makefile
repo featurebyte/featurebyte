@@ -93,9 +93,6 @@ test-integration-snowflake:
 test-integration-spark:
 	poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
 
-test-docs:
-	poetry run pytest --timeout=240 featurebyte
-
 test-merge:
 	echo "coverage: platform" > pytest-coverage.txt
 	poetry run coverage combine
@@ -119,10 +116,6 @@ docker-dev: | docker-build
 	poetry run featurebyte start --local
 	poetry run featurebyte start spark --local
 
-docker-dev-stop:
-	poetry run featurebyte stop
-	poetry run featurebyte stop spark
-
 #* Cleaning
 clean:
 	git stash -u
@@ -132,5 +125,3 @@ clean:
 #* Api documentation
 docs:
 	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs serve --config-file mkdocs.yaml --no-livereload
-docs-reload:
-	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs serve --config-file mkdocs.yaml

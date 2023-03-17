@@ -32,9 +32,7 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _derive_sdk_code(
@@ -122,9 +120,7 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:

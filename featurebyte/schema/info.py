@@ -18,7 +18,7 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
 )
-from featurebyte.models.feature_store import TableStatus
+from featurebyte.models.feature_store import DataStatus
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
@@ -49,7 +49,7 @@ class EntityBriefInfo(BaseBriefInfo):
     """
 
     serving_names: List[str]
-    catalog_name: str
+    workspace_name: str
 
 
 class EntityInfo(EntityBriefInfo, BaseInfo):
@@ -79,28 +79,28 @@ class EntityBriefInfoList(FeatureByteBaseModel):
         -------
         EntityBriefInfoList
         """
-        entity_project = DictProject(rule=("data", ["name", "serving_names", "catalog_name"]))
+        entity_project = DictProject(rule=("data", ["name", "serving_names", "workspace_name"]))
         return EntityBriefInfoList(__root__=entity_project.project(paginated_data))
 
 
-class TableBriefInfo(BaseBriefInfo):
+class DataBriefInfo(BaseBriefInfo):
     """
-    Table brief info schema
-    """
-
-    status: TableStatus
-    catalog_name: str
-
-
-class TableBriefInfoList(FeatureByteBaseModel):
-    """
-    Paginated list of table brief info
+    Data brief info schema
     """
 
-    __root__: List[TableBriefInfo]
+    status: DataStatus
+    workspace_name: str
+
+
+class DataBriefInfoList(FeatureByteBaseModel):
+    """
+    Paginated list of data brief info
+    """
+
+    __root__: List[DataBriefInfo]
 
     @classmethod
-    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> TableBriefInfoList:
+    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> DataBriefInfoList:
         """
         Construct data brief info list from paginated data
 
@@ -111,21 +111,21 @@ class TableBriefInfoList(FeatureByteBaseModel):
 
         Returns
         -------
-        TableBriefInfoList
+        DataBriefInfoList
         """
-        data_project = DictProject(rule=("data", ["name", "status", "catalog_name"]))
-        return TableBriefInfoList(__root__=data_project.project(paginated_data))
+        data_project = DictProject(rule=("data", ["name", "status", "workspace_name"]))
+        return DataBriefInfoList(__root__=data_project.project(paginated_data))
 
 
-class EventTableBriefInfoList(FeatureByteBaseModel):
+class EventDataBriefInfoList(FeatureByteBaseModel):
     """
-    Paginated list of event table brief info
+    Paginated list of event data brief info
     """
 
-    __root__: List[TableBriefInfo]
+    __root__: List[DataBriefInfo]
 
     @classmethod
-    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventTableBriefInfoList:
+    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventDataBriefInfoList:
         """
         Construct event data brief info list from paginated data
 
@@ -136,15 +136,15 @@ class EventTableBriefInfoList(FeatureByteBaseModel):
 
         Returns
         -------
-        EventTableBriefInfoList
+        EventDataBriefInfoList
         """
         event_data_project = DictProject(rule=("data", ["name", "status"]))
-        return EventTableBriefInfoList(__root__=event_data_project.project(paginated_data))
+        return EventDataBriefInfoList(__root__=event_data_project.project(paginated_data))
 
 
-class TableColumnInfo(FeatureByteBaseModel):
+class DataColumnInfo(FeatureByteBaseModel):
     """
-    TableColumnInfo for storing column information
+    EventDataColumnInfo for storing column information
 
     name: str
         Column name
@@ -163,22 +163,22 @@ class TableColumnInfo(FeatureByteBaseModel):
     critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
 
 
-class TableInfo(TableBriefInfo, BaseInfo):
+class DataInfo(DataBriefInfo, BaseInfo):
     """
     Data info schema
     """
 
-    record_creation_timestamp_column: Optional[str]
+    record_creation_date_column: Optional[str]
     table_details: TableDetails
     entities: EntityBriefInfoList
     semantics: List[str]
     column_count: int
-    columns_info: Optional[List[TableColumnInfo]]
+    columns_info: Optional[List[DataColumnInfo]]
 
 
-class EventTableInfo(TableInfo):
+class EventDataInfo(DataInfo):
     """
-    EventTable info schema
+    EventData info schema
     """
 
     event_timestamp_column: str
@@ -186,9 +186,9 @@ class EventTableInfo(TableInfo):
     default_feature_job_setting: Optional[FeatureJobSetting]
 
 
-class ItemTableInfo(TableInfo):
+class ItemDataInfo(DataInfo):
     """
-    ItemTable info schema
+    ItemData info schema
     """
 
     event_id_column: str
@@ -196,17 +196,17 @@ class ItemTableInfo(TableInfo):
     event_data_name: str
 
 
-class DimensionTableInfo(TableInfo):
+class DimensionDataInfo(DataInfo):
     """
-    DimensionTable info schema
+    DimensionData info schema
     """
 
     dimension_id_column: str
 
 
-class SCDTableInfo(TableInfo):
+class SCDDataInfo(DataInfo):
     """
-    SCDTable info schema
+    Slow Changing Dimension Data info schema
     """
 
     natural_key_column: str
@@ -222,10 +222,10 @@ class NamespaceInfo(BaseInfo):
     """
 
     entities: EntityBriefInfoList
-    tabular_data: TableBriefInfoList
+    tabular_data: DataBriefInfoList
     default_version_mode: DefaultVersionMode
     version_count: int
-    catalog_name: str
+    workspace_name: str
 
 
 class FeatureNamespaceInfo(NamespaceInfo):
@@ -293,7 +293,7 @@ class FeatureListBriefInfoList(FeatureByteBaseModel):
         FeatureBriefInfoList
         """
         feature_list_project = DictProject(
-            rule=("data", ["version", "readiness_distribution", "created_at", "catalog_id"])
+            rule=("data", ["version", "readiness_distribution", "created_at", "workspace_id"])
         )
         return FeatureListBriefInfoList(__root__=feature_list_project.project(paginated_data))
 
@@ -334,32 +334,32 @@ class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
     recommendation: FeatureJobSetting
-    catalog_name: str
+    workspace_name: str
 
 
-class CatalogBriefInfo(BaseBriefInfo):
+class WorkspaceBriefInfo(BaseBriefInfo):
     """
-    Catalog brief info schema
-    """
-
-
-class CatalogInfo(CatalogBriefInfo, BaseInfo):
-    """
-    Catalog info schema
+    Workspace brief info schema
     """
 
 
-class CatalogBriefInfoList(FeatureByteBaseModel):
+class WorkspaceInfo(WorkspaceBriefInfo, BaseInfo):
     """
-    Paginated list of Catalog brief info
+    Workspace info schema
     """
 
-    __root__: List[CatalogBriefInfo]
+
+class WorkspaceBriefInfoList(FeatureByteBaseModel):
+    """
+    Paginated list of workspace brief info
+    """
+
+    __root__: List[WorkspaceBriefInfo]
 
     @classmethod
-    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> CatalogBriefInfoList:
+    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> WorkspaceBriefInfoList:
         """
-        Construct Catalog brief info list from paginated data
+        Construct workspace brief info list from paginated data
 
         Parameters
         ----------
@@ -368,7 +368,7 @@ class CatalogBriefInfoList(FeatureByteBaseModel):
 
         Returns
         -------
-        CatalogBriefInfoList
+        WorkspaceBriefInfoList
         """
-        catalog_project = DictProject(rule=("data", ["name"]))
-        return CatalogBriefInfoList(__root__=catalog_project.project(paginated_data))
+        workspace_project = DictProject(rule=("data", ["name"]))
+        return WorkspaceBriefInfoList(__root__=workspace_project.project(paginated_data))

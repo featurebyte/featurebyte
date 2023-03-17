@@ -16,7 +16,7 @@ from featurebyte.models.parent_serving import JoinStep
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity import EntityService
-from featurebyte.service.table import TableService
+from featurebyte.service.tabular_data import DataService
 
 
 class ParentEntityLookupService(BaseService):
@@ -29,11 +29,11 @@ class ParentEntityLookupService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        workspace_id: ObjectId,
         entity_service: EntityService,
-        data_service: TableService,
+        data_service: DataService,
     ):
-        super().__init__(user, persistent, catalog_id)
+        super().__init__(user, persistent, workspace_id)
         self.entity_service = entity_service
         self.data_service = data_service
 
@@ -170,7 +170,7 @@ class ParentEntityLookupService(BaseService):
             (current_entity, current_path), pending = pending[0], pending[1:]
             updated_path = [current_entity] + current_path
 
-            if current_entity.id in available_entity_ids and result is None:
+            if current_entity.id in available_entity_ids:
                 # Do not exit early, continue to see if there are multiple join paths (can be
                 # detected when an entity is queued more than once)
                 result = updated_path

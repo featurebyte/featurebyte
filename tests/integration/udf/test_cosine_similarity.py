@@ -4,6 +4,9 @@ Tests for snowflake cosine similarity UDF
 import numpy as np
 import pytest
 
+import tests.integration.udf.snowflake.util as snowflake_util
+import tests.integration.udf.spark.util as spark_util
+
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.parametrize(
@@ -22,10 +25,16 @@ import pytest
     ],
 )
 @pytest.mark.asyncio
-async def test_cosine_similarity_udf(session, to_object, counts1, counts2, expected):
+async def test_cosine_similarity_udf(session, source_type, counts1, counts2, expected):
     """
     Test cosine similarity UDF
     """
+    if source_type == "snowflake":
+        to_object = snowflake_util.to_object
+    elif source_type == "spark":
+        to_object = spark_util.to_object
+    else:
+        raise NotImplementedError()
 
     async def _check(a, b):
         a_expr = to_object(a)

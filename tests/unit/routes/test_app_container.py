@@ -7,7 +7,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.app import User
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.service.task_manager import TaskManager
@@ -26,9 +26,9 @@ def app_container_constructor_params_fixture(persistent):
         "temp_storage": get_temp_storage(),
         "storage": get_storage(),
         "task_manager": TaskManager(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
         ),
-        "catalog_id": DEFAULT_CATALOG_ID,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
 
 
@@ -75,10 +75,10 @@ class TestService:
     Test service
     """
 
-    def __init__(self, user: Any, persistent: Any, catalog_id: ObjectId):
+    def __init__(self, user: Any, persistent: Any, workspace_id: ObjectId):
         self.user = user
         self.persistent = persistent
-        self.catalog_id = catalog_id
+        self.workspace_id = workspace_id
 
 
 class TestServiceWithOtherDeps:
@@ -86,10 +86,10 @@ class TestServiceWithOtherDeps:
     Test service with other deps
     """
 
-    def __init__(self, user: Any, persistent: Any, catalog_id: ObjectId, other_dep: Any):
+    def __init__(self, user: Any, persistent: Any, workspace_id: ObjectId, other_dep: Any):
         self.user = user
         self.persistent = persistent
-        self.catalog_id = catalog_id
+        self.workspace_id = workspace_id
         self.other_dep = other_dep
 
 

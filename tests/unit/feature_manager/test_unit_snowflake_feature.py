@@ -149,9 +149,7 @@ async def test_online_disable(
     )
 
     mock_execute_query.side_effect = [None, None, None, None]
-    with mock.patch("featurebyte.tile.base.BaseTileManager.remove_tile_jobs") as mock_tile_manager:
-        mock_tile_manager.side_effect = None
-        await feature_manager.online_disable(feature_spec)
+    await feature_manager.online_disable(feature_spec)
 
     delete_sql = tm_delete_tile_feature_mapping.render(
         aggregation_id=feature_spec.aggregation_ids[0],

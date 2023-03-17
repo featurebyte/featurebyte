@@ -46,9 +46,9 @@ def test_dict_project__item_not_exists(rule, input_value, expected):
 def input_dict_fixture():
     """input_dict fixture"""
     return {
-        "name": "event_table",
+        "name": "event_data",
         "event_timestamp_column": "event_timestamp",
-        "record_creation_timestamp_column": "created_at",
+        "record_creation_date_column": "created_at",
         "columns_info": [
             {"name": "event_timestamp", "dtype": "timestamp"},
             {"name": "created_at", "dtype": "timestamp"},
@@ -66,7 +66,7 @@ def input_dict_fixture():
     [
         (
             {"__root__": DictProject(rule=["name", "event_timestamp_column"])},
-            {"name": "event_table", "event_timestamp_column": "event_timestamp"},
+            {"name": "event_data", "event_timestamp_column": "event_timestamp"},
         ),
         (
             {"columns": DictProject(rule=("columns_info", ["name", "dtype", "entity"]))},
@@ -101,7 +101,7 @@ def test_dict_transform(input_dict, rule, expected):
                     rule=("event_timestamp_column",), verbose_only=True
                 ),
             },
-            {"name": "event_table"},
+            {"name": "event_data"},
         ),
     ],
 )

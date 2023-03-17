@@ -35,6 +35,7 @@ class TestEventView(BaseViewTestSuite):
     protected_columns = ["event_timestamp"]
     view_type = ViewType.EVENT_VIEW
     col = "cust_id"
+    factory_method = EventView.from_event_data
     view_class = EventView
     bool_col = "col_boolean"
     expected_view_with_raw_accessor_sql = """
@@ -63,11 +64,11 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache):
     Test from_event_data
     """
     _ = mock_api_object_cache
-    event_view_first = snowflake_event_data.get_view()
+    event_view_first = EventView.from_event_data(snowflake_event_data)
     expected_view_columns_info = [
         col
         for col in snowflake_event_data.columns_info
-        if col.name != snowflake_event_data.record_creation_timestamp_column
+        if col.name != snowflake_event_data.record_creation_date_column
     ]
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
     assert event_view_first.row_index_lineage == snowflake_event_data.frame.row_index_lineage
@@ -81,11 +82,11 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache):
             blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
         )
     )
-    event_view_second = snowflake_event_data.get_view()
+    event_view_second = EventView.from_event_data(snowflake_event_data)
     expected_view_columns_info = [
         col
         for col in snowflake_event_data.columns_info
-        if col.name != snowflake_event_data.record_creation_timestamp_column
+        if col.name != snowflake_event_data.record_creation_date_column
     ]
     assert event_view_second.columns_info == expected_view_columns_info
     assert event_view_second.default_feature_job_setting == FeatureJobSetting(
@@ -173,7 +174,7 @@ def test_event_view_column_lag(
         data_id_to_info={
             snowflake_event_data.id: {
                 "name": snowflake_event_data.name,
-                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
             }
         },
     )
@@ -269,7 +270,7 @@ def test_event_view_groupby__prune(
         data_id_to_info={
             snowflake_event_data_with_entity.id: {
                 "name": snowflake_event_data_with_entity.name,
-                "record_creation_timestamp_column": snowflake_event_data_with_entity.record_creation_timestamp_column,
+                "record_creation_date_column": snowflake_event_data_with_entity.record_creation_date_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail during GroupBy construction
                 "columns_info": event_data_columns_info,
@@ -663,32 +664,19 @@ def test_add_feature(
         data_id_to_info={
             snowflake_event_data.id: {
                 "name": snowflake_event_data.name,
-                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in GroupBy construction
                 "columns_info": event_data_columns_info,
             },
             snowflake_item_data.id: {
                 "name": snowflake_item_data.name,
-                "record_creation_timestamp_column": snowflake_item_data.record_creation_timestamp_column,
+                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in GroupBy construction
                 "columns_info": item_data_columns_info,
             },
         },
-    )
-
-
-def test_add_feature__wrong_type(snowflake_event_view):
-    """
-    Test add feature with invalid type
-    """
-    with pytest.raises(TypeError) as exc_info:
-        col = snowflake_event_view["col_int"]
-        snowflake_event_view.add_feature("new_col", col, "cust_id")
-    assert (
-        str(exc_info.value)
-        == 'type of argument "feature" must be Feature; got EventViewColumn instead'
     )
 
 
@@ -703,7 +691,7 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
         )
 
     # create event view & the metadata
-    event_view = snowflake_event_data_with_entity.get_view()
+    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
     graph_metadata = event_view.node.parameters.metadata
     assert graph_metadata.column_cleaning_operations == [
         {
@@ -763,7 +751,7 @@ def test__validate_column_is_not_used(empty_event_view_builder):
 def test_sdk_code_generation(saved_event_data, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
-    event_view = saved_event_data.get_view()
+    event_view = EventView.from_event_data(event_data=saved_event_data)
     check_sdk_code_generation(
         event_view,
         to_use_saved_data=to_use_saved_data,
@@ -784,7 +772,7 @@ def test_sdk_code_generation(saved_event_data, update_fixtures):
         ]
     )
 
-    event_view = saved_event_data.get_view()
+    event_view = EventView.from_event_data(event_data=saved_event_data)
     check_sdk_code_generation(
         event_view,
         to_use_saved_data=to_use_saved_data,

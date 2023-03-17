@@ -230,7 +230,7 @@ def test_binary_operation_node__scalar(node_type, value, right_op, expected, inp
 def test_make_input_node_escape_special_characters():
     """Test input node quotes all identifiers to handle special characters"""
     parameters = {
-        "type": "event_table",
+        "type": "event_data",
         "columns": [
             {"name": "SUM(a)", "dtype": "FLOAT"},
             {"name": "b", "dtype": "FLOAT"},

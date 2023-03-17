@@ -11,15 +11,15 @@ import yaml
 from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 
-from featurebyte.api.base_table import TableApiObject
-from featurebyte.api.dimension_table import DimensionTable
+from featurebyte.api.base_data import DataApiObject
+from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_table import EventTable
+from featurebyte.api.event_data import EventData
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.item_table import ItemTable
-from featurebyte.api.scd_table import SCDTable
+from featurebyte.api.item_data import ItemData
+from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
 from featurebyte.config import Configurations
 from featurebyte.persistent.mongo import MongoDB
@@ -147,11 +147,11 @@ def config_fixture(test_api_client):
     [
         FeatureStore,
         Entity,
-        EventTable,
-        ItemTable,
-        DimensionTable,
-        SCDTable,
-        TableApiObject,
+        EventData,
+        ItemData,
+        DimensionData,
+        SlowlyChangingData,
+        DataApiObject,
         Feature,
         FeatureList,
     ],

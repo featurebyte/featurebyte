@@ -591,13 +591,11 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def object_keys(cls, dictionary_expression: Expression) -> Expression:
-        return expressions.Anonymous(this="map_keys", expressions=[dictionary_expression])
+        raise NotImplementedError()
 
     @classmethod
     def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
-        return expressions.Anonymous(
-            this="array_contains", expressions=[array_expression, input_expression]
-        )
+        raise NotImplementedError()
 
     @classmethod
     def is_string_type(cls, column_expr: Expression) -> Expression:
@@ -607,7 +605,7 @@ class DatabricksAdapter(BaseAdapter):
     def get_value_from_dictionary(
         cls, dictionary_expression: Expression, key_expression: Expression
     ) -> Expression:
-        return expressions.Bracket(this=dictionary_expression, expressions=[key_expression])
+        raise NotImplementedError()
 
     @classmethod
     def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
@@ -643,7 +641,21 @@ class SparkAdapter(DatabricksAdapter):
         return False
 
     @classmethod
+    def object_keys(cls, dictionary_expression: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
     def is_string_type(cls, column_expr: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def get_value_from_dictionary(
+        cls, dictionary_expression: Expression, key_expression: Expression
+    ) -> Expression:
         raise NotImplementedError()
 
 

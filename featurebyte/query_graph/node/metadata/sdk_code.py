@@ -60,7 +60,7 @@ class ValueStr(str):
 class VariableNameStr(str):
     """
     VariableNameStr class is used to represent variable name string in the code. It also includes
-    indexed variable, for example: `event_table`, `event_table['timestamp']`.
+    indexed variable, for example: `event_data`, `event_data['timestamp']`.
     """
 
     def as_input(self) -> str:
@@ -77,7 +77,7 @@ class VariableNameStr(str):
 class ExpressionStr(str):
     """
     ExpressionStr class is used to represent a combination of operations, variables, or values that will
-    produce a result when evaluated, for example: `event_table['quantity'] * event_table['price_per_unit']`.
+    produce a result when evaluated, for example: `event_data['quantity'] * event_data['price_per_unit']`.
     """
 
     def as_input(self) -> str:
@@ -94,7 +94,7 @@ class ExpressionStr(str):
 class StatementStr(str):
     """
     StatementStr class is used to represent an instruction that performs specific task, for example:
-    `event_table['rate'] = 1.34`, `col = event_view["amount"]`.
+    `event_data['rate'] = 1.34`, `col = event_view["amount"]`.
     """
 
 
@@ -112,11 +112,11 @@ class ObjectClass(BaseModel):
     - import objects
     """
 
-    module_path: Optional[str]
-    class_name: Optional[str]
+    module_path: str
+    class_name: str
     positional_args: List[Any]
     keyword_args: Dict[str, Any]
-    callable_name: Optional[str] = Field(default=None)
+    method_name: Optional[str] = Field(default=None)
 
     def __str__(self) -> str:
         params: List[Union[VariableNameStr, ExpressionStr, ValueStr, str]] = []
@@ -132,17 +132,9 @@ class ObjectClass(BaseModel):
             else:
                 params.append(f"{key}={value}")
 
-        params_str = ", ".join(params)
-
-        if self.class_name is not None:
-            # Calling a class constructor or a classmethod
-            if self.callable_name:
-                return f"{self.class_name}.{self.callable_name}({params_str})"
-            return f"{self.class_name}({params_str})"
-
-        # Calling a function
-        assert self.callable_name is not None
-        return f"{self.callable_name}({params_str})"
+        if self.method_name:
+            return f"{self.class_name}.{self.method_name}({', '.join(params)})"
+        return f"{self.class_name}({', '.join(params)})"
 
     def __repr__(self) -> str:
         return str(self)
@@ -162,11 +154,7 @@ class ObjectClass(BaseModel):
 
     @classmethod
     def _extract_import(cls, obj: ObjectClass) -> Set[Tuple[str, str]]:
-        if obj.module_path is not None:
-            assert obj.class_name is not None
-            output = {(obj.module_path, obj.class_name)}
-        else:
-            output = set()
+        output = {(obj.module_path, obj.class_name)}
         for pos_arg in obj.positional_args:
             output.update(cls._extract_import_helper(pos_arg))
         for val_arg in obj.keyword_args.values():
@@ -207,11 +195,11 @@ class ClassEnum(Enum):
     TABULAR_SOURCE = ("featurebyte.query_graph.model.common_table", "TabularSource")
 
     # data
-    SOURCE_TABLE = ("featurebyte.api.source_table", "SourceTable")
-    EVENT_TABLE = ("featurebyte", "EventTable")
-    ITEM_TABLE = ("featurebyte", "ItemTable")
-    DIMENSION_TABLE = ("featurebyte", "DimensionTable")
-    SCD_TABLE = ("featurebyte", "SCDTable")
+    DATABASE_TABLE = ("featurebyte.api.database_table", "DatabaseTable")
+    EVENT_DATA = ("featurebyte", "EventData")
+    ITEM_DATA = ("featurebyte", "ItemData")
+    DIMENSION_DATA = ("featurebyte", "DimensionData")
+    SCD_DATA = ("featurebyte", "SlowlyChangingData")
 
     # view
     EVENT_VIEW = ("featurebyte", "EventView")
@@ -240,43 +228,15 @@ class ClassEnum(Enum):
         return ObjectClass(
             module_path=module_path,
             class_name=class_name,
-            callable_name=_method_name,
+            method_name=_method_name,
             positional_args=args,
             keyword_args=kwargs,
         )
 
 
-def get_object_class_from_function_call(
-    callable_name: str, *args: Any, **kwargs: Any
-) -> ObjectClass:
-    """
-    Get an instance of ObjectClass to represent a function call
-
-    Parameters
-    ----------
-    callable_name: str
-        Name of the callable, typically a function name
-    args: Any
-        Positional arguments for the function call
-    kwargs: Any
-        Keyword arguments for the function call
-
-    Returns
-    -------
-    ObjectClass
-    """
-    return ObjectClass(
-        positional_args=args,
-        keyword_args=kwargs,
-        callable_name=callable_name,
-    )
-
-
 VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
 RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
-StatementT = Union[  # pylint: disable=invalid-name
-    StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]
-]
+StatementT = Union[StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]]
 
 
 class CodeGenerationConfig(BaseModel):
@@ -301,7 +261,7 @@ class CodeGenerationConfig(BaseModel):
     feature_store_id: PydanticObjectId = Field(default_factory=ObjectId)
     feature_store_name: str = Field(default="feature_store")
 
-    # data ID to data info (name, record_creation_timestamp_column, etc)
+    # data ID to data info (name, record_creation_date_column, etc)
     data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]] = Field(default_factory=dict)
 
     # output variable name used to store the final output

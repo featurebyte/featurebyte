@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.worker.task.base import TASK_MAP, BaseTask
 from tests.util.task import TaskExecutor
@@ -67,12 +67,12 @@ def test_extend_base_task_payload(random_task_payload_class):
     user_id = ObjectId()
     document_id = ObjectId()
     payload_obj = random_task_payload_class(
-        user_id=user_id, catalog_id=DEFAULT_CATALOG_ID, output_document_id=document_id
+        user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID, output_document_id=document_id
     )
     assert payload_obj.dict() == {
         "command": "random_command",
         "user_id": user_id,
-        "catalog_id": DEFAULT_CATALOG_ID,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
         "output_document_id": document_id,
     }
     assert payload_obj.task_output_path == f"/random_collection/{document_id}"
@@ -92,7 +92,7 @@ async def test_task_executor(random_task_class, persistent):
         payload={
             "command": "random_command",
             "user_id": user_id,
-            "catalog_id": DEFAULT_CATALOG_ID,
+            "workspace_id": DEFAULT_WORKSPACE_ID,
             "output_document_id": document_id,
         },
         progress=None,

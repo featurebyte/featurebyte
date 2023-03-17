@@ -21,22 +21,22 @@ from featurebyte.common.utils import (
     dataframe_to_arrow_bytes,
 )
 from featurebyte.enum import SourceType
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from tests.unit.routes.base import BaseCatalogApiTestSuite
+from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
-class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-public-methods
+class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many-public-methods
     """
     TestFeatureListApi class
     """
 
     class_name = "FeatureList"
     base_route = "/feature_list"
-    payload = BaseCatalogApiTestSuite.load_payload(
+    payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_list_single.json"
     )
-    payload_multi = BaseCatalogApiTestSuite.load_payload(
+    payload_multi = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_list_multi.json"
     )
     object_id = str(ObjectId())
@@ -79,20 +79,20 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         ),
     ]
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
-            ("event_table", "event_table"),
+            ("event_data", "event_data"),
             ("feature", "feature_sum_30m"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(
-                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
+                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
             )
             assert response.status_code == HTTPStatus.CREATED
 
@@ -147,7 +147,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                 "_id": ObjectId(),
                 "user_id": ObjectId(user_id),
                 "readiness": "PRODUCTION_READY",
-                "catalog_id": DEFAULT_CATALOG_ID,
+                "workspace_id": DEFAULT_WORKSPACE_ID,
             },
             user_id=user_id,
         )
@@ -240,10 +240,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         Test feature list with different feature stores
         """
         test_api_client, _ = test_api_client_persistent
-        # create feature_store, event_table & feature
+        # create feature_store, event_data & feature
         self.setup_creation_route(api_client=test_api_client)
 
-        # create another feature_store, event_table & feature with different feature_store
+        # create another feature_store, event_data & feature with different feature_store
         feature_store = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
         feature_store["_id"] = str(ObjectId())
         feature_store["name"] = f'new_{feature_store["name"]}'
@@ -251,7 +251,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             key: f"{value}_1" for key, value in feature_store["details"].items()
         }
 
-        event_data = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+        event_data = self.load_payload("tests/fixtures/request_payloads/event_data.json")
         event_data["_id"] = str(ObjectId())
         event_data["name"] = f'new_{event_data["name"]}'
         tabular_source = {
@@ -265,7 +265,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         payload_api_object_pairs = [
             (feature_store, "feature_store"),
-            (event_data, "event_table"),
+            (event_data, "event_data"),
             (feature, "feature"),
         ]
         for payload, api_object in payload_api_object_pairs:
@@ -284,7 +284,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         Test feature list with different feature stores
         """
         test_api_client, _ = test_api_client_persistent
-        # create feature_store, event_table & feature
+        # create feature_store, event_data & feature
         self.setup_creation_route(api_client=test_api_client)
 
         # create another feature with the same name
@@ -451,10 +451,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         expected_info_response = {
             "name": "sf_feature_list",
             "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
             ],
             "tabular_data": [
-                {"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
             ],
             "default_version_mode": "AUTO",
             "version_count": 1,
@@ -466,7 +466,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "versions_info": None,
             "deployed": True,
             "serving_endpoint": f"/feature_list/{feature_list_id}/online_features",
-            "catalog_name": "default",
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
@@ -490,10 +490,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         expected_info_response = {
             "name": "sf_feature_list",
             "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
             ],
             "tabular_data": [
-                {"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
             ],
             "default_version_mode": "AUTO",
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
@@ -503,7 +503,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "production_ready_fraction": {"this": 0, "default": 0},
             "deployed": False,
             "serving_endpoint": None,
-            "catalog_name": "default",
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

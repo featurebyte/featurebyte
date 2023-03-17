@@ -1,15 +1,14 @@
 """
 Test session validator class
 """
-import copy
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from featurebyte import FeatureStore
+from featurebyte import FeatureStore, SourceType
 from featurebyte.app import User
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
-from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
 from featurebyte.service.session_validator import SessionValidatorService, ValidateStatus
 from featurebyte.utils.credential import ConfigCredentialProvider
 
@@ -31,27 +30,38 @@ def get_session_validator_service_fixture(persistent, credential_provider):
     return SessionValidatorService(
         user=user,
         persistent=persistent,
-        catalog_id=DEFAULT_CATALOG_ID,
+        workspace_id=DEFAULT_WORKSPACE_ID,
         credential_provider=credential_provider,
     )
 
 
 @pytest.mark.asyncio
 async def test_get_feature_store_id_from_details(
-    session_validator_service, snowflake_feature_store
+    session_validator_service, snowflake_feature_store, snowflake_connector, snowflake_execute_query
 ):
     """
     Test getting feature store ID from details
     """
+    _ = snowflake_connector, snowflake_execute_query
+    feature_store_id = await session_validator_service.get_feature_store_id_from_details(
+        snowflake_feature_store.details
+    )
+    assert feature_store_id is None
+
     # Write details to persistent layer
-    assert isinstance(snowflake_feature_store, FeatureStore)
+    feature_store = FeatureStore.create(
+        name=snowflake_feature_store.name,
+        source_type=snowflake_feature_store.type,
+        details=snowflake_feature_store.details,
+    )
+    assert isinstance(feature_store, FeatureStore)
 
     # Check that we can retrieve the feature store ID
     feature_store_id = await session_validator_service.get_feature_store_id_from_details(
         snowflake_feature_store.details
     )
     assert feature_store_id is not None
-    assert feature_store_id == snowflake_feature_store.id
+    assert feature_store_id == feature_store.id
 
 
 @pytest.fixture(name="mock_session")
@@ -101,17 +111,25 @@ def get_noop_session_validator_fixture():
 
 
 @pytest.mark.asyncio
-async def test_validate_feature_store_exists(session_validator_service, snowflake_feature_store):
+async def test_validate_feature_store_exists(
+    session_validator_service, snowflake_feature_store, snowflake_connector, snowflake_execute_query
+):
     """
     Test validate_feature_store_exists function
     """
+    _ = snowflake_connector, snowflake_execute_query
     with pytest.raises(NoFeatureStorePresentError):
-        details = copy.deepcopy(snowflake_feature_store.details)
-        details.database = "not_a_real_database"
-        await session_validator_service.validate_feature_store_exists(details)
+        await session_validator_service.validate_feature_store_exists(
+            snowflake_feature_store.details
+        )
 
     # Write details to persistent layer
-    assert isinstance(snowflake_feature_store, FeatureStore)
+    feature_store = FeatureStore.create(
+        name=snowflake_feature_store.name,
+        source_type=SourceType.SNOWFLAKE,
+        details=snowflake_feature_store.details,
+    )
+    assert isinstance(feature_store, FeatureStore)
 
     # Calling validate now shouldn't throw an error
     await session_validator_service.validate_feature_store_exists(snowflake_feature_store.details)

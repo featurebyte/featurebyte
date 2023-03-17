@@ -14,7 +14,7 @@ from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, 
 from featurebyte.schema.context import ContextCreate, ContextUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
-from featurebyte.service.table import TableService
+from featurebyte.service.tabular_data import DataService
 
 
 class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpdate]):
@@ -33,7 +33,9 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         -------
         EntityService
         """
-        return EntityService(user=self.user, persistent=self.persistent, catalog_id=self.catalog_id)
+        return EntityService(
+            user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+        )
 
     async def create_document(self, data: ContextCreate) -> ContextModel:
         entities = await self.entity_service.list_documents(
@@ -66,8 +68,8 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         DocumentUpdateError
             When the context view is not a proper context view (frame, view and has all required entities)
         """
-        data_service = TableService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+        data_service = DataService(
+            user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
         )
 
         # check that it is a proper view

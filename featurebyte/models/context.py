@@ -4,7 +4,7 @@ This module contains context related models.
 from typing import List, Optional
 
 from featurebyte.models.base import (
-    FeatureByteCatalogBaseDocumentModel,
+    FeatureByteWorkspaceBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -12,7 +12,7 @@ from featurebyte.models.base import (
 from featurebyte.query_graph.graph import QueryGraph
 
 
-class ContextModel(FeatureByteCatalogBaseDocumentModel):
+class ContextModel(FeatureByteWorkspaceBaseDocumentModel):
     """
     Context is used to define the circumstances in which features are expected to be materialized.
 

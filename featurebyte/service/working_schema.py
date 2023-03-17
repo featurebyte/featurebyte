@@ -45,12 +45,14 @@ class WorkingSchemaService(BaseService):
 
     _task_manager: TaskManager = PrivateAttr()
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
-        super().__init__(user, persistent, catalog_id)
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+        super().__init__(user, persistent, workspace_id)
         self.feature_service = FeatureService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
-        self._task_manager = TaskManager(user=user, persistent=persistent, catalog_id=catalog_id)
+        self._task_manager = TaskManager(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
 
     async def recreate_working_schema(
         self, feature_store_id: ObjectId, session: BaseSession
@@ -89,7 +91,7 @@ class WorkingSchemaService(BaseService):
         self, feature_store_id: ObjectId, session: BaseSession
     ) -> None:
 
-        # activate use of raw query filter to retrieve all documents regardless of catalog membership
+        # activate use of raw query filter to retrieve all documents regardless of workspace membership
         self.feature_service.allow_use_raw_query_filter()
         online_enabled_feature_docs = self.feature_service.list_documents_iterator(
             query_filter={

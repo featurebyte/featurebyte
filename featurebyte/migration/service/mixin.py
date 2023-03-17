@@ -179,12 +179,12 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
         credential_provider = ConfigCredentialProvider()
         user = User(id=feature_store.user_id)
         session_validator_service = SessionValidatorService(
-            user, self.persistent, self.catalog_id, credential_provider
+            user, self.persistent, self.workspace_id, credential_provider
         )
         session_manager_service = SessionManagerService(
             user=user,
             persistent=self.persistent,
-            catalog_id=self.catalog_id,
+            workspace_id=self.workspace_id,
             credential_provider=credential_provider,
             session_validator_service=session_validator_service,
         )

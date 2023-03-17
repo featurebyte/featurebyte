@@ -552,8 +552,6 @@ class SparkSchemaInitializer(BaseSchemaInitializer):
                 "com.featurebyte.hive.udf.CountDictMostFrequentValue",
             ),
             ("F_COUNT_DICT_NUM_UNIQUE", "com.featurebyte.hive.udf.CountDictNumUnique"),
-            ("F_GET_RELATIVE_FREQUENCY", "com.featurebyte.hive.udf.CountDictRelativeFrequency"),
-            ("F_GET_RANK", "com.featurebyte.hive.udf.CountDictRank"),
         ]
         for (function_name, class_name) in udf_functions:
             logger.debug(

@@ -15,7 +15,7 @@ from featurebyte.schema.relationship_info import (
 from featurebyte.service.entity import EntityService
 from featurebyte.service.info import InfoService
 from featurebyte.service.relationship_info import RelationshipInfoService
-from featurebyte.service.table import TableService
+from featurebyte.service.tabular_data import DataService
 
 
 class RelationshipInfoController(
@@ -32,7 +32,7 @@ class RelationshipInfoController(
         relationship_info_service: RelationshipInfoService,
         info_service: InfoService,
         entity_service: EntityService,
-        data_service: TableService,
+        data_service: DataService,
     ):
         super().__init__(relationship_info_service)
         self.relationship_info_service = relationship_info_service

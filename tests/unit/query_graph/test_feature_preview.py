@@ -207,7 +207,7 @@ def test_get_feature_preview_sql__event_lookup_features(
     update_fixtures,
 ):
     """
-    Test case for preview SQL for a lookup feature from EventTable
+    Test case for preview SQL for a lookup feature from EventData
     """
     point_in_time_and_serving_name = {
         "POINT_IN_TIME": "2022-04-20 10:00:00",

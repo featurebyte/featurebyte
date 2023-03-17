@@ -35,11 +35,11 @@ class FeatureStoreWarehouseService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        workspace_id: ObjectId,
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(user, persistent, catalog_id)
+        super().__init__(user, persistent, workspace_id)
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
 

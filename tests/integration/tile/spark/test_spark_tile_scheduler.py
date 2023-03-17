@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 
 from featurebyte.common import date_util
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
 from featurebyte.service.task_manager import TaskManager
@@ -23,12 +23,12 @@ async def mock_scheduler_fixture(feature, tile_spec, persistent):
     """
     tile_spec.tile_sql = "SELECT * FROM TEMP_TABLE"
     tile_spec.user_id = feature.user_id
-    tile_spec.catalog_id = feature.catalog_id
+    tile_spec.workspace_id = feature.workspace_id
     tile_spec.feature_store_id = feature.tabular_source.feature_store_id
     job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 
     task_manager = TaskManager(
-        user=User(id=feature.user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=User(id=feature.user_id), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
     )
     tile_scheduler = TileScheduler(task_manager=task_manager)
 

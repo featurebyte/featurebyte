@@ -8,11 +8,7 @@ from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.spark.common import (
-    CACHE_TABLE_PLACEHOLDER,
-    construct_create_delta_table_query,
-    retry_sql_with_cache,
-)
+from featurebyte.sql.spark.common import construct_create_delta_table_query
 
 
 class TileScheduleOnlineStore(BaseModel):
@@ -105,12 +101,9 @@ class TileScheduleOnlineStore(BaseModel):
                 entity_filter_cols_str = " AND ".join(entity_filter_cols)
 
                 # check whether feature value column exists, if not add the new column
-                cols_df = await self._spark.execute_query(f"SHOW COLUMNS IN {fs_table}")
-                col_exists = (
-                    False if cols_df is None else cols_df["col_name"].str.contains(f_name).any()
-                )
-
-                if not col_exists:
+                try:
+                    await self._spark.execute_query(f"SELECT {f_name} FROM {fs_table} LIMIT 1")
+                except Exception:  # pylint: disable=broad-except
                     await self._spark.execute_query(
                         f"ALTER TABLE {fs_table} ADD COLUMN {f_name} {f_value_type}"
                     )
@@ -131,7 +124,7 @@ class TileScheduleOnlineStore(BaseModel):
                     on_condition_str = "true"
                     values_args = f"b.`{f_name}`"
                 merge_sql = f"""
-                    merge into {fs_table} a using ({CACHE_TABLE_PLACEHOLDER}) b
+                    merge into {fs_table} a using ({f_sql}) b
                         on {on_condition_str}
                         when matched then
                             update set a.{f_name} = b.{f_name}
@@ -139,6 +132,4 @@ class TileScheduleOnlineStore(BaseModel):
                             insert ({entities_fname_str})
                                 values ({values_args})
                 """
-                await retry_sql_with_cache(
-                    session=self._spark, sql=merge_sql, cached_select_sql=f_sql
-                )
+                await self._spark.execute_query(merge_sql)

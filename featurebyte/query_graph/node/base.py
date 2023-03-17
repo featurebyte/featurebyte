@@ -144,9 +144,7 @@ class BaseNode(BaseModel):
                     out.update(cls._extract_column_str_values(val, column_str_type))
         return list(out)
 
-    def get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
         """
         Get the required input column names for the given input based on this node parameters.
         For example, a JoinNode will consume two input node and inside the JoinNode parameters,
@@ -159,8 +157,6 @@ class BaseNode(BaseModel):
         ----------
         input_index: int
             This parameter is used to specify which input to get the required columns
-        available_column_names: List[str]
-            List of available column names
 
         Returns
         -------
@@ -169,12 +165,10 @@ class BaseNode(BaseModel):
             for the given input index.
         """
         self._validate_get_required_input_columns_input_index(input_index)
-        return self._get_required_input_columns(input_index, available_column_names)
+        return self._get_required_input_columns(input_index)
 
     @abstractmethod
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         """
         Helper method for get_required_input_columns
 
@@ -182,8 +176,6 @@ class BaseNode(BaseModel):
         ----------
         input_index: int
             This parameter is used to specify which input to get the required columns
-        available_column_names: List[str]
-            List of input available columns
 
         Returns
         -------
@@ -571,9 +563,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
@@ -658,9 +648,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
-    ) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     @abstractmethod

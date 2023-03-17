@@ -314,10 +314,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         return self.backward_edges_map.get(node.name, [])
 
     def get_target_nodes_required_column_names(
-        self,
-        node_name: str,
-        keep_target_node_names: Optional[Set[str]],
-        available_column_names: List[str],
+        self, node_name: str, keep_target_node_names: Optional[Set[str]]
     ) -> List[str]:
         """
         Get the target required column names of the given node.
@@ -329,9 +326,6 @@ class QueryGraphModel(FeatureByteBaseModel):
             Node name
         keep_target_node_names: Optional[Set[str]]
             If provided, only use the target nodes with names in the set
-        available_column_names: List[str]
-            List of available input columns. This is used to cater the case when the node output should keep all
-            the input columns (like filter node).
 
         Returns
         -------
@@ -355,9 +349,7 @@ class QueryGraphModel(FeatureByteBaseModel):
             # construct required column names
             required_columns = set().union(
                 *(
-                    node.get_required_input_columns(
-                        input_index=input_order, available_column_names=available_column_names
-                    )
+                    node.get_required_input_columns(input_index=input_order)
                     for node, input_order in target_node_input_order_pairs
                 )
             )

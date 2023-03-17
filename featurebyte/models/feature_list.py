@@ -16,7 +16,7 @@ from featurebyte.common.validator import construct_sort_validator, version_valid
 from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseModel,
-    FeatureByteCatalogBaseDocumentModel,
+    FeatureByteWorkspaceBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -240,7 +240,7 @@ class FeatureCluster(FeatureByteBaseModel):
         return [self.graph.get_node_by_name(name) for name in self.node_names]
 
 
-class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
+class FrozenFeatureListNamespaceModel(FeatureByteWorkspaceBaseDocumentModel):
     """
     FrozenFeatureListNamespaceModel store all the attributes that are fixed after object construction.
     """
@@ -419,7 +419,7 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
     )
 
 
-class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
+class FrozenFeatureListModel(FeatureByteWorkspaceBaseDocumentModel):
     """
     FrozenFeatureListModel store all the attributes that are fixed after object construction.
     """

@@ -51,6 +51,10 @@ async def test_generate_tile(session):
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 2
 
+    result = await session.execute_query(f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'")
+    assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE"
+    assert result["VALUE_COLUMN_TYPES"].iloc[0] == "FLOAT"
+
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
@@ -134,6 +138,11 @@ async def test_generate_tile_new_value_column(session):
     result = await session.execute_query(sql)
     assert len(result) == 2
 
+    sql = f"SELECT VALUE_COLUMN_NAMES FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
+    result = await session.execute_query(sql)
+    assert len(result) == 1
+    assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE"
+
     value_col_names_2 = ["VALUE", "VALUE_2"]
     value_col_types_2 = ["FLOAT", "FLOAT"]
     value_col_names_2_str = ",".join(value_col_names_2)
@@ -162,3 +171,8 @@ async def test_generate_tile_new_value_column(session):
     sql = f"SELECT {value_col_names_2_str} FROM {tile_id}"
     result = await session.execute_query(sql)
     assert len(result) == 2
+
+    sql = f"SELECT VALUE_COLUMN_NAMES FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
+    result = await session.execute_query(sql)
+    assert len(result) == 1
+    assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE,VALUE_2"

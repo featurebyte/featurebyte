@@ -33,7 +33,7 @@ public class CountDictMostFrequentValue extends CountDictUDF {
     double most_frequent_count = 0.0;
     Object most_frequent_count_value = null;
     for (Map.Entry<String, Object> entry : counts.entrySet()) {
-      double doubleValue = convertMapValueAsDouble(entry.getValue());
+      double doubleValue = ((DoubleWritable) converters[1].convert(entry.getValue())).get();
       if (doubleValue > most_frequent_count) {
         most_frequent_count = doubleValue;
         most_frequent_count_value = entry.getValue();

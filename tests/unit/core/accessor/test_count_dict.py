@@ -52,7 +52,7 @@ def test_transformation(
         data_id_to_info={
             snowflake_event_data.id: {
                 "name": snowflake_event_data.name,
-                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail during GroupBy construction
                 "columns_info": event_data_columns_info,
@@ -100,7 +100,7 @@ def test_cosine_similarity(
         data_id_to_info={
             snowflake_event_data.id: {
                 "name": snowflake_event_data.name,
-                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail during GroupBy construction
                 "columns_info": event_data_columns_info,
@@ -181,7 +181,7 @@ def test_get_value_from_dictionary__success(
             data_id_to_info={
                 snowflake_event_data.id: {
                     "name": snowflake_event_data.name,
-                    "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
+                    "record_creation_date_column": snowflake_event_data.record_creation_date_column,
                     # since the data is not saved, we need to pass in the columns info
                     # otherwise, entity id will be missing and code generation will fail during GroupBy construction
                     "columns_info": event_data_columns_info,

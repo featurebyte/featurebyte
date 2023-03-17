@@ -30,7 +30,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.table import TableService
+from featurebyte.service.tabular_data import DataService
 from featurebyte.service.view_construction import ViewConstructionService
 
 
@@ -39,23 +39,23 @@ class VersionService(BaseService):
     VersionService class is responsible for creating new feature version
     """
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
-        super().__init__(user, persistent, catalog_id)
-        self.data_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+        super().__init__(user, persistent, workspace_id)
+        self.data_service = DataService(user=user, persistent=persistent, workspace_id=workspace_id)
         self.feature_service = FeatureService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
         self.feature_namespace_service = FeatureNamespaceService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
         self.feature_list_service = FeatureListService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
         self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
         self.view_construction_service = ViewConstructionService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
 
     async def _prepare_group_by_node_name_to_replacement_node(
@@ -202,7 +202,6 @@ class VersionService(BaseService):
             view_node_name_replacement = (
                 await self.view_construction_service.prepare_view_node_name_to_replacement_node(
                     query_graph=feature.graph,
-                    target_node=feature.node,
                     data_cleaning_operations=data_cleaning_operations or [],
                     use_source_settings=use_source_settings,
                 )

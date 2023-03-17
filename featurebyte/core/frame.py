@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, List, Tuple, TypeVar, Union
 
 import pandas as pd
-from pydantic import Field, validator
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
@@ -15,7 +15,6 @@ from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.node.validator import construct_unique_name_validator
 
 
 class BaseFrame(QueryObject, SampleMixin):
@@ -29,11 +28,6 @@ class BaseFrame(QueryObject, SampleMixin):
     """
 
     columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
-
-    # pydantic validator
-    _validate_column_names = validator("columns_info", allow_reuse=True)(
-        construct_unique_name_validator(field="name")
-    )
 
     @property
     def column_var_type_map(self) -> dict[str, DBVarType]:
@@ -248,7 +242,7 @@ class Frame(FrozenFrame):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node, value.node],
             )
-            column_info = ColumnInfo(name=key, dtype=value.dtype)
+            self.columns_info.append(ColumnInfo(name=key, dtype=value.dtype))
         else:
             node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
@@ -256,12 +250,9 @@ class Frame(FrozenFrame):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node],
             )
-            column_info = ColumnInfo(name=key, dtype=self.pytype_dbtype_map[type(value)])
-
-        # update columns_info
-        columns_info = [col for col in self.columns_info if col.name != key]
-        columns_info.append(column_info)
-        self.columns_info = columns_info
+            self.columns_info.append(
+                ColumnInfo(name=key, dtype=self.pytype_dbtype_map[type(value)])
+            )
 
         # update node_name
         self.node_name = node.name

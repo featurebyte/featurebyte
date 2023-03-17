@@ -8,7 +8,7 @@ from datetime import datetime
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel, FeatureReadiness
 from featurebyte.query_graph.node.metadata.operation import AggregationColumn, SourceDataColumn
 
@@ -32,7 +32,7 @@ def feature_name_space_dict_fixture():
         "entity_ids": entity_ids,
         "tabular_data_ids": tabular_data_ids,
         "user_id": None,
-        "catalog_id": DEFAULT_CATALOG_ID,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
 
 
@@ -58,7 +58,7 @@ def test_feature_model(feature_model_dict, test_dir, api_object_to_id):
         "deployed_feature_list_ids": [],
         "dtype": "FLOAT",
         "entity_ids": [ObjectId(api_object_to_id["entity"])],
-        "tabular_data_ids": [ObjectId(api_object_to_id["event_table"])],
+        "tabular_data_ids": [ObjectId(api_object_to_id["event_data"])],
         "feature_list_ids": [],
         "feature_namespace_id": feature_dict["feature_namespace_id"],
         "graph": {
@@ -81,7 +81,7 @@ def test_feature_model(feature_model_dict, test_dir, api_object_to_id):
         "updated_at": None,
         "user_id": None,
         "version": None,
-        "catalog_id": DEFAULT_CATALOG_ID,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
 
     # DEV-556: check older record can be loaded

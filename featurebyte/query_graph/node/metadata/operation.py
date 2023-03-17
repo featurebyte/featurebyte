@@ -497,19 +497,6 @@ class OperationStructure(FeatureByteBaseModel):
         """
         return [col for col in self.columns if isinstance(col, SourceDataColumn)]
 
-    @property
-    def output_column_names(self) -> List[str]:
-        """
-        List of output column names
-
-        Returns
-        -------
-        List[str]
-        """
-        if self.output_category == NodeOutputCategory.VIEW:
-            return [col.name for col in self.columns if col.name]
-        return [agg.name for agg in self.aggregations if agg.name]
-
     @validator("columns", "aggregations")
     @classmethod
     def _validator(cls, value: List[Any]) -> List[Any]:

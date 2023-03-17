@@ -7,7 +7,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableVoidObjectInspector;
-import org.apache.hadoop.io.DoubleWritable;
 
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.NUMERIC_GROUP;
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP;
@@ -15,11 +14,7 @@ import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveO
 public abstract class CountDictUDF extends GenericUDF {
 
   protected transient MapObjectInspector inputMapOI;
-
-  // inputTypes[0] is for key, inputTypes[1] is for value
   final protected transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[2];
-
-  // converters[0] is for key, converters[1] is for value
   final protected transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[2];
 
   protected static final WritableVoidObjectInspector nullOI = PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
@@ -54,7 +49,7 @@ public abstract class CountDictUDF extends GenericUDF {
     try {
       checkArgPrimitive(map_args, 0);
       checkArgGroups(map_args, 0, inputTypes, STRING_GROUP);
-      obtainStringConverter(map_args, 0, inputTypes, converters);
+      obtainDoubleConverter(map_args, 0, inputTypes, converters);
     } catch (UDFArgumentException e) {
       throw new UDFArgumentTypeException(0, "Map key must be a string");
     }
@@ -68,10 +63,6 @@ public abstract class CountDictUDF extends GenericUDF {
     }
 
     return inputMapOI;
-  }
-
-  protected double convertMapValueAsDouble(Object obj) {
-    return ((DoubleWritable) converters[1].convert(obj)).get();
   }
 
 }

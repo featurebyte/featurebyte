@@ -2,7 +2,6 @@
 Tile Monitor Job for SP_TILE_MONITOR
 """
 from featurebyte.logger import logger
-from featurebyte.sql.spark.common import retry_sql, retry_sql_with_cache
 from featurebyte.sql.spark.tile_common import TileCommon
 from featurebyte.sql.spark.tile_registry import TileRegistry
 
@@ -32,6 +31,14 @@ class TileMonitor(TileCommon):
         if not tile_table_exist_flag:
             logger.info(f"tile table {self.tile_id} does not exist")
         else:
+            col_names_df = await self._spark.execute_query(
+                f"select value_column_names from tile_registry where tile_id = '{self.tile_id}'"
+            )
+
+            if col_names_df is None or len(col_names_df) == 0:
+                return
+
+            existing_value_columns = col_names_df["value_column_names"].iloc[0]
 
             tile_sql = self.monitor_sql.replace("'", "''")
 
@@ -61,7 +68,7 @@ class TileMonitor(TileCommon):
                         {self.frequency_minute}
                     ) as INDEX,
                     {self.entity_column_names_str},
-                    {self.value_column_names_str}
+                    {existing_value_columns}
                 from ({self.monitor_sql})
             """
 
@@ -69,12 +76,15 @@ class TileMonitor(TileCommon):
                 [f"a.`{c}` = b.`{c}`" for c in self.entity_column_names]
             )
             value_select_cols_str = " , ".join(
-                [f"b.{c} as OLD_{c}" for c in self.value_column_names]
+                [f"b.{c} as OLD_{c}" for c in existing_value_columns.split(",")]
+            )
+            value_insert_cols_str = " , ".join(
+                [f"OLD_{c}" for c in existing_value_columns.split(",")]
             )
             value_filter_cols_str = " OR ".join(
                 [
                     f"{c} != OLD_{c} or ({c} is not null and OLD_{c} is null)"
-                    for c in self.value_column_names
+                    for c in existing_value_columns.split(",")
                 ]
             )
 
@@ -129,48 +139,21 @@ class TileMonitor(TileCommon):
                 await tile_registry_ins.execute()
                 logger.info("\nEnd of calling tile_registry.execute\n\n")
 
-                # spark does not support insert with partial columns
-                # need to use merge for insertion
-                entity_column_names_str_src = " , ".join(
-                    [f"b.{c}" for c in self.entity_column_names_str.split(",")]
-                )
-                old_value_insert_cols_str_target = " , ".join(
-                    [f"OLD_{c}" for c in self.value_column_names]
-                )
-                value_insert_cols_str = " , ".join([f"b.{c}" for c in self.value_column_names])
-                old_value_insert_cols_str = " , ".join(
-                    [f"b.OLD_{c}" for c in self.value_column_names]
-                )
-
                 insert_sql = f"""
-                    MERGE into {monitor_table_name} a using ({compare_sql}) b
-                        ON a.INDEX = b.INDEX AND a.CREATED_AT = b.CREATED_AT
-                    WHEN NOT MATCHED THEN
-                        INSERT
+                    insert into {monitor_table_name}
                         (
                             {self.tile_start_date_column},
                             INDEX,
                             {self.entity_column_names_str},
-                            {self.value_column_names_str},
-                            {old_value_insert_cols_str_target},
+                            {existing_value_columns},
+                            {value_insert_cols_str},
                             TILE_TYPE,
                             EXPECTED_CREATED_AT,
                             CREATED_AT
-                        ) VALUES
-                        (
-                            b.{self.tile_start_date_column},
-                            b.INDEX,
-                            {entity_column_names_str_src},
-                            {value_insert_cols_str},
-                            {old_value_insert_cols_str},
-                            b.TILE_TYPE,
-                            b.EXPECTED_CREATED_AT,
-                            b.CREATED_AT
                         )
+                        {compare_sql}
                 """
-                await retry_sql_with_cache(
-                    session=self._spark, sql=insert_sql, cached_select_sql=compare_sql
-                )
+                await self._spark.execute_query(insert_sql)
 
             insert_monitor_summary_sql = f"""
                 INSERT INTO TILE_MONITOR_SUMMARY(TILE_ID, TILE_START_DATE, TILE_TYPE, CREATED_AT)
@@ -181,4 +164,4 @@ class TileMonitor(TileCommon):
                     current_timestamp()
                 FROM ({compare_sql})
             """
-            await retry_sql(self._spark, insert_monitor_summary_sql)
+            await self._spark.execute_query(insert_monitor_summary_sql)

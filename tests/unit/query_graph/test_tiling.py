@@ -6,12 +6,12 @@ import copy
 import pytest
 
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_table import EventTable
+from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.tiling import AggFunc, InputColumn, get_aggregator
+from featurebyte.query_graph.sql.tiling import AggFunc, InputColumn, TileSpec, get_aggregator
 
 
 def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
@@ -179,9 +179,9 @@ def run_groupby_and_get_tile_table_identifier(
         assert isinstance(by_key, str)
         if create_entity:
             Entity(name=by_key, serving_names=[by_key]).save()
-        if isinstance(event_data_or_event_view, EventTable):
+        if isinstance(event_data_or_event_view, EventData):
             event_data_or_event_view[by_key].as_entity(by_key)
-            event_view = event_data_or_event_view.get_view()
+            event_view = EventView.from_event_data(event_data=event_data_or_event_view)
 
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate_over(**aggregate_kwargs)

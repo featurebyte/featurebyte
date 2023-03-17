@@ -58,14 +58,14 @@ async def list_feature_job_setting_analysis(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
-    event_table_id: Optional[PydanticObjectId] = None,
+    event_data_id: Optional[PydanticObjectId] = None,
 ) -> FeatureJobSettingAnalysisList:
     """
     List Feature Job Setting Analysis
     """
     params = {}
-    if event_table_id:
-        params["query_filter"] = {"event_data_id": event_table_id}
+    if event_data_id:
+        params["query_filter"] = {"event_data_id": event_data_id}
 
     controller = request.state.app_container.feature_job_setting_analysis_controller
     analysis_list: FeatureJobSettingAnalysisList = await controller.list(

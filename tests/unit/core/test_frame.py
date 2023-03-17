@@ -6,7 +6,6 @@ import pytest
 from featurebyte.core.frame import Frame, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.column_info import ColumnInfo
 from tests.util.helper import get_node
 
 
@@ -521,46 +520,3 @@ def test_frame__project_always_uses_current_node_as_input(dataframe):
         "output_type": "series",
         "parameters": {"columns": ["CUST_ID"]},
     }
-
-
-def test_frame__setitem_with_multiple_assignments(dataframe):
-    """Test frame setitem with multiple assignments"""
-    mask = dataframe["MASK"]
-    dataframe["new_column"] = "some_value"
-    dataframe.new_column[mask] = "some_other_value"
-    dataframe.new_column[~mask] = "other_value"
-
-    # check that there is no duplicated 'new_column' column info
-    assert dataframe.columns_info == [
-        ColumnInfo(
-            name="CUST_ID", dtype="INT", entity_id=None, semantic_id=None, critical_data_info=None
-        ),
-        ColumnInfo(
-            name="PRODUCT_ACTION",
-            dtype="VARCHAR",
-            entity_id=None,
-            semantic_id=None,
-            critical_data_info=None,
-        ),
-        ColumnInfo(
-            name="VALUE", dtype="FLOAT", entity_id=None, semantic_id=None, critical_data_info=None
-        ),
-        ColumnInfo(
-            name="MASK", dtype="BOOL", entity_id=None, semantic_id=None, critical_data_info=None
-        ),
-        ColumnInfo(
-            name="TIMESTAMP",
-            dtype="TIMESTAMP",
-            entity_id=None,
-            semantic_id=None,
-            critical_data_info=None,
-        ),
-        ColumnInfo(name="PROMOTION_START_DATE", dtype="DATE", entity_id=None, semantic_id=None),
-        ColumnInfo(
-            name="new_column",
-            dtype="VARCHAR",
-            entity_id=None,
-            semantic_id=None,
-            critical_data_info=None,
-        ),
-    ]

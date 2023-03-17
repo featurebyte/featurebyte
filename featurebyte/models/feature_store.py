@@ -12,7 +12,7 @@ from pydantic import Field, StrictStr
 from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
-    FeatureByteCatalogBaseDocumentModel,
+    FeatureByteWorkspaceBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -66,8 +66,8 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
         ]
 
 
-class TableStatus(OrderedStrEnum):
-    """Table status"""
+class DataStatus(OrderedStrEnum):
+    """Data status"""
 
     DEPRECATED = "DEPRECATED"
     DRAFT = "DRAFT"
@@ -113,22 +113,22 @@ class ConstructGraphMixin:
         return graph, inserted_input_node
 
 
-class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocumentModel, ABC):
+class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteWorkspaceBaseDocumentModel, ABC):
     """
-    TableModel schema
+    DataModel schema
 
     tabular_source : TabularSource
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
-        List of table column information
-    status: TableStatus
-        Table status
-    record_creation_timestamp_column: Optional[str]
-        Record creation timestamp column name
+        List of event data columns
+    status: DataStatus
+        Data status
+    record_creation_date_column: Optional[str]
+        Record creation date column name
     """
 
-    status: TableStatus = Field(default=TableStatus.DRAFT, allow_mutation=False)
-    record_creation_timestamp_column: Optional[StrictStr]
+    status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
+    record_creation_date_column: Optional[StrictStr]
     _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
     @property
@@ -201,7 +201,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         MongoDB settings
         """
 
-        collection_name: str = "table"
+        collection_name: str = "tabular_data"
         unique_constraints: List[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),

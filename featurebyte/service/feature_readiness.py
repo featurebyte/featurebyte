@@ -42,19 +42,21 @@ class FeatureReadinessService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        workspace_id: ObjectId,
         feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,
         feature_list_service: FeatureListService,
         feature_list_namespace_service: FeatureListNamespaceService,
         version_service: VersionService,
     ):
-        super().__init__(user, persistent, catalog_id)
+        super().__init__(user, persistent, workspace_id)
         self.feature_service = feature_service
         self.feature_namespace_service = feature_namespace_service
         self.feature_list_service = feature_list_service
         self.feature_list_namespace_service = feature_list_namespace_service
-        self.production_ready_validator = ProductionReadyValidator(version_service, feature_service)
+        self.production_ready_validator = ProductionReadyValidator(
+            self.feature_namespace_service, version_service
+        )
 
     async def update_feature_list_namespace(
         self,
@@ -214,7 +216,7 @@ class FeatureReadinessService(BaseService):
             )
         return self.conditional_return(document=updated_document, condition=return_document)
 
-    async def update_feature(  # pylint: disable=unused-argument
+    async def update_feature(
         self,
         feature_id: ObjectId,
         readiness: FeatureReadiness,
@@ -242,6 +244,14 @@ class FeatureReadinessService(BaseService):
         Optional[FeatureModel]
         """
         document = await self.feature_service.get_document(document_id=feature_id)
+
+        # If we are updating the feature readiness status to PRODUCTION_READY, perform some additional validation.
+        if readiness == FeatureReadiness.PRODUCTION_READY:
+            assert document.name is not None
+            await self.production_ready_validator.validate(
+                document.name, document.id, document.graph, ignore_guardrails
+            )
+
         if document.readiness != readiness:
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(

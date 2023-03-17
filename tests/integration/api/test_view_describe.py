@@ -4,6 +4,11 @@ Test API View objects describe function
 import pandas as pd
 from pandas.testing import assert_series_equal
 
+from featurebyte.api.dimension_view import DimensionView
+from featurebyte.api.event_view import EventView
+from featurebyte.api.item_view import ItemView
+from featurebyte.api.scd_view import SlowlyChangingView
+
 
 def _to_utc_no_offset(date):
     """
@@ -16,7 +21,7 @@ def test_event_view_describe(event_data):
     """
     Test describe for EventView
     """
-    event_view = event_data.get_view()
+    event_view = EventView.from_event_data(event_data)
 
     describe_df = event_view.describe()
     assert describe_df.columns.tolist() == [
@@ -65,7 +70,7 @@ def test_event_view_describe_with_date_range(event_data):
     """
     Test describe for EventView with date range
     """
-    event_view = event_data.get_view()
+    event_view = EventView.from_event_data(event_data)
     sample_params = {
         "from_timestamp": "2001-10-10",
         "to_timestamp": "2001-10-14",
@@ -119,7 +124,7 @@ def test_item_view_describe(item_data):
     """
     Test describe for ItemView
     """
-    item_view = item_data.get_view()
+    item_view = ItemView.from_item_data(item_data)
 
     describe_df = item_view.describe()
     assert describe_df.columns.tolist() == [
@@ -166,7 +171,7 @@ def test_dimension_view_describe(dimension_data):
     """
     Test sample for DimensionView
     """
-    dimension_view = dimension_data.get_view()
+    dimension_view = DimensionView.from_dimension_data(dimension_data)
     describe_df = dimension_view.describe()
     assert describe_df.columns.tolist() == [
         "created_at",
@@ -192,7 +197,7 @@ def test_scd_view_describe(scd_data):
     """
     Test sample for DimensionView
     """
-    scd_view = scd_data.get_view()
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
     describe_df = scd_view.describe()
     assert describe_df.columns.tolist() == [
         "Effective Timestamp",

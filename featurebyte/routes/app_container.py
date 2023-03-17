@@ -27,7 +27,7 @@ class AppContainer:
         task_manager: AbstractTaskManager,
         storage: Storage,
         app_config: AppContainerConfig,
-        catalog_id: ObjectId,
+        workspace_id: ObjectId,
     ):
         """
         Initialize services and controller instances
@@ -46,8 +46,8 @@ class AppContainer:
             permanent storage
         app_config: Dict[str, Any]
             input app config dict, default to app_container_config
-        catalog_id: ObjectId
-            catalog id
+        workspace_id: ObjectId
+            workspace id
         """
         _ = storage  # not used in the app_container bean yet
 
@@ -65,7 +65,7 @@ class AppContainer:
         # build services
         for item in app_config.basic_services:
             name, class_ = item.name, item.class_
-            service_instance = class_(user=user, persistent=persistent, catalog_id=catalog_id)
+            service_instance = class_(user=user, persistent=persistent, workspace_id=workspace_id)
             self.instance_map[name] = service_instance
 
         # build services with other dependencies
@@ -73,7 +73,7 @@ class AppContainer:
             name, class_ = item.name, item.class_
             extra_depends = item.dependencies
             # seed depend_instances with the normal user and persistent objects
-            depend_instances = [user, persistent, catalog_id]
+            depend_instances = [user, persistent, workspace_id]
             for s_name in extra_depends:
                 depend_instances.append(self.instance_map[s_name])
             instance = class_(*depend_instances)
@@ -100,7 +100,7 @@ class AppContainer:
         temp_storage: Storage,
         task_manager: AbstractTaskManager,
         storage: Storage,
-        container_id: ObjectId,
+        workspace_id: ObjectId,
     ) -> Any:
         """
         Get instance of AppContainer
@@ -117,8 +117,8 @@ class AppContainer:
             task manager
         storage: Storage
             permanent storage
-        container_id: ObjectId
-            catalog id
+        workspace_id: ObjectId
+            workspace id
 
         Returns
         -------
@@ -132,5 +132,5 @@ class AppContainer:
             task_manager=task_manager,
             storage=storage,
             app_config=app_container_config,
-            catalog_id=container_id,
+            workspace_id=workspace_id,
         )

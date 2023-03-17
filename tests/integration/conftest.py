@@ -28,13 +28,13 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
-from featurebyte import DatabricksDetails, FeatureJobSetting, SnowflakeDetails
-from featurebyte.api.dimension_table import DimensionTable
+from featurebyte import DatabricksDetails, DimensionView, FeatureJobSetting, SnowflakeDetails
+from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_table import EventTable
+from featurebyte.api.event_data import EventData
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.item_table import ItemTable
-from featurebyte.api.scd_table import SCDTable
+from featurebyte.api.item_data import ItemData
+from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
 from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.config import Configurations
@@ -265,17 +265,17 @@ def source_type_fixture(request):
     Example 1
     ---------
 
-    def my_test(event_table):
-        # event_table will be instantiated using Snowflake, Spark, ... etc. my_test will be executed
-        # multiple times, each time with an EventTable from a different source.
+    def my_test(event_data):
+        # event_data will be instantiated using Snowflake, Spark, ... etc. my_test will be executed
+        # multiple times, each time with an EventData from a different source.
         ...
 
     Example 2
     ----------
 
     @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-    def my_test(event_table):
-        # event_table will be instantiated using Snowflake as the source and my_test only runs once
+    def my_test(event_data):
+        # event_data will be instantiated using Snowflake as the source and my_test only runs once
         ...
 
     """
@@ -345,20 +345,13 @@ def feature_store_fixture(
     Feature store fixture
     """
     _ = mock_get_persistent
-    feature_store = FeatureStore.create(
+    feature_store = FeatureStore(
         name=feature_store_name,
-        source_type=source_type,
+        type=source_type,
         details=feature_store_details,
     )
+    feature_store.save()
     yield feature_store
-
-
-@pytest.fixture(name="data_source", scope="session")
-def data_source_fixture(feature_store):
-    """
-    Data source fixture
-    """
-    return feature_store.get_data_source()
 
 
 @pytest.fixture(name="mock_config_path_env", scope="session")
@@ -652,13 +645,13 @@ async def datasets_registration_helper_fixture(
 
     helper = DatasetsRegistrationHelper()
 
-    # Event table
+    # EventData table
     helper.add_table("TEST_TABLE", transaction_data_upper_case)
 
-    # Item table
+    # ItemData table
     helper.add_table("ITEM_DATA_TABLE", items_dataframe)
 
-    # Dimension table
+    # DimensionData table
     helper.add_table(dimension_data_table_name, dimension_dataframe)
 
     # SCD table
@@ -827,7 +820,7 @@ def tile_manager(session):
     """
     Tile Manager fixture
     """
-    return tile_manager_from_session(session=session, use_snowflake_scheduling=True)
+    return tile_manager_from_session(session=session)
 
 
 @pytest.fixture(name="feature_model_dict")
@@ -998,13 +991,13 @@ def status_entity_fixture():
     return entity
 
 
-def create_transactions_event_data_from_data_source(
-    data_source, database_name, schema_name, table_name, event_data_name
+def create_transactions_event_data_from_feature_store(
+    feature_store, database_name, schema_name, table_name, event_data_name
 ):
     """
-    Helper function to create an EventTable with the given feature store
+    Helper function to create an EventData with the given feature store
     """
-    available_tables = data_source.list_tables(
+    available_tables = feature_store.list_tables(
         database_name=database_name,
         schema_name=schema_name,
     )
@@ -1012,7 +1005,7 @@ def create_transactions_event_data_from_data_source(
     available_tables = [x.upper() for x in available_tables]
     assert table_name.upper() in available_tables
 
-    database_table = data_source.get_table(
+    database_table = feature_store.get_table(
         database_name=database_name,
         schema_name=schema_name,
         table_name=table_name,
@@ -1020,7 +1013,7 @@ def create_transactions_event_data_from_data_source(
     expected_dtypes = pd.Series(
         {
             "ËVENT_TIMESTAMP": "TIMESTAMP_TZ"
-            if data_source.type == SourceType.SNOWFLAKE
+            if feature_store.type == SourceType.SNOWFLAKE
             else "TIMESTAMP",
             "CREATED_AT": "INT",
             "CUST_ID": "INT",
@@ -1032,7 +1025,7 @@ def create_transactions_event_data_from_data_source(
         }
     )
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)
-    event_data = EventTable.from_tabular_source(
+    event_data = EventData.from_tabular_source(
         tabular_source=database_table,
         name=event_data_name,
         event_id_column="TRANSACTION_ID",
@@ -1048,14 +1041,14 @@ def create_transactions_event_data_from_data_source(
     event_data["PRODUCT_ACTION"].as_entity("ProductAction")
     event_data["CUST_ID"].as_entity("Customer")
     event_data.save()
-    event_data = EventTable.get(event_data_name)
+    event_data = EventData.get(event_data_name)
     return event_data
 
 
 @pytest.fixture(name="event_data_name", scope="session")
 def event_data_name_fixture(source_type):
     """
-    Fixture for the EventTable name
+    Fixture for the EventData name
     """
     return f"{source_type}_event_data"
 
@@ -1063,7 +1056,7 @@ def event_data_name_fixture(source_type):
 @pytest.fixture(name="event_data", scope="session")
 def event_data_fixture(
     session,
-    data_source,
+    feature_store,
     event_data_name,
     user_entity,
     product_action_entity,
@@ -1071,14 +1064,14 @@ def event_data_fixture(
     order_entity,
 ):
     """
-    Fixture for an EventTable in integration tests
+    Fixture for an EventData in integration tests
     """
     _ = user_entity
     _ = product_action_entity
     _ = customer_entity
     _ = order_entity
-    event_data = create_transactions_event_data_from_data_source(
-        data_source=data_source,
+    event_data = create_transactions_event_data_from_feature_store(
+        feature_store,
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="TEST_TABLE",
@@ -1090,7 +1083,7 @@ def event_data_fixture(
 @pytest.fixture(name="item_data_name", scope="session")
 def item_data_name_fixture(source_type):
     """
-    Fixture for the ItemTable name
+    Fixture for the ItemData name
     """
     return f"{source_type}_item_data"
 
@@ -1098,21 +1091,21 @@ def item_data_name_fixture(source_type):
 @pytest.fixture(name="item_data", scope="session")
 def item_data_fixture(
     session,
-    data_source,
+    feature_store,
     item_data_name,
     event_data,
     order_entity,
     item_entity,
 ):
     """
-    Fixture for an ItemTable in integration tests
+    Fixture for an ItemData in integration tests
     """
-    database_table = data_source.get_table(
+    database_table = feature_store.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="ITEM_DATA_TABLE",
     )
-    item_data = ItemTable.from_tabular_source(
+    item_data = ItemData.from_tabular_source(
         tabular_source=database_table,
         name=item_data_name,
         event_id_column="order_id",
@@ -1120,7 +1113,7 @@ def item_data_fixture(
         event_data_name=event_data.name,
     )
     item_data.save()
-    item_data = ItemTable.get(item_data_name)
+    item_data = ItemData.get(item_data_name)
     item_data["order_id"].as_entity(order_entity.name)
     item_data["item_id"].as_entity(item_entity.name)
     return item_data
@@ -1129,7 +1122,7 @@ def item_data_fixture(
 @pytest.fixture(name="dimension_data_name", scope="session")
 def dimension_data_name_fixture(source_type):
     """
-    Fixture for the DimensionTable name
+    Fixture for the DimensionData name
     """
     return f"{source_type}_dimension_data"
 
@@ -1137,26 +1130,26 @@ def dimension_data_name_fixture(source_type):
 @pytest.fixture(name="dimension_data", scope="session")
 def dimension_data_fixture(
     session,
-    data_source,
+    feature_store,
     dimension_data_table_name,
     dimension_data_name,
     item_entity,
 ):
     """
-    Fixture for a DimensionTable in integration tests
+    Fixture for a DimensionData in integration tests
     """
-    database_table = data_source.get_table(
+    database_table = feature_store.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name=dimension_data_table_name,
     )
-    dimension_data = DimensionTable.from_tabular_source(
+    dimension_data = DimensionData.from_tabular_source(
         tabular_source=database_table,
         name=dimension_data_name,
         dimension_id_column="item_id",
     )
     dimension_data.save()
-    dimension_data = DimensionTable.get(dimension_data_name)
+    dimension_data = DimensionData.get(dimension_data_name)
     dimension_data["item_id"].as_entity(item_entity.name)
     return dimension_data
 
@@ -1164,13 +1157,13 @@ def dimension_data_fixture(
 @pytest.fixture(name="scd_data_tabular_source", scope="session")
 def scd_data_tabular_source_fixture(
     session,
-    data_source,
+    feature_store,
     scd_data_table_name,
 ):
     """
     Fixture for scd data tabular source
     """
-    database_table = data_source.get_table(
+    database_table = feature_store.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name=scd_data_table_name,
@@ -1196,7 +1189,7 @@ def scd_data_fixture(
     """
     Fixture for a SlowlyChangingData in integration tests
     """
-    data = SCDTable.from_tabular_source(
+    data = SlowlyChangingData.from_tabular_source(
         tabular_source=scd_data_tabular_source,
         name=scd_data_name,
         natural_key_column="User ID",
@@ -1204,7 +1197,7 @@ def scd_data_fixture(
         surrogate_key_column="ID",
     )
     data.save()
-    data = SCDTable.get(scd_data_name)
+    data = SlowlyChangingData.get(scd_data_name)
     data["User ID"].as_entity(user_entity.name)
     data["User Status"].as_entity(status_entity.name)
     return data
@@ -1215,7 +1208,7 @@ def dimension_view_fixture(dimension_data):
     """
     Fixture for a DimensionView
     """
-    return dimension_data.get_view()
+    return DimensionView.from_dimension_data(dimension_data)
 
 
 @pytest.fixture(name="get_cred")

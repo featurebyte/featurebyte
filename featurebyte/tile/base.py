@@ -253,7 +253,7 @@ class BaseTileManager(BaseModel, ABC):
         Raises
         -------
         TileScheduleNotSupportedError
-            if catalog_id or feature_store_id is not provided or task manager is not initialized
+            if workspace_id or feature_store_id is not provided or task manager is not initialized
 
         Returns
         -------
@@ -263,8 +263,10 @@ class BaseTileManager(BaseModel, ABC):
         logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
         job_id = f"{tile_type}_{tile_spec.aggregation_id}"
 
-        if not tile_spec.catalog_id or not tile_spec.feature_store_id:
-            raise TileScheduleNotSupportedError("catalog_id and feature_store_id must be provided")
+        if not tile_spec.workspace_id or not tile_spec.feature_store_id:
+            raise TileScheduleNotSupportedError(
+                "workspace_id and feature_store_id must be provided"
+            )
 
         if not self._task_manager:
             raise TileScheduleNotSupportedError("Task manager is not initialized")
@@ -291,6 +293,7 @@ class BaseTileManager(BaseModel, ABC):
                 tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
                 monitor_periods=monitor_periods,
                 agg_id=tile_spec.aggregation_id,
+                job_schedule_ts=next_job_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             )
 
             interval_seconds = (
@@ -305,7 +308,7 @@ class BaseTileManager(BaseModel, ABC):
                 instance=tile_schedule_ins,
                 user_id=tile_spec.user_id,
                 feature_store_id=tile_spec.feature_store_id,
-                catalog_id=tile_spec.catalog_id,
+                workspace_id=tile_spec.workspace_id,
             )
 
             return tile_schedule_ins.json()

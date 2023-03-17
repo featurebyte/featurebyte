@@ -6,19 +6,19 @@ from http import HTTPStatus
 import pytest
 from bson import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.schema.relationship_info import RelationshipInfoUpdate
-from tests.unit.routes.base import BaseCatalogApiTestSuite
+from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
-class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
+class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
     """
     Test relationship info routes
     """
 
     class_name = "RelationshipInfo"
     base_route = "/relationship_info"
-    payload = BaseCatalogApiTestSuite.load_payload(
+    payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/relationship_info.json"
     )
     create_conflict_payload_expected_detail_pairs = [
@@ -77,13 +77,13 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
-            ("event_table", "event_table"),
+            ("event_data", "event_data"),
             ("entity", "entity"),
             ("entity", "entity_transaction"),
             ("entity", "entity_user"),
@@ -92,7 +92,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(
-                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
+                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
             )
             assert response.status_code == HTTPStatus.CREATED
 

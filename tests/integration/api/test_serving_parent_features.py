@@ -3,12 +3,19 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 
-from featurebyte import DimensionTable, Entity, EventTable, FeatureList, SCDTable
+from featurebyte import (
+    DimensionData,
+    DimensionView,
+    Entity,
+    EventData,
+    FeatureList,
+    SlowlyChangingData,
+)
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest_asyncio.fixture(name="feature_list_with_child_entities", scope="session")
-async def feature_list_with_child_entities_fixture(session, data_source):
+async def feature_list_with_child_entities_fixture(session, feature_store):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
     """
@@ -63,11 +70,11 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     country_entity = Entity(name=f"{table_prefix}_country", serving_names=["country_id"])
     country_entity.save()
 
-    event_data = EventTable.from_tabular_source(
-        tabular_source=data_source.get_table(
+    event_data = EventData.from_tabular_source(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_EVENT",
-            database_name=session.database_name,
-            schema_name=session.schema_name,
+            database_name=session.database,
+            schema_name=session.sf_schema,
         ),
         name=f"{table_prefix}_event_data",
         event_id_column="event_id",
@@ -77,11 +84,11 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     event_data["event_id"].as_entity(event_entity.name)
     event_data["cust_id"].as_entity(customer_entity.name)
 
-    scd_data = SCDTable.from_tabular_source(
-        tabular_source=data_source.get_table(
+    scd_data = SlowlyChangingData.from_tabular_source(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_SCD",
-            database_name=session.database_name,
-            schema_name=session.schema_name,
+            database_name=session.database,
+            schema_name=session.sf_schema,
         ),
         name=f"{table_prefix}_scd_data",
         natural_key_column="scd_cust_id",
@@ -92,11 +99,11 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     scd_data["scd_cust_id"].as_entity(customer_entity.name)
     scd_data["scd_city"].as_entity(city_entity.name)
 
-    dimension_data_1 = DimensionTable.from_tabular_source(
-        tabular_source=data_source.get_table(
+    dimension_data_1 = DimensionData.from_tabular_source(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_DIMENSION_1",
-            database_name=session.database_name,
-            schema_name=session.schema_name,
+            database_name=session.database,
+            schema_name=session.sf_schema,
         ),
         name=f"{table_prefix}_dimension_data_1",
         dimension_id_column="city",
@@ -105,11 +112,11 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     dimension_data_1["city"].as_entity(city_entity.name)
     dimension_data_1["state"].as_entity(state_entity.name)
 
-    dimension_data_2 = DimensionTable.from_tabular_source(
-        tabular_source=data_source.get_table(
+    dimension_data_2 = DimensionData.from_tabular_source(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_DIMENSION_2",
-            database_name=session.database_name,
-            schema_name=session.schema_name,
+            database_name=session.database,
+            schema_name=session.sf_schema,
         ),
         name=f"{table_prefix}_dimension_data_2",
         dimension_id_column="state",
@@ -118,7 +125,7 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     dimension_data_2["state"].as_entity(state_entity.name)
     dimension_data_2["country"].as_entity(country_entity.name)
 
-    dimension_view = dimension_data_2.get_view()
+    dimension_view = DimensionView.from_dimension_data(dimension_data_2)
     feature = dimension_view["country"].as_feature("Country Name")
 
     feature_list = FeatureList([feature], name=f"{table_prefix}_feature_list")
@@ -132,7 +139,7 @@ async def feature_list_with_child_entities_fixture(session, data_source):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "point_in_time, provided_entity, expected",
     [
@@ -193,7 +200,7 @@ def observations_set_with_expected_features_fixture():
     return observations_set_with_expected_features
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_historical_features(
     feature_list_with_child_entities,
     observations_set_with_expected_features,
@@ -209,7 +216,7 @@ def test_historical_features(
     pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_historical_features_with_serving_names_mapping(
     feature_list_with_child_entities,
     observations_set_with_expected_features,
@@ -231,7 +238,7 @@ def test_historical_features_with_serving_names_mapping(
     pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_online_features(config, feature_list_with_child_entities):
     """
     Test requesting online features

@@ -14,7 +14,7 @@ from featurebyte.schema.context import ContextCreate, ContextUpdate
 
 @pytest.fixture(name="input_event_data_node")
 def input_event_data_node_fixture(event_data):
-    """Input event_table node of a graph"""
+    """Input event_data node of a graph"""
     return {
         "name": "input_1",
         "type": "input",
@@ -55,7 +55,7 @@ def input_event_data_node_fixture(event_data):
 
 @pytest.fixture(name="input_item_data_node")
 def input_item_data_node_fixture(item_data, event_data):
-    """Input item_table node of a graph"""
+    """Input item_data node of a graph"""
     return {
         "name": "input_2",
         "type": "input",

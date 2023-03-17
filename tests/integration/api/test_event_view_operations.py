@@ -11,9 +11,12 @@ import pytest
 
 from featurebyte import (
     AggFunc,
-    EventTable,
+    EventData,
+    EventView,
     FeatureJobSetting,
     FeatureList,
+    ItemView,
+    SlowlyChangingView,
     SourceType,
     to_timedelta,
 )
@@ -130,7 +133,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
     route_fixture_path_pairs = [
         ("/entity", "entity.json"),
         ("/feature_store", "feature_store.json"),
-        ("/event_table", "event_table.json"),
+        ("/event_data", "event_data.json"),
     ]
     base_path = os.path.join(test_dir, "fixtures/request_payloads")
     for route, fixture_path in route_fixture_path_pairs:
@@ -139,18 +142,18 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
             response = client.post(route, json=payload)
             assert response.status_code == 201
 
-            if route == "/event_table":
+            if route == "/event_data":
                 column_specs = [ColumnSpec(**col_info) for col_info in payload["columns_info"]]
                 mock_list_columns.return_value = column_specs
 
-    event_data = EventTable.get_by_id(id=response.json()["_id"])
+    event_data = EventData.get_by_id(id=response.json()["_id"])
     event_data.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(
             blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
         )
     )
     event_data.cust_id.as_entity("customer")
-    event_view = event_data.get_view()
+    event_view = EventView.from_event_data(event_data)
     feature_group = event_view.groupby("cust_id").aggregate_over(
         method="count",
         windows=["2h", "24h"],
@@ -174,7 +177,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
 @pytest.fixture(name="event_view")
 def event_view_fixture(event_data):
     # create event view
-    event_view = event_data.get_view()
+    event_view = EventView.from_event_data(event_data)
     assert event_view.columns == [
         "ËVENT_TIMESTAMP",
         "CREATED_AT",
@@ -969,9 +972,9 @@ def get_non_time_based_feature_fixture(item_data):
     """
     Get a non-time-based feature.
 
-    This is a non-time-based feature as it is built from ItemTable.
+    This is a non-time-based feature as it is built from ItemData.
     """
-    item_view = item_data.get_view()
+    item_view = ItemView.from_item_data(item_data)
     return item_view.groupby("order_id").aggregate(
         method=AggFunc.COUNT,
         feature_name="non_time_count_feature",
@@ -1031,7 +1034,7 @@ def test_add_feature_on_view_with_join(event_view, scd_data, non_time_based_feat
     Test add feature when the input EventView involves a join
     """
     # update the view with a join first
-    scd_view = scd_data.get_view()
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
     event_view.join(scd_view)
     original_column_names = [col.name for col in event_view.columns_info]
 

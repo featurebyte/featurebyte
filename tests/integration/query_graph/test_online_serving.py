@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from featurebyte import FeatureList
+from featurebyte import EventView, FeatureList
 from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
@@ -20,7 +20,7 @@ def features_fixture(event_data, source_type):
     """
     Fixture for feature
     """
-    event_view = event_data.get_view()
+    event_view = EventView.from_event_data(event_data)
     event_view["ÀMOUNT"].fillna(0)  # pylint: disable=no-member
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",
@@ -133,7 +133,7 @@ async def test_online_serving_sql(features, session, config):
         # Check online_features route
         check_online_features_route(feature_list, config, df_historical, columns)
     finally:
-        feature_list.deploy(make_production_ready=True, enable=False)
+        feature_list.deploy(make_production_ready=False, enable=False)
 
 
 def check_online_features_route(feature_list, config, df_historical, columns):

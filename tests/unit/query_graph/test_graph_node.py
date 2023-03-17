@@ -627,18 +627,3 @@ def test_graph_node_keep_only_required_target_columns(input_node_params):
     graph_node = pruned_graph.get_node_by_name("graph_1")
     assert list(graph_node.parameters.graph.nodes_map.keys()) == ["input_1"]
     assert graph_node.parameters.graph.edges == []
-
-    # add a filter node into the graph & check that assign node is kept
-    filter_node = graph.add_operation(
-        node_type=NodeType.FILTER,
-        node_params={},
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[
-            inserted_graph_node,
-            proj_col_int_node,
-        ],  # proj_col_int_node served as a filter condition
-    )
-    pruned_graph, _ = graph.prune(target_node=filter_node, aggressive=True)
-    graph_node = pruned_graph.get_node_by_name("graph_1")
-    assert list(graph_node.parameters.graph.nodes_map.keys()) == ["input_1", "assign_1"]
-    assert graph_node.parameters.graph.edges == [{"source": "input_1", "target": "assign_1"}]

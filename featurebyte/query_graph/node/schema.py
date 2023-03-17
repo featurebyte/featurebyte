@@ -45,7 +45,7 @@ class DatabricksDetails(BaseDatabaseDetails):
 class SparkDetails(BaseDatabaseDetails):
     """Model for Spark data source information"""
 
-    host: StrictStr = Field(default="127.0.0.1")
+    host: StrictStr = Field(default="localhost")
     port: int = Field(default=10000)
     http_path: StrictStr = Field(default="cliservice")
     use_http_transport: bool = Field(default=False)

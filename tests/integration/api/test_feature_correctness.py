@@ -6,7 +6,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
+from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.logger import logger
 from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
@@ -296,7 +298,7 @@ def test_aggregate_over(
     """
     Test that aggregate_over produces correct feature values
     """
-    event_view = event_data.get_view()
+    event_view = EventView.from_event_data(event_data)
     feature_job_setting = event_data.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
         frequency=feature_job_setting.frequency,
@@ -410,7 +412,7 @@ def test_aggregate_asat(
         (None, "count", "asat_count", lambda x: len(x)),
     ]
 
-    scd_view = scd_data.get_view()
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
     entity_column_name = "User Status"
     effective_timestamp_column = "Effective Timestamp"
 

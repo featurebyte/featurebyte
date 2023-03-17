@@ -39,7 +39,6 @@ class BaseViewTestSuite:
     protected_columns = []
     view_type: ViewType = ""
     col = ""
-    data_factory_method_name = None
     factory_method = None
     view_class = None
     bool_col = col
@@ -89,14 +88,6 @@ class BaseViewTestSuite:
         assert len(data_under_test[self.col].info.critical_data_info.cleaning_operations) == 1
         return data_under_test
 
-    def create_view(self, data, **factory_kwargs):
-        """
-        Create a View object
-        """
-        if hasattr(data, "get_view"):
-            return getattr(data, "get_view")(**factory_kwargs)
-        return self.factory_method(data, **factory_kwargs)
-
     def test_auto_view_mode(self, data_under_test_with_imputation):
         """
         Test auto view mode
@@ -106,14 +97,14 @@ class BaseViewTestSuite:
             factory_kwargs["event_suffix"] = "_event"
 
         # create view
-        view = self.create_view(data_under_test_with_imputation, **factory_kwargs)
+        view = self.factory_method(data_under_test_with_imputation, **factory_kwargs)
 
         # check view graph metadata
         metadata = view.node.parameters.metadata
         expected_drop_column_names = []
-        if data_under_test_with_imputation.record_creation_timestamp_column:
+        if data_under_test_with_imputation.record_creation_date_column:
             expected_drop_column_names.append(
-                data_under_test_with_imputation.record_creation_timestamp_column
+                data_under_test_with_imputation.record_creation_date_column
             )
         assert metadata.view_mode == "auto"
         assert metadata.drop_column_names == expected_drop_column_names
@@ -148,7 +139,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test_with_imputation.id: {
                     "name": data_under_test_with_imputation.name,
-                    "record_creation_timestamp_column": data_under_test_with_imputation.record_creation_timestamp_column,
+                    "record_creation_date_column": data_under_test_with_imputation.record_creation_date_column,
                 }
             },
         )
@@ -162,7 +153,7 @@ class BaseViewTestSuite:
             factory_kwargs["event_suffix"] = "_event"
 
         # create view
-        view = self.create_view(
+        view = self.factory_method(
             data_under_test_with_imputation, **factory_kwargs, view_mode="manual"
         )
 
@@ -187,7 +178,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test_with_imputation.id: {
                     "name": data_under_test_with_imputation.name,
-                    "record_creation_timestamp_column": data_under_test_with_imputation.record_creation_timestamp_column,
+                    "record_creation_date_column": data_under_test_with_imputation.record_creation_date_column,
                 }
             },
         )
@@ -205,12 +196,12 @@ class BaseViewTestSuite:
             manual_kwargs["event_join_column_names"] = ["event_timestamp", "cust_id"]
 
         # create view using auto mode
-        view_auto = self.create_view(data_under_test_with_imputation, **factory_kwargs)
+        view_auto = self.factory_method(data_under_test_with_imputation, **factory_kwargs)
 
         # create another equivalent view using manual mode
         data_under_test_with_imputation[self.col].update_critical_data_info(cleaning_operations=[])
         drop_column_names = view_auto.node.parameters.metadata.drop_column_names
-        view_manual = self.create_view(
+        view_manual = self.factory_method(
             data_under_test_with_imputation,
             **factory_kwargs,
             view_mode="manual",
@@ -251,7 +242,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
                 }
             },
         )
@@ -274,7 +265,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
                 }
             },
         )
@@ -311,7 +302,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
                 }
             },
         )
@@ -338,7 +329,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
                 }
             },
         )
@@ -372,7 +363,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
                 }
             },
         )
@@ -434,7 +425,7 @@ class BaseViewTestSuite:
             data_id_to_info={
                 data_under_test.id: {
                     "name": data_under_test.name,
-                    "record_creation_timestamp_column": data_under_test.record_creation_timestamp_column,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
                 }
             },
         )
@@ -449,15 +440,8 @@ class BaseViewTestSuite:
 
     def test_from_data__invalid_input(self):
         """
-        Test from_data with invalid input
-
-        Note that this test is valid only for the soon-to-be fully deprecated View.from_*_data()
-        interface. With the new Data.get_view() interface it is not possible to make this kind of
-        user error.
+        Test from_item_data
         """
-        if self.factory_method is None:
-            # View is already using the new interface, nothing to test
-            return
         with pytest.raises(TypeError) as exc:
             self.factory_method("hello")
         exception_message = str(exc.value)

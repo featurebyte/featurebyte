@@ -26,7 +26,7 @@ from featurebyte.schema.feature_namespace import (
 )
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.table import TableService
+from featurebyte.service.tabular_data import DataService
 from featurebyte.service.view_construction import ViewConstructionService
 
 
@@ -77,10 +77,10 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
 
     document_class = FeatureModel
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
-        super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+        super().__init__(user=user, persistent=persistent, workspace_id=workspace_id)
         self.view_construction_service = ViewConstructionService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
 
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
@@ -108,7 +108,6 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         # reconstruct view graph node to remove unused column cleaning operations
         graph, node_name_map = await self.view_construction_service.construct_graph(
             query_graph=feature.graph,
-            target_node=feature.node,
             data_cleaning_operations=[],
         )
         node = graph.get_node_by_name(node_name_map[feature.node_name])
@@ -126,7 +125,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
                 "readiness": FeatureReadiness.DRAFT,
                 "version": await self._get_feature_version(data.name),
                 "user_id": self.user.id,
-                "catalog_id": self.catalog_id,
+                "workspace_id": self.workspace_id,
             }
         )
 
@@ -139,8 +138,8 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             await self._check_document_unique_constraints(document=document)
 
             # check whether data has been saved at persistent storage
-            data_service = TableService(
-                user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+            data_service = DataService(
+                user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
             )
             for tabular_data_id in data.tabular_data_ids:
                 _ = await data_service.get_document(document_id=tabular_data_id)
@@ -158,7 +157,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             assert insert_id == document.id
 
             feature_namespace_service = FeatureNamespaceService(
-                user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+                user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
             )
             try:
                 feature_namespace = await feature_namespace_service.get_document(

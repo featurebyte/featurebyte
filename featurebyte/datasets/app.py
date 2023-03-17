@@ -88,13 +88,7 @@ def import_dataset(dataset_name: str) -> None:
                 # extracting files to staging location
                 console.print(f"Extracting files to staging location: {local_staging_path}")
                 with tarfile.open(local_path) as file_obj:
-                    file_obj.extractall(
-                        local_staging_path,
-                        members=filter(
-                            lambda x: not x.path.startswith("/") and not ".." in x.path,
-                            file_obj.getmembers(),
-                        ),
-                    )
+                    file_obj.extractall(local_staging_path)
 
         sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")
         for line in DockerClient().execute(  # type:ignore
