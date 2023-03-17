@@ -880,14 +880,26 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
-        >>> column = view["Amount"].ceil()
+        >>> view["AmountCeil"] = view["Amount"].ceil()
+        >>> view.preview(5).filter(regex="Amount")
+           Amount  AmountCeil
+        0   10.68          11
+        1   38.04          39
+        2    1.99           2
+        3   37.21          38
+        4    1.20           2
 
 
         Compute rounded values for a Feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("InvoiceAmount")
+        >>> feature = fb.Feature.get("TotalInvoiceAmount_30days")
         >>> feature_ceil = feature.ceil()
+        >>> feature_ceil.name = "TotalInvoiceAmount_30days_ceil"
+        >>> preview_params = pd.DataFrame([{"POINT_IN_TIME": "2023-01-01", "GROCERYCUSTOMERGUID": "1834d6f0-b1c1-41cd-b916-acee888de982"}])
+        >>> fb.FeatureGroup([feature, feature_ceil]).preview(preview_params).iloc[:, 2:]
+           TotalInvoiceAmount_30days  TotalInvoiceAmount_30days_ceil
+        0                     136.53                             137
         """
         return series_unary_operation(
             input_series=self,
