@@ -1133,6 +1133,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             Whether to deploy this feature list
         make_production_ready: bool
             Whether to convert the feature to production ready if it is not production ready
+        ignore_guardrails: bool
+            Whether to ignore guardrails when trying to promote features in the list to production ready status
         """
         self.update(
             update_payload={

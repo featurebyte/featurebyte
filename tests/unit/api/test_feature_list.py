@@ -10,6 +10,7 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
+from featurebyte import FeatureJobSetting
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import (
     BaseFeatureGroup,
@@ -24,6 +25,7 @@ from featurebyte.exception import (
     FeatureListNotOnlineEnabledError,
     ObjectHasBeenSavedError,
     RecordRetrievalException,
+    RecordUpdateException,
 )
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
@@ -809,6 +811,55 @@ def test_feature_list_update_status_and_default_version_mode__unsaved_feature_li
     with pytest.raises(RecordRetrievalException) as exc:
         feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
     assert expected in str(exc.value)
+
+
+def _assert_all_features_in_list_with_enabled_status(feature_list, is_enabled):
+    for feature_id in feature_list.feature_ids:
+        feature = Feature.get_by_id(feature_id)
+        assert feature.online_enabled == is_enabled
+
+
+def test_deploy__feature_list_with_already_production_ready_features_doesnt_error(feature_list):
+    """
+    Test that deploying a feature list that already has features that are production ready doesn't error.
+    """
+    feature_list.save()
+    feature_list.deploy(enable=True, make_production_ready=True)
+    _assert_all_features_in_list_with_enabled_status(feature_list, True)
+
+    # Deploy again to show that we don't error
+    feature_list.deploy(enable=True, make_production_ready=True)
+    _assert_all_features_in_list_with_enabled_status(feature_list, True)
+
+    # Disable feature list
+    feature_list.deploy(enable=False, make_production_ready=True)
+    _assert_all_features_in_list_with_enabled_status(feature_list, False)
+
+
+def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowflake_event_data):
+    """
+    Test that deploying a feature list with ignore guardrails skips validation checks.
+    """
+    feature_list.save()
+    _assert_all_features_in_list_with_enabled_status(feature_list, False)
+
+    # Update feature job setting so that guardrails check will fail
+    snowflake_event_data.update_default_feature_job_setting(
+        FeatureJobSetting(blind_spot="75m", frequency="30m", time_modulo_frequency="15m")
+    )
+
+    # Deploy a feature list that errors due to guardrails
+    with pytest.raises(RecordUpdateException) as exc:
+        feature_list.deploy(enable=True, make_production_ready=True)
+    assert (
+        "Discrepancies found between the promoted feature version you are trying to promote to "
+        "PRODUCTION_READY, and the input data." in str(exc.value)
+    )
+    _assert_all_features_in_list_with_enabled_status(feature_list, False)
+
+    # Set ignore_guardrails to be True - verify that the feature list deploys without errors
+    feature_list.deploy(enable=True, make_production_ready=True, ignore_guardrails=True)
+    _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
 
 def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_object_cache):
