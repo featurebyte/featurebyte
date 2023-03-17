@@ -650,14 +650,14 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Compute absolute values for a column in a view:
 
         >>> import featurebyte as fb
-        >>> view = fb.ItemTable.get("GROCERYITEMS").get_view()
-        >>> column = view["DISCOUNT"].abs()
+        >>> view = fb.Table.get("GROCERYCUSTOMER").get_view()
+        >>> column = view["Longitude"].abs()
 
 
         Compute absolute values for a feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("GROCERYITEMS_DISCOUNT")
+        >>> feature = fb.Feature.get("StateCentroidLongitude")
         >>> feature_abs = feature.abs()
         """
         return series_unary_operation(
