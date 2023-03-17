@@ -3,7 +3,7 @@ Entity class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List
 
 from http import HTTPStatus
 
@@ -12,7 +12,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
-from featurebyte.exception import RecordUpdateException
+from featurebyte.exception import RecordRetrievalException, RecordUpdateException
 from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
@@ -69,6 +69,51 @@ class Entity(EntityModel, SavableApiObject):
         list[dict[str, Any]]
         """
         return self._get_audit_history(field_name="name")
+
+    @classmethod
+    def create(cls, name: str, serving_names: List[str]) -> Entity:
+        """
+        Create new entity
+
+        Parameters
+        ----------
+        name: str
+            Entity name
+        serving_names: List[str]
+            Names of the serving columns
+
+        Returns
+        -------
+        Entity
+        """
+        entity = Entity(name=name, serving_names=serving_names)
+        entity.save()
+        return entity
+
+    @classmethod
+    def get_or_create(
+        cls,
+        name: str,
+        serving_names: List[str],
+    ) -> Entity:
+        """
+        Get entity, or create one if we cannot find an entity with the given name.
+
+        Parameters
+        ----------
+        name: str
+            Entity name
+        serving_names: List[str]
+            Names of the serving columns
+
+        Returns
+        -------
+        Entity
+        """
+        try:
+            return Entity.get(name=name)
+        except RecordRetrievalException:
+            return Entity.create(name=name, serving_names=serving_names)
 
     @typechecked
     def add_parent(self, parent_entity_name: str, relation_dataset_name: str) -> None:
