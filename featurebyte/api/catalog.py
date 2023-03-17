@@ -156,10 +156,10 @@ class Catalog(CatalogModel, SavableApiObject):
 
         >>> import featurebyte as fb
         >>> catalog = fb.Catalog.get_or_create("grocery")
-        >>> fb.Catalog.list()[["name", "active"]]
-              name  active
-        0  grocery   False
-        1  default    True
+        >>> fb.Catalog.list()[["name"]]
+              name
+        0  grocery
+        1  default
 
         See Also
         --------
