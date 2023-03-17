@@ -207,7 +207,7 @@ async def test_schedule_online_feature_store__change_entity_universe(session, ti
     )
     await tile_online_store_ins.execute()
 
-    sql = f"SELECT * FROM {feature_store_table_name} ORDER BY UPDATED_AT"
+    sql = f"SELECT * FROM {feature_store_table_name} ORDER BY UPDATED_AT_{feature_name}"
     result = await session.execute_query(sql)
     assert len(result) == 4
     assert np.isnan(result[feature_name].iloc[0])

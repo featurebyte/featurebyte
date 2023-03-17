@@ -98,11 +98,11 @@ class TileScheduleOnlineStore(BaseModel):
                 await self._spark.execute_query(create_sql)
 
                 await self._spark.execute_query(
-                    f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT TIMESTAMP"
+                    f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP"
                 )
                 await retry_sql(
                     session=self._spark,
-                    sql=f"UPDATE {fs_table} SET UPDATED_AT = to_timestamp('{current_ts}')",
+                    sql=f"UPDATE {fs_table} SET UPDATED_AT_{f_name} = to_timestamp('{current_ts}')",
                 )
             else:
                 # feature store table already exists, insert records with the input feature sql
@@ -123,7 +123,7 @@ class TileScheduleOnlineStore(BaseModel):
 
                 if not col_exists:
                     await self._spark.execute_query(
-                        f"ALTER TABLE {fs_table} ADD COLUMN {f_name} {f_value_type}"
+                        f"ALTER TABLE {fs_table} ADD COLUMNS ({f_name} {f_value_type}, UPDATED_AT_{f_name} TIMESTAMP)"
                     )
 
                 # update or insert feature values for entities that are in entity universe
@@ -139,9 +139,9 @@ class TileScheduleOnlineStore(BaseModel):
                     merge into {fs_table} a using ({CACHE_TABLE_PLACEHOLDER}) b
                         on {on_condition_str}
                         when matched then
-                            update set a.{f_name} = b.{f_name}, a.UPDATED_AT = to_timestamp('{current_ts}')
+                            update set a.{f_name} = b.{f_name}, a.UPDATED_AT_{f_name} = to_timestamp('{current_ts}')
                         when not matched then
-                            insert ({entities_fname_str}, UPDATED_AT)
+                            insert ({entities_fname_str}, UPDATED_AT_{f_name})
                                 values ({values_args}, to_timestamp('{current_ts}'))
                 """
                 await retry_sql_with_cache(
@@ -149,5 +149,5 @@ class TileScheduleOnlineStore(BaseModel):
                 )
 
                 # remove feature values for entities that are not in entity universe
-                remove_values_sql = f"UPDATE {fs_table} SET {f_name} = NULL WHERE UPDATED_AT < to_timestamp('{current_ts}')"
+                remove_values_sql = f"UPDATE {fs_table} SET {f_name} = NULL WHERE UPDATED_AT_{f_name} < to_timestamp('{current_ts}')"
                 await retry_sql(session=self._spark, sql=remove_values_sql)
