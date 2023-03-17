@@ -559,11 +559,20 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
     def isnull(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Returns a boolean Series indicating whether each value is missing
+        Returns a boolean Series indicating whether each element is missing.
 
         Returns
         -------
         FrozenSeriesT
+            Column or Feature with boolean values
+
+        Examples
+        --------
+        Filter a View based on whether a column has null values:
+
+        >>> import featurebyte as fb
+        >>> view = fb.Table.get("GROCERYINVOICE")
+        >>> view_filtered = view[view["Amount"].isnull()]
         """
         return series_unary_operation(
             input_series=self,
@@ -575,11 +584,20 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
     def notnull(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Returns a boolean Series indicating whether each value is not null
+        Returns a boolean Series indicating whether each element is not null.
 
         Returns
         -------
         FrozenSeriesT
+            Column or Feature with boolean values
+
+        Examples
+        --------
+        Filter a View by removing rows where a column has null values:
+
+        >>> import featurebyte as fb
+        >>> view = fb.Table.get("GROCERYINVOICE")
+        >>> view_filtered = view[view["Amount"].notnull()]
         """
         return ~self.isnull()
 
@@ -638,7 +656,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def abs(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Compute the absolute numeric value of each element
+        Compute the absolute numeric value of each element.
 
         Returns
         -------
@@ -647,14 +665,14 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Examples
         --------
-        Compute absolute values for a column in a view:
+        Compute absolute values for a Column in a View:
 
         >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYCUSTOMER").get_view()
         >>> column = view["Longitude"].abs()
 
 
-        Compute absolute values for a feature:
+        Compute absolute values for a Feature:
 
         >>> import featurebyte as fb
         >>> feature = fb.Feature.get("StateCentroidLongitude")
@@ -671,11 +689,27 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def sqrt(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Computes the square root of the current Series
+        Compute the square root of each element.
 
         Returns
         -------
         FrozenSeriesT
+            Column or Feature with square root values
+
+        Examples
+        --------
+        Compute square root values for a Column in a View:
+
+        >>> import featurebyte as fb
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> column = view["Amount"].sqrt()
+
+
+        Compute square root values for a Feature:
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("StateArea")
+        >>> feature_sqrt = feature.sqrt()
         """
         return series_unary_operation(
             input_series=self,
@@ -688,7 +722,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def pow(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         """
-        Computes the exponential power of the current Series
+        Compute the exponential power of each element.
 
         Parameters
         ----------
@@ -698,6 +732,22 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Returns
         -------
         FrozenSeriesT
+            Column or Feature with exponential power values
+
+        Examples
+        --------
+        Compute exponential power values for a Column in a View:
+
+        >>> import featurebyte as fb
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> column = view["Amount"].pow(2)
+
+
+        Compute exponential power values for a Feature:
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("NumericFeature")
+        >>> feature_pow = feature.pow(2)
         """
         return self._binary_op(
             other=other,
@@ -708,11 +758,27 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def log(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Compute the natural logarithm of the Series
+        Compute the natural logarithm of each element.
 
         Returns
         -------
         FrozenSeriesT
+            Column or Feature with natural logarithm values
+
+        Examples
+        --------
+        Compute natural logarithm values for a Column in a View:
+
+        >>> import featurebyte as fb
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> column = view["Amount"].log()
+
+
+        Compute natural logarithm values for a Feature:
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("NumericFeature")
+        >>> feature_log = feature.log()
         """
         return series_unary_operation(
             input_series=self,
@@ -725,11 +791,27 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def exp(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Compute the exponential of the Series
+        Compute the exponential value of each element.
 
         Returns
         -------
         FrozenSeriesT
+            Column or Feature with exponential values
+
+        Examples
+        --------
+        Compute exponential values for a Column in a View:
+
+        >>> import featurebyte as fb
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> column = view["Amount"].exp()
+
+
+        Compute exponential values for a Feature:
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("NumericFeature")
+        >>> feature_exp = feature.exp()
         """
         return series_unary_operation(
             input_series=self,
@@ -742,11 +824,27 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def floor(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Round the Series to the nearest equal or smaller integer
+        Round each element to the nearest equal or smaller integer.
 
         Returns
         -------
         FrozenSeriesT
+            Column or Feature with rounded values
+
+        Examples
+        --------
+        Round values for a Column in a View:
+
+        >>> import featurebyte as fb
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> column = view["Amount"].floor()
+
+
+        Round values for a Feature:
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("NumericFeature")
+        >>> feature_floor = feature.floor()
         """
         return series_unary_operation(
             input_series=self,
@@ -759,11 +857,27 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def ceil(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Round the Series to the nearest equal or larger integer
+        Round each element to the nearest equal or larger integer.
 
         Returns
         -------
         FrozenSeriesT
+            Series or Feature with rounded values
+
+        Examples
+        --------
+        Compute rounded values for a Column in a View:
+
+        >>> import featurebyte as fb
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> column = view["Amount"].ceil()
+
+
+        Compute rounded values for a Feature:
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("InvoiceAmount")
+        >>> feature_ceil = feature.ceil()
         """
         return series_unary_operation(
             input_series=self,
@@ -796,7 +910,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence], right_op: bool = False
     ) -> FrozenSeriesT:
         """
-        Identify if values in a series is in another series, or a pre-defined sequence.
+        Identify if each element in a Series is in another Series, or a pre-defined sequence.
 
         Parameters
         ----------
