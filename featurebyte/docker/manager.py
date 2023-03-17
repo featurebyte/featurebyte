@@ -95,7 +95,7 @@ def get_docker_client(app_name: ApplicationName) -> Generator[DockerClient, None
             uid = os.getuid()
             user = pwd.getpwuid(uid)
             with open(compose_env_file, "w", encoding="utf8") as file_obj:
-                file_obj.write(f'LOCAL_UID="{uid}" LOCAL_GID="{user.pw_gid}"')
+                file_obj.write(f'LOCAL_UID="{uid}"\nLOCAL_GID="{user.pw_gid}"\n')
             docker = DockerClient(
                 compose_project_name=app_name.value,
                 compose_files=[os.path.join(get_package_root(), "docker/featurebyte.yml")],
