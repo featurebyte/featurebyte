@@ -12,6 +12,7 @@ from featurebyte.docker.manager import (
     get_status,
     print_logs,
     start_app,
+    start_playground,
     stop_app,
 )
 
@@ -32,6 +33,14 @@ def start(
 ) -> None:
     """Start application"""
     start_app(app_name, local)
+
+
+@app.command(name="playground")
+def playground(
+    local: bool = typer.Option(default=False, help="Do not pull new images from registry"),
+) -> None:
+    """Start playground environment"""
+    start_playground(local)
 
 
 @app.callback(invoke_without_command=True)

@@ -1,5 +1,5 @@
 """Python Library for FeatureOps"""
-from typing import Optional
+from typing import List, Optional
 
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
@@ -26,9 +26,9 @@ from featurebyte.core.timedelta import to_timedelta
 from featurebyte.datasets.app import import_dataset
 from featurebyte.docker.manager import ApplicationName
 from featurebyte.docker.manager import start_app as _start_app
+from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import AggFunc, SourceType, StorageType
-from featurebyte.logger import logger
 from featurebyte.models.credential import Credential, UsernamePasswordCredential
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListNewVersionMode
@@ -51,13 +51,13 @@ from featurebyte.schema.feature_list import FeatureVersionInfo
 version: str = get_version()
 
 
-def start(local: Optional[bool] = False) -> None:
+def start(local: bool = False) -> None:
     """
     Start featurebyte application
 
     Parameters
     ----------
-    local : Optional[bool]
+    local : bool
         Do not pull new images from registry, by default False
     """
     _start_app(ApplicationName.FEATUREBYTE, local=local, verbose=False)
@@ -70,40 +70,30 @@ def stop() -> None:
     _stop_app(ApplicationName.FEATUREBYTE, verbose=False)
 
 
-def playground(local: Optional[bool] = False) -> None:
+def start_spark(local: bool = False) -> None:
     """
-    Start featurebyte playground environment
+    Start local spark application
 
     Parameters
     ----------
-    local : Optional[bool]
+    local : bool
         Do not pull new images from registry, by default False
     """
-    logger.info("Starting featurebyte service")
-    _start_app(ApplicationName.FEATUREBYTE, local=local, verbose=False)
-    logger.info("Starting local spark service")
     _start_app(ApplicationName.SPARK, local=local, verbose=False)
-    for dataset in ["grocery", "healthcare", "creditcard"]:
-        logger.info(f"Importing dataset: {dataset}")
-        import_dataset(dataset, verbose=False)
 
-    # create local spark feature store
-    logger.info("Creating local spark feature store")
-    Configurations().use_profile("local")
-    FeatureStore.get_or_create(
-        name="playground",
-        source_type=SourceType.SPARK,
-        details=SparkDetails(
-            host="spark-thrift",
-            http_path="cliservice",
-            port=10000,
-            storage_type="file",
-            storage_url="/data/staging/featurebyte",
-            storage_spark_url="file:///opt/spark/data/staging/featurebyte",
-            featurebyte_catalog="spark_catalog",
-            featurebyte_schema="playground",
-        ),
-    )
+
+def playground(local: bool = False, datasets: Optional[List[str]] = None) -> None:
+    """
+    Start playground environment
+
+    Parameters
+    ----------
+    local : bool
+        Do not pull new images from registry, by default False
+    datasets : Optional[List[str]]
+        List of datasets to import, by default None (import all datasets)
+    """
+    _start_playground(local=local, datasets=datasets)
 
 
 __all__ = [

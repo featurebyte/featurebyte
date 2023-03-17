@@ -22,7 +22,7 @@ from featurebyte.api.relationship import Relationship
 from featurebyte.api.table import Table
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import activate_catalog, get_active_catalog_id
-from featurebyte.exception import DuplicatedRecordException
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
@@ -124,20 +124,9 @@ class Catalog(CatalogModel, SavableApiObject):
         -------
         Catalog
 
-        Examples
+        See Also
         --------
-        Create a new catalog
-
-        >>> import featurebyte as fb
-        >>> fb.Catalog.create(  # doctest: +SKIP
-        ...     name="My Catalog"
-        ... )
-
-        List catalogs
-        >>> fb.Catalog.list()  # doctest: +SKIP
-                                  id	             name	             created_at	active
-        0	63ef2ca50523266031b728dd	     My Catalog	2023-02-17 07:28:37.368   True
-        1	63eda344d0313fb925f7883a	          default	2023-02-17 07:03:26.267	 False
+        Catalog.get_or_create
         """
         catalog = cls(name=name)
         catalog.save()
@@ -161,14 +150,28 @@ class Catalog(CatalogModel, SavableApiObject):
         -------
         Catalog
 
+        Examples
+        --------
+        Create a new catalog
+
+        >>> import featurebyte as fb
+        >>> catalog = fb.Catalog.get_or_create("grocery")
+        >>> catalog.name
+        'grocery'
+
+        List catalogs
+        >>> fb.Catalog.list()  # doctest: +SKIP
+            name              created_at  active
+         grocery 2023-03-15 15:45:06.551   False
+
         See Also
         --------
         Catalog.create
         """
         try:
-            return Catalog.create(name=name)
-        except DuplicatedRecordException:
             return Catalog.get(name=name)
+        except RecordRetrievalException:
+            return Catalog.create(name=name)
 
     @classmethod
     def get_active(cls) -> Catalog:

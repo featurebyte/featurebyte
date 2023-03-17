@@ -1,8 +1,6 @@
 """
 CLI tools for managing sample datasets
 """
-from typing import Optional
-
 import base64
 import os
 import re
@@ -17,6 +15,7 @@ from rich.console import Console
 from rich.table import Table
 
 from featurebyte.common.path_util import get_package_root
+from featurebyte.logger import logger
 
 console = Console()
 datasets_dir = os.path.join(get_package_root(), "datasets")
@@ -30,9 +29,7 @@ app = typer.Typer(
 
 @app.command(name="list")
 def list_datasets() -> None:
-    """
-    List datasets available
-    """
+    """List datasets available"""
     table = Table(title="Sample Datasets")
     table.add_column("Name", justify="left", style="cyan")
     table.add_column("Url", justify="left")
@@ -52,7 +49,7 @@ def list_datasets() -> None:
 
 
 @app.command(name="import")
-def import_dataset(dataset_name: str, verbose: Optional[bool] = True) -> None:
+def import_dataset(dataset_name: str) -> None:
     """
     Import dataset to local Spark database. Ensure local Spark app is running.
     """
@@ -86,13 +83,11 @@ def import_dataset(dataset_name: str, verbose: Optional[bool] = True) -> None:
             with tempfile.TemporaryDirectory() as tempdir:
                 # download tar file
                 local_path = os.path.join(tempdir, "data.tar.gz")
-                if verbose:
-                    console.print(f"Downloading data from: {url} -> {local_path}")
+                logger.debug(f"Downloading data from: {url} -> {local_path}")
                 request.urlretrieve(url, local_path)  # nosec
 
                 # extracting files to staging location
-                if verbose:
-                    console.print(f"Extracting files to staging location: {local_staging_path}")
+                logger.debug(f"Extracting files to staging location: {local_staging_path}")
                 with tarfile.open(local_path) as file_obj:
                     file_obj.extractall(
                         local_staging_path,
@@ -103,15 +98,12 @@ def import_dataset(dataset_name: str, verbose: Optional[bool] = True) -> None:
                     )
 
         sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")
-        params = {
-            "container": "featurebyte-server",
-            "command": ["python", "-m", "featurebyte.datasets.__main__", sql_b64],
-        }
-        if verbose:
-            for line in DockerClient().execute(**params, tty=True):  # type:ignore
-                console.print(line)
-        else:
-            DockerClient().execute(**params)  # type:ignore
+        for line in DockerClient().execute(  # type:ignore
+            container="featurebyte-server",
+            command=["python", "-m", "featurebyte.datasets.__main__", sql_b64],
+            tty=True,
+        ):
+            logger.debug(line)
 
 
 if __name__ == "__main__":

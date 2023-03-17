@@ -1,5 +1,5 @@
 """
-Featurebyte CLI tools
+Featurebyte tools for managing docker containers
 """
 from typing import Generator, List, Optional
 
@@ -18,7 +18,12 @@ from rich.status import Status
 from rich.table import Table
 from rich.text import Text
 
+from featurebyte.api.feature_store import FeatureStore, SourceType
 from featurebyte.common.path_util import get_package_root
+from featurebyte.config import Configurations
+from featurebyte.datasets.app import import_dataset
+from featurebyte.logger import logger
+from featurebyte.query_graph.node.schema import SparkDetails
 
 
 class ApplicationName(str, Enum):
@@ -271,6 +276,47 @@ def start_app(
     finally:
         __restore_docker_conf()
         __delete_docker_backup()
+
+
+def start_playground(local: bool = False, datasets: Optional[List[str]] = None) -> None:
+    """
+    Start featurebyte playground environment
+
+    Parameters
+    ----------
+    local : bool
+        Do not pull new images from registry, by default False
+    datasets : Optional[List[str]]
+        List of datasets to import, by default None (import all datasets)
+    """
+    logger.info("Starting featurebyte service")
+    start_app(ApplicationName.FEATUREBYTE, local=local, verbose=False)
+    logger.info("Starting local spark service")
+    start_app(ApplicationName.SPARK, local=local, verbose=False)
+
+    # import datasets
+    datasets = datasets or ["grocery", "healthcare", "creditcard"]
+    for dataset in datasets:
+        logger.info(f"Importing dataset: {dataset}")
+        import_dataset(dataset)
+
+    # create local spark feature store
+    logger.info("Creating local spark feature store")
+    Configurations().use_profile("local")
+    FeatureStore.get_or_create(
+        name="playground",
+        source_type=SourceType.SPARK,
+        details=SparkDetails(
+            host="spark-thrift",
+            http_path="cliservice",
+            port=10000,
+            storage_type="file",
+            storage_url="/data/staging/featurebyte",
+            storage_spark_url="file:///opt/spark/data/staging/featurebyte",
+            featurebyte_catalog="spark_catalog",
+            featurebyte_schema="playground",
+        ),
+    )
 
 
 def stop_app(
