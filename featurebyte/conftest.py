@@ -12,4 +12,4 @@ def add_imports(doctest_namespace):
 
 @pytest.fixture(autouse=True)
 def activate_playground_catalog():
-    featurebyte.Catalog.activate("quick start feature engineering 20230317:2047")
+    featurebyte.Catalog.activate("grocery")
