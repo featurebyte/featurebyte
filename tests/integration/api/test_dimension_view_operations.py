@@ -5,7 +5,7 @@ Integration tests related to DimensionView
 import pandas as pd
 import pytest
 
-from featurebyte import EventView, Feature, ItemView
+from featurebyte import Feature
 from featurebyte.common.typing import is_scalar_nan
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
@@ -27,7 +27,7 @@ def count_item_type_dictionary_feature_fixture(item_data):
 
     Feature is grouped by ORDER_ID, with ITEM_TYPE as their category.
     """
-    item_data = ItemView.from_item_data(item_data)
+    item_data = item_data.get_view()
     return item_data.groupby("order_id", category="item_type").aggregate(
         method="count",
         feature_name="COUNT_ITEM_TYPE",
@@ -62,7 +62,7 @@ def test_dimension_lookup_features(dimension_view):
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_is_in_dictionary__target_is_dictionary_feature(
     item_type_dimension_lookup_feature, event_data
 ):
@@ -70,7 +70,7 @@ def test_is_in_dictionary__target_is_dictionary_feature(
     Test is in dictionary
     """
     # get dictionary feature
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     feature_group = event_view.groupby("CUST_ID", category="ÜSER ID").aggregate_over(
         value_column="PRODUCT_ACTION",
         method="latest",
@@ -93,7 +93,7 @@ def test_is_in_dictionary__target_is_dictionary_feature(
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature):
     """
     Test is in array
@@ -112,7 +112,7 @@ def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature):
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_value_from_dictionary__target_is_lookup_feature(
     item_type_dimension_lookup_feature, count_item_type_dictionary_feature
 ):
@@ -124,7 +124,8 @@ def test_get_value_from_dictionary__target_is_lookup_feature(
         item_type_dimension_lookup_feature
     )
     assert isinstance(get_value_feature, Feature)
-    get_value_feature.name = "get_count_value_from_dictionary"
+    feature_name = "get_count_value_from_dictionary"
+    get_value_feature.name = feature_name
 
     # assert
     preview_params = {
@@ -133,20 +134,27 @@ def test_get_value_from_dictionary__target_is_lookup_feature(
         "order_id": "T2",
     }
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
+
+    # Note: Snowflake returns the count value 1 as a string because the value type has to be VARIANT
+    # when constructing the dictionary. Spark returns the count value 1 as an int which is more
+    # correct. Adding this cast here so that the test works for both backends, but ideally we should
+    # fix Snowflake to return the correct type when looking up values from a dictionary.
+    get_value_feature_preview[feature_name] = get_value_feature_preview[feature_name].astype(int)
+
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
-        get_value_feature.name: "1",
+        feature_name: 1,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_value_in_dictionary__target_is_scalar(event_data):
     """
     Test is in dictionary
     """
     # get dictionary feature
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     feature_name = "SUM_AMOUNT_DICT_30d"
     feature_group = event_view.groupby("CUST_ID", category="PRODUCT_ACTION").aggregate_over(
         value_column="ÀMOUNT",
@@ -159,19 +167,25 @@ def test_get_value_in_dictionary__target_is_scalar(event_data):
     # perform get_value
     get_value_feature = dictionary_feature.cd.get_value("detail")
     assert isinstance(get_value_feature, Feature)
-    get_value_feature.name = "get_value_in_dictionary"
+    feature_name = "get_value_in_dictionary"
+    get_value_feature.name = feature_name
 
     # assert
     preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "cust_id": "350"}
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
+
+    # Note: See notes above in test_get_value_from_dictionary__target_is_lookup_feature for why the
+    # casting is needed.
+    get_value_feature_preview[feature_name] = get_value_feature_preview[feature_name].astype(float)
+
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
-        get_value_feature.name: "4.421000000000000e+01",
+        feature_name: 44.21,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
     item_type_dimension_lookup_feature, count_item_type_dictionary_feature
 ):
@@ -199,7 +213,7 @@ def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_relative_frequency_in_dictionary__target_is_scalar(count_item_type_dictionary_feature):
     """
     Test get relative frequency
@@ -219,7 +233,7 @@ def test_get_relative_frequency_in_dictionary__target_is_scalar(count_item_type_
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_rank_from_dictionary__target_is_lookup_feature(
     item_type_dimension_lookup_feature, count_item_type_dictionary_feature
 ):
@@ -247,7 +261,7 @@ def test_get_rank_from_dictionary__target_is_lookup_feature(
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_feature):
     """
     Test get rank in dictionary
@@ -267,7 +281,7 @@ def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_fea
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_rank_in_dictionary__target_is_not_found(count_item_type_dictionary_feature):
     """
     Test get rank in dictionary, key is not found

@@ -48,7 +48,7 @@ services:
       WORKERS: 3
       LOG_LEVEL: info
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088/status"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8088/status"]
     volumes:
       - ./migration.py:/scripts/migration.py
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml

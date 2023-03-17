@@ -57,10 +57,11 @@ $$
     snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "STARTED").replace("<MESSAGE>", "")})
 
     // determine tile_end_ts (tile end timestamp) based on tile_type and JOB_SCHEDULE_TS
-    var tile_end_ts = JOB_SCHEDULE_TS
+    var last_tile_end_ts = JOB_SCHEDULE_TS
     cron_residue_seconds = TIME_MODULO_FREQUENCY_SECONDS % 60
-    tile_end_ts.setSeconds(cron_residue_seconds)
-    tile_end_ts.setSeconds(tile_end_ts.getSeconds() - BLIND_SPOT_SECONDS)
+    last_tile_end_ts.setSeconds(cron_residue_seconds)
+    last_tile_end_ts.setSeconds(last_tile_end_ts.getSeconds() - BLIND_SPOT_SECONDS)
+    tile_end_ts = last_tile_end_ts
 
     debug = " - tile_end_ts: " + tile_end_ts
 
@@ -80,6 +81,16 @@ $$
     tile_start_ts.setMinutes(tile_start_ts.getMinutes() - lookback_period)
     tile_start_ts_str = tile_start_ts.toISOString()
     debug = debug + " - tile_start_ts_str: " + tile_start_ts_str
+    monitor_tile_start_ts_str = tile_start_ts_str
+
+    result = snowflake.execute({sqlText: `SELECT to_varchar(LAST_TILE_START_DATE_ONLINE, 'YYYY-MM-DD"T"HH24:MI:SS.ff3"Z"') FROM TILE_REGISTRY WHERE TILE_ID = '${tile_id}' AND LAST_TILE_START_DATE_ONLINE IS NOT NULL`})
+    if (result.next()) {
+        registry_last_tile_start_ts = result.getColumnValue(1)
+        debug = debug + " - registry_last_tile_start_ts: " + registry_last_tile_start_ts
+        if (registry_last_tile_start_ts < tile_start_ts_str) {
+            tile_start_ts_str = registry_last_tile_start_ts
+        }
+    }
 
     // trigger stored procedure to monitor previous tiles. No need to monitor the last tile to be created
     var monitor_end_ts = new Date(tile_end_ts.getTime())
@@ -87,7 +98,7 @@ $$
     monitor_tile_end_ts_str = monitor_end_ts.toISOString()
     debug = debug + " - monitor_tile_end_ts_str: " + monitor_tile_end_ts_str
 
-    var monitor_input_sql = SQL.replaceAll(`${TILE_START_DATE_PLACEHOLDER}`, "''"+tile_start_ts_str+"''").replaceAll(`${TILE_END_DATE_PLACEHOLDER}`, "''"+monitor_tile_end_ts_str+"''")
+    var monitor_input_sql = SQL.replaceAll(`${TILE_START_DATE_PLACEHOLDER}`, "''"+monitor_tile_start_ts_str+"''").replaceAll(`${TILE_END_DATE_PLACEHOLDER}`, "''"+monitor_tile_end_ts_str+"''")
     var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', '${TILE_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${tile_id}', '${tile_type}')`
     try {
         result = snowflake.execute({sqlText: monitor_stored_proc})
@@ -122,7 +133,7 @@ $$
 
     // update related online feature store
     try {
-        job_schedule_ts_str = JOB_SCHEDULE_TS.toISOString()
+        job_schedule_ts_str = last_tile_end_ts.toISOString()
         snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${AGGREGATION_ID}', '${job_schedule_ts_str}')`})
     } catch (err)  {
         message = err.message.replaceAll("'", "")

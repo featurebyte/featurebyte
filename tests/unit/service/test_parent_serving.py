@@ -218,3 +218,43 @@ async def test_get_join_steps__ambiguous_relationships(
             entity_info_with_ambiguous_relationships
         )
     assert str(exc_info.value) == "Cannot find an unambiguous join path for entity entity_e"
+
+
+@pytest.mark.asyncio
+async def test_get_join_steps__multiple_provided(
+    entity_a,
+    entity_b,
+    entity_d,
+    b_is_parent_of_a,
+    c_is_parent_of_b,
+    d_is_parent_of_c,
+    parent_entity_lookup_service,
+):
+    """
+    Test looking up parent entity when more than one entity in the join path are provided. In this
+    case, to obtain entity D we can perform two joins from entity B. The join path must not involve
+    entity A (otherwise B would be duplicated and that would cause the generated sql to be invalid).
+
+    a (provided) --> b (provided) --> c --> d (required)
+    """
+    _ = b_is_parent_of_a
+    data_b_to_c = c_is_parent_of_b
+    data_c_to_d = d_is_parent_of_c
+    entity_info = EntityInfo(required_entities=[entity_d], provided_entities=[entity_a, entity_b])
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    assert join_steps == [
+        JoinStep(
+            data=data_b_to_c.dict(by_alias=True),
+            parent_key="c",
+            parent_serving_name="C",
+            child_key="b",
+            child_serving_name="B",
+        ),
+        JoinStep(
+            data=data_c_to_d.dict(by_alias=True),
+            parent_key="d",
+            parent_serving_name="D",
+            child_key="c",
+            child_serving_name="C",
+        ),
+    ]

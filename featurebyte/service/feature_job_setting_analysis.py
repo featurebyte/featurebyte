@@ -18,7 +18,7 @@ from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisTaskPayload,
 )
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.event_data import EventDataService
+from featurebyte.service.event_table import EventTableService
 
 
 class FeatureJobSettingAnalysisService(
@@ -61,19 +61,19 @@ class FeatureJobSettingAnalysisService(
         )
 
         # check that event data exists
-        event_data_service = EventDataService(
+        event_data_service = EventTableService(
             user=self.user,
             persistent=self.persistent,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
         )
         event_data = await event_data_service.get_document(document_id=data.event_data_id)
-        if not event_data.record_creation_date_column:
+        if not event_data.record_creation_timestamp_column:
             raise DocumentError("Creation date column is not available for the event data.")
 
         return FeatureJobSettingAnalysisTaskPayload(
             **data.dict(),
             user_id=self.user.id,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
             output_document_id=output_document_id,
         )
 
@@ -103,6 +103,6 @@ class FeatureJobSettingAnalysisService(
         return FeatureJobSettingAnalysisBackTestTaskPayload(
             **data.dict(),
             user_id=self.user.id,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
             output_document_id=output_document_id,
         )

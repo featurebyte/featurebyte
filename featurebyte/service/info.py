@@ -11,8 +11,8 @@ from featurebyte import DataCleaningOperation
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_store import DataModel
-from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.models.feature_store import TableModel
+from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -22,11 +22,11 @@ from featurebyte.query_graph.model.feature_job_setting import (
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (
-    DataBriefInfoList,
-    DimensionDataInfo,
+    CatalogInfo,
+    DimensionTableInfo,
     EntityBriefInfoList,
     EntityInfo,
-    EventDataInfo,
+    EventTableInfo,
     FeatureInfo,
     FeatureJobSettingAnalysisInfo,
     FeatureListBriefInfoList,
@@ -34,32 +34,32 @@ from featurebyte.schema.info import (
     FeatureListNamespaceInfo,
     FeatureNamespaceInfo,
     FeatureStoreInfo,
-    ItemDataInfo,
-    SCDDataInfo,
-    WorkspaceInfo,
+    ItemTableInfo,
+    SCDTableInfo,
+    TableBriefInfoList,
 )
 from featurebyte.schema.relationship_info import RelationshipInfoInfo
 from featurebyte.schema.semantic import SemanticList
-from featurebyte.schema.tabular_data import TabularDataList
+from featurebyte.schema.table import TableList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService
-from featurebyte.service.dimension_data import DimensionDataService
+from featurebyte.service.catalog import CatalogService
+from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
-from featurebyte.service.event_data import EventDataService
+from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.item_data import ItemDataService
+from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
 from featurebyte.service.relationship_info import RelationshipInfoService
-from featurebyte.service.scd_data import SCDDataService
+from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
-from featurebyte.service.tabular_data import DataService
+from featurebyte.service.table import TableService
 from featurebyte.service.user_service import UserService
-from featurebyte.service.workspace import WorkspaceService
 
 ObjectT = TypeVar("ObjectT")
 
@@ -71,52 +71,50 @@ class InfoService(BaseService):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
-        super().__init__(user, persistent, workspace_id)
-        self.data_service = DataService(user=user, persistent=persistent, workspace_id=workspace_id)
-        self.event_data_service = EventDataService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+        super().__init__(user, persistent, catalog_id)
+        self.data_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.event_data_service = EventTableService(
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.item_data_service = ItemDataService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+        self.item_data_service = ItemTableService(
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.dimension_data_service = DimensionDataService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+        self.dimension_data_service = DimensionTableService(
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.scd_data_service = SCDDataService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+        self.scd_data_service = SCDTableService(
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.semantic_service = SemanticService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_store_service = FeatureStoreService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.entity_service = EntityService(
-            user=user, persistent=persistent, workspace_id=workspace_id
-        )
+        self.entity_service = EntityService(user=user, persistent=persistent, catalog_id=catalog_id)
         self.feature_service = FeatureService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_namespace_service = FeatureNamespaceService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_list_service = FeatureListService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_job_setting_analysis_service = FeatureJobSettingAnalysisService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.workspace_service = WorkspaceService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+        self.catalog_service = CatalogService(
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.relationship_info_service = RelationshipInfoService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.user_service = UserService(user=user, persistent=persistent, workspace_id=workspace_id)
+        self.user_service = UserService(user=user, persistent=persistent, catalog_id=catalog_id)
 
     @staticmethod
     async def _get_list_object(
@@ -190,24 +188,24 @@ class InfoService(BaseService):
         _ = verbose
         entity = await self.entity_service.get_document(document_id=document_id)
 
-        # get workspace info
-        workspace = await self.workspace_service.get_document(entity.workspace_id)
+        # get catalog info
+        catalog = await self.catalog_service.get_document(entity.catalog_id)
 
         return EntityInfo(
             name=entity.name,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
             serving_names=entity.serving_names,
-            workspace_name=workspace.name,
+            catalog_name=catalog.name,
         )
 
-    async def _get_data_info(self, data_document: DataModel, verbose: bool) -> Dict[str, Any]:
+    async def _get_data_info(self, data_document: TableModel, verbose: bool) -> Dict[str, Any]:
         """
         Get data info
 
         Parameters
         ----------
-        data_document: DataModel
+        data_document: TableModel
             Data document (could be event data, SCD data, item data, dimension data, etc)
         verbose: bool
             Verbose or not
@@ -239,24 +237,24 @@ class InfoService(BaseService):
                     }
                 )
 
-        # get workspace info
-        workspace = await self.workspace_service.get_document(data_document.workspace_id)
+        # get catalog info
+        catalog = await self.catalog_service.get_document(data_document.catalog_id)
         for entity in entities["data"]:
-            assert entity["workspace_id"] == workspace.id
-            entity["workspace_name"] = workspace.name
+            assert entity["catalog_id"] == catalog.id
+            entity["catalog_name"] = catalog.name
 
         return {
             "name": data_document.name,
             "created_at": data_document.created_at,
             "updated_at": data_document.updated_at,
-            "record_creation_date_column": data_document.record_creation_date_column,
+            "record_creation_timestamp_column": data_document.record_creation_timestamp_column,
             "table_details": data_document.tabular_source.table_details,
             "status": data_document.status,
             "entities": EntityBriefInfoList.from_paginated_data(entities),
             "semantics": [semantic["name"] for semantic in semantics["data"]],
             "column_count": len(data_document.columns_info),
             "columns_info": columns_info,
-            "workspace_name": workspace.name,
+            "catalog_name": catalog.name,
         }
 
     async def get_relationship_info_info(self, document_id: ObjectId) -> RelationshipInfoInfo:
@@ -298,7 +296,7 @@ class InfoService(BaseService):
             updated_by=updated_user_name,
         )
 
-    async def get_event_data_info(self, document_id: ObjectId, verbose: bool) -> EventDataInfo:
+    async def get_event_table_info(self, document_id: ObjectId, verbose: bool) -> EventTableInfo:
         """
         Get event data info
 
@@ -311,18 +309,18 @@ class InfoService(BaseService):
 
         Returns
         -------
-        EventDataInfo
+        EventTableInfo
         """
         event_data = await self.event_data_service.get_document(document_id=document_id)
         data_dict = await self._get_data_info(data_document=event_data, verbose=verbose)
-        return EventDataInfo(
+        return EventTableInfo(
             **data_dict,
             event_id_column=event_data.event_id_column,
             event_timestamp_column=event_data.event_timestamp_column,
             default_feature_job_setting=event_data.default_feature_job_setting,
         )
 
-    async def get_item_data_info(self, document_id: ObjectId, verbose: bool) -> ItemDataInfo:
+    async def get_item_table_info(self, document_id: ObjectId, verbose: bool) -> ItemTableInfo:
         """
         Get item data info
 
@@ -335,21 +333,21 @@ class InfoService(BaseService):
 
         Returns
         -------
-        ItemDataInfo
+        ItemTableInfo
         """
         item_data = await self.item_data_service.get_document(document_id=document_id)
         data_dict = await self._get_data_info(data_document=item_data, verbose=verbose)
         event_data = await self.event_data_service.get_document(document_id=item_data.event_data_id)
-        return ItemDataInfo(
+        return ItemTableInfo(
             **data_dict,
             event_id_column=item_data.event_id_column,
             item_id_column=item_data.item_id_column,
             event_data_name=event_data.name,
         )
 
-    async def get_dimension_data_info(
+    async def get_dimension_table_info(
         self, document_id: ObjectId, verbose: bool
-    ) -> DimensionDataInfo:
+    ) -> DimensionTableInfo:
         """
         Get dimension data info
 
@@ -362,16 +360,16 @@ class InfoService(BaseService):
 
         Returns
         -------
-        DimensionDataInfo
+        DimensionTableInfo
         """
         dimension_data = await self.dimension_data_service.get_document(document_id=document_id)
         data_dict = await self._get_data_info(data_document=dimension_data, verbose=verbose)
-        return DimensionDataInfo(
+        return DimensionTableInfo(
             **data_dict,
             dimension_id_column=dimension_data.dimension_id_column,
         )
 
-    async def get_scd_data_info(self, document_id: ObjectId, verbose: bool) -> SCDDataInfo:
+    async def get_scd_table_info(self, document_id: ObjectId, verbose: bool) -> SCDTableInfo:
         """
         Get Slow Changing Dimension data info
 
@@ -384,11 +382,11 @@ class InfoService(BaseService):
 
         Returns
         -------
-        SCDDataInfo
+        SCDTableInfo
         """
         scd_data = await self.scd_data_service.get_document(document_id=document_id)
         data_dict = await self._get_data_info(data_document=scd_data, verbose=verbose)
-        return SCDDataInfo(
+        return SCDTableInfo(
             **data_dict,
             natural_key_column=scd_data.natural_key_column,
             effective_timestamp_column=scd_data.effective_timestamp_column,
@@ -398,7 +396,7 @@ class InfoService(BaseService):
         )
 
     @staticmethod
-    def _get_main_data(tabular_data_list: list[TabularDataModel]) -> TabularDataModel:
+    def _get_main_data(tabular_data_list: list[ProxyTableModel]) -> ProxyTableModel:
         """
         Get the main data from the list of tabular data
 
@@ -409,7 +407,7 @@ class InfoService(BaseService):
 
         Returns
         -------
-        TabularDataModel
+        ProxyTableModel
         """
         data_priority_map = {}
         for tabular_data in tabular_data_list:
@@ -426,7 +424,7 @@ class InfoService(BaseService):
     async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
         # retrieve related tabular data & semantic
         tabular_data_list = await self._get_list_object(
-            self.data_service, op_struct.tabular_data_ids, TabularDataList
+            self.data_service, op_struct.tabular_data_ids, TableList
         )
         semantic_list = await self._get_list_object(
             self.semantic_service, tabular_data_list.semantic_ids, SemanticList
@@ -637,26 +635,26 @@ class InfoService(BaseService):
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
         )
 
-        # get workspace info
-        workspace = await self.workspace_service.get_document(namespace.workspace_id)
+        # get catalog info
+        catalog = await self.catalog_service.get_document(namespace.catalog_id)
         for entity in entities["data"]:
-            assert entity["workspace_id"] == workspace.id
-            entity["workspace_name"] = workspace.name
+            assert entity["catalog_id"] == catalog.id
+            entity["catalog_name"] = catalog.name
         for data in tabular_data["data"]:
-            assert data["workspace_id"] == workspace.id
-            data["workspace_name"] = workspace.name
+            assert data["catalog_id"] == catalog.id
+            data["catalog_name"] = catalog.name
 
         return FeatureNamespaceInfo(
             name=namespace.name,
             created_at=namespace.created_at,
             updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
-            tabular_data=DataBriefInfoList.from_paginated_data(tabular_data),
+            tabular_data=TableBriefInfoList.from_paginated_data(tabular_data),
             default_version_mode=namespace.default_version_mode,
             default_feature_id=namespace.default_feature_id,
             dtype=namespace.dtype,
             version_count=len(namespace.feature_ids),
-            workspace_name=workspace.name,
+            catalog_name=catalog.name,
         )
 
     async def get_feature_list_info(self, document_id: ObjectId, verbose: bool) -> FeatureListInfo:
@@ -741,28 +739,28 @@ class InfoService(BaseService):
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
         )
 
-        # get workspace info
-        workspace = await self.workspace_service.get_document(namespace.workspace_id)
+        # get catalog info
+        catalog = await self.catalog_service.get_document(namespace.catalog_id)
         for entity in entities["data"]:
-            assert entity["workspace_id"] == workspace.id
-            entity["workspace_name"] = workspace.name
+            assert entity["catalog_id"] == catalog.id
+            entity["catalog_name"] = catalog.name
         for data in tabular_data["data"]:
-            assert data["workspace_id"] == workspace.id
-            data["workspace_name"] = workspace.name
+            assert data["catalog_id"] == catalog.id
+            data["catalog_name"] = catalog.name
 
         return FeatureListNamespaceInfo(
             name=namespace.name,
             created_at=namespace.created_at,
             updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
-            tabular_data=DataBriefInfoList.from_paginated_data(tabular_data),
+            tabular_data=TableBriefInfoList.from_paginated_data(tabular_data),
             default_version_mode=namespace.default_version_mode,
             default_feature_list_id=namespace.default_feature_list_id,
             dtype_distribution=namespace.dtype_distribution,
             version_count=len(namespace.feature_list_ids),
             feature_count=len(namespace.feature_namespace_ids),
             status=namespace.status,
-            workspace_name=workspace.name,
+            catalog_name=catalog.name,
         )
 
     async def get_feature_job_setting_analysis_info(
@@ -793,10 +791,8 @@ class InfoService(BaseService):
             document_id=feature_job_setting_analysis.event_data_id
         )
 
-        # get workspace info
-        workspace = await self.workspace_service.get_document(
-            feature_job_setting_analysis.workspace_id
-        )
+        # get catalog info
+        catalog = await self.catalog_service.get_document(feature_job_setting_analysis.catalog_id)
 
         return FeatureJobSettingAnalysisInfo(
             created_at=feature_job_setting_analysis.created_at,
@@ -808,12 +804,12 @@ class InfoService(BaseService):
                 time_modulo_frequency=f"{recommended_setting.job_time_modulo_frequency}s",
                 frequency=f"{recommended_setting.frequency}s",
             ),
-            workspace_name=workspace.name,
+            catalog_name=catalog.name,
         )
 
-    async def get_workspace_info(self, document_id: ObjectId, verbose: bool) -> WorkspaceInfo:
+    async def get_catalog_info(self, document_id: ObjectId, verbose: bool) -> CatalogInfo:
         """
-        Get workspace info
+        Get catalog info
 
         Parameters
         ----------
@@ -824,12 +820,12 @@ class InfoService(BaseService):
 
         Returns
         -------
-        WorkspaceInfo
+        CatalogInfo
         """
         _ = verbose
-        workspace = await self.workspace_service.get_document(document_id=document_id)
-        return WorkspaceInfo(
-            name=workspace.name,
-            created_at=workspace.created_at,
-            updated_at=workspace.updated_at,
+        catalog = await self.catalog_service.get_document(document_id=document_id)
+        return CatalogInfo(
+            name=catalog.name,
+            created_at=catalog.created_at,
+            updated_at=catalog.updated_at,
         )

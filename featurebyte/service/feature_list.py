@@ -75,7 +75,7 @@ class FeatureListService(
         feature_namespace_ids = set()
         features = []
         feature_service = FeatureService(
-            user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
         )
         for feature_id in document.feature_ids:
             # retrieve feature from the persistent
@@ -111,7 +111,7 @@ class FeatureListService(
         self, features: list[FeatureModel], feature_list_id: ObjectId
     ) -> None:
         feature_service = FeatureService(
-            user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
         )
         for feature in features:
             await feature_service.update_document(
@@ -141,7 +141,7 @@ class FeatureListService(
                 "feature_ids": sorted(data.feature_ids),
                 "version": await self._get_feature_list_version(data.name),
                 "user_id": self.user.id,
-                "workspace_id": self.workspace_id,
+                "catalog_id": self.catalog_id,
             }
         )
 
@@ -168,7 +168,7 @@ class FeatureListService(
             feature_list_namespace_service = FeatureListNamespaceService(
                 user=self.user,
                 persistent=self.persistent,
-                workspace_id=self.workspace_id,
+                catalog_id=self.catalog_id,
             )
             try:
                 feature_list_namespace = await feature_list_namespace_service.get_document(
@@ -178,7 +178,7 @@ class FeatureListService(
                     feature_list=document,
                     feature_list_namespace=feature_list_namespace,
                     feature_service=FeatureService(
-                        user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+                        user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
                     ),
                 )
                 feature_list_namespace = await feature_list_namespace_service.update_document(

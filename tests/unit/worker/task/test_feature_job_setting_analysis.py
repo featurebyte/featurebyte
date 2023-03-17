@@ -9,7 +9,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.event_data import EventDataModel
+from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
@@ -39,10 +39,10 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
         # save event data
-        payload = self.load_payload("tests/fixtures/request_payloads/event_data.json")
+        payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
         await persistent.insert_one(
-            collection_name=EventDataModel.collection_name(),
-            document=EventDataModel(**payload).dict(by_alias=True),
+            collection_name=EventTableModel.collection_name(),
+            document=EventTableModel(**payload).dict(by_alias=True),
             user_id=None,
         )
 
@@ -133,7 +133,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             )
         assert (
             str(excinfo.value)
-            == f'EventData (id: "{event_data_id}") not found. Please save the EventData object first.'
+            == f'EventTable (id: "{event_data_id}") not found. Please save the EventTable object first.'
         )
 
         # check progress update records

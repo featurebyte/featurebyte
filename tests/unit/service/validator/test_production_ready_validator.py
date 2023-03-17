@@ -4,19 +4,20 @@ Test production ready validator
 import textwrap
 
 import pytest
+from bson import ObjectId
 
-from featurebyte import DimensionView, EventView, Feature, FeatureJobSetting, MissingValueImputation
+from featurebyte import DimensionView, Feature, FeatureJobSetting, MissingValueImputation
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
 @pytest.fixture(name="production_ready_validator")
-def production_ready_validator_fixture(feature_namespace_service, version_service):
+def production_ready_validator_fixture(version_service, feature_service):
     """
     Get production ready validator
     """
     return ProductionReadyValidator(
-        feature_namespace_service=feature_namespace_service,
         version_service=version_service,
+        feature_service=feature_service,
     )
 
 
@@ -57,7 +58,6 @@ def format_exception_string_for_comparison(exception_str: str) -> str:
 @pytest.mark.asyncio
 async def test_validate(
     production_ready_validator,
-    snowflake_feature_store,
     snowflake_event_data_with_entity,
     feature_group_feature_job_setting,
 ):
@@ -65,7 +65,6 @@ async def test_validate(
     Test the validate method returns an error when there are differences.
     """
     # Generate a feature
-    snowflake_feature_store.save()
     snowflake_event_data_with_entity.save()
     snowflake_event_data_with_entity.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
@@ -76,7 +75,7 @@ async def test_validate(
         ]
     )
 
-    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    event_view = snowflake_event_data_with_entity.get_view()
     updated_feature_job_setting = feature_group_feature_job_setting
     assert feature_group_feature_job_setting["blind_spot"] == "10m"
     updated_feature_job_setting["blind_spot"] = "3m"  # set a new value
@@ -138,7 +137,9 @@ async def test_assert_no_other_production_ready_feature__does_not_exist(producti
 
     sum_30m is the name of the production_ready_feature used in the next test.
     """
-    await production_ready_validator._assert_no_other_production_ready_feature("sum_30m")
+    await production_ready_validator._assert_no_other_production_ready_feature(
+        ObjectId(), "sum_30m"
+    )
 
 
 @pytest.mark.asyncio
@@ -151,15 +152,27 @@ async def test_assert_no_other_production_ready_feature__exists(
     """
     with pytest.raises(ValueError) as exc:
         await production_ready_validator._assert_no_other_production_ready_feature(
-            production_ready_feature.name
+            ObjectId(), production_ready_feature.name
         )
     assert "Found another feature version that is already" in str(exc)
 
 
 @pytest.mark.asyncio
+async def test_assert_no_other_production_ready_feature__no_error_if_promoted_feature_is_currently_prod_ready(
+    production_ready_validator, production_ready_feature
+):
+    """
+    Test that assert does not throw an error if the feature that is already production ready is the same as the
+    feature that is _being_ promoted to production ready.
+    """
+    await production_ready_validator._assert_no_other_production_ready_feature(
+        production_ready_feature.id, production_ready_feature.name
+    )
+
+
+@pytest.mark.asyncio
 async def test_get_feature_job_setting_diffs__settings_differ(
     production_ready_validator,
-    snowflake_feature_store,
     snowflake_event_data_with_entity,
     feature_group_feature_job_setting,
     source_version_creator,
@@ -169,14 +182,13 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     Test _check_feature_job_setting_match returns a dictionary when the settings differ
     """
     # update event data w/ a feature job setting
-    snowflake_feature_store.save()
     snowflake_event_data_with_entity.save()
     snowflake_event_data_with_entity.update_default_feature_job_setting(
         FeatureJobSetting(**feature_group_feature_job_setting)
     )
 
     # create a feature with a different feature job setting from the event data
-    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    event_view = snowflake_event_data_with_entity.get_view()
     updated_feature_job_setting = feature_group_feature_job_setting.copy()
     assert updated_feature_job_setting["blind_spot"] == "10m"
     updated_feature_job_setting["blind_spot"] = "5m"  # set a new value
@@ -216,7 +228,6 @@ async def test_get_feature_job_setting_diffs__settings_differ(
 
 @pytest.mark.asyncio
 async def test_validate__no_diff_in_feature_should_return_none(
-    snowflake_feature_store,
     snowflake_event_data_with_entity,
     production_ready_validator,
     feature_group_feature_job_setting,
@@ -225,13 +236,12 @@ async def test_validate__no_diff_in_feature_should_return_none(
     Test validate - no diff returns None
     """
     # Create a feature that has same feature job setting and cleaning operations as it's data source
-    snowflake_feature_store.save()
     snowflake_event_data_with_entity.save()
     snowflake_event_data_with_entity.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
     )
 
-    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    event_view = snowflake_event_data_with_entity.get_view()
     feature = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",

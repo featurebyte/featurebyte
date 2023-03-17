@@ -7,7 +7,6 @@ import pytest
 
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.feature_list import FeatureList
-from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.enum import DBVarType
 from featurebyte.exception import JoinViewMismatchError, RepeatedColumnNamesError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
@@ -22,7 +21,6 @@ class TestDimensionView(BaseViewTestSuite):
     protected_columns = ["col_int"]
     view_type = ViewType.DIMENSION_VIEW
     col = "cust_id"
-    factory_method = DimensionView.from_dimension_data
     view_class = DimensionView
     bool_col = "col_boolean"
     expected_view_with_raw_accessor_sql = """
@@ -84,7 +82,7 @@ def test_join_same_rsuffix_multiple_times(snowflake_dimension_view, snowflake_di
         data_id_to_info={
             snowflake_dimension_data.id: {
                 "name": snowflake_dimension_data.name,
-                "record_creation_date_column": snowflake_dimension_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_dimension_data.record_creation_timestamp_column,
             }
         },
     )
@@ -99,7 +97,7 @@ def snowflake_dimension_view_with_entity(
     """
     _ = mock_api_object_cache
     snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
-    view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    view = snowflake_dimension_data.get_view()
     return view
 
 
@@ -203,7 +201,7 @@ def test_as_features__with_primary_key_column(
             data_id_to_info={
                 snowflake_dimension_data.id: {
                     "name": snowflake_dimension_data.name,
-                    "record_creation_date_column": snowflake_dimension_data.record_creation_date_column,
+                    "record_creation_timestamp_column": snowflake_dimension_data.record_creation_timestamp_column,
                     # since the data is not saved, we need to pass in the columns info
                     # otherwise, entity id will be missing and code generation will fail in as_features method
                     "columns_info": dimension_data_columns_info,
@@ -232,7 +230,7 @@ def test_as_features__offset_provided_but_ignored(
         data_id_to_info={
             snowflake_dimension_data.id: {
                 "name": snowflake_dimension_data.name,
-                "record_creation_date_column": snowflake_dimension_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_dimension_data.record_creation_timestamp_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in as_features method
                 "columns_info": dimension_data_columns_info,
@@ -271,7 +269,7 @@ def test_as_feature_same_column_name(
     )
 
     snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
-    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    scd_view = snowflake_scd_data.get_view()
     feature_b = scd_view["col_float"].as_feature("FloatFeatureSCDView", offset="7d")
 
     new_feature = feature_b == feature_a
@@ -380,7 +378,7 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
 def test_sdk_code_generation(saved_dimension_data, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
-    dimension_view = DimensionView.from_dimension_data(saved_dimension_data)
+    dimension_view = saved_dimension_data.get_view()
     check_sdk_code_generation(
         dimension_view,
         to_use_saved_data=to_use_saved_data,

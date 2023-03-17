@@ -8,7 +8,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from featurebyte.models.base import (
-    FeatureByteWorkspaceBaseDocumentModel,
+    FeatureByteCatalogBaseDocumentModel,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
@@ -35,7 +35,7 @@ class Crontab(BaseModel):
     month_of_year: Union[str, int]
 
 
-class PeriodicTask(FeatureByteWorkspaceBaseDocumentModel):
+class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
     """
     PeriodicTask document model
     Schema to match model in celerybeatnmongo scheduler package for the scheduler to work

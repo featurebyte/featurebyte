@@ -14,7 +14,7 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.feature import FeatureService
@@ -28,7 +28,7 @@ class TileColumnTypeExtractor:
     """
 
     def __init__(self, user: Any, persistent: Persistent):
-        self.feature_service = FeatureService(user, persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+        self.feature_service = FeatureService(user, persistent, catalog_id=DEFAULT_CATALOG_ID)
         self.tile_column_name_to_type: Optional[dict[str, str]] = None
 
     async def setup(self) -> None:
@@ -44,7 +44,7 @@ class TileColumnTypeExtractor:
         feature_service: FeatureService,
     ) -> dict[str, str]:
         tile_column_name_to_type = {}
-        # activate use of raw query filter to retrieve all documents regardless of workspace membership
+        # activate use of raw query filter to retrieve all documents regardless of catalog membership
         feature_service.allow_use_raw_query_filter()
         feature_documents = feature_service.list_documents_iterator(
             query_filter={}, use_raw_query_filter=True
@@ -137,7 +137,7 @@ class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
         # migrate all records and audit records
         await self.migrate_all_records(version=migration_version)
 
-    @migrate(version=6, description="Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table")
+    @migrate(version=1, description="Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table")
     async def add_tile_value_types_column(self) -> None:
         """
         Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table
@@ -145,7 +145,7 @@ class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
         await self._add_tile_value_types_column(migration_version=6)
 
     @migrate(
-        version=7,
+        version=2,
         description="Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table (fix session uses wrong user ID issue)",
     )
     async def add_tile_value_types_column_again(self) -> None:
@@ -219,7 +219,7 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
     2. Fix jobs scheduling bug caused by tile_id collision
     """
 
-    @migrate(version=8, description="Reset working schema from scratch")
+    @migrate(version=3, description="Reset working schema from scratch")
     async def reset_working_schema(self, query_filter: Optional[dict[str, Any]] = None) -> None:
         """
         Reset working schema from scratch
@@ -236,7 +236,7 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
         self, feature_store: FeatureStoreModel, session: BaseSession
     ) -> None:
         working_schema_service = WorkingSchemaService(
-            user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
         )
         await working_schema_service.recreate_working_schema(
             feature_store_id=feature_store.id, session=session

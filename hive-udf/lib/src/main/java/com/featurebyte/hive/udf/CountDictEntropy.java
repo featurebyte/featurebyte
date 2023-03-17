@@ -37,7 +37,7 @@ public class CountDictEntropy extends CountDictUDF {
     double[] values = new double[counts.size()];
     for (Object value : counts.values()) {
       if (value != null) {
-        double doubleValue = ((DoubleWritable) converters[1].convert(value)).get();
+        double doubleValue = convertMapValueAsDouble(value);
         total += doubleValue;
         values[index++] = doubleValue;
       }

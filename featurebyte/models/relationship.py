@@ -11,7 +11,7 @@ from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
-    FeatureByteWorkspaceBaseDocumentModel,
+    FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -28,7 +28,7 @@ class Parent(FeatureByteBaseModel):
 
 class Relationship(FeatureByteBaseDocumentModel):
     """
-    Workspace-agnostic relationship model
+    Catalog-agnostic relationship model
     """
 
     parents: List[Parent] = Field(default_factory=list, allow_mutation=False)
@@ -41,9 +41,9 @@ class Relationship(FeatureByteBaseDocumentModel):
     )
 
 
-class WorkspaceRelationship(Relationship, FeatureByteWorkspaceBaseDocumentModel):
+class CatalogRelationship(Relationship, FeatureByteCatalogBaseDocumentModel):
     """
-    Workspace-specific relationship model
+    Catalog-specific relationship model
     """
 
 
@@ -55,7 +55,7 @@ class RelationshipType(StrEnum):
     CHILD_PARENT = "child_parent"
 
 
-class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
+class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
     """
     Relationship info data model.
 

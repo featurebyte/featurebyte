@@ -63,7 +63,7 @@ def derived_expression_from_join_node(global_graph, item_data_join_event_data_no
 
 def test_item_data_join_event_data_attributes(global_graph, item_data_join_event_data_node):
     """
-    Test SQL generation for ItemData joined with EventData
+    Test SQL generation for ItemTable joined with EventTable
     """
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
@@ -103,7 +103,7 @@ def test_item_data_join_event_data_attributes_with_filter(
     global_graph, item_data_join_event_data_filtered_node
 ):
     """
-    Test SQL generation for ItemData joined with EventData with filter
+    Test SQL generation for ItemTable joined with EventTable with filter
     """
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
@@ -221,7 +221,7 @@ def test_item_data_join_event_data_attributes_on_demand_tile_gen(
 
 def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature_join_node):
     """
-    Test SQL generation for non-time aware feature in ItemData joined into EventView
+    Test SQL generation for non-time aware feature in ItemTable joined into EventView
     """
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
@@ -309,7 +309,7 @@ def test_derived_expression_from_join_node(global_graph, derived_expression_from
 
 def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
     """
-    Test aggregating a non-time aware feature derived from ItemData
+    Test aggregating a non-time aware feature derived from ItemTable
     """
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE

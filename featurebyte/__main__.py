@@ -6,6 +6,7 @@ from typing import Generator, List
 import os
 import sys
 import tempfile
+import time
 from contextlib import contextmanager
 from enum import Enum
 
@@ -45,7 +46,7 @@ messages = {
             """
             [bold green]Featurebyte application started successfully![/]
 
-            API server now running at: [cyan underline]http://localhost:8088[/].
+            API server now running at: [cyan underline]http://127.0.0.1:8088[/].
             You can now use the featurebyte SDK with the API server.
             """
         ),
@@ -227,6 +228,24 @@ def start(
                 docker.compose.pull()
             __restore_docker_conf()  # Restore as early as possible
             docker.compose.up(services=get_service_names(app_name), detach=True)
+
+            # Wait for all services to be healthy
+            with console.status("Waiting for services to be healthy...") as spinner_status:
+                while True:
+                    unhealthy_containers = []
+                    for container in docker.compose.ps():
+                        health = container.state.health.status if container.state.health else "N/A"
+                        if health not in {"healthy", "N/A"}:
+                            unhealthy_containers.append(container.name)
+                    if len(unhealthy_containers) == 0:
+                        break
+                    statuses = (
+                        Text("Services: [")
+                        + Text(", ").join(map(lambda s: Text(s, style="red"), unhealthy_containers))
+                        + Text("] are unhealthy", style="None")
+                    )
+                    spinner_status.update(statuses)
+                    time.sleep(5)
     finally:
         __restore_docker_conf()
         __delete_docker_backup()
@@ -277,12 +296,14 @@ def status() -> None:
     table.add_column("Health", justify="center")
     health_colors = {
         "healthy": "green",
+        "starting": "yellow",
         "unhealthy": "red",
     }
     status_colors = {
         "running": "green",
         "exited": "red",
     }
+
     for app_name in ApplicationName:
         with get_docker_client(ApplicationName(app_name)) as docker:
             containers = docker.compose.ps()

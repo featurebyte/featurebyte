@@ -5,7 +5,6 @@ import pytest
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
-from featurebyte.api.scd_view import SlowlyChangingView
 from tests.util.helper import check_sdk_code_generation, get_node
 
 
@@ -24,7 +23,7 @@ def scd_view_with_entity(snowflake_scd_data, entity_col_int):
     Entity(name="col_text_entity", serving_names=["col_text"]).save()
     snowflake_scd_data["col_text"].as_entity("col_text_entity")
     snowflake_scd_data["col_int"].as_entity("col_int_entity")
-    return SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    return snowflake_scd_data.get_view()
 
 
 def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_data, entity_col_int):
@@ -81,7 +80,7 @@ def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_data, entity_
         data_id_to_info={
             snowflake_scd_data.id: {
                 "name": snowflake_scd_data.name,
-                "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+                "record_creation_timestamp_column": snowflake_scd_data.record_creation_timestamp_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail during aggregate_asat
                 "columns_info": scd_data_columns_info,

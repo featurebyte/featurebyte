@@ -331,8 +331,11 @@ class GraphStructurePruningExtractor(
 
         # otherwise, we use the target columns from the node
         # global_state.node_names is a set of node names that contributes to the final output
+        operation_structure = global_state.operation_structure_map[node.name]
         return self.graph.get_target_nodes_required_column_names(
-            node_name=node.name, keep_target_node_names=global_state.node_names
+            node_name=node.name,
+            keep_target_node_names=global_state.node_names,
+            available_column_names=operation_structure.output_column_names,
         )
 
     @classmethod

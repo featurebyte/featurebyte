@@ -38,6 +38,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     StatementT,
     VariableNameGenerator,
     VarNameExpressionStr,
+    get_object_class_from_function_call,
 )
 
 
@@ -57,7 +58,9 @@ class ProxyInputNode(BaseNode):
     def max_input_count(self) -> int:
         return 0
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         raise RuntimeError("Proxy input node should not be used to derive input columns.")
 
     def _derive_node_operation_info(
@@ -262,9 +265,10 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
         view_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="event_view"
         )
-        expression = ClassEnum.EVENT_VIEW(
-            _method_name="from_event_data",
-            event_data=input_var_name_expressions[0],
+        assert len(input_var_name_expressions) == 1
+        event_data_var_name = input_var_name_expressions[0]
+        expression = get_object_class_from_function_call(
+            callable_name=f"{event_data_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
             drop_column_names=self.metadata.drop_column_names,
             column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
@@ -302,9 +306,10 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
         view_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="item_view"
         )
-        expression = ClassEnum.ITEM_VIEW(
-            _method_name="from_item_data",
-            item_data=input_var_name_expressions[0],
+        assert len(input_var_name_expressions) == 1
+        data_var_name = input_var_name_expressions[0]
+        expression = get_object_class_from_function_call(
+            callable_name=f"{data_var_name}.get_view",
             event_suffix=self.metadata.event_suffix,
             view_mode=ViewMode.MANUAL,
             drop_column_names=self.metadata.drop_column_names,
@@ -353,9 +358,10 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
         view_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="dimension_view"
         )
-        expression = ClassEnum.DIMENSION_VIEW(
-            _method_name="from_dimension_data",
-            dimension_data=input_var_name_expressions[0],
+        assert len(input_var_name_expressions) == 1
+        data_var_name = input_var_name_expressions[0]
+        expression = get_object_class_from_function_call(
+            f"{data_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
             drop_column_names=self.metadata.drop_column_names,
             column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
@@ -380,9 +386,10 @@ class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         # construct scd view sdk statement
         view_var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="scd_view")
-        expression = ClassEnum.SCD_VIEW(
-            _method_name="from_slowly_changing_data",
-            slowly_changing_data=input_var_name_expressions[0],
+        assert len(input_var_name_expressions) == 1
+        data_var_name = input_var_name_expressions[0]
+        expression = get_object_class_from_function_call(
+            f"{data_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
             drop_column_names=self.metadata.drop_column_names,
             column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
@@ -425,9 +432,10 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
                 **self.metadata.default_feature_job_setting
             )
 
-        expression = ClassEnum.CHANGE_VIEW(
-            _method_name="from_slowly_changing_data",
-            slowly_changing_data=input_var_name_expressions[0],
+        assert len(input_var_name_expressions) == 1
+        data_var_name = input_var_name_expressions[0]
+        expression = get_object_class_from_function_call(
+            f"{data_var_name}.get_change_view",
             track_changes_column=self.metadata.track_changes_column,
             default_feature_job_setting=feature_job_setting,
             prefixes=self.metadata.prefixes,
@@ -496,7 +504,9 @@ class BaseGraphNode(BasePrunableNode):
         """
         return self.parameters.type == GraphNodeType.CLEANING
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         # first the corresponding input proxy node in the nested graph
         proxy_input_node: Optional[BaseNode] = None
         for node in self.parameters.graph.iterate_nodes(
@@ -517,7 +527,11 @@ class BaseGraphNode(BasePrunableNode):
             target_node = self.parameters.graph.nodes_map[target_node_name]
             target_input_node_names = self.parameters.graph.get_input_node_names(target_node)
             input_index = target_input_node_names.index(proxy_input_node.name)
-            required_input_columns.update(target_node.get_required_input_columns(input_index))
+            required_input_columns.update(
+                target_node.get_required_input_columns(
+                    input_index=input_index, available_column_names=available_column_names
+                )
+            )
         return list(required_input_columns)
 
     def resolve_node_pruned(self, input_node_names: List[str]) -> str:

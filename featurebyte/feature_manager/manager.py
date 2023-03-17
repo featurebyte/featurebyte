@@ -42,7 +42,11 @@ class FeatureManager(BaseModel):
     _adapter: BaseAdapter = PrivateAttr()
 
     def __init__(
-        self, session: BaseSession, task_manager: Optional[TaskManager] = None, **kw: Any
+        self,
+        session: BaseSession,
+        task_manager: Optional[TaskManager] = None,
+        use_snowflake_scheduling: Optional[bool] = False,
+        **kw: Any,
     ) -> None:
         """
         Custom constructor for TileSnowflake to instantiate a datasource session
@@ -53,13 +57,19 @@ class FeatureManager(BaseModel):
             input session for datasource
         task_manager: Optional[TaskManager]
             input task manager
+        use_snowflake_scheduling: Optional[bool]
+            whether to use snowflake scheduling
         kw: Any
             constructor arguments
         """
         super().__init__(**kw)
         self._session = session
         self._adapter = get_sql_adapter(session.source_type)
-        self._tile_manager = tile_manager_from_session(session, task_manager)
+        self._tile_manager = tile_manager_from_session(
+            session=session,
+            task_manager=task_manager,
+            use_snowflake_scheduling=use_snowflake_scheduling,
+        )
 
     async def online_enable(
         self, feature_spec: OnlineFeatureSpec, schedule_time: datetime = datetime.utcnow()
@@ -87,7 +97,7 @@ class FeatureManager(BaseModel):
                 # enable online tiles scheduled job
                 tile_spec.user_id = feature_spec.feature.user_id
                 tile_spec.feature_store_id = feature_spec.feature.tabular_source.feature_store_id
-                tile_spec.workspace_id = feature_spec.feature.workspace_id
+                tile_spec.catalog_id = feature_spec.feature.catalog_id
 
                 await self._tile_manager.schedule_online_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time

@@ -49,14 +49,14 @@ class PreviewService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        workspace_id: ObjectId,
+        catalog_id: ObjectId,
         session_manager_service: SessionManagerService,
         feature_list_service: FeatureListService,
         entity_validation_service: EntityValidationService,
     ):
-        super().__init__(user, persistent, workspace_id)
+        super().__init__(user, persistent, catalog_id)
         self.feature_store_service = FeatureStoreService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.session_manager_service = session_manager_service
         self.feature_list_service = feature_list_service
@@ -95,7 +95,7 @@ class PreviewService(BaseService):
         self, preview: FeatureStorePreview, limit: int, get_credential: Any
     ) -> dict[str, Any]:
         """
-        Preview a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
+        Preview a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
         Parameters
         ----------
@@ -127,7 +127,7 @@ class PreviewService(BaseService):
         self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
     ) -> dict[str, Any]:
         """
-        Sample a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
+        Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
         Parameters
         ----------
@@ -168,7 +168,7 @@ class PreviewService(BaseService):
         self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
     ) -> dict[str, Any]:
         """
-        Sample a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
+        Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
         Parameters
         ----------

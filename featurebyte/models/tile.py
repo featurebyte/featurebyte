@@ -52,7 +52,7 @@ class TileSpec(FeatureByteBaseModel):
 
     feature_store_id: Optional[ObjectId]
     user_id: Optional[ObjectId]
-    workspace_id: Optional[ObjectId]
+    catalog_id: Optional[ObjectId]
 
     class Config:
         """

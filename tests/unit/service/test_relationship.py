@@ -5,7 +5,7 @@ import pytest
 import pytest_asyncio
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.relationship import Parent, Relationship
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.relationship import RelationshipService
@@ -60,7 +60,7 @@ class FamilyRelationshipService(RelationshipService):
     @property
     def document_service(self):
         return FamilyDocumentService(
-            user=self.user, persistent=self.persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=self.user, persistent=self.persistent, catalog_id=DEFAULT_CATALOG_ID
         )
 
     @classmethod
@@ -71,16 +71,14 @@ class FamilyRelationshipService(RelationshipService):
 @pytest.fixture(name="family_document_service")
 def family_document_service_fixture(user, persistent):
     """FamilyDocumentService object"""
-    return FamilyDocumentService(
-        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
-    )
+    return FamilyDocumentService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="family_relationship_service")
 def family_relationship_service_fixture(user, persistent):
     """FamilyRelationshipService object"""
     return FamilyRelationshipService(
-        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
 
 

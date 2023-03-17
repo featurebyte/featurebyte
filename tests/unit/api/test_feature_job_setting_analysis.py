@@ -46,7 +46,7 @@ def test_list(saved_analysis, saved_event_data):
     assert result.columns.to_list() == [
         "id",
         "created_at",
-        "event_data",
+        "event_table",
         "analysis_start",
         "analysis_date",
         "frequency",
@@ -54,11 +54,11 @@ def test_list(saved_analysis, saved_event_data):
         "blind_spot",
     ]
     assert result["id"].iloc[0] == analysis_id
-    assert result["event_data"].iloc[0] == "sf_event_data"
+    assert result["event_table"].iloc[0] == "sf_event_data"
 
     # list with filter
-    assert FeatureJobSettingAnalysis.list(event_data_id=saved_event_data.id).shape == (1, 8)
-    assert FeatureJobSettingAnalysis.list(event_data_id=ObjectId()).shape == (0, 8)
+    assert FeatureJobSettingAnalysis.list(event_table_id=saved_event_data.id).shape == (1, 8)
+    assert FeatureJobSettingAnalysis.list(event_table_id=ObjectId()).shape == (0, 8)
 
 
 @patch("featurebyte.common.env_util.is_notebook")
@@ -102,7 +102,7 @@ def test_info(saved_analysis):
             "min_featurejob_period": 60,
         },
         "analysis_parameters": {
-            "event_data_name": "sf_event_data",
+            "event_table_name": "sf_event_data",
             "creation_date_column": "created_at",
             "event_timestamp_column": "event_timestamp",
             "blind_spot_buffer": 5,
@@ -117,7 +117,7 @@ def test_info(saved_analysis):
             "frequency": "180s",
             "time_modulo_frequency": "61s",
         },
-        "workspace_name": "default",
+        "catalog_name": "default",
     }
 
 

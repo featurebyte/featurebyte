@@ -21,8 +21,9 @@ from featurebyte.query_graph.node.nested import (
     BaseViewGraphNodeParameters,
     ViewMetadata,
 )
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.service.base_service import BaseService
-from featurebyte.service.tabular_data import DataService
+from featurebyte.service.table import TableService
 
 
 class ViewConstructionService(BaseService):
@@ -31,9 +32,9 @@ class ViewConstructionService(BaseService):
     This service will retrieve the data from the data service and construct the view graph nodes.
     """
 
-    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
-        super().__init__(user, persistent, workspace_id)
-        self.data_service = DataService(user=user, persistent=persistent, workspace_id=workspace_id)
+    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+        super().__init__(user, persistent, catalog_id)
+        self.data_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
 
     @staticmethod
     def _get_additional_keyword_parameters_pairs(
@@ -103,9 +104,12 @@ class ViewConstructionService(BaseService):
         view_node_name_to_data_info: dict[str, tuple[Node, list[ColumnInfo], InputNode]],
         input_node_names: list[str],
         node_name: str,
+        available_column_names: list[str],
     ) -> tuple[list[str], list[Node]]:
         target_columns = query_graph.get_target_nodes_required_column_names(
-            node_name=node_name, keep_target_node_names=None
+            node_name=node_name,
+            keep_target_node_names=None,
+            available_column_names=available_column_names,
         )
         input_nodes = []
         for input_node_name in input_node_names:
@@ -118,18 +122,17 @@ class ViewConstructionService(BaseService):
 
     async def _construct_view_graph_node(
         self,
-        query_graph: QueryGraphModel,
         graph_node: BaseGraphNode,
-        input_node: InputNode,
-        input_node_names: list[str],
+        input_data_node: InputNode,
+        graph_input_nodes: list[Node],
+        target_columns: list[str],
         data_name_to_column_cleaning_operations: dict[str, list[ColumnCleaningOperation]],
-        view_node_name_to_data_info: dict[str, tuple[Node, list[ColumnInfo], InputNode]],
         create_view_kwargs: dict[str, Any],
         metadata_kwargs: dict[str, Any],
         use_source_settings: bool,
     ) -> tuple[BaseGraphNode, list[ColumnInfo]]:
         # get the data document based on the data ID in input node
-        data_id = input_node.parameters.id
+        data_id = input_data_node.parameters.id
         assert data_id is not None
         data_document = await self.data_service.get_document(document_id=data_id)
 
@@ -153,24 +156,16 @@ class ViewConstructionService(BaseService):
 
         # create a temporary view graph node & use it to prune the view graph node parameters
         temp_view_graph_node, _ = data_document.create_view_graph_node(
-            input_node=input_node,
+            input_node=input_data_node,
             metadata=parameters_metadata,
             **create_view_kwargs,
         )
 
-        # prune the view graph node metadata and reconstruct a new view graph node
-        target_columns, input_nodes = self._prepare_target_columns_and_input_nodes(
-            query_graph=query_graph,
-            view_node_name_to_data_info=view_node_name_to_data_info,
-            input_node_names=input_node_names,
-            node_name=graph_node.name,
-        )
-
         assert isinstance(temp_view_graph_node.parameters, BaseViewGraphNodeParameters)
         new_view_graph_node, new_view_columns_info = data_document.create_view_graph_node(
-            input_node=input_node,
+            input_node=input_data_node,
             metadata=temp_view_graph_node.parameters.prune_metadata(
-                target_columns=target_columns, input_nodes=input_nodes
+                target_columns=target_columns, input_nodes=graph_input_nodes
             ),
             **create_view_kwargs,
         )
@@ -179,6 +174,7 @@ class ViewConstructionService(BaseService):
     async def prepare_view_node_name_to_replacement_node(
         self,
         query_graph: QueryGraphModel,
+        target_node: Node,
         data_cleaning_operations: list[DataCleaningOperation],
         use_source_settings: bool,
     ) -> dict[str, Node]:
@@ -189,7 +185,9 @@ class ViewConstructionService(BaseService):
         Parameters
         ----------
         query_graph: QueryGraphModel
-            Feature model
+            Feature model graph
+        target_node: Node
+            Target node of the feature model graph
         data_cleaning_operations: Optional[List[DataCleaningOperation]]
             Data cleaning operations
         use_source_settings: bool
@@ -212,6 +210,11 @@ class ViewConstructionService(BaseService):
         # view node name to (view graph node, view columns_info & data input node)
         view_node_name_to_data_info: dict[str, tuple[Node, list[ColumnInfo], InputNode]] = {}
 
+        # prepare operation structure of nodes
+        operation_structure_info = OperationStructureExtractor(graph=query_graph).extract(
+            node=target_node
+        )
+
         # since the graph node is topologically sorted, input to the view graph node will always be
         # processed before the view graph node itself
         for graph_node in query_graph.iterate_sorted_graph_nodes(
@@ -233,14 +236,25 @@ class ViewConstructionService(BaseService):
                 view_node_name_to_data_info=view_node_name_to_data_info,
             )
 
+            # construct list of columns name of view graph node output
+            operation_structure = operation_structure_info.operation_structure_map[graph_node.name]
+
+            # prepare required output columns & input nodes for the view graph node
+            target_columns, input_nodes = self._prepare_target_columns_and_input_nodes(
+                query_graph=query_graph,
+                view_node_name_to_data_info=view_node_name_to_data_info,
+                input_node_names=input_node_names,
+                node_name=graph_node.name,
+                available_column_names=operation_structure.output_column_names,
+            )
+
             # create a new view graph node
             new_view_graph_node, new_view_columns_info = await self._construct_view_graph_node(
-                query_graph=query_graph,
                 graph_node=graph_node,
-                input_node=view_graph_input_node,
-                input_node_names=input_node_names,
+                input_data_node=view_graph_input_node,
+                graph_input_nodes=input_nodes,
+                target_columns=target_columns,
                 data_name_to_column_cleaning_operations=data_name_to_column_cleaning_operations,
-                view_node_name_to_data_info=view_node_name_to_data_info,
                 create_view_kwargs=create_view_kwargs,
                 metadata_kwargs=metadata_kwargs,
                 use_source_settings=use_source_settings,
@@ -260,7 +274,10 @@ class ViewConstructionService(BaseService):
         return node_name_to_replacement_node
 
     async def construct_graph(
-        self, query_graph: QueryGraphModel, data_cleaning_operations: list[DataCleaningOperation]
+        self,
+        query_graph: QueryGraphModel,
+        target_node: Node,
+        data_cleaning_operations: list[DataCleaningOperation],
     ) -> GraphNodeNameMap:
         """
         Constructs the query graph by reconstructing the view graph nodes in the query graph.
@@ -271,6 +288,8 @@ class ViewConstructionService(BaseService):
         ----------
         query_graph: QueryGraphModel
             Query graph model
+        target_node: Node
+            Target node of the query graph
         data_cleaning_operations: list[DataCleaningOperation]
             List of data cleaning operations to be applied to the data used by the query graph
 
@@ -280,6 +299,7 @@ class ViewConstructionService(BaseService):
         """
         node_name_to_replacement_node = await self.prepare_view_node_name_to_replacement_node(
             query_graph=query_graph,
+            target_node=target_node,
             data_cleaning_operations=data_cleaning_operations,
             use_source_settings=False,
         )

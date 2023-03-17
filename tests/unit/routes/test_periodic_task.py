@@ -9,7 +9,7 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 from requests import Response
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.periodic_task import Interval, PeriodicTask
 from featurebyte.service.periodic_task import PeriodicTaskService
 from tests.unit.routes.base import BaseApiTestSuite
@@ -40,7 +40,7 @@ class TestPeriodicTaskApi(BaseApiTestSuite):
         interval=Interval(every=1, period="minutes"),
         args=[],
         kwargs={"some_key": "some_value"},
-        workspace_id=DEFAULT_WORKSPACE_ID,
+        catalog_id=DEFAULT_CATALOG_ID,
     ).dict()
     unknown_id = ObjectId()
 
@@ -57,12 +57,12 @@ class TestPeriodicTaskApi(BaseApiTestSuite):
         """Test creation (success) ID is None"""
 
     @pytest.mark.skip("POST method not exposed")
-    def test_create_201_non_default_workspace(
+    def test_create_201_non_default_catalog(
         self,
-        workspace_id,
-        create_success_response_non_default_workspace,
+        catalog_id,
+        create_success_response_non_default_catalog,
     ):
-        """Test creation (success) in non default workspace"""
+        """Test creation (success) in non default catalog"""
 
     @pytest.mark.skip("GET method not exposed")
     def test_list_audit_422(
@@ -84,7 +84,7 @@ class TestPeriodicTaskApi(BaseApiTestSuite):
         """Post route success response object"""
         _, persistent = test_api_client_persistent
         periodic_task_service = PeriodicTaskService(
-            user=User(id=user_id), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=User(id=user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )
         document = await periodic_task_service.create_document(data=PeriodicTask(**self.payload))
         return MockResponse(
@@ -99,7 +99,7 @@ class TestPeriodicTaskApi(BaseApiTestSuite):
         _, persistent = test_api_client_persistent
         output = []
         periodic_task_service = PeriodicTaskService(
-            user=User(id=user_id), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=User(id=user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )
         for payload in self.multiple_success_payload_generator(None):
             document = await periodic_task_service.create_document(data=PeriodicTask(**payload))
@@ -114,7 +114,7 @@ class TestPeriodicTaskApi(BaseApiTestSuite):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
 
-        # default workspace
+        # default catalog
         payload = self.payload.copy()
         yield payload
 

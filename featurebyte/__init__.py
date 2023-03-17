@@ -1,21 +1,22 @@
 """Python Library for FeatureOps"""
+from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
-from featurebyte.api.data import Data
-from featurebyte.api.dimension_data import DimensionData
+from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_data import EventData
+from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.item_data import ItemData
+from featurebyte.api.item_table import ItemTable
 from featurebyte.api.item_view import ItemView
+from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
-from featurebyte.api.scd_data import SlowlyChangingData
+from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.scd_view import SlowlyChangingView
-from featurebyte.api.workspace import Workspace
+from featurebyte.api.table import Table
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations
 from featurebyte.core.series import Series
@@ -44,14 +45,15 @@ version: str = get_version()
 
 
 __all__ = [
+    "Catalog",
     "ChangeView",
     "Credential",
     "Configurations",
-    "Data",
-    "DimensionData",
+    "Table",
+    "DimensionTable",
     "DimensionView",
     "Entity",
-    "EventData",
+    "EventTable",
     "EventView",
     "Feature",
     "FeatureGroup",
@@ -60,11 +62,11 @@ __all__ = [
     "FeatureJobSettingAnalysis",
     "FeatureList",
     "FeatureStore",
-    "ItemData",
+    "ItemTable",
     "ItemView",
     "Relationship",
     "Series",
-    "SlowlyChangingData",
+    "SCDTable",
     "SlowlyChangingView",
     "to_timedelta",
     "SnowflakeDetails",
@@ -85,7 +87,7 @@ __all__ = [
     "FeatureListNewVersionMode",
     "FeatureVersionInfo",
     # others
-    "Workspace",
     "ColumnCleaningOperation",
     "DataCleaningOperation",
+    "PeriodicTask",
 ]

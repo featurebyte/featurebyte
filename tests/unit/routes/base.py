@@ -12,9 +12,9 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
-from featurebyte.schema.tabular_data import DataCreate
+from featurebyte.schema.table import TableCreate
 
 
 class BaseApiTestSuite:
@@ -107,7 +107,8 @@ class BaseApiTestSuite:
     @property
     def id_field_name(self):
         """ID field name in the url"""
-        return self.base_route.lstrip("/") + "_id"
+        base_name = self.base_route.lstrip("/")
+        return f"{base_name}_id"
 
     def pytest_generate_tests(self, metafunc):
         """Parametrize fixture at runtime"""
@@ -128,7 +129,7 @@ class BaseApiTestSuite:
                 self.list_unprocessable_params_expected_detail_pairs,
             )
 
-    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
+    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """Setup for post route"""
 
     @pytest_asyncio.fixture()
@@ -446,33 +447,33 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         assert [record["previous_values"] for record in response_dict["data"]] == [{}]
 
 
-class BaseWorkspaceApiTestSuite(BaseApiTestSuite):
+class BaseCatalogApiTestSuite(BaseApiTestSuite):
     """
-    BaseWorkspaceApiTestSuite includes some checks for behaviour of objects that belong to workspaces
+    BaseCatalogApiTestSuite includes some checks for behaviour of objects that belong to catalogs
     """
 
-    @pytest.fixture(name="workspace_id")
-    def workspace_id_fixture(self, test_api_client_persistent):
+    @pytest.fixture(name="catalog_id")
+    def catalog_id_fixture(self, test_api_client_persistent):
         """
-        Create workspace
+        Create catalog
         """
         test_api_client, _ = test_api_client_persistent
-        response = test_api_client.post("/workspace", json={"name": "Test"})
+        response = test_api_client.post("/catalog", json={"name": "Test"})
         assert response.status_code == HTTPStatus.CREATED
         return ObjectId(response.json()["_id"])
 
     @pytest_asyncio.fixture()
-    async def create_success_response_non_default_workspace(
-        self, test_api_client_persistent, workspace_id
+    async def create_success_response_non_default_catalog(
+        self, test_api_client_persistent, catalog_id
     ):
-        """Create object with non default workspace"""
+        """Create object with non default catalog"""
         test_api_client, _ = test_api_client_persistent
-        self.setup_creation_route(test_api_client, workspace_id=workspace_id)
+        self.setup_creation_route(test_api_client, catalog_id=catalog_id)
         payload = copy.deepcopy(self.payload)
         payload["_id"] = str(ObjectId())
-        payload["workspace_id"] = str(workspace_id)
+        payload["catalog_id"] = str(catalog_id)
         response = test_api_client.post(
-            f"{self.base_route}", params={"workspace_id": workspace_id}, json=payload
+            f"{self.base_route}", params={"catalog_id": catalog_id}, json=payload
         )
         assert response.status_code == HTTPStatus.CREATED, response.json()
         return response
@@ -480,65 +481,65 @@ class BaseWorkspaceApiTestSuite(BaseApiTestSuite):
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
-        # test default workspace id is captured in document
-        assert create_success_response.json()["workspace_id"] == str(DEFAULT_WORKSPACE_ID)
+        # test default catalog id is captured in document
+        assert create_success_response.json()["catalog_id"] == str(DEFAULT_CATALOG_ID)
 
-    def test_create_201_non_default_workspace(
+    def test_create_201_non_default_catalog(
         self,
-        workspace_id,
-        create_success_response_non_default_workspace,
+        catalog_id,
+        create_success_response_non_default_catalog,
     ):
-        """Test creation (success) in non default workspace"""
-        response = create_success_response_non_default_workspace
+        """Test creation (success) in non default catalog"""
+        response = create_success_response_non_default_catalog
         result = response.json()
 
-        # check workspace id is updated correctly
-        assert result["workspace_id"] == str(workspace_id)
+        # check catalog id is updated correctly
+        assert result["catalog_id"] == str(catalog_id)
 
-    def test_list_200_non_default_workspace(
+    def test_list_200_non_default_catalog(
         self,
         test_api_client_persistent,
-        workspace_id,
-        create_success_response_non_default_workspace,
+        catalog_id,
+        create_success_response_non_default_catalog,
     ):
-        """Test list in non default workspace"""
+        """Test list in non default catalog"""
         test_api_client, _ = test_api_client_persistent
-        custom_workspace_document_id = create_success_response_non_default_workspace.json()["_id"]
+        custom_catalog_document_id = create_success_response_non_default_catalog.json()["_id"]
 
-        # expect to see document in the workspace
-        response = test_api_client.get(f"{self.base_route}", params={"workspace_id": workspace_id})
+        # expect to see document in the catalog
+        response = test_api_client.get(f"{self.base_route}", params={"catalog_id": catalog_id})
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 1
-        assert results["data"][0]["_id"] == custom_workspace_document_id
+        assert results["data"][0]["_id"] == custom_catalog_document_id
 
-        # expect not to see document in the default workspace
+        # expect not to see document in the default catalog
         response = test_api_client.get(f"{self.base_route}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 0
 
-    def test_get_200_non_default_workspace(
+    def test_get_200_non_default_catalog(
         self,
         test_api_client_persistent,
-        workspace_id,
-        create_success_response_non_default_workspace,
+        catalog_id,
+        create_success_response_non_default_catalog,
     ):
         """Test get (success)"""
         test_api_client, _ = test_api_client_persistent
-        custom_workspace_document_id = create_success_response_non_default_workspace.json()["_id"]
+        custom_catalog_document_id = create_success_response_non_default_catalog.json()["_id"]
 
-        # expect to see document in the workspace
+        # expect to see document in the catalog
         response = test_api_client.get(
-            f"{self.base_route}/{custom_workspace_document_id}",
-            params={"workspace_id": workspace_id},
+            f"{self.base_route}/{custom_catalog_document_id}",
+            params={"catalog_id": catalog_id},
         )
         assert response.status_code == HTTPStatus.OK
         results = response.json()
-        assert results["_id"] == custom_workspace_document_id
+        assert results["_id"] == custom_catalog_document_id
 
-        # expect not to see document in the default workspace
-        response = test_api_client.get(f"{self.base_route}/{custom_workspace_document_id}")
+        # expect not to see document in the default catalog
+        response = test_api_client.get(f"{self.base_route}/{custom_catalog_document_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
 
 
@@ -686,28 +687,26 @@ class BaseRelationshipApiTestSuite(BaseApiTestSuite):
         }
 
 
-class BaseWorkspaceRelationshipApiTestSuite(
-    BaseRelationshipApiTestSuite, BaseWorkspaceApiTestSuite
-):
+class BaseCatalogRelationshipApiTestSuite(BaseRelationshipApiTestSuite, BaseCatalogApiTestSuite):
     """
-    BaseWorkspaceRelationshipApiTestSuite contains tests related to adding & removing parent object
-    for workspace-specific objects
+    BaseCatalogRelationshipApiTestSuite contains tests related to adding & removing parent object
+    for catalog-specific objects
     """
 
 
-class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
+class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
     """
-    BaseDataApiTestSuite contains tests related to data service
+    BaseTableApiTestSuite contains tests related to data service
     """
 
-    data_create_schema_class = DataCreate
+    data_create_schema_class = TableCreate
     update_unprocessable_payload_expected_detail_pairs = []
 
     def pytest_generate_tests(self, metafunc):
         """Parametrize fixture at runtime"""
         base_update_unprocessable_payload_expected_detail_pairs = [
             (
-                {"record_creation_date_column": "non-exist-columns"},
+                {"record_creation_timestamp_column": "non-exist-columns"},
                 (
                     f"1 validation error for {self.class_name}Model\n"
                     "__root__\n  "
@@ -715,7 +714,7 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
                 ),
             ),
             (
-                {"record_creation_date_column": "item_id"},
+                {"record_creation_timestamp_column": "item_id"},
                 (
                     f"1 validation error for {self.class_name}Model\n"
                     f"__root__\n  "
@@ -734,7 +733,7 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
                 ),
             )
 
-    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
+    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """
         Setup for post route
         """
@@ -745,7 +744,7 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(
-                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
+                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
             )
             assert response.status_code == HTTPStatus.CREATED
 
@@ -811,11 +810,8 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
         """
         Event data response fixture
         """
+        _ = snowflake_feature_store
         test_api_client, _ = test_api_client_persistent
-
-        response = test_api_client.post("/feature_store", json=snowflake_feature_store.json_dict())
-        assert response.status_code == HTTPStatus.CREATED
-
         payload = self.data_create_schema_class(**data_model_dict).json_dict()
         payload["columns_info"] = columns_info
         response = test_api_client.post(self.base_route, json=payload)
@@ -939,19 +935,19 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
         data_response,
     ):
         """
-        Update Event Data record creation date column
+        Update Event Data record creation timestamp column
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
 
         update_response = test_api_client.patch(
             f"{self.base_route}/{response_dict['_id']}",
-            json={"record_creation_date_column": "another_created_at"},
+            json={"record_creation_timestamp_column": "another_created_at"},
         )
         update_response_dict = update_response.json()
         expected_response = {
             **response_dict,
-            "record_creation_date_column": "another_created_at",
+            "record_creation_timestamp_column": "another_created_at",
         }
         expected_response.pop("updated_at")
         assert update_response_dict.items() > expected_response.items()
@@ -1022,18 +1018,18 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         success_response_dict = create_success_response.json()
 
-        # check that tabular_data route can be used to retrieve the created data
-        response = test_api_client.get(f"/tabular_data/{success_response_dict['_id']}")
+        # check that table route can be used to retrieve the created data
+        response = test_api_client.get(f"/table/{success_response_dict['_id']}")
         assert response.json() == success_response_dict
 
     def test_tabular_data_list_200(
         self, test_api_client_persistent, create_multiple_success_responses
     ):
-        """Test tabular_data list (success, multiple)"""
+        """Test table list (success, multiple)"""
         # test with default params
         test_api_client, _ = test_api_client_persistent
         _ = create_multiple_success_responses
-        response = test_api_client.get("/tabular_data")
+        response = test_api_client.get("/table")
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
         expected_paginated_info = {"page": 1, "page_size": 10, "total": 3}
@@ -1050,7 +1046,7 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
 
         # test with pagination parameters (page 1)
         response_with_params = test_api_client.get(
-            "/tabular_data",
+            "/table",
             params={"sort_dir": "asc", "sort_by": "name", "page_size": 2, "page": 1},
         )
         assert response_with_params.status_code == HTTPStatus.OK
@@ -1064,7 +1060,7 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
 
         # test with pagination parameters (page 2)
         response_with_params = test_api_client.get(
-            "/tabular_data",
+            "/table",
             params={"sort_dir": "asc", "sort_by": "name", "page_size": 2, "page": 2},
         )
         assert response_with_params.status_code == HTTPStatus.OK
@@ -1075,21 +1071,15 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
 
         # test sort_by with some random unknown column name
         # should not throw error, just that the sort_by param has no real effect since column not found
-        response_with_params = test_api_client.get(
-            "/tabular_data", params={"sort_by": "random_name"}
-        )
+        response_with_params = test_api_client.get("/table", params={"sort_by": "random_name"})
         assert response_with_params.status_code == HTTPStatus.OK
 
         # test name parameter
-        response_with_params = test_api_client.get(
-            "/tabular_data", params={"name": expected_names[1]}
-        )
+        response_with_params = test_api_client.get("/table", params={"name": expected_names[1]})
         assert response_with_params.status_code == HTTPStatus.OK
         response_with_params_names = [elem["name"] for elem in response_with_params.json()["data"]]
         assert response_with_params_names == [expected_names[1]]
 
         # test bench_size_boundary
-        response_page_size_boundary = test_api_client.get(
-            "/tabular_data", params={"page_size": 100}
-        )
+        response_page_size_boundary = test_api_client.get("/table", params={"page_size": 100})
         assert response_page_size_boundary.status_code == HTTPStatus.OK

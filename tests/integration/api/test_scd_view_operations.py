@@ -7,14 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import (
-    DimensionView,
-    EventData,
-    EventView,
-    FeatureList,
-    SlowlyChangingData,
-    SlowlyChangingView,
-)
+from featurebyte import EventTable, FeatureList, SCDTable
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from tests.util.helper import assert_preview_result_equal
 
@@ -69,7 +62,7 @@ def expected_dataframe_scd_join(transaction_data_upper_case, scd_dataframe):
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_scd_join_small(session, feature_store, source_type):
+async def test_scd_join_small(session, data_source, source_type):
     """
     Self-contained test case to test SCD with small datasets
     """
@@ -111,31 +104,27 @@ async def test_scd_join_small(session, feature_store, source_type):
     table_prefix = "TEST_SCD_JOIN_SMALL"
     await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
     await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
-    event_view = EventView.from_event_data(
-        EventData.from_tabular_source(
-            tabular_source=feature_store.get_table(
-                table_name=f"{table_prefix}_EVENT",
-                database_name=session.database_name,
-                schema_name=session.schema_name,
-            ),
-            name=f"{source_type}_{table_prefix}_EVENT_DATA",
-            event_id_column="event_id",
-            event_timestamp_column="ts",
-        )
-    )
-    scd_view = SlowlyChangingView.from_slowly_changing_data(
-        SlowlyChangingData.from_tabular_source(
-            tabular_source=feature_store.get_table(
-                table_name=f"{table_prefix}_SCD",
-                database_name=session.database_name,
-                schema_name=session.schema_name,
-            ),
-            name=f"{source_type}_{table_prefix}_SCD_DATA",
-            natural_key_column="scd_cust_id",
-            effective_timestamp_column="effective_ts",
-            surrogate_key_column="scd_cust_id",
-        )
-    )
+    event_view = EventTable.from_tabular_source(
+        tabular_source=data_source.get_table(
+            table_name=f"{table_prefix}_EVENT",
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+        ),
+        name=f"{source_type}_{table_prefix}_EVENT_DATA",
+        event_id_column="event_id",
+        event_timestamp_column="ts",
+    ).get_view()
+    scd_view = SCDTable.from_tabular_source(
+        tabular_source=data_source.get_table(
+            table_name=f"{table_prefix}_SCD",
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+        ),
+        name=f"{source_type}_{table_prefix}_SCD_DATA",
+        natural_key_column="scd_cust_id",
+        effective_timestamp_column="effective_ts",
+        surrogate_key_column="scd_cust_id",
+    ).get_view()
     event_view.join(scd_view, on="cust_id", rsuffix="_latest")
     event_view.join(scd_view, on="cust_id", rsuffix="_latest_v2")
     df_actual = event_view.preview()
@@ -147,8 +136,8 @@ def test_event_view_join_scd_view__preview_view(event_data, scd_data, expected_d
     """
     Test joining an EventView with and SCDView
     """
-    event_view = EventView.from_event_data(event_data)
-    scd_data = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    event_view = event_data.get_view()
+    scd_data = scd_data.get_view()
     event_view.join(scd_data, on="ÜSER ID")
     df = event_view.preview(1000)
     df_expected = expected_dataframe_scd_join
@@ -172,8 +161,8 @@ def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
     """
     Test joining an EventView with and SCDView
     """
-    event_view = EventView.from_event_data(event_data)
-    scd_data = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    event_view = event_data.get_view()
+    scd_data = scd_data.get_view()
     event_view.join(scd_data, on="ÜSER ID")
 
     # Create a feature and preview it
@@ -199,15 +188,15 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     Test creating lookup feature from a SlowlyChangingView
     """
     # SCD lookup feature
-    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    scd_view = scd_data.get_view()
     scd_lookup_feature = scd_view["User Status"].as_feature("Current User Status")
 
     # Dimension lookup feature
-    dimension_view = DimensionView.from_dimension_data(dimension_data)
+    dimension_view = dimension_data.get_view()
     dimension_lookup_feature = dimension_view["item_name"].as_feature("Item Name Feature")
 
     # Window feature that depends on an SCD join
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     event_view.join(scd_view, on="ÜSER ID")
     window_feature = event_view.groupby("ÜSER ID", "User Status").aggregate_over(
         method="count",
@@ -256,7 +245,7 @@ def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
     """
     # SCD lookup feature
     offset = "90d"
-    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    scd_view = scd_data.get_view()
     scd_lookup_feature = scd_view["User Status"].as_feature("Current User Status", offset=offset)
 
     # Preview
@@ -282,7 +271,7 @@ def test_aggregate_asat(scd_data, scd_dataframe):
     """
     Test aggregate_asat aggregation on SlowlyChangingView
     """
-    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    scd_view = scd_data.get_view()
     feature = scd_view.groupby("User Status").aggregate_asat(
         method="count", feature_name="Current Number of Users With This Status"
     )
@@ -343,7 +332,7 @@ def test_aggregate_asat__no_entity(scd_data, scd_dataframe, config):
     """
     Test aggregate_asat aggregation on SlowlyChangingView without entity
     """
-    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    scd_view = scd_data.get_view()
     feature = scd_view.groupby([]).aggregate_asat(
         method="count", feature_name="Current Number of Users"
     )
@@ -394,7 +383,7 @@ def snowflake_scd_data_fixture_with_minimal_cols(source_type, scd_data_tabular_s
     """
     Fixture for a SlowlyChangingData in integration tests
     """
-    return SlowlyChangingData.from_tabular_source(
+    return SCDTable.from_tabular_source(
         tabular_source=scd_data_tabular_source,
         name=f"{source_type}_scd_data_with_minimal_cols",
         natural_key_column="User ID",
@@ -408,7 +397,7 @@ def test_scd_view__create_with_minimal_params(scd_data_with_minimal_cols):
     Test SCD view creation with minimal params
     """
     # Able to create view
-    SlowlyChangingView.from_slowly_changing_data(scd_data_with_minimal_cols)
+    scd_data_with_minimal_cols.get_view()
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
@@ -416,8 +405,8 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_data, scd_data):
     """
     Test aggregate_over using a key column joined from another view
     """
-    event_view = EventView.from_event_data(event_data)
-    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    event_view = event_data.get_view()
+    scd_view = scd_data.get_view()
 
     event_view.join(scd_view, on="ÜSER ID")
 

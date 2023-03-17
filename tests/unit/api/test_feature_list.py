@@ -10,7 +10,6 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import (
     BaseFeatureGroup,
@@ -18,7 +17,6 @@ from featurebyte.api.feature_list import (
     FeatureList,
     FeatureListNamespace,
 )
-from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import InternalName
 from featurebyte.exception import (
@@ -27,7 +25,7 @@ from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordRetrievalException,
 )
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
@@ -69,7 +67,6 @@ def deprecated_feature_fixture(feature_group):
 def single_feat_flist_fixture(production_ready_feature):
     """Feature list with a single feature"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
-    production_ready_feature.feature_store.save()
     return flist
 
 
@@ -79,7 +76,6 @@ def test_feature_list_creation__success(
 ):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
-    production_ready_feature.feature_store.save(conflict_resolution="retrieve")
 
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
@@ -89,7 +85,7 @@ def test_feature_list_creation__success(
         "updated_at": None,
         "user_id": None,
         "feature_clusters": None,
-        "workspace_id": DEFAULT_WORKSPACE_ID,
+        "catalog_id": DEFAULT_CATALOG_ID,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -196,7 +192,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         ],
         "name": "my_feature_list",
         "feature_clusters": None,
-        "workspace_id": DEFAULT_WORKSPACE_ID,
+        "catalog_id": DEFAULT_CATALOG_ID,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -364,7 +360,7 @@ def test_feature_group__setitem__with_series_not_allowed(production_ready_featur
     """
     Test that FeatureGroup.__setitem__ for a series is not allowed.
     """
-    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    scd_view = saved_scd_data.get_view()
     series = scd_view["col_int"]
     feature_group = FeatureGroup([production_ready_feature])
     with pytest.raises(TypeError) as exc:
@@ -423,16 +419,14 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
 
 @pytest.fixture(name="saved_feature_list")
 def saved_feature_list_fixture(
-    snowflake_feature_store,
     snowflake_event_data,
     float_feature,
 ):
     """
     Saved feature list fixture
     """
-    snowflake_feature_store.save()
     snowflake_event_data.save()
-    assert float_feature.tabular_source.feature_store_id == snowflake_feature_store.id
+    assert float_feature.tabular_source.feature_store_id == snowflake_event_data.feature_store.id
     feature_list = FeatureList([float_feature], name="my_feature_list")
     assert feature_list.saved is False
     feature_list_id_before = feature_list.id
@@ -489,10 +483,8 @@ def test_info(saved_feature_list):
     expected_info = {
         "name": "my_feature_list",
         "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
-        "entities": [
-            {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
-        ],
-        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}],
+        "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}],
+        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}],
         "default_version_mode": "AUTO",
         "status": "DRAFT",
         "feature_count": 1,
@@ -500,7 +492,7 @@ def test_info(saved_feature_list):
         "production_ready_fraction": {"this": 0.0, "default": 0.0},
         "deployed": False,
         "serving_endpoint": None,
-        "workspace_name": "default",
+        "catalog_name": "default",
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict
@@ -555,9 +547,10 @@ def test_get_feature_list(saved_feature_list):
     audit_history = saved_feature_list.audit()
     expected_audit_history = pd.DataFrame(
         [
+            ("catalog_id", str(DEFAULT_CATALOG_ID)),
             ("created_at", saved_feature_list.created_at.isoformat()),
             ("deployed", False),
-            ("feature_clusters", audit_history.new_value.iloc[2]),
+            ("feature_clusters", audit_history.new_value.iloc[3]),
             ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
             ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace_id)),
             ("name", "my_feature_list"),
@@ -567,7 +560,6 @@ def test_get_feature_list(saved_feature_list):
             ("user_id", None),
             ("version.name", saved_feature_list.version.name),
             ("version.suffix", None),
-            ("workspace_id", str(DEFAULT_WORKSPACE_ID)),
         ],
         columns=["field_name", "new_value"],
     )
@@ -676,7 +668,6 @@ def test_get_historical_feature_sql(saved_feature_list):
 
 
 def test_feature_list__feature_list_saving_in_bad_state(
-    snowflake_feature_store,
     snowflake_event_data,
     production_ready_feature,
     draft_feature,
@@ -684,7 +675,6 @@ def test_feature_list__feature_list_saving_in_bad_state(
     deprecated_feature,
 ):
     """Test feature list saving in bad state due to some feature has been saved (when the feature id is the same)"""
-    snowflake_feature_store.save()
     snowflake_event_data.save()
 
     # create a feature list
@@ -723,7 +713,6 @@ def test_feature_list__feature_list_saving_in_bad_state(
 
 
 def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different(
-    snowflake_feature_store,
     snowflake_event_data,
     feature_group,
     production_ready_feature,
@@ -732,7 +721,6 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
     deprecated_feature,
 ):
     """Test feature list saving in bad state due to some feature has been saved (when the feature id is different)"""
-    snowflake_feature_store.save()
     snowflake_event_data.save()
 
     # save the feature outside the feature list
@@ -764,14 +752,12 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
 
 @pytest.fixture(name="feature_list")
 def feature_list_fixture(
-    snowflake_feature_store,
     snowflake_event_data,
     production_ready_feature,
     draft_feature,
     quarantine_feature,
     deprecated_feature,
 ):
-    snowflake_feature_store.save()
     snowflake_event_data.save()
 
     # create a feature list
@@ -1109,7 +1095,7 @@ def test_get_online_serving_code(mock_preview, feature_list):
                 """
                 response = requests.post(
                     url="http://localhost:8080/feature_list/{feature_list.id}/online_features",
-                    params={{"workspace_id": "63eda344d0313fb925f7883a"}},
+                    params={{"catalog_id": "63eda344d0313fb925f7883a"}},
                     headers={{"Content-Type": "application/json", "Authorization": "Bearer token"}},
                     json={{"entity_serving_names": entity_serving_names}},
                 )
@@ -1123,7 +1109,7 @@ def test_get_online_serving_code(mock_preview, feature_list):
     )
     url = (
         f"http://localhost:8080/feature_list/{feature_list.id}/online_features"
-        f"?workspace_id={feature_list.workspace_id}"
+        f"?catalog_id={feature_list.catalog_id}"
     )
     assert (
         feature_list.get_online_serving_code(language="sh").strip()
@@ -1170,7 +1156,7 @@ def test_get_feature_jobs_status_feature_without_tile(
     mock_execute_query.return_value = feature_job_logs[:0]
     saved_scd_data["col_text"].as_entity(cust_id_entity.name)
     snowflake_event_data.save()
-    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    scd_view = saved_scd_data.get_view()
     feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
     feature_list = FeatureList([feature, float_feature], name="FeatureList")
     feature_list.save()

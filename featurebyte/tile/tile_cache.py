@@ -78,7 +78,9 @@ class TileCache:
 
     def __init__(self, session: BaseSession):
         self.session = session
-        self.tile_manager = tile_manager_from_session(session=session, task_manager=None)
+        self.tile_manager = tile_manager_from_session(
+            session=session, task_manager=None, use_snowflake_scheduling=False
+        )
         self._materialized_temp_table_names: set[str] = set()
 
     @property

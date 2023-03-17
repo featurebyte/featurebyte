@@ -58,7 +58,9 @@ class ProjectNode(BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self.parameters.columns
 
     def prune(
@@ -167,7 +169,14 @@ class FilterNode(BaseNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        # the first input is the input view and the second input is the mask view
+        if input_index == 0:
+            # for the input view, all columns are required, otherwise it may drop some columns
+            # during the preview (where the final output is a filter node)
+            return available_column_names
         return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
@@ -320,7 +329,9 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     @staticmethod
@@ -398,7 +409,9 @@ class LagNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return len(self.parameters.entity_columns) + 2
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         # this node has the following input structure:
         # [0] column to lag
         # [1...n-1] entity column(s)
@@ -453,7 +466,9 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
@@ -496,7 +511,9 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         if target_node_input_order_pairs:
             required_columns = set().union(
                 *(
-                    node.get_required_input_columns(input_index=input_order)
+                    node.get_required_input_columns(
+                        input_index=input_order, available_column_names=self.parameters.names  # type: ignore
+                    )
                     for node, input_order in target_node_input_order_pairs
                 )
             )
@@ -572,7 +589,9 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
@@ -705,7 +724,9 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
@@ -845,7 +866,9 @@ class JoinNode(BasePrunableNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         if input_index == 0:
             return list(set(self.parameters.left_input_columns).union([self.parameters.left_on]))
         return list(set(self.parameters.right_input_columns).union([self.parameters.right_on]))
@@ -1031,7 +1054,9 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         if input_index == 0:
             view_required_columns = [self.parameters.view_entity_column]
             if self.parameters.view_point_in_time_column:
@@ -1119,7 +1144,9 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
@@ -1204,7 +1231,9 @@ class AliasNode(BaseNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
@@ -1274,7 +1303,9 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     def max_input_count(self) -> int:
         return 3
 
-    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:

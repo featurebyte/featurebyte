@@ -39,12 +39,12 @@ from featurebyte.api.api_object import (
     ForeignKeyMapping,
     SavableApiObject,
 )
-from featurebyte.api.base_data import DataApiObject
-from featurebyte.api.data import Data
+from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
@@ -400,7 +400,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", DataApiObject, "data"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "data"),
     ]
 
     @property
@@ -832,8 +832,30 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         return self._list(include_id=include_id, params={"name": self.name})
 
     @classmethod
-    def list(cls, *args: Any, **kwargs: Any) -> pd.DataFrame:
-        return FeatureListNamespace.list(*args, **kwargs)
+    def list(
+        cls,
+        include_id: Optional[bool] = False,
+        entity: Optional[str] = None,
+        data: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        List saved feature lists
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+        entity: Optional[str]
+            Name of entity used to filter results
+        data: Optional[str]
+            Name of data used to filter results
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of feature lists
+        """
+        return FeatureListNamespace.list(include_id=include_id, entity=entity, data=data)
 
     def list_features(
         self, entity: Optional[str] = None, data: Optional[str] = None
@@ -1151,7 +1173,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             for entity in info["entities"]
         }
         for tabular_source in info["tabular_data"]:
-            data = Data.get(tabular_source["name"])
+            data = Table.get(tabular_source["name"])
             entity_columns = [
                 column for column in data.columns_info if column.entity_id in entities
             ]
@@ -1192,7 +1214,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         return CodeStr(
             template.render(
-                workspace_id=self.workspace_id,
+                catalog_id=self.catalog_id,
                 headers=json.dumps(headers),
                 header_params=header_params,
                 serving_url=serving_url,

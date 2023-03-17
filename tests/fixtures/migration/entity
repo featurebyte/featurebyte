@@ -1,1 +1,0 @@
-[{"_id": {"$oid": "6332fdb21e8f0eeccc414513"}, "user_id": {"$oid": "636bcb729d26ed8f501cf22b"}, "name": "e", "created_at": {"$date": "2022-11-09T15:46:58.671Z"}, "updated_at": {"$date": "2022-11-09T15:46:58.697Z"}, "ancestor_ids": [], "parents": [], "serving_names": ["cust_id"]}]

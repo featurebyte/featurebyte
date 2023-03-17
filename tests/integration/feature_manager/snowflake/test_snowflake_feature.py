@@ -13,9 +13,15 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
+from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.periodic_task import Interval
+from featurebyte.models.tile import TileType
 from featurebyte.query_graph.sql.online_serving import OnlineStorePrecomputeQuery
+from featurebyte.service.task_manager import TaskManager
+from featurebyte.tile.scheduler import TileScheduler
 
 
 @pytest.fixture(name="feature_sql")
@@ -37,11 +43,98 @@ def feature_store_table_name_fixture():
     return feature_store_table_name
 
 
+@pytest.fixture(name="feature_manager_with_sf_scheduling")
+def snowflake_feature_manager_fixture(session):
+    """
+    Feature store table name fixture
+    """
+    feature_manager = FeatureManager(session=session)
+    feature_manager._tile_manager._use_snowflake_scheduling = True
+    return feature_manager
+
+
+@pytest.fixture(name="feature_manager_no_sf_scheduling")
+def snowflake_feature_manager_no_sf_scheduling_fixture(extended_feature_model, persistent, session):
+    """
+    Feature store table name fixture
+    """
+    feature_manager = FeatureManager(session=session)
+    feature_manager._tile_manager._use_snowflake_scheduling = False
+    task_manager = TaskManager(
+        user=User(id=extended_feature_model.user_id),
+        persistent=persistent,
+        catalog_id=DEFAULT_CATALOG_ID,
+    )
+    feature_manager._tile_manager._task_manager = task_manager
+
+    return feature_manager
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_online_enabled__without_snowflake_scheduling(
+    session,
+    extended_feature_model,
+    tile_spec,
+    feature_manager_no_sf_scheduling,
+    feature_sql,
+    feature_store_table_name,
+    persistent,
+):
+    with patch.object(ExtendedFeatureModel, "tile_specs", PropertyMock(return_value=[tile_spec])):
+        mock_precompute_queries = [
+            OnlineStorePrecomputeQuery(
+                sql=feature_sql,
+                tile_id=tile_spec.tile_id,
+                aggregation_id=tile_spec.aggregation_id,
+                table_name=feature_store_table_name,
+                result_name="sum_30m",
+                result_type="FLOAT",
+                serving_names=["cust_id"],
+            )
+        ]
+        online_feature_spec = OnlineFeatureSpec(
+            feature=extended_feature_model, precompute_queries=mock_precompute_queries
+        )
+        schedule_time = datetime.utcnow()
+
+        try:
+            await feature_manager_no_sf_scheduling.online_enable(
+                online_feature_spec, schedule_time=schedule_time
+            )
+
+            tile_scheduler = TileScheduler(
+                task_manager=feature_manager_no_sf_scheduling._tile_manager._task_manager
+            )
+            # check if the task is scheduled
+            job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
+            job_details = await tile_scheduler.get_job_details(job_id=job_id)
+            assert job_details is not None
+            assert job_details.name == job_id
+            assert job_details.interval == Interval(
+                every=tile_spec.frequency_minute * 60, period="seconds"
+            )
+
+            # check if the task is not scheduled in snowflake
+            tasks = await session.execute_query(
+                f"SHOW TASKS LIKE '%{extended_feature_model.tile_specs[0].aggregation_id}%'"
+            )
+            assert len(tasks) == 0
+
+        finally:
+            await session.execute_query(
+                f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
+            )
+            await session.execute_query(
+                f"DELETE FROM ONLINE_STORE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
+            )
+
+
 @pytest_asyncio.fixture(name="online_enabled_feature_spec")
 async def online_enabled_feature_spec_fixture(
     session,
     extended_feature_model,
-    feature_manager,
+    feature_manager_with_sf_scheduling,
     feature_sql,
     feature_store_table_name,
     tile_spec,
@@ -69,7 +162,9 @@ async def online_enabled_feature_spec_fixture(
         )
         schedule_time = datetime.utcnow()
 
-        await feature_manager.online_enable(online_feature_spec, schedule_time=schedule_time)
+        await feature_manager_with_sf_scheduling.online_enable(
+            online_feature_spec, schedule_time=schedule_time
+        )
 
         yield online_feature_spec, schedule_time
 
@@ -88,7 +183,116 @@ async def test_online_enabled_feature_spec(
     session,
     extended_feature_model,
     tile_spec,
-    feature_manager,
+    feature_sql,
+    feature_store_table_name,
+):
+    """
+    Test online_enable
+    """
+    assert session.source_type == "snowflake"
+
+    online_feature_spec, schedule_time = online_enabled_feature_spec
+    expected_tile_id = tile_spec.tile_id
+    expected_aggregation_id = tile_spec.aggregation_id
+
+    next_job_time_online = date_util.get_next_job_datetime(
+        input_dt=schedule_time,
+        frequency_minutes=tile_spec.frequency_minute,
+        time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+    )
+
+    next_job_time_offline = date_util.get_next_job_datetime(
+        input_dt=schedule_time,
+        frequency_minutes=1440,
+        time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+    )
+
+    tasks = await session.execute_query(
+        f"SHOW TASKS LIKE '%{extended_feature_model.tile_specs[0].aggregation_id}%'"
+    )
+    assert len(tasks) == 2
+    assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_aggregation_id.upper()}_OFFLINE"
+    assert (
+        tasks["schedule"].iloc[0]
+        == f"USING CRON {next_job_time_offline.minute} {next_job_time_offline.hour} {next_job_time_offline.day} * * UTC"
+    )
+    assert tasks["state"].iloc[0] == "started"
+    assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_aggregation_id.upper()}_ONLINE"
+    assert (
+        tasks["schedule"].iloc[1]
+        == f"USING CRON {next_job_time_online.minute} {next_job_time_online.hour} {next_job_time_online.day} * * UTC"
+    )
+    assert tasks["state"].iloc[1] == "started"
+
+    sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{expected_tile_id}'"
+    result = await session.execute_query(sql)
+    assert len(result) == 1
+    expected_df = pd.DataFrame(
+        {
+            "TILE_ID": [expected_tile_id],
+            "AGGREGATION_ID": [expected_aggregation_id],
+            "FEATURE_NAME": [online_feature_spec.feature.name],
+            "FEATURE_TYPE": ["FLOAT"],
+            "FEATURE_VERSION": [online_feature_spec.feature.version.to_str()],
+            "FEATURE_READINESS": [str(online_feature_spec.feature.readiness)],
+            "FEATURE_EVENT_DATA_IDS": [
+                ",".join([str(i) for i in online_feature_spec.event_data_ids])
+            ],
+            "IS_DELETED": [False],
+        }
+    )
+    result = result.drop(columns=["CREATED_AT"])
+    assert_frame_equal(result, expected_df)
+
+    sql = f"SELECT * FROM ONLINE_STORE_MAPPING WHERE TILE_ID = '{expected_tile_id}'"
+    result = await session.execute_query(sql)
+    assert len(result) == 1
+    expected_df = pd.DataFrame(
+        {
+            "TILE_ID": [expected_tile_id],
+            "AGGREGATION_ID": [expected_aggregation_id],
+            "RESULT_ID": ["sum_30m"],
+            "RESULT_TYPE": ["FLOAT"],
+            "SQL_QUERY": feature_sql,
+            "ONLINE_STORE_TABLE_NAME": feature_store_table_name,
+            "ENTITY_COLUMN_NAMES": ['"cust_id"'],
+            "IS_DELETED": [False],
+        }
+    )
+    result = result.drop(columns=["CREATED_AT"])
+    assert_frame_equal(result, expected_df)
+
+    # validate as result of calling SP_TILE_GENERATE to generate historical tiles
+    sql = f"SELECT * FROM {expected_tile_id}"
+    result = await session.execute_query(sql)
+    assert len(result) == 100
+    expected_df = pd.DataFrame(
+        {
+            "INDEX": np.array([5514911, 5514910, 5514909], dtype=np.int32),
+            "PRODUCT_ACTION": ["view", "view", "view"],
+            "CUST_ID": np.array([1, 1, 1], dtype=np.int8),
+            "VALUE": np.array([5, 2, 2], dtype=np.int8),
+        }
+    )
+    result = result[:3].drop(columns=["CREATED_AT"])
+    assert_frame_equal(result, expected_df)
+
+    # validate as result of calling SP_TILE_SCHEDULE_ONLINE_STORE to populate Online Store
+    sql = f"SELECT * FROM {feature_store_table_name}"
+    result = await session.execute_query(sql)
+    assert len(result) == 100
+    expect_cols = online_feature_spec.precompute_queries[0].serving_names[:]
+    expect_cols.append(online_feature_spec.feature.name)
+    assert list(result) == expect_cols
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_online_enabled_feature_spec(
+    online_enabled_feature_spec,
+    session,
+    extended_feature_model,
+    tile_spec,
     feature_sql,
     feature_store_table_name,
 ):
@@ -197,7 +401,7 @@ async def test_online_enabled_feature_spec(
 async def test_online_disable(
     session,
     snowflake_feature_expected_tile_spec_dict,
-    feature_manager,
+    feature_manager_with_sf_scheduling,
     online_enabled_feature_spec,
 ):
     """
@@ -208,7 +412,7 @@ async def test_online_disable(
     online_feature_spec, _ = online_enabled_feature_spec
     tile_id = online_feature_spec.tile_ids[0]
 
-    await feature_manager.online_disable(online_feature_spec)
+    await feature_manager_with_sf_scheduling.online_disable(online_feature_spec)
 
     result = await session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
     assert len(result) == 0
@@ -233,8 +437,8 @@ async def test_online_disable(
 async def test_online_disable__tile_in_use(
     session,
     snowflake_feature_expected_tile_spec_dict,
-    feature_manager,
     online_enabled_feature_spec,
+    feature_manager_with_sf_scheduling,
 ):
     """
     Test online_disable
@@ -247,9 +451,9 @@ async def test_online_disable__tile_in_use(
 
     online_feature_spec_2 = copy.deepcopy(online_feature_spec)
     online_feature_spec_2.feature.name = online_feature_spec_2.feature.name + "_2"
-    await feature_manager.online_enable(online_feature_spec_2)
+    await feature_manager_with_sf_scheduling.online_enable(online_feature_spec_2)
 
-    await feature_manager.online_disable(online_feature_spec)
+    await feature_manager_with_sf_scheduling.online_disable(online_feature_spec)
 
     result = await session.execute_query(f"SHOW TASKS LIKE '%{aggregation_id}%'")
     assert len(result) == 2
@@ -294,7 +498,7 @@ async def test_online_disable__tile_in_use(
 async def test_online_disable___re_enable(
     session,
     snowflake_feature_expected_tile_spec_dict,
-    feature_manager,
+    feature_manager_with_sf_scheduling,
     online_enabled_feature_spec,
 ):
     """
@@ -306,7 +510,7 @@ async def test_online_disable___re_enable(
     tile_id = online_feature_spec.tile_ids[0]
     aggregation_id = online_feature_spec.aggregation_ids[0]
 
-    await feature_manager.online_disable(online_feature_spec)
+    await feature_manager_with_sf_scheduling.online_disable(online_feature_spec)
 
     result = await session.execute_query(f"SHOW TASKS LIKE '%{aggregation_id}%'")
     assert len(result) == 0
@@ -316,7 +520,7 @@ async def test_online_disable___re_enable(
     assert len(result) == 1
 
     # re-enable the feature jobs
-    await feature_manager.online_enable(online_feature_spec)
+    await feature_manager_with_sf_scheduling.online_enable(online_feature_spec)
 
     result = await session.execute_query(f"SHOW TASKS LIKE '%{aggregation_id}%'")
     assert len(result) == 2
@@ -353,7 +557,7 @@ async def test_online_disable___re_enable(
 async def test_get_last_tile_index(
     extended_feature_model,
     snowflake_feature_expected_tile_spec_dict,
-    feature_manager,
+    feature_manager_with_sf_scheduling,
     tile_manager,
     online_enabled_feature_spec,
 ):
@@ -363,7 +567,9 @@ async def test_get_last_tile_index(
     _ = online_enabled_feature_spec
 
     await tile_manager.insert_tile_registry(tile_spec=extended_feature_model.tile_specs[0])
-    last_index_df = await feature_manager.retrieve_last_tile_index(extended_feature_model)
+    last_index_df = await feature_manager_with_sf_scheduling.retrieve_last_tile_index(
+        extended_feature_model
+    )
 
     assert len(last_index_df) == 1
     assert last_index_df.iloc[0]["TILE_ID"] == "TILE_ID1"
@@ -373,7 +579,7 @@ async def test_get_last_tile_index(
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_get_tile_monitor_summary(
-    extended_feature_model, feature_manager, session, online_enabled_feature_spec
+    extended_feature_model, feature_manager_with_sf_scheduling, session, online_enabled_feature_spec
 ):
     """
     Test retrieve_feature_tile_inconsistency_data
@@ -411,7 +617,7 @@ async def test_get_tile_monitor_summary(
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 5
 
-    result = await feature_manager.retrieve_feature_tile_inconsistency_data(
+    result = await feature_manager_with_sf_scheduling.retrieve_feature_tile_inconsistency_data(
         query_start_ts=(datetime.utcnow() - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S"),
         query_end_ts=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
