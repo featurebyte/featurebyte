@@ -49,10 +49,7 @@ async def test_generate_tile(session):
 
     result = await session.execute_query(f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'")
     assert (
-        result["LAST_TILE_START_DATE_OFFLINE"]
-        .dt.tz_convert(tz="UTC")
-        .iloc[0]
-        .strftime("%Y-%m-%d %H:%M:%S")
+        result["LAST_TILE_START_DATE_OFFLINE"].iloc[0].strftime("%Y-%m-%d %H:%M:%S")
         == "2022-06-05 23:53:00"
     )
 
