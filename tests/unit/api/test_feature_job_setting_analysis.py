@@ -102,7 +102,7 @@ def test_info(saved_analysis):
             "min_featurejob_period": 60,
         },
         "analysis_parameters": {
-            "event_data_name": "sf_event_data",
+            "event_table_name": "sf_event_data",
             "creation_date_column": "created_at",
             "event_timestamp_column": "event_timestamp",
             "blind_spot_buffer": 5,
