@@ -64,16 +64,13 @@ class TileGenerateSchedule(TileCommon):
 
         # use the last_tile_start_date from tile registry as tile_start_ts_str if it is earlier than tile_start_ts_str
         registry_df = await self._spark.execute_query(
-            f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}'"
+            f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}' AND LAST_TILE_START_DATE_ONLINE IS NOT NULL"
         )
         if registry_df is not None and len(registry_df) > 0:
             registry_last_tile_start_ts = registry_df["LAST_TILE_START_DATE_ONLINE"].iloc[0]
             logger.info(f"Last tile start date from registry - {registry_last_tile_start_ts}")
 
-            if (
-                registry_last_tile_start_ts is not None
-                and registry_last_tile_start_ts < tile_start_ts_str
-            ):
+            if registry_last_tile_start_ts < tile_start_ts_str:
                 logger.info(
                     f"Use last tile start date from registry - {registry_last_tile_start_ts} instead of {tile_start_ts_str}"
                 )

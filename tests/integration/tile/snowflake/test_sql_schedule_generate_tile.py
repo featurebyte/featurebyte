@@ -119,7 +119,7 @@ async def test_tile_job_monitor__fail_halfway(session, tile_task_prep):
     )
 
     # simulate error for the stored procedure to stop half way
-    await session.execute_query("ALTER TABLE TILE_REGISTRY RENAME COLUMN TILE_ID to TILE_ID_TEMP")
+    # await session.execute_query("ALTER TABLE TILE_REGISTRY RENAME COLUMN TILE_ID to TILE_ID_TEMP")
     sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
@@ -141,25 +141,125 @@ async def test_tile_job_monitor__fail_halfway(session, tile_task_prep):
           '{tile_end_ts}'
         )
         """
+    await session.execute_query(sql)
+
+    sql = f"UPDATE {table_name} SET VALUE = VALUE + 1 WHERE {InternalName.TILE_START_DATE} in ('2022-06-05T23:48:00Z', '2022-06-05T23:33:00Z') "
+    await session.execute_query(sql)
+
+    tile_end_ts_2 = "2022-06-05T23:58:00Z"
+    sql = f"""
+        call SP_TILE_GENERATE_SCHEDULE(
+          '{tile_id}',
+          '{agg_id}',
+          183,
+          3,
+          5,
+          1440,
+          '{tile_sql}',
+          '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_LAST_START_DATE}',
+          '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
+          '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
+          '{entity_col_names}',
+          '{value_col_names}',
+          '{value_col_types}',
+          'ONLINE',
+          {tile_monitor},
+          '{tile_end_ts_2}'
+        )
+        """
+    await session.execute_query(sql)
+
+    await session.execute_query(
+        f"ALTER TABLE {tile_id}_MONITOR RENAME COLUMN OLD_VALUE to OLD_VALUE_TEMP"
+    )
     try:
         await session.execute_query(sql)
     except:
         await session.execute_query(
-            "ALTER TABLE TILE_REGISTRY RENAME COLUMN TILE_ID_TEMP to TILE_ID"
+            f"ALTER TABLE {tile_id}_MONITOR RENAME COLUMN OLD_VALUE_TEMP to OLD_VALUE"
         )
 
     # verify tile job monitor
-    sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}'"
+    sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}' ORDER BY CREATED_AT"
     result = await session.execute_query(sql)
-    assert len(result) == 3
-    assert result["STATUS"].tolist() == ["STARTED", "MONITORED", "GENERATED_FAILED"]
-    error_msg = result["MESSAGE"].iloc[2]
-    assert "error" in error_msg and "TILE_ID" in error_msg
+    result = result.iloc[-2:]
+    assert result["STATUS"].tolist() == ["STARTED", "MONITORED_FAILED"]
+    error_msg = result["MESSAGE"].iloc[1]
+    assert "error" in error_msg
 
     session_id = result["SESSION_ID"].iloc[0]
-    assert result["SESSION_ID"].tolist() == [session_id] * 3
+    assert result["SESSION_ID"].tolist() == [session_id] * 2
     assert result["CREATED_AT"].iloc[1] > result["CREATED_AT"].iloc[0]
-    assert result["CREATED_AT"].iloc[2] > result["CREATED_AT"].iloc[1]
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_schedule_generate_tile__with_registry(session, tile_task_prep):
+    """
+    Test the stored procedure of generating tiles
+    """
+
+    tile_id, agg_id, feature_store_table_name, _, _ = tile_task_prep
+
+    entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
+    value_col_names = "VALUE"
+    value_col_types = "FLOAT"
+    table_name = "TEMP_TABLE"
+    tile_monitor = 2
+    tile_end_ts = "2022-06-05T23:58:00Z"
+    tile_sql = (
+        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
+        f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
+        f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
+    )
+
+    tile_schedule_sql = f"""
+        call SP_TILE_GENERATE_SCHEDULE(
+          '{tile_id}',
+          '{agg_id}',
+          183,
+          3,
+          5,
+          1440,
+          '{tile_sql}',
+          '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_LAST_START_DATE}',
+          '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
+          '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
+          '{entity_col_names}',
+          '{value_col_names}',
+          '{value_col_types}',
+          'ONLINE',
+          {tile_monitor},
+          '{tile_end_ts}'
+        )
+        """
+
+    await session.execute_query(tile_schedule_sql)
+
+    sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
+    result = await session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 3
+    result = await session.execute_query(
+        f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
+    )
+    assert result["LAST_TILE_START_DATE_ONLINE"].iloc[0] == "2022-06-05T23:53:00.000Z"
+
+    # test for LAST_TILE_START_DATE_ONLINE earlier than tile_start_date
+    await session.execute_query(
+        f"UPDATE TILE_REGISTRY SET LAST_TILE_START_DATE_ONLINE = '2022-06-05T23:33:00Z' WHERE TILE_ID = '{tile_id}'"
+    )
+
+    await session.execute_query(tile_schedule_sql)
+    sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
+    result = await session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 5
+
+    result = await session.execute_query(
+        f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
+    )
+    assert result["LAST_TILE_START_DATE_ONLINE"].iloc[0] == "2022-06-05T23:53:00.000Z"
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
