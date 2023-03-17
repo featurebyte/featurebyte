@@ -63,13 +63,6 @@ def start(local: bool = False) -> None:
     _start_app(ApplicationName.FEATUREBYTE, local=local, verbose=False)
 
 
-def stop() -> None:
-    """
-    Stop featurebyte application
-    """
-    _stop_app(ApplicationName.FEATUREBYTE, verbose=False)
-
-
 def start_spark(local: bool = False) -> None:
     """
     Start local spark application
@@ -80,6 +73,14 @@ def start_spark(local: bool = False) -> None:
         Do not pull new images from registry, by default False
     """
     _start_app(ApplicationName.SPARK, local=local, verbose=False)
+
+
+def stop() -> None:
+    """
+    Stop all applications
+    """
+    _stop_app(ApplicationName.FEATUREBYTE, verbose=False)
+    _stop_app(ApplicationName.SPARK, verbose=False)
 
 
 def playground(local: bool = False, datasets: Optional[List[str]] = None) -> None:
