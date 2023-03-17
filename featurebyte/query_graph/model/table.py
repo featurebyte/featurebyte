@@ -303,13 +303,13 @@ class ItemTableData(BaseTableData):
             metadata=metadata,
         )
         (  # pylint: disable=unbalanced-tuple-unpacking
-            proxy_item_data_node,
+            proxy_item_table_node,
             proxy_event_view_node,
         ) = proxy_input_nodes
         item_view_columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
         _, columns_info, join_parameters = self.join_event_view_columns(
             graph=view_graph_node,
-            item_view_node=proxy_item_data_node,
+            item_view_node=proxy_item_table_node,
             item_view_columns_info=item_view_columns_info,
             item_view_event_id_column=self.event_id_column,
             event_view_node=proxy_event_view_node,
@@ -320,7 +320,7 @@ class ItemTableData(BaseTableData):
         )
 
         # left output columns is the renamed event timestamp column
-        # (see `columns` parameter in above `_join_event_data_attributes` method)
+        # (see `columns` parameter in above `_join_event_table_attributes` method)
         renamed_event_timestamp_column = join_parameters.left_output_columns[0]
         return view_graph_node, columns_info, renamed_event_timestamp_column
 

@@ -185,7 +185,7 @@ class FeatureManager(BaseModel):
                 feature_type=feature_spec.value_type,
                 feature_version=feature_spec.feature.version.to_str(),
                 feature_readiness=str(feature_spec.feature.readiness),
-                feature_event_data_ids=",".join([str(i) for i in feature_spec.event_table_ids]),
+                feature_event_table_ids=",".join([str(i) for i in feature_spec.event_table_ids]),
                 is_deleted=False,
             )
             await self._session.execute_query(upsert_sql)

@@ -103,10 +103,10 @@ class TestContextApi(BaseCatalogApiTestSuite):
             payload["name"] = f"{payload['name']}_{i}"
             yield payload
 
-    @pytest.fixture(name="input_event_data_node")
-    def input_event_data_node_fixture(self):
+    @pytest.fixture(name="input_event_table_node")
+    def input_event_table_node_fixture(self):
         """Input event_table node of a graph"""
-        event_data_payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+        event_table_payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
         return {
             "name": "input_1",
             "type": "input",
@@ -132,7 +132,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
                     },
                     "type": "snowflake",
                 },
-                "id": event_data_payload["_id"],
+                "id": event_table_payload["_id"],
                 "id_column": "col_int",
                 "table_details": {
                     "database_name": "sf_database",
@@ -148,7 +148,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
         self,
         create_success_response,
         test_api_client_persistent,
-        input_event_data_node,
+        input_event_table_node,
     ):
         """
         Test context update (success)
@@ -156,8 +156,8 @@ class TestContextApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         context_id = response_dict["_id"]
-        graph = {"nodes": [input_event_data_node], "edges": []}
-        payload = {"graph": graph, "node_name": input_event_data_node["name"]}
+        graph = {"nodes": [input_event_table_node], "edges": []}
+        payload = {"graph": graph, "node_name": input_event_table_node["name"]}
         response = test_api_client.patch(f"{self.base_route}/{context_id}", json=payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK

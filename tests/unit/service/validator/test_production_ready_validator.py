@@ -6,7 +6,7 @@ import textwrap
 import pytest
 from bson import ObjectId
 
-from featurebyte import DimensionView, Feature, FeatureJobSetting, MissingValueImputation
+from featurebyte import Feature, FeatureJobSetting, MissingValueImputation
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
@@ -253,14 +253,6 @@ async def test_validate__no_diff_in_feature_should_return_none(
     # Validate
     response = await production_ready_validator.validate(feature.name, feature.id, feature.graph)
     assert response is None
-
-
-@pytest.fixture(name="feature_from_dimension_data")
-def feature_from_dimension_data_fixture(cust_id_entity, snowflake_dimension_data):
-    """Feature from dimension table"""
-    snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
-    dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
-    return dimension_view["col_float"].as_feature("FloatFeature")  # pylint: disable=no-member
 
 
 def test_raise_error_if_diffs_present():

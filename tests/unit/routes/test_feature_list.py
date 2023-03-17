@@ -251,21 +251,21 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             key: f"{value}_1" for key, value in feature_store["details"].items()
         }
 
-        event_data = self.load_payload("tests/fixtures/request_payloads/event_table.json")
-        event_data["_id"] = str(ObjectId())
-        event_data["name"] = f'new_{event_data["name"]}'
+        event_table = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+        event_table["_id"] = str(ObjectId())
+        event_table["name"] = f'new_{event_table["name"]}'
         tabular_source = {
             "feature_store_id": feature_store["_id"],
-            "table_details": event_data["tabular_source"]["table_details"],
+            "table_details": event_table["tabular_source"]["table_details"],
         }
-        event_data["tabular_source"] = tabular_source
+        event_table["tabular_source"] = tabular_source
 
         feature = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
         feature["tabular_source"] = tabular_source
 
         payload_api_object_pairs = [
             (feature_store, "feature_store"),
-            (event_data, "event_table"),
+            (event_table, "event_table"),
             (feature, "feature"),
         ]
         for payload, api_object in payload_api_object_pairs:

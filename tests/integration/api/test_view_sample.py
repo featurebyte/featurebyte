@@ -12,10 +12,10 @@ def test_event_table_sample(event_table):
     """
     Test event table sample & event table column sample
     """
-    event_data_df = event_table.sample()
+    event_table_df = event_table.sample()
     ts_col = "ËVENT_TIMESTAMP"
     ev_ts = event_table[ts_col].sample()
-    pd.testing.assert_frame_equal(event_data_df[[ts_col]], ev_ts)
+    pd.testing.assert_frame_equal(event_table_df[[ts_col]], ev_ts)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

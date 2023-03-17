@@ -349,7 +349,7 @@ def test_update_record_creation_timestamp_column__saved_object(saved_item_table)
     assert expected_msg in str(exc.value)
 
 
-def test_get_item_data(saved_item_table, snowflake_item_table):
+def test_get_item_table(saved_item_table, snowflake_item_table):
     """
     Test ItemTable.get function
     """
@@ -361,10 +361,10 @@ def test_get_item_data(saved_item_table, snowflake_item_table):
     assert ItemTable.get_by_id(id=loaded_data.id) == snowflake_item_table
 
     with pytest.raises(RecordRetrievalException) as exc:
-        ItemTable.get("unknown_item_data")
+        ItemTable.get("unknown_item_table")
 
     expected_msg = (
-        'ItemTable (name: "unknown_item_data") not found. '
+        'ItemTable (name: "unknown_item_table") not found. '
         "Please save the ItemTable object first."
     )
     assert expected_msg in str(exc.value)
@@ -402,15 +402,15 @@ def test_list_filter(saved_item_table):
     assert feature_list.shape[0] == 0
 
 
-def assert_info_helper(item_data_info):
+def assert_info_helper(item_table_info):
     """
     Helper function to assert info from item table.
     """
-    assert item_data_info["event_id_column"] == "event_id_col"
-    assert item_data_info["item_id_column"] == "item_id_col"
-    assert len(item_data_info["entities"]) == 1
-    assert item_data_info["name"] == "sf_item_table"
-    assert item_data_info["status"] == "DRAFT"
+    assert item_table_info["event_id_column"] == "event_id_col"
+    assert item_table_info["item_id_column"] == "item_id_col"
+    assert len(item_table_info["entities"]) == 1
+    assert item_table_info["name"] == "sf_item_table"
+    assert item_table_info["status"] == "DRAFT"
 
 
 def test_info(saved_item_table):
@@ -425,16 +425,16 @@ def test_info(saved_item_table):
     assert_info_helper(info)
 
 
-def test_accessing_item_data_attributes(snowflake_item_table):
-    """Test accessing event table object attributes"""
+def test_accessing_item_table_attributes(snowflake_item_table):
+    """Test accessing item table object attributes"""
     assert snowflake_item_table.saved is False
     assert snowflake_item_table.record_creation_timestamp_column is None
     assert snowflake_item_table.event_id_column == "event_id_col"
     assert snowflake_item_table.item_id_column == "item_id_col"
 
 
-def test_accessing_saved_item_data_attributes(saved_item_table):
-    """Test accessing event table object attributes"""
+def test_accessing_saved_item_table_attributes(saved_item_table):
+    """Test accessing item table object attributes"""
     assert saved_item_table.saved
     assert isinstance(saved_item_table.cached_model, ItemTableModel)
     assert saved_item_table.record_creation_timestamp_column is None

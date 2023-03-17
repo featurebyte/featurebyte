@@ -54,7 +54,7 @@ def test_validate_join(snowflake_dimension_view, snowflake_scd_view):
 
 def test_get_join_column(snowflake_dimension_view):
     column = snowflake_dimension_view.get_join_column()
-    # col_int is the dimension_data_id_key column name used when creating this view fixture
+    # col_int is the dimension_id column name used when creating this view fixture
     assert column == "col_int"
 
 

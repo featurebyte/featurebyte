@@ -179,7 +179,7 @@ class ItemView(View, GroupByMixin):
                 "aggregate_over functions."
             )
 
-        self._assert_not_all_columns_are_from_event_data(keys, value_column)
+        self._assert_not_all_columns_are_from_event_table(keys, value_column)
 
     def validate_simple_aggregate_parameters(
         self, keys: list[str], value_column: Optional[str]
@@ -210,9 +210,9 @@ class ItemView(View, GroupByMixin):
                 "when performing simple aggregates."
             )
 
-        self._assert_not_all_columns_are_from_event_data(keys, value_column)
+        self._assert_not_all_columns_are_from_event_table(keys, value_column)
 
-    def _assert_not_all_columns_are_from_event_data(
+    def _assert_not_all_columns_are_from_event_table(
         self, keys: list[str], value_column: Optional[str]
     ) -> None:
         """
@@ -234,13 +234,13 @@ class ItemView(View, GroupByMixin):
             return
 
         columns_to_check = [*keys, value_column]
-        if self._are_columns_derived_only_from_event_data(columns_to_check):
+        if self._are_columns_derived_only_from_event_table(columns_to_check):
             raise ValueError(
                 "Columns imported from EventTable and their derivatives should be aggregated in"
                 " EventView"
             )
 
-    def _are_columns_derived_only_from_event_data(self, column_names: List[str]) -> bool:
+    def _are_columns_derived_only_from_event_table(self, column_names: List[str]) -> bool:
         """
         Check if column is derived using only EventTable's columns
 

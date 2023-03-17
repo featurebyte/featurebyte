@@ -112,16 +112,16 @@ def input_node_fixture(global_graph, input_details):
     return node_input
 
 
-@pytest.fixture(name="item_data_input_details")
-def item_data_input_details_fixture(input_details):
+@pytest.fixture(name="item_table_input_details")
+def item_table_input_details_fixture(input_details):
     """Similar to input_details but for an ItemTable table"""
     input_details = copy.deepcopy(input_details)
     input_details["table_details"]["table_name"] = "item_table"
     return input_details
 
 
-@pytest.fixture(name="item_data_input_node")
-def item_data_input_node_fixture(global_graph, item_data_input_details):
+@pytest.fixture(name="item_table_input_node")
+def item_table_input_node_fixture(global_graph, item_table_input_details):
     """Fixture of an input node representing an ItemTable"""
     node_params = {
         "type": "item_table",
@@ -132,7 +132,7 @@ def item_data_input_node_fixture(global_graph, item_data_input_details):
             {"name": "item_type", "dtype": DBVarType.VARCHAR},
         ],
     }
-    node_params.update(item_data_input_details)
+    node_params.update(item_table_input_details)
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params=node_params,
@@ -142,16 +142,16 @@ def item_data_input_node_fixture(global_graph, item_data_input_details):
     return node_input
 
 
-@pytest.fixture(name="scd_data_input_details")
-def scd_data_input_details_fixture(input_details):
+@pytest.fixture(name="scd_table_input_details")
+def scd_table_input_details_fixture(input_details):
     """Similar to input_details but for an SlowlyChangingView table"""
     input_details = copy.deepcopy(input_details)
     input_details["table_details"]["table_name"] = "customer_profile_table"
     return input_details
 
 
-@pytest.fixture(name="scd_data_input_node")
-def scd_data_input_node_fixture(global_graph, scd_data_input_details):
+@pytest.fixture(name="scd_table_input_node")
+def scd_table_input_node_fixture(global_graph, scd_table_input_details):
     """Fixture of an SlowlyChangingView input node"""
     node_params = {
         "type": "scd_table",
@@ -161,7 +161,7 @@ def scd_data_input_node_fixture(global_graph, scd_data_input_details):
             {"name": "membership_status", "dtype": DBVarType.VARCHAR},
         ],
     }
-    node_params.update(scd_data_input_details)
+    node_params.update(scd_table_input_details)
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params=node_params,
@@ -171,16 +171,16 @@ def scd_data_input_node_fixture(global_graph, scd_data_input_details):
     return node_input
 
 
-@pytest.fixture(name="dimension_data_input_details")
-def dimension_data_input_details_fixture(input_details):
+@pytest.fixture(name="dimension_table_input_details")
+def dimension_table_input_details_fixture(input_details):
     """Similar to input_details but for a Dimension table"""
     input_details = copy.deepcopy(input_details)
     input_details["table_details"]["table_name"] = "dimension_table"
     return input_details
 
 
-@pytest.fixture(name="dimension_data_input_node")
-def dimension_data_input_node_fixture(global_graph, dimension_data_input_details):
+@pytest.fixture(name="dimension_table_input_node")
+def dimension_table_input_node_fixture(global_graph, dimension_table_input_details):
     """Fixture of a DimensionTable input node"""
     node_params = {
         "type": "dimension_table",
@@ -190,7 +190,7 @@ def dimension_data_input_node_fixture(global_graph, dimension_data_input_details
             {"name": "cust_value_2", "dtype": DBVarType.FLOAT},
         ],
     }
-    node_params.update(dimension_data_input_details)
+    node_params.update(dimension_table_input_details)
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params=node_params,
@@ -200,8 +200,8 @@ def dimension_data_input_node_fixture(global_graph, dimension_data_input_details
     return node_input
 
 
-@pytest.fixture(name="event_data_input_node")
-def event_data_input_node_fixture(global_graph, input_details):
+@pytest.fixture(name="event_table_input_node")
+def event_table_input_node_fixture(global_graph, input_details):
     """Fixture of an EventTable input node"""
     # pylint: disable=duplicate-code
     node_params = {
@@ -474,11 +474,11 @@ def join_node_params_fixture():
     }
 
 
-@pytest.fixture(name="item_data_join_event_data_node")
-def item_data_join_event_data_node_fixture(
+@pytest.fixture(name="item_table_join_event_table_node")
+def item_table_join_event_table_node_fixture(
     global_graph,
-    item_data_input_node,
-    event_data_input_node,
+    item_table_input_node,
+    event_table_input_node,
     join_node_params,
 ):
     """
@@ -490,13 +490,15 @@ def item_data_join_event_data_node_fixture(
         node_type=NodeType.JOIN,
         node_params=join_node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_data_input_node, item_data_input_node],
+        input_nodes=[event_table_input_node, item_table_input_node],
     )
     return node
 
 
-@pytest.fixture(name="item_data_joined_event_data_feature_node")
-def item_data_joined_event_data_feature_node_fixture(global_graph, item_data_join_event_data_node):
+@pytest.fixture(name="item_table_joined_event_table_feature_node")
+def item_table_joined_event_table_feature_node_fixture(
+    global_graph, item_table_join_event_table_node
+):
     """
     Fixture of a feature using item table joined with event table as input
     """
@@ -513,7 +515,9 @@ def item_data_joined_event_data_feature_node_fixture(global_graph, item_data_joi
         "names": ["item_type_count_30d"],
         "windows": ["30d"],
     }
-    groupby_node = add_groupby_operation(global_graph, node_params, item_data_join_event_data_node)
+    groupby_node = add_groupby_operation(
+        global_graph, node_params, item_table_join_event_table_node
+    )
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["item_type_count_30d"]},
@@ -524,7 +528,7 @@ def item_data_joined_event_data_feature_node_fixture(global_graph, item_data_joi
 
 
 @pytest.fixture(name="order_size_feature_group_node")
-def order_size_feature_group_node_fixture(global_graph, item_data_input_node):
+def order_size_feature_group_node_fixture(global_graph, item_table_input_node):
     """
     Fixture of a non-time aware groupby node
     """
@@ -540,7 +544,7 @@ def order_size_feature_group_node_fixture(global_graph, item_data_input_node):
         node_type=NodeType.ITEM_GROUPBY,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[item_data_input_node],
+        input_nodes=[item_table_input_node],
     )
     return groupby_node
 
@@ -572,7 +576,7 @@ def order_size_feature_node_fixture(global_graph, order_size_feature_group_node)
 def order_size_feature_join_node_fixture(
     global_graph,
     order_size_feature_node,
-    event_data_input_node,
+    event_table_input_node,
 ):
     """
     Fixture of a non-time aware feature joined to EventView. Result of:
@@ -588,7 +592,7 @@ def order_size_feature_join_node_fixture(
         node_type=NodeType.JOIN_FEATURE,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_data_input_node, order_size_feature_node],
+        input_nodes=[event_table_input_node, order_size_feature_node],
     )
     return node
 
@@ -616,11 +620,11 @@ def order_size_agg_by_cust_id_graph_fixture(global_graph, order_size_feature_joi
     return global_graph, node
 
 
-@pytest.fixture(name="item_data_join_event_data_with_renames_node")
-def item_data_join_event_data_with_renames_node_fixture(
+@pytest.fixture(name="item_table_join_event_table_with_renames_node")
+def item_table_join_event_table_with_renames_node_fixture(
     global_graph,
-    item_data_input_node,
-    event_data_input_node,
+    item_table_input_node,
+    event_table_input_node,
 ):
     """
     Fixture of a join node with column renames
@@ -638,7 +642,7 @@ def item_data_join_event_data_with_renames_node_fixture(
         node_type=NodeType.JOIN,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_data_input_node, item_data_input_node],
+        input_nodes=[event_table_input_node, item_table_input_node],
     )
     return node
 
@@ -646,7 +650,7 @@ def item_data_join_event_data_with_renames_node_fixture(
 @pytest.fixture(name="mixed_point_in_time_and_item_aggregations")
 def mixed_point_in_time_and_item_aggregations_fixture(
     query_graph_with_groupby,
-    item_data_input_node,
+    item_table_input_node,
     entity_id,
 ):
     """
@@ -665,7 +669,7 @@ def mixed_point_in_time_and_item_aggregations_fixture(
         node_type=NodeType.ITEM_GROUPBY,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[item_data_input_node],
+        input_nodes=[item_table_input_node],
     )
     item_groupby_feature_node = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -694,8 +698,8 @@ def mixed_point_in_time_and_item_aggregations_features_fixture(
 @pytest.fixture(name="scd_join_node")
 def scd_join_node_fixture(
     global_graph,
-    event_data_input_node,
-    scd_data_input_node,
+    event_table_input_node,
+    scd_table_input_node,
 ):
     """
     Fixture of a join node that performs an SCD join between EventTable and DimensionTable
@@ -722,13 +726,13 @@ def scd_join_node_fixture(
         node_type=NodeType.JOIN,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_data_input_node, scd_data_input_node],
+        input_nodes=[event_table_input_node, scd_table_input_node],
     )
     return node
 
 
 @pytest.fixture(name="lookup_node")
-def lookup_node_fixture(global_graph, dimension_data_input_node, entity_id):
+def lookup_node_fixture(global_graph, dimension_table_input_node, entity_id):
     """
     Fixture of a lookup feature node with multiple features
     """
@@ -743,7 +747,7 @@ def lookup_node_fixture(global_graph, dimension_data_input_node, entity_id):
         node_type=NodeType.LOOKUP,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[dimension_data_input_node],
+        input_nodes=[dimension_table_input_node],
     )
     return lookup_node
 
@@ -790,7 +794,7 @@ def lookup_feature_node_fixture(global_graph, projected_lookup_features):
 
 
 @pytest.fixture(name="event_lookup_node")
-def event_lookup_node_fixture(global_graph, event_data_input_node, entity_id):
+def event_lookup_node_fixture(global_graph, event_table_input_node, entity_id):
     """
     Fixture of a lookup feature node from EventTable
     """
@@ -806,7 +810,7 @@ def event_lookup_node_fixture(global_graph, event_data_input_node, entity_id):
         node_type=NodeType.LOOKUP,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_data_input_node],
+        input_nodes=[event_table_input_node],
     )
     return lookup_node
 
@@ -842,7 +846,7 @@ def scd_lookup_node_parameters_fixture(entity_id):
 
 
 @pytest.fixture(name="scd_lookup_node")
-def scd_lookup_node_fixture(global_graph, scd_lookup_node_parameters, scd_data_input_node):
+def scd_lookup_node_fixture(global_graph, scd_lookup_node_parameters, scd_table_input_node):
     """
     Fixture of a SCD lookup node
     """
@@ -850,14 +854,14 @@ def scd_lookup_node_fixture(global_graph, scd_lookup_node_parameters, scd_data_i
         node_type=NodeType.LOOKUP,
         node_params=scd_lookup_node_parameters,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[scd_data_input_node],
+        input_nodes=[scd_table_input_node],
     )
     return lookup_node
 
 
 @pytest.fixture(name="scd_lookup_without_current_flag_node")
 def scd_lookup_without_current_flag_node_fixture(
-    global_graph, scd_lookup_node_parameters, scd_data_input_node
+    global_graph, scd_lookup_node_parameters, scd_table_input_node
 ):
     """
     Fixture of a SCD lookup node without current flag column
@@ -868,7 +872,7 @@ def scd_lookup_without_current_flag_node_fixture(
         node_type=NodeType.LOOKUP,
         node_params=scd_lookup_node_parameters,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[scd_data_input_node],
+        input_nodes=[scd_table_input_node],
     )
     return lookup_node
 
@@ -888,14 +892,14 @@ def scd_lookup_feature_node_fixture(global_graph, scd_lookup_node):
 
 
 @pytest.fixture(name="scd_offset_lookup_node")
-def scd_offset_lookup_node_fixture(global_graph, scd_data_input_node, scd_lookup_node_parameters):
+def scd_offset_lookup_node_fixture(global_graph, scd_table_input_node, scd_lookup_node_parameters):
     node_params = copy.deepcopy(scd_lookup_node_parameters)
     node_params["scd_parameters"]["offset"] = "14d"
     lookup_node = global_graph.add_operation(
         node_type=NodeType.LOOKUP,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[scd_data_input_node],
+        input_nodes=[scd_table_input_node],
     )
     return lookup_node
 
@@ -967,7 +971,7 @@ def latest_value_without_window_feature_node_fixture(global_graph, input_node):
 
 
 @pytest.fixture(name="aggregate_asat_feature_node")
-def aggregate_asat_feature_node_fixture(global_graph, scd_data_input_node):
+def aggregate_asat_feature_node_fixture(global_graph, scd_table_input_node):
     node_params = {
         "keys": ["membership_status"],
         "serving_names": ["MEMBERSHIP_STATUS"],
@@ -983,7 +987,7 @@ def aggregate_asat_feature_node_fixture(global_graph, scd_data_input_node):
         node_type=NodeType.AGGREGATE_AS_AT,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[scd_data_input_node],
+        input_nodes=[scd_table_input_node],
     )
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -994,8 +998,8 @@ def aggregate_asat_feature_node_fixture(global_graph, scd_data_input_node):
     return feature_node
 
 
-@pytest.fixture(name="event_data_table_details")
-def get_event_data_table_details_fixture():
+@pytest.fixture(name="event_table_details")
+def get_event_table_details_fixture():
     """
     Get event table details fixture
     """
@@ -1008,7 +1012,7 @@ def get_event_data_table_details_fixture():
 
 @pytest.fixture(name="graph_single_node")
 def query_graph_single_node(
-    global_graph, event_data_table_details, snowflake_feature_store_details_dict
+    global_graph, event_table_details, snowflake_feature_store_details_dict
 ):
     """
     Query graph with a single node
@@ -1018,7 +1022,7 @@ def query_graph_single_node(
         node_params={
             "type": "event_table",
             "columns": [{"name": "column", "dtype": "FLOAT"}],
-            "table_details": event_data_table_details.dict(),
+            "table_details": event_table_details.dict(),
             "feature_store_details": snowflake_feature_store_details_dict,
         },
         node_output_type=NodeOutputType.FRAME,
@@ -1036,7 +1040,7 @@ def query_graph_single_node(
             "parameters": {
                 "type": "event_table",
                 "columns": [{"name": "column", "dtype": "FLOAT"}],
-                "table_details": event_data_table_details.dict(),
+                "table_details": event_table_details.dict(),
                 "feature_store_details": snowflake_feature_store_details_dict,
                 "timestamp_column": None,
                 "id": None,

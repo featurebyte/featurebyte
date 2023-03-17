@@ -278,7 +278,7 @@ class TestEventTableTestSuite(BaseTableTestSuite):
     """
 
 
-def test_info__event_data_without_record_creation_date(snowflake_database_table):
+def test_info__event_table_without_record_creation_date(snowflake_database_table):
     """Test info on event table with record creation timestamp is None"""
     event_table = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
@@ -396,7 +396,7 @@ def test_info(saved_event_table, cust_id_entity):
     ]
 
 
-def test_event_data__save__exceptions(saved_event_table):
+def test_event_table__save__exceptions(saved_event_table):
     """
     Test save event table failure due to conflict
     """
@@ -407,7 +407,7 @@ def test_event_data__save__exceptions(saved_event_table):
     assert expected_msg in str(exc.value)
 
 
-def test_event_data__record_creation_exception(snowflake_event_table):
+def test_event_table__record_creation_exception(snowflake_event_table):
     """
     Test save event table failure due to conflict
     """
@@ -445,7 +445,7 @@ def test_update_default_job_setting(snowflake_event_table, config, mock_api_obje
     assert isinstance(feature_store_id, ObjectId)
 
 
-def test_update_default_job_setting__saved_event_data(
+def test_update_default_job_setting__saved_event_table(
     saved_event_table, config, mock_api_object_cache
 ):
     """
@@ -578,7 +578,7 @@ def test_update_default_job_setting__record_update_exception(snowflake_event_tab
             )
 
 
-def test_update_default_job_setting__feature_job_setting_analysis_failure__event_data_not_saved(
+def test_update_default_job_setting__feature_job_setting_analysis_failure__event_table_not_saved(
     snowflake_event_table, config
 ):
     """
@@ -652,7 +652,7 @@ def test_update_record_creation_timestamp_column__saved_object(saved_event_table
     assert expected_msg in str(exc.value)
 
 
-def test_get_event_data(snowflake_event_table, mock_config_path_env):
+def test_get_event_table(snowflake_event_table, mock_config_path_env):
     """
     Test EventTable.get function
     """
@@ -662,16 +662,16 @@ def test_get_event_data(snowflake_event_table, mock_config_path_env):
     snowflake_event_table.save()
 
     # load the event table from the persistent
-    loaded_event_data = EventTable.get(snowflake_event_table.name)
-    assert loaded_event_data.saved is True
-    assert loaded_event_data == snowflake_event_table
+    loaded_event_table = EventTable.get(snowflake_event_table.name)
+    assert loaded_event_table.saved is True
+    assert loaded_event_table == snowflake_event_table
     assert EventTable.get_by_id(id=snowflake_event_table.id) == snowflake_event_table
 
     with pytest.raises(RecordRetrievalException) as exc:
-        EventTable.get("unknown_event_data")
+        EventTable.get("unknown_event_table")
 
     expected_msg = (
-        'EventTable (name: "unknown_event_data") not found. '
+        'EventTable (name: "unknown_event_table") not found. '
         "Please save the EventTable object first."
     )
     assert expected_msg in str(exc.value)
@@ -679,7 +679,7 @@ def test_get_event_data(snowflake_event_table, mock_config_path_env):
 
 @patch("featurebyte.api.source_table.logger")
 @patch("featurebyte.service.session_manager.SessionManager.get_session")
-def test_get_event_data__schema_has_been_changed(mock_get_session, mock_logger, saved_event_table):
+def test_get_event_table__schema_has_been_changed(mock_get_session, mock_logger, saved_event_table):
     """
     Test retrieving event table after table schema has been changed
     """
@@ -927,7 +927,7 @@ def test_list_feature_job_setting_analysis(mock_list, saved_event_table):
     assert output == mock_list.return_value
 
 
-def test_event_data__entity_relation_auto_tagging(saved_event_table):
+def test_event_table__entity_relation_auto_tagging(saved_event_table):
     """Test event table update: entity relation will be created automatically"""
     transaction_entity = Entity(name="transaction", serving_names=["transaction_id"])
     transaction_entity.save()
@@ -953,7 +953,7 @@ def test_event_data__entity_relation_auto_tagging(saved_event_table):
     assert updated_transaction_entity.parents == []
 
 
-def test_accessing_event_data_attributes(snowflake_event_table):
+def test_accessing_event_table_attributes(snowflake_event_table):
     """Test accessing event table object attributes"""
     assert snowflake_event_table.saved is False
     assert snowflake_event_table.record_creation_timestamp_column == "created_at"
@@ -963,7 +963,7 @@ def test_accessing_event_data_attributes(snowflake_event_table):
     assert snowflake_event_table.timestamp_column == "event_timestamp"
 
 
-def test_accessing_saved_event_data_attributes(saved_event_table):
+def test_accessing_saved_event_table_attributes(saved_event_table):
     """Test accessing event table object attributes"""
     assert saved_event_table.saved
     assert isinstance(saved_event_table.cached_model, EventTableModel)

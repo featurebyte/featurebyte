@@ -69,7 +69,7 @@ async def feature_list_with_child_entities_fixture(session, data_source):
             database_name=session.database_name,
             schema_name=session.schema_name,
         ),
-        name=f"{table_prefix}_event_data",
+        name=f"{table_prefix}_event_table",
         event_id_column="event_id",
         event_timestamp_column="ts",
     )
@@ -83,7 +83,7 @@ async def feature_list_with_child_entities_fixture(session, data_source):
             database_name=session.database_name,
             schema_name=session.schema_name,
         ),
-        name=f"{table_prefix}_scd_data",
+        name=f"{table_prefix}_scd_table",
         natural_key_column="scd_cust_id",
         effective_timestamp_column="effective_ts",
         surrogate_key_column="scd_cust_id",
@@ -98,7 +98,7 @@ async def feature_list_with_child_entities_fixture(session, data_source):
             database_name=session.database_name,
             schema_name=session.schema_name,
         ),
-        name=f"{table_prefix}_dimension_data_1",
+        name=f"{table_prefix}_dimension_table_1",
         dimension_id_column="city",
     )
     dimension_table_1.save()
@@ -111,7 +111,7 @@ async def feature_list_with_child_entities_fixture(session, data_source):
             database_name=session.database_name,
             schema_name=session.schema_name,
         ),
-        name=f"{table_prefix}_dimension_data_2",
+        name=f"{table_prefix}_dimension_table_2",
         dimension_id_column="state",
     )
     dimension_table_2.save()

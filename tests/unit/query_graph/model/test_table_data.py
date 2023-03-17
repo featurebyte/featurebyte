@@ -292,7 +292,9 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
     )
 
 
-def test_construct_cleaning_recipe_node__dimension_data(dimension_table_data, dimension_input_node):
+def test_construct_cleaning_recipe_node__dimension_table(
+    dimension_table_data, dimension_input_node
+):
     """Test construct_cleaning_recipe_node (SQL generation is not ready for IS_IN and IS_STRING node)"""
     graph_node = dimension_table_data.construct_cleaning_recipe_node(
         input_node=dimension_input_node, skip_column_names=[]

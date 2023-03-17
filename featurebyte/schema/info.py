@@ -138,8 +138,8 @@ class EventTableBriefInfoList(FeatureByteBaseModel):
         -------
         EventTableBriefInfoList
         """
-        event_data_project = DictProject(rule=("data", ["name", "status"]))
-        return EventTableBriefInfoList(__root__=event_data_project.project(paginated_data))
+        event_table_project = DictProject(rule=("data", ["name", "status"]))
+        return EventTableBriefInfoList(__root__=event_table_project.project(paginated_data))
 
 
 class TableColumnInfo(FeatureByteBaseModel):

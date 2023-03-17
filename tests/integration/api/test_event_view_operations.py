@@ -1055,18 +1055,18 @@ def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_fea
     )
 
     # check pruning behaviour
-    item_data_table_name = "ITEM_DATA_TABLE"
+    item_table_name = "ITEM_DATA_TABLE"
 
     # 1. transaction_count requires referencing item table
     view_subset = event_view[["transaction_count"]]
     sql = view_subset.preview_sql()
-    assert item_data_table_name in sql
+    assert item_table_name in sql
     assert view_subset.preview().columns.tolist() == view_subset.columns
 
     # 2. "User Status New" only requires scd table but not item table
     view_subset = event_view[["User Status New"]]
     sql = view_subset.preview_sql()
-    assert item_data_table_name not in sql
+    assert item_table_name not in sql
     assert view_subset.preview().columns.tolist() == view_subset.columns
 
 

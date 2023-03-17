@@ -13,23 +13,23 @@ async def test_data_document_services__retrieval(
     event_table_service, item_table_service, event_table, item_table
 ):
     """Test table document services retrieval"""
-    retrieved_event_data = await event_table_service.get_document(document_id=event_table.id)
-    assert retrieved_event_data == event_table
+    retrieved_event_table = await event_table_service.get_document(document_id=event_table.id)
+    assert retrieved_event_table == event_table
 
-    retrieved_item_data = await item_table_service.get_document(document_id=item_table.id)
-    assert retrieved_item_data == item_table
+    retrieved_item_table = await item_table_service.get_document(document_id=item_table.id)
+    assert retrieved_item_table == item_table
 
     # check retrieval
-    event_data_docs = await event_table_service.list_documents(page_size=0)
-    event_data_ids = {doc["_id"] for doc in event_data_docs["data"]}
+    event_table_docs = await event_table_service.list_documents(page_size=0)
+    event_table_ids = {doc["_id"] for doc in event_table_docs["data"]}
 
-    item_data_docs = await item_table_service.list_documents(page_size=0)
-    item_data_ids = {doc["_id"] for doc in item_data_docs["data"]}
+    item_table_docs = await item_table_service.list_documents(page_size=0)
+    item_table_ids = {doc["_id"] for doc in item_table_docs["data"]}
 
-    assert event_table.id in event_data_ids
-    assert item_table.id in item_data_ids
-    assert event_table.id not in item_data_ids
-    assert item_table.id not in event_data_ids
+    assert event_table.id in event_table_ids
+    assert item_table.id in item_table_ids
+    assert event_table.id not in item_table_ids
+    assert item_table.id not in event_table_ids
 
     # check event table & item table are logically mutually exclusive
     with pytest.raises(DocumentNotFoundError) as exc:
@@ -51,9 +51,9 @@ async def test_data_document_services__creation_conflict(
 ):
     """Test table document services - document creation conflict"""
     with pytest.raises(DocumentConflictError) as exc:
-        event_data_dict = event_table.dict(by_alias=True)
-        event_data_dict["_id"] = item_table.id
-        await event_table_service.create_document(data=EventTableCreate(**event_data_dict))
+        event_table_dict = event_table.dict(by_alias=True)
+        event_table_dict["_id"] = item_table.id
+        await event_table_service.create_document(data=EventTableCreate(**event_table_dict))
 
     expected_msg = (
         f'Table (id: "{item_table.id}") already exists. '
@@ -62,9 +62,9 @@ async def test_data_document_services__creation_conflict(
     assert expected_msg in str(exc.value)
 
     with pytest.raises(DocumentConflictError) as exc:
-        item_data_dict = item_table.dict(by_alias=True)
-        item_data_dict["_id"] = event_table.id
-        await item_table_service.create_document(data=ItemTableCreate(**item_data_dict))
+        item_table_dict = item_table.dict(by_alias=True)
+        item_table_dict["_id"] = event_table.id
+        await item_table_service.create_document(data=ItemTableCreate(**item_table_dict))
 
     expected_msg = (
         f'Table (id: "{event_table.id}") already exists. '

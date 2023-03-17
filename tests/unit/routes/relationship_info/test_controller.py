@@ -91,7 +91,7 @@ async def test_validate_relationship_info_create__tabular_data_id_error_thrown(
 
 
 @pytest_asyncio.fixture(name="event_table")
-async def event_data_fixture(app_container):
+async def event_table_fixture(app_container):
     """
     Create event_table fixture
     """
@@ -99,10 +99,10 @@ async def event_data_fixture(app_container):
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
-        event_data = await app_container.event_table_service.create_document(
+        event_table = await app_container.event_table_service.create_document(
             data=EventTableCreate(**payload)
         )
-        yield event_data
+        yield event_table
 
 
 @pytest_asyncio.fixture(name="feature_store")

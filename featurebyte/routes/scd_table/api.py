@@ -118,7 +118,7 @@ async def list_scd_table_audit_logs(
 
 
 @router.get("/{scd_table_id}/info", response_model=SCDTableInfo)
-async def get_item_data_info(
+async def get_scd_table_info(
     request: Request,
     scd_table_id: PydanticObjectId,
     verbose: bool = VerboseQuery,

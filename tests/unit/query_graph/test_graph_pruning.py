@@ -169,7 +169,7 @@ def test_join_feature_node_is_prunable(global_graph, order_size_feature_join_nod
 
 
 def test_join_with_assign_node__join_node_parameters_pruning(
-    global_graph, event_data_input_node, item_data_input_node, groupby_node_params
+    global_graph, event_table_input_node, item_table_input_node, groupby_node_params
 ):
     """Test join node parameters pruning"""
     # construct a join node to join an item table & an event table (with a redundant column)
@@ -177,7 +177,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["order_id"]},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[event_data_input_node],
+        input_nodes=[event_table_input_node],
     )
     add_node = global_graph.add_operation(
         node_type=NodeType.ADD,
@@ -189,7 +189,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         node_type=NodeType.ASSIGN,
         node_params={"name": "derived_col"},
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_data_input_node, add_node],
+        input_nodes=[event_table_input_node, add_node],
     )
     join_node_parameters = {
         "left_on": "order_id",
@@ -206,7 +206,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         node_type=NodeType.JOIN,
         node_params=join_node_parameters,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[assign_node, item_data_input_node],
+        input_nodes=[assign_node, item_table_input_node],
     )
 
     # perform a groupby on the merged table without using the derived column
@@ -309,7 +309,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
 
 
 def test_join_is_prunable(
-    global_graph, event_data_input_node, item_data_input_node, groupby_node_params
+    global_graph, event_table_input_node, item_table_input_node, groupby_node_params
 ):
     """Test join node parameters pruning"""
     # construct a join node to join an item table & an event table (with a redundant column)
@@ -328,12 +328,12 @@ def test_join_is_prunable(
         node_type=NodeType.JOIN,
         node_params=join_node_parameters,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_data_input_node, item_data_input_node],
+        input_nodes=[event_table_input_node, item_table_input_node],
     )
     pruned_graph, node_name_map = global_graph.prune(target_node=join_node, aggressive=True)
     pruned_graph = QueryGraph(**pruned_graph.dict())
-    pruned_ev_node = pruned_graph.get_node_by_name(node_name_map[event_data_input_node.name])
-    pruned_it_node = pruned_graph.get_node_by_name(node_name_map[item_data_input_node.name])
+    pruned_ev_node = pruned_graph.get_node_by_name(node_name_map[event_table_input_node.name])
+    pruned_it_node = pruned_graph.get_node_by_name(node_name_map[item_table_input_node.name])
 
     # check operation structure of the join node output
     op_struct = pruned_graph.extract_operation_structure(node=join_node)
@@ -383,7 +383,7 @@ def test_join_is_prunable(
         node_type=NodeType.JOIN,
         node_params=join_node_parameters,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_data_input_node, item_data_input_node],
+        input_nodes=[event_table_input_node, item_table_input_node],
     )
     proj_cust_id_inner = global_graph.add_operation(
         node_type=NodeType.PROJECT,

@@ -104,7 +104,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 col["semantic_id"] = event_id_semantic_id
             cols_info.append(col)
 
-        event_data_dict = {
+        event_table_dict = {
             "name": "订单表",
             "tabular_source": tabular_source,
             "columns_info": cols_info,
@@ -120,15 +120,15 @@ class TestEventTableApi(BaseTableApiTestSuite):
             "user_id": str(user_id),
             "_id": ObjectId(),
         }
-        event_table_data = EventTableData(**event_data_dict)
+        event_table_data = EventTableData(**event_table_dict)
         input_node = event_table_data.construct_input_node(
             feature_store_details=feature_store_details
         )
         graph = QueryGraph()
         inserted_node = graph.add_node(node=input_node, input_nodes=[])
-        event_data_dict["graph"] = graph
-        event_data_dict["node_name"] = inserted_node.name
-        output = EventTableModel(**event_data_dict).json_dict()
+        event_table_dict["graph"] = graph
+        event_table_dict["node_name"] = inserted_node.name
+        output = EventTableModel(**event_table_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None
         return output

@@ -695,7 +695,7 @@ class Feature(
         >>> feature.create_new_version(
         ...   table_feature_job_settings=[
         ...     fb.TableFeatureJobSetting(
-        ...       table_name="some_event_data_name",
+        ...       table_name="some_event_table_name",
         ...       feature_job_setting=fb.FeatureJobSetting(
         ...         blind_spot="10m",
         ...         frequency="30m",
@@ -713,7 +713,7 @@ class Feature(
         >>> feature.create_new_version(
         ...   table_cleaning_operations=[
         ...     fb.TableCleaningOperation(
-        ...       table_name="some_event_data_name",
+        ...       table_name="some_event_table_name",
         ...       column_cleaning_operations=[
         ...         fb.ColumnCleaningOperation(
         ...           column_name="some_column_name",

@@ -161,7 +161,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
 
-    def test_create_event_data_not_found(self, test_api_client_persistent):
+    def test_create_event_table_not_found(self, test_api_client_persistent):
         """
         Create request for non-existent event table
         """
@@ -221,7 +221,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         assert_frame_equal(backtest_dataframe, backtest_result[0].results)
 
     @pytest.mark.asyncio
-    async def test_create_event_data_no_creation_date(self, test_api_client_persistent):
+    async def test_create_event_table_no_creation_date(self, test_api_client_persistent):
         """
         Create request for event table with no creation date column
         """
@@ -245,7 +245,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_create_event_data_high_frequency(
+    async def test_create_event_table_high_frequency(
         self, mock_analysis, test_api_client_persistent
     ):
         """

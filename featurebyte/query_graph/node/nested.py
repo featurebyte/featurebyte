@@ -266,9 +266,9 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="event_view"
         )
         assert len(input_var_name_expressions) == 1
-        event_data_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0]
         expression = get_object_class_from_function_call(
-            callable_name=f"{event_data_var_name}.get_view",
+            callable_name=f"{table_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
             drop_column_names=self.metadata.drop_column_names,
             column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
@@ -307,9 +307,9 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="item_view"
         )
         assert len(input_var_name_expressions) == 1
-        data_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0]
         expression = get_object_class_from_function_call(
-            callable_name=f"{data_var_name}.get_view",
+            callable_name=f"{table_var_name}.get_view",
             event_suffix=self.metadata.event_suffix,
             view_mode=ViewMode.MANUAL,
             drop_column_names=self.metadata.drop_column_names,
@@ -359,9 +359,9 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="dimension_view"
         )
         assert len(input_var_name_expressions) == 1
-        data_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0]
         expression = get_object_class_from_function_call(
-            f"{data_var_name}.get_view",
+            f"{table_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
             drop_column_names=self.metadata.drop_column_names,
             column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
@@ -387,9 +387,9 @@ class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
         # construct scd view sdk statement
         view_var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="scd_view")
         assert len(input_var_name_expressions) == 1
-        data_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0]
         expression = get_object_class_from_function_call(
-            f"{data_var_name}.get_view",
+            f"{table_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
             drop_column_names=self.metadata.drop_column_names,
             column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
@@ -433,9 +433,9 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
             )
 
         assert len(input_var_name_expressions) == 1
-        data_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0]
         expression = get_object_class_from_function_call(
-            f"{data_var_name}.get_change_view",
+            f"{table_var_name}.get_change_view",
             track_changes_column=self.metadata.track_changes_column,
             default_feature_job_setting=feature_job_setting,
             prefixes=self.metadata.prefixes,

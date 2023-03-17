@@ -129,7 +129,7 @@ class ChangeView(View, GroupByMixin):
 
     @staticmethod
     def validate_inputs(
-        scd_data: SCDTable,
+        scd_table: SCDTable,
         track_changes_column: str,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
     ) -> None:
@@ -142,7 +142,7 @@ class ChangeView(View, GroupByMixin):
 
         Parameters
         ----------
-        scd_data: SCDTable
+        scd_table: SCDTable
             table to create view from
         track_changes_column: str
             column to track changes for
@@ -160,10 +160,10 @@ class ChangeView(View, GroupByMixin):
         """
         if track_changes_column == "":
             raise ValueError("Empty column provided. Please provide a valid column.")
-        if track_changes_column not in scd_data.columns:
+        if track_changes_column not in scd_table.columns:
             raise ValueError(
                 "Column provided is not a column in the SCDTable provided. Please pick a column "
-                f"from: {sorted(scd_data.columns)}."
+                f"from: {sorted(scd_table.columns)}."
             )
 
         # Validate prefixes

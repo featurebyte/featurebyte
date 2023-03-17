@@ -58,9 +58,9 @@ class TestEventView(BaseViewTestSuite):
         assert row_subset.default_feature_job_setting == view_under_test.default_feature_job_setting
 
 
-def test_from_event_data(snowflake_event_table, mock_api_object_cache):
+def test_from_event_table(snowflake_event_table, mock_api_object_cache):
     """
-    Test from_event_data
+    Test event table creation
     """
     _ = mock_api_object_cache
     event_view_first = snowflake_event_table.get_view()
@@ -658,7 +658,7 @@ def test_add_feature(
 
     # check SDK code generation
     event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
-    item_data_columns_info = snowflake_item_table.dict(by_alias=True)["columns_info"]
+    item_table_columns_info = snowflake_item_table.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         snowflake_event_view,
         to_use_saved_data=False,
@@ -675,7 +675,7 @@ def test_add_feature(
                 "record_creation_timestamp_column": snowflake_item_table.record_creation_timestamp_column,
                 # since the table is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in GroupBy construction
-                "columns_info": item_data_columns_info,
+                "columns_info": item_table_columns_info,
             },
         },
     )

@@ -3,7 +3,7 @@ from bson import ObjectId
 from featurebyte import EventTable
 from featurebyte import ItemTable
 
-item_table = ItemTable.get_by_id(ObjectId("{item_data_id}"))
+item_table = ItemTable.get_by_id(ObjectId("{item_table_id}"))
 item_view = item_table.get_view(
     event_suffix="_event_view",
     view_mode="manual",

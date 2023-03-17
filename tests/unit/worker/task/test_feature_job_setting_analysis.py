@@ -119,9 +119,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         persistent, _ = mongo_persistent
 
         # execute task with payload
-        event_data_id = ObjectId()
+        event_table_id = ObjectId()
         payload = copy.deepcopy(self.payload)
-        payload["event_table_id"] = event_data_id
+        payload["event_table_id"] = event_table_id
         with pytest.raises(DocumentNotFoundError) as excinfo:
             await self.execute_task(
                 task_class=self.task_class,
@@ -133,7 +133,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             )
         assert (
             str(excinfo.value)
-            == f'EventTable (id: "{event_data_id}") not found. Please save the EventTable object first.'
+            == f'EventTable (id: "{event_table_id}") not found. Please save the EventTable object first.'
         )
 
         # check progress update records

@@ -73,16 +73,16 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
     ]
     update_unprocessable_payload_expected_detail_pairs = []
 
-    @pytest_asyncio.fixture(name="dimension_data_semantic_ids")
-    async def dimension_data_semantic_ids_fixture(self, user_id, persistent):
+    @pytest_asyncio.fixture(name="dimension_id_semantic_id")
+    async def dimension_id_semantic_id_fixture(self, user_id, persistent):
         """Dimension ID semantic IDs fixture"""
         user = mock.Mock()
         user.id = user_id
         semantic_service = SemanticService(
             user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )
-        dimension_data = await semantic_service.get_or_create_document("dimension_id")
-        return dimension_data.id
+        dimension_id_semantic = await semantic_service.get_or_create_document("dimension_id")
+        return dimension_id_semantic.id
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(
@@ -90,19 +90,18 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
         tabular_source,
         columns_info,
         user_id,
-        dimension_data_semantic_ids,
+        dimension_id_semantic_id,
         feature_store_details,
     ):
         """Fixture for a Dimension Data dict"""
-        dimension_data_id = dimension_data_semantic_ids
         cols_info = []
         for col_info in columns_info:
             col = col_info.copy()
             if col["name"] == "dimension_id":
-                col["semantic_id"] = dimension_data_id
+                col["semantic_id"] = dimension_id_semantic_id
             cols_info.append(col)
 
-        dimension_data_dict = {
+        dimension_table_dict = {
             "name": "订单表",
             "tabular_source": tabular_source,
             "columns_info": cols_info,
@@ -111,15 +110,15 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
             "user_id": str(user_id),
             "dimension_id_column": "dimension_id",  # this value needs to match the column name used in test table
         }
-        dimension_table_data = DimensionTableData(**dimension_data_dict)
+        dimension_table_data = DimensionTableData(**dimension_table_dict)
         input_node = dimension_table_data.construct_input_node(
             feature_store_details=feature_store_details
         )
         graph = QueryGraph()
         inserted_node = graph.add_node(node=input_node, input_nodes=[])
-        dimension_data_dict["graph"] = graph
-        dimension_data_dict["node_name"] = inserted_node.name
-        output = DimensionTableModel(**dimension_data_dict).json_dict()
+        dimension_table_dict["graph"] = graph
+        dimension_table_dict["node_name"] = inserted_node.name
+        output = DimensionTableModel(**dimension_table_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None
         return output

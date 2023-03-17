@@ -998,7 +998,7 @@ def status_entity_fixture():
     return entity
 
 
-def create_transactions_event_data_from_data_source(
+def create_transactions_event_table_from_data_source(
     data_source, database_name, schema_name, table_name, event_table_name
 ):
     """
@@ -1032,24 +1032,24 @@ def create_transactions_event_data_from_data_source(
         }
     )
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)
-    event_data = EventTable.from_tabular_source(
+    event_table = EventTable.from_tabular_source(
         tabular_source=database_table,
         name=event_table_name,
         event_id_column="TRANSACTION_ID",
         event_timestamp_column="ËVENT_TIMESTAMP",
     )
-    event_data.update_default_feature_job_setting(
+    event_table.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(
             blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
         )
     )
-    event_data["TRANSACTION_ID"].as_entity("Order")
-    event_data["ÜSER ID"].as_entity("User")
-    event_data["PRODUCT_ACTION"].as_entity("ProductAction")
-    event_data["CUST_ID"].as_entity("Customer")
-    event_data.save()
-    event_data = EventTable.get(event_table_name)
-    return event_data
+    event_table["TRANSACTION_ID"].as_entity("Order")
+    event_table["ÜSER ID"].as_entity("User")
+    event_table["PRODUCT_ACTION"].as_entity("ProductAction")
+    event_table["CUST_ID"].as_entity("Customer")
+    event_table.save()
+    event_table = EventTable.get(event_table_name)
+    return event_table
 
 
 @pytest.fixture(name="event_table_name", scope="session")
@@ -1061,7 +1061,7 @@ def event_table_name_fixture(source_type):
 
 
 @pytest.fixture(name="event_table", scope="session")
-def event_data_fixture(
+def event_table_fixture(
     session,
     data_source,
     event_table_name,
@@ -1077,14 +1077,14 @@ def event_data_fixture(
     _ = product_action_entity
     _ = customer_entity
     _ = order_entity
-    event_data = create_transactions_event_data_from_data_source(
+    event_table = create_transactions_event_table_from_data_source(
         data_source=data_source,
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="TEST_TABLE",
         event_table_name=event_table_name,
     )
-    return event_data
+    return event_table
 
 
 @pytest.fixture(name="item_table_name", scope="session")
@@ -1096,7 +1096,7 @@ def item_table_name_fixture(source_type):
 
 
 @pytest.fixture(name="item_table", scope="session")
-def item_data_fixture(
+def item_table_fixture(
     session,
     data_source,
     item_table_name,
@@ -1126,8 +1126,8 @@ def item_data_fixture(
     return item_table
 
 
-@pytest.fixture(name="dimension_data_name", scope="session")
-def dimension_data_name_fixture(source_type):
+@pytest.fixture(name="dimension_table_name", scope="session")
+def dimension_table_name_fixture(source_type):
     """
     Fixture for the DimensionTable name
     """
@@ -1139,7 +1139,7 @@ def dimension_table_fixture(
     session,
     data_source,
     dimension_data_table_name,
-    dimension_data_name,
+    dimension_table_name,
     item_entity,
 ):
     """
@@ -1150,15 +1150,15 @@ def dimension_table_fixture(
         schema_name=session.schema_name,
         table_name=dimension_data_table_name,
     )
-    dimension_data = DimensionTable.from_tabular_source(
+    dimension_table = DimensionTable.from_tabular_source(
         tabular_source=database_table,
-        name=dimension_data_name,
+        name=dimension_table_name,
         dimension_id_column="item_id",
     )
-    dimension_data.save()
-    dimension_data = DimensionTable.get(dimension_data_name)
-    dimension_data["item_id"].as_entity(item_entity.name)
-    return dimension_data
+    dimension_table.save()
+    dimension_table = DimensionTable.get(dimension_table_name)
+    dimension_table["item_id"].as_entity(item_entity.name)
+    return dimension_table
 
 
 @pytest.fixture(name="scd_data_tabular_source", scope="session")
@@ -1178,8 +1178,8 @@ def scd_data_tabular_source_fixture(
     return database_table
 
 
-@pytest.fixture(name="scd_data_name", scope="session")
-def scd_data_name_fixture(source_type):
+@pytest.fixture(name="scd_table_name", scope="session")
+def scd_table_name_fixture(source_type):
     """
     Fixture for the SlowlyChangingData name
     """
@@ -1189,7 +1189,7 @@ def scd_data_name_fixture(source_type):
 @pytest.fixture(name="scd_table", scope="session")
 def scd_table_fixture(
     scd_data_tabular_source,
-    scd_data_name,
+    scd_table_name,
     user_entity,
     status_entity,
 ):
@@ -1198,13 +1198,13 @@ def scd_table_fixture(
     """
     data = SCDTable.from_tabular_source(
         tabular_source=scd_data_tabular_source,
-        name=scd_data_name,
+        name=scd_table_name,
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
     )
     data.save()
-    data = SCDTable.get(scd_data_name)
+    data = SCDTable.get(scd_table_name)
     data["User ID"].as_entity(user_entity.name)
     data["User Status"].as_entity(status_entity.name)
     return data

@@ -163,5 +163,5 @@ def test_skd_code_generation__complex_feature(
         fixture_path="tests/fixtures/sdk_code/complex_event_item_feature.py.jinja2",
         update_fixtures=update_fixtures,
         table_id=saved_event_table.id,
-        item_data_id=saved_item_table.id,
+        item_table_id=saved_item_table.id,
     )
