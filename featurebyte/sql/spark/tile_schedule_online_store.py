@@ -98,10 +98,11 @@ class TileScheduleOnlineStore(BaseModel):
                 await self._spark.execute_query(create_sql)
 
                 await self._spark.execute_query(
-                    f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT STRING"
+                    f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT TIMESTAMP"
                 )
-                await self._spark.execute_query(
-                    f"UPDATE {fs_table} SET UPDATED_AT = '{current_ts}'"
+                await retry_sql(
+                    session=self._spark,
+                    sql=f"UPDATE {fs_table} SET UPDATED_AT = to_timestamp('{current_ts}')",
                 )
             else:
                 # feature store table already exists, insert records with the input feature sql
@@ -138,17 +139,15 @@ class TileScheduleOnlineStore(BaseModel):
                     merge into {fs_table} a using ({CACHE_TABLE_PLACEHOLDER}) b
                         on {on_condition_str}
                         when matched then
-                            update set a.{f_name} = b.{f_name}, a.UPDATED_AT = '{current_ts}'
+                            update set a.{f_name} = b.{f_name}, a.UPDATED_AT = to_timestamp('{current_ts}')
                         when not matched then
                             insert ({entities_fname_str}, UPDATED_AT)
-                                values ({values_args}, '{current_ts}')
+                                values ({values_args}, to_timestamp('{current_ts}'))
                 """
                 await retry_sql_with_cache(
                     session=self._spark, sql=merge_sql, cached_select_sql=f_sql
                 )
 
                 # remove feature values for entities that are not in entity universe
-                remove_values_sql = (
-                    f"UPDATE {fs_table} SET {f_name} = NULL WHERE UPDATED_AT < '{current_ts}'"
-                )
+                remove_values_sql = f"UPDATE {fs_table} SET {f_name} = NULL WHERE UPDATED_AT < to_timestamp('{current_ts}')"
                 await retry_sql(session=self._spark, sql=remove_values_sql)
