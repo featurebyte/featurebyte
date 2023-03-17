@@ -122,7 +122,7 @@ def test_all_relevant_methods_are_in_list():
 
     # Verify all relevant get methods are present
     get_methods = {method for method in methods if method.startswith("get_")}
-    excluded_methods = {"get_by_id", "get_active"}
+    excluded_methods = {"get_by_id", "get_active", "get_or_create"}
     assert len(get_methods) - len(excluded_methods) == len(catalog_get_methods_to_test_list())
     for method in catalog_get_methods_to_test_list():
         assert method.catalog_method_name in get_methods

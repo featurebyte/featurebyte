@@ -15,6 +15,7 @@ from rich.console import Console
 from rich.table import Table
 
 from featurebyte.common.path_util import get_package_root
+from featurebyte.logger import logger
 
 console = Console()
 datasets_dir = os.path.join(get_package_root(), "datasets")
@@ -82,11 +83,11 @@ def import_dataset(dataset_name: str) -> None:
             with tempfile.TemporaryDirectory() as tempdir:
                 # download tar file
                 local_path = os.path.join(tempdir, "data.tar.gz")
-                console.print(f"Downloading data from: {url} -> {local_path}")
+                logger.debug(f"Downloading data from: {url} -> {local_path}")
                 request.urlretrieve(url, local_path)  # nosec
 
                 # extracting files to staging location
-                console.print(f"Extracting files to staging location: {local_staging_path}")
+                logger.debug(f"Extracting files to staging location: {local_staging_path}")
                 with tarfile.open(local_path) as file_obj:
                     file_obj.extractall(
                         local_staging_path,
@@ -102,7 +103,7 @@ def import_dataset(dataset_name: str) -> None:
             command=["python", "-m", "featurebyte.datasets.__main__", sql_b64],
             tty=True,
         ):
-            console.print(line)
+            logger.debug(line)
 
 
 if __name__ == "__main__":
