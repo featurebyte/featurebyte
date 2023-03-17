@@ -1121,7 +1121,9 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         assert self.feature_list_namespace.default_feature_list_id == self.id
 
     @typechecked
-    def deploy(self, enable: bool, make_production_ready: bool = False) -> None:
+    def deploy(
+        self, enable: bool, make_production_ready: bool = False, ignore_guardrails=False
+    ) -> None:
         """
         Update feature list deployment status
 
@@ -1133,7 +1135,11 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             Whether to convert the feature to production ready if it is not production ready
         """
         self.update(
-            update_payload={"deployed": enable, "make_production_ready": make_production_ready},
+            update_payload={
+                "deployed": enable,
+                "make_production_ready": make_production_ready,
+                "ignore_guardrails": ignore_guardrails,
+            },
             allow_update_local=False,
         )
 
