@@ -55,6 +55,7 @@ async def test_generate_tile(session):
         .strftime("%Y-%m-%d %H:%M:%S")
         == "2022-06-05 23:53:00"
     )
+
     assert result["LAST_TILE_INDEX_OFFLINE"].iloc[0] == 5514910
 
 

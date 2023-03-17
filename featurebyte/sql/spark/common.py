@@ -110,11 +110,12 @@ async def retry_sql_with_cache(
     sleep_interval: int
         Sleep interval between retries
     """
-
     cache_table_name = f"CACHED_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     cache_table_sql = f"CACHE TABLE {cache_table_name} OPTIONS ('storageLevel' 'MEMORY_ONLY') SELECT * FROM ({cached_select_sql})"
-    await session.execute_query(cache_table_sql)
-
     new_sql = sql.replace(CACHE_TABLE_PLACEHOLDER, f"SELECT * FROM {cache_table_name}")
 
-    await retry_sql(session, new_sql, retry_num, sleep_interval)
+    try:
+        await session.execute_query(cache_table_sql)
+        await retry_sql(session, new_sql, retry_num, sleep_interval)
+    finally:
+        await session.execute_query(f"UNCACHE TABLE IF EXISTS {cache_table_name}")
