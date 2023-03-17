@@ -295,11 +295,10 @@ jobs:
       - name: Start local server
         run: |
           export FEATUREBYTE_NP_PASSWORD="${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}"
-          make docker-dev
-          docker logs featurebyte-server
+          make docker-build
       - name: Test documentation
         run: |
-          mkdir -p ~/.featurebyte/data/spark/staging
+          mkdir -p ~/.featurebyte/data/spark/staging/playground
           make test-docs
   validate:
     needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark"]
