@@ -906,23 +906,20 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         _ = other
 
     @typechecked
-    def isin(
-        self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence], right_op: bool = False
-    ) -> FrozenSeriesT:
+    def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
         """
-        Identify if each element in a Series is in another Series, or a pre-defined sequence.
+        Identify if each element is contained in a sequence of values represented by `other`.
 
         Parameters
         ----------
         other: Union[FrozenSeries, ScalarSequence]
-            other input to check whether the current series is in
-        right_op: bool
-            right op
+            The sequence of values to check for membership. This can be a predefined list of values,
+            or a dictionary Feature if `self` is a Feature.
 
         Returns
         -------
         FrozenSeriesT
-            updated series
+            Column or Feature with boolean values
 
         Raises
         ------
@@ -972,7 +969,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
             other=other_series,
             node_type=NodeType.IS_IN,
             output_var_type=DBVarType.BOOL,
-            right_op=right_op,
             additional_node_params=additional_node_params,
         )
 
