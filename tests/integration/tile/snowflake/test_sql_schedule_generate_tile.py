@@ -118,8 +118,6 @@ async def test_tile_job_monitor__fail_halfway(session, tile_task_prep):
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
 
-    # simulate error for the stored procedure to stop half way
-    # await session.execute_query("ALTER TABLE TILE_REGISTRY RENAME COLUMN TILE_ID to TILE_ID_TEMP")
     sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
@@ -237,14 +235,17 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep):
         """
 
     await session.execute_query(tile_schedule_sql)
-
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 3
+
     result = await session.execute_query(
         f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
     )
-    assert result["LAST_TILE_START_DATE_ONLINE"].iloc[0] == "2022-06-05T23:53:00.000Z"
+    assert (
+        result["LAST_TILE_START_DATE_ONLINE"].iloc[0].strftime("%Y-%m-%d %H:%M:%S")
+        == "2022-06-05 23:53:00"
+    )
 
     # test for LAST_TILE_START_DATE_ONLINE earlier than tile_start_date
     await session.execute_query(
@@ -255,11 +256,13 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep):
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 5
-
     result = await session.execute_query(
         f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
     )
-    assert result["LAST_TILE_START_DATE_ONLINE"].iloc[0] == "2022-06-05T23:53:00.000Z"
+    assert (
+        result["LAST_TILE_START_DATE_ONLINE"].iloc[0].strftime("%Y-%m-%d %H:%M:%S")
+        == "2022-06-05 23:53:00"
+    )
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

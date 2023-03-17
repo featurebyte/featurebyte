@@ -134,7 +134,7 @@ class TileGenerate(TileCommon):
                 UPDATE TILE_REGISTRY
                     SET
                         LAST_TILE_INDEX_{self.tile_type} = {ind_value},
-                        {self.tile_last_start_date_column}_{self.tile_type} = '{self.last_tile_start_str}'
+                        {self.tile_last_start_date_column}_{self.tile_type} = to_timestamp('{self.last_tile_start_str}')
                 WHERE TILE_ID = '{self.tile_id}'
             """
             await retry_sql(self._spark, update_tile_last_ind_sql)

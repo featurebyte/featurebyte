@@ -226,7 +226,10 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
     result = await session.execute_query(
         f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
     )
-    assert result["LAST_TILE_START_DATE_ONLINE"].iloc[0] == "2022-06-05 23:53:00"
+    assert (
+        result["LAST_TILE_START_DATE_ONLINE"].iloc[0].strftime("%Y-%m-%d %H:%M:%S")
+        == "2022-06-05 23:53:00"
+    )
 
     # test for LAST_TILE_START_DATE_ONLINE earlier than tile_start_date
     await session.execute_query(
@@ -240,4 +243,7 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
     result = await session.execute_query(
         f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
     )
-    assert result["LAST_TILE_START_DATE_ONLINE"].iloc[0] == "2022-06-05 23:53:00"
+    assert (
+        result["LAST_TILE_START_DATE_ONLINE"].iloc[0].strftime("%Y-%m-%d %H:%M:%S")
+        == "2022-06-05 23:53:00"
+    )

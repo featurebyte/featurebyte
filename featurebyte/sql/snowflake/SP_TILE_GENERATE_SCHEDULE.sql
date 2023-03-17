@@ -83,11 +83,11 @@ $$
     debug = debug + " - tile_start_ts_str: " + tile_start_ts_str
     monitor_tile_start_ts_str = tile_start_ts_str
 
-    result = snowflake.execute({sqlText: `SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '${tile_id}' AND LAST_TILE_START_DATE_ONLINE IS NOT NULL`})
+    result = snowflake.execute({sqlText: `SELECT to_varchar(LAST_TILE_START_DATE_ONLINE, 'YYYY-MM-DD"T"HH24:MI:SS.ff3"Z"') FROM TILE_REGISTRY WHERE TILE_ID = '${tile_id}' AND LAST_TILE_START_DATE_ONLINE IS NOT NULL`})
     if (result.next()) {
         registry_last_tile_start_ts = result.getColumnValue(1)
+        debug = debug + " - registry_last_tile_start_ts: " + registry_last_tile_start_ts
         if (registry_last_tile_start_ts < tile_start_ts_str) {
-            debug = debug + " - registry_last_tile_start_ts: " + registry_last_tile_start_ts
             tile_start_ts_str = registry_last_tile_start_ts
         }
     }
