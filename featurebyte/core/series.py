@@ -712,13 +712,20 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
-        >>> column = view["Amount"].sqrt()
+        >>> view["AmountSqrt"] = view["Amount"].sqrt()
+        >>> view.preview(5).filter(regex="Amount")
+           Amount  AmountSqrt
+        0   10.68    3.268027
+        1   38.04    6.167658
+        2    1.99    1.410674
+        3   37.21    6.100000
+        4    1.20    1.095445
 
 
         Compute square root values for a Feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("StateArea")
+        >>> feature = fb.Feature.get("StateArea")  # doctest: +SKIP
         >>> feature_sqrt = feature.sqrt()
         """
         return series_unary_operation(
@@ -750,13 +757,20 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
-        >>> column = view["Amount"].pow(2)
+        >>> view["Amount^2"] = view["Amount"].pow(2)
+        >>> view.preview(5).filter(regex="Amount")
+           Amount   Amount^2
+        0   10.68   114.0624
+        1   38.04  1447.0416
+        2    1.99     3.9601
+        3   37.21  1384.5841
+        4    1.20     1.4400
 
 
         Compute exponential power values for a Feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("NumericFeature")
+        >>> feature = fb.Feature.get("TotalInvoiceAmount_30days")
         >>> feature_pow = feature.pow(2)
         """
         return self._binary_op(
@@ -781,7 +795,14 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
-        >>> column = view["Amount"].log()
+        >>> view["AmountLog"] = view["Amount"].log()
+        >>> view.preview(5).filter(regex="Amount")
+          Amount  AmountLog
+        0   10.68   2.368373
+        1   38.04   3.638638
+        2    1.99   0.688135
+        3   37.21   3.616578
+        4    1.20   0.182322
 
 
         Compute natural logarithm values for a Feature:
@@ -813,14 +834,21 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Compute exponential values for a Column in a View:
 
         >>> import featurebyte as fb
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
-        >>> column = view["Amount"].exp()
+        >>> view = fb.Table.get("INVOICEITEMS").get_view()
+        >>> view["QuantityExp"] = view["Quantity"].exp()
+        >>> view.preview(5).filter(regex="Quantity")
+           Quantity  QuantityExp
+        0       2.0     7.389056
+        1       1.0     2.718282
+        2       1.0     2.718282
+        3       1.0     2.718282
+        4       2.0     7.389056
 
 
         Compute exponential values for a Feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("NumericFeature")
+        >>> feature = fb.Feature.get("TotalInvoiceAmount_30days")
         >>> feature_exp = feature.exp()
         """
         return series_unary_operation(
@@ -848,12 +876,20 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> column = view["Amount"].floor()
+        >>> view["AmountFloor"] = view["Amount"].floor()
+        >>> view.preview(5).filter(regex="Amount")
+           Amount  AmountFloor
+        0   10.68          10
+        1   38.04          38
+        2    1.99           1
+        3   37.21          37
+        4    1.20           1
 
 
         Round values for a Feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("NumericFeature")
+        >>> feature = fb.Feature.get("TotalInvoiceAmount_30days")
         >>> feature_floor = feature.floor()
         """
         return series_unary_operation(
