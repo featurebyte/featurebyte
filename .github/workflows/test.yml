@@ -299,7 +299,7 @@ jobs:
           docker logs featurebyte-server
       - name: Test documentation
         run: |
-          mkdir -p ~/.spark/data
+          mkdir -p ~/.featurebyte/data/spark/staging
           make test-docs
   validate:
     needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark"]
