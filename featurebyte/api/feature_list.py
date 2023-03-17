@@ -1122,7 +1122,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     @typechecked
     def deploy(
-        self, enable: bool, make_production_ready: bool = False, ignore_guardrails=False
+        self, enable: bool, make_production_ready: bool = False, ignore_guardrails: bool = False
     ) -> None:
         """
         Update feature list deployment status
