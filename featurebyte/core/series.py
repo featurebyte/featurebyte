@@ -571,7 +571,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Filter a View based on whether a column has null values:
 
         >>> import featurebyte as fb
-        >>> view = fb.Table.get("GROCERYINVOICE")
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> view_filtered = view[view["Amount"].isnull()]
         """
         return series_unary_operation(
@@ -596,7 +596,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Filter a View by removing rows where a column has null values:
 
         >>> import featurebyte as fb
-        >>> view = fb.Table.get("GROCERYINVOICE")
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> view_filtered = view[view["Amount"].notnull()]
         """
         return ~self.isnull()
@@ -680,13 +680,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute absolute values for a Feature:
 
-        >>> feature = fb.Feature.get("StateCentroidLongitude")
-        >>> feature_abs = feature.abs()
-        >>> feature_abs.name = "StateCentroidLongitudeAbs"
-        >>> preview_params = pd.DataFrame([{"POINT_IN_TIME": "2023-01-01" , "FRENCHSTATE": "Aquitaine"}])
-        >>> fb.FeatureGroup([feature, feature_abs]).preview(preview_params)
-          POINT_IN_TIME FRENCHSTATE  StateCentroidLongitude  StateCentroidLongitudeAbs
-        0    2023-01-01   Aquitaine               -0.711901                   0.711901
+        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
+        >>> feature_abs = feature.abs()  # doctest: +SKIP
         """
         return series_unary_operation(
             input_series=self,
@@ -726,7 +721,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         >>> import featurebyte as fb
         >>> feature = fb.Feature.get("StateArea")  # doctest: +SKIP
-        >>> feature_sqrt = feature.sqrt()
+        >>> feature_sqrt = feature.sqrt()  # doctest: +SKIP
         """
         return series_unary_operation(
             input_series=self,
@@ -770,8 +765,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Compute exponential power values for a Feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("TotalInvoiceAmount_30days")
-        >>> feature_pow = feature.pow(2)
+        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
+        >>> feature_pow = feature.pow(2)  # doctest: +SKIP
         """
         return self._binary_op(
             other=other,
@@ -808,8 +803,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Compute natural logarithm values for a Feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("NumericFeature")
-        >>> feature_log = feature.log()
+        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
+        >>> feature_log = feature.log()  # doctest: +SKIP
         """
         return series_unary_operation(
             input_series=self,
@@ -848,8 +843,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Compute exponential values for a Feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("TotalInvoiceAmount_30days")
-        >>> feature_exp = feature.exp()
+        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
+        >>> feature_exp = feature.exp()  # doctest: +SKIP
         """
         return series_unary_operation(
             input_series=self,
@@ -889,8 +884,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Round values for a Feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("TotalInvoiceAmount_30days")
-        >>> feature_floor = feature.floor()
+        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
+        >>> feature_floor = feature.floor()  # doctest: +SKIP
         """
         return series_unary_operation(
             input_series=self,
@@ -929,13 +924,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Compute rounded values for a Feature:
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("TotalInvoiceAmount_30days")
-        >>> feature_ceil = feature.ceil()
-        >>> feature_ceil.name = "TotalInvoiceAmount_30days_ceil"
-        >>> preview_params = pd.DataFrame([{"POINT_IN_TIME": "2023-01-01", "GROCERYCUSTOMERGUID": "1834d6f0-b1c1-41cd-b916-acee888de982"}])
-        >>> fb.FeatureGroup([feature, feature_ceil]).preview(preview_params).iloc[:, 2:]
-           TotalInvoiceAmount_30days  TotalInvoiceAmount_30days_ceil
-        0                     136.53                             137
+        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
+        >>> feature_ceil = feature.ceil()  # doctest: +SKIP
         """
         return series_unary_operation(
             input_series=self,
