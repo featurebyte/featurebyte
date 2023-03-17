@@ -31,6 +31,7 @@ setup_permissions() {
       useradd -g "${HOST_GID}" -u "${HOST_UID}" -o -M -d /app -r "${NON_PRIVUSER}"
     fi
     chown -R "${HOST_UID}:${HOST_GID}" /app
+    chown -R "${HOST_UID}:${HOST_GID}" /data
   fi
 }
 
