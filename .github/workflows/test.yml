@@ -300,6 +300,12 @@ jobs:
         run: |
           mkdir -p ~/.featurebyte/data/spark/staging/playground
           make test-docs
+      - name: Test2
+        if: always()
+        run: |
+          find ~/.featurebyte/data/spark/staging/playground
+          docker exec featurebyte-server ls -l /data/staging
+          docker exec featurebyte-server ls -l /data/staging/playground
   validate:
     needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark"]
     runs-on: ubuntu-20.04
