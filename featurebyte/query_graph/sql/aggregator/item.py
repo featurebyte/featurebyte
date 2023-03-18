@@ -29,9 +29,10 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
     ItemView
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, to_inner_join_with_request_table=True, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.non_time_aware_request_table_plan = RequestTablePlan(is_time_aware=False)
+        self.to_inner_join_with_request_table = to_inner_join_with_request_table
 
     def additional_update(self, aggregation_spec: ItemAggregationSpec) -> None:
         """
@@ -63,31 +64,48 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         spec = agg_specs[0]
 
         # Construct input to be aggregated using GROUP BY
-        request_table_name = self.non_time_aware_request_table_plan.get_request_table_name(spec)
-        join_condition = expressions.and_(
-            *[
-                expressions.EQ(
-                    this=get_qualified_column_identifier(serving_name, "REQ"),
-                    expression=get_qualified_column_identifier(key, "ITEM"),
+        if self.to_inner_join_with_request_table:
+            request_table_name = self.non_time_aware_request_table_plan.get_request_table_name(spec)
+            join_condition = expressions.and_(
+                *[
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(serving_name, "REQ"),
+                        expression=get_qualified_column_identifier(key, "ITEM"),
+                    )
+                    for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
+                ]
+            )
+            groupby_input_expr = (
+                select()
+                .from_(
+                    expressions.Table(
+                        this=quoted_identifier(request_table_name),
+                        alias="REQ",
+                    )
                 )
-                for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
+                .join(
+                    spec.source_expr.subquery(),
+                    join_type="inner",
+                    join_alias="ITEM",
+                    on=join_condition,
+                )
+            )
+            groupby_keys = [
+                GroupbyKey(
+                    expr=get_qualified_column_identifier(serving_name, "REQ"),
+                    name=serving_name,
+                )
+                for serving_name in spec.serving_names
             ]
-        )
-        groupby_input_expr = (
-            select()
-            .from_(
-                expressions.Table(
-                    this=quoted_identifier(request_table_name),
-                    alias="REQ",
+        else:
+            groupby_input_expr = select().from_(spec.source_expr.subquery(alias="ITEM"))
+            groupby_keys = [
+                GroupbyKey(
+                    expr=get_qualified_column_identifier(key, "ITEM"),
+                    name=serving_name,
                 )
-            )
-            .join(
-                spec.source_expr.subquery(),
-                join_type="inner",
-                join_alias="ITEM",
-                on=join_condition,
-            )
-        )
+                for (key, serving_name) in zip(spec.parameters.keys, spec.serving_names)
+            ]
 
         # Construct GROUP BY expression using groupby_helper
         groupby_columns = [
@@ -101,13 +119,6 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
                 result_name=s.agg_result_name,
             )
             for s in agg_specs
-        ]
-        groupby_keys = [
-            GroupbyKey(
-                expr=get_qualified_column_identifier(serving_name, "REQ"),
-                name=serving_name,
-            )
-            for serving_name in spec.serving_names
         ]
         value_by = (
             GroupbyKey(
