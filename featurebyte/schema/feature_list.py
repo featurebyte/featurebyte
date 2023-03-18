@@ -67,6 +67,7 @@ class FeatureListUpdate(FeatureByteBaseModel):
 
     make_production_ready: Optional[bool]
     deployed: Optional[bool]
+    ignore_guardrails: Optional[bool]
 
 
 class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdate):
