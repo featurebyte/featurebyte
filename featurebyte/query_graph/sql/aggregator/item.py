@@ -29,10 +29,10 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
     ItemView
     """
 
-    def __init__(self, to_inner_join_with_request_table=True, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.to_inner_join_with_request_table = kwargs.pop("to_inner_join_with_request_table", True)
         super().__init__(*args, **kwargs)
         self.non_time_aware_request_table_plan = RequestTablePlan(is_time_aware=False)
-        self.to_inner_join_with_request_table = to_inner_join_with_request_table
 
     def additional_update(self, aggregation_spec: ItemAggregationSpec) -> None:
         """
