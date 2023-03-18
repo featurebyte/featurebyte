@@ -836,7 +836,7 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     _assert_all_features_in_list_with_enabled_status(feature_list, False)
 
 
-def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowflake_event_data):
+def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowflake_event_table):
     """
     Test that deploying a feature list with ignore guardrails skips validation checks.
     """
@@ -844,7 +844,7 @@ def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowfla
     _assert_all_features_in_list_with_enabled_status(feature_list, False)
 
     # Update feature job setting so that guardrails check will fail
-    snowflake_event_data.update_default_feature_job_setting(
+    snowflake_event_table.update_default_feature_job_setting(
         FeatureJobSetting(blind_spot="75m", frequency="30m", time_modulo_frequency="15m")
     )
 
@@ -853,7 +853,7 @@ def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowfla
         feature_list.deploy(enable=True, make_production_ready=True)
     assert (
         "Discrepancies found between the promoted feature version you are trying to promote to "
-        "PRODUCTION_READY, and the input data." in str(exc.value)
+        "PRODUCTION_READY, and the input table." in str(exc.value)
     )
     _assert_all_features_in_list_with_enabled_status(feature_list, False)
 
