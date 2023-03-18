@@ -352,12 +352,18 @@ class FBAutoDocProcessor(AutoDocProcessor):
         else:
             # class
             resource_name = resource_descriptor.split(".")[-1]
-            resource = import_resource(resource_descriptor)
+            resource_class = import_resource(resource_descriptor)
+            resource = resource_class
             resource_realname = resource.__name__
             resource_path = resource.__module__
             resource_type = "class"
             base_classes = [self.format_param_type(base_class) for base_class in resource.__bases__]
             method_type = None
+
+        # use proxy class if specified
+        autodoc_config = resource_class.__dict__.get("__fbautodoc__", FBAutoDoc())
+        if autodoc_config:
+            proxy_path = autodoc_config.proxy_class
 
         # process signature
         parameters, return_type = self.get_params_from_signature(resource)

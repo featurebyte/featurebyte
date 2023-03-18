@@ -10,6 +10,7 @@ from http import HTTPStatus
 from typeguard import typechecked
 
 from featurebyte.api.source_table import SourceTable
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
@@ -20,8 +21,15 @@ from featurebyte.query_graph.node.schema import TableDetails
 
 class DataSource:
     """
-    DataSource class to represent a table source in FeatureByte.
+    DataSource class to represent a data source in FeatureByte.
+    This class is used to manage a data source in FeatureByte.
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(
+        section=["DataSource"],
+        proxy_class="featurebyte.DataSource",
+    )
 
     def __init__(self, feature_store_model: FeatureStoreModel):
         self._feature_store = feature_store_model
@@ -29,29 +37,45 @@ class DataSource:
     @property
     def type(self) -> SourceType:
         """
-        Get table source type
+        Get the data source type, which indicates how the data is stored and computed.
+        e.g. `SourceType.SPARK`
 
         Returns
         -------
         SourceType
-            Data source type
+            Data source type.
+
+        Examples
+        --------
+        >>> fb.FeatureStore.get("playground").get_data_source().type
+        'spark'
+
+        See Also
+        --------
+        - [SourceType](/reference/featurebyte.enum.SourceType/): SourceType
         """
         return self._feature_store.type
 
     @typechecked
     def list_databases(self) -> List[str]:
         """
-        List databases in a table source
+        List databases in the data source.
 
         Returns
         -------
         List[str]
-            List of databases
+            List of databases.
 
         Raises
         ------
         RecordRetrievalException
-            Failed to retrieve database list
+            Failed to retrieve database list.
+
+        Examples
+        --------
+        >>> data_source = fb.FeatureStore.get("playground").get_data_source()
+        >>> data_source.list_databases()
+        ['spark_catalog']
         """
         client = Configurations().get_client()
         response = client.post(url="/feature_store/database", json=self._feature_store.json_dict())
@@ -62,21 +86,28 @@ class DataSource:
     @typechecked
     def list_schemas(self, database_name: Optional[str] = None) -> List[str]:
         """
-        List schemas in a database
+        List schemas in a database.
 
         Parameters
         ----------
         database_name: Optional[str]
-            Database name
+            Name of database.
 
         Returns
         -------
-        list schemas
+        List[str]
+            List of schemas.
 
         Raises
         ------
         RecordRetrievalException
-            Failed to retrieve database schema list
+            Failed to retrieve database schema list.
+
+        Examples
+        --------
+        >>> data_source = fb.FeatureStore.get("playground").get_data_source()
+        >>> data_source.list_schemas(database_name="spark_catalog")
+        ['default', 'grocery', 'playground']
         """
         client = Configurations().get_client()
         response = client.post(
@@ -94,23 +125,33 @@ class DataSource:
         schema_name: Optional[str] = None,
     ) -> List[str]:
         """
-        List tables in a schema
+        List tables in a database schema.
 
         Parameters
         ----------
         database_name: Optional[str]
-            Database name
+            Name of database.
         schema_name: Optional[str]
-            Schema name
+            Name of schema.
 
         Returns
         -------
-        list tables
+        List[str]
+            List of tables.
 
         Raises
         ------
         RecordRetrievalException
             Failed to retrieve database table list
+
+        Examples
+        --------
+        >>> data_source = fb.FeatureStore.get("playground").get_data_source()
+        >>> data_source.list_tables(
+        ...     database_name="spark_catalog",
+        ...     schema_name="grocery",
+        ... )[:3]
+        ['__grocerycustomer', '__groceryinvoice', '__invoiceitems']
         """
         client = Configurations().get_client()
         response = client.post(
@@ -129,20 +170,36 @@ class DataSource:
         schema_name: Optional[str] = None,
     ) -> SourceTable:
         """
-        Get table from the feature store
+        Get a table in a database schema.
 
         Parameters
         ----------
         table_name: str
-            Table name
+            Name of table.
         database_name: Optional[str]
-            Database name
+            Name of database.
         schema_name: Optional[str]
-            Schema name
+            Name of schema.
 
         Returns
         -------
-        DatabaseTable
+        SourceTable
+            SourceTable object.
+
+        Examples
+        --------
+        >>> data_source = fb.FeatureStore.get("playground").get_data_source()
+        >>> source_table = data_source.get_table(
+        ...     table_name="groceryinvoice",
+        ...     database_name="spark_catalog",
+        ...     schema_name="grocery",
+        ... )
+        >>> source_table.columns
+        ['GroceryInvoiceGuid', 'GroceryCustomerGuid', 'Timestamp', 'record_available_at', 'Amount']
+
+        See Also
+        --------
+        - [SourceTable](/reference/featurebyte.api.source_table.SourceTable/): SourceTable
         """
         return SourceTable(
             feature_store=self._feature_store,

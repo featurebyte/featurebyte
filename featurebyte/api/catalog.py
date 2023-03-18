@@ -70,7 +70,11 @@ def update_and_reset_catalog(func: Any) -> Any:
 @typechecked
 class Catalog(CatalogModel, SavableApiObject):
     """
-    Catalog API object contains a bunch of helpers to easily access and view objects within Featurebyte.
+    A Catalog serves as a centralized repository for storing metadata about tables, entities, features,
+    and feature lists associated with a specific domain.
+
+    It functions as an effective tool for facilitating collaboration among team members working on similar
+    use cases or utilizing the same data source within a data warehouse.
     """
 
     # pylint: disable=too-many-public-methods
@@ -92,16 +96,22 @@ class Catalog(CatalogModel, SavableApiObject):
     @classmethod
     def activate(cls, name: str) -> Catalog:
         """
-        Activate catalog by name
+        Activate catalog by name.
 
         Parameters
         ----------
         name: str
-            Name of catalog to activate
+            Name of catalog to activate.
 
         Returns
         -------
         Catalog
+
+        Examples
+        --------
+        >>> catalog = Catalog.activate("grocery")
+        >>> catalog.name
+        'grocery'
         """
         catalog = cls.get(name)
         activate_catalog(catalog.id)
@@ -113,12 +123,12 @@ class Catalog(CatalogModel, SavableApiObject):
         name: str,
     ) -> Catalog:
         """
-        Create and activate catalog
+        Create and return an instance of a catalog. The catalog will be activated.
 
         Parameters
         ----------
         name: str
-            feature store name
+            Name of catalog to create.
 
         Returns
         -------
@@ -139,12 +149,13 @@ class Catalog(CatalogModel, SavableApiObject):
         name: str,
     ) -> Catalog:
         """
-        Create and activate catalog
+        Create and return an instance of a catalog. If a catalog with the same name already exists,
+        return that instead. The catalog will be activated.
 
         Parameters
         ----------
         name: str
-            feature store name
+            Name of catalog to get or create.
 
         Returns
         -------
@@ -154,30 +165,38 @@ class Catalog(CatalogModel, SavableApiObject):
         --------
         Create a new catalog
 
-        >>> import featurebyte as fb
         >>> catalog = fb.Catalog.get_or_create("grocery")
-        >>> fb.Catalog.list()[["name"]]
-              name
-        0  grocery
-        1  default
+        >>> fb.Catalog.list()[["name", "active"]]
+              name  active
+        0  grocery    True
+        1  default   False
 
         See Also
         --------
         - [Catalog.create](/reference/featurebyte.api.catalog.Catalog.create/): Create Catalog
         """
         try:
-            return Catalog.get(name=name)
+            catalog = Catalog.get(name=name)
+            activate_catalog(catalog.id)
+            return catalog
         except RecordRetrievalException:
             return Catalog.create(name=name)
 
     @classmethod
     def get_active(cls) -> Catalog:
         """
-        Get active catalog
+        Get the currently active catalog.
 
         Returns
         -------
         Catalog
+            The currently active catalog.
+
+        Examples
+        --------
+        >>> catalog = fb.Catalog.get_active()
+        >>> catalog.name
+        'grocery'
         """
         return cls.get_by_id(get_active_catalog_id())
 
@@ -192,12 +211,22 @@ class Catalog(CatalogModel, SavableApiObject):
 
     def update_name(self, name: str) -> None:
         """
-        Change entity name
+        Update catalog name.
 
         Parameters
         ----------
         name: str
-            New entity name
+            New catalog name.
+
+        Examples
+        --------
+        >>> catalog = fb.Catalog.get_active()
+        >>> catalog.update_name("grocery_store")
+        >>> catalog.name
+        'grocery_store'
+        >>> catalog.update_name("grocery")
+        >>> catalog.name
+        'grocery'
         """
         self.update(update_payload={"name": name}, allow_update_local=True)
 
@@ -388,14 +417,25 @@ class Catalog(CatalogModel, SavableApiObject):
         --------
         List all relationships
 
-        >>> import featurebyte as fb
-        >>> fb.Relationship.list()  # doctest: +SKIP
-
+        >>> fb.Relationship.list()[[
+        ...     "relationship_type",
+        ...     "primary_entity",
+        ...     "related_entity",
+        ... ]]
+          relationship_type   primary_entity   related_entity
+        0      child_parent   groceryinvoice  grocerycustomer
+        1      child_parent  grocerycustomer      frenchstate
 
         List all child-parent relationships
 
-        >>> import featurebyte as fb
-        >>> fb.Relationship.list(relationship_type="child_parent")  # doctest: +SKIP
+        >>> fb.Relationship.list(relationship_type="child_parent")[[
+        ...     "relationship_type",
+        ...     "primary_entity",
+        ...     "related_entity",
+        ... ]]
+          relationship_type   primary_entity   related_entity
+        0      child_parent   groceryinvoice  grocerycustomer
+        1      child_parent  grocerycustomer      frenchstate
         """
         return Relationship.list(include_id=include_id, relationship_type=relationship_type)
 

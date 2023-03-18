@@ -131,14 +131,26 @@ class Relationship(ApiObject):
         --------
         List all relationships
 
-        >>> import featurebyte as fb
-        >>> fb.Relationship.list()  # doctest: +SKIP
+        >>> fb.Relationship.list()[[
+        ...     "relationship_type",
+        ...     "primary_entity",
+        ...     "related_entity",
+        ... ]]
+          relationship_type   primary_entity   related_entity
+        0      child_parent   groceryinvoice  grocerycustomer
+        1      child_parent  grocerycustomer      frenchstate
 
 
         List all child-parent relationships
 
-        >>> import featurebyte as fb
-        >>> fb.Relationship.list(relationship_type="child_parent")  # doctest: +SKIP
+        >>> fb.Relationship.list(relationship_type="child_parent")[[
+        ...     "relationship_type",
+        ...     "primary_entity",
+        ...     "related_entity",
+        ... ]]
+          relationship_type   primary_entity   related_entity
+        0      child_parent   groceryinvoice  grocerycustomer
+        1      child_parent  grocerycustomer      frenchstate
         """
         list_responses = super().list(include_id=include_id)
         if relationship_type:

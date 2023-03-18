@@ -19,11 +19,18 @@ from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
 class Entity(EntityModel, SavableApiObject):
     """
-    Entity class
+    Entity class to represent an entity in FeatureByte.
+
+    An entity is a real-world object or concept that is represented by fields in the source tables.
+    Entities facilitate automatic table join definitions, serve as the unit of analysis for feature engineering,
+    and aid in organizing features, feature lists, and use cases.
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Entity"])
+    __fbautodoc__ = FBAutoDoc(
+        section=["Entity"],
+        proxy_class="featurebyte.Entity",
+    )
 
     # class variables
     _route = "/entity"
@@ -39,52 +46,59 @@ class Entity(EntityModel, SavableApiObject):
     @property
     def serving_name(self) -> str:
         """
-        Serving name
+        Serving name of the entity.
 
         Returns
         -------
         str
+            Serving name of the entity.
         """
         return self.serving_names[0]
 
     @typechecked
     def update_name(self, name: str) -> None:
         """
-        Change entity name
+        Update entity name.
 
         Parameters
         ----------
         name: str
-            New entity name
+            New entity name.
         """
         self.update(update_payload={"name": name}, allow_update_local=True)
 
     @property
     def name_history(self) -> list[dict[str, Any]]:
         """
-        List of name history entries
+        Get the history of the entity name.
 
         Returns
         -------
         list[dict[str, Any]]
+            History of the entity name.
         """
         return self._get_audit_history(field_name="name")
 
     @classmethod
     def create(cls, name: str, serving_names: List[str]) -> Entity:
         """
-        Create new entity
+        Create a new entity.
 
         Parameters
         ----------
         name: str
-            Entity name
+            Name of the entity.
         serving_names: List[str]
-            Names of the serving columns
+            Names of the serving columns.
 
         Returns
         -------
         Entity
+            The newly created entity.
+
+        See Also
+        --------
+        - [Entity.get_or_create](/reference/featurebyte.api.entity.Entity.get_or_create/): Entity.get_or_create
         """
         entity = Entity(name=name, serving_names=serving_names)
         entity.save()
@@ -102,13 +116,27 @@ class Entity(EntityModel, SavableApiObject):
         Parameters
         ----------
         name: str
-            Entity name
+            Name of the entity.
         serving_names: List[str]
-            Names of the serving columns
+            Names of the serving columns.
 
         Returns
         -------
         Entity
+            The newly created entity.
+
+        Examples
+        --------
+        >>> entity = fb.Entity.get_or_create(
+        ...     name="grocerycustomer",
+        ...     serving_names=["GROCERYCUSTOMERGUID"]
+        ... )
+        >>> entity.name
+        'grocerycustomer'
+
+        See Also
+        --------
+        - [Entity.create](/reference/featurebyte.api.entity.Entity.create/): Entity.create
         """
         try:
             return Entity.get(name=name)
