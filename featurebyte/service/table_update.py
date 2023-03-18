@@ -62,11 +62,11 @@ class TableUpdateService(BaseService):
         )
 
     @staticmethod
-    async def update_data_status(
+    async def update_table_status(
         service: TableDocumentService, document_id: ObjectId, data: TableServiceUpdateSchema
     ) -> None:
         """
-        Update data status
+        Update table status
 
         Parameters
         ----------
@@ -80,7 +80,7 @@ class TableUpdateService(BaseService):
         Raises
         ------
         DocumentUpdateError
-            When the data status transition is invalid
+            When the table status transition is invalid
         """
         document = await service.get_document(document_id=document_id)
 
@@ -140,7 +140,7 @@ class TableUpdateService(BaseService):
         self, service: TableDocumentService, document_id: ObjectId, data: TableServiceUpdateSchema
     ) -> None:
         """
-        Update data columns info
+        Update table columns info
 
         Parameters
         ----------
@@ -176,10 +176,10 @@ class TableUpdateService(BaseService):
                     data=type(data)(columns_info=data.columns_info),  # type: ignore
                 )
 
-                # update entity data reference
-                await self.update_entity_data_references(document, data)
+                # update entity table reference
+                await self.update_entity_table_references(document, data)
 
-    async def _update_entity_tabular_data_reference(
+    async def _update_entity_table_reference(
         self,
         document: TableModel,
         entity_update: dict[ObjectId, int],
@@ -190,11 +190,11 @@ class TableUpdateService(BaseService):
             if update_flag == 0 and primary_update_flag == 0:
                 continue
 
-            # data reference update is needed
+            # table reference update is needed
             entity = await self.entity_service.get_document(entity_id)
             update_values = {}
             if update_flag != 0:
-                # data references updated in entity
+                # table references updated in entity
                 update_action = (
                     self.include_object_id if update_flag > 0 else self.exclude_object_id
                 )
@@ -203,7 +203,7 @@ class TableUpdateService(BaseService):
                 )
 
             if primary_update_flag != 0:
-                # primary data references updated in entity
+                # primary table references updated in entity
                 update_action = (
                     self.include_object_id if primary_update_flag > 0 else self.exclude_object_id
                 )
@@ -219,28 +219,28 @@ class TableUpdateService(BaseService):
     @staticmethod
     def _include_parent_entities(
         parents: List[ParentEntity],
-        data_id: ObjectId,
-        data_type: TableDataType,
+        table_id: ObjectId,
+        table_type: TableDataType,
         parent_entity_ids: List[ObjectId],
     ) -> Tuple[List[ParentEntity], List[ObjectId]]:
         current_parent_entity_ids = {
             parent.id
             for parent in parents
-            if parent.data_id == data_id and parent.data_type == data_type
+            if parent.table_id == table_id and parent.table_type == table_type
         }
         additional_parent_entity_ids = sorted(
             set(parent_entity_ids).difference(current_parent_entity_ids)
         )
         output = parents.copy()
         for entity_id in additional_parent_entity_ids:
-            output.append(ParentEntity(id=entity_id, data_type=data_type, data_id=data_id))
+            output.append(ParentEntity(id=entity_id, table_type=table_type, table_id=table_id))
         return output, additional_parent_entity_ids
 
     @staticmethod
     def _exclude_parent_entities(
         parents: List[ParentEntity],
-        data_id: ObjectId,
-        data_type: TableDataType,
+        table_id: ObjectId,
+        table_type: TableDataType,
         parent_entity_ids: List[ObjectId],
     ) -> Tuple[List[ParentEntity], List[PydanticObjectId]]:
         removed_parent_entity_ids = []
@@ -248,8 +248,8 @@ class TableUpdateService(BaseService):
         for parent in parents:
             if (
                 parent.id in parent_entity_ids
-                and parent.data_id == data_id
-                and parent.data_type == data_type
+                and parent.table_id == table_id
+                and parent.table_type == table_type
             ):
                 removed_parent_entity_ids.append(parent.id)
                 continue
@@ -303,8 +303,8 @@ class TableUpdateService(BaseService):
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
                 parents, new_parent_entity_ids = self._include_parent_entities(
                     parents=primary_entity.parents,
-                    data_id=document.id,
-                    data_type=document.type,
+                    table_id=document.id,
+                    table_type=document.type,
                     parent_entity_ids=list(new_parent_entities),
                 )
                 await self.entity_service.update_document(
@@ -322,8 +322,8 @@ class TableUpdateService(BaseService):
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
                 parents, removed_parent_entity_ids = self._exclude_parent_entities(
                     parents=primary_entity.parents,
-                    data_id=document.id,
-                    data_type=document.type,
+                    table_id=document.id,
+                    table_type=document.type,
                     parent_entity_ids=list(old_parent_entities),
                 )
                 await self.entity_service.update_document(
@@ -339,14 +339,14 @@ class TableUpdateService(BaseService):
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
                 parents, removed_parent_entity_ids = self._exclude_parent_entities(
                     parents=primary_entity.parents,
-                    data_id=document.id,
-                    data_type=document.type,
+                    table_id=document.id,
+                    table_type=document.type,
                     parent_entity_ids=list(old_parent_entities.difference(new_parent_entities)),
                 )
                 parents, new_parent_entity_ids = self._include_parent_entities(
                     parents=parents,
-                    data_id=document.id,
-                    data_type=document.type,
+                    table_id=document.id,
+                    table_type=document.type,
                     parent_entity_ids=list(new_parent_entities.difference(old_parent_entities)),
                 )
                 if parents != primary_entity.parents:
@@ -360,11 +360,11 @@ class TableUpdateService(BaseService):
                     # Remove relationship info links for old parent entity relationships
                     await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
 
-    async def update_entity_data_references(
+    async def update_entity_table_references(
         self, document: TableModel, data: TableServiceUpdateSchema
     ) -> None:
         """
-        Update data columns info
+        Update table columns info
 
         Parameters
         ----------
@@ -376,8 +376,8 @@ class TableUpdateService(BaseService):
         if not data.columns_info:
             return
 
-        # prepare data to:
-        # - update data references in affected entities
+        # prepare table to:
+        # - update table references in affected entities
         # - update entity relationship
         primary_keys = document.primary_key_columns
         entity_update: dict[ObjectId, int] = defaultdict(int)
@@ -407,7 +407,7 @@ class TableUpdateService(BaseService):
                     new_parent_entities.add(column_info.entity_id)
 
         # actual entity document update
-        await self._update_entity_tabular_data_reference(
+        await self._update_entity_table_reference(
             document=document,
             entity_update=entity_update,
             primary_entity_update=primary_entity_update,

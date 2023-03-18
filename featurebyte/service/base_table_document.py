@@ -45,10 +45,10 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         dict[str, str]
         """
         return {
-            "event_data": "EventTable",
-            "item_data": "ItemTable",
-            "dimension_data": "DimensionTable",
-            "scd_data": "SCDTable",
+            "event_table": "EventTable",
+            "item_table": "ItemTable",
+            "dimension_table": "DimensionTable",
+            "scd_table": "SCDTable",
         }
 
     @property

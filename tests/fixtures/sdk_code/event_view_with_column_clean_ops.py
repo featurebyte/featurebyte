@@ -5,7 +5,7 @@ from featurebyte import DisguisedValueImputation
 from featurebyte import EventTable
 from featurebyte import MissingValueImputation
 
-event_table = EventTable.get_by_id(ObjectId("{data_id}"))
+event_table = EventTable.get_by_id(ObjectId("{table_id}"))
 event_view = event_table.get_view(
     view_mode="manual",
     drop_column_names=["created_at"],

@@ -64,7 +64,7 @@ async def test_threadsafety(session, source_type):
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_threadsafety_api_object(event_data):
+async def test_threadsafety_api_object(event_table):
     """
     Test that the API objects are thread safe regardless of source type
     """
@@ -76,7 +76,7 @@ async def test_threadsafety_api_object(event_data):
     threads = []
     values = list(range(1, 11))
     for i in values:
-        t = threading.Thread(target=run, args=(event_data, i))
+        t = threading.Thread(target=run, args=(event_table, i))
         threads.append(t)
         t.start()
     for t in threads:

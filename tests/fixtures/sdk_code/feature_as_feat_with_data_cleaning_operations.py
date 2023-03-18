@@ -4,9 +4,9 @@ from featurebyte import ColumnCleaningOperation
 from featurebyte import ItemTable
 from featurebyte import MissingValueImputation
 
-item_table = ItemTable.get_by_id(ObjectId("{data_id}"))
+item_table = ItemTable.get_by_id(ObjectId("{table_id}"))
 item_view = item_table.get_view(
-    event_suffix="_event_data",
+    event_suffix="_event_table",
     view_mode="manual",
     drop_column_names=[],
     column_cleaning_operations=[

@@ -74,7 +74,7 @@ async def test_online_enable(
         feature_type=feature_spec.value_type,
         feature_version=feature_spec.feature.version.to_str(),
         feature_readiness=str(mock_snowflake_feature.readiness),
-        feature_event_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
+        feature_event_table_ids=",".join([str(i) for i in feature_spec.event_table_ids]),
         is_deleted=False,
     )
     assert mock_execute_query.call_args_list[0] == mock.call(upsert_sql)

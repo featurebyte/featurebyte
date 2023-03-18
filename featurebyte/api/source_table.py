@@ -23,7 +23,7 @@ from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreMo
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
+from featurebyte.query_graph.model.table import AllTableDataT, SouceTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
@@ -31,7 +31,7 @@ from featurebyte.query_graph.node.schema import TableDetails
 
 class TableDataFrame(BaseFrame):
     """
-    TableDataFrame class is a frame encapsulation of the table data objects (like event data, item data).
+    TableDataFrame class is a frame encapsulation of the table objects (like event table, item table).
     This class is used to construct the query graph for previewing/sampling underlying table stored at the
     data warehouse. The constructed query graph is stored locally (not loaded into the global query graph).
     """
@@ -55,7 +55,7 @@ class TableDataFrame(BaseFrame):
 
 class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     """
-    AbstractTableDataFrame class represents the table data.
+    AbstractTableDataFrame class represents the table.
     """
 
     # class variables
@@ -124,7 +124,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def table_data(self) -> BaseTableData:
         """
-        Table data object for the given data model
+        Table table object for the given table model
 
         Returns
         -------
@@ -135,14 +135,14 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def frame(self) -> TableDataFrame:
         """
-        Frame object of this table data object. The frame is constructed from a local query graph.
+        Frame object of this table object. The frame is constructed from a local query graph.
 
         Returns
         -------
         TableDataFrame
         """
         # Note that the constructed query graph WILL NOT BE INSERTED into the global query graph.
-        # Only when the view is constructed, the local query graph (constructed by data object) is then loaded
+        # Only when the view is constructed, the local query graph (constructed by table object) is then loaded
         # into the global query graph.
         graph, node = self.construct_graph_and_node(
             feature_store_details=self.feature_store.get_feature_store_details(),
@@ -171,7 +171,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def dtypes(self) -> pd.Series:
         """
-        Retrieve column data type info
+        Retrieve column table type info
 
         Returns
         -------
@@ -209,7 +209,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @typechecked
     def preview_clean_data_sql(self, limit: int = 10) -> str:
         """
-        Generate SQL query to preview the table data after applying list of cleaning operations
+        Generate SQL query to preview the table after applying list of cleaning operations
 
         Parameters
         ----------
@@ -225,7 +225,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @typechecked
     def preview(self, limit: int = 10, after_cleaning: bool = False, **kwargs: Any) -> pd.DataFrame:
         """
-        Preview raw or clean table data
+        Preview raw or clean table
 
         Parameters
         ----------
@@ -253,7 +253,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
-        Sample raw or clean table data
+        Sample raw or clean table
 
         Parameters
         ----------
@@ -294,7 +294,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
-        Describe raw or clean table data
+        Describe raw or clean table
 
         Parameters
         ----------
@@ -342,7 +342,7 @@ class SourceTable(AbstractTableData):
     SourceTable class to preview table
     """
 
-    _table_data_class: ClassVar[Type[AllTableDataT]] = GenericTableData
+    _table_data_class: ClassVar[Type[AllTableDataT]] = SouceTableData
 
     @property
     def columns_info(self) -> List[ColumnInfo]:

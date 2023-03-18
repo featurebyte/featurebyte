@@ -52,7 +52,7 @@ class FeatureJobSettingAnalysisService(
         Raises
         ------
         DocumentError
-            Creation date column is not available for the event data
+            Creation date column is not available for the event table
         """
         # check any conflict with existing documents
         output_document_id = data.id or ObjectId()
@@ -60,15 +60,15 @@ class FeatureJobSettingAnalysisService(
             document=FeatureByteBaseDocumentModel(_id=output_document_id),
         )
 
-        # check that event data exists
-        event_data_service = EventTableService(
+        # check that event table exists
+        event_table_service = EventTableService(
             user=self.user,
             persistent=self.persistent,
             catalog_id=self.catalog_id,
         )
-        event_data = await event_data_service.get_document(document_id=data.event_data_id)
-        if not event_data.record_creation_timestamp_column:
-            raise DocumentError("Creation date column is not available for the event data.")
+        event_table = await event_table_service.get_document(document_id=data.event_table_id)
+        if not event_table.record_creation_timestamp_column:
+            raise DocumentError("Creation date column is not available for the event table.")
 
         return FeatureJobSettingAnalysisTaskPayload(
             **data.dict(),

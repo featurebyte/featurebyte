@@ -2,5 +2,5 @@
 from bson import ObjectId
 from featurebyte import ItemTable
 
-item_table = ItemTable.get_by_id(ObjectId("{data_id}"))
+item_table = ItemTable.get_by_id(ObjectId("{table_id}"))
 output = item_table

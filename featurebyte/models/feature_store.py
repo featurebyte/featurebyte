@@ -94,7 +94,7 @@ class ConstructGraphMixin:
         feature_store_details: FeatureStoreDetails
             Feature store details
         table_data_dict: Dict[str, Any]
-            Serialized table data dictionary
+            Serialized table dictionary
         graph: Optional[QueryGraph]
             Graph object to insert the node or create a new QueryGraph object if the param is empty
 
@@ -134,7 +134,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
     @property
     def entity_ids(self) -> List[PydanticObjectId]:
         """
-        List of entity IDs in the data model
+        List of entity IDs in the table model
 
         Returns
         -------
@@ -145,7 +145,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
     @property
     def semantic_ids(self) -> List[PydanticObjectId]:
         """
-        List of semantic IDs in the data model
+        List of semantic IDs in the table model
 
         Returns
         -------
@@ -156,7 +156,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
     @property
     def table_data(self) -> BaseTableData:
         """
-        Table data
+        Table table
 
         Returns
         -------

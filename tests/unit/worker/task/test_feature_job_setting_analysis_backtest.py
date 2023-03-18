@@ -42,7 +42,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             user_id=None,
         )
 
-        # save event data
+        # save event table
         payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
         await persistent.insert_one(
             collection_name=EventTableModel.collection_name(),
@@ -90,7 +90,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         if update_fixtures:
             analysis_data.to_parquet(results_fixture_path)
         else:
-            # check analysis data
+            # check analysis table
             expected_data = pd.read_parquet(results_fixture_path)
             assert_frame_equal(analysis_data, expected_data)
 
@@ -106,7 +106,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
 
         # check progress update records
         assert progress.put.call_args_list == [
-            call({"percent": 0, "message": "Preparing data"}),
+            call({"percent": 0, "message": "Preparing table"}),
             call({"percent": 5, "message": "Running Analysis"}),
             call({"percent": 95, "message": "Saving Analysis"}),
             call({"percent": 100, "message": "Analysis Completed"}),
@@ -140,5 +140,5 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
 
         # check progress update records
         assert progress.put.call_args_list == [
-            call({"percent": 0, "message": "Preparing data"}),
+            call({"percent": 0, "message": "Preparing table"}),
         ]

@@ -28,16 +28,19 @@ from featurebyte.query_graph.model.common_table import (
     BaseTableData,
 )
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import JoinEventDataAttributesMetadata, JoinNodeParameters
+from featurebyte.query_graph.node.generic import (
+    JoinEventTableAttributesMetadata,
+    JoinNodeParameters,
+)
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ChangeViewMetadata, ItemViewMetadata, ViewMetadata
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
-class GenericTableData(BaseTableData):
-    """GenericTableData class"""
+class SouceTableData(BaseTableData):
+    """SouceTableData class"""
 
-    type: Literal[TableDataType.GENERIC] = Field(TableDataType.GENERIC, const=True)
+    type: Literal[TableDataType.SOURCE_TABLE] = Field(TableDataType.SOURCE_TABLE, const=True)
 
     @property
     def primary_key_columns(self) -> List[str]:
@@ -57,10 +60,10 @@ class GenericTableData(BaseTableData):
 class EventTableData(BaseTableData):
     """EventTableData class"""
 
-    type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     event_timestamp_column: StrictStr
-    event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
+    event_id_column: StrictStr
 
     @property
     def primary_key_columns(self) -> List[str]:
@@ -82,19 +85,19 @@ class EventTableData(BaseTableData):
 
     def construct_event_view_graph_node(
         self,
-        event_data_node: InputNode,
+        event_table_node: InputNode,
         drop_column_names: List[str],
         metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
-        Construct a graph node & columns info for EventView of this event data.
+        Construct a graph node & columns info for EventView of this event table.
 
         Parameters
         ----------
-        event_data_node: InputNode
-            Event data node
+        event_table_node: InputNode
+            Event table node
         drop_column_names: List[str]
-            List of column names to drop from the event data
+            List of column names to drop from the event table
         metadata: ViewMetadata
             Metadata to be added to the graph node
 
@@ -104,7 +107,7 @@ class EventTableData(BaseTableData):
         """
         view_graph_node, _ = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.EVENT_VIEW,
-            data_node=event_data_node,
+            data_node=event_table_node,
             other_input_nodes=[],
             drop_column_names=drop_column_names,
             metadata=metadata,
@@ -116,11 +119,11 @@ class EventTableData(BaseTableData):
 class ItemTableData(BaseTableData):
     """ItemTableData class"""
 
-    type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
+    type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     event_id_column: StrictStr
     item_id_column: StrictStr
-    event_data_id: PydanticObjectId
+    event_table_id: PydanticObjectId
 
     @property
     def primary_key_columns(self) -> List[str]:
@@ -132,7 +135,7 @@ class ItemTableData(BaseTableData):
             parameters={
                 "id": self.id,
                 "id_column": self.item_id_column,
-                "event_data_id": self.event_data_id,
+                "event_table_id": self.event_table_id,
                 "event_id_column": self.event_id_column,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
@@ -153,16 +156,16 @@ class ItemTableData(BaseTableData):
             if col not in event_view_columns:
                 raise ValueError(f"Column does not exist in EventTable: {col}")
 
-        # ItemData columns
+        # ItemTable columns
         right_on = item_view_event_id_column
         right_input_columns = item_view_columns
         right_output_columns = item_view_columns
 
-        # EventData columns
+        # EventTable columns
         left_on = event_view_event_id_column
-        # EventData's event_id_column will be excluded from the result since that would be same as
+        # EventTable's event_id_column will be excluded from the result since that would be same as
         # ItemView's event_id_column. There is no need to specify event_suffix if the
-        # event_id_column is the only common column name between EventData and ItemView.
+        # event_id_column is the only common column name between EventTable and ItemView.
         columns_excluding_event_id = filter_columns(columns_to_join, [left_on])
         renamed_event_view_columns = append_rsuffix_to_columns(
             columns_excluding_event_id, event_suffix
@@ -172,7 +175,7 @@ class ItemTableData(BaseTableData):
         repeated_column_names = sorted(set(right_output_columns).intersection(left_output_columns))
         if repeated_column_names:
             raise RepeatedColumnNamesError(
-                f"Duplicate column names {repeated_column_names} found between EventData and"
+                f"Duplicate column names {repeated_column_names} found between EventTable and"
                 f" ItemView. Consider setting the event_suffix parameter to disambiguate the"
                 f" resulting columns."
             )
@@ -185,7 +188,7 @@ class ItemTableData(BaseTableData):
             right_input_columns=right_input_columns,
             right_output_columns=right_output_columns,
             join_type="inner",
-            metadata=JoinEventDataAttributesMetadata(
+            metadata=JoinEventTableAttributesMetadata(
                 columns=columns_to_join,
                 event_suffix=event_suffix,
             ),
@@ -257,7 +260,7 @@ class ItemTableData(BaseTableData):
 
     def construct_item_view_graph_node(
         self,
-        item_data_node: InputNode,
+        item_table_node: InputNode,
         columns_to_join: List[str],
         event_view_node: Node,
         event_view_columns_info: List[ColumnInfo],
@@ -271,8 +274,8 @@ class ItemTableData(BaseTableData):
 
         Parameters
         ----------
-        item_data_node: InputNode
-            Item data node
+        item_table_node: InputNode
+            Item table node
         columns_to_join: List[str]
             List of columns to join from EventView
         event_view_node: Node
@@ -284,7 +287,7 @@ class ItemTableData(BaseTableData):
         event_suffix: Optional[str]
             Suffix to append to joined EventView columns
         drop_column_names: List[str]
-            List of columns to drop from the item data
+            List of columns to drop from the item table
         metadata: ItemViewMetadata
             Metadata to add to the graph node
 
@@ -294,19 +297,19 @@ class ItemTableData(BaseTableData):
         """
         view_graph_node, proxy_input_nodes = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.ITEM_VIEW,
-            data_node=item_data_node,
+            data_node=item_table_node,
             other_input_nodes=[event_view_node],
             drop_column_names=drop_column_names,
             metadata=metadata,
         )
         (  # pylint: disable=unbalanced-tuple-unpacking
-            proxy_item_data_node,
+            proxy_item_table_node,
             proxy_event_view_node,
         ) = proxy_input_nodes
         item_view_columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
         _, columns_info, join_parameters = self.join_event_view_columns(
             graph=view_graph_node,
-            item_view_node=proxy_item_data_node,
+            item_view_node=proxy_item_table_node,
             item_view_columns_info=item_view_columns_info,
             item_view_event_id_column=self.event_id_column,
             event_view_node=proxy_event_view_node,
@@ -317,7 +320,7 @@ class ItemTableData(BaseTableData):
         )
 
         # left output columns is the renamed event timestamp column
-        # (see `columns` parameter in above `_join_event_data_attributes` method)
+        # (see `columns` parameter in above `_join_event_table_attributes` method)
         renamed_event_timestamp_column = join_parameters.left_output_columns[0]
         return view_graph_node, columns_info, renamed_event_timestamp_column
 
@@ -325,7 +328,7 @@ class ItemTableData(BaseTableData):
 class DimensionTableData(BaseTableData):
     """DimensionTableData class"""
 
-    type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
+    type: Literal[TableDataType.DIMENSION_TABLE] = Field(TableDataType.DIMENSION_TABLE, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     dimension_id_column: StrictStr
 
@@ -346,7 +349,7 @@ class DimensionTableData(BaseTableData):
 
     def construct_dimension_view_graph_node(
         self,
-        dimension_data_node: InputNode,
+        dimension_table_node: InputNode,
         drop_column_names: List[str],
         metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
@@ -355,10 +358,10 @@ class DimensionTableData(BaseTableData):
 
         Parameters
         ----------
-        dimension_data_node: InputNode
-            Dimension data node
+        dimension_table_node: InputNode
+            Dimension table node
         drop_column_names: List[str]
-            List of columns to drop from the dimension data
+            List of columns to drop from the dimension table
         metadata: ViewMetadata
             Metadata to add to the graph node
 
@@ -368,7 +371,7 @@ class DimensionTableData(BaseTableData):
         """
         view_graph_node, _ = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.DIMENSION_VIEW,
-            data_node=dimension_data_node,
+            data_node=dimension_table_node,
             other_input_nodes=[],
             drop_column_names=drop_column_names,
             metadata=metadata,
@@ -392,7 +395,7 @@ class ChangeViewColumnNames:
 class SCDTableData(BaseTableData):
     """SCDTableData class"""
 
-    type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     natural_key_column: StrictStr
     effective_timestamp_column: StrictStr
@@ -421,7 +424,7 @@ class SCDTableData(BaseTableData):
 
     def construct_scd_view_graph_node(
         self,
-        scd_data_node: InputNode,
+        scd_table_node: InputNode,
         drop_column_names: List[str],
         metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
@@ -430,10 +433,10 @@ class SCDTableData(BaseTableData):
 
         Parameters
         ----------
-        scd_data_node: InputNode
-            Slowly changing dimension data node
+        scd_table_node: InputNode
+            Slowly changing dimension table node
         drop_column_names: List[str]
-            List of columns to drop from the SCD data
+            List of columns to drop from the SCD table
         metadata: ViewMetadata
             Metadata to add to the graph node
 
@@ -443,7 +446,7 @@ class SCDTableData(BaseTableData):
         """
         view_graph_node, _ = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.SCD_VIEW,
-            data_node=scd_data_node,
+            data_node=scd_table_node,
             other_input_nodes=[],
             drop_column_names=drop_column_names,
             metadata=metadata,
@@ -615,7 +618,7 @@ class SCDTableData(BaseTableData):
 
     def construct_change_view_graph_node(
         self,
-        scd_data_node: InputNode,
+        scd_table_node: InputNode,
         track_changes_column: str,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]],
         drop_column_names: List[str],
@@ -626,14 +629,14 @@ class SCDTableData(BaseTableData):
 
         Parameters
         ----------
-        scd_data_node: InputNode
-            Slowly changing dimension data node
+        scd_table_node: InputNode
+            Slowly changing dimension table node
         track_changes_column: str
             Column name of the column that tracks changes
         prefixes: Tuple[Optional[str], Optional[str]]
             Prefixes for the new and previous columns
         drop_column_names: List[str]
-            Column names to drop from the slow changing dimension data
+            Column names to drop from the slow changing dimension table
         metadata: ChangeViewMetadata
             Metadata for the graph node
 
@@ -643,7 +646,7 @@ class SCDTableData(BaseTableData):
         """
         view_graph_node, proxy_input_nodes = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.CHANGE_VIEW,
-            data_node=scd_data_node,
+            data_node=scd_table_node,
             other_input_nodes=[],
             drop_column_names=drop_column_names,
             metadata=metadata,

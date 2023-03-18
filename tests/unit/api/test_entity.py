@@ -257,7 +257,7 @@ def get_insert_tabular_data_helper_fixture(mongo_persistent):
         test_document = {
             "_id": ObjectId(),
             "name": dataset_name,
-            "type": TableDataType.DIMENSION_DATA,
+            "type": TableDataType.DIMENSION_TABLE,
             "tabular_source": TabularSource(
                 feature_store_id=PydanticObjectId(ObjectId()),
                 table_details=TableDetails(table_name="test_table"),

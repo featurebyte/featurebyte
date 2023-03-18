@@ -71,15 +71,15 @@
         }
     ],
     "dimension_id_column": "col_int",
-    "name": "sf_dimension_data",
+    "name": "sf_dimension_table",
     "record_creation_timestamp_column": "created_at",
     "tabular_source": {
-        "feature_store_id": "63ff1a9c5631c515f17fc66e",
+        "feature_store_id": "6414004ac6834e5117ec155c",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table"
         }
     },
-    "type": "dimension_data"
+    "type": "dimension_table"
 }

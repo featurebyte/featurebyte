@@ -160,13 +160,13 @@ def test__setitem__cond_assign_consecutive(dataframe, bool_series):
     assert series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "input_1", "target": "project_2"},
-        {"source": "project_1", "target": "conditional_1"},
         {"source": "project_2", "target": "conditional_1"},
+        {"source": "project_1", "target": "conditional_1"},
         {"source": "input_1", "target": "assign_1"},
         {"source": "conditional_1", "target": "assign_1"},
         {"source": "assign_1", "target": "project_3"},
         {"source": "project_3", "target": "conditional_2"},
-        {"source": "project_2", "target": "conditional_2"},
+        {"source": "project_1", "target": "conditional_2"},
         {"source": "assign_1", "target": "assign_2"},
         {"source": "conditional_2", "target": "assign_2"},
         {"source": "assign_2", "target": "project_4"},
@@ -215,10 +215,10 @@ def test__setitem__conditional_assign_unnamed_series(int_series, bool_series):
     # No assignment occurred
     assert temp_series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
-        {"source": "project_1", "target": "add_1"},
         {"source": "input_1", "target": "project_2"},
+        {"source": "project_2", "target": "add_1"},
         {"source": "add_1", "target": "conditional_1"},
-        {"source": "project_2", "target": "conditional_1"},
+        {"source": "project_1", "target": "conditional_1"},
     ]
 
 
@@ -800,9 +800,9 @@ def test_date_add_operator__constructed_timedelta(timestamp_series, timedelta_se
     series_dict = new_series.dict()
     assert series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "timedelta_1"},
         {"source": "input_1", "target": "project_2"},
-        {"source": "project_2", "target": "timedelta_1"},
-        {"source": "project_1", "target": "date_add_1"},
+        {"source": "project_2", "target": "date_add_1"},
         {"source": "timedelta_1", "target": "date_add_1"},
     ]
 

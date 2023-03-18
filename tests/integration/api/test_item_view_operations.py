@@ -7,11 +7,11 @@ from featurebyte import AggFunc, FeatureList
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_expected_rows_and_columns(item_data, expected_joined_event_item_dataframe):
+def test_expected_rows_and_columns(item_table, expected_joined_event_item_dataframe):
     """
     Test ItemView rows and columns are correct
     """
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
     df_preview = item_view.preview(limit=50)
     expected_columns = [
         "ËVENT_TIMESTAMP",
@@ -25,7 +25,7 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
     assert df_preview.columns.tolist() == expected_columns
     assert df_preview.shape[0] == 50
 
-    # Check preview result with the expected joined events-items data
+    # Check preview result with the expected joined events-items table
     df_expected_subset = pd.merge(
         df_preview[["order_id", "item_id"]],
         expected_joined_event_item_dataframe,
@@ -38,11 +38,11 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
 
 
 @pytest.fixture
-def item_aggregate_with_category_features(item_data):
+def item_aggregate_with_category_features(item_table):
     """
     Fixture for a FeatureList with features derived from item aggregation per category
     """
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
     feature = item_view.groupby("order_id", category="item_type").aggregate(
         method=AggFunc.COUNT, feature_name="my_item_feature"
     )
@@ -54,7 +54,7 @@ def item_aggregate_with_category_features(item_data):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_item_aggregation_with_category(item_aggregate_with_category_features, event_data):
+def test_item_aggregation_with_category(item_aggregate_with_category_features, event_table):
     """
     Test ItemView.groupby(..., category=...).aggregate() feature
     """
@@ -80,7 +80,7 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
     np.testing.assert_allclose(df["item_type_entropy"].values, [1.79175947, 1.09861229, 2.19722458])
 
     # check add_feature (note added feature value is the same as the preview above)
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     event_view.add_feature(
         "most_frequent_item_type",
         item_aggregate_with_category_features["most_frequent_item_type"],
@@ -91,11 +91,11 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
+def test_item_view_ops(item_table, expected_joined_event_item_dataframe):
     """
     Test ItemView operations
     """
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
 
     # Add a new column
     item_view["item_type_upper"] = item_view["item_type"].str.upper()
@@ -110,7 +110,7 @@ def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
     assert (df.iloc[:, 0] == "TYPE_42_ABC").all()
 
     # Join additional columns from EventTable
-    item_view_filtered.join_event_data_attributes(["SESSION_ID"])
+    item_view_filtered.join_event_table_attributes(["SESSION_ID"])
     df = item_view_filtered.preview(500)
     assert df["SESSION_ID"].notnull().all()
     assert (df["item_type_upper"] == "TYPE_42").all()
@@ -171,13 +171,13 @@ def assert_match(item_id: str, item_name: str, item_type: str):
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_joined_with_dimension_view(
-    transaction_data_upper_case, item_data, dimension_data
+    transaction_data_upper_case, item_table, dimension_table
 ):
     """
     Test joining an item view with a dimension view.
     """
     # create item view
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
     item_columns = [
         "order_id",
         "item_id",
@@ -191,7 +191,7 @@ def test_item_view_joined_with_dimension_view(
     original_item_preview = item_view.preview()
 
     # create dimension view
-    dimension_view = dimension_data.get_view()
+    dimension_view = dimension_table.get_view()
     initial_dimension_columns = ["created_at", "item_id", "item_name", "item_type"]
     assert dimension_view.columns == initial_dimension_columns
 

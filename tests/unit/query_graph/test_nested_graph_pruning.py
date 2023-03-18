@@ -11,7 +11,7 @@ def add_input_node(query_graph, input_details):
     return query_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
-            "type": "event_data",
+            "type": "event_table",
             "columns": [
                 {"name": "ts", "dtype": "TIMESTAMP"},
                 {"name": "cust_id", "dtype": "INT"},
@@ -103,7 +103,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
                     "node_names": {"input_1"},
                     "node_name": "input_1",
                     "tabular_data_id": None,
-                    "tabular_data_type": "event_data",
+                    "tabular_data_type": "event_table",
                     "type": "source",
                     "dtype": "FLOAT",
                 },
@@ -126,7 +126,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
                 "node_names": {"input_1"},
                 "node_name": "input_1",
                 "tabular_data_id": None,
-                "tabular_data_type": "event_data",
+                "tabular_data_type": "event_table",
                 "type": "source",
                 "dtype": "FLOAT",
             }

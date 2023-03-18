@@ -56,7 +56,7 @@ async def test_generate_tile(session):
 @pytest.mark.asyncio
 async def test_generate_tile_no_data(session):
     """
-    Test generation of tile with no tile data
+    Test generation of tile with no tile table
     """
     entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "客户"]
     value_col_names = ["VALUE"]

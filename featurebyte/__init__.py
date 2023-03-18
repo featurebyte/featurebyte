@@ -33,15 +33,15 @@ from featurebyte.models.credential import Credential, UsernamePasswordCredential
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.model.feature_job_setting import (
-    DataFeatureJobSetting,
     FeatureJobSetting,
+    TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
-    DataCleaningOperation,
     DisguisedValueImputation,
     MissingValueImputation,
     StringValueImputation,
+    TableCleaningOperation,
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
@@ -111,7 +111,7 @@ __all__ = [
     "Feature",
     "FeatureGroup",
     "FeatureJobSetting",
-    "DataFeatureJobSetting",
+    "TableFeatureJobSetting",
     "FeatureJobSettingAnalysis",
     "FeatureList",
     "FeatureStore",
@@ -141,7 +141,7 @@ __all__ = [
     "FeatureVersionInfo",
     # others
     "ColumnCleaningOperation",
-    "DataCleaningOperation",
+    "TableCleaningOperation",
     "PeriodicTask",
     # services
     "start",

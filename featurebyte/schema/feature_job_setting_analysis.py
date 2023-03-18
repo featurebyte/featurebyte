@@ -24,7 +24,7 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: Optional[StrictStr]
-    event_data_id: PydanticObjectId
+    event_table_id: PydanticObjectId
     analysis_date: Optional[datetime] = Field(default=None)
     analysis_length: int = Field(ge=3600, le=3600 * 24 * 28 * 6, default=3600 * 24 * 28)
     min_featurejob_period: int = Field(ge=60, le=3600 * 24 * 28, default=60)
@@ -39,7 +39,7 @@ class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
     FeatureJobSettingAnalysis persistent record without report
     """
 
-    event_data_id: PydanticObjectId
+    event_table_id: PydanticObjectId
     analysis_options: AnalysisOptions
     recommended_feature_job_setting: FeatureJobSetting
 

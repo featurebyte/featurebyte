@@ -17,11 +17,11 @@ from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVers
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
-    DataFeatureJobSetting,
     FeatureJobSetting,
+    TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
+from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
@@ -41,7 +41,7 @@ class VersionService(BaseService):
 
     def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
         super().__init__(user, persistent, catalog_id)
-        self.data_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.table_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
         self.feature_service = FeatureService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
@@ -61,7 +61,7 @@ class VersionService(BaseService):
     async def _prepare_group_by_node_name_to_replacement_node(
         self,
         feature: FeatureModel,
-        data_feature_job_settings: Optional[list[DataFeatureJobSetting]],
+        table_feature_job_settings: Optional[list[TableFeatureJobSetting]],
         use_source_settings: bool,
     ) -> dict[str, Node]:
         """
@@ -73,10 +73,10 @@ class VersionService(BaseService):
         ----------
         feature: FeatureModel
             Feature model
-        data_feature_job_settings: Optional[list[DataFeatureJobSetting]]
+        table_feature_job_settings: Optional[list[TableFeatureJobSetting]]
             Feature job setting
         use_source_settings: bool
-            Whether to use source data's default feature job setting
+            Whether to use source table's default feature job setting
 
         Returns
         -------
@@ -85,44 +85,44 @@ class VersionService(BaseService):
         Raises
         ------
         NoFeatureJobSettingInSourceError
-            If the source data does not have a default feature job setting
+            If the source table does not have a default feature job setting
         """
         node_name_to_replacement_node: dict[str, Node] = {}
-        data_feature_job_settings = data_feature_job_settings or []
-        if data_feature_job_settings or use_source_settings:
-            data_name_to_feature_job_setting: dict[str, FeatureJobSetting] = {
-                data_feature_job_setting.data_name: data_feature_job_setting.feature_job_setting
-                for data_feature_job_setting in data_feature_job_settings
+        table_feature_job_settings = table_feature_job_settings or []
+        if table_feature_job_settings or use_source_settings:
+            table_name_to_feature_job_setting: dict[str, FeatureJobSetting] = {
+                data_feature_job_setting.table_name: data_feature_job_setting.feature_job_setting
+                for data_feature_job_setting in table_feature_job_settings
             }
-            data_id_to_doc: dict[ObjectId, dict[str, Any]] = {
+            table_id_to_doc: dict[ObjectId, dict[str, Any]] = {
                 doc["_id"]: doc
-                async for doc in self.data_service.list_documents_iterator(
+                async for doc in self.table_service.list_documents_iterator(
                     query_filter={"_id": {"$in": feature.tabular_data_ids}}
                 )
             }
             for (
                 group_by_node,
-                event_data_id,
-            ) in feature.graph.iterate_group_by_and_data_id_node_pairs(target_node=feature.node):
+                event_table_id,
+            ) in feature.graph.iterate_group_by_node_and_table_id_pairs(target_node=feature.node):
                 # prepare feature job setting
-                assert event_data_id is not None, "Event data ID should not be None."
-                data_doc = data_id_to_doc[event_data_id]
-                feature_job_setting = None
+                assert event_table_id is not None, "Event table ID should not be None."
+                table_doc = table_id_to_doc[event_table_id]
+                feature_job_setting: Optional[FeatureJobSetting] = None
                 if use_source_settings:
-                    # use the (event) data source's default feature job setting
-                    feature_job_setting_dict = data_doc["default_feature_job_setting"]
+                    # use the (event) table source's default feature job setting
+                    feature_job_setting_dict = table_doc["default_feature_job_setting"]
                     if feature_job_setting_dict:
                         feature_job_setting = FeatureJobSetting(**feature_job_setting_dict)
                     else:
                         raise NoFeatureJobSettingInSourceError(
-                            f"No feature job setting found in source id {event_data_id}"
+                            f"No feature job setting found in source id {event_table_id}"
                         )
                 else:
                     # use the provided feature job setting
-                    feature_job_setting = data_name_to_feature_job_setting.get(data_doc["name"])
+                    feature_job_setting = table_name_to_feature_job_setting.get(table_doc["name"])
 
                 if feature_job_setting:
-                    # input node will be used when we need to support updating specific groupby node given event data ID
+                    # input node will be used when we need to support updating specific groupby node given event table ID
                     parameters = {
                         **group_by_node.parameters.dict(),
                         **feature_job_setting.to_seconds(),
@@ -183,8 +183,8 @@ class VersionService(BaseService):
     async def _create_new_feature_version(
         self,
         feature: FeatureModel,
-        data_feature_job_settings: Optional[list[DataFeatureJobSetting]],
-        data_cleaning_operations: Optional[list[DataCleaningOperation]],
+        table_feature_job_settings: Optional[list[TableFeatureJobSetting]],
+        table_cleaning_operations: Optional[list[TableCleaningOperation]],
         use_source_settings: bool,
     ) -> FeatureModel:
         node_name_to_replacement_node: dict[str, Node] = {}
@@ -192,18 +192,18 @@ class VersionService(BaseService):
         # prepare group by node replacement
         group_by_node_replacement = await self._prepare_group_by_node_name_to_replacement_node(
             feature=feature,
-            data_feature_job_settings=data_feature_job_settings,
+            table_feature_job_settings=table_feature_job_settings,
             use_source_settings=use_source_settings,
         )
         node_name_to_replacement_node.update(group_by_node_replacement)
 
         # prepare view graph node replacement
-        if data_cleaning_operations or use_source_settings:
+        if table_cleaning_operations or use_source_settings:
             view_node_name_replacement = (
                 await self.view_construction_service.prepare_view_node_name_to_replacement_node(
                     query_graph=feature.graph,
                     target_node=feature.node,
-                    data_cleaning_operations=data_cleaning_operations or [],
+                    table_cleaning_operations=table_cleaning_operations or [],
                     use_source_settings=use_source_settings,
                 )
             )
@@ -217,12 +217,12 @@ class VersionService(BaseService):
             return new_feature_version
 
         # no new feature is created, raise the error message accordingly
-        if data_feature_job_settings or data_cleaning_operations:
+        if table_feature_job_settings or table_cleaning_operations:
             actions = []
-            if data_feature_job_settings:
+            if table_feature_job_settings:
                 actions.append("feature job setting")
-            if data_cleaning_operations:
-                actions.append("data cleaning operation(s)")
+            if table_cleaning_operations:
+                actions.append("table cleaning operation(s)")
 
             actions_str = " and ".join(actions).capitalize()
             do_str = "do" if len(actions) > 1 else "does"
@@ -253,8 +253,8 @@ class VersionService(BaseService):
         feature = await self.feature_service.get_document(document_id=data.source_feature_id)
         new_feature = await self._create_new_feature_version(
             feature,
-            data.data_feature_job_settings,
-            data.data_cleaning_operations,
+            data.table_feature_job_settings,
+            data.table_cleaning_operations,
             use_source_settings=False,
         )
         return await self.feature_service.create_document(
@@ -265,7 +265,7 @@ class VersionService(BaseService):
         self, document_id: ObjectId
     ) -> FeatureModel:
         """
-        Create new feature version based on feature job settings & cleaning operation from the source data
+        Create new feature version based on feature job settings & cleaning operation from the source table
         (newly created feature won't be saved to the persistent)
 
         Parameters
@@ -280,8 +280,8 @@ class VersionService(BaseService):
         feature = await self.feature_service.get_document(document_id=document_id)
         new_feature = await self._create_new_feature_version(
             feature,
-            data_feature_job_settings=None,
-            data_cleaning_operations=None,
+            table_feature_job_settings=None,
+            table_cleaning_operations=None,
             use_source_settings=True,
         )
         return new_feature

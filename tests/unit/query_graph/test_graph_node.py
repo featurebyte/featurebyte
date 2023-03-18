@@ -15,7 +15,7 @@ from featurebyte.query_graph.graph_node.base import GraphNode
 def input_node_params_fixture(snowflake_feature_store_details_dict, snowflake_table_details_dict):
     """Input node parameters fixture"""
     return {
-        "type": "generic",
+        "type": "source_table",
         "columns": [
             {"name": "col_int", "dtype": "INT"},
             {"name": "col_float", "dtype": "FLOAT"},
@@ -131,7 +131,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
                         "node_names": {"project_1", "input_1"},
                         "node_name": "input_1",
                         "tabular_data_id": None,
-                        "tabular_data_type": "generic",
+                        "tabular_data_type": "source_table",
                         "type": "source",
                         "dtype": "INT",
                     },
@@ -141,7 +141,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
                         "node_names": {"input_1", "project_2"},
                         "node_name": "input_1",
                         "tabular_data_id": None,
-                        "tabular_data_type": "generic",
+                        "tabular_data_type": "source_table",
                         "type": "source",
                         "dtype": "FLOAT",
                     },
@@ -210,7 +210,7 @@ def nested_input_graph_fixture(input_node_params):
                         "node_names": {"graph_1"},
                         "node_name": "graph_1",
                         "tabular_data_id": None,
-                        "tabular_data_type": "generic",
+                        "tabular_data_type": "source_table",
                         "type": "source",
                         "dtype": "INT",
                     }
@@ -278,7 +278,7 @@ def nested_output_graph_fixture(input_node_params):
                         "node_names": {"input_1", "graph_1"},
                         "node_name": "graph_1",
                         "tabular_data_id": None,
-                        "tabular_data_type": "generic",
+                        "tabular_data_type": "source_table",
                         "type": "source",
                         "dtype": "INT",
                     }
@@ -368,7 +368,7 @@ def deep_nested_graph_fixture(input_node_params):
                         "node_names": {"graph_1"},
                         "node_name": "graph_1",
                         "tabular_data_id": None,
-                        "tabular_data_type": "generic",
+                        "tabular_data_type": "source_table",
                         "type": "source",
                         "dtype": "INT",
                     }
@@ -482,7 +482,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
                 "node_names": {"project_2", "input_1"},
                 "node_name": "input_1",
                 "tabular_data_id": None,
-                "tabular_data_type": "generic",
+                "tabular_data_type": "source_table",
                 "type": "source",
                 "dtype": "INT",
             }

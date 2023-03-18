@@ -37,7 +37,7 @@ class EventViewColumn(LaggableViewColumn):
 
 class EventView(View, GroupByMixin):
     """
-    EventViews allow users to transform EventTable to support the data preparation necessary before creating features.
+    EventViews allow users to transform EventTable to support the table preparation necessary before creating features.
     """
 
     # documentation metadata
@@ -54,7 +54,7 @@ class EventView(View, GroupByMixin):
     @property
     def timestamp_column(self) -> str:
         """
-        Timestamp column of the event data
+        Timestamp column of the event table
 
         Returns
         -------
@@ -63,7 +63,7 @@ class EventView(View, GroupByMixin):
         input_node = next(
             node
             for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.INPUT)
-            if cast(InputNode, node).parameters.type == TableDataType.EVENT_DATA
+            if cast(InputNode, node).parameters.type == TableDataType.EVENT_TABLE
         )
         return input_node.parameters.timestamp_column  # type: ignore
 
@@ -319,7 +319,7 @@ class EventView(View, GroupByMixin):
         self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None
     ) -> None:
         """
-        Features that are non-time based and are extracted from other data views can be added as a column to an event
+        Features that are non-time based and are extracted from other table views can be added as a column to an event
         view if one of its columns has been tagged with the same entity as the entity of the features.
 
         Time-based features will be supported in the future once we have support for offline stores.

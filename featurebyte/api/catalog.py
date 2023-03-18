@@ -156,10 +156,10 @@ class Catalog(CatalogModel, SavableApiObject):
 
         >>> import featurebyte as fb
         >>> catalog = fb.Catalog.get_or_create("grocery")
-        >>> fb.Catalog.list()[["name", "active"]]
-              name  active
-        0  grocery   False
-        1  default    True
+        >>> fb.Catalog.list()[["name"]]
+              name
+        0  grocery
+        1  default
 
         See Also
         --------
@@ -250,7 +250,7 @@ class Catalog(CatalogModel, SavableApiObject):
         entity: Optional[str]
             Name of entity used to filter results
         data: Optional[str]
-            Name of data used to filter results
+            Name of table used to filter results
 
         Returns
         -------
@@ -278,7 +278,7 @@ class Catalog(CatalogModel, SavableApiObject):
         entity: Optional[str]
             Name of entity used to filter results
         data: Optional[str]
-            Name of data used to filter results
+            Name of table used to filter results
 
         Returns
         -------
@@ -304,7 +304,7 @@ class Catalog(CatalogModel, SavableApiObject):
         entity: Optional[str]
             Name of entity used to filter results
         data: Optional[str]
-            Name of data used to filter results
+            Name of table used to filter results
 
         Returns
         -------
@@ -366,7 +366,7 @@ class Catalog(CatalogModel, SavableApiObject):
         - the relationship id
         - primary entity
         - related entity
-        - data source
+        - table source
         - enabled (whether the relationship is enabled)
         - creation timestamp
         - update timestamp

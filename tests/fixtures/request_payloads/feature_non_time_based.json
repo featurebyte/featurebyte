@@ -4,12 +4,12 @@
         "Instead, update the test conftest.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "63ff1a9d5631c515f17fc684",
+    "_id": "6414004bc6834e5117ec1575",
     "dtype": "FLOAT",
     "entity_ids": [
         "63f94ed6ea1f050131379204"
     ],
-    "feature_namespace_id": "63ff1a9d5631c515f17fc685",
+    "feature_namespace_id": "6414004bc6834e5117ec1576",
     "graph": {
         "edges": [
             {
@@ -93,7 +93,7 @@
                         "table_name": "sf_table"
                     },
                     "timestamp_column": "event_timestamp",
-                    "type": "event_data"
+                    "type": "event_table"
                 },
                 "type": "input"
             },
@@ -138,10 +138,10 @@
                     },
                     "metadata": {
                         "column_cleaning_operations": [],
-                        "data_id": "6337f9651050ee7d5980660d",
                         "drop_column_names": [
                             "created_at"
                         ],
+                        "table_id": "6337f9651050ee7d5980660d",
                         "view_mode": "auto"
                     },
                     "output_node_name": "project_1",
@@ -179,8 +179,8 @@
                             "name": "event_timestamp"
                         }
                     ],
-                    "event_data_id": "6337f9651050ee7d5980660d",
                     "event_id_column": "event_id_col",
+                    "event_table_id": "6337f9651050ee7d5980660d",
                     "feature_store_details": {
                         "details": {
                             "account": "sf_account",
@@ -197,7 +197,7 @@
                         "schema_name": "sf_schema",
                         "table_name": "items_table"
                     },
-                    "type": "item_data"
+                    "type": "item_table"
                 },
                 "type": "input"
             },
@@ -273,7 +273,7 @@
                                             "cust_id"
                                         ],
                                         "event_suffix": "_event_table",
-                                        "type": "join_event_data_attributes"
+                                        "type": "join_event_table_attributes"
                                     },
                                     "right_input_columns": [
                                         "event_id_col",
@@ -300,10 +300,8 @@
                     },
                     "metadata": {
                         "column_cleaning_operations": [],
-                        "data_id": "6337f9651050ee7d5980662d",
                         "drop_column_names": [],
                         "event_column_cleaning_operations": [],
-                        "event_data_id": "6337f9651050ee7d5980660d",
                         "event_drop_column_names": [
                             "created_at"
                         ],
@@ -313,6 +311,8 @@
                             "cust_id"
                         ],
                         "event_suffix": "_event_table",
+                        "event_table_id": "6337f9651050ee7d5980660d",
+                        "table_id": "6337f9651050ee7d5980662d",
                         "view_mode": "auto"
                     },
                     "output_node_name": "join_1",
@@ -359,7 +359,7 @@
         "6337f9651050ee7d5980662d"
     ],
     "tabular_source": {
-        "feature_store_id": "63ff1a9c5631c515f17fc66e",
+        "feature_store_id": "6414004ac6834e5117ec155c",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

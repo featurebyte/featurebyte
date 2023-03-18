@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Type, TypeVar
 
 from bson.objectid import ObjectId
 
-from featurebyte import DataCleaningOperation
+from featurebyte import TableCleaningOperation
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
@@ -16,8 +16,8 @@ from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.model.feature_job_setting import (
-    DataFeatureJobSetting,
     FeatureJobSetting,
+    TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.feature import FeatureBriefInfoList
@@ -73,17 +73,17 @@ class InfoService(BaseService):
 
     def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
         super().__init__(user, persistent, catalog_id)
-        self.data_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
-        self.event_data_service = EventTableService(
+        self.table_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.event_table_service = EventTableService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.item_data_service = ItemTableService(
+        self.item_table_service = ItemTableService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.dimension_data_service = DimensionTableService(
+        self.dimension_table_service = DimensionTableService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.scd_data_service = SCDTableService(
+        self.scd_table_service = SCDTableService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.semantic_service = SemanticService(
@@ -199,14 +199,14 @@ class InfoService(BaseService):
             catalog_name=catalog.name,
         )
 
-    async def _get_data_info(self, data_document: TableModel, verbose: bool) -> Dict[str, Any]:
+    async def _get_table_info(self, data_document: TableModel, verbose: bool) -> Dict[str, Any]:
         """
-        Get data info
+        Get table info
 
         Parameters
         ----------
         data_document: TableModel
-            Data document (could be event data, SCD data, item data, dimension data, etc)
+            Data document (could be event table, SCD table, item table, dimension table, etc)
         verbose: bool
             Verbose or not
 
@@ -273,7 +273,7 @@ class InfoService(BaseService):
         relationship_info = await self.relationship_info_service.get_document(
             document_id=document_id
         )
-        data_info = await self.data_service.get_document(
+        data_info = await self.table_service.get_document(
             document_id=relationship_info.primary_data_source_id
         )
         updated_user_name = self.user_service.get_user_name_for_id(relationship_info.updated_by)
@@ -298,7 +298,7 @@ class InfoService(BaseService):
 
     async def get_event_table_info(self, document_id: ObjectId, verbose: bool) -> EventTableInfo:
         """
-        Get event data info
+        Get event table info
 
         Parameters
         ----------
@@ -311,18 +311,18 @@ class InfoService(BaseService):
         -------
         EventTableInfo
         """
-        event_data = await self.event_data_service.get_document(document_id=document_id)
-        data_dict = await self._get_data_info(data_document=event_data, verbose=verbose)
+        event_table = await self.event_table_service.get_document(document_id=document_id)
+        table_dict = await self._get_table_info(data_document=event_table, verbose=verbose)
         return EventTableInfo(
-            **data_dict,
-            event_id_column=event_data.event_id_column,
-            event_timestamp_column=event_data.event_timestamp_column,
-            default_feature_job_setting=event_data.default_feature_job_setting,
+            **table_dict,
+            event_id_column=event_table.event_id_column,
+            event_timestamp_column=event_table.event_timestamp_column,
+            default_feature_job_setting=event_table.default_feature_job_setting,
         )
 
     async def get_item_table_info(self, document_id: ObjectId, verbose: bool) -> ItemTableInfo:
         """
-        Get item data info
+        Get item table info
 
         Parameters
         ----------
@@ -335,21 +335,23 @@ class InfoService(BaseService):
         -------
         ItemTableInfo
         """
-        item_data = await self.item_data_service.get_document(document_id=document_id)
-        data_dict = await self._get_data_info(data_document=item_data, verbose=verbose)
-        event_data = await self.event_data_service.get_document(document_id=item_data.event_data_id)
+        item_table = await self.item_table_service.get_document(document_id=document_id)
+        table_dict = await self._get_table_info(data_document=item_table, verbose=verbose)
+        event_table = await self.event_table_service.get_document(
+            document_id=item_table.event_table_id
+        )
         return ItemTableInfo(
-            **data_dict,
-            event_id_column=item_data.event_id_column,
-            item_id_column=item_data.item_id_column,
-            event_data_name=event_data.name,
+            **table_dict,
+            event_id_column=item_table.event_id_column,
+            item_id_column=item_table.item_id_column,
+            event_table_name=event_table.name,
         )
 
     async def get_dimension_table_info(
         self, document_id: ObjectId, verbose: bool
     ) -> DimensionTableInfo:
         """
-        Get dimension data info
+        Get dimension table info
 
         Parameters
         ----------
@@ -362,16 +364,16 @@ class InfoService(BaseService):
         -------
         DimensionTableInfo
         """
-        dimension_data = await self.dimension_data_service.get_document(document_id=document_id)
-        data_dict = await self._get_data_info(data_document=dimension_data, verbose=verbose)
+        dimension_table = await self.dimension_table_service.get_document(document_id=document_id)
+        table_dict = await self._get_table_info(data_document=dimension_table, verbose=verbose)
         return DimensionTableInfo(
-            **data_dict,
-            dimension_id_column=dimension_data.dimension_id_column,
+            **table_dict,
+            dimension_id_column=dimension_table.dimension_id_column,
         )
 
     async def get_scd_table_info(self, document_id: ObjectId, verbose: bool) -> SCDTableInfo:
         """
-        Get Slow Changing Dimension data info
+        Get Slow Changing Dimension table info
 
         Parameters
         ----------
@@ -384,26 +386,26 @@ class InfoService(BaseService):
         -------
         SCDTableInfo
         """
-        scd_data = await self.scd_data_service.get_document(document_id=document_id)
-        data_dict = await self._get_data_info(data_document=scd_data, verbose=verbose)
+        scd_table = await self.scd_table_service.get_document(document_id=document_id)
+        table_dict = await self._get_table_info(data_document=scd_table, verbose=verbose)
         return SCDTableInfo(
-            **data_dict,
-            natural_key_column=scd_data.natural_key_column,
-            effective_timestamp_column=scd_data.effective_timestamp_column,
-            surrogate_key_column=scd_data.surrogate_key_column,
-            end_timestamp_column=scd_data.end_timestamp_column,
-            current_flag_column=scd_data.current_flag_column,
+            **table_dict,
+            natural_key_column=scd_table.natural_key_column,
+            effective_timestamp_column=scd_table.effective_timestamp_column,
+            surrogate_key_column=scd_table.surrogate_key_column,
+            end_timestamp_column=scd_table.end_timestamp_column,
+            current_flag_column=scd_table.current_flag_column,
         )
 
     @staticmethod
     def _get_main_data(tabular_data_list: list[ProxyTableModel]) -> ProxyTableModel:
         """
-        Get the main data from the list of tabular data
+        Get the main table from the list of tables
 
         Parameters
         ----------
         tabular_data_list: list[TabularDataModel]
-            List of tabular data model
+            List of table models
 
         Returns
         -------
@@ -411,9 +413,9 @@ class InfoService(BaseService):
         """
         data_priority_map = {}
         for tabular_data in tabular_data_list:
-            if tabular_data.type == TableDataType.ITEM_DATA:
+            if tabular_data.type == TableDataType.ITEM_TABLE:
                 data_priority_map[3] = tabular_data
-            elif tabular_data.type == TableDataType.EVENT_DATA:
+            elif tabular_data.type == TableDataType.EVENT_TABLE:
                 data_priority_map[2] = tabular_data
             elif tabular_data.entity_ids:
                 data_priority_map[1] = tabular_data
@@ -422,9 +424,9 @@ class InfoService(BaseService):
         return data_priority_map[max(data_priority_map)]
 
     async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
-        # retrieve related tabular data & semantic
+        # retrieve related tables & semantics
         tabular_data_list = await self._get_list_object(
-            self.data_service, op_struct.tabular_data_ids, TableList
+            self.table_service, op_struct.tabular_data_ids, TableList
         )
         semantic_list = await self._get_list_object(
             self.semantic_service, tabular_data_list.semantic_ids, SemanticList
@@ -436,7 +438,7 @@ class InfoService(BaseService):
         for tabular_data in tabular_data_list.data:
             for column in tabular_data.columns_info:
                 column_map[(tabular_data.id, column.name)] = {
-                    "data_name": tabular_data.name,
+                    "table_name": tabular_data.name,
                     "semantic": semantic_map.get(column.semantic_id),  # type: ignore
                 }
 
@@ -447,7 +449,7 @@ class InfoService(BaseService):
             column_metadata = column_map[(src_col.tabular_data_id, src_col.name)]
             reference_map[src_col] = f"Input{idx}"
             source_columns[reference_map[src_col]] = {
-                "data": column_metadata["data_name"],
+                "data": column_metadata["table_name"],
                 "column_name": src_col.name,
                 "semantic": column_metadata["semantic"],
             }
@@ -487,7 +489,7 @@ class InfoService(BaseService):
 
         main_data = self._get_main_data(tabular_data_list.data)
         return {
-            "main_data": {"name": main_data.name, "data_type": main_data.type, "id": main_data.id},
+            "main_data": {"name": main_data.name, "table_type": main_data.type, "id": main_data.id},
             "input_columns": source_columns,
             "derived_columns": derived_columns,
             "aggregations": aggregation_columns,
@@ -495,37 +497,37 @@ class InfoService(BaseService):
         }
 
     @staticmethod
-    def _extract_feature_data_cleaning_operations(
-        feature: FeatureModel, data_id_to_name: dict[ObjectId, str]
-    ) -> list[DataCleaningOperation]:
-        data_cleaning_operations: list[DataCleaningOperation] = []
+    def _extract_feature_table_cleaning_operations(
+        feature: FeatureModel, table_id_to_name: dict[ObjectId, str]
+    ) -> list[TableCleaningOperation]:
+        table_cleaning_operations: list[TableCleaningOperation] = []
         for view_graph_node in feature.graph.iterate_sorted_graph_nodes(
             graph_node_types=GraphNodeType.view_graph_node_types()
         ):
             view_metadata = view_graph_node.parameters.metadata  # type: ignore
             if view_metadata.column_cleaning_operations:
-                data_cleaning_operations.append(
-                    DataCleaningOperation(
-                        data_name=data_id_to_name[view_metadata.data_id],
+                table_cleaning_operations.append(
+                    TableCleaningOperation(
+                        table_name=table_id_to_name[view_metadata.table_id],
                         column_cleaning_operations=view_metadata.column_cleaning_operations,
                     )
                 )
-        return data_cleaning_operations
+        return table_cleaning_operations
 
     @staticmethod
-    def _extract_data_feature_job_settings(
-        feature: FeatureModel, data_id_to_name: dict[ObjectId, str]
-    ) -> list[DataFeatureJobSetting]:
-        data_feature_job_settings = []
-        for group_by_node, data_id in feature.graph.iterate_group_by_and_data_id_node_pairs(
+    def _extract_table_feature_job_settings(
+        feature: FeatureModel, table_id_to_name: dict[ObjectId, str]
+    ) -> list[TableFeatureJobSetting]:
+        table_feature_job_settings = []
+        for group_by_node, data_id in feature.graph.iterate_group_by_node_and_table_id_pairs(
             target_node=feature.node
         ):
-            assert data_id is not None, "Event data ID not found"
-            data_name = data_id_to_name[data_id]
+            assert data_id is not None, "Event table ID not found"
+            table_name = table_id_to_name[data_id]
             group_by_node_params = group_by_node.parameters
-            data_feature_job_settings.append(
-                DataFeatureJobSetting(
-                    data_name=data_name,
+            table_feature_job_settings.append(
+                TableFeatureJobSetting(
+                    table_name=table_name,
                     feature_job_setting=FeatureJobSetting(
                         blind_spot=f"{group_by_node_params.blind_spot}s",
                         frequency=f"{group_by_node_params.frequency}s",
@@ -533,7 +535,7 @@ class InfoService(BaseService):
                     ),
                 )
             )
-        return data_feature_job_settings
+        return table_feature_job_settings
 
     async def get_feature_info(self, document_id: ObjectId, verbose: bool) -> FeatureInfo:
         """
@@ -553,7 +555,7 @@ class InfoService(BaseService):
         feature = await self.feature_service.get_document(document_id=document_id)
         data_id_to_name = {
             doc["_id"]: doc["name"]
-            async for doc in self.data_service.list_documents_iterator(
+            async for doc in self.table_service.list_documents_iterator(
                 query_filter={"_id": {"$in": feature.tabular_data_ids}}
             )
         }
@@ -588,20 +590,20 @@ class InfoService(BaseService):
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
-            data_feature_job_setting={
-                "this": self._extract_data_feature_job_settings(
-                    feature=feature, data_id_to_name=data_id_to_name
+            table_feature_job_setting={
+                "this": self._extract_table_feature_job_settings(
+                    feature=feature, table_id_to_name=data_id_to_name
                 ),
-                "default": self._extract_data_feature_job_settings(
-                    feature=default_feature, data_id_to_name=data_id_to_name
+                "default": self._extract_table_feature_job_settings(
+                    feature=default_feature, table_id_to_name=data_id_to_name
                 ),
             },
-            data_cleaning_operation={
-                "this": self._extract_feature_data_cleaning_operations(
-                    feature=feature, data_id_to_name=data_id_to_name
+            table_cleaning_operation={
+                "this": self._extract_feature_table_cleaning_operations(
+                    feature=feature, table_id_to_name=data_id_to_name
                 ),
-                "default": self._extract_feature_data_cleaning_operations(
-                    feature=default_feature, data_id_to_name=data_id_to_name
+                "default": self._extract_feature_table_cleaning_operations(
+                    feature=default_feature, table_id_to_name=data_id_to_name
                 ),
             },
             versions_info=versions_info,
@@ -631,7 +633,7 @@ class InfoService(BaseService):
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
 
-        tabular_data = await self.data_service.list_documents(
+        tabular_data = await self.table_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
         )
 
@@ -735,7 +737,7 @@ class InfoService(BaseService):
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
 
-        tabular_data = await self.data_service.list_documents(
+        tabular_data = await self.table_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
         )
 
@@ -767,7 +769,7 @@ class InfoService(BaseService):
         self, document_id: ObjectId, verbose: bool
     ) -> FeatureJobSettingAnalysisInfo:
         """
-        Get item data info
+        Get item table info
 
         Parameters
         ----------
@@ -787,8 +789,8 @@ class InfoService(BaseService):
         recommended_setting = (
             feature_job_setting_analysis.analysis_result.recommended_feature_job_setting
         )
-        event_data = await self.event_data_service.get_document(
-            document_id=feature_job_setting_analysis.event_data_id
+        event_table = await self.event_table_service.get_document(
+            document_id=feature_job_setting_analysis.event_table_id
         )
 
         # get catalog info
@@ -796,7 +798,7 @@ class InfoService(BaseService):
 
         return FeatureJobSettingAnalysisInfo(
             created_at=feature_job_setting_analysis.created_at,
-            event_data_name=event_data.name,
+            event_table_name=event_table.name,
             analysis_options=feature_job_setting_analysis.analysis_options,
             analysis_parameters=feature_job_setting_analysis.analysis_parameters,
             recommendation=FeatureJobSetting(

@@ -230,7 +230,7 @@ class WindowAggregator(BaseAggregator):
         feature_names: List[str]
             Output feature names
         timestamp_column: Optional[str]
-            Timestamp column used to specify the window (if not specified, event data timestamp is used)
+            Timestamp column used to specify the window (if not specified, event table timestamp is used)
         feature_job_setting: Optional[Dict[str, str]]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
@@ -716,7 +716,7 @@ class GroupBy:
         feature_names: List[str]
             Output feature names
         timestamp_column: Optional[str]
-            Timestamp column used to specify the window (if not specified, event data timestamp is used)
+            Timestamp column used to specify the window (if not specified, event table timestamp is used)
         feature_job_setting: Optional[Dict[str, str]]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters

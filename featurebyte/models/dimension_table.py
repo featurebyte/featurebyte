@@ -22,7 +22,7 @@ class DimensionTableModel(DimensionTableData, TableModel):
     Model for DimensionTable entity
 
     dimension_id_column: str
-        The primary key of the dimension data table in the DWH
+        The primary key of the dimension table in the DWH
     """
 
     _table_data_class: ClassVar[Type[DimensionTableData]] = DimensionTableData
@@ -38,13 +38,6 @@ class DimensionTableModel(DimensionTableData, TableModel):
         )
     )
 
-    @root_validator(pre=True)
-    @classmethod
-    def _handle_backward_compatibility(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "dimension_data_id_column" in values:  # DEV-556
-            values["dimension_id_column"] = values["dimension_data_id_column"]
-        return values
-
     @property
     def primary_key_columns(self) -> List[str]:
         return [self.dimension_id_column]
@@ -56,7 +49,7 @@ class DimensionTableModel(DimensionTableData, TableModel):
             column_cleaning_operations=metadata.column_cleaning_operations
         )
         return table_data.construct_dimension_view_graph_node(  # pylint: disable=no-member
-            dimension_data_node=input_node,
+            dimension_table_node=input_node,
             drop_column_names=metadata.drop_column_names,
             metadata=metadata,
         )

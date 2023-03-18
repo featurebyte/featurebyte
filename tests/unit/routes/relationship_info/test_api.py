@@ -114,7 +114,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         assert response_dict["relationship_type"] == "child_parent"
         assert response_dict["primary_entity_name"] == "customer"
         assert response_dict["related_entity_name"] == "transaction"
-        assert response_dict["data_source_name"] == "sf_event_data"
+        assert response_dict["data_source_name"] == "sf_event_table"
 
     def test_update_200(self, test_api_client_persistent, create_success_response):
         """

@@ -110,7 +110,7 @@ def calculate_aggregate_asat_ground_truth(
 @pytest.fixture(scope="session")
 def observation_set(transaction_data_upper_case):
 
-    # Sample training time points from historical data
+    # Sample training time points from historical table
     df = transaction_data_upper_case
     cols = ["ËVENT_TIMESTAMP", "ÜSER ID"]
     df = df[cols].drop_duplicates(cols)
@@ -289,15 +289,15 @@ def feature_parameters_fixture(source_type):
 def test_aggregate_over(
     transaction_data_upper_case,
     observation_set,
-    event_data,
+    event_table,
     config,
     feature_parameters,
 ):
     """
     Test that aggregate_over produces correct feature values
     """
-    event_view = event_data.get_view()
-    feature_job_setting = event_data.default_feature_job_setting
+    event_view = event_table.get_view()
+    feature_job_setting = event_table.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
         frequency=feature_job_setting.frequency,
         time_modulo_frequency=feature_job_setting.time_modulo_frequency,
@@ -400,7 +400,7 @@ def test_aggregate_over(
 def test_aggregate_asat(
     scd_dataframe,
     scd_observation_set,
-    scd_data,
+    scd_table,
     config,
 ):
     """
@@ -410,7 +410,7 @@ def test_aggregate_asat(
         (None, "count", "asat_count", lambda x: len(x)),
     ]
 
-    scd_view = scd_data.get_view()
+    scd_view = scd_table.get_view()
     entity_column_name = "User Status"
     effective_timestamp_column = "Effective Timestamp"
 

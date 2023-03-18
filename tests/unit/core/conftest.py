@@ -42,7 +42,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
     node = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
-            "type": "generic",
+            "type": "source_table",
             "columns": [col["name"] for col in columns_info],
             "timestamp": "VALUE",
             "table_details": {

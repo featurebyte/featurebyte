@@ -38,6 +38,6 @@ dimension_table = DimensionTable(
     ],
     record_creation_timestamp_column=None,
     dimension_id_column="col_int",
-    _id=ObjectId("{data_id}"),
+    _id=ObjectId("{table_id}"),
 )
 output = dimension_table

@@ -4,12 +4,12 @@
         "Instead, update the test conftest.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "63ff1a9d5631c515f17fc692",
+    "_id": "6414004bc6834e5117ec1583",
     "dtype": "FLOAT",
     "entity_ids": [
         "63f94ed6ea1f050131379214"
     ],
-    "feature_namespace_id": "63ff1a9d5631c515f17fc693",
+    "feature_namespace_id": "6414004bc6834e5117ec1584",
     "graph": {
         "edges": [
             {
@@ -25,10 +25,6 @@
                 "target": "project_2"
             },
             {
-                "source": "project_2",
-                "target": "lag_1"
-            },
-            {
                 "source": "project_1",
                 "target": "lag_1"
             },
@@ -37,7 +33,11 @@
                 "target": "lag_1"
             },
             {
-                "source": "project_2",
+                "source": "project_1",
+                "target": "lag_1"
+            },
+            {
+                "source": "project_1",
                 "target": "date_diff_1"
             },
             {
@@ -89,14 +89,6 @@
                 "target": "project_3"
             },
             {
-                "source": "project_3",
-                "target": "add_2"
-            },
-            {
-                "source": "add_2",
-                "target": "log_2"
-            },
-            {
                 "source": "assign_2",
                 "target": "groupby_2"
             },
@@ -115,6 +107,14 @@
             {
                 "source": "project_3",
                 "target": "div_1"
+            },
+            {
+                "source": "project_3",
+                "target": "add_2"
+            },
+            {
+                "source": "add_2",
+                "target": "log_2"
             },
             {
                 "source": "div_1",
@@ -189,7 +189,7 @@
                         "table_name": "sf_table"
                     },
                     "timestamp_column": "event_timestamp",
-                    "type": "event_data"
+                    "type": "event_table"
                 },
                 "type": "input"
             },
@@ -234,10 +234,10 @@
                     },
                     "metadata": {
                         "column_cleaning_operations": [],
-                        "data_id": "6337f9651050ee7d5980660d",
                         "drop_column_names": [
                             "created_at"
                         ],
+                        "table_id": "6337f9651050ee7d5980660d",
                         "view_mode": "auto"
                     },
                     "output_node_name": "project_1",
@@ -250,7 +250,7 @@
                 "output_type": "series",
                 "parameters": {
                     "columns": [
-                        "cust_id"
+                        "event_timestamp"
                     ]
                 },
                 "type": "project"
@@ -260,7 +260,7 @@
                 "output_type": "series",
                 "parameters": {
                     "columns": [
-                        "event_timestamp"
+                        "cust_id"
                     ]
                 },
                 "type": "project"
@@ -338,7 +338,7 @@
                 "output_type": "frame",
                 "parameters": {
                     "agg_func": "sum",
-                    "aggregation_id": "sum_eb0ce89d5b9a7bc91544853e96ec3a44ed1a4655",
+                    "aggregation_id": "sum_b1e8ebaf05dfdd55d7d5538e7372694b53908c53",
                     "blind_spot": 10800,
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
@@ -354,7 +354,7 @@
                     "serving_names": [
                         "cust_id"
                     ],
-                    "tile_id": "TILE_F21600_M10800_B10800_1956C75E002E2318F3C200A254CC99AA34FC667D",
+                    "tile_id": "TILE_F21600_M10800_B10800_5CFE6E5E9F557A17E16D55D57B0A6B217C5F55D9",
                     "time_modulo_frequency": 10800,
                     "timestamp": "event_timestamp",
                     "value_by": null,
@@ -375,26 +375,11 @@
                 "type": "project"
             },
             {
-                "name": "add_2",
-                "output_type": "series",
-                "parameters": {
-                    "right_op": false,
-                    "value": 0.1
-                },
-                "type": "add"
-            },
-            {
-                "name": "log_2",
-                "output_type": "series",
-                "parameters": {},
-                "type": "log"
-            },
-            {
                 "name": "groupby_2",
                 "output_type": "frame",
                 "parameters": {
                     "agg_func": "sum",
-                    "aggregation_id": "sum_423e4ab3c917524fdc62065ef84c45c44223babb",
+                    "aggregation_id": "sum_a84e99e7900edf13a35fdd7e18f5a9b1b3629dd1",
                     "blind_spot": 10800,
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
@@ -410,7 +395,7 @@
                     "serving_names": [
                         "cust_id"
                     ],
-                    "tile_id": "TILE_F21600_M10800_B10800_1956C75E002E2318F3C200A254CC99AA34FC667D",
+                    "tile_id": "TILE_F21600_M10800_B10800_5CFE6E5E9F557A17E16D55D57B0A6B217C5F55D9",
                     "time_modulo_frequency": 10800,
                     "timestamp": "event_timestamp",
                     "value_by": null,
@@ -449,6 +434,21 @@
                 "type": "div"
             },
             {
+                "name": "add_2",
+                "output_type": "series",
+                "parameters": {
+                    "right_op": false,
+                    "value": 0.1
+                },
+                "type": "add"
+            },
+            {
+                "name": "log_2",
+                "output_type": "series",
+                "parameters": {},
+                "type": "log"
+            },
+            {
                 "name": "add_3",
                 "output_type": "series",
                 "parameters": {
@@ -473,7 +473,7 @@
         "6337f9651050ee7d5980660d"
     ],
     "tabular_source": {
-        "feature_store_id": "63ff1a9c5631c515f17fc66e",
+        "feature_store_id": "6414004ac6834e5117ec155c",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

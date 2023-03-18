@@ -10,13 +10,13 @@ from featurebyte.tile.tile_cache import OnDemandTileComputeRequest, TileCache
 
 
 @pytest.fixture(name="feature_for_tile_cache_tests")
-def feature_for_tile_cache_tests_fixture(event_data, groupby_category):
+def feature_for_tile_cache_tests_fixture(event_table, groupby_category):
     """Fixture for a feature used for tile cache test
 
     Should not be shared with other tests because of side effects after running on-demand tiles
     computation, get_historical_features(), etc.
     """
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     feature_group = event_view.groupby("ÜSER ID", category=groupby_category).aggregate_over(
         method="count",
         windows=["48h"],

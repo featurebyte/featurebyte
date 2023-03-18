@@ -26,12 +26,10 @@ class DimensionTableController(
     document_update_schema_class = DimensionTableServiceUpdate
 
     async def _get_column_semantic_map(self, document: DimensionTableModel) -> dict[str, Any]:
-        dimension_data_id = await self.semantic_service.get_or_create_document(
+        dimension_id_semantic = await self.semantic_service.get_or_create_document(
             name=SemanticType.DIMENSION_ID
         )
-        return {
-            document.dimension_id_column: dimension_data_id,
-        }
+        return {document.dimension_id_column: dimension_id_semantic}
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> DimensionTableInfo:
         """

@@ -21,14 +21,14 @@ def item_type_dimension_lookup_feature_fixture(dimension_view):
 
 
 @pytest.fixture(name="count_item_type_dictionary_feature")
-def count_item_type_dictionary_feature_fixture(item_data):
+def count_item_type_dictionary_feature_fixture(item_table):
     """
     Get count item type dictionary feature.
 
     Feature is grouped by ORDER_ID, with ITEM_TYPE as their category.
     """
-    item_data = item_data.get_view()
-    return item_data.groupby("order_id", category="item_type").aggregate(
+    item_table = item_table.get_view()
+    return item_table.groupby("order_id", category="item_type").aggregate(
         method="count",
         feature_name="COUNT_ITEM_TYPE",
     )
@@ -64,13 +64,13 @@ def test_dimension_lookup_features(dimension_view):
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_is_in_dictionary__target_is_dictionary_feature(
-    item_type_dimension_lookup_feature, event_data
+    item_type_dimension_lookup_feature, event_table
 ):
     """
     Test is in dictionary
     """
     # get dictionary feature
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     feature_group = event_view.groupby("CUST_ID", category="ÜSER ID").aggregate_over(
         value_column="PRODUCT_ACTION",
         method="latest",
@@ -149,12 +149,12 @@ def test_get_value_from_dictionary__target_is_lookup_feature(
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_get_value_in_dictionary__target_is_scalar(event_data):
+def test_get_value_in_dictionary__target_is_scalar(event_table):
     """
     Test is in dictionary
     """
     # get dictionary feature
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     feature_name = "SUM_AMOUNT_DICT_30d"
     feature_group = event_view.groupby("CUST_ID", category="PRODUCT_ACTION").aggregate_over(
         value_column="ÀMOUNT",

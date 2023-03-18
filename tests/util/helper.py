@@ -73,7 +73,7 @@ def get_lagged_series_pandas(df, column, timestamp, groupby_key):
 
 
 def get_node(graph_dict, node_name):
-    """Get node from the data dictionary"""
+    """Get node from the table dictionary"""
     return next(node for node in graph_dict["nodes"] if node["name"] == node_name)
 
 
@@ -130,11 +130,11 @@ def _replace_view_mode_to_manual(pruned_graph):
 def check_sdk_code_generation(  # pylint: disable=too-many-locals
     api_object,
     to_use_saved_data=False,
-    data_id_to_info=None,
+    table_id_to_info=None,
     to_format=True,
     fixture_path=None,
     update_fixtures=False,
-    data_id=None,
+    table_id=None,
     **kwargs,
 ):
     """Check SDK code generation"""
@@ -148,7 +148,7 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
     # execute SDK code & generate output object
     local_vars = {}
     sdk_code = query_object._generate_code(
-        to_format=to_format, to_use_saved_data=to_use_saved_data, data_id_to_info=data_id_to_info
+        to_format=to_format, to_use_saved_data=to_use_saved_data, table_id_to_info=table_id_to_info
     )
     exec(sdk_code, {}, local_vars)  # pylint: disable=exec-used
     output = local_vars["output"]
@@ -176,11 +176,11 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
             formatted_sdk_code = formatted_sdk_code.replace(
                 f"{feature_store_id}", "{feature_store_id}"
             )
-            if data_id:
-                formatted_sdk_code = formatted_sdk_code.replace(f"{data_id}", "{data_id}")
+            if table_id:
+                formatted_sdk_code = formatted_sdk_code.replace(f"{table_id}", "{table_id}")
 
-            # for item data, there is an additional `event_data_id`. Replace the actual `event_data_id` value
-            # to {event_data_id} placeholder through kwargs
+            # for item table, there is an additional `event_table_id`. Replace the actual `event_table_id` value
+            # to {event_table_id} placeholder through kwargs
             for key, value in kwargs.items():
                 formatted_sdk_code = formatted_sdk_code.replace(
                     f"{value}", "{key}".replace("key", key)
@@ -191,7 +191,7 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
         else:
             with open(fixture_path, mode="r", encoding="utf-8") as file_handle:
                 expected = file_handle.read().format(
-                    feature_store_id=feature_store_id, data_id=data_id, **kwargs
+                    feature_store_id=feature_store_id, table_id=table_id, **kwargs
                 )
                 assert expected.strip() == sdk_code.strip(), sdk_code
 

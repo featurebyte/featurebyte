@@ -164,7 +164,7 @@ class ObjectHasBeenSavedError(Exception):
 
 class TableSchemaHasBeenChangedError(Exception):
     """
-    Raise when the table schema has been changed (different from the time EventData object is saved)
+    Raise when the table schema has been changed (different from the time EventTable object is saved)
     """
 
 
@@ -294,7 +294,7 @@ class TileScheduleNotSupportedError(NotImplementedError):
 
 class NoFeatureJobSettingInSourceError(Exception):
     """
-    Raise when the input data does not have any feature job setting.
+    Raise when the input table does not have any feature job setting.
     """
 
 

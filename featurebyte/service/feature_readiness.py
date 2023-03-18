@@ -214,7 +214,7 @@ class FeatureReadinessService(BaseService):
             )
         return self.conditional_return(document=updated_document, condition=return_document)
 
-    async def update_feature(  # pylint: disable=unused-argument
+    async def update_feature(
         self,
         feature_id: ObjectId,
         readiness: FeatureReadiness,
@@ -242,6 +242,14 @@ class FeatureReadinessService(BaseService):
         Optional[FeatureModel]
         """
         document = await self.feature_service.get_document(document_id=feature_id)
+        if readiness == FeatureReadiness.PRODUCTION_READY:
+            assert document.name is not None
+            await self.production_ready_validator.validate(
+                promoted_feature_name=document.name,
+                promoted_feature_id=document.id,
+                promoted_feature_graph=document.graph,
+                ignore_guardrails=ignore_guardrails,
+            )
         if document.readiness != readiness:
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(

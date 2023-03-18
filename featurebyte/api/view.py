@@ -236,7 +236,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     @property
     def raw(self) -> FrozenFrame:
         """
-        Return the raw input data view (without any cleaning operations applied)
+        Return the raw input table view (without any cleaning operations applied)
 
         Returns
         -------

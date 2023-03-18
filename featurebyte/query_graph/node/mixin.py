@@ -92,7 +92,7 @@ class AggregationOpStructMixin:
 
     def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
         """
-        Get the data column used for aggregation
+        Get the table column used for aggregation
 
         Parameters
         ----------

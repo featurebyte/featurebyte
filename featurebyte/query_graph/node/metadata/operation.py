@@ -60,7 +60,7 @@ class BaseColumn(FeatureByteBaseModel):
     name: Optional[str]
         Column name
     dtype: DBVarType
-        Column data type
+        Column table type
     filter: bool
         Whether the column has been filtered
     node_names: Set[str]

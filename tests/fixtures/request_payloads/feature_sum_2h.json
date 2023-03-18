@@ -4,12 +4,12 @@
         "Instead, update the test conftest.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "63ff1a9d5631c515f17fc67f",
+    "_id": "6414004bc6834e5117ec1571",
     "dtype": "FLOAT",
     "entity_ids": [
         "63f94ed6ea1f050131379214"
     ],
-    "feature_namespace_id": "63ff1a9d5631c515f17fc680",
+    "feature_namespace_id": "6414004bc6834e5117ec1572",
     "graph": {
         "edges": [
             {
@@ -85,7 +85,7 @@
                         "table_name": "sf_table"
                     },
                     "timestamp_column": "event_timestamp",
-                    "type": "event_data"
+                    "type": "event_table"
                 },
                 "type": "input"
             },
@@ -130,10 +130,10 @@
                     },
                     "metadata": {
                         "column_cleaning_operations": [],
-                        "data_id": "6337f9651050ee7d5980660d",
                         "drop_column_names": [
                             "created_at"
                         ],
+                        "table_id": "6337f9651050ee7d5980660d",
                         "view_mode": "auto"
                     },
                     "output_node_name": "project_1",
@@ -146,7 +146,7 @@
                 "output_type": "frame",
                 "parameters": {
                     "agg_func": "sum",
-                    "aggregation_id": "sum_60e19c3e160be7db3a64f2a828c1c7929543abb4",
+                    "aggregation_id": "sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f",
                     "blind_spot": 600,
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
@@ -164,7 +164,7 @@
                     "serving_names": [
                         "cust_id"
                     ],
-                    "tile_id": "TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817",
+                    "tile_id": "TILE_F1800_M300_B600_B839AFCB06ADBAEDCA89907891465110B151C88E",
                     "time_modulo_frequency": 300,
                     "timestamp": "event_timestamp",
                     "value_by": null,
@@ -194,7 +194,7 @@
         "6337f9651050ee7d5980660d"
     ],
     "tabular_source": {
-        "feature_store_id": "63ff1a9c5631c515f17fc66e",
+        "feature_store_id": "6414004ac6834e5117ec155c",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

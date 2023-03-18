@@ -39,6 +39,6 @@ event_table = EventTable(
     record_creation_timestamp_column=None,
     event_id_column="col_int",
     event_timestamp_column="event_timestamp",
-    _id=ObjectId("{data_id}"),
+    _id=ObjectId("{table_id}"),
 )
 output = event_table

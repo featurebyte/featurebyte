@@ -44,8 +44,8 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.model.feature_job_setting import DataFeatureJobSetting
-from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
+from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSetting
+from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.generic import (
     AliasNode,
     GroupByNode,
@@ -72,13 +72,13 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
         "dtype",
         "readiness",
         "online_enabled",
-        "data",
+        "table",
         "entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", TableApiObject, "data"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "table"),
     ]
 
     @property
@@ -162,7 +162,7 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
         entity: Optional[str]
             Name of entity used to filter results
         data: Optional[str]
-            Name of data used to filter results
+            Name of table used to filter results
 
         Returns
         -------
@@ -176,7 +176,7 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
             ]
         if data:
             feature_list = feature_list[
-                feature_list.data.apply(lambda data_list: data in data_list)
+                feature_list.table.apply(lambda data_list: data in data_list)
             ]
         return feature_list
 
@@ -210,13 +210,13 @@ class Feature(
         "dtype",
         "readiness",
         "online_enabled",
-        "data",
+        "table",
         "entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", TableApiObject, "data"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "table"),
     ]
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
@@ -279,7 +279,7 @@ class Feature(
         entity: Optional[str]
             Name of entity used to filter results
         data: Optional[str]
-            Name of data used to filter results
+            Name of table used to filter results
 
         Returns
         -------
@@ -317,7 +317,7 @@ class Feature(
         entity: Optional[str]
             Name of entity used to filter results
         data: Optional[str]
-            Name of data used to filter results
+            Name of table used to filter results
 
         Returns
         -------
@@ -560,16 +560,16 @@ class Feature(
         str
         """
         try:
-            # retrieve all the data used to construct this feature
+            # retrieve all the table used to construct this feature
             data_id_to_doc = {
                 data_id: Table.get_by_id(data_id).dict() for data_id in self.tabular_data_ids
             }
         except RecordRetrievalException:
-            # data used to construct this feature has not been saved
+            # table used to construct this feature has not been saved
             data_id_to_doc = {}
         return CodeStr(
             self._generate_code(
-                to_format=True, to_use_saved_data=True, data_id_to_info=data_id_to_doc
+                to_format=True, to_use_saved_data=True, table_id_to_info=data_id_to_doc
             )
         )
 
@@ -663,18 +663,18 @@ class Feature(
     @typechecked
     def create_new_version(
         self,
-        data_feature_job_settings: Optional[List[DataFeatureJobSetting]] = None,
-        data_cleaning_operations: Optional[List[DataCleaningOperation]] = None,
+        table_feature_job_settings: Optional[List[TableFeatureJobSetting]] = None,
+        table_cleaning_operations: Optional[List[TableCleaningOperation]] = None,
     ) -> Feature:
         """
         Create new feature version from the current one.
 
         Parameters
         ----------
-        data_feature_job_settings: Optional[List[DataFeatureJobSetting]]
-            List of data feature job settings to be applied to the feature
-        data_cleaning_operations: Optional[List[DataCleaningOperation]]
-            List of data cleaning operations to be applied to the feature
+        table_feature_job_settings: Optional[List[TableFeatureJobSetting]]
+            List of table feature job settings to be applied to the feature
+        table_cleaning_operations: Optional[List[DataCleaningOperation]]
+            List of table cleaning operations to be applied to the feature
 
         Returns
         -------
@@ -693,9 +693,9 @@ class Feature(
         >>> import featurebyte as fb
         >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
         >>> feature.create_new_version(
-        ...   data_feature_job_settings=[
-        ...     fb.DataFeatureJobSetting(
-        ...       data_name="some_event_data_name",
+        ...   table_feature_job_settings=[
+        ...     fb.TableFeatureJobSetting(
+        ...       table_name="some_event_table_name",
         ...       feature_job_setting=fb.FeatureJobSetting(
         ...         blind_spot="10m",
         ...         frequency="30m",
@@ -706,14 +706,14 @@ class Feature(
         ... )  # doctest: +SKIP
 
 
-        Create a new version of a feature with data cleaning operations
+        Create a new version of a feature with table cleaning operations
 
         >>> import featurebyte as fb
         >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
         >>> feature.create_new_version(
-        ...   data_cleaning_operations=[
-        ...     fb.DataCleaningOperation(
-        ...       data_name="some_event_data_name",
+        ...   table_cleaning_operations=[
+        ...     fb.TableCleaningOperation(
+        ...       table_name="some_event_table_name",
         ...       column_cleaning_operations=[
         ...         fb.ColumnCleaningOperation(
         ...           column_name="some_column_name",
@@ -730,16 +730,16 @@ class Feature(
             url=self._route,
             json={
                 "source_feature_id": str(self.id),
-                "data_feature_job_settings": [
-                    data_feature_job_setting.dict()
-                    for data_feature_job_setting in data_feature_job_settings
+                "table_feature_job_settings": [
+                    table_feature_job_setting.dict()
+                    for table_feature_job_setting in table_feature_job_settings
                 ]
-                if data_feature_job_settings
+                if table_feature_job_settings
                 else None,
-                "data_cleaning_operations": [
-                    clean_ops.dict() for clean_ops in data_cleaning_operations
+                "table_cleaning_operations": [
+                    clean_ops.dict() for clean_ops in table_cleaning_operations
                 ]
-                if data_cleaning_operations
+                if table_cleaning_operations
                 else None,
             },
         )

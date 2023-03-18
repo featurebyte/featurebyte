@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 class DimensionTable(TableApiObject):
     """
-    Dimension Table is a data source object connected with a Dimension table in the data warehouse that has static data.
+    Dimension Table is a table source object connected with a Dimension table in the data warehouse that has static table.
 
     To build features, users create Dimension Views from Dimension Table
     """
@@ -45,7 +45,7 @@ class DimensionTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = DimensionTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
+    type: Literal[TableDataType.DIMENSION_TABLE] = Field(TableDataType.DIMENSION_TABLE, const=True)
 
     # pydantic instance variable (internal use)
     internal_dimension_id_column: StrictStr = Field(alias="dimension_id_column")
@@ -97,7 +97,7 @@ class DimensionTable(TableApiObject):
             column_cleaning_operations=column_cleaning_operations,
         )
 
-        # The input of view graph node is the data node. The final graph looks like this:
+        # The input of view graph node is the table node. The final graph looks like this:
         #    +-----------+     +--------------------------------+
         #    | InputNode + --> | GraphNode(type:dimension_view) +
         #    +-----------+     +--------------------------------+
@@ -119,13 +119,13 @@ class DimensionTable(TableApiObject):
         )
 
         view_graph_node, columns_info = dimension_table_data.construct_dimension_view_graph_node(
-            dimension_data_node=data_node,
+            dimension_table_node=data_node,
             drop_column_names=drop_column_names,
             metadata=ViewMetadata(
                 view_mode=view_mode,
                 drop_column_names=drop_column_names,
                 column_cleaning_operations=column_cleaning_operations,
-                data_id=data_node.parameters.id,
+                table_id=data_node.parameters.id,
             ),
         )
         inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
@@ -170,9 +170,9 @@ class DimensionTable(TableApiObject):
         tabular_source: SourceTable
             DatabaseTable object constructed from FeatureStore
         name: str
-            Dimension data name
+            Dimension table name
         dimension_id_column: str
-            Dimension data ID column from the given tabular source
+            Dimension table ID column from the given tabular source
         record_creation_timestamp_column: str
             Record creation timestamp column from the given tabular source
         _id: Optional[ObjectId]

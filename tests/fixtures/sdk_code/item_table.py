@@ -36,7 +36,7 @@ item_table = ItemTable(
     record_creation_timestamp_column=None,
     item_id_column="item_id_col",
     event_id_column="event_id_col",
-    event_data_id=ObjectId("{event_data_id}"),
-    _id=ObjectId("{data_id}"),
+    event_table_id=ObjectId("{event_table_id}"),
+    _id=ObjectId("{table_id}"),
 )
 output = item_table

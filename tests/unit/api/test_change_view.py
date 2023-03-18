@@ -28,12 +28,12 @@ from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture
-def feature_from_change_view(saved_scd_data, cust_id_entity):
+def feature_from_change_view(saved_scd_table, cust_id_entity):
     """
     Fixture for a feature created from a ChangeView
     """
-    saved_scd_data["col_text"].as_entity(cust_id_entity.name)
-    snowflake_change_view = saved_scd_data.get_change_view("col_int")
+    saved_scd_table["col_text"].as_entity(cust_id_entity.name)
+    snowflake_change_view = saved_scd_table.get_change_view("col_int")
     feature_group = snowflake_change_view.groupby("col_text").aggregate_over(
         method="count", windows=["30d"], feature_names=["feat_30d"]
     )
@@ -42,27 +42,27 @@ def feature_from_change_view(saved_scd_data, cust_id_entity):
     return feature
 
 
-@pytest.fixture(name="snowflake_scd_data_with_imputation")
-def snowflake_scd_data_with_imputation_fixture(snowflake_scd_data_with_entity):
+@pytest.fixture(name="snowflake_scd_table_with_imputation")
+def snowflake_scd_table_with_imputation_fixture(snowflake_scd_table_with_entity):
     """
-    Fixture for a SCDTableData with imputation
+    Fixture for a SCDTable with imputation
     """
-    snowflake_scd_data_with_entity["col_int"].update_critical_data_info(
+    snowflake_scd_table_with_entity["col_int"].update_critical_data_info(
         cleaning_operations=[MissingValueImputation(imputed_value=-1)]
     )
-    return snowflake_scd_data_with_entity
+    return snowflake_scd_table_with_entity
 
 
-def test_auto_view_mode(snowflake_scd_data_with_imputation):
+def test_auto_view_mode(snowflake_scd_table_with_imputation):
     """
     Test auto view mode
     """
     # create view
-    snowflake_change_view = snowflake_scd_data_with_imputation.get_change_view("col_int")
+    snowflake_change_view = snowflake_scd_table_with_imputation.get_change_view("col_int")
 
     # check view graph metadata
     metadata = snowflake_change_view.node.parameters.metadata
-    assert snowflake_scd_data_with_imputation.record_creation_timestamp_column is None
+    assert snowflake_scd_table_with_imputation.record_creation_timestamp_column is None
     assert metadata.view_mode == "auto"
     assert metadata.drop_column_names == []
     assert metadata.column_cleaning_operations == [
@@ -71,7 +71,7 @@ def test_auto_view_mode(snowflake_scd_data_with_imputation):
             "cleaning_operations": [{"imputed_value": -1, "type": "missing"}],
         }
     ]
-    assert metadata.data_id == snowflake_scd_data_with_imputation.id
+    assert metadata.table_id == snowflake_scd_table_with_imputation.id
 
     # check that cleaning graph is created
     nested_graph = snowflake_change_view.node.parameters.graph
@@ -82,21 +82,21 @@ def test_auto_view_mode(snowflake_scd_data_with_imputation):
     check_sdk_code_generation(
         snowflake_change_view,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_scd_data_with_imputation.id: {
-                "name": snowflake_scd_data_with_imputation.name,
-                "record_creation_timestamp_column": snowflake_scd_data_with_imputation.record_creation_timestamp_column,
+        table_id_to_info={
+            snowflake_scd_table_with_imputation.id: {
+                "name": snowflake_scd_table_with_imputation.name,
+                "record_creation_timestamp_column": snowflake_scd_table_with_imputation.record_creation_timestamp_column,
             }
         },
     )
 
 
-def test_manual_view_mode(snowflake_scd_data_with_imputation):
+def test_manual_view_mode(snowflake_scd_table_with_imputation):
     """
     Test manual view mode
     """
     # create view
-    snowflake_change_view = snowflake_scd_data_with_imputation.get_change_view(
+    snowflake_change_view = snowflake_scd_table_with_imputation.get_change_view(
         "col_int", view_mode="manual"
     )
 
@@ -105,7 +105,7 @@ def test_manual_view_mode(snowflake_scd_data_with_imputation):
     assert metadata.view_mode == "manual"
     assert metadata.drop_column_names == []
     assert metadata.column_cleaning_operations == []
-    assert metadata.data_id == snowflake_scd_data_with_imputation.id
+    assert metadata.table_id == snowflake_scd_table_with_imputation.id
 
     # check that there is no cleaning graph
     nested_graph = snowflake_change_view.node.parameters.graph
@@ -115,28 +115,28 @@ def test_manual_view_mode(snowflake_scd_data_with_imputation):
     check_sdk_code_generation(
         snowflake_change_view,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_scd_data_with_imputation.id: {
-                "name": snowflake_scd_data_with_imputation.name,
-                "record_creation_timestamp_column": snowflake_scd_data_with_imputation.record_creation_timestamp_column,
+        table_id_to_info={
+            snowflake_scd_table_with_imputation.id: {
+                "name": snowflake_scd_table_with_imputation.name,
+                "record_creation_timestamp_column": snowflake_scd_table_with_imputation.record_creation_timestamp_column,
             }
         },
     )
 
 
-def test_view_mode__auto_manual_equality_check(snowflake_scd_data_with_imputation):
+def test_view_mode__auto_manual_equality_check(snowflake_scd_table_with_imputation):
     """
     Test view mode (create a view in auto mode, then create another equivalent view in manual mode).
     The equality is checked by comparing the view graphs. By using this relationship, we can
     reconstruct the view graph in manual mode from the view graph in auto mode.
     """
     # create view using auto mode
-    view_auto = snowflake_scd_data_with_imputation.get_change_view("col_int")
+    view_auto = snowflake_scd_table_with_imputation.get_change_view("col_int")
 
     # create another equivalent view using manual mode
-    snowflake_scd_data_with_imputation["col_int"].update_critical_data_info(cleaning_operations=[])
+    snowflake_scd_table_with_imputation["col_int"].update_critical_data_info(cleaning_operations=[])
     drop_column_names = view_auto.node.parameters.metadata.drop_column_names
-    view_manual = snowflake_scd_data_with_imputation.get_change_view(
+    view_manual = snowflake_scd_table_with_imputation.get_change_view(
         "col_int",
         view_mode="manual",
         column_cleaning_operations=[
@@ -180,22 +180,22 @@ def test_get_default_feature_job_setting():
     assert feature_job_setting == job_setting_provided
 
 
-def test_validate_inputs(snowflake_scd_data):
+def test_validate_inputs(snowflake_scd_table):
     """
     Test _validate_inputs
     """
     # empty input should error
     with pytest.raises(ValueError) as exc_info:
-        ChangeView.validate_inputs(snowflake_scd_data, "")
+        ChangeView.validate_inputs(snowflake_scd_table, "")
     assert "Empty column provided" in str(exc_info)
 
-    # column not in SCD data should error
+    # column not in SCD table should error
     with pytest.raises(ValueError) as exc_info:
-        ChangeView.validate_inputs(snowflake_scd_data, "random_col")
+        ChangeView.validate_inputs(snowflake_scd_table, "random_col")
     assert "Column provided is not a column in the SCDTable provided" in str(exc_info)
 
-    # column in SCD data should be ok
-    ChangeView.validate_inputs(snowflake_scd_data, "col_int")
+    # column in SCD table should be ok
+    ChangeView.validate_inputs(snowflake_scd_table, "col_int")
 
 
 def test_validate_prefixes():
@@ -261,13 +261,13 @@ def test_get_new_column_names():
     assert column_names.new_valid_from_column_name == f"updated_{timestamp_col_name}"
 
 
-def change_view_test_helper(snowflake_scd_data, change_view):
+def change_view_test_helper(snowflake_scd_table, change_view):
     """
     Helper method to do some asserts
     """
     assert len(change_view.columns_info) == 5
     assert change_view.timestamp_column == "new_effective_timestamp"
-    assert change_view.natural_key_column == snowflake_scd_data.natural_key_column
+    assert change_view.natural_key_column == snowflake_scd_table.natural_key_column
     assert change_view.columns == [
         "col_text",
         "new_effective_timestamp",
@@ -277,7 +277,7 @@ def change_view_test_helper(snowflake_scd_data, change_view):
     ]
 
 
-def test_get_change_view__no_default_job_setting(snowflake_scd_data):
+def test_get_change_view__no_default_job_setting(snowflake_scd_table):
     """
     Test get_change_view - no default job setting provided
     """
@@ -286,31 +286,31 @@ def test_get_change_view__no_default_job_setting(snowflake_scd_data):
     mocked_minute = 15
     datetime_mock.now.return_value = datetime(1999, 1, 1, mocked_hour, mocked_minute, 0)
     with patch("featurebyte.api.change_view.datetime", new=datetime_mock):
-        change_view = snowflake_scd_data.get_change_view("col_int")
+        change_view = snowflake_scd_table.get_change_view("col_int")
         assert change_view.default_feature_job_setting == FeatureJobSetting(
             blind_spot="0",
             time_modulo_frequency=f"{mocked_hour}h{mocked_minute}m",
             frequency="24h",
         )
-        change_view_test_helper(snowflake_scd_data, change_view)
+        change_view_test_helper(snowflake_scd_table, change_view)
 
 
-def test_get_change_view__with_default_job_setting(snowflake_scd_data):
+def test_get_change_view__with_default_job_setting(snowflake_scd_table):
     """
     Test get_change_view - default job setting provided
     """
     job_setting_provided = FeatureJobSetting(
         blind_spot="1h", time_modulo_frequency="1h", frequency="12h"
     )
-    change_view = snowflake_scd_data.get_change_view("col_int", job_setting_provided)
+    change_view = snowflake_scd_table.get_change_view("col_int", job_setting_provided)
     assert change_view.default_feature_job_setting == job_setting_provided
-    change_view_test_helper(snowflake_scd_data, change_view)
+    change_view_test_helper(snowflake_scd_table, change_view)
 
 
-def test_get_change_view__check_entity_id(snowflake_scd_data):
+def test_get_change_view__check_entity_id(snowflake_scd_table):
     """
     Test get_change_view:w
-     - entity_id from the SCD data is correctly set
+     - entity_id from the SCD table is correctly set
     """
     entity_key = Entity(name="key_column", serving_names=["key_column"])
     entity_eff_ts = Entity(name="eff_timestamp", serving_names=["eff_timestamp"])
@@ -318,12 +318,12 @@ def test_get_change_view__check_entity_id(snowflake_scd_data):
     for entity in [entity_key, entity_eff_ts, entity_change]:
         entity.save()
 
-    snowflake_scd_data[snowflake_scd_data.natural_key_column].as_entity("key_column")
-    snowflake_scd_data[snowflake_scd_data.effective_timestamp_column].as_entity("eff_timestamp")
-    snowflake_scd_data.col_int.as_entity("change")
+    snowflake_scd_table[snowflake_scd_table.natural_key_column].as_entity("key_column")
+    snowflake_scd_table[snowflake_scd_table.effective_timestamp_column].as_entity("eff_timestamp")
+    snowflake_scd_table.col_int.as_entity("change")
 
     # create change view
-    change_view = snowflake_scd_data.get_change_view("col_int")
+    change_view = snowflake_scd_table.get_change_view("col_int")
     assert change_view.dict()["columns_info"] == [
         {
             "critical_data_info": None,
@@ -427,15 +427,15 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
 
 
 def test_get_change_view__keep_record_creation_timestamp_column(
-    snowflake_scd_data, mock_api_object_cache
+    snowflake_scd_table, mock_api_object_cache
 ):
     """
     Test create ChangeView using record creation timestamp column as track changes column
     """
-    snowflake_scd_data.update_record_creation_timestamp_column("created_at")
-    assert snowflake_scd_data.record_creation_timestamp_column == "created_at"
-    change_view = snowflake_scd_data.get_change_view(
-        track_changes_column=snowflake_scd_data.record_creation_timestamp_column
+    snowflake_scd_table.update_record_creation_timestamp_column("created_at")
+    assert snowflake_scd_table.record_creation_timestamp_column == "created_at"
+    change_view = snowflake_scd_table.get_change_view(
+        track_changes_column=snowflake_scd_table.record_creation_timestamp_column
     )
     expected_sql = textwrap.dedent(
         """
@@ -455,13 +455,13 @@ def test_get_change_view__keep_record_creation_timestamp_column(
         {"source": "proxy_input_1", "target": "project_1"},  # no cleaning operation
     ]
 
-    # check the case when the data has cleaning operations
-    # cleaned data should be used to generate the change view
-    snowflake_scd_data["created_at"].update_critical_data_info(
+    # check the case when the table has cleaning operations
+    # cleaned table should be used to generate the change view
+    snowflake_scd_table["created_at"].update_critical_data_info(
         cleaning_operations=[MissingValueImputation(imputed_value="2020-01-01")]
     )
-    change_view = snowflake_scd_data.get_change_view(
-        track_changes_column=snowflake_scd_data.record_creation_timestamp_column
+    change_view = snowflake_scd_table.get_change_view(
+        track_changes_column=snowflake_scd_table.record_creation_timestamp_column
     )
     expected_sql = textwrap.dedent(
         """
@@ -491,10 +491,10 @@ def test_get_change_view__keep_record_creation_timestamp_column(
     assert nested_graph_node.parameters.type == "cleaning"
 
 
-def test_sdk_code_generation(saved_scd_data, update_fixtures):
+def test_sdk_code_generation(saved_scd_table, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
-    change_view = saved_scd_data.get_change_view(
+    change_view = saved_scd_table.get_change_view(
         track_changes_column="col_int",
         default_feature_job_setting=FeatureJobSetting(
             blind_spot="0", time_modulo_frequency="1h", frequency="24h"
@@ -506,11 +506,11 @@ def test_sdk_code_generation(saved_scd_data, update_fixtures):
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/change_view.py",
         update_fixtures=update_fixtures,
-        data_id=saved_scd_data.id,
+        table_id=saved_scd_table.id,
     )
 
     # check the case when the view is construct with cleaning operations
-    change_view = saved_scd_data.get_change_view(
+    change_view = saved_scd_table.get_change_view(
         track_changes_column="col_int",
         view_mode="manual",
         column_cleaning_operations=[
@@ -525,15 +525,15 @@ def test_sdk_code_generation(saved_scd_data, update_fixtures):
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/change_view_with_column_clean_ops.py",
         update_fixtures=update_fixtures,
-        data_id=saved_scd_data.id,
+        table_id=saved_scd_table.id,
     )
 
 
-def test_raw_accessor(snowflake_scd_data):
+def test_raw_accessor(snowflake_scd_table):
     """Test raw accessor"""
-    change_view = snowflake_scd_data.get_change_view("col_int")
+    change_view = snowflake_scd_table.get_change_view("col_int")
     assert change_view.raw.node.type == NodeType.INPUT
-    pd.testing.assert_series_equal(change_view.raw.dtypes, snowflake_scd_data.dtypes)
+    pd.testing.assert_series_equal(change_view.raw.dtypes, snowflake_scd_table.dtypes)
 
     # check read operation is ok
     column = "col_int"
@@ -584,12 +584,12 @@ def test_raw_accessor(snowflake_scd_data):
     assert filtered_column.node.type == NodeType.FILTER
 
 
-def test_filtered_view_output(saved_scd_data, cust_id_entity):
+def test_filtered_view_output(saved_scd_table, cust_id_entity):
     """
     Fixture for a feature created from a ChangeView
     """
-    saved_scd_data["col_text"].as_entity(cust_id_entity.name)
-    change_view = saved_scd_data.get_change_view("col_int")
+    saved_scd_table["col_text"].as_entity(cust_id_entity.name)
+    change_view = saved_scd_table.get_change_view("col_int")
     mask = change_view.new_col_int > 10
     filtered_view = change_view[mask]
     output_sql = filtered_view.preview_sql()

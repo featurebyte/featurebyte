@@ -189,9 +189,9 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "/feature",
             json={
                 "source_feature_id": feature_id,
-                "data_feature_job_settings": [
+                "table_feature_job_settings": [
                     {
-                        "data_name": "sf_event_data",
+                        "table_name": "sf_event_table",
                         "feature_job_setting": {
                             "blind_spot": "23h",
                             "frequency": "24h",
@@ -273,7 +273,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
             "tabular_data": [
-                {"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
             ],
             "default_version_mode": "AUTO",
             "default_feature_list_id": response_dict["default_feature_list_id"],

@@ -236,7 +236,7 @@ async def test_online_enabled_feature_spec(
             "FEATURE_VERSION": [online_feature_spec.feature.version.to_str()],
             "FEATURE_READINESS": [str(online_feature_spec.feature.readiness)],
             "FEATURE_EVENT_DATA_IDS": [
-                ",".join([str(i) for i in online_feature_spec.event_data_ids])
+                ",".join([str(i) for i in online_feature_spec.event_table_ids])
             ],
             "IS_DELETED": [False],
         }
@@ -346,7 +346,7 @@ async def test_online_enabled_feature_spec(
             "FEATURE_VERSION": [online_feature_spec.feature.version.to_str()],
             "FEATURE_READINESS": [str(online_feature_spec.feature.readiness)],
             "FEATURE_EVENT_DATA_IDS": [
-                ",".join([str(i) for i in online_feature_spec.event_data_ids])
+                ",".join([str(i) for i in online_feature_spec.event_table_ids])
             ],
             "IS_DELETED": [False],
         }

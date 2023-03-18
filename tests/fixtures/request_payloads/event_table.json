@@ -9,9 +9,9 @@
         {
             "critical_data_info": null,
             "dtype": "INT",
-            "entity_id": "63f94ed6ea1f050131379214",
+            "entity_id": "63f94ed6ea1f050131379204",
             "name": "col_int",
-            "semantic_id": "63ff1a9c5631c515f17fc674"
+            "semantic_id": "6414004ac6834e5117ec1562"
         },
         {
             "critical_data_info": null,
@@ -53,7 +53,7 @@
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
             "name": "event_timestamp",
-            "semantic_id": "63ff1a9c5631c515f17fc672"
+            "semantic_id": "6414004ac6834e5117ec1560"
         },
         {
             "critical_data_info": null,
@@ -77,15 +77,15 @@
     },
     "event_id_column": "col_int",
     "event_timestamp_column": "event_timestamp",
-    "name": "sf_event_data",
+    "name": "sf_event_table",
     "record_creation_timestamp_column": "created_at",
     "tabular_source": {
-        "feature_store_id": "63ff1a9c5631c515f17fc66e",
+        "feature_store_id": "6414004ac6834e5117ec155c",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table"
         }
     },
-    "type": "event_data"
+    "type": "event_table"
 }

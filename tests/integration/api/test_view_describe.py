@@ -12,11 +12,11 @@ def _to_utc_no_offset(date):
     return pd.to_datetime(date, utc=True).tz_localize(None)
 
 
-def test_event_view_describe(event_data):
+def test_event_view_describe(event_table):
     """
     Test describe for EventView
     """
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
 
     describe_df = event_view.describe()
     assert describe_df.columns.tolist() == [
@@ -48,8 +48,8 @@ def test_event_view_describe(event_data):
     ]
     expected_min_timestamp = pd.to_datetime("2001-01-01 00:23:02.000349")
     expected_max_timestamp = pd.to_datetime("2002-01-01 22:43:16.000409")
-    if event_data.name == "snowflake_event_data":
-        # Snowflake event data has timestamps with tz offsets
+    if event_table.name == "snowflake_event_table":
+        # Snowflake event table has timestamps with tz offsets
         expected_row_idx += [
             "min TZ offset",
             "max TZ offset",
@@ -61,11 +61,11 @@ def test_event_view_describe(event_data):
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
 
-def test_event_view_describe_with_date_range(event_data):
+def test_event_view_describe_with_date_range(event_table):
     """
     Test describe for EventView with date range
     """
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     sample_params = {
         "from_timestamp": "2001-10-10",
         "to_timestamp": "2001-10-14",
@@ -75,7 +75,7 @@ def test_event_view_describe_with_date_range(event_data):
     expected_num_rows = 16
     expected_min_timestamp = pd.to_datetime("2001-10-10 00:15:16.000751")
     expected_max_timestamp = pd.to_datetime("2001-10-13 23:50:48.000003")
-    if event_data.name != "snowflake_event_data":
+    if event_table.name != "snowflake_event_table":
         expected_num_rows = 14
 
     assert describe_df.shape == (expected_num_rows, 8)
@@ -115,11 +115,11 @@ def test_event_view_describe_with_date_range(event_data):
     )
 
 
-def test_item_view_describe(item_data):
+def test_item_view_describe(item_table):
     """
     Test describe for ItemView
     """
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
 
     describe_df = item_view.describe()
     assert describe_df.columns.tolist() == [
@@ -149,8 +149,8 @@ def test_item_view_describe(item_data):
     ]
     expected_min_timestamp = pd.to_datetime("2001-01-01 00:23:02.000349")
     expected_max_timestamp = pd.to_datetime("2002-01-01 22:43:16.000409")
-    if item_data.name == "snowflake_item_data":
-        # Snowflake event data has timestamps with tz offsets
+    if item_table.name == "snowflake_item_table":
+        # Snowflake event table has timestamps with tz offsets
         expected_row_idx += [
             "min TZ offset",
             "max TZ offset",
@@ -162,11 +162,11 @@ def test_item_view_describe(item_data):
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
 
-def test_dimension_view_describe(dimension_data):
+def test_dimension_view_describe(dimension_table):
     """
     Test sample for DimensionView
     """
-    dimension_view = dimension_data.get_view()
+    dimension_view = dimension_table.get_view()
     describe_df = dimension_view.describe()
     assert describe_df.columns.tolist() == [
         "created_at",
@@ -188,11 +188,11 @@ def test_dimension_view_describe(dimension_data):
     assert describe_df.shape == (9, 4)
 
 
-def test_scd_view_describe(scd_data):
+def test_scd_view_describe(scd_table):
     """
     Test sample for DimensionView
     """
-    scd_view = scd_data.get_view()
+    scd_view = scd_table.get_view()
     describe_df = scd_view.describe()
     assert describe_df.columns.tolist() == [
         "Effective Timestamp",
@@ -218,8 +218,8 @@ def test_scd_view_describe(scd_data):
     ]
     expected_min_timestamp = pd.to_datetime("2001-01-01 12:00:00")
     expected_max_timestamp = pd.to_datetime("2002-01-01 04:00:00")
-    if scd_data.name == "snowflake_scd_data":
-        # Snowflake event data has timestamps with tz offsets
+    if scd_table.name == "snowflake_scd_table":
+        # Snowflake event table has timestamps with tz offsets
         expected_row_idx += [
             "min TZ offset",
             "max TZ offset",

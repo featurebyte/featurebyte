@@ -142,8 +142,8 @@ class Entity(EntityModel, SavableApiObject):
 
         parent_entity = Entity.get(parent_entity_name)
         data = ParentEntity(
-            data_type=data_response[0]["type"],
-            data_id=data_response[0]["_id"],
+            table_type=data_response[0]["type"],
+            table_id=data_response[0]["_id"],
             id=parent_entity.id,
         )
 

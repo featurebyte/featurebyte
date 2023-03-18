@@ -1,5 +1,5 @@
 """
-This module contains ItemData related models
+This module contains ItemTable related models
 """
 from __future__ import annotations
 
@@ -19,28 +19,28 @@ from featurebyte.query_graph.node.nested import ItemViewMetadata
 
 class ItemTableModel(ItemTableData, TableModel):
     """
-    Model for ItemData entity
+    Model for ItemTable entity
 
     id: PydanticObjectId
         Id of the object
     name : str
-        Name of the ItemData
+        Name of the ItemTable
     tabular_source : TabularSource
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
-        List of ItemData columns
+        List of ItemTable columns
     status: TableStatus
-        Status of the ItemData
+        Status of the ItemTable
     event_id_column: str
         Event ID column name
     item_id_column: str
         Item ID column name
-    event_data_id: PydanticObjectId
-        Id of the associated EventData
+    event_table_id: PydanticObjectId
+        Id of the associated EventTable
     created_at : Optional[datetime]
-        Datetime when the ItemData was first saved or published
+        Datetime when the ItemTable was first saved or published
     updated_at: Optional[datetime]
-        Datetime when the ItemData object was last updated
+        Datetime when the ItemTable object was last updated
     """
 
     _table_data_class: ClassVar[Type[ItemTableData]] = ItemTableData
@@ -75,7 +75,7 @@ class ItemTableModel(ItemTableData, TableModel):
             columns_info,
             _,
         ) = table_data.construct_item_view_graph_node(  # pylint: disable=no-member
-            item_data_node=input_node,
+            item_table_node=input_node,
             columns_to_join=metadata.event_join_column_names,
             event_suffix=metadata.event_suffix,
             drop_column_names=metadata.drop_column_names,

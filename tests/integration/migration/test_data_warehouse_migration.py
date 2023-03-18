@@ -123,7 +123,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
 async def test_data_warehouse_migration_v6(
     user,
     persistent,
-    event_data,
+    event_table,
     session,
     bad_feature_stores,
 ):
@@ -131,7 +131,7 @@ async def test_data_warehouse_migration_v6(
     Test data warehouse migration
     """
     _ = bad_feature_stores
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     features_1 = event_view.groupby("ÜSER ID").aggregate_over(
         method="count",
         windows=["7d"],

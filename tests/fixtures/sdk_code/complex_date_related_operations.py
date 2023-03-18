@@ -3,17 +3,17 @@ from bson import ObjectId
 from featurebyte import EventTable
 from featurebyte import to_timedelta
 
-event_table = EventTable.get_by_id(ObjectId("{data_id}"))
+event_table = EventTable.get_by_id(ObjectId("{table_id}"))
 event_view = event_table.get_view(
     view_mode="manual", drop_column_names=["created_at"], column_cleaning_operations=[]
 )
 col = event_view["event_timestamp"]
-col_1 = (col.dt.month * col.dt.week) / col.dt.day
-col_2 = (col.dt.year + col.dt.quarter) - (col_1 % col.dt.day_of_week)
-col_3 = (col_2 + col.dt.hour) - (col.dt.minute * col.dt.second)
-col_4 = event_view["col_int"]
-col_5 = to_timedelta(series=col_4, unit="hour")
-col_6 = (col_5.dt.minute / col_5.dt.second) * col_5.dt.millisecond
-col_7 = ((col_5.dt.day * col_5.dt.hour) - col_6) + col_5.dt.microsecond
-col_8 = (col + col_5).dt.second + (col - col).dt.minute
-output = (col_3 + col_7) + col_8
+col_1 = event_view["col_int"]
+col_2 = to_timedelta(series=col_1, unit="hour")
+col_3 = (col + col_2).dt.second + (col - col).dt.minute
+col_4 = (col.dt.month * col.dt.week) / col.dt.day
+col_5 = (col.dt.year + col.dt.quarter) - (col_4 % col.dt.day_of_week)
+col_6 = (col_5 + col.dt.hour) - (col.dt.minute * col.dt.second)
+col_7 = (col_2.dt.minute / col_2.dt.second) * col_2.dt.millisecond
+col_8 = ((col_2.dt.day * col_2.dt.hour) - col_7) + col_2.dt.microsecond
+output = (col_6 + col_8) + col_3

@@ -20,7 +20,7 @@ from featurebyte.exception import AggregationNotSupportedForViewError
         (["cust_id", "col_text"], ["cust_id", "col_text"]),
     ],
 )
-def test_constructor(snowflake_event_data, keys, expected_keys):
+def test_constructor(snowflake_event_table, keys, expected_keys):
     """
     Test constructor
     """
@@ -32,9 +32,9 @@ def test_constructor(snowflake_event_data, keys, expected_keys):
         Entity(name=column, serving_names=[serving_name]).save()
 
         # mark the column as entity
-        snowflake_event_data[column].as_entity(column)
+        snowflake_event_table[column].as_entity(column)
 
-    snowflake_event_view = snowflake_event_data.get_view()
+    snowflake_event_view = snowflake_event_table.get_view()
     grouped = GroupBy(obj=snowflake_event_view, keys=keys)
     assert grouped.keys == expected_keys
     assert grouped.serving_names == expected_serving_names
@@ -190,7 +190,7 @@ def test_groupby__default_feature_job_setting(
     snowflake_event_view_with_entity_and_feature_job, cust_id_entity
 ):
     """
-    Test default job setting from event data is used
+    Test default job setting from event table is used
     """
     feature_group = snowflake_event_view_with_entity_and_feature_job.groupby(
         "cust_id"
@@ -215,8 +215,8 @@ def test_groupby__default_feature_job_setting(
         "blind_spot": 90,
         "frequency": 360,
         "time_modulo_frequency": 180,
-        "tile_id": "TILE_F360_M180_B90_B1D6A11C54A3BA6081F14AB1ECCAC6D9CBCC6DA2",
-        "aggregation_id": "sum_f6c607a93e05d666f3ce6934fbd10ac9c200a215",
+        "tile_id": "TILE_F360_M180_B90_655A56553E323B7DC0A64E9C3D4F7E6A55FDF63E",
+        "aggregation_id": "sum_1ee3b3c60068e279ef969ef9e7524f3bd2077ec0",
         "timestamp": "event_timestamp",
         "value_by": None,
         "serving_names": ["cust_id"],
@@ -251,8 +251,8 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
         "blind_spot": 90,
         "frequency": 360,
         "time_modulo_frequency": 180,
-        "tile_id": "TILE_F360_M180_B90_E0A502A51198638842541C02AA38C67BC064DF9C",
-        "aggregation_id": "sum_d6065bcb5946aba9578ce230e2cc3aa6dad775dc",
+        "tile_id": "TILE_F360_M180_B90_68AC23EE57BDA4B48E885E3FE824C0A524D73900",
+        "aggregation_id": "sum_4c093e7709406c891565d8bb67107ee389248e6b",
         "timestamp": "event_timestamp",
         "value_by": "col_int",
         "serving_names": ["cust_id"],

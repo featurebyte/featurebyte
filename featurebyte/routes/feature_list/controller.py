@@ -136,7 +136,7 @@ class FeatureListController(
                 await self.feature_readiness_service.update_feature(
                     feature_id=feature_id,
                     readiness=FeatureReadiness.PRODUCTION_READY,
-                    ignore_guardrails=False,
+                    ignore_guardrails=bool(data.ignore_guardrails),
                     return_document=False,
                 )
         if data.deployed is not None:

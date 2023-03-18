@@ -6,7 +6,7 @@ import textwrap
 import pytest
 from bson import ObjectId
 
-from featurebyte import DimensionView, Feature, FeatureJobSetting, MissingValueImputation
+from featurebyte import Feature, FeatureJobSetting, MissingValueImputation
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
@@ -58,24 +58,24 @@ def format_exception_string_for_comparison(exception_str: str) -> str:
 @pytest.mark.asyncio
 async def test_validate(
     production_ready_validator,
-    snowflake_event_data_with_entity,
+    snowflake_event_table_with_entity,
     feature_group_feature_job_setting,
 ):
     """
     Test the validate method returns an error when there are differences.
     """
     # Generate a feature
-    snowflake_event_data_with_entity.save()
-    snowflake_event_data_with_entity.update_default_feature_job_setting(
+    snowflake_event_table_with_entity.save()
+    snowflake_event_table_with_entity.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
     )
-    snowflake_event_data_with_entity["col_int"].update_critical_data_info(
+    snowflake_event_table_with_entity["col_int"].update_critical_data_info(
         cleaning_operations=[
             MissingValueImputation(imputed_value=2.0),
         ]
     )
 
-    event_view = snowflake_event_data_with_entity.get_view()
+    event_view = snowflake_event_table_with_entity.get_view()
     updated_feature_job_setting = feature_group_feature_job_setting
     assert feature_group_feature_job_setting["blind_spot"] == "10m"
     updated_feature_job_setting["blind_spot"] = "3m"  # set a new value
@@ -89,7 +89,7 @@ async def test_validate(
     feature.save()
 
     # Update cleaning operations after feature has been created
-    snowflake_event_data_with_entity["col_int"].update_critical_data_info(
+    snowflake_event_table_with_entity["col_int"].update_critical_data_info(
         cleaning_operations=[
             MissingValueImputation(imputed_value=0.0),
         ]
@@ -109,7 +109,7 @@ async def test_validate(
     expected_exception_str = format_exception_string_for_comparison(
         """
         Discrepancies found between the promoted feature version you are trying to promote to PRODUCTION_READY,
-        and the input data.
+        and the input table.
         {
             'feature_job_setting': {
                 'data_source': FeatureJobSetting(blind_spot='600s', frequency='1800s', time_modulo_frequency='300s'),
@@ -173,7 +173,7 @@ async def test_assert_no_other_production_ready_feature__no_error_if_promoted_fe
 @pytest.mark.asyncio
 async def test_get_feature_job_setting_diffs__settings_differ(
     production_ready_validator,
-    snowflake_event_data_with_entity,
+    snowflake_event_table_with_entity,
     feature_group_feature_job_setting,
     source_version_creator,
     feature_service,
@@ -181,14 +181,14 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     """
     Test _check_feature_job_setting_match returns a dictionary when the settings differ
     """
-    # update event data w/ a feature job setting
-    snowflake_event_data_with_entity.save()
-    snowflake_event_data_with_entity.update_default_feature_job_setting(
+    # update event table w/ a feature job setting
+    snowflake_event_table_with_entity.save()
+    snowflake_event_table_with_entity.update_default_feature_job_setting(
         FeatureJobSetting(**feature_group_feature_job_setting)
     )
 
-    # create a feature with a different feature job setting from the event data
-    event_view = snowflake_event_data_with_entity.get_view()
+    # create a feature with a different feature job setting from the event table
+    event_view = snowflake_event_table_with_entity.get_view()
     updated_feature_job_setting = feature_group_feature_job_setting.copy()
     assert updated_feature_job_setting["blind_spot"] == "10m"
     updated_feature_job_setting["blind_spot"] = "5m"  # set a new value
@@ -211,7 +211,7 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     feature_document = feature_data[0]
     refetch_feature = Feature(**feature_document)
     pruned_graph, _ = refetch_feature.extract_pruned_graph_and_node()
-    differences = await production_ready_validator._get_feature_job_setting_diffs_data_source_vs_promoted_feature(
+    differences = await production_ready_validator._get_feature_job_setting_diffs_table_source_vs_promoted_feature(
         source_node, source_feature_version_graph, pruned_graph
     )
 
@@ -228,20 +228,20 @@ async def test_get_feature_job_setting_diffs__settings_differ(
 
 @pytest.mark.asyncio
 async def test_validate__no_diff_in_feature_should_return_none(
-    snowflake_event_data_with_entity,
+    snowflake_event_table_with_entity,
     production_ready_validator,
     feature_group_feature_job_setting,
 ):
     """
     Test validate - no diff returns None
     """
-    # Create a feature that has same feature job setting and cleaning operations as it's data source
-    snowflake_event_data_with_entity.save()
-    snowflake_event_data_with_entity.update_default_feature_job_setting(
+    # Create a feature that has same feature job setting and cleaning operations as it's table source
+    snowflake_event_table_with_entity.save()
+    snowflake_event_table_with_entity.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
     )
 
-    event_view = snowflake_event_data_with_entity.get_view()
+    event_view = snowflake_event_table_with_entity.get_view()
     feature = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
@@ -253,14 +253,6 @@ async def test_validate__no_diff_in_feature_should_return_none(
     # Validate
     response = await production_ready_validator.validate(feature.name, feature.id, feature.graph)
     assert response is None
-
-
-@pytest.fixture(name="feature_from_dimension_data")
-def feature_from_dimension_data_fixture(cust_id_entity, snowflake_dimension_data):
-    """Feature from dimension data"""
-    snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
-    dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
-    return dimension_view["col_float"].as_feature("FloatFeature")  # pylint: disable=no-member
 
 
 def test_raise_error_if_diffs_present():

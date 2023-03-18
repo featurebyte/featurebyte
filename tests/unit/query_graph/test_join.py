@@ -14,8 +14,10 @@ from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 
-@pytest.fixture(name="item_data_join_event_data_filtered_node")
-def item_data_join_event_data_filtered_node_fixture(global_graph, item_data_join_event_data_node):
+@pytest.fixture(name="item_table_join_event_table_filtered_node")
+def item_table_join_event_table_filtered_node_fixture(
+    global_graph, item_table_join_event_table_node
+):
     """
     Apply filtering on a join node
     """
@@ -24,7 +26,7 @@ def item_data_join_event_data_filtered_node_fixture(global_graph, item_data_join
         node_type=NodeType.PROJECT,
         node_params={"columns": ["item_type"]},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[item_data_join_event_data_node],
+        input_nodes=[item_table_join_event_table_node],
     )
     condition = graph.add_operation(
         node_type=NodeType.EQ,
@@ -36,13 +38,13 @@ def item_data_join_event_data_filtered_node_fixture(global_graph, item_data_join
         node_type=NodeType.FILTER,
         node_params={},
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[item_data_join_event_data_node, condition],
+        input_nodes=[item_table_join_event_table_node, condition],
     )
     return filtered_node
 
 
 @pytest.fixture
-def derived_expression_from_join_node(global_graph, item_data_join_event_data_node):
+def derived_expression_from_join_node(global_graph, item_table_join_event_table_node):
     """
     ExpressionNode derived from a join node
     """
@@ -50,7 +52,7 @@ def derived_expression_from_join_node(global_graph, item_data_join_event_data_no
         node_type=NodeType.PROJECT,
         node_params={"columns": ["item_id"]},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[global_graph.get_node_by_name(item_data_join_event_data_node.name)],
+        input_nodes=[global_graph.get_node_by_name(item_table_join_event_table_node.name)],
     )
     add_node = global_graph.add_operation(
         node_type=NodeType.ADD,
@@ -61,14 +63,14 @@ def derived_expression_from_join_node(global_graph, item_data_join_event_data_no
     return add_node
 
 
-def test_item_data_join_event_data_attributes(global_graph, item_data_join_event_data_node):
+def test_item_table_join_event_table_attributes(global_graph, item_table_join_event_table_node):
     """
     Test SQL generation for ItemTable joined with EventTable
     """
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
     )
-    sql_tree = sql_graph.build(item_data_join_event_data_node).sql
+    sql_tree = sql_graph.build(item_table_join_event_table_node).sql
     expected = textwrap.dedent(
         """
         SELECT
@@ -99,8 +101,8 @@ def test_item_data_join_event_data_attributes(global_graph, item_data_join_event
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_item_data_join_event_data_attributes_with_filter(
-    global_graph, item_data_join_event_data_filtered_node
+def test_item_table_join_event_table_attributes_with_filter(
+    global_graph, item_table_join_event_table_filtered_node
 ):
     """
     Test SQL generation for ItemTable joined with EventTable with filter
@@ -108,7 +110,7 @@ def test_item_data_join_event_data_attributes_with_filter(
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
     )
-    sql_tree = sql_graph.build(item_data_join_event_data_filtered_node).sql
+    sql_tree = sql_graph.build(item_table_join_event_table_filtered_node).sql
     expected = textwrap.dedent(
         """
         SELECT
@@ -143,16 +145,16 @@ def test_item_data_join_event_data_attributes_with_filter(
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_item_data_join_event_data_attributes_on_demand_tile_gen(
-    global_graph, item_data_joined_event_data_feature_node
+def test_item_table_join_event_table_attributes_on_demand_tile_gen(
+    global_graph, item_table_joined_event_table_feature_node
 ):
     """
     Test on-demand tile SQL generation for ItemView
     """
     interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
-    groupby_node_name = global_graph.get_input_node_names(item_data_joined_event_data_feature_node)[
-        0
-    ]
+    groupby_node_name = global_graph.get_input_node_names(
+        item_table_joined_event_table_feature_node
+    )[0]
     groupby_node = global_graph.get_node_by_name(groupby_node_name)
     tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=True)
     assert len(tile_gen_sqls) == 1
@@ -164,7 +166,7 @@ def test_item_data_join_event_data_attributes_on_demand_tile_gen(
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "item_type",
-          COUNT(*) AS value_count_d3aca2b274b8253dd5a2aa41d62f55757aa2f2ce
+          COUNT(*) AS value_count_f31c5c9eb3c998d87069cce7b2abbf7f455e89e0
         FROM (
           SELECT
             *,
@@ -324,8 +326,8 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("ord_size") AS sum_value_avg_5c419f6baffa4a4a158e33527e5c5a288dc03d42,
-          COUNT("ord_size") AS count_value_avg_5c419f6baffa4a4a158e33527e5c5a288dc03d42
+          SUM("ord_size") AS sum_value_avg_b3d693b2f24a3b72386f1591e8cbdd4803cbf72e,
+          COUNT("ord_size") AS count_value_avg_b3d693b2f24a3b72386f1591e8cbdd4803cbf72e
         FROM (
           SELECT
             *,

@@ -15,8 +15,8 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, Vers
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.model.feature_job_setting import DataFeatureJobSetting
-from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
+from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSetting
+from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.operation import DictProject
@@ -44,15 +44,15 @@ class FeatureNewVersionCreate(FeatureByteBaseModel):
     """
 
     source_feature_id: PydanticObjectId
-    data_feature_job_settings: Optional[List[DataFeatureJobSetting]]
-    data_cleaning_operations: Optional[List[DataCleaningOperation]]
+    table_feature_job_settings: Optional[List[TableFeatureJobSetting]]
+    table_cleaning_operations: Optional[List[TableCleaningOperation]]
 
     # pydantic validators
-    _validate_unique_feat_job_data_name = validator("data_feature_job_settings", allow_reuse=True)(
-        construct_unique_name_validator(field="data_name")
+    _validate_unique_feat_job_data_name = validator("table_feature_job_settings", allow_reuse=True)(
+        construct_unique_name_validator(field="table_name")
     )
-    _validate_unique_clean_ops_data_name = validator("data_cleaning_operations", allow_reuse=True)(
-        construct_unique_name_validator(field="data_name")
+    _validate_unique_clean_ops_data_name = validator("table_cleaning_operations", allow_reuse=True)(
+        construct_unique_name_validator(field="table_name")
     )
 
 
@@ -121,22 +121,22 @@ class VersionComparison(FeatureByteBaseModel):
         return cls(this=this.to_str(), default=default.to_str())
 
 
-class DataFeatureJobSettingComparison(FeatureByteBaseModel):
+class TableFeatureJobSettingComparison(FeatureByteBaseModel):
     """
-    Data feature job setting comparison schema
-    """
-
-    this: List[DataFeatureJobSetting]
-    default: List[DataFeatureJobSetting]
-
-
-class DataCleaningOperationComparison(FeatureByteBaseModel):
-    """
-    Data cleaning operation comparison schema
+    Table feature job setting comparison schema
     """
 
-    this: List[DataCleaningOperation]
-    default: List[DataCleaningOperation]
+    this: List[TableFeatureJobSetting]
+    default: List[TableFeatureJobSetting]
+
+
+class TableCleaningOperationComparison(FeatureByteBaseModel):
+    """
+    Table cleaning operation comparison schema
+    """
+
+    this: List[TableCleaningOperation]
+    default: List[TableCleaningOperation]
 
 
 class FeatureBriefInfo(FeatureByteBaseModel):

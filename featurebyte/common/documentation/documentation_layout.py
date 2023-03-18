@@ -1008,37 +1008,6 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
             "featurebyte.ViewColumn.abs",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.cd"], "featurebyte.ViewColumn.cd"
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.cd.cosine_similarity"],
-            "featurebyte.ViewColumn.cd.cosine_similarity",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.cd.entropy"],
-            "featurebyte.ViewColumn.cd.entropy",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.cd.get_rank"],
-            "featurebyte.ViewColumn.cd.get_rank",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.cd.get_relative_frequency"],
-            "featurebyte.ViewColumn.cd.get_relative_frequency",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.cd.get_value"],
-            "featurebyte.ViewColumn.cd.get_value",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.cd.most_frequent"],
-            "featurebyte.ViewColumn.cd.most_frequent",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.cd.unique_count"],
-            "featurebyte.ViewColumn.cd.unique_count",
-        ),
-        DocLayoutItem(
             [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.ceil"],
             "featurebyte.ViewColumn.ceil",
         ),
