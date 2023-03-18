@@ -39,7 +39,7 @@ def setup() -> None:
             name="INVOICEITEMS",
             event_id_column="GroceryInvoiceGuid",
             item_id_column="GroceryInvoiceItemGuid",
-            event_data_name="GROCERYINVOICE",
+            event_table_name="GROCERYINVOICE",
             tabular_source=data_source.get_table(
                 database_name="spark_catalog", schema_name="GROCERY", table_name="INVOICEITEMS"
             ),
