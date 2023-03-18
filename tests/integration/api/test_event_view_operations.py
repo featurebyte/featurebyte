@@ -993,15 +993,21 @@ def test_add_feature(event_view, non_time_based_feature, scd_data):
 
     # add feature
     event_view.add_feature("transaction_count", non_time_based_feature, "TRANSACTION_ID")
+    event_view.add_feature("transaction_count_2", non_time_based_feature, "TRANSACTION_ID")
 
     # test columns are updated as expected
     event_view_preview = event_view.preview(5000)
     new_columns = event_view_preview.columns.tolist()
-    expected_updated_column_names = [*original_column_names, "transaction_count"]
+    expected_updated_column_names = [
+        *original_column_names,
+        "transaction_count",
+        "transaction_count_2",
+    ]
     assert new_columns == expected_updated_column_names
 
     # test that count feature should not have any missing values
     assert event_view_preview["transaction_count"].isna().sum() == 0
+    assert event_view_preview["transaction_count"].equals(event_view_preview["transaction_count_2"])
 
     # test that one of the feature join keys is correct
     order_id_to_match = "T0"
