@@ -195,7 +195,7 @@ WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 -- populate Icd9Hierarchy
 CREATE OR REPLACE TEMP VIEW temp_table
 USING parquet OPTIONS (
-    path '{staging_path}/Icd9Hierarchy.parquet'
+    path '{staging_path}/ICD9Hierarchy.parquet'
 );
 CREATE TABLE HEALTHCARE.ICD9HIERARCHY USING DELTA AS SELECT * FROM temp_table;
 
