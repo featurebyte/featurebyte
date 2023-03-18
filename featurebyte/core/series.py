@@ -571,7 +571,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Filter a View based on whether a column has null values:
 
-        >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> view_filtered = view[view["Amount"].isnull()]
         """
@@ -596,7 +595,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Filter a View by removing rows where a column has null values:
 
-        >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> view_filtered = view[view["Amount"].notnull()]
         """
@@ -681,8 +679,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute absolute values for a Feature:
 
-        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
-        >>> feature_abs = feature.abs()  # doctest: +SKIP
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature_abs = feature.abs()
         """
         return series_unary_operation(
             input_series=self,
@@ -706,7 +704,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute square root values for a Column in a View:
 
-        >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> view["AmountSqrt"] = view["Amount"].sqrt()
         >>> view.preview(5).filter(regex="Amount")
@@ -720,9 +717,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute square root values for a Feature:
 
-        >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("StateArea")  # doctest: +SKIP
-        >>> feature_sqrt = feature.sqrt()  # doctest: +SKIP
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature_sqrt = feature.sqrt()
         """
         return series_unary_operation(
             input_series=self,
@@ -751,7 +747,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute exponential power values for a Column in a View:
 
-        >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> view["Amount^2"] = view["Amount"].pow(2)
         >>> view.preview(5).filter(regex="Amount")
@@ -765,9 +760,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute exponential power values for a Feature:
 
-        >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
-        >>> feature_pow = feature.pow(2)  # doctest: +SKIP
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature_pow = feature.pow(2)
         """
         return self._binary_op(
             other=other,
@@ -789,7 +783,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute natural logarithm values for a Column in a View:
 
-        >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> view["AmountLog"] = view["Amount"].log()
         >>> view.preview(5).filter(regex="Amount")
@@ -803,9 +796,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute natural logarithm values for a Feature:
 
-        >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
-        >>> feature_log = feature.log()  # doctest: +SKIP
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature_log = (feature + 1.0).log()
         """
         return series_unary_operation(
             input_series=self,
@@ -829,7 +821,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute exponential values for a Column in a View:
 
-        >>> import featurebyte as fb
         >>> view = fb.Table.get("INVOICEITEMS").get_view()
         >>> view["QuantityExp"] = view["Quantity"].exp()
         >>> view.preview(5).filter(regex="Quantity")
@@ -843,9 +834,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute exponential values for a Feature:
 
-        >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
-        >>> feature_exp = feature.exp()  # doctest: +SKIP
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature_exp = feature.exp()
         """
         return series_unary_operation(
             input_series=self,
@@ -869,7 +859,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Round values for a Column in a View:
 
-        >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> column = view["Amount"].floor()
         >>> view["AmountFloor"] = view["Amount"].floor()
@@ -884,9 +873,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Round values for a Feature:
 
-        >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
-        >>> feature_floor = feature.floor()  # doctest: +SKIP
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature_floor = feature.floor()
         """
         return series_unary_operation(
             input_series=self,
@@ -910,7 +898,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute rounded values for a Column in a View:
 
-        >>> import featurebyte as fb
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> view["AmountCeil"] = view["Amount"].ceil()
         >>> view.preview(5).filter(regex="Amount")
@@ -924,9 +911,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute rounded values for a Feature:
 
-        >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("NumericFeature")  # doctest: +SKIP
-        >>> feature_ceil = feature.ceil()  # doctest: +SKIP
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature_ceil = feature.ceil()
         """
         return series_unary_operation(
             input_series=self,
