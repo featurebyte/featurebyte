@@ -15,19 +15,19 @@ class JoinStep(FeatureByteBaseModel):
     JoinStep contains all information required to perform a join between two related entities for
     the purpose of serving parent features
 
-    data: ProxyTableModel
-        The data encoding the relationship between the two entities
+    table: ProxyTableModel
+        The table encoding the relationship between the two entities
     parent_key: str
-        Column name in the data that is tagged as the parent entity
+        Column name in the table that is tagged as the parent entity
     parent_serving_name: str
         Serving name of the parent entity
     child_key: str
-        Column name in the data that is tagged as the child entity
+        Column name in the table that is tagged as the child entity
     child_serving_name: str
         Serving name of the child entity
     """
 
-    data: ProxyTableModel
+    table: ProxyTableModel
     parent_key: str
     parent_serving_name: str
     child_key: str

@@ -17,7 +17,7 @@ arbitrary_test_date_time = datetime.datetime(2022, 2, 1)
 
 @pytest.fixture(name="dimension_columns_info")
 def get_dimension_columns_info():
-    """Fixture to get a some dimension data columns info"""
+    """Fixture to get a some dimension table columns info"""
     return [
         {
             "name": "col",
@@ -43,11 +43,11 @@ def get_dimension_columns_info():
     ]
 
 
-@pytest.fixture(name="dimension_data_model")
-def get_dimension_data_model_fixture(snowflake_feature_store, dimension_columns_info):
-    """Fixture to get a base dimension data model"""
+@pytest.fixture(name="dimension_table_model")
+def get_dimension_table_model_fixture(snowflake_feature_store, dimension_columns_info):
+    """Fixture to get a base dimension table model"""
     return DimensionTableModel(
-        name="my_dimension_data",
+        name="my_dimension_table",
         tabular_source={
             "feature_store_id": snowflake_feature_store.id,
             "table_details": TableDetails(
@@ -62,21 +62,21 @@ def get_dimension_data_model_fixture(snowflake_feature_store, dimension_columns_
     )
 
 
-@pytest.fixture(name="expected_dimension_data_model")
-def get_base_expected_dimension_data_model(dimension_data_model, dimension_columns_info):
-    """Fixture to get a base expected dimension data JSON"""
+@pytest.fixture(name="expected_dimension_table_model")
+def get_base_expected_dimension_table_model(dimension_table_model, dimension_columns_info):
+    """Fixture to get a base expected dimension table JSON"""
     return {
-        "type": "dimension_data",
+        "type": "dimension_table",
         "user_id": None,
         "created_at": arbitrary_test_date_time,
         "updated_at": None,
         "columns_info": dimension_columns_info,
-        "id": dimension_data_model.id,
-        "name": "my_dimension_data",
+        "id": dimension_table_model.id,
+        "name": "my_dimension_table",
         "record_creation_timestamp_column": "created_at",
         "status": "PUBLISHED",
         "tabular_source": {
-            "feature_store_id": dimension_data_model.tabular_source.feature_store_id,
+            "feature_store_id": dimension_table_model.tabular_source.feature_store_id,
             "table_details": {
                 "database_name": "database",
                 "schema_name": "schema",
@@ -88,17 +88,12 @@ def get_base_expected_dimension_data_model(dimension_data_model, dimension_colum
     }
 
 
-def test_dimension_data_model(dimension_data_model, expected_dimension_data_model):
+def test_dimension_table_model(dimension_table_model, expected_dimension_table_model):
     """Test creation, serialization and deserialization of DimensionTable"""
-    assert dimension_data_model.dict() == expected_dimension_data_model
-    dimension_data_json = dimension_data_model.json(by_alias=True)
-    dimension_data_loaded = DimensionTableModel.parse_raw(dimension_data_json)
-    assert dimension_data_loaded == dimension_data_model
-
-    # DEV-556: check backward compatibility
-    dimension_data_dict = dimension_data_model.dict(by_alias=True)
-    dimension_data_dict["dimension_data_id_column"] = dimension_data_dict.pop("dimension_id_column")
-    assert dimension_data_model == DimensionTableModel(**dimension_data_dict)
+    assert dimension_table_model.dict() == expected_dimension_table_model
+    dimension_table_json = dimension_table_model.json(by_alias=True)
+    dimension_table_loaded = DimensionTableModel.parse_raw(dimension_table_json)
+    assert dimension_table_loaded == dimension_table_model
 
 
 def assert_missing_column(exc_info: ExceptionInfo):
@@ -110,12 +105,12 @@ def assert_missing_column(exc_info: ExceptionInfo):
     assert error["type"] == "value_error.missing"
 
 
-def test_missing_dimension_data_id_column_errors(expected_dimension_data_model):
-    """Test missing column validation on dimension data id column"""
-    # Remove the "dimension_data_id_column" so that we can test the missing column validation
-    expected_dimension_data_model.pop("dimension_id_column")
+def test_missing_dimension_table_id_column_errors(expected_dimension_table_model):
+    """Test missing column validation on dimension table id column"""
+    # Remove the "dimension_table_id_column" so that we can test the missing column validation
+    expected_dimension_table_model.pop("dimension_id_column")
     with pytest.raises(ValidationError) as exc_info:
-        DimensionTableModel.parse_obj(expected_dimension_data_model)
+        DimensionTableModel.parse_obj(expected_dimension_table_model)
     assert_missing_column(exc_info)
 
 
@@ -128,10 +123,10 @@ def assert_type_error(exc_info: ExceptionInfo, expected_type: str):
     assert error["type"] == f"type_error.{expected_type}"
 
 
-def test_incorrect_dimension_data_id_type_errors(expected_dimension_data_model):
-    """Test type validation on dimension data id column"""
+def test_incorrect_dimension_table_id_type_errors(expected_dimension_table_model):
+    """Test type validation on dimension table id column"""
     # Update type to non str
-    expected_dimension_data_model["dimension_id_column"] = arbitrary_test_date_time
+    expected_dimension_table_model["dimension_id_column"] = arbitrary_test_date_time
     with pytest.raises(ValidationError) as exc_info:
-        DimensionTableModel.parse_obj(expected_dimension_data_model)
+        DimensionTableModel.parse_obj(expected_dimension_table_model)
     assert_type_error(exc_info, "str")

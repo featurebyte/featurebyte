@@ -151,7 +151,10 @@ def mock_snowflake_execute_query(snowflake_connector):
             'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
                 {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
                 {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
-                {"column_name": "col_char", "data_type": json.dumps({"type": "TEXT", "length": 1})},
+                {
+                    "column_name": "col_char",
+                    "data_type": json.dumps({"type": "TEXT", "length": 1}),
+                },
                 {
                     "column_name": "col_text",
                     "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
@@ -292,7 +295,7 @@ def snowflake_feature_store_fixture(snowflake_feature_store_params, snowflake_ex
 @pytest.fixture(name="snowflake_data_source")
 def snowflake_data_source_fixture(snowflake_feature_store):
     """
-    Snowflake data source fixture
+    Snowflake table source fixture
     """
     return snowflake_feature_store.get_data_source()
 
@@ -313,8 +316,8 @@ def snowflake_database_table_fixture(
     yield snowflake_table
 
 
-@pytest.fixture(name="snowflake_database_table_item_data")
-def snowflake_database_table_item_data_fixture(snowflake_data_source):
+@pytest.fixture(name="snowflake_database_table_item_table")
+def snowflake_database_table_item_table_fixture(snowflake_data_source):
     """
     SourceTable object fixture for ItemTable (using config object)
     """
@@ -325,10 +328,10 @@ def snowflake_database_table_item_data_fixture(snowflake_data_source):
     )
 
 
-@pytest.fixture(name="snowflake_database_table_scd_data")
-def snowflake_database_table_scd_data_fixture(snowflake_data_source):
+@pytest.fixture(name="snowflake_database_table_scd_table")
+def snowflake_database_table_scd_table_fixture(snowflake_data_source):
     """
-    SourceTable object fixture for SlowlyChangingData (using config object)
+    SourceTable object fixture for SCDTable (using config object)
     """
     yield snowflake_data_source.get_table(
         database_name="sf_database",
@@ -337,8 +340,8 @@ def snowflake_database_table_scd_data_fixture(snowflake_data_source):
     )
 
 
-@pytest.fixture(name="snowflake_database_table_item_data_same_event_id")
-def snowflake_database_table_item_data_same_event_id_fixture(snowflake_data_source):
+@pytest.fixture(name="snowflake_database_table_item_table_same_event_id")
+def snowflake_database_table_item_table_same_event_id_fixture(snowflake_data_source):
     """
     SourceTable object fixture for ItemTable (same event_id_column with EventTable)
     """
@@ -349,33 +352,33 @@ def snowflake_database_table_item_data_same_event_id_fixture(snowflake_data_sour
     )
 
 
-@pytest.fixture(name="snowflake_dimension_data_id")
-def snowflake_dimension_data_id_fixture():
-    """Snowflake dimension data ID"""
+@pytest.fixture(name="snowflake_dimension_table_id")
+def snowflake_dimension_table_id_fixture():
+    """Snowflake dimension table ID"""
     return ObjectId("6337f9651050ee7d1234660d")
 
 
-@pytest.fixture(name="snowflake_scd_data_id")
-def snowflake_scd_data_id_fixture():
-    """Snowflake SCD data ID"""
+@pytest.fixture(name="snowflake_scd_table_id")
+def snowflake_scd_table_id_fixture():
+    """Snowflake SCD table ID"""
     return ObjectId("6337f9651050ee7d123466cd")
 
 
-@pytest.fixture(name="snowflake_event_data_id")
-def snowflake_event_data_id_fixture():
-    """Snowflake event data ID"""
+@pytest.fixture(name="snowflake_event_table_id")
+def snowflake_event_table_id_fixture():
+    """Snowflake event table ID"""
     return ObjectId("6337f9651050ee7d5980660d")
 
 
-@pytest.fixture(name="snowflake_item_data_id")
-def snowflake_item_data_id_fixture():
-    """Snowflake event data ID"""
+@pytest.fixture(name="snowflake_item_table_id")
+def snowflake_item_table_id_fixture():
+    """Snowflake event table ID"""
     return ObjectId("6337f9651050ee7d5980662d")
 
 
-@pytest.fixture(name="snowflake_item_data_id_2")
-def snowflake_item_data_id_2_fixture():
-    """Snowflake event data ID"""
+@pytest.fixture(name="snowflake_item_table_id_2")
+def snowflake_item_table_id_2_fixture():
+    """Snowflake event table ID"""
     return ObjectId("6337f9651050ee7d5980662e")
 
 
@@ -397,107 +400,107 @@ def transaction_entity_id_fixture():
     return ObjectId("63f94ed6ea1f050131379204")
 
 
-@pytest.fixture(name="snowflake_event_data")
-def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_id):
+@pytest.fixture(name="snowflake_event_table")
+def snowflake_event_table_fixture(snowflake_database_table, snowflake_event_table_id):
     """EventTable object fixture"""
-    event_data = EventTable.from_tabular_source(
+    event_table = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
-        name="sf_event_data",
+        name="sf_event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
         record_creation_timestamp_column="created_at",
-        _id=snowflake_event_data_id,
+        _id=snowflake_event_table_id,
     )
-    assert event_data.frame.node.parameters.id == event_data.id
-    yield event_data
+    assert event_table.frame.node.parameters.id == event_table.id
+    yield event_table
 
 
-@pytest.fixture(name="snowflake_dimension_data")
-def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimension_data_id):
+@pytest.fixture(name="snowflake_dimension_table")
+def snowflake_dimension_table_fixture(snowflake_database_table, snowflake_dimension_table_id):
     """DimensionTable object fixture"""
-    dimension_data = DimensionTable.from_tabular_source(
+    dimension_table = DimensionTable.from_tabular_source(
         tabular_source=snowflake_database_table,
-        name="sf_dimension_data",
+        name="sf_dimension_table",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
-        _id=snowflake_dimension_data_id,
+        _id=snowflake_dimension_table_id,
     )
-    assert dimension_data.frame.node.parameters.id == dimension_data.id
-    yield dimension_data
+    assert dimension_table.frame.node.parameters.id == dimension_table.id
+    yield dimension_table
 
 
-@pytest.fixture(name="snowflake_scd_data")
-def snowflake_scd_data_fixture(snowflake_database_table_scd_data, snowflake_scd_data_id):
-    """SlowlyChangingData object fixture"""
-    scd_data = SCDTable.from_tabular_source(
-        tabular_source=snowflake_database_table_scd_data,
-        name="sf_scd_data",
+@pytest.fixture(name="snowflake_scd_table")
+def snowflake_scd_table_fixture(snowflake_database_table_scd_table, snowflake_scd_table_id):
+    """SCDTable object fixture"""
+    scd_table = SCDTable.from_tabular_source(
+        tabular_source=snowflake_database_table_scd_table,
+        name="sf_scd_table",
         natural_key_column="col_text",
         surrogate_key_column="col_int",
         effective_timestamp_column="effective_timestamp",
         end_timestamp_column="end_timestamp",
         current_flag_column="is_active",
-        _id=snowflake_scd_data_id,
+        _id=snowflake_scd_table_id,
     )
-    assert scd_data.frame.node.parameters.id == scd_data.id
-    yield scd_data
+    assert scd_table.frame.node.parameters.id == scd_table.id
+    yield scd_table
 
 
-@pytest.fixture(name="snowflake_scd_data_with_entity")
-def snowflake_scd_data_with_entity_fixture(snowflake_scd_data, cust_id_entity):
+@pytest.fixture(name="snowflake_scd_table_with_entity")
+def snowflake_scd_table_with_entity_fixture(snowflake_scd_table, cust_id_entity):
     """
-    Fixture for an SCD data with entity
+    Fixture for an SCD table with entity
     """
-    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
-    return snowflake_scd_data
+    snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
+    return snowflake_scd_table
 
 
-@pytest.fixture(name="snowflake_item_data")
-def snowflake_item_data_fixture(
-    snowflake_database_table_item_data,
+@pytest.fixture(name="snowflake_item_table")
+def snowflake_item_table_fixture(
+    snowflake_database_table_item_table,
     mock_get_persistent,
-    snowflake_item_data_id,
-    snowflake_event_data,
+    snowflake_item_table_id,
+    snowflake_event_table,
 ):
     """
     Snowflake ItemTable object fixture
     """
     _ = mock_get_persistent
-    snowflake_event_data.save()
-    item_data = ItemTable.from_tabular_source(
-        tabular_source=snowflake_database_table_item_data,
-        name="sf_item_data",
+    snowflake_event_table.save()
+    item_table = ItemTable.from_tabular_source(
+        tabular_source=snowflake_database_table_item_table,
+        name="sf_item_table",
         event_id_column="event_id_col",
         item_id_column="item_id_col",
-        event_data_name=snowflake_event_data.name,
-        _id=snowflake_item_data_id,
+        event_table_name=snowflake_event_table.name,
+        _id=snowflake_item_table_id,
     )
-    assert item_data.frame.node.parameters.id == item_data.id
-    yield item_data
+    assert item_table.frame.node.parameters.id == item_table.id
+    yield item_table
 
 
-@pytest.fixture(name="snowflake_item_data_same_event_id")
-def snowflake_item_data_same_event_id_fixture(
-    snowflake_database_table_item_data_same_event_id,
+@pytest.fixture(name="snowflake_item_table_same_event_id")
+def snowflake_item_table_same_event_id_fixture(
+    snowflake_database_table_item_table_same_event_id,
     mock_get_persistent,
-    snowflake_item_data_id_2,
-    snowflake_event_data,
-    snowflake_item_data,
+    snowflake_item_table_id_2,
+    snowflake_event_table,
+    snowflake_item_table,
 ):
     """
     Snowflake ItemTable object fixture (same event_id_column as EventTable)
     """
     _ = mock_get_persistent
-    _ = snowflake_item_data
+    _ = snowflake_item_table
     event_id_column = "col_int"
-    assert snowflake_event_data.event_id_column == event_id_column
+    assert snowflake_event_table.event_id_column == event_id_column
     yield ItemTable.from_tabular_source(
-        tabular_source=snowflake_database_table_item_data_same_event_id,
-        name="sf_item_data_2",
+        tabular_source=snowflake_database_table_item_table_same_event_id,
+        name="sf_item_table_2",
         event_id_column=event_id_column,
         item_id_column="item_id_col",
-        event_data_name=snowflake_event_data.name,
-        _id=snowflake_item_data_id_2,
+        event_table_name=snowflake_event_table.name,
+        _id=snowflake_item_table_id_2,
     )
 
 
@@ -522,17 +525,17 @@ def transaction_entity_fixture(transaction_entity_id):
     yield entity
 
 
-@pytest.fixture(name="snowflake_event_data_with_entity")
-def snowflake_event_data_with_entity_fixture(
-    snowflake_event_data, cust_id_entity, mock_api_object_cache
+@pytest.fixture(name="snowflake_event_table_with_entity")
+def snowflake_event_table_with_entity_fixture(
+    snowflake_event_table, cust_id_entity, transaction_entity, mock_api_object_cache
 ):
     """
-    Entity fixture that sets cust_id in snowflake_event_data as an Entity
+    Entity fixture that sets cust_id in snowflake_event_table as an Entity
     """
     _ = mock_api_object_cache
-    snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
-    snowflake_event_data.col_int.as_entity(cust_id_entity.name)
-    yield snowflake_event_data
+    snowflake_event_table.cust_id.as_entity(cust_id_entity.name)
+    snowflake_event_table.col_int.as_entity(transaction_entity.name)
+    yield snowflake_event_table
 
 
 @pytest.fixture(name="arbitrary_default_feature_job_setting")
@@ -543,18 +546,18 @@ def arbitrary_default_feature_job_setting_fixture():
     return FeatureJobSetting(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m")
 
 
-@pytest.fixture(name="snowflake_event_data_with_entity_and_feature_job")
-def snowflake_event_data_with_entity_and_feature_job_fixture(
-    snowflake_event_data, cust_id_entity, arbitrary_default_feature_job_setting
+@pytest.fixture(name="snowflake_event_table_with_entity_and_feature_job")
+def snowflake_event_table_with_entity_and_feature_job_fixture(
+    snowflake_event_table, cust_id_entity, arbitrary_default_feature_job_setting
 ):
     """
-    Entity fixture that sets cust_id in snowflake_event_data as an Entity
+    Entity fixture that sets cust_id in snowflake_event_table as an Entity
     """
-    snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
-    snowflake_event_data.update_default_feature_job_setting(
+    snowflake_event_table.cust_id.as_entity(cust_id_entity.name)
+    snowflake_event_table.update_default_feature_job_setting(
         feature_job_setting=arbitrary_default_feature_job_setting
     )
-    yield snowflake_event_data
+    yield snowflake_event_table
 
 
 @pytest.fixture(name="snowflake_feature_store_details_dict")
@@ -583,19 +586,19 @@ def snowflake_table_details_dict_fixture():
 
 @pytest.fixture(name="snowflake_event_view")
 def snowflake_event_view_fixture(
-    snowflake_event_data, snowflake_feature_store_details_dict, snowflake_table_details_dict
+    snowflake_event_table, snowflake_feature_store_details_dict, snowflake_table_details_dict
 ):
     """
     EventTable object fixture
     """
-    event_view = snowflake_event_data.get_view()
+    event_view = snowflake_event_table.get_view()
     assert isinstance(event_view, EventView)
     expected_input_node = construct_node(
         name="input_2",
         type=NodeType.INPUT,
         parameters={
             "type": "event_table",
-            "id": snowflake_event_data.id,
+            "id": snowflake_event_table.id,
             "columns": [
                 "col_int",
                 "col_float",
@@ -620,27 +623,27 @@ def snowflake_event_view_fixture(
     assert event_view.protected_columns == {"event_timestamp"}
     assert event_view.inherited_columns == {"event_timestamp"}
     assert event_view.timestamp_column == "event_timestamp"
-    assert event_view.tabular_data_ids == [snowflake_event_data.id]
+    assert event_view.tabular_data_ids == [snowflake_event_table.id]
     yield event_view
 
 
 @pytest.fixture(name="snowflake_event_view_with_entity")
-def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity):
+def snowflake_event_view_entity_fixture(snowflake_event_table_with_entity):
     """
     Snowflake event view with entity
     """
-    event_view = snowflake_event_data_with_entity.get_view()
+    event_view = snowflake_event_table_with_entity.get_view()
     yield event_view
 
 
 @pytest.fixture(name="snowflake_event_view_with_entity_and_feature_job")
 def snowflake_event_view_entity_feature_job_fixture(
-    snowflake_event_data_with_entity_and_feature_job,
+    snowflake_event_table_with_entity_and_feature_job,
 ):
     """
     Snowflake event view with entity
     """
-    event_view = snowflake_event_data_with_entity_and_feature_job.get_view()
+    event_view = snowflake_event_table_with_entity_and_feature_job.get_view()
     yield event_view
 
 
@@ -671,13 +674,13 @@ def feature_group_feature_job_setting():
 def feature_group_fixture(
     grouped_event_view,
     cust_id_entity,
-    snowflake_event_data_with_entity,
+    snowflake_event_table_with_entity,
     feature_group_feature_job_setting,
 ):
     """
     FeatureList fixture
     """
-    snowflake_event_data_with_entity.update_default_feature_job_setting(
+    snowflake_event_table_with_entity.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(
             **feature_group_feature_job_setting,
         )
@@ -695,7 +698,7 @@ def feature_group_fixture(
     for feature in feature_group.feature_objects.values():
         assert grouped_event_view.view_obj.tabular_data_ids == feature.tabular_data_ids
         assert id(feature.graph.nodes) == id(global_graph.nodes)
-        assert feature.tabular_data_ids == [snowflake_event_data_with_entity.id]
+        assert feature.tabular_data_ids == [snowflake_event_table_with_entity.id]
         assert feature.entity_ids == [cust_id_entity.id]
     yield feature_group
 
@@ -714,19 +717,19 @@ def production_ready_feature_fixture(feature_group):
 
 @pytest.fixture(name="feature_with_cleaning_operations")
 def feature_with_cleaning_operations_fixture(
-    snowflake_event_data, cust_id_entity, feature_group_feature_job_setting
+    snowflake_event_table, cust_id_entity, feature_group_feature_job_setting
 ):
     """
     Fixture to get a feature with cleaning operations
     """
-    snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
-    snowflake_event_data.save()
-    snowflake_event_data["col_float"].update_critical_data_info(
+    snowflake_event_table.cust_id.as_entity(cust_id_entity.name)
+    snowflake_event_table.save()
+    snowflake_event_table["col_float"].update_critical_data_info(
         cleaning_operations=[
             MissingValueImputation(imputed_value=0.0),
         ]
     )
-    event_view = snowflake_event_data.get_view()
+    event_view = snowflake_event_table.get_view()
     feature_group = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
@@ -738,15 +741,15 @@ def feature_with_cleaning_operations_fixture(
 
 
 @pytest.fixture(name="non_time_based_feature")
-def get_non_time_based_feature_fixture(snowflake_item_data, transaction_entity):
+def get_non_time_based_feature_fixture(snowflake_item_table, transaction_entity):
     """
     Get a non-time-based feature.
 
     This is a non-time-based feature as it is built from ItemTable.
     """
-    snowflake_item_data.event_id_col.as_entity(transaction_entity.name)
-    item_data = ItemTable(**{**snowflake_item_data.json_dict(), "item_id_column": "event_id_col"})
-    item_view = item_data.get_view(event_suffix="_event_table")
+    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
+    item_table = ItemTable(**{**snowflake_item_table.json_dict(), "item_id_column": "event_id_col"})
+    item_view = item_table.get_view(event_suffix="_event_table")
     return item_view.groupby("event_id_col").aggregate(
         value_column="item_amount",
         method=AggFunc.SUM,
@@ -1050,10 +1053,10 @@ def api_object_to_id_fixture():
 def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     update_fixtures,
     snowflake_feature_store,
-    snowflake_event_data,
-    snowflake_item_data,
-    snowflake_dimension_data,
-    snowflake_scd_data,
+    snowflake_event_table,
+    snowflake_item_table,
+    snowflake_dimension_table,
+    snowflake_scd_table,
     snowflake_event_view_with_entity,
     feature_group,
     non_time_based_feature,
@@ -1106,7 +1109,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         _id="62f301e841b73757c9ff879a",
         user_id="62f302f841b73757c9ff876b",
         name="sample_analysis",
-        event_data_id=snowflake_event_data.id,
+        event_table_id=snowflake_event_table.id,
         analysis_data=None,
         analysis_length=2419200,
         min_featurejob_period=60,
@@ -1137,10 +1140,10 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (cust_id_entity, "entity"),
             (transaction_entity, "entity_transaction"),
             (snowflake_feature_store, "feature_store"),
-            (snowflake_event_data, "event_table"),
-            (snowflake_item_data, "item_table"),
-            (snowflake_dimension_data, "dimension_table"),
-            (snowflake_scd_data, "scd_table"),
+            (snowflake_event_table, "event_table"),
+            (snowflake_item_table, "item_table"),
+            (snowflake_dimension_table, "dimension_table"),
+            (snowflake_scd_table, "scd_table"),
             (feature_sum_30m, "feature_sum_30m"),
             (feature_sum_2h, "feature_sum_2h"),
             (non_time_based_feature, "feature_non_time_based"),

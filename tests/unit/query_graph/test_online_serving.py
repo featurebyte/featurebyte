@@ -172,19 +172,21 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
     node = graph.get_node_by_name("groupby_1")
     queries = get_online_store_precompute_queries(graph, node, SourceType.SNOWFLAKE)
     assert len(queries) == 2
+    tile_id = "8502F6BC497F17F84385ABE4346FD392F2F56725"
+    aggregation_id = "47938f0bfcde2a5c7d483ce1926aa72900653d65"
     expected_query_params = {
-        "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-        "aggregation_id": "avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "tile_id": f"TILE_F3600_M1800_B900_{tile_id}",
+        "aggregation_id": f"avg_{aggregation_id}",
         "table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
         "result_type": "FLOAT",
         "serving_names": ["CUSTOMER_ID"],
     }
     assert queries[0].dict(exclude={"sql"}) == {
-        "result_name": "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "result_name": f"agg_w7200_avg_{aggregation_id}",
         **expected_query_params,
     }
     assert queries[1].dict(exclude={"sql"}) == {
-        "result_name": "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "result_name": f"agg_w172800_avg_{aggregation_id}",
         **expected_query_params,
     }
     assert_equal_with_expected_fixture(
@@ -217,24 +219,24 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
     assert len(queries) == 2
     expected_query_params_tile_1 = {
         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-        "aggregation_id": "avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "aggregation_id": "avg_47938f0bfcde2a5c7d483ce1926aa72900653d65",
         "table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
         "result_type": "FLOAT",
         "serving_names": ["CUSTOMER_ID"],
     }
     expected_query_params_tile_2 = {
         "tile_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
-        "aggregation_id": "sum_875069c3061f4fbb8c0e49a0a927676315f07a46",
+        "aggregation_id": "sum_6e33dd8addc3595450df495cd997ffd55efad68c",
         "table_name": "online_store_b8cd14c914ca8a3a31bbfdf21e684d0d6c1936f3",
         "result_type": "FLOAT",
         "serving_names": ["BUSINESS_ID"],
     }
     assert queries[0].dict(exclude={"sql"}) == {
-        "result_name": "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "result_name": "agg_w7200_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65",
         **expected_query_params_tile_1,
     }
     assert queries[1].dict(exclude={"sql"}) == {
-        "result_name": "agg_w604800_sum_875069c3061f4fbb8c0e49a0a927676315f07a46",
+        "result_name": "agg_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c",
         **expected_query_params_tile_2,
     }
     assert_equal_with_expected_fixture(

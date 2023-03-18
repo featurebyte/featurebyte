@@ -50,7 +50,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     FeatureJobSettingAnalysis persistent model
     """
 
-    event_data_id: PydanticObjectId
+    event_table_id: PydanticObjectId
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
     analysis_result: AnalysisResult

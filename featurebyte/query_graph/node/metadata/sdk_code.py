@@ -206,7 +206,7 @@ class ClassEnum(Enum):
     TABLE_DETAILS = ("featurebyte.query_graph.node.schema", "TableDetails")
     TABULAR_SOURCE = ("featurebyte.query_graph.model.common_table", "TabularSource")
 
-    # data
+    # table
     SOURCE_TABLE = ("featurebyte.api.source_table", "SourceTable")
     EVENT_TABLE = ("featurebyte", "EventTable")
     ITEM_TABLE = ("featurebyte", "ItemTable")
@@ -285,11 +285,11 @@ class CodeGenerationConfig(BaseModel):
     store some intermediate results.
 
     feature_store_name: str
-        Feature store name used to construct unsaved data object
+        Feature store name used to construct unsaved table object
     final_output_name: str
         Variable name which contains final output
     to_use_saved_data: str
-        When enabled, load the data object from the persistent, otherwise construct the data from
+        When enabled, load the table object from the persistent, otherwise construct the table from
         feature store explicitly
     max_expression_length: int
         Maximum expression length used to decide whether to assign the expression into a variable
@@ -301,8 +301,8 @@ class CodeGenerationConfig(BaseModel):
     feature_store_id: PydanticObjectId = Field(default_factory=ObjectId)
     feature_store_name: str = Field(default="feature_store")
 
-    # data ID to data info (name, record_creation_timestamp_column, etc)
-    data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]] = Field(default_factory=dict)
+    # table ID to table info (name, record_creation_timestamp_column, etc)
+    table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]] = Field(default_factory=dict)
 
     # output variable name used to store the final output
     final_output_name: str = Field(default="output")

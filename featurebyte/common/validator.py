@@ -13,7 +13,7 @@ def construct_data_model_root_validator(
     expected_column_field_name_type_pairs: List[Tuple[str, Optional[Set[DBVarType]]]],
 ) -> Any:
     """
-    Construct data model root_validator used to validate model input data
+    Construct table model root_validator used to validate model input table
 
     Parameters
     ----------

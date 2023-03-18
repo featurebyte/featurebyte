@@ -50,7 +50,7 @@ tm_upsert_tile_feature_mapping = Template(
             '{{feature_type}}' as FEATURE_TYPE,
             '{{feature_version}}' as FEATURE_VERSION,
             '{{feature_readiness}}' as FEATURE_READINESS,
-            '{{feature_event_data_ids}}' as FEATURE_EVENT_DATA_IDS,
+            '{{feature_event_table_ids}}' as FEATURE_EVENT_DATA_IDS,
             {{is_deleted}} as IS_DELETED
     ) b
     ON

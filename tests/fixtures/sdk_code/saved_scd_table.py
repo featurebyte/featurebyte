@@ -2,5 +2,5 @@
 from bson import ObjectId
 from featurebyte import SCDTable
 
-scd_table = SCDTable.get_by_id(ObjectId("{data_id}"))
+scd_table = SCDTable.get_by_id(ObjectId("{table_id}"))
 output = scd_table

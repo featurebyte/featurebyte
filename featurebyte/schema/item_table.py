@@ -17,10 +17,10 @@ class ItemTableCreate(TableCreate):
     ItemTable creation schema
     """
 
-    type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
+    type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
     event_id_column: StrictStr
     item_id_column: StrictStr
-    event_data_id: PydanticObjectId
+    event_table_id: PydanticObjectId
 
 
 class ItemTableList(PaginationMixin):

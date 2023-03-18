@@ -18,7 +18,7 @@ class DimensionTableCreate(TableCreate):
     DimensionTable Creation Schema
     """
 
-    type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
+    type: Literal[TableDataType.DIMENSION_TABLE] = Field(TableDataType.DIMENSION_TABLE, const=True)
     dimension_id_column: StrictStr
 
 

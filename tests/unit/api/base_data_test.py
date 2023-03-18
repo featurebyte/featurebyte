@@ -41,19 +41,19 @@ class BaseTableTestSuite:
     @pytest.fixture(name="data_under_test")
     def get_data_under_test_fixture(
         self,
-        snowflake_item_data,
-        snowflake_event_data,
-        snowflake_dimension_data,
-        snowflake_scd_data,
+        snowflake_item_table,
+        snowflake_event_table,
+        snowflake_dimension_table,
+        snowflake_scd_table,
     ):
         """
-        Retrieves fixture for data under test.
+        Retrieves fixture for table under test.
         """
         data_map = {
-            DataType.ITEM_DATA: snowflake_item_data,
-            DataType.EVENT_DATA: snowflake_event_data,
-            DataType.DIMENSION_DATA: snowflake_dimension_data,
-            DataType.SCD_DATA: snowflake_scd_data,
+            DataType.ITEM_DATA: snowflake_item_table,
+            DataType.EVENT_DATA: snowflake_event_table,
+            DataType.DIMENSION_DATA: snowflake_dimension_table,
+            DataType.SCD_DATA: snowflake_scd_table,
         }
         if self.data_type not in data_map:
             pytest.fail(
@@ -64,7 +64,7 @@ class BaseTableTestSuite:
     @pytest.fixture(name="imputed_data_under_test")
     def imputed_data_under_test_fixture(self, data_under_test):
         """
-        Retrieves fixture for data under test
+        Retrieves fixture for table under test
         """
         data_under_test[self.col].update_critical_data_info(
             cleaning_operations=[MissingValueImputation(imputed_value=0)]
@@ -94,7 +94,7 @@ class BaseTableTestSuite:
 
     def test_data_preview_sql(self, imputed_data_under_test):
         """
-        Test preview data (make sure imputed data show only raw data sql)
+        Test preview table (make sure imputed table show only raw table sql)
         """
         data_sql = imputed_data_under_test.preview_sql()
         clean_data_sql = imputed_data_under_test.preview_clean_data_sql()
@@ -103,7 +103,7 @@ class BaseTableTestSuite:
 
     def test_data_column_preview_sql(self, data_under_test):
         """
-        Test preview data column
+        Test preview table column
         """
         data_column_sql = data_under_test[self.col].preview_sql()
         assert data_column_sql == textwrap.dedent(self.expected_data_column_sql).strip()

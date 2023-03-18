@@ -2,5 +2,5 @@
 from bson import ObjectId
 from featurebyte import DimensionTable
 
-dimension_table = DimensionTable.get_by_id(ObjectId("{data_id}"))
+dimension_table = DimensionTable.get_by_id(ObjectId("{table_id}"))
 output = dimension_table

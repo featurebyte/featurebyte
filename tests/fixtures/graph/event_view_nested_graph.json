@@ -63,7 +63,7 @@
                         "sf_schema": "sf_schema"
                     }
                 },
-                "type": "event_data",
+                "type": "event_table",
                 "id": {
                     "$oid": "6337f9651050ee7d5980660d"
                 },
@@ -326,7 +326,7 @@
                     "view_mode": "auto",
                     "drop_column_names": ["created_at"],
                     "column_cleaning_operations": [],
-                    "data_id": {
+                    "table_id": {
                         "$oid": "6337f9651050ee7d5980660d"
                     }
                 }

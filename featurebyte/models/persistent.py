@@ -29,7 +29,7 @@ class AuditTransactionMode(StrEnum):
 
 class AuditActionType(StrEnum):
     """
-    Database or data warehouse source type
+    Audit action type
     """
 
     INSERT = "INSERT"

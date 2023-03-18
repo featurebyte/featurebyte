@@ -128,7 +128,7 @@ def test_extract_operation_structure(feature_model_dict):
     op_struct = feature.extract_operation_structure()
     common_source_col_params = {
         "tabular_data_id": ObjectId(feature_model_dict["tabular_data_ids"][0]),
-        "tabular_data_type": "event_data",
+        "tabular_data_type": "event_table",
         "node_names": {"input_1", "graph_1"},
         "node_name": "graph_1",
     }

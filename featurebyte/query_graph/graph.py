@@ -39,11 +39,11 @@ class QueryGraph(QueryGraphModel):
     Graph data structure
     """
 
-    def iterate_group_by_and_data_id_node_pairs(
+    def iterate_group_by_node_and_table_id_pairs(
         self, target_node: Node
     ) -> Iterator[Tuple[GroupByNode, Optional[ObjectId]]]:
         """
-        Iterate all GroupBy nodes and their corresponding Data ID
+        Iterate all GroupBy nodes and their corresponding Table ID
 
         Parameters
         ----------
@@ -53,7 +53,7 @@ class QueryGraph(QueryGraphModel):
         Yields
         ------
         Tuple[GroupByNode, Optional[ObjectId]]
-            GroupBy node and its corresponding EventData input node
+            GroupBy node and its corresponding EventTable input node
         """
         operation_structure_info = OperationStructureExtractor(graph=self).extract(
             node=target_node,

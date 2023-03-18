@@ -113,7 +113,7 @@ class BaseTableDocumentController(
         Returns
         -------
         TableDocumentT
-            Newly created data object
+            Newly created table object
         """
         document = await self.service.create_document(data)  # type: ignore[arg-type]
         return await self._add_semantic_tags(document=document)  # type: ignore
@@ -142,7 +142,7 @@ class BaseTableDocumentController(
             )
 
         if data.status:
-            await self.table_update_service.update_data_status(
+            await self.table_update_service.update_table_status(
                 service=self.service,
                 document_id=document_id,
                 data=self.document_update_schema_class(**data.dict()),  # type: ignore

@@ -46,7 +46,7 @@ class EventTableModel(EventTableData, TableModel):
     tabular_source : TabularSource
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
-        List of event data columns
+        List of event table columns
     event_id_column: str
         Event ID column name
     event_timestamp_column: str
@@ -89,7 +89,7 @@ class EventTableModel(EventTableData, TableModel):
             column_cleaning_operations=metadata.column_cleaning_operations
         )
         return table_data.construct_event_view_graph_node(  # pylint: disable=no-member
-            event_data_node=input_node,
+            event_table_node=input_node,
             drop_column_names=metadata.drop_column_names,
             metadata=metadata,
         )

@@ -324,7 +324,7 @@ def test_lookup_aggregator__online_with_offset(
     ]
 
 
-def test_lookup_aggregator__event_data(offline_lookup_aggregator, event_lookup_specs, entity_id):
+def test_lookup_aggregator__event_table(offline_lookup_aggregator, event_lookup_specs, entity_id):
     """
     Test lookup features from EventTable
     """

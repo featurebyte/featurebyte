@@ -50,9 +50,9 @@ class FeatureTypeFeatureCount(FeatureByteBaseModel):
     Feature count corresponding to the feature type within a feature list
 
     dtype: DBVarType
-        Feature data type
+        Feature table type
     count: int
-        Number of features with the specified data type
+        Number of features with the specified table type
     """
 
     dtype: DBVarType
@@ -282,7 +282,7 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     @staticmethod
     def derive_dtype_distribution(features: List[FeatureModel]) -> List[FeatureTypeFeatureCount]:
         """
-        Derive feature data type distribution from features
+        Derive feature table type distribution from features
 
         Parameters
         ----------
@@ -399,7 +399,7 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
     entity_ids: List[PydanticObjectId]
         Entity IDs used in the feature list
     tabular_data_ids: List[PydanticObjectId]
-        Tabular data IDs used in the feature list
+        Tabular table IDs used in the feature list
     """
 
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)

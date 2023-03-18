@@ -149,7 +149,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
     def get_data_source(self) -> DataSource:
         """
-        Get the data source associated with the feature store
+        Get the table source associated with the feature store
 
         Returns
         -------

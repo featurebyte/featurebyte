@@ -116,7 +116,7 @@ class BaseInputNodeParameters(BaseModel):
     @abstractmethod
     def variable_name_prefix(self) -> str:
         """
-        Pre-variable name used by the specific table data
+        Pre-variable name used by the specific table
 
         Returns
         -------
@@ -124,14 +124,14 @@ class BaseInputNodeParameters(BaseModel):
         """
 
     @abstractmethod
-    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract other constructor parameters used in SDK code generation
 
         Parameters
         ----------
-        data_info: Dict[str, Any]
-            Data info that does not store in the query graph input node
+        table_info: Dict[str, Any]
+            Table info that does not store in the query graph input node
 
         Returns
         -------
@@ -140,15 +140,15 @@ class BaseInputNodeParameters(BaseModel):
 
     @abstractmethod
     def construct_comment(
-        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
     ) -> Optional[CommentStr]:
         """
         Construct comment for the input node
 
         Parameters
         ----------
-        data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
-            Data ID to data info mapping
+        table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+            Table ID to table info mapping
 
         Returns
         -------
@@ -156,29 +156,29 @@ class BaseInputNodeParameters(BaseModel):
         """
 
 
-class GenericInputNodeParameters(BaseInputNodeParameters):
-    """GenericParameters"""
+class SourceTableInputNodeParameters(BaseInputNodeParameters):
+    """SourceTableInputNodeParameters"""
 
-    type: Literal[TableDataType.GENERIC] = Field(TableDataType.GENERIC)
+    type: Literal[TableDataType.SOURCE_TABLE] = Field(TableDataType.SOURCE_TABLE)
     id: Optional[PydanticObjectId] = Field(default=None)
 
     @property
     def variable_name_prefix(self) -> str:
-        return "data"
+        return "table"
 
-    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
         return {}
 
     def construct_comment(
-        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
     ) -> Optional[CommentStr]:
         return None
 
 
-class EventDataInputNodeParameters(BaseInputNodeParameters):
-    """EventDataParameters"""
+class EventTableInputNodeParameters(BaseInputNodeParameters):
+    """EventTableParameters"""
 
-    type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
     id: Optional[PydanticObjectId] = Field(default=None)
     timestamp_column: Optional[InColumnStr] = Field(
         default=None
@@ -201,65 +201,65 @@ class EventDataInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "event_table"
 
-    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "record_creation_timestamp_column": data_info.get("record_creation_timestamp_column"),
+            "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "event_id_column": self.id_column,
             "event_timestamp_column": self.timestamp_column,
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
     def construct_comment(
-        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
     ) -> Optional[CommentStr]:
         output = None
         if self.id:
-            data_name = data_id_to_info.get(self.id, {}).get("name")
-            if data_name:
-                output = CommentStr(f'event_table name: "{data_name}"')
+            table_name = table_id_to_info.get(self.id, {}).get("name")
+            if table_name:
+                output = CommentStr(f'event_table name: "{table_name}"')
         return output
 
 
-class ItemDataInputNodeParameters(BaseInputNodeParameters):
-    """ItemDataParameters"""
+class ItemTableInputNodeParameters(BaseInputNodeParameters):
+    """ItemTableParameters"""
 
-    type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
+    type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
     id: Optional[PydanticObjectId] = Field(default=None)
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
-    event_data_id: Optional[PydanticObjectId] = Field(default=None)
+    event_table_id: Optional[PydanticObjectId] = Field(default=None)
     event_id_column: Optional[InColumnStr] = Field(default=None)
 
     @property
     def variable_name_prefix(self) -> str:
         return "item_table"
 
-    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "record_creation_timestamp_column": data_info.get("record_creation_timestamp_column"),
+            "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "item_id_column": self.id_column,
             "event_id_column": self.event_id_column,
-            "event_data_id": ClassEnum.OBJECT_ID(self.event_data_id),
+            "event_table_id": ClassEnum.OBJECT_ID(self.event_table_id),
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
     def construct_comment(
-        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
     ) -> Optional[CommentStr]:
         output = None
-        if self.id and self.event_data_id:
-            data_name = data_id_to_info.get(self.id, {}).get("name")
-            event_data_name = data_id_to_info.get(self.event_data_id, {}).get("name")
-            if data_name and event_data_name:
+        if self.id and self.event_table_id:
+            table_name = table_id_to_info.get(self.id, {}).get("name")
+            event_table_name = table_id_to_info.get(self.event_table_id, {}).get("name")
+            if table_name and event_table_name:
                 output = CommentStr(
-                    f'item_table name: "{data_name}", event_table name: "{event_data_name}"'
+                    f'item_table name: "{table_name}", event_table name: "{event_table_name}"'
                 )
         return output
 
 
-class DimensionDataInputNodeParameters(BaseInputNodeParameters):
-    """DimensionDataParameters"""
+class DimensionTableInputNodeParameters(BaseInputNodeParameters):
+    """DimensionTableParameters"""
 
-    type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
+    type: Literal[TableDataType.DIMENSION_TABLE] = Field(TableDataType.DIMENSION_TABLE, const=True)
     id: Optional[PydanticObjectId] = Field(default=None)
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
 
@@ -267,28 +267,28 @@ class DimensionDataInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "dimension_table"
 
-    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "record_creation_timestamp_column": data_info.get("record_creation_timestamp_column"),
+            "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "dimension_id_column": self.id_column,
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
     def construct_comment(
-        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
     ) -> Optional[CommentStr]:
         output = None
         if self.id:
-            data_name = data_id_to_info.get(self.id, {}).get("name")
-            if data_name:
-                output = CommentStr(f'dimension_table name: "{data_name}"')
+            table_name = table_id_to_info.get(self.id, {}).get("name")
+            if table_name:
+                output = CommentStr(f'dimension_table name: "{table_name}"')
         return output
 
 
-class SCDDataInputNodeParameters(BaseInputNodeParameters):
-    """SCDDataParameters"""
+class SCDTableInputNodeParameters(BaseInputNodeParameters):
+    """SCDTableParameters"""
 
-    type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
     id: Optional[PydanticObjectId] = Field(default=None)
     natural_key_column: Optional[InColumnStr] = Field(
         default=None
@@ -304,9 +304,9 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "scd_table"
 
-    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "record_creation_timestamp_column": data_info.get("record_creation_timestamp_column"),
+            "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "natural_key_column": self.natural_key_column,
             "effective_timestamp_column": self.effective_timestamp_column,
             "end_timestamp_column": self.end_timestamp_column,
@@ -316,13 +316,13 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
         }
 
     def construct_comment(
-        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
     ) -> Optional[CommentStr]:
         output = None
         if self.id:
-            data_name = data_id_to_info.get(self.id, {}).get("name")
-            if data_name:
-                output = CommentStr(f'scd_table name: "{data_name}"')
+            table_name = table_id_to_info.get(self.id, {}).get("name")
+            if table_name:
+                output = CommentStr(f'scd_table name: "{table_name}"')
         return output
 
 
@@ -333,33 +333,33 @@ class InputNode(BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Annotated[
         Union[
-            EventDataInputNodeParameters,
-            ItemDataInputNodeParameters,
-            GenericInputNodeParameters,
-            DimensionDataInputNodeParameters,
-            SCDDataInputNodeParameters,
+            EventTableInputNodeParameters,
+            ItemTableInputNodeParameters,
+            SourceTableInputNodeParameters,
+            DimensionTableInputNodeParameters,
+            SCDTableInputNodeParameters,
         ],
         Field(discriminator="type"),
     ]
 
     # class variable
-    _data_to_data_class_enum: ClassVar[Dict[TableDataType, ClassEnum]] = {
-        TableDataType.GENERIC: ClassEnum.SOURCE_TABLE,
-        TableDataType.EVENT_DATA: ClassEnum.EVENT_TABLE,
-        TableDataType.ITEM_DATA: ClassEnum.ITEM_TABLE,
-        TableDataType.DIMENSION_DATA: ClassEnum.DIMENSION_TABLE,
-        TableDataType.SCD_DATA: ClassEnum.SCD_TABLE,
+    _table_type_to_table_class_enum: ClassVar[Dict[TableDataType, ClassEnum]] = {
+        TableDataType.SOURCE_TABLE: ClassEnum.SOURCE_TABLE,
+        TableDataType.EVENT_TABLE: ClassEnum.EVENT_TABLE,
+        TableDataType.ITEM_TABLE: ClassEnum.ITEM_TABLE,
+        TableDataType.DIMENSION_TABLE: ClassEnum.DIMENSION_TABLE,
+        TableDataType.SCD_TABLE: ClassEnum.SCD_TABLE,
     }
 
     @root_validator(pre=True)
     @classmethod
     def _set_default_table_data_type(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        # DEV-556: set default table data type when it is not present
+        # DEV-556: set default table type when it is not present
         if values.get("type") == NodeType.INPUT:
             # only attempt to fix this if it is an INPUT node
             # otherwise, it may cause issue when deserializing the graph in fastapi response
             if "parameters" in values and "type" not in values["parameters"]:
-                values["parameters"]["type"] = TableDataType.EVENT_DATA
+                values["parameters"]["type"] = TableDataType.EVENT_TABLE
         return values
 
     @property
@@ -405,35 +405,35 @@ class InputNode(BaseNode):
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         statements: List[StatementT] = []
         table_type = self.parameters.type
-        data_class_enum = self._data_to_data_class_enum[table_type]
+        table_class_enum = self._table_type_to_table_class_enum[table_type]
 
-        # construct data sdk statement
-        data_var_name = var_name_generator.convert_to_variable_name(
+        # construct table sdk statement
+        table_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix=self.parameters.variable_name_prefix
         )
-        data_id = self.parameters.id
-        data_info = config.data_id_to_info.get(data_id, {}) if data_id else {}
-        data_name = data_info.get("name")
+        table_id = self.parameters.id
+        table_info = config.table_id_to_info.get(table_id, {}) if table_id else {}
+        table_name = table_info.get("name")
         if config.to_use_saved_data and self.parameters.id:
-            # to generate `*Data.get_by_id(ObjectId("<data_id>"))` statement
-            comment = self.parameters.construct_comment(data_id_to_info=config.data_id_to_info)
+            # to generate `*Data.get_by_id(ObjectId("<table_id>"))` statement
+            comment = self.parameters.construct_comment(table_id_to_info=config.table_id_to_info)
             if comment:
                 statements.append(comment)
             object_id = ClassEnum.OBJECT_ID(self.parameters.id)
-            right_op = data_class_enum(object_id, _method_name="get_by_id")
+            right_op = table_class_enum(object_id, _method_name="get_by_id")
         else:
-            # to generate `*Data(
-            #     name="<data_name>",
+            # to generate `*Table(
+            #     name="<table_name>",
             #     feature_store=FeatureStore(...),
             #     tabular_source=TabularSource(...),
             #     columns_info=[ColumnInfo(...), ...],
             #     ...
             # )` statement
-            columns_info = data_info.get(
+            columns_info = table_info.get(
                 "columns_info", self.parameters.extract_columns_info_objects()
             )
-            right_op = data_class_enum(
-                name=data_name or str(data_var_name),
+            right_op = table_class_enum(
+                name=table_name or str(table_var_name),
                 feature_store=self.parameters.extract_feature_store_object(
                     feature_store_name=config.feature_store_name
                 ),
@@ -441,8 +441,8 @@ class InputNode(BaseNode):
                     feature_store_id=config.feature_store_id
                 ),
                 columns_info=columns_info,
-                **self.parameters.extract_other_constructor_parameters(data_info),
+                **self.parameters.extract_other_constructor_parameters(table_info),
             )
 
-        statements.append((data_var_name, right_op))
-        return statements, data_var_name
+        statements.append((table_var_name, right_op))
+        return statements, table_var_name

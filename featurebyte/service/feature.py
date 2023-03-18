@@ -109,7 +109,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         graph, node_name_map = await self.view_construction_service.construct_graph(
             query_graph=feature.graph,
             target_node=feature.node,
-            data_cleaning_operations=[],
+            table_cleaning_operations=[],
         )
         node = graph.get_node_by_name(node_name_map[feature.node_name])
 
@@ -138,12 +138,12 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             # check any conflict with existing documents
             await self._check_document_unique_constraints(document=document)
 
-            # check whether data has been saved at persistent storage
-            data_service = TableService(
+            # check whether table has been saved at persistent storage
+            table_service = TableService(
                 user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
             )
             for tabular_data_id in data.tabular_data_ids:
-                _ = await data_service.get_document(document_id=tabular_data_id)
+                _ = await table_service.get_document(document_id=tabular_data_id)
 
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,

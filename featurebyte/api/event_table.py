@@ -40,9 +40,9 @@ class EventTable(TableApiObject):
     - and an event_id column as a primary key\n
     - an event timestamp
 
-    Users are strongly encouraged to annotate the data by tagging entities and defining:
+    Users are strongly encouraged to annotate the table by tagging entities and defining:
 
-    - the semantic of the data field
+    - the semantic of the table field
     - critical data information on the data quality that requires cleaning before feature engineering.
 
     Before registering a new EventTable, users are asked to set the default for the FeatureJob scheduling for features
@@ -62,7 +62,7 @@ class EventTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
 
     # pydantic instance variable (internal use)
     internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
@@ -118,7 +118,7 @@ class EventTable(TableApiObject):
             column_cleaning_operations=column_cleaning_operations,
         )
 
-        # The input of view graph node is the data node. The final graph looks like this:
+        # The input of view graph node is the table node. The final graph looks like this:
         #    +-----------+     +----------------------------+
         #    | InputNode + --> | GraphNode(type:event_view) +
         #    +-----------+     +----------------------------+
@@ -139,13 +139,13 @@ class EventTable(TableApiObject):
         )
 
         view_graph_node, columns_info = event_table_data.construct_event_view_graph_node(
-            event_data_node=data_node,
+            event_table_node=data_node,
             drop_column_names=drop_column_names,
             metadata=ViewMetadata(
                 view_mode=view_mode,
                 drop_column_names=drop_column_names,
                 column_cleaning_operations=column_cleaning_operations,
-                data_id=data_node.parameters.id,
+                table_id=data_node.parameters.id,
             ),
         )
         inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
@@ -242,7 +242,7 @@ class EventTable(TableApiObject):
         tabular_source: SourceTable
             DatabaseTable object constructed from FeatureStore
         name: str
-            Event data name
+            Event table name
         event_id_column: str
             Event ID column from the given tabular source
         event_timestamp_column: str
@@ -337,7 +337,7 @@ class EventTable(TableApiObject):
         late_data_allowance: float = 5e-5,
     ) -> FeatureJobSettingAnalysis:
         """
-        Create new feature job setting analysis on the event data
+        Create new feature job setting analysis on the event table
 
         Parameters
         ----------
@@ -352,7 +352,7 @@ class EventTable(TableApiObject):
         job_time_buffer_setting: Union[int, Literal["auto"]]
             Buffer time for job execution (seconds)
         blind_spot_buffer_setting: int
-            Buffer time for data population blind spot
+            Buffer time for table population blind spot
         late_data_allowance: float
             Threshold for late records (percentile)
 
@@ -361,7 +361,7 @@ class EventTable(TableApiObject):
         FeatureJobSettingAnalysis
         """
         payload = FeatureJobSettingAnalysisCreate(
-            event_data_id=self.id,
+            event_table_id=self.id,
             analysis_date=analysis_date,
             analysis_length=analysis_length,
             min_featurejob_period=min_featurejob_period,
@@ -380,7 +380,7 @@ class EventTable(TableApiObject):
     @typechecked
     def initialize_default_feature_job_setting(self) -> None:
         """
-        Initialize default feature job setting by performing an analysis on the data
+        Initialize default feature job setting by performing an analysis on the table
 
         Raises
         ------

@@ -4,9 +4,10 @@
         "Instead, update the test conftest.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "63ff1a9d5631c515f17fc699",
+    "_id": "6414004bc6834e5117ec158a",
+    "catalog_id": "63eda344d0313fb925f7883a",
     "created_at": null,
-    "default_feature_list_id": "63ff1a9d5631c515f17fc696",
+    "default_feature_list_id": "6414004bc6834e5117ec1587",
     "default_version_mode": "AUTO",
     "deployed_feature_list_ids": [],
     "dtype_distribution": [
@@ -19,11 +20,11 @@
         "63f94ed6ea1f050131379214"
     ],
     "feature_list_ids": [
-        "63ff1a9d5631c515f17fc696"
+        "6414004bc6834e5117ec1587"
     ],
     "feature_namespace_ids": [
-        "63ff1a9d5631c515f17fc67e",
-        "63ff1a9d5631c515f17fc680"
+        "6414004bc6834e5117ec1570",
+        "6414004bc6834e5117ec1572"
     ],
     "name": "sf_feature_list_multiple",
     "readiness_distribution": [
@@ -37,6 +38,5 @@
         "6337f9651050ee7d5980660d"
     ],
     "updated_at": null,
-    "user_id": null,
-    "catalog_id": "63eda344d0313fb925f7883a"
+    "user_id": null
 }

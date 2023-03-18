@@ -20,7 +20,7 @@ class EventTableCreate(TableCreate):
     EventTable Creation Schema
     """
 
-    type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
     event_id_column: StrictStr
     event_timestamp_column: StrictStr
     default_feature_job_setting: Optional[FeatureJobSetting]

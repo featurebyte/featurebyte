@@ -34,7 +34,7 @@ async def test_get_join_steps__one_step(
     join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
     assert join_steps == [
         JoinStep(
-            data=data.dict(by_alias=True),
+            table=data.dict(by_alias=True),
             parent_key="b",
             parent_serving_name="B",
             child_key="a",
@@ -62,14 +62,14 @@ async def test_get_join_steps__two_steps(
     join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
     assert join_steps == [
         JoinStep(
-            data=data_a_to_b.dict(by_alias=True),
+            table=data_a_to_b.dict(by_alias=True),
             parent_key="b",
             parent_serving_name="B",
             child_key="a",
             child_serving_name="A",
         ),
         JoinStep(
-            data=data_b_to_c.dict(by_alias=True),
+            table=data_b_to_c.dict(by_alias=True),
             parent_key="c",
             parent_serving_name="C",
             child_key="b",
@@ -103,21 +103,21 @@ async def test_get_join_steps__two_branches(
     join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
     assert join_steps == [
         JoinStep(
-            data=data_a_to_b.dict(by_alias=True),
+            table=data_a_to_b.dict(by_alias=True),
             parent_key="b",
             parent_serving_name="B",
             child_key="a",
             child_serving_name="A",
         ),
         JoinStep(
-            data=data_b_to_c.dict(by_alias=True),
+            table=data_b_to_c.dict(by_alias=True),
             parent_key="c",
             parent_serving_name="C",
             child_key="b",
             child_serving_name="B",
         ),
         JoinStep(
-            data=data_b_to_d.dict(by_alias=True),
+            table=data_b_to_d.dict(by_alias=True),
             parent_key="d",
             parent_serving_name="D",
             child_key="b",
@@ -153,21 +153,21 @@ async def test_get_join_steps__serving_names_mapping(
     join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
     assert join_steps == [
         JoinStep(
-            data=data_a_to_b.dict(by_alias=True),
+            table=data_a_to_b.dict(by_alias=True),
             parent_key="b",
             parent_serving_name="B",
             child_key="a",
             child_serving_name="new_A",
         ),
         JoinStep(
-            data=data_b_to_c.dict(by_alias=True),
+            table=data_b_to_c.dict(by_alias=True),
             parent_key="c",
             parent_serving_name="C",
             child_key="b",
             child_serving_name="B",
         ),
         JoinStep(
-            data=data_b_to_d.dict(by_alias=True),
+            table=data_b_to_d.dict(by_alias=True),
             parent_key="d",
             parent_serving_name="D",
             child_key="b",
@@ -244,14 +244,14 @@ async def test_get_join_steps__multiple_provided(
     join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
     assert join_steps == [
         JoinStep(
-            data=data_b_to_c.dict(by_alias=True),
+            table=data_b_to_c.dict(by_alias=True),
             parent_key="c",
             parent_serving_name="C",
             child_key="b",
             child_serving_name="B",
         ),
         JoinStep(
-            data=data_c_to_d.dict(by_alias=True),
+            table=data_c_to_d.dict(by_alias=True),
             parent_key="d",
             parent_serving_name="D",
             child_key="c",

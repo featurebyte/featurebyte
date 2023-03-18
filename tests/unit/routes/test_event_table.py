@@ -27,23 +27,24 @@ class TestEventTableApi(BaseTableApiTestSuite):
     base_route = "/event_table"
     data_create_schema_class = EventTableCreate
     payload = BaseTableApiTestSuite.load_payload("tests/fixtures/request_payloads/event_table.json")
+    document_name = "sf_event_table"
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
             f'{class_name} (id: "{payload["_id"]}") already exists. '
-            f'Get the existing object by `{class_name}.get(name="sf_event_data")`.',
+            f'Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            f'{class_name} (name: "sf_event_data") already exists. '
-            f'Get the existing object by `{class_name}.get(name="sf_event_data")`.',
+            f'{class_name} (name: "{document_name}") already exists. '
+            f'Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
         (
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
             f"{class_name} (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
             "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'}}\") "
-            f'already exists. Get the existing object by `{class_name}.get(name="sf_event_data")`.',
+            f'already exists. Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
@@ -103,7 +104,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 col["semantic_id"] = event_id_semantic_id
             cols_info.append(col)
 
-        event_data_dict = {
+        event_table_dict = {
             "name": "订单表",
             "tabular_source": tabular_source,
             "columns_info": cols_info,
@@ -119,15 +120,15 @@ class TestEventTableApi(BaseTableApiTestSuite):
             "user_id": str(user_id),
             "_id": ObjectId(),
         }
-        event_table_data = EventTableData(**event_data_dict)
+        event_table_data = EventTableData(**event_table_dict)
         input_node = event_table_data.construct_input_node(
             feature_store_details=feature_store_details
         )
         graph = QueryGraph()
         inserted_node = graph.add_node(node=input_node, input_nodes=[])
-        event_data_dict["graph"] = graph
-        event_data_dict["node_name"] = inserted_node.name
-        output = EventTableModel(**event_data_dict).json_dict()
+        event_table_dict["graph"] = graph
+        event_table_dict["node_name"] = inserted_node.name
+        output = EventTableModel(**event_table_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None
         return output
@@ -135,7 +136,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
     @pytest.fixture(name="data_update_dict")
     def data_update_dict_fixture(self):
         """
-        Event data update dict object
+        Event table update dict object
         """
         return {
             "default_feature_job_setting": {
@@ -300,7 +301,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
         expected_info_response = {
-            "name": "sf_event_data",
+            "name": self.document_name,
             "event_timestamp_column": "event_timestamp",
             "record_creation_timestamp_column": "created_at",
             "table_details": {

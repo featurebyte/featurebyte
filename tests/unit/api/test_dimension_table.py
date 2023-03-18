@@ -1,5 +1,5 @@
 """
-Test dimension data API object
+Test dimension table API object
 """
 from unittest.mock import patch
 
@@ -66,12 +66,12 @@ class TestDimensionTableTestSuite(BaseTableTestSuite):
     """
 
 
-@pytest.fixture(name="dimension_data_dict")
-def dimension_data_dict_fixture(snowflake_database_table):
+@pytest.fixture(name="dimension_table_dict")
+def dimension_table_dict_fixture(snowflake_database_table):
     """DimensionTable in serialized dictionary format"""
     return {
-        "type": TableDataType.DIMENSION_DATA,
-        "name": "sf_dimension_data",
+        "type": TableDataType.DIMENSION_TABLE,
+        "name": "sf_dimension_table",
         "tabular_source": {
             "feature_store_id": snowflake_database_table.feature_store.id,
             "table_details": {
@@ -153,29 +153,29 @@ def dimension_data_dict_fixture(snowflake_database_table):
     }
 
 
-def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
+def test_from_tabular_source(snowflake_database_table, dimension_table_dict):
     """
     Test DimensionTable creation using tabular source
     """
-    dimension_data = DimensionTable.from_tabular_source(
+    dimension_table = DimensionTable.from_tabular_source(
         tabular_source=snowflake_database_table,
-        name="sf_dimension_data",
+        name="sf_dimension_table",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
     )
 
     # check that node parameter is set properly
-    node_params = dimension_data.frame.node.parameters
-    assert node_params.id == dimension_data.id
-    assert node_params.type == TableDataType.DIMENSION_DATA
+    node_params = dimension_table.frame.node.parameters
+    assert node_params.id == dimension_table.id
+    assert node_params.type == TableDataType.DIMENSION_TABLE
 
-    # check that dimension data columns for autocompletion
-    assert set(dimension_data.columns).issubset(dir(dimension_data))
-    assert dimension_data._ipython_key_completions_() == set(dimension_data.columns)
+    # check that dimension table columns for autocompletion
+    assert set(dimension_table.columns).issubset(dir(dimension_table))
+    assert dimension_table._ipython_key_completions_() == set(dimension_table.columns)
 
-    output = dimension_data.dict(by_alias=True)
-    dimension_data_dict["_id"] = dimension_data.id
-    assert output == dimension_data_dict
+    output = dimension_table.dict(by_alias=True)
+    dimension_table_dict["_id"] = dimension_table.id
+    assert output == dimension_table_dict
 
     # user input validation
     with pytest.raises(TypeError) as exc:
@@ -188,20 +188,20 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
 
-def test_from_tabular_source__duplicated_record(saved_dimension_data, snowflake_database_table):
+def test_from_tabular_source__duplicated_record(saved_dimension_table, snowflake_database_table):
     """
-    Test DimensionTable creation failure due to duplicated dimension data name
+    Test DimensionTable creation failure due to duplicated dimension table name
     """
-    _ = saved_dimension_data
+    _ = saved_dimension_table
     with pytest.raises(DuplicatedRecordException) as exc:
         DimensionTable.from_tabular_source(
             tabular_source=snowflake_database_table,
-            name="sf_dimension_data",
+            name="sf_dimension_table",
             dimension_id_column="col_int",
             record_creation_timestamp_column="created_at",
         )
     assert (
-        'DimensionTable (dimension_data.name: "sf_dimension_data") exists in saved record.'
+        'DimensionTable (dimension_table.name: "sf_dimension_table") exists in saved record.'
         in str(exc.value)
     )
 
@@ -214,82 +214,82 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
         with patch("featurebyte.api.base_table.Configurations"):
             DimensionTable.from_tabular_source(
                 tabular_source=snowflake_database_table,
-                name="sf_dimension_data",
+                name="sf_dimension_table",
                 dimension_id_column="col_int",
                 record_creation_timestamp_column="created_at",
             )
 
 
-def assert_info_helper(dimension_data_info):
+def assert_info_helper(dimension_table_info):
     """
-    Helper function to assert info from dimension data.
+    Helper function to assert info from dimension table.
     """
-    assert dimension_data_info["dimension_id_column"] == "col_int"
-    assert dimension_data_info["entities"] == []
-    assert dimension_data_info["name"] == "sf_dimension_data"
-    assert dimension_data_info["record_creation_timestamp_column"] == "created_at"
-    assert dimension_data_info["status"] == "DRAFT"
+    assert dimension_table_info["dimension_id_column"] == "col_int"
+    assert dimension_table_info["entities"] == []
+    assert dimension_table_info["name"] == "sf_dimension_table"
+    assert dimension_table_info["record_creation_timestamp_column"] == "created_at"
+    assert dimension_table_info["status"] == "DRAFT"
 
 
-def test_info(saved_dimension_data):
+def test_info(saved_dimension_table):
     """
     Test info
     """
-    info = saved_dimension_data.info()
+    info = saved_dimension_table.info()
     assert_info_helper(info)
 
     # setting verbose = true is a no-op for now
-    info = saved_dimension_data.info(verbose=True)
+    info = saved_dimension_table.info(verbose=True)
     assert_info_helper(info)
 
 
-def test_accessing_dimension_data_attributes(snowflake_dimension_data):
-    """Test accessing event data object attributes"""
-    assert snowflake_dimension_data.saved is False
-    assert snowflake_dimension_data.record_creation_timestamp_column == "created_at"
-    assert snowflake_dimension_data.dimension_id_column == "col_int"
+def test_accessing_dimension_table_attributes(snowflake_dimension_table):
+    """Test accessing event table object attributes"""
+    assert snowflake_dimension_table.saved is False
+    assert snowflake_dimension_table.record_creation_timestamp_column == "created_at"
+    assert snowflake_dimension_table.dimension_id_column == "col_int"
 
 
-def test_accessing_saved_dimension_data_attributes(saved_dimension_data):
-    """Test accessing event data object attributes"""
-    assert saved_dimension_data.saved
-    assert isinstance(saved_dimension_data.cached_model, DimensionTableModel)
-    assert saved_dimension_data.record_creation_timestamp_column == "created_at"
-    assert saved_dimension_data.dimension_id_column == "col_int"
+def test_accessing_saved_dimension_table_attributes(saved_dimension_table):
+    """Test accessing event table object attributes"""
+    assert saved_dimension_table.saved
+    assert isinstance(saved_dimension_table.cached_model, DimensionTableModel)
+    assert saved_dimension_table.record_creation_timestamp_column == "created_at"
+    assert saved_dimension_table.dimension_id_column == "col_int"
 
     # check synchronization
-    cloned = DimensionTable.get_by_id(id=saved_dimension_data.id)
+    cloned = DimensionTable.get_by_id(id=saved_dimension_table.id)
     assert cloned.record_creation_timestamp_column == "created_at"
-    saved_dimension_data.update_record_creation_timestamp_column(
+    saved_dimension_table.update_record_creation_timestamp_column(
         record_creation_timestamp_column="event_timestamp"
     )
-    assert saved_dimension_data.record_creation_timestamp_column == "event_timestamp"
+    assert saved_dimension_table.record_creation_timestamp_column == "event_timestamp"
     assert cloned.record_creation_timestamp_column == "event_timestamp"
 
 
 def test_sdk_code_generation(snowflake_database_table, update_fixtures):
-    """Check SDK code generation for unsaved data"""
-    dimension_data = DimensionTable.from_tabular_source(
+    """Check SDK code generation for unsaved table"""
+    dimension_table = DimensionTable.from_tabular_source(
         tabular_source=snowflake_database_table,
-        name="sf_dimension_data",
+        name="sf_dimension_table",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
     )
     check_sdk_code_generation(
-        dimension_data.frame,
+        dimension_table.frame,
         to_use_saved_data=False,
         fixture_path="tests/fixtures/sdk_code/dimension_table.py",
         update_fixtures=update_fixtures,
-        data_id=dimension_data.id,
+        table_id=dimension_table.id,
     )
 
 
-def test_sdk_code_generation_on_saved_data(saved_dimension_data, update_fixtures):
-    """Check SDK code generation for saved data"""
+def test_sdk_code_generation_on_saved_data(saved_dimension_table, update_fixtures):
+    """Check SDK code generation for saved table"""
     check_sdk_code_generation(
-        saved_dimension_data.frame,
+        saved_dimension_table.frame,
         to_use_saved_data=True,
         fixture_path="tests/fixtures/sdk_code/saved_dimension_table.py",
         update_fixtures=update_fixtures,
-        data_id=saved_dimension_data.id,
+        table_id=saved_dimension_table.id,
     )

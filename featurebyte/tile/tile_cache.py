@@ -608,7 +608,7 @@ class TileCache:
     ) -> tuple[Expression, Expression]:
         """Get the start and end dates based on which to compute the tiles
 
-        These will be used to construct the entity table that will be used to filter the event data
+        These will be used to construct the entity table that will be used to filter the event table
         before building tiles.
 
         Parameters

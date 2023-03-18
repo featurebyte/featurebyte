@@ -48,8 +48,8 @@ class TestCatalogApi(BaseApiTestSuite):
         (
             {
                 "id": str(unknown_id),
-                "data_type": "event_table",
-                "data_id": str(ObjectId()),
+                "table_type": "event_table",
+                "table_id": str(ObjectId()),
             },
             f'Catalog (id: "{unknown_id}") not found. Please save the Catalog object first.',
         )
@@ -118,8 +118,8 @@ class TestCatalogApi(BaseApiTestSuite):
     @staticmethod
     def prepare_parent_payload(payload):
         """Create parent payload"""
-        payload["data_type"] = "event_table"
-        payload["data_id"] = str(ObjectId())
+        payload["table_type"] = "event_table"
+        payload["table_id"] = str(ObjectId())
         return payload
 
     def test_update_200(self, create_success_response, test_api_client_persistent):

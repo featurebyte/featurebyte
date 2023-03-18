@@ -19,7 +19,7 @@ def source_col1_fixture():
     return SourceDataColumn(
         name="source_col1",
         tabular_data_id=None,
-        tabular_data_type="event_data",
+        tabular_data_type="event_table",
         node_names={"input_1"},
         node_name="input_1",
         dtype=DBVarType.FLOAT,
@@ -32,7 +32,7 @@ def source_col2_fixture():
     return SourceDataColumn(
         name="source_col2",
         tabular_data_id=None,
-        tabular_data_type="event_data",
+        tabular_data_type="event_table",
         node_names={"input_1"},
         node_name="input_1",
         dtype=DBVarType.INT,
@@ -134,7 +134,7 @@ def test_insert_column():
     col1 = SourceDataColumn(
         name="col1",
         tabular_data_id=None,
-        tabular_data_type="event_data",
+        tabular_data_type="event_table",
         node_names={"input_1", "project_1"},
         node_name="input_1",
         dtype=DBVarType.FLOAT,
@@ -149,7 +149,7 @@ def test_insert_column():
             "node_names": {"input_1", "project_1", "filter_1"},
             "node_name": "filter_1",
             "tabular_data_id": None,
-            "tabular_data_type": "event_data",
+            "tabular_data_type": "event_table",
             "type": "source",
             "filter": True,
             "dtype": "FLOAT",
@@ -158,7 +158,7 @@ def test_insert_column():
 
 
 def test_data_column_clone_with_replacement(source_col1):
-    """Test data column clone_with_replacement"""
+    """Test table column clone_with_replacement"""
     # case 1: when the node name found in the replace_node_name_map
     op_struct = OperationStructure(
         columns=[source_col1],
@@ -197,7 +197,7 @@ def test_data_column_clone_with_replacement(source_col1):
 
 
 def test_derived_data_column_clone_without_internal_nodes(source_col1, source_col2, derived_col1):
-    """Test derived data column clone_without_internal_nodes"""
+    """Test derived table column clone_without_internal_nodes"""
     # case 1: when all the node names found in the proxy_node_name_map
     assert source_col1.node_names == {"input_1"}
     op_struct = OperationStructure(
@@ -217,7 +217,7 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
     assert output == {
         "name": "source_col1",
         "tabular_data_id": None,
-        "tabular_data_type": "event_data",
+        "tabular_data_type": "event_table",
         "type": "source",
         "dtype": "FLOAT",
         "filter": False,
@@ -242,7 +242,7 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
                 "node_names": {"input_2"},
                 "node_name": "input_2",
                 "tabular_data_id": None,
-                "tabular_data_type": "event_data",
+                "tabular_data_type": "event_table",
                 "type": "source",
                 "dtype": "FLOAT",
             },
@@ -252,7 +252,7 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
                 "node_names": {"input_2"},
                 "node_name": "input_2",
                 "tabular_data_id": None,
-                "tabular_data_type": "event_data",
+                "tabular_data_type": "event_table",
                 "type": "source",
                 "dtype": "INT",
             },
@@ -281,7 +281,7 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
                 "node_names": {"graph_1"},  # note that input_1 is replaced with graph_1
                 "node_name": "graph_1",
                 "tabular_data_id": None,
-                "tabular_data_type": "event_data",
+                "tabular_data_type": "event_table",
                 "type": "source",
                 "dtype": "FLOAT",
             },
@@ -291,7 +291,7 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
                 "node_names": {"graph_1"},  # note that input_1 is replaced with graph_1
                 "node_name": "graph_1",
                 "tabular_data_id": None,
-                "tabular_data_type": "event_data",
+                "tabular_data_type": "event_table",
                 "type": "source",
                 "dtype": "INT",
             },

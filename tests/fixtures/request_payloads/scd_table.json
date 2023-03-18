@@ -80,17 +80,17 @@
     "current_flag_column": "is_active",
     "effective_timestamp_column": "effective_timestamp",
     "end_timestamp_column": "end_timestamp",
-    "name": "sf_scd_data",
+    "name": "sf_scd_table",
     "natural_key_column": "col_text",
     "record_creation_timestamp_column": null,
     "surrogate_key_column": "col_int",
     "tabular_source": {
-        "feature_store_id": "63ff1a9c5631c515f17fc66e",
+        "feature_store_id": "6414004ac6834e5117ec155c",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "scd_table"
         }
     },
-    "type": "scd_data"
+    "type": "scd_table"
 }

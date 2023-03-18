@@ -20,15 +20,15 @@ from tests.util.helper import patch_import_package
 
 
 @pytest_asyncio.fixture(name="saved_analysis")
-async def saved_analysis_fixture(mock_get_persistent, saved_event_data):
+async def saved_analysis_fixture(mock_get_persistent, saved_event_table):
     """
     Saved analysis
     """
     persistent = mock_get_persistent()
-    _ = saved_event_data
+    _ = saved_event_table
     with open("tests/fixtures/feature_job_setting_analysis/result.json", "r") as file_handle:
         analysis = FeatureJobSettingAnalysisModel(**json.load(file_handle))
-    analysis.event_data_id = saved_event_data.id
+    analysis.event_table_id = saved_event_table.id
     return await persistent.insert_one(
         collection_name=FeatureJobSettingAnalysisModel.collection_name(),
         document=analysis.dict(),
@@ -36,7 +36,7 @@ async def saved_analysis_fixture(mock_get_persistent, saved_event_data):
     )
 
 
-def test_list(saved_analysis, saved_event_data):
+def test_list(saved_analysis, saved_event_table):
     """
     Test list analysis
     """
@@ -54,10 +54,10 @@ def test_list(saved_analysis, saved_event_data):
         "blind_spot",
     ]
     assert result["id"].iloc[0] == analysis_id
-    assert result["event_table"].iloc[0] == "sf_event_data"
+    assert result["event_table"].iloc[0] == "sf_event_table"
 
     # list with filter
-    assert FeatureJobSettingAnalysis.list(event_table_id=saved_event_data.id).shape == (1, 8)
+    assert FeatureJobSettingAnalysis.list(event_table_id=saved_event_table.id).shape == (1, 8)
     assert FeatureJobSettingAnalysis.list(event_table_id=ObjectId()).shape == (0, 8)
 
 
@@ -90,7 +90,7 @@ def test_info(saved_analysis):
     analysis = FeatureJobSettingAnalysis.get_by_id(saved_analysis)
     assert analysis.info() == {
         "created_at": analysis.created_at.isoformat(),
-        "event_data_name": "sf_event_data",
+        "event_table_name": "sf_event_table",
         "analysis_options": {
             "analysis_date": "2022-04-18T23:59:55.799000",
             "analysis_start": "2022-03-21T23:59:55.799000",
@@ -102,7 +102,7 @@ def test_info(saved_analysis):
             "min_featurejob_period": 60,
         },
         "analysis_parameters": {
-            "event_table_name": "sf_event_data",
+            "event_table_name": "sf_event_table",
             "creation_date_column": "created_at",
             "event_timestamp_column": "event_timestamp",
             "blind_spot_buffer": 5,

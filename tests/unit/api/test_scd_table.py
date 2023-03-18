@@ -1,5 +1,5 @@
 """
-Test SCD data API object
+Test SCD table API object
 """
 from unittest.mock import patch
 
@@ -71,14 +71,14 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
     """
 
 
-@pytest.fixture(name="scd_data_dict")
-def scd_data_dict_fixture(snowflake_database_table_scd_data):
+@pytest.fixture(name="scd_table_dict")
+def scd_table_dict_fixture(snowflake_database_table_scd_table):
     """SCDTable in serialized dictionary format"""
     return {
-        "type": TableDataType.SCD_DATA,
-        "name": "sf_scd_data",
+        "type": TableDataType.SCD_TABLE,
+        "name": "sf_scd_table",
         "tabular_source": {
-            "feature_store_id": snowflake_database_table_scd_data.feature_store.id,
+            "feature_store_id": snowflake_database_table_scd_table.feature_store.id,
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
@@ -169,13 +169,13 @@ def scd_data_dict_fixture(snowflake_database_table_scd_data):
     }
 
 
-def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
+def test_from_tabular_source(snowflake_database_table_scd_table, scd_table_dict):
     """
     Test SCDTable creation using tabular source
     """
-    scd_data = SCDTable.from_tabular_source(
-        tabular_source=snowflake_database_table_scd_data,
-        name="sf_scd_data",
+    scd_table = SCDTable.from_tabular_source(
+        tabular_source=snowflake_database_table_scd_table,
+        name="sf_scd_table",
         natural_key_column="col_text",
         surrogate_key_column="col_int",
         effective_timestamp_column="effective_timestamp",
@@ -185,23 +185,23 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
     )
 
     # check that node parameter is set properly
-    node_params = scd_data.frame.node.parameters
-    assert node_params.id == scd_data.id
-    assert node_params.type == TableDataType.SCD_DATA
+    node_params = scd_table.frame.node.parameters
+    assert node_params.id == scd_table.id
+    assert node_params.type == TableDataType.SCD_TABLE
 
-    # check that dimension data columns for autocompletion
-    assert set(scd_data.columns).issubset(dir(scd_data))
-    assert scd_data._ipython_key_completions_() == set(scd_data.columns)
+    # check that dimension table columns for autocompletion
+    assert set(scd_table.columns).issubset(dir(scd_table))
+    assert scd_table._ipython_key_completions_() == set(scd_table.columns)
 
-    output = scd_data.dict(by_alias=True)
-    scd_data_dict["_id"] = scd_data.id
-    scd_data_dict["current_flag_column"] = scd_data_dict.pop("current_flag")  # DEV-556
-    assert output == scd_data_dict
+    output = scd_table.dict(by_alias=True)
+    scd_table_dict["_id"] = scd_table.id
+    scd_table_dict["current_flag_column"] = scd_table_dict.pop("current_flag")  # DEV-556
+    assert output == scd_table_dict
 
     # user input validation
     with pytest.raises(TypeError) as exc:
         SCDTable.from_tabular_source(
-            tabular_source=snowflake_database_table_scd_data,
+            tabular_source=snowflake_database_table_scd_table,
             name=123,
             natural_key_column="col_text",
             surrogate_key_column="col_int",
@@ -213,15 +213,15 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
 
-@pytest.mark.usefixtures("saved_scd_data")
-def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_data):
+@pytest.mark.usefixtures("saved_scd_table")
+def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_table):
     """
-    Test SCDTable creation failure due to duplicated dimension data name
+    Test SCDTable creation failure due to duplicated dimension table name
     """
     with pytest.raises(DuplicatedRecordException) as exc:
         SCDTable.from_tabular_source(
-            tabular_source=snowflake_database_table_scd_data,
-            name="sf_scd_data",
+            tabular_source=snowflake_database_table_scd_table,
+            name="sf_scd_table",
             natural_key_column="col_text",
             surrogate_key_column="col_int",
             effective_timestamp_column="effective_timestamp",
@@ -229,18 +229,18 @@ def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_dat
             current_flag_column="is_active",
             record_creation_timestamp_column="created_at",
         )
-    assert 'SCDTable (scd_data.name: "sf_scd_data") exists in saved record.' in str(exc.value)
+    assert 'SCDTable (scd_table.name: "sf_scd_table") exists in saved record.' in str(exc.value)
 
 
-def test_from_tabular_source__retrieval_exception(snowflake_database_table_scd_data):
+def test_from_tabular_source__retrieval_exception(snowflake_database_table_scd_table):
     """
     Test SCDTable creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.base_table.Configurations"):
             SCDTable.from_tabular_source(
-                tabular_source=snowflake_database_table_scd_data,
-                name="sf_scd_data",
+                tabular_source=snowflake_database_table_scd_table,
+                name="sf_scd_table",
                 natural_key_column="col_text",
                 surrogate_key_column="col_int",
                 effective_timestamp_column="effective_timestamp",
@@ -250,97 +250,97 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table_scd_d
             )
 
 
-def assert_info_helper(scd_data_info):
+def assert_info_helper(scd_table_info):
     """
-    Helper function to assert info from SCD data.
+    Helper function to assert info from SCD table.
     """
-    assert scd_data_info["entities"] == []
-    assert scd_data_info["name"] == "sf_scd_data"
-    assert scd_data_info["status"] == "DRAFT"
-    assert scd_data_info["natural_key_column"] == "col_text"
-    assert scd_data_info["surrogate_key_column"] == "col_int"
-    assert scd_data_info["effective_timestamp_column"] == "effective_timestamp"
-    assert scd_data_info["end_timestamp_column"] == "end_timestamp"
-    assert scd_data_info["current_flag_column"] == "is_active"
+    assert scd_table_info["entities"] == []
+    assert scd_table_info["name"] == "sf_scd_table"
+    assert scd_table_info["status"] == "DRAFT"
+    assert scd_table_info["natural_key_column"] == "col_text"
+    assert scd_table_info["surrogate_key_column"] == "col_int"
+    assert scd_table_info["effective_timestamp_column"] == "effective_timestamp"
+    assert scd_table_info["end_timestamp_column"] == "end_timestamp"
+    assert scd_table_info["current_flag_column"] == "is_active"
 
 
-def test_info(saved_scd_data):
+def test_info(saved_scd_table):
     """
     Test info
     """
-    info = saved_scd_data.info()
+    info = saved_scd_table.info()
     assert_info_helper(info)
 
     # setting verbose = true is a no-op for now
-    info = saved_scd_data.info(verbose=True)
+    info = saved_scd_table.info(verbose=True)
     assert_info_helper(info)
 
 
-def test_scd_data__entity_relation_auto_tagging(saved_scd_data):
-    """Test scd data update: entity relation will be created automatically"""
+def test_scd_table__entity_relation_auto_tagging(saved_scd_table):
+    """Test scd table update: entity relation will be created automatically"""
     entity_a = Entity(name="a", serving_names=["a_id"])
     entity_a.save()
 
     entity_b = Entity(name="b", serving_names=["b_id"])
     entity_b.save()
 
-    # add entities to scd data
-    assert saved_scd_data.natural_key_column == "col_text"
-    saved_scd_data.col_text.as_entity("a")
-    saved_scd_data.cust_id.as_entity("b")
+    # add entities to scd table
+    assert saved_scd_table.natural_key_column == "col_text"
+    saved_scd_table.col_text.as_entity("a")
+    saved_scd_table.cust_id.as_entity("b")
 
     updated_entity_a = Entity.get_by_id(id=entity_a.id)
     assert updated_entity_a.parents == [
-        {"id": entity_b.id, "data_type": "scd_data", "data_id": saved_scd_data.id}
+        {"id": entity_b.id, "table_type": "scd_table", "table_id": saved_scd_table.id}
     ]
     updated_entity_b = Entity.get_by_id(id=entity_b.id)
     assert updated_entity_b.parents == []
 
     # remove primary id column's entity
-    saved_scd_data.col_text.as_entity(None)
+    saved_scd_table.col_text.as_entity(None)
     updated_entity_a = Entity.get_by_id(id=entity_a.id)
     assert updated_entity_a.parents == []
 
 
-def test_accessing_scd_data_attributes(snowflake_scd_data):
-    """Test accessing event data object attributes"""
-    assert snowflake_scd_data.saved is False
-    assert snowflake_scd_data.record_creation_timestamp_column is None
-    assert snowflake_scd_data.natural_key_column == "col_text"
-    assert snowflake_scd_data.effective_timestamp_column == "effective_timestamp"
-    assert snowflake_scd_data.surrogate_key_column == "col_int"
-    assert snowflake_scd_data.end_timestamp_column == "end_timestamp"
-    assert snowflake_scd_data.current_flag_column == "is_active"
-    assert snowflake_scd_data.timestamp_column == "effective_timestamp"
+def test_accessing_scd_table_attributes(snowflake_scd_table):
+    """Test accessing event table object attributes"""
+    assert snowflake_scd_table.saved is False
+    assert snowflake_scd_table.record_creation_timestamp_column is None
+    assert snowflake_scd_table.natural_key_column == "col_text"
+    assert snowflake_scd_table.effective_timestamp_column == "effective_timestamp"
+    assert snowflake_scd_table.surrogate_key_column == "col_int"
+    assert snowflake_scd_table.end_timestamp_column == "end_timestamp"
+    assert snowflake_scd_table.current_flag_column == "is_active"
+    assert snowflake_scd_table.timestamp_column == "effective_timestamp"
 
 
-def test_accessing_saved_scd_data_attributes(saved_scd_data):
-    """Test accessing event data object attributes"""
-    assert saved_scd_data.saved
-    assert isinstance(saved_scd_data.cached_model, SCDTableModel)
-    assert saved_scd_data.record_creation_timestamp_column is None
-    assert saved_scd_data.natural_key_column == "col_text"
-    assert saved_scd_data.effective_timestamp_column == "effective_timestamp"
-    assert saved_scd_data.surrogate_key_column == "col_int"
-    assert saved_scd_data.end_timestamp_column == "end_timestamp"
-    assert saved_scd_data.current_flag_column == "is_active"
-    assert saved_scd_data.timestamp_column == "effective_timestamp"
+def test_accessing_saved_scd_table_attributes(saved_scd_table):
+    """Test accessing event table object attributes"""
+    assert saved_scd_table.saved
+    assert isinstance(saved_scd_table.cached_model, SCDTableModel)
+    assert saved_scd_table.record_creation_timestamp_column is None
+    assert saved_scd_table.natural_key_column == "col_text"
+    assert saved_scd_table.effective_timestamp_column == "effective_timestamp"
+    assert saved_scd_table.surrogate_key_column == "col_int"
+    assert saved_scd_table.end_timestamp_column == "end_timestamp"
+    assert saved_scd_table.current_flag_column == "is_active"
+    assert saved_scd_table.timestamp_column == "effective_timestamp"
 
     # check synchronization
-    cloned = SCDTable.get_by_id(id=saved_scd_data.id)
+    cloned = SCDTable.get_by_id(id=saved_scd_table.id)
     assert cloned.record_creation_timestamp_column is None
-    saved_scd_data.update_record_creation_timestamp_column(
+    saved_scd_table.update_record_creation_timestamp_column(
         record_creation_timestamp_column="effective_timestamp"
     )
-    assert saved_scd_data.record_creation_timestamp_column == "effective_timestamp"
+    assert saved_scd_table.record_creation_timestamp_column == "effective_timestamp"
     assert cloned.record_creation_timestamp_column == "effective_timestamp"
 
 
-def test_sdk_code_generation(snowflake_database_table_scd_data, update_fixtures):
-    """Check SDK code generation for unsaved data"""
-    scd_data = SCDTable.from_tabular_source(
-        tabular_source=snowflake_database_table_scd_data,
-        name="sf_scd_data",
+def test_sdk_code_generation(snowflake_database_table_scd_table, update_fixtures):
+    """Check SDK code generation for unsaved table"""
+    scd_table = SCDTable.from_tabular_source(
+        tabular_source=snowflake_database_table_scd_table,
+        name="sf_scd_table",
         natural_key_column="col_text",
         surrogate_key_column="col_int",
         effective_timestamp_column="effective_timestamp",
@@ -349,20 +349,20 @@ def test_sdk_code_generation(snowflake_database_table_scd_data, update_fixtures)
         record_creation_timestamp_column="created_at",
     )
     check_sdk_code_generation(
-        scd_data.frame,
+        scd_table.frame,
         to_use_saved_data=False,
         fixture_path="tests/fixtures/sdk_code/scd_table.py",
         update_fixtures=update_fixtures,
-        data_id=scd_data.id,
+        table_id=scd_table.id,
     )
 
 
-def test_sdk_code_generation_on_saved_data(saved_scd_data, update_fixtures):
-    """Check SDK code generation for saved data"""
+def test_sdk_code_generation_on_saved_data(saved_scd_table, update_fixtures):
+    """Check SDK code generation for saved table"""
     check_sdk_code_generation(
-        saved_scd_data.frame,
+        saved_scd_table.frame,
         to_use_saved_data=True,
         fixture_path="tests/fixtures/sdk_code/saved_scd_table.py",
         update_fixtures=update_fixtures,
-        data_id=saved_scd_data.id,
+        table_id=saved_scd_table.id,
     )

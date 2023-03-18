@@ -15,8 +15,8 @@ from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.table import (
     DimensionTableData,
     EventTableData,
-    GenericTableData,
     ItemTableData,
+    SouceTableData,
 )
 from featurebyte.query_graph.node.cleaning_operation import (
     ConditionOperationField,
@@ -61,10 +61,10 @@ def feature_store_details_fixture():
     )
 
 
-@pytest.fixture(name="generic_table_data")
-def generic_table_data_fixture(tabular_source):
-    """Generic table data fixture"""
-    return GenericTableData(
+@pytest.fixture(name="source_table_data")
+def source_table_data_fixture(tabular_source):
+    """Source table fixture"""
+    return SouceTableData(
         columns_info=[
             ColumnInfo(name="col_int", dtype=DBVarType.INT),
             ColumnInfo(name="col_float", dtype=DBVarType.FLOAT),
@@ -75,7 +75,7 @@ def generic_table_data_fixture(tabular_source):
 
 @pytest.fixture(name="event_table_data")
 def event_table_data_fixture(tabular_source):
-    """Event table data fixture"""
+    """Event table fixture"""
     return EventTableData(
         columns_info=[
             ColumnInfo(name="event_timestamp", dtype=DBVarType.TIMESTAMP),
@@ -101,7 +101,7 @@ def event_table_data_fixture(tabular_source):
 
 @pytest.fixture(name="item_table_data")
 def item_table_data_fixture(tabular_source, event_table_data):
-    """Item table data fixture"""
+    """Item table fixture"""
     return ItemTableData(
         columns_info=[
             ColumnInfo(name="item_id", dtype=DBVarType.INT),
@@ -117,13 +117,13 @@ def item_table_data_fixture(tabular_source, event_table_data):
         tabular_source=tabular_source,
         event_id_column="event_timestamp",
         item_id_column="item_id",
-        event_data_id=event_table_data.id,
+        event_table_id=event_table_data.id,
     )
 
 
 @pytest.fixture(name="dimension_table_data")
 def dimension_table_data_fixture(tabular_source):
-    """Dimension table data fixture"""
+    """Dimension table fixture"""
     return DimensionTableData(
         columns_info=[
             ColumnInfo(name="user_id", dtype=DBVarType.INT),
@@ -154,12 +154,10 @@ def dimension_table_data_fixture(tabular_source):
     )
 
 
-@pytest.fixture(name="generic_input_node")
-def generic_input_node_fixture(feature_store_details, generic_table_data):
-    """Generic table data input node"""
-    input_node = generic_table_data.construct_input_node(
-        feature_store_details=feature_store_details
-    )
+@pytest.fixture(name="source_table_input_node")
+def source_table_input_node_fixture(feature_store_details, source_table_data):
+    """Generic table input node"""
+    input_node = source_table_data.construct_input_node(feature_store_details=feature_store_details)
     assert input_node.dict() == {
         "type": "input",
         "name": "temp",
@@ -170,8 +168,8 @@ def generic_input_node_fixture(feature_store_details, generic_table_data):
             ],
             "feature_store_details": feature_store_details,
             "id": None,
-            "table_details": generic_table_data.tabular_source.table_details,
-            "type": "generic",
+            "table_details": source_table_data.tabular_source.table_details,
+            "type": "source_table",
         },
         "output_type": "frame",
     }
@@ -180,7 +178,7 @@ def generic_input_node_fixture(feature_store_details, generic_table_data):
 
 @pytest.fixture(name="event_input_node")
 def event_input_node_fixture(feature_store_details, event_table_data):
-    """Event table data input node"""
+    """Event table input node"""
     input_node = event_table_data.construct_input_node(feature_store_details=feature_store_details)
     assert input_node.dict() == {
         "type": "input",
@@ -196,7 +194,7 @@ def event_input_node_fixture(feature_store_details, event_table_data):
             "table_details": event_table_data.tabular_source.table_details,
             "id_column": "event_id",
             "timestamp_column": "event_timestamp",
-            "type": "event_data",
+            "type": "event_table",
         },
         "output_type": "frame",
     }
@@ -205,14 +203,14 @@ def event_input_node_fixture(feature_store_details, event_table_data):
 
 @pytest.fixture(name="item_input_node")
 def item_input_node_fixture(feature_store_details, item_table_data):
-    """Item table data input node"""
+    """Item table input node"""
     input_node = item_table_data.construct_input_node(feature_store_details=feature_store_details)
     return input_node
 
 
 @pytest.fixture(name="dimension_input_node")
 def dimension_input_node_fixture(feature_store_details, dimension_table_data):
-    """Dimension table data input node"""
+    """Dimension table input node"""
     input_node = dimension_table_data.construct_input_node(
         feature_store_details=feature_store_details
     )
@@ -229,7 +227,7 @@ def dimension_input_node_fixture(feature_store_details, dimension_table_data):
             "id": dimension_table_data.id,
             "table_details": dimension_table_data.tabular_source.table_details,
             "id_column": "user_id",
-            "type": "dimension_data",
+            "type": "dimension_table",
         },
         "output_type": "frame",
     }
@@ -237,11 +235,11 @@ def dimension_input_node_fixture(feature_store_details, dimension_table_data):
 
 
 def test_construct_cleaning_recipe_node__missing_critical_data_info(
-    generic_table_data, generic_input_node
+    source_table_data, source_table_input_node
 ):
-    """Test construct_cleaning_recipe_node on a table data without any critical data info"""
-    output = generic_table_data.construct_cleaning_recipe_node(
-        input_node=generic_input_node, skip_column_names=[]
+    """Test construct_cleaning_recipe_node on a source table without any critical data info"""
+    output = source_table_data.construct_cleaning_recipe_node(
+        input_node=source_table_input_node, skip_column_names=[]
     )
     assert output is None
 
@@ -294,7 +292,9 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
     )
 
 
-def test_construct_cleaning_recipe_node__dimension_data(dimension_table_data, dimension_input_node):
+def test_construct_cleaning_recipe_node__dimension_table(
+    dimension_table_data, dimension_input_node
+):
     """Test construct_cleaning_recipe_node (SQL generation is not ready for IS_IN and IS_STRING node)"""
     graph_node = dimension_table_data.construct_cleaning_recipe_node(
         input_node=dimension_input_node, skip_column_names=[]
@@ -335,13 +335,13 @@ def test_columns_info_validator():
 def test_event_view_graph_node(event_table_data, event_input_node):
     """Test construct_event_view_graph_node function"""
     graph_node, columns_info = event_table_data.construct_event_view_graph_node(
-        event_data_node=event_input_node,
+        event_table_node=event_input_node,
         drop_column_names=["event_timestamp"],
         metadata=ViewMetadata(
             view_mode=ViewMode.MANUAL,
             drop_column_names=["event_timestamp"],
             column_cleaning_operations=[],
-            data_id=event_table_data.id,
+            table_id=event_table_data.id,
         ),
     )
     # only amount is required as it is used in cleaning nested graph
@@ -375,13 +375,13 @@ def test_event_view_graph_node(event_table_data, event_input_node):
 def test_item_view_graph_node(item_table_data, event_table_data, item_input_node, event_input_node):
     """Test construct_item_view_graph_node function"""
     event_graph_node, event_columns_info = event_table_data.construct_event_view_graph_node(
-        event_data_node=event_input_node,
+        event_table_node=event_input_node,
         drop_column_names=[],
         metadata=ViewMetadata(
             view_mode=ViewMode.MANUAL,
             drop_column_names=[],
             column_cleaning_operations=[],
-            data_id=event_table_data.id,
+            table_id=event_table_data.id,
         ),
     )
     (
@@ -389,7 +389,7 @@ def test_item_view_graph_node(item_table_data, event_table_data, item_input_node
         item_columns_info,
         timestamp_column,
     ) = item_table_data.construct_item_view_graph_node(
-        item_data_node=item_input_node,
+        item_table_node=item_input_node,
         columns_to_join=["event_timestamp", "amount"],
         event_view_node=event_graph_node,
         event_view_columns_info=event_columns_info,
@@ -400,12 +400,12 @@ def test_item_view_graph_node(item_table_data, event_table_data, item_input_node
             view_mode=ViewMode.MANUAL,
             drop_column_names=[],
             column_cleaning_operations=[],
-            data_id=item_table_data.id,
+            table_id=item_table_data.id,
             event_suffix="_event",
             event_drop_column_names=[],
             event_column_cleaning_operations=[],
             event_join_column_names=[],
-            event_data_id=event_table_data.id,
+            event_table_id=event_table_data.id,
         ),
     )
 

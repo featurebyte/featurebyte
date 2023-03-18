@@ -31,11 +31,11 @@ class ParentEntityLookupService(BaseService):
         persistent: Persistent,
         catalog_id: ObjectId,
         entity_service: EntityService,
-        data_service: TableService,
+        table_service: TableService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.entity_service = entity_service
-        self.data_service = data_service
+        self.table_service = table_service
 
     async def get_required_join_steps(self, entity_info: EntityInfo) -> list[JoinStep]:
         """
@@ -102,12 +102,12 @@ class ParentEntityLookupService(BaseService):
             child_entity_id = child_entity.id
             parent_entity_id = parent_entity.id
 
-            # Retrieve the relationship for the data id defined in the relationship
+            # Retrieve the relationship for the table id defined in the relationship
             parents = entities_by_id[child_entity_id].parents
             relationship = next(parent for parent in parents if parent.id == parent_entity_id)
 
-            # Retrieve the join keys from the data
-            data = await self.data_service.get_document(relationship.data_id)
+            # Retrieve the join keys from the table
+            data = await self.table_service.get_document(relationship.table_id)
             child_key, parent_key = None, None
             for column_info in data.columns_info:
                 name = column_info.name
@@ -119,9 +119,9 @@ class ParentEntityLookupService(BaseService):
             assert child_key is not None
             assert parent_key is not None
 
-            # Converting data to dict by_alias to preserve the correct id when constructing JoinStep
+            # Converting table to dict by_alias to preserve the correct id when constructing JoinStep
             join_step = JoinStep(
-                data=data.dict(by_alias=True),
+                table=data.dict(by_alias=True),
                 parent_key=parent_key,
                 parent_serving_name=entity_info.get_effective_serving_name(parent_entity),
                 child_key=child_key,

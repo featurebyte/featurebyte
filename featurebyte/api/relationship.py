@@ -29,9 +29,9 @@ class Relationship(ApiObject):
     - recommend features recipes such as similarity between the child and the parent
     - serve feature list
 
-    Relationships are automatically established when an entity is a primary key (or natural key) of a data and other
-    entities are tagged in this data. The entity that is the primary key (or natural key) is automatically set as
-    the child of the other entities. The data that maps the relationship is tagged in the relationship to facilitate
+    Relationships are automatically established when an entity is a primary key (or natural key) of a table and other
+    entities are tagged in this table. The entity that is the primary key (or natural key) is automatically set as
+    the child of the other entities. The table that maps the relationship is tagged in the relationship to facilitate
     the serving of the features.
     """
 
@@ -109,7 +109,7 @@ class Relationship(ApiObject):
         - the relationship id
         - primary entity
         - related entity
-        - data source
+        - table source
         - enabled (whether the relationship is enabled)
         - creation timestamp
         - update timestamp

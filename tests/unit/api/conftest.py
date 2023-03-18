@@ -40,7 +40,7 @@ def expected_snowflake_table_preview_query() -> str:
 
 
 @pytest.fixture()
-def expected_item_data_table_preview_query() -> str:
+def expected_item_table_preview_query() -> str:
     """
     Expected preview_sql output
     """
@@ -71,9 +71,9 @@ def snowflake_database_table_fixture(snowflake_data_source):
     )
 
 
-@pytest.fixture(name="snowflake_event_data")
-def snowflake_event_data_fixture(
-    snowflake_database_table, mock_get_persistent, snowflake_event_data_id
+@pytest.fixture(name="snowflake_event_table")
+def snowflake_event_table_fixture(
+    snowflake_database_table, mock_get_persistent, snowflake_event_table_id
 ):
     """
     Snowflake EventTable object fixture (using config object)
@@ -81,85 +81,85 @@ def snowflake_event_data_fixture(
     _ = mock_get_persistent
     yield EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
-        name="sf_event_data",
+        name="sf_event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
         record_creation_timestamp_column="created_at",
-        _id=snowflake_event_data_id,
+        _id=snowflake_event_table_id,
     )
 
 
-@pytest.fixture(name="saved_event_data")
-def saved_event_data_fixture(snowflake_event_data):
+@pytest.fixture(name="saved_event_table")
+def saved_event_table_fixture(snowflake_event_table):
     """
-    Saved event data fixture
+    Saved event table fixture
     """
-    previous_id = snowflake_event_data.id
-    assert snowflake_event_data.saved is False
-    snowflake_event_data.save()
-    assert snowflake_event_data.saved is True
-    assert snowflake_event_data.id == previous_id
-    assert snowflake_event_data.status == TableStatus.DRAFT
-    assert isinstance(snowflake_event_data.created_at, datetime)
-    assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
+    previous_id = snowflake_event_table.id
+    assert snowflake_event_table.saved is False
+    snowflake_event_table.save()
+    assert snowflake_event_table.saved is True
+    assert snowflake_event_table.id == previous_id
+    assert snowflake_event_table.status == TableStatus.DRAFT
+    assert isinstance(snowflake_event_table.created_at, datetime)
+    assert isinstance(snowflake_event_table.tabular_source.feature_store_id, ObjectId)
 
-    # test list event data
-    event_data_list = EventTable.list()
+    # test list event table
+    event_table_list = EventTable.list()
     assert_frame_equal(
-        event_data_list,
+        event_table_list,
         pd.DataFrame(
             {
-                "name": [snowflake_event_data.name],
-                "type": [snowflake_event_data.type],
-                "status": [snowflake_event_data.status],
+                "name": [snowflake_event_table.name],
+                "type": [snowflake_event_table.type],
+                "status": [snowflake_event_table.status],
                 "entities": [[]],
-                "created_at": [snowflake_event_data.created_at],
+                "created_at": [snowflake_event_table.created_at],
             }
         ),
     )
-    yield snowflake_event_data
+    yield snowflake_event_table
 
 
-@pytest.fixture(name="saved_dimension_data")
-def saved_dimension_data_fixture(snowflake_dimension_data):
+@pytest.fixture(name="saved_dimension_table")
+def saved_dimension_table_fixture(snowflake_dimension_table):
     """
-    Saved dimension data fixture
+    Saved dimension table fixture
     """
-    previous_id = snowflake_dimension_data.id
-    assert snowflake_dimension_data.saved is False
-    snowflake_dimension_data.save()
-    assert snowflake_dimension_data.saved is True
-    assert snowflake_dimension_data.id == previous_id
-    assert snowflake_dimension_data.status == TableStatus.DRAFT
-    assert isinstance(snowflake_dimension_data.created_at, datetime)
-    assert isinstance(snowflake_dimension_data.tabular_source.feature_store_id, ObjectId)
+    previous_id = snowflake_dimension_table.id
+    assert snowflake_dimension_table.saved is False
+    snowflake_dimension_table.save()
+    assert snowflake_dimension_table.saved is True
+    assert snowflake_dimension_table.id == previous_id
+    assert snowflake_dimension_table.status == TableStatus.DRAFT
+    assert isinstance(snowflake_dimension_table.created_at, datetime)
+    assert isinstance(snowflake_dimension_table.tabular_source.feature_store_id, ObjectId)
 
-    yield snowflake_dimension_data
+    yield snowflake_dimension_table
 
 
-@pytest.fixture(name="saved_scd_data")
-def saved_scd_data_fixture(snowflake_scd_data):
+@pytest.fixture(name="saved_scd_table")
+def saved_scd_table_fixture(snowflake_scd_table):
     """
-    Saved SCD data fixture
+    Saved SCD table fixture
     """
-    previous_id = snowflake_scd_data.id
-    assert snowflake_scd_data.saved is False
-    snowflake_scd_data.save()
-    assert snowflake_scd_data.saved is True
-    assert snowflake_scd_data.id == previous_id
-    assert snowflake_scd_data.status == TableStatus.DRAFT
-    assert isinstance(snowflake_scd_data.created_at, datetime)
-    assert isinstance(snowflake_scd_data.tabular_source.feature_store_id, ObjectId)
+    previous_id = snowflake_scd_table.id
+    assert snowflake_scd_table.saved is False
+    snowflake_scd_table.save()
+    assert snowflake_scd_table.saved is True
+    assert snowflake_scd_table.id == previous_id
+    assert snowflake_scd_table.status == TableStatus.DRAFT
+    assert isinstance(snowflake_scd_table.created_at, datetime)
+    assert isinstance(snowflake_scd_table.tabular_source.feature_store_id, ObjectId)
 
-    yield snowflake_scd_data
+    yield snowflake_scd_table
 
 
-@pytest.fixture(name="snowflake_item_data")
-def snowflake_item_data_fixture(
-    snowflake_database_table_item_data,
+@pytest.fixture(name="snowflake_item_table")
+def snowflake_item_table_fixture(
+    snowflake_database_table_item_table,
     mock_get_persistent,
-    snowflake_item_data_id,
-    saved_event_data,
+    snowflake_item_table_id,
+    saved_event_table,
     cust_id_entity,
     arbitrary_default_feature_job_setting,
 ):
@@ -167,17 +167,17 @@ def snowflake_item_data_fixture(
     Snowflake ItemTable object fixture (using config object)
     """
     _ = mock_get_persistent
-    saved_event_data.update_default_feature_job_setting(arbitrary_default_feature_job_setting)
-    saved_event_data["cust_id"].as_entity(cust_id_entity.name)
-    item_data = ItemTable.from_tabular_source(
-        tabular_source=snowflake_database_table_item_data,
-        name="sf_item_data",
+    saved_event_table.update_default_feature_job_setting(arbitrary_default_feature_job_setting)
+    saved_event_table["cust_id"].as_entity(cust_id_entity.name)
+    item_table = ItemTable.from_tabular_source(
+        tabular_source=snowflake_database_table_item_table,
+        name="sf_item_table",
         event_id_column="event_id_col",
         item_id_column="item_id_col",
-        event_data_name=saved_event_data.name,
-        _id=snowflake_item_data_id,
+        event_table_name=saved_event_table.name,
+        _id=snowflake_item_table_id,
     )
-    yield item_data
+    yield item_table
 
 
 @pytest.fixture()
@@ -201,91 +201,91 @@ def item_entity(item_entity_id):
     return entity
 
 
-@pytest.fixture(name="saved_item_data")
-def saved_item_data_fixture(snowflake_feature_store, snowflake_item_data, item_entity):
+@pytest.fixture(name="saved_item_table")
+def saved_item_table_fixture(snowflake_feature_store, snowflake_item_table, item_entity):
     """
     Saved ItemTable fixture
     """
-    previous_id = snowflake_item_data.id
-    assert snowflake_item_data.saved is False
-    snowflake_item_data.save()
-    assert snowflake_item_data.saved is True
-    assert snowflake_item_data.id == previous_id
-    assert snowflake_item_data.status == TableStatus.DRAFT
-    assert isinstance(snowflake_item_data.created_at, datetime)
-    assert isinstance(snowflake_item_data.tabular_source.feature_store_id, ObjectId)
+    previous_id = snowflake_item_table.id
+    assert snowflake_item_table.saved is False
+    snowflake_item_table.save()
+    assert snowflake_item_table.saved is True
+    assert snowflake_item_table.id == previous_id
+    assert snowflake_item_table.status == TableStatus.DRAFT
+    assert isinstance(snowflake_item_table.created_at, datetime)
+    assert isinstance(snowflake_item_table.tabular_source.feature_store_id, ObjectId)
 
-    item_id_col = snowflake_item_data.item_id_col
+    item_id_col = snowflake_item_table.item_id_col
     assert isinstance(item_id_col, TableColumn)
-    snowflake_item_data.item_id_col.as_entity(item_entity.name)
-    assert snowflake_item_data.item_id_col.info.entity_id == item_entity.id
+    snowflake_item_table.item_id_col.as_entity(item_entity.name)
+    assert snowflake_item_table.item_id_col.info.entity_id == item_entity.id
 
-    # test list event data
-    item_data_list = ItemTable.list()
+    # test list event table
+    item_table_list = ItemTable.list()
     assert_frame_equal(
-        item_data_list,
+        item_table_list,
         pd.DataFrame(
             {
-                "name": [snowflake_item_data.name],
-                "type": [snowflake_item_data.type],
-                "status": [snowflake_item_data.status],
+                "name": [snowflake_item_table.name],
+                "type": [snowflake_item_table.type],
+                "status": [snowflake_item_table.status],
                 "entities": [["item"]],
-                "created_at": [snowflake_item_data.created_at],
+                "created_at": [snowflake_item_table.created_at],
             }
         ),
     )
 
-    yield snowflake_item_data
+    yield snowflake_item_table
 
 
 @pytest.fixture(name="snowflake_item_view")
-def snowflake_item_view_fixture(snowflake_item_data):
+def snowflake_item_view_fixture(snowflake_item_table):
     """
     ItemView fixture
     """
-    item_view = snowflake_item_data.get_view(event_suffix="_event_table")
+    item_view = snowflake_item_table.get_view(event_suffix="_event_table")
     yield item_view
 
 
 @pytest.fixture(name="snowflake_dimension_view")
-def snowflake_dimension_view_fixture(snowflake_dimension_data):
+def snowflake_dimension_view_fixture(snowflake_dimension_table):
     """
     DimensionView fixture
     """
-    dimension_view = snowflake_dimension_data.get_view()
+    dimension_view = snowflake_dimension_table.get_view()
     yield dimension_view
 
 
 @pytest.fixture(name="snowflake_scd_view")
-def snowflake_slowly_changing_view_fixture(snowflake_scd_data):
+def snowflake_slowly_changing_view_fixture(snowflake_scd_table):
     """
     SlowlyChangingView fixture
     """
-    scd_view = snowflake_scd_data.get_view()
+    scd_view = snowflake_scd_table.get_view()
     yield scd_view
 
 
 @pytest.fixture(name="snowflake_change_view")
-def snowflake_change_view(snowflake_scd_data):
+def snowflake_change_view(snowflake_scd_table):
     """
     ChangeView fixture
     """
-    change_view = snowflake_scd_data.get_change_view("col_int")
+    change_view = snowflake_scd_table.get_change_view("col_int")
     yield change_view
 
 
 @pytest.fixture(name="snowflake_event_view")
 def snowflake_event_view_fixture(
-    snowflake_event_data, config, arbitrary_default_feature_job_setting
+    snowflake_event_table, config, arbitrary_default_feature_job_setting
 ):
     """
     EventTable object fixture
     """
     _ = config
-    snowflake_event_data.update_default_feature_job_setting(
+    snowflake_event_table.update_default_feature_job_setting(
         feature_job_setting=arbitrary_default_feature_job_setting
     )
-    event_view = snowflake_event_data.get_view()
+    event_view = snowflake_event_table.get_view()
     yield event_view
 
 

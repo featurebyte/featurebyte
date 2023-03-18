@@ -371,21 +371,21 @@ def test_extract_operation__groupby(query_graph_with_groupby):
 
 @pytest.fixture(name="order_id_source_data")
 def order_id_source_data_fixture():
-    """Order id source data"""
+    """Order id source table"""
     return {
         "name": "order_id",
         "dtype": "INT",
         "filter": False,
         "node_names": {"input_1"},
         "node_name": "input_1",
-        "tabular_data_type": "item_data",
+        "tabular_data_type": "item_table",
         "tabular_data_id": None,
         "type": "source",
     }
 
 
 def test_extract_operation__item_groupby(
-    global_graph, item_data_input_node, order_size_feature_group_node, order_id_source_data
+    global_graph, item_table_input_node, order_size_feature_group_node, order_id_source_data
 ):
     """Test extract_operation_structure: item groupby"""
     op_struct = global_graph.extract_operation_structure(node=order_size_feature_group_node)
@@ -414,31 +414,31 @@ def test_extract_operation__item_groupby(
 
 def test_extract_operation__join_node(
     global_graph,
-    item_data_join_event_data_with_renames_node,
-    event_data_input_node,
-    item_data_input_node,
+    item_table_join_event_table_with_renames_node,
+    event_table_input_node,
+    item_table_input_node,
 ):
     """Test extract_operation_structure: join"""
 
     # check join & its output
     op_struct = global_graph.extract_operation_structure(
-        node=item_data_join_event_data_with_renames_node
+        node=item_table_join_event_table_with_renames_node
     )
-    common_event_data_column_params = extract_column_parameters(
-        event_data_input_node,
+    common_event_table_column_params = extract_column_parameters(
+        event_table_input_node,
         other_node_names={"input_2", "join_1"},
         node_name="join_1",
     )
-    common_item_data_column_params = extract_column_parameters(
-        item_data_input_node,
+    common_item_table_column_params = extract_column_parameters(
+        item_table_input_node,
         other_node_names={"input_1", "join_1"},
         node_name="join_1",
     )
     assert to_dict(op_struct.columns) == [
-        {"name": "order_id", "dtype": "INT", **common_event_data_column_params},
-        {"name": "order_method_left", "dtype": "VARCHAR", **common_event_data_column_params},
-        {"name": "item_type_right", "dtype": "VARCHAR", **common_item_data_column_params},
-        {"name": "item_name_right", "dtype": "VARCHAR", **common_item_data_column_params},
+        {"name": "order_id", "dtype": "INT", **common_event_table_column_params},
+        {"name": "order_method_left", "dtype": "VARCHAR", **common_event_table_column_params},
+        {"name": "item_type_right", "dtype": "VARCHAR", **common_item_table_column_params},
+        {"name": "item_name_right", "dtype": "VARCHAR", **common_item_table_column_params},
     ]
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
@@ -450,7 +450,7 @@ def test_extract_operation__join_double_aggregations(
     global_graph,
     order_size_feature_join_node,
     order_size_agg_by_cust_id_graph,
-    event_data_input_node,
+    event_table_input_node,
     order_id_source_data,
 ):
     """Test extract_operation_structure: join feature & double aggregations"""
@@ -458,8 +458,8 @@ def test_extract_operation__join_double_aggregations(
 
     # check join & its output
     op_struct = global_graph.extract_operation_structure(node=order_size_feature_join_node)
-    common_event_data_column_params = extract_column_parameters(
-        event_data_input_node,
+    common_event_table_column_params = extract_column_parameters(
+        event_table_input_node,
         other_node_names={"input_2"},
     )
     order_size_column = {
@@ -473,10 +473,10 @@ def test_extract_operation__join_double_aggregations(
         "dtype": "FLOAT",
     }
     assert op_struct.columns == [
-        {"name": "ts", "dtype": "TIMESTAMP", **common_event_data_column_params},
-        {"name": "cust_id", "dtype": "INT", **common_event_data_column_params},
-        {"name": "order_id", "dtype": "INT", **common_event_data_column_params},
-        {"name": "order_method", "dtype": "VARCHAR", **common_event_data_column_params},
+        {"name": "ts", "dtype": "TIMESTAMP", **common_event_table_column_params},
+        {"name": "cust_id", "dtype": "INT", **common_event_table_column_params},
+        {"name": "order_id", "dtype": "INT", **common_event_table_column_params},
+        {"name": "order_method", "dtype": "VARCHAR", **common_event_table_column_params},
         order_size_column,
     ]
     assert op_struct.aggregations == []
@@ -526,12 +526,12 @@ def test_extract_operation__join_double_aggregations(
 def test_extract_operation__lookup_feature(
     global_graph,
     lookup_feature_node,
-    dimension_data_input_node,
+    dimension_table_input_node,
 ):
     """Test extract_operation_structure: lookup features"""
 
     op_struct = global_graph.extract_operation_structure(node=lookup_feature_node)
-    common_data_params = extract_column_parameters(dimension_data_input_node)
+    common_data_params = extract_column_parameters(dimension_table_input_node)
     expected_columns = [
         {"name": "cust_value_1", "dtype": "FLOAT", **common_data_params},
         {"name": "cust_value_2", "dtype": "FLOAT", **common_data_params},
@@ -588,12 +588,12 @@ def test_extract_operation__lookup_feature(
 def test_extract_operation__event_lookup_feature(
     global_graph,
     event_lookup_feature_node,
-    event_data_input_node,
+    event_table_input_node,
 ):
     """Test extract_operation_structure: event lookup features"""
 
     op_struct = global_graph.extract_operation_structure(node=event_lookup_feature_node)
-    common_data_params = extract_column_parameters(event_data_input_node)
+    common_data_params = extract_column_parameters(event_table_input_node)
     expected_columns = [
         {"name": "ts", "dtype": "TIMESTAMP", **common_data_params},
         {"name": "order_method", "dtype": "VARCHAR", **common_data_params},
@@ -625,12 +625,12 @@ def test_extract_operation__event_lookup_feature(
 def test_extract_operation__scd_lookup_feature(
     global_graph,
     scd_lookup_feature_node,
-    scd_data_input_node,
+    scd_table_input_node,
 ):
     """Test extract_operation_structure: SCD lookup features"""
 
     op_struct = global_graph.extract_operation_structure(node=scd_lookup_feature_node)
-    common_data_params = extract_column_parameters(scd_data_input_node)
+    common_data_params = extract_column_parameters(scd_table_input_node)
     expected_columns = [
         {"name": "membership_status", "dtype": "VARCHAR", **common_data_params},
     ]
@@ -661,12 +661,12 @@ def test_extract_operation__scd_lookup_feature(
 def test_extract_operation__aggregate_asat_feature(
     global_graph,
     aggregate_asat_feature_node,
-    scd_data_input_node,
+    scd_table_input_node,
 ):
     """Test extract_operation_structure: features derived from aggregate_asat"""
 
     op_struct = global_graph.extract_operation_structure(node=aggregate_asat_feature_node)
-    common_data_params = extract_column_parameters(scd_data_input_node)
+    common_data_params = extract_column_parameters(scd_table_input_node)
     expected_columns = [
         {"name": "effective_ts", "dtype": "TIMESTAMP", **common_data_params},
         {"name": "cust_id", "dtype": "INT", **common_data_params},
@@ -914,7 +914,7 @@ def test_extract_operation_structure__groupby_on_event_timestamp_columns(
             "node_name": "input_1",
             "node_names": {"input_1"},
             "tabular_data_id": None,
-            "tabular_data_type": "event_data",
+            "tabular_data_type": "event_table",
             "type": "source",
         },
         "dtype": "TIMESTAMP",
@@ -933,7 +933,7 @@ def test_extract_operation_structure__groupby_on_event_timestamp_columns(
             "node_name": "input_1",
             "node_names": {"input_1"},
             "tabular_data_id": None,
-            "tabular_data_type": "event_data",
+            "tabular_data_type": "event_table",
             "type": "source",
         }
     ]
@@ -956,7 +956,7 @@ def test_extract_operation_structure__graph_node_row_index_lineage(
         "node_name": "input_1",
         "filter": False,
         "tabular_data_id": None,
-        "tabular_data_type": "event_data",
+        "tabular_data_type": "event_table",
         "type": "source",
     }
     assert op_struct.columns == [
@@ -978,7 +978,7 @@ def test_extract_operation_structure__graph_node_row_index_lineage(
                     "node_name": "graph_1",
                     "filter": False,
                     "tabular_data_id": None,
-                    "tabular_data_type": "event_data",
+                    "tabular_data_type": "event_table",
                     "type": "source",
                 }
             ],

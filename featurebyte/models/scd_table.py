@@ -1,5 +1,5 @@
 """
-This module contains SCD data related models
+This module contains SCD table related models
 """
 from __future__ import annotations
 
@@ -25,13 +25,13 @@ class SCDTableModel(SCDTableData, TableModel):
         The column for the natural key (key for which there is one unique active record) in the DWH.
     surrogate_key_column: str
         The column for the surrogate key (the primary key of the SCD) in the DWH.
-        The primary key of the dimension data table in the DWH
+        The primary key of the dimension table in the DWH
     effective_timestamp_column: str
-        The effective date or timestamp for which the data is valid.
+        The effective date or timestamp for which the table is valid.
     end_timestamp_column: str
-        The end date or timestamp for which the data is valid.
+        The end date or timestamp for which the table is valid.
     current_flag: str
-        The current status of the data.
+        The current status of the table.
     """
 
     _table_data_class: ClassVar[Type[SCDTableData]] = SCDTableData
@@ -74,7 +74,7 @@ class SCDTableModel(SCDTableData, TableModel):
         )
         if isinstance(metadata, ChangeViewMetadata):
             return table_data.construct_change_view_graph_node(  # pylint: disable=no-member
-                scd_data_node=input_node,
+                scd_table_node=input_node,
                 track_changes_column=metadata.track_changes_column,
                 prefixes=metadata.prefixes,
                 drop_column_names=metadata.drop_column_names,
@@ -82,7 +82,7 @@ class SCDTableModel(SCDTableData, TableModel):
             )
 
         return table_data.construct_scd_view_graph_node(  # pylint: disable=no-member
-            scd_data_node=input_node,
+            scd_table_node=input_node,
             drop_column_names=metadata.drop_column_names,
             metadata=metadata,
         )

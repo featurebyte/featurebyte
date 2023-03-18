@@ -22,8 +22,8 @@ TableModel = Annotated[
 
 class ProxyTableModel(BaseTableModel):  # pylint: disable=abstract-method
     """
-    Pseudo Data class to support multiple data types.
-    This class basically parses the persistent data model record & deserialized it into proper type.
+    Pseudo Data class to support multiple table types.
+    This class basically parses the persistent table model record & deserialized it into proper type.
     """
 
     def __new__(cls, **kwargs: Any) -> Any:

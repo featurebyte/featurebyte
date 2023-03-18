@@ -41,7 +41,7 @@ def mock_sqlite_feature_fixture():
     feature_store = FeatureStore(
         name="mock_sqlite_feature",
         type=SourceType.SQLITE,
-        details=SQLiteDetails(filename="data.csv"),
+        details=SQLiteDetails(filename="table.csv"),
     )
     feature.feature_store = feature_store
     feature.tabular_source = (feature_store.id, Mock(name="MockTableDetails"))

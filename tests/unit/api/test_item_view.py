@@ -12,14 +12,14 @@ from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import (
-    DataFeatureJobSetting,
     FeatureJobSetting,
+    TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
-    DataCleaningOperation,
     MissingValueImputation,
     StringValueImputation,
+    TableCleaningOperation,
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
@@ -40,7 +40,7 @@ class TestItemView(BaseViewTestSuite):
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
         assert row_subset.event_id_column == view_under_test.event_id_column
         assert row_subset.item_id_column == view_under_test.item_id_column
-        assert row_subset.event_data_id == view_under_test.event_data_id
+        assert row_subset.event_table_id == view_under_test.event_table_id
         assert row_subset.event_view.dict() == view_under_test.event_view.dict()
         assert (
             row_subset.default_feature_job_setting.dict()
@@ -65,14 +65,14 @@ class TestItemView(BaseViewTestSuite):
 
 
 def test_get_view__auto_join_columns(
-    snowflake_item_data,
-    snowflake_event_data_id,
-    snowflake_item_data_id,
+    snowflake_item_table,
+    snowflake_event_table_id,
+    snowflake_item_table_id,
 ):
     """
     Test ItemView automatically joins timestamp column and entity columns from related EventTable
     """
-    view = snowflake_item_data.get_view(event_suffix="_event_table")
+    view = snowflake_item_table.get_view(event_suffix="_event_table")
     view_dict = view.dict()
 
     # Check node is a join node which will make event timestamp and EventTable entities available
@@ -145,7 +145,7 @@ def test_get_view__auto_join_columns(
                             ],
                             "scd_parameters": None,
                             "metadata": {
-                                "type": "join_event_data_attributes",
+                                "type": "join_event_table_attributes",
                                 "columns": ["event_timestamp", "cust_id"],
                                 "event_suffix": "_event_table",
                             },
@@ -159,11 +159,11 @@ def test_get_view__auto_join_columns(
                 "event_suffix": "_event_table",
                 "view_mode": "auto",
                 "drop_column_names": [],
-                "data_id": snowflake_item_data_id,
+                "table_id": snowflake_item_table_id,
                 "column_cleaning_operations": [],
                 "event_drop_column_names": ["created_at"],
                 "event_column_cleaning_operations": [],
-                "event_data_id": snowflake_event_data_id,
+                "event_table_id": snowflake_event_table_id,
                 "event_join_column_names": ["event_timestamp", "cust_id"],
             },
             "type": "item_view",
@@ -172,7 +172,7 @@ def test_get_view__auto_join_columns(
     }
 
     # Check Frame attributes
-    assert set(view.tabular_data_ids) == {snowflake_item_data_id, snowflake_event_data_id}
+    assert set(view.tabular_data_ids) == {snowflake_item_table_id, snowflake_event_table_id}
     assert view.columns == [
         "event_id_col",
         "item_id_col",
@@ -233,7 +233,7 @@ def test_get_view__auto_join_columns(
         LIMIT 10
         """
     ).strip()
-    assert snowflake_item_data.record_creation_timestamp_column is None
+    assert snowflake_item_table.record_creation_timestamp_column is None
     assert preview_sql == expected_sql
 
 
@@ -244,20 +244,20 @@ def test_has_event_timestamp_column(snowflake_item_view):
     assert snowflake_item_view.timestamp_column == "event_timestamp_event_table"
 
 
-def test_default_feature_job_setting(snowflake_item_view, snowflake_event_data):
+def test_default_feature_job_setting(snowflake_item_view, snowflake_event_table):
     """
     Test that ItemView inherits the same feature job setting from the EventTable
     """
     assert (
         snowflake_item_view.default_feature_job_setting
-        == snowflake_event_data.default_feature_job_setting
+        == snowflake_event_table.default_feature_job_setting
     )
 
 
 def test_setitem__str_key_series_value(
     snowflake_item_view,
-    snowflake_event_data,
-    snowflake_item_data,
+    snowflake_event_table,
+    snowflake_item_table,
 ):
     """
     Test assigning Series object to ItemView
@@ -272,16 +272,16 @@ def test_setitem__str_key_series_value(
     }
 
 
-def test_join_event_data_attributes__more_columns(
+def test_join_event_table_attributes__more_columns(
     snowflake_item_view,
-    snowflake_event_data_id,
-    snowflake_item_data_id,
+    snowflake_event_table_id,
+    snowflake_item_table_id,
 ):
     """
     Test joining more columns from EventTable after creating ItemView
     """
     view = snowflake_item_view
-    view.join_event_data_attributes(["col_float"])
+    view.join_event_table_attributes(["col_float"])
     view_dict = view.dict()
 
     # Check node
@@ -318,7 +318,7 @@ def test_join_event_data_attributes__more_columns(
             "join_type": "inner",
             "scd_parameters": None,
             "metadata": {
-                "type": "join_event_data_attributes",
+                "type": "join_event_table_attributes",
                 "columns": ["col_float"],
                 "event_suffix": None,
             },
@@ -327,7 +327,7 @@ def test_join_event_data_attributes__more_columns(
 
     # Check Frame attributes
     assert len(view.tabular_data_ids) == 2
-    assert set(view.tabular_data_ids) == {snowflake_item_data_id, snowflake_event_data_id}
+    assert set(view.tabular_data_ids) == {snowflake_item_table_id, snowflake_event_table_id}
     assert view.columns == [
         "event_id_col",
         "item_id_col",
@@ -418,32 +418,32 @@ def test_join_event_data_attributes__more_columns(
     assert preview_sql == expected_sql
 
 
-def test_join_event_data_attributes__missing_required_event_suffix(snowflake_item_data):
+def test_join_event_table_attributes__missing_required_event_suffix(snowflake_item_table):
     """
     Test when event_suffix is required but not provided
     """
     with pytest.raises(RepeatedColumnNamesError) as exc:
-        snowflake_item_data.get_view()
+        snowflake_item_table.get_view()
     assert "Duplicate column names ['event_timestamp'] found" in str(exc.value)
 
 
-def test_join_event_data_attributes__invalid_columns(snowflake_item_view):
+def test_join_event_table_attributes__invalid_columns(snowflake_item_view):
     """
-    Test join_event_data_attributes with invalid columns
+    Test join_event_table_attributes with invalid columns
     """
     with pytest.raises(ValueError) as exc:
-        snowflake_item_view.join_event_data_attributes(["non_existing_column"])
+        snowflake_item_view.join_event_table_attributes(["non_existing_column"])
     assert str(exc.value) == "Column does not exist in EventTable: non_existing_column"
 
 
-def test_item_view__item_data_same_event_id_column_as_event_data(
-    snowflake_item_data_same_event_id, snowflake_event_data
+def test_item_view__item_table_same_event_id_column_as_event_table(
+    snowflake_item_table_same_event_id, snowflake_event_table
 ):
     """
     Test creating ItemView when ItemTable has the same event_id_column as EventTable
     """
     # No need to specify event_suffix
-    item_view = snowflake_item_data_same_event_id.get_view()
+    item_view = snowflake_item_table_same_event_id.get_view()
     assert item_view.timestamp_column == "event_timestamp"
 
     view_dict = item_view.dict()
@@ -492,7 +492,7 @@ def test_item_view__item_data_same_event_id_column_as_event_data(
                             "join_type": "inner",
                             "scd_parameters": None,
                             "metadata": {
-                                "type": "join_event_data_attributes",
+                                "type": "join_event_table_attributes",
                                 "event_suffix": None,
                                 "columns": ["event_timestamp", "cust_id"],
                             },
@@ -506,10 +506,10 @@ def test_item_view__item_data_same_event_id_column_as_event_data(
                 "view_mode": "auto",
                 "drop_column_names": [],
                 "column_cleaning_operations": [],
-                "data_id": snowflake_item_data_same_event_id.id,
+                "table_id": snowflake_item_table_same_event_id.id,
                 "event_drop_column_names": ["created_at"],
                 "event_column_cleaning_operations": [],
-                "event_data_id": snowflake_event_data.id,
+                "event_table_id": snowflake_event_table.id,
                 "event_join_column_names": ["event_timestamp", "cust_id"],
             },
             "type": "item_view",
@@ -517,8 +517,8 @@ def test_item_view__item_data_same_event_id_column_as_event_data(
     }
 
 
-def test_item_view_groupby__item_data_column(
-    snowflake_item_view, snowflake_item_data, snowflake_event_data
+def test_item_view_groupby__item_table_column(
+    snowflake_item_view, snowflake_item_table, snowflake_event_table
 ):
     """
     Test aggregating a column from ItemTable using an EventTable entity is allowed
@@ -548,14 +548,14 @@ def test_item_view_groupby__item_data_column(
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_item_data.id: {
-                "name": snowflake_item_data.name,
-                "record_creation_timestamp_column": snowflake_item_data.record_creation_timestamp_column,
+        table_id_to_info={
+            snowflake_item_table.id: {
+                "name": snowflake_item_table.name,
+                "record_creation_timestamp_column": snowflake_item_table.record_creation_timestamp_column,
             },
-            snowflake_event_data.id: {
-                "name": snowflake_event_data.name,
-                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
+            snowflake_event_table.id: {
+                "name": snowflake_event_table.name,
+                "record_creation_timestamp_column": snowflake_event_table.record_creation_timestamp_column,
             },
         },
     )
@@ -573,11 +573,11 @@ def get_groupby_feature_job_setting_fixture():
     }
 
 
-def test_item_view_groupby__event_data_column(snowflake_item_view, groupby_feature_job_setting):
+def test_item_view_groupby__event_table_column(snowflake_item_view, groupby_feature_job_setting):
     """
     Test aggregating an EventTable column using EventTable entity is not allowed
     """
-    snowflake_item_view.join_event_data_attributes(["col_float"])
+    snowflake_item_view.join_event_table_attributes(["col_float"])
     with pytest.raises(ValueError) as exc:
         _ = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
             "col_float",
@@ -591,13 +591,13 @@ def test_item_view_groupby__event_data_column(snowflake_item_view, groupby_featu
     )
 
 
-def test_item_view_groupby__event_data_column_derived(
+def test_item_view_groupby__event_table_column_derived(
     snowflake_item_view, groupby_feature_job_setting
 ):
     """
     Test aggregating a column derived from EventTable column using EventTable entity is not allowed
     """
-    snowflake_item_view.join_event_data_attributes(["col_float"])
+    snowflake_item_view.join_event_table_attributes(["col_float"])
     snowflake_item_view["col_float_v2"] = (snowflake_item_view["col_float"] + 123) - 45
     snowflake_item_view["col_float_v3"] = (snowflake_item_view["col_float_v2"] * 678) / 90
     with pytest.raises(ValueError) as exc:
@@ -613,13 +613,13 @@ def test_item_view_groupby__event_data_column_derived(
     )
 
 
-def test_item_view_groupby__event_data_column_derived_mixed(
-    snowflake_item_view, snowflake_item_data, groupby_feature_job_setting
+def test_item_view_groupby__event_table_column_derived_mixed(
+    snowflake_item_view, snowflake_item_table, groupby_feature_job_setting
 ):
     """
     Test aggregating a column derived from both EventTable and ItemTable is allowed
     """
-    snowflake_item_view.join_event_data_attributes(["col_float"])
+    snowflake_item_view.join_event_table_attributes(["col_float"])
     snowflake_item_view["new_col"] = (
         snowflake_item_view["col_float"] + snowflake_item_view["item_amount"]
     )
@@ -635,16 +635,16 @@ def test_item_view_groupby__event_data_column_derived_mixed(
     check_sdk_code_generation(
         feat,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_item_data.id: {
-                "name": snowflake_item_data.name,
-                "record_creation_timestamp_column": snowflake_item_data.record_creation_timestamp_column,
+        table_id_to_info={
+            snowflake_item_table.id: {
+                "name": snowflake_item_table.name,
+                "record_creation_timestamp_column": snowflake_item_table.record_creation_timestamp_column,
             }
         },
     )
 
 
-def test_item_view_groupby__no_value_column(snowflake_item_view, snowflake_item_data):
+def test_item_view_groupby__no_value_column(snowflake_item_view, snowflake_item_table):
     """
     Test count aggregation without value_column using EventTable entity is allowed
     """
@@ -664,23 +664,23 @@ def test_item_view_groupby__no_value_column(snowflake_item_view, snowflake_item_
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_item_data.id: {
-                "name": snowflake_item_data.name,
-                "record_creation_timestamp_column": snowflake_item_data.record_creation_timestamp_column,
+        table_id_to_info={
+            snowflake_item_table.id: {
+                "name": snowflake_item_table.name,
+                "record_creation_timestamp_column": snowflake_item_table.record_creation_timestamp_column,
             }
         },
     )
 
 
 def test_item_view_groupby__event_id_column(
-    snowflake_item_data, snowflake_event_data, transaction_entity
+    snowflake_item_table, snowflake_event_table, transaction_entity
 ):
     """
     Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
     """
-    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = snowflake_item_data.get_view(event_suffix="_event_table")
+    snowflake_item_table["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = snowflake_item_table.get_view(event_suffix="_event_table")
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
         method=AggFunc.COUNT,
         feature_name="order_size",
@@ -710,23 +710,23 @@ def test_item_view_groupby__event_id_column(
     }
 
     # check SDK code generation
-    # since the data is not saved, we need to pass in the columns info
+    # since the table is not saved, we need to pass in the columns info
     # otherwise, entity id will be missing and code generation will fail during GroupBy construction
-    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
-    item_data_columns_info = snowflake_item_data.dict(by_alias=True)["columns_info"]
+    event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
+    item_table_columns_info = snowflake_item_table.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         api_object=feature,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_event_data.id: {
-                "name": snowflake_event_data.name,
-                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
-                "columns_info": event_data_columns_info,
+        table_id_to_info={
+            snowflake_event_table.id: {
+                "name": snowflake_event_table.name,
+                "record_creation_timestamp_column": snowflake_event_table.record_creation_timestamp_column,
+                "columns_info": event_table_columns_info,
             },
-            snowflake_item_data.id: {
-                "name": snowflake_item_data.name,
-                "record_creation_timestamp_column": snowflake_item_data.record_creation_timestamp_column,
-                "columns_info": item_data_columns_info,
+            snowflake_item_table.id: {
+                "name": snowflake_item_table.name,
+                "record_creation_timestamp_column": snowflake_item_table.record_creation_timestamp_column,
+                "columns_info": item_table_columns_info,
             },
         },
     )
@@ -741,15 +741,15 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_i
     snowflake_item_view.validate_join(snowflake_item_view)
 
 
-def test_validate_simple_aggregate_parameters(snowflake_item_data, transaction_entity):
+def test_validate_simple_aggregate_parameters(snowflake_item_table, transaction_entity):
     """
     Test validate_simple_aggregate_parameters
     """
-    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_data["item_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = snowflake_item_data.get_view(event_suffix="_event_table")
+    snowflake_item_table["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_table["item_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = snowflake_item_table.get_view(event_suffix="_event_table")
 
-    # no error expected as other_col is not from event data
+    # no error expected as other_col is not from event table
     group_by = snowflake_item_view.groupby("event_id_col")
     snowflake_item_view.validate_simple_aggregate_parameters(group_by.keys, "other_col")
 
@@ -768,15 +768,15 @@ def test_validate_simple_aggregate_parameters(snowflake_item_data, transaction_e
     snowflake_item_view.validate_simple_aggregate_parameters(group_by.keys, None)
 
 
-def test_validate_aggregate_over_parameters(snowflake_item_data, transaction_entity):
+def test_validate_aggregate_over_parameters(snowflake_item_table, transaction_entity):
     """
     Test validate_aggregate_over_parameters
     """
-    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_data["item_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = snowflake_item_data.get_view(event_suffix="_event_table")
+    snowflake_item_table["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_table["item_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = snowflake_item_table.get_view(event_suffix="_event_table")
 
-    # no error expected as other_col is not from event data
+    # no error expected as other_col is not from event table
     group_by = snowflake_item_view.groupby("item_id_col")
     snowflake_item_view.validate_aggregate_over_parameters(group_by.keys, "other_col")
 
@@ -798,10 +798,10 @@ def test_validate_aggregate_over_parameters(snowflake_item_data, transaction_ent
 
 
 @pytest.fixture(name="non_time_based_saved_feature")
-def non_time_based_saved_feature_fixture(saved_item_data, transaction_entity):
+def non_time_based_saved_feature_fixture(saved_item_table, transaction_entity):
     """Non-time-based saved feature fixture"""
-    saved_item_data["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = saved_item_data.get_view(event_suffix="_event_table")
+    saved_item_table["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = saved_item_table.get_view(event_suffix="_event_table")
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
         method="count",
         feature_name="order_size",
@@ -818,15 +818,15 @@ def test_non_time_based_feature__create_new_version(non_time_based_saved_feature
     """
     with pytest.raises(RecordCreationException) as exc:
         non_time_based_saved_feature.create_new_version(
-            data_feature_job_settings=[
-                DataFeatureJobSetting(
-                    data_name="sf_event_data",
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name="sf_event_table",
                     feature_job_setting=FeatureJobSetting(
                         blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
                     ),
                 )
             ],
-            data_cleaning_operations=None,
+            table_cleaning_operations=None,
         )
 
     expected_msg = (
@@ -837,18 +837,18 @@ def test_non_time_based_feature__create_new_version(non_time_based_saved_feature
 
 
 def test_non_time_based_feature__create_new_version_with_data_cleaning(
-    saved_item_data, non_time_based_saved_feature, update_fixtures
+    saved_item_table, non_time_based_saved_feature, update_fixtures
 ):
-    """Test creation of new version with data cleaning operations"""
+    """Test creation of new version with table cleaning operations"""
     # check sdk code generation of source feature
     check_sdk_code_generation(non_time_based_saved_feature, to_use_saved_data=True)
 
-    # create a new version with data cleaning operations
+    # create a new version with table cleaning operations
     new_version = non_time_based_saved_feature.create_new_version(
-        data_feature_job_settings=None,
-        data_cleaning_operations=[
-            DataCleaningOperation(
-                data_name="sf_item_data",
+        table_feature_job_settings=None,
+        table_cleaning_operations=[
+            TableCleaningOperation(
+                table_name="sf_item_table",
                 column_cleaning_operations=[
                     # group by column
                     ColumnCleaningOperation(
@@ -862,8 +862,8 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
                     ),
                 ],
             ),
-            DataCleaningOperation(
-                data_name="sf_event_data",
+            TableCleaningOperation(
+                table_name="sf_event_table",
                 column_cleaning_operations=[
                     # event ID column
                     ColumnCleaningOperation(
@@ -886,16 +886,16 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
         to_use_saved_data=True,
         fixture_path="tests/fixtures/sdk_code/feature_non_time_based_with_data_cleaning_operations.py",
         update_fixtures=update_fixtures,
-        data_id=saved_item_data.id,
-        event_data_id=saved_item_data.event_data_id,
+        table_id=saved_item_table.id,
+        event_table_id=saved_item_table.event_table_id,
     )
 
 
-def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtures):
+def test_as_feature__from_view_column(saved_item_table, item_entity, update_fixtures):
     """
     Test calling as_feature() from ItemView column
     """
-    view = saved_item_data.get_view(event_suffix="_event_data")
+    view = saved_item_table.get_view(event_suffix="_event_table")
     feature = view["item_amount"].as_feature("ItemAmountFeature")
     assert feature.name == "ItemAmountFeature"
     assert feature.dtype == DBVarType.FLOAT
@@ -921,7 +921,7 @@ def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtu
             "serving_name": "item_id",
             "entity_id": item_entity.id,
             "scd_parameters": None,
-            "event_parameters": {"event_timestamp_column": "event_timestamp_event_data"},
+            "event_parameters": {"event_timestamp_column": "event_timestamp_event_table"},
         },
     }
 
@@ -929,10 +929,10 @@ def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtu
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
-        data_id_to_info={
-            saved_item_data.id: {
-                "name": saved_item_data.name,
-                "record_creation_timestamp_column": saved_item_data.record_creation_timestamp_column,
+        table_id_to_info={
+            saved_item_table.id: {
+                "name": saved_item_table.name,
+                "record_creation_timestamp_column": saved_item_table.record_creation_timestamp_column,
             }
         },
     )
@@ -940,10 +940,10 @@ def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtu
     # test create new version & check SDK code generation
     feature.save()
     new_version = feature.create_new_version(
-        data_feature_job_settings=None,
-        data_cleaning_operations=[
-            DataCleaningOperation(
-                data_name="sf_item_data",
+        table_feature_job_settings=None,
+        table_cleaning_operations=[
+            TableCleaningOperation(
+                table_name="sf_item_table",
                 column_cleaning_operations=[
                     ColumnCleaningOperation(
                         column_name="item_amount",
@@ -965,35 +965,35 @@ def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtu
         to_use_saved_data=True,
         fixture_path="tests/fixtures/sdk_code/feature_as_feat_with_data_cleaning_operations.py",
         update_fixtures=update_fixtures,
-        data_id=saved_item_data.id,
-        event_data_id=saved_item_data.event_data_id,
+        table_id=saved_item_table.id,
+        event_table_id=saved_item_table.event_table_id,
     )
 
     # create another new version & check SDK code generation
     version_without_clean_ops = new_version.create_new_version(
-        data_cleaning_operations=[
-            DataCleaningOperation(data_name="sf_item_data", column_cleaning_operations=[])
+        table_cleaning_operations=[
+            TableCleaningOperation(table_name="sf_item_table", column_cleaning_operations=[])
         ]
     )
     check_sdk_code_generation(version_without_clean_ops, to_use_saved_data=True)
 
 
-def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures):
+def test_sdk_code_generation(saved_item_table, saved_event_table, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
-    item_view = saved_item_data.get_view(event_suffix="_event_data")
+    item_view = saved_item_table.get_view(event_suffix="_event_table")
     check_sdk_code_generation(
         item_view,
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/item_view.py",
         update_fixtures=update_fixtures,
-        data_id=saved_item_data.id,
-        event_data_id=saved_event_data.id,
+        table_id=saved_item_table.id,
+        event_table_id=saved_event_table.id,
     )
 
     # add some cleaning operations during view construction
-    item_view = saved_item_data.get_view(
-        event_suffix="_event_data",
+    item_view = saved_item_table.get_view(
+        event_suffix="_event_table",
         view_mode="manual",
         column_cleaning_operations=[
             ColumnCleaningOperation(
@@ -1026,11 +1026,11 @@ def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures)
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/item_view_with_column_clean_ops.py",
         update_fixtures=update_fixtures,
-        data_id=saved_item_data.id,
+        table_id=saved_item_table.id,
     )
 
 
-def test_join_event_data_attributes__with_multiple_assignments(snowflake_item_view):
+def test_join_event_table_attributes__with_multiple_assignments(snowflake_item_view):
     """
     Test joining more columns from EventTable after creating ItemView with multiple assignments
     """
@@ -1040,7 +1040,7 @@ def test_join_event_data_attributes__with_multiple_assignments(snowflake_item_vi
     view["new_col"] = "new_column"
     view["new_col"][mask] = "some_value"
     view["new_col"][~mask] = "another_value"
-    view.join_event_data_attributes(["col_float"])
+    view.join_event_table_attributes(["col_float"])
 
     expected_columns = [
         "event_id_col",

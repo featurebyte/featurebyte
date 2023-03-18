@@ -23,16 +23,16 @@ def freeze_time_for_change_view():
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.usefixtures("freeze_time_for_change_view")
-def test_change_view(scd_data):
+def test_change_view(scd_table):
     """
     Test change view operations
     """
-    change_view = scd_data.get_change_view("User Status")
+    change_view = scd_table.get_change_view("User Status")
 
     # assert initialization
     assert len(change_view.columns_info) == 5
     assert change_view.timestamp_column == "new_Effective Timestamp"
-    assert change_view.natural_key_column == scd_data.natural_key_column
+    assert change_view.natural_key_column == scd_table.natural_key_column
     assert change_view.columns == [
         "User ID",
         "new_Effective Timestamp",
@@ -59,11 +59,11 @@ def test_change_view(scd_data):
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.usefixtures("freeze_time_for_change_view")
-def test_change_view__feature_no_entity(scd_data):
+def test_change_view__feature_no_entity(scd_table):
     """
     Test change view operations
     """
-    change_view = scd_data.get_change_view("User Status")
+    change_view = scd_table.get_change_view("User Status")
 
     # assert that we can get features
     expected = {

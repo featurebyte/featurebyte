@@ -69,7 +69,7 @@ def test_get_join_column(snowflake_scd_view):
 
 
 def test_event_view_join_scd_view(
-    snowflake_event_view, snowflake_event_data, snowflake_scd_view, snowflake_scd_data
+    snowflake_event_view, snowflake_event_table, snowflake_scd_view, snowflake_scd_table
 ):
     """
     Test additional join parameters are added for SCDView
@@ -121,25 +121,25 @@ def test_event_view_join_scd_view(
     check_sdk_code_generation(
         snowflake_event_view,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_scd_data.id: {
-                "name": snowflake_scd_data.name,
-                "record_creation_timestamp_column": snowflake_scd_data.record_creation_timestamp_column,
+        table_id_to_info={
+            snowflake_scd_table.id: {
+                "name": snowflake_scd_table.name,
+                "record_creation_timestamp_column": snowflake_scd_table.record_creation_timestamp_column,
             },
-            snowflake_event_data.id: {
-                "name": snowflake_event_data.name,
-                "record_creation_timestamp_column": snowflake_event_data.record_creation_timestamp_column,
+            snowflake_event_table.id: {
+                "name": snowflake_event_table.name,
+                "record_creation_timestamp_column": snowflake_event_table.record_creation_timestamp_column,
             },
         },
     )
 
 
-def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
+def test_scd_view_as_feature(snowflake_scd_table, cust_id_entity):
     """
     Test SlowlyChangingView as_feature configures additional parameters
     """
-    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
-    scd_view = snowflake_scd_data.get_view()
+    snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
+    scd_view = snowflake_scd_table.get_view()
     feature = scd_view["col_float"].as_feature("FloatFeature", offset="7d")
     graph_dict = feature.dict()["graph"]
     lookup_node = get_node(graph_dict, "lookup_1")
@@ -165,28 +165,28 @@ def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
     }
 
     # check SDK code generation
-    scd_data_columns_info = snowflake_scd_data.dict(by_alias=True)["columns_info"]
+    scd_table_columns_info = snowflake_scd_table.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_scd_data.id: {
-                "name": snowflake_scd_data.name,
-                "record_creation_timestamp_column": snowflake_scd_data.record_creation_timestamp_column,
-                # since the data is not saved, we need to pass in the columns info
+        table_id_to_info={
+            snowflake_scd_table.id: {
+                "name": snowflake_scd_table.name,
+                "record_creation_timestamp_column": snowflake_scd_table.record_creation_timestamp_column,
+                # since the table is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in as_features method
-                "columns_info": scd_data_columns_info,
+                "columns_info": scd_table_columns_info,
             }
         },
     )
 
 
-def test_scd_view_as_feature__invalid_duration(snowflake_scd_data, cust_id_entity):
+def test_scd_view_as_feature__invalid_duration(snowflake_scd_table, cust_id_entity):
     """
     Test SlowlyChangingView as_feature configures additional parameters
     """
-    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
-    scd_view = snowflake_scd_data.get_view()
+    snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
+    scd_view = snowflake_scd_table.get_view()
     with pytest.raises(ValueError) as exc:
         scd_view["col_float"].as_feature("FloatFeature", offset="something")
     assert "Failed to parse the offset parameter" in str(exc.value)
@@ -201,12 +201,12 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
     assert subset_view.columns == ["col_float", "is_active", "col_text", "effective_timestamp"]
 
 
-def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity):
+def test_scd_view_as_feature__special_column(snowflake_scd_table, cust_id_entity):
     """
     Test SlowlyChangingView as_feature selects a special column that is excluded by default
     """
-    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
-    scd_view = snowflake_scd_data.get_view()
+    snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
+    scd_view = snowflake_scd_table.get_view()
     feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
     lookup_node_dict = get_node(feature.dict()["graph"], "lookup_1")
     assert feature.name == "Latest Record Change Date"
@@ -227,39 +227,39 @@ def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity)
     }
 
     # check SDK code generation
-    scd_data_columns_info = snowflake_scd_data.dict(by_alias=True)["columns_info"]
+    scd_table_columns_info = snowflake_scd_table.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
-        data_id_to_info={
-            snowflake_scd_data.id: {
-                "name": snowflake_scd_data.name,
-                "record_creation_timestamp_column": snowflake_scd_data.record_creation_timestamp_column,
-                # since the data is not saved, we need to pass in the columns info
+        table_id_to_info={
+            snowflake_scd_table.id: {
+                "name": snowflake_scd_table.name,
+                "record_creation_timestamp_column": snowflake_scd_table.record_creation_timestamp_column,
+                # since the table is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail in as_features method
-                "columns_info": scd_data_columns_info,
+                "columns_info": scd_table_columns_info,
             }
         },
     )
 
 
-def test_sdk_code_generation(saved_scd_data, update_fixtures):
+def test_sdk_code_generation(saved_scd_table, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
-    scd_view = saved_scd_data.get_view()
+    scd_view = saved_scd_table.get_view()
     check_sdk_code_generation(
         scd_view,
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/scd_view.py",
         update_fixtures=update_fixtures,
-        data_id=saved_scd_data.id,
+        table_id=saved_scd_table.id,
     )
 
 
-def test_aggregate_asat_sdk_code_generation(saved_scd_data, transaction_entity):
+def test_aggregate_asat_sdk_code_generation(saved_scd_table, transaction_entity):
     """Test SDK code generation for aggregate asat"""
-    saved_scd_data.col_int.as_entity(transaction_entity.name)
-    snowflake_scd_view = saved_scd_data.get_view()
+    saved_scd_table.col_int.as_entity(transaction_entity.name)
+    snowflake_scd_view = saved_scd_table.get_view()
     feature = snowflake_scd_view.groupby(by_keys=["col_int"]).aggregate_asat(
         value_column="col_float", method="max", feature_name="col_float_max"
     )
@@ -269,7 +269,7 @@ def test_aggregate_asat_sdk_code_generation(saved_scd_data, transaction_entity):
     from featurebyte import SCDTable
 
 
-    # scd_table name: "sf_scd_data"
+    # scd_table name: "sf_scd_table"
     scd_table = SCDTable.get_by_id(ObjectId("6337f9651050ee7d123466cd"))
     scd_view = scd_table.get_view(
         view_mode="manual", drop_column_names=[], column_cleaning_operations=[]

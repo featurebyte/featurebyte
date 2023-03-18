@@ -11,13 +11,13 @@ from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest.fixture(name="online_enabled_feature_list", scope="module")
-def online_enabled_feature_list_fixture(event_data, config):
+def online_enabled_feature_list_fixture(event_table, config):
     """
     Fixture for an online enabled feature
 
     To avoid side effects, this should not be shared with other tests.
     """
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     event_view["ÀMOUNT"] = event_view["ÀMOUNT"] + 12345
 
     # Aggregate using a different entity than "ÜSER ID". Otherwise, it will be creating a feature
@@ -67,11 +67,11 @@ async def test_online_enabled_features_have_scheduled_jobs(online_enabled_featur
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_online_enable_non_time_aware_feature(item_data, config):
+async def test_online_enable_non_time_aware_feature(item_table, config):
     """
     Test online enabling a non-time aware feature
     """
-    item_view = item_data.get_view()
+    item_view = item_table.get_view()
     feature = item_view.groupby("order_id").aggregate(
         method="count", feature_name="my_item_feature_for_online_enable_test"
     )

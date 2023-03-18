@@ -8,11 +8,11 @@ from featurebyte import FeatureList
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_features_without_entity(event_data):
+def test_features_without_entity(event_table):
     """
     Test working with purely time based features without any entity
     """
-    event_view = event_data.get_view()
+    event_view = event_table.get_view()
     feature_group = event_view.groupby([]).aggregate_over(
         method="count",
         windows=["2h", "24h"],

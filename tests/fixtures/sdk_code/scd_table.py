@@ -43,6 +43,6 @@ scd_table = SCDTable(
     end_timestamp_column="end_timestamp",
     surrogate_key_column="col_int",
     current_flag_column="is_active",
-    _id=ObjectId("{data_id}"),
+    _id=ObjectId("{table_id}"),
 )
 output = scd_table

@@ -51,7 +51,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
     ) -> None:
         """
         Validate context view operation structure, check that
-        - whether all tabular data used in the view can be retrieved from persistent
+        - whether all table used in the view can be retrieved from persistent
         - whether the view output contains required entity column(s)
 
         Parameters
@@ -66,7 +66,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         DocumentUpdateError
             When the context view is not a proper context view (frame, view and has all required entities)
         """
-        data_service = TableService(
+        table_service = TableService(
             user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
         )
 
@@ -76,7 +76,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         if operation_structure.output_category != NodeOutputCategory.VIEW:
             raise DocumentUpdateError("Context view must be a view but not a feature.")
 
-        # check that tabular data document can be retrieved from the persistent
+        # check that table document can be retrieved from the persistent
         tabular_data_map = {}
         tabular_data_ids = list(
             set(col.tabular_data_id for col in operation_structure.source_columns)
@@ -84,7 +84,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         for tabular_data_id in tabular_data_ids:
             if tabular_data_id is None:
                 raise DocumentUpdateError("Data record has not been stored at the persistent.")
-            tabular_data_map[tabular_data_id] = await data_service.get_document(
+            tabular_data_map[tabular_data_id] = await table_service.get_document(
                 document_id=tabular_data_id
             )
 

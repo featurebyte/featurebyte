@@ -44,7 +44,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         "blind_spot",
     ]
     _list_foreign_keys = [
-        ForeignKeyMapping("event_data_id", TableApiObject, "event_table"),
+        ForeignKeyMapping("event_table_id", TableApiObject, "event_table"),
     ]
 
     @classmethod
@@ -78,7 +78,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         include_id: Optional[bool]
             Whether to include id in the list
         event_table_id: Optional[ObjectId]
-            Event data id used to filter results
+            Event table id used to filter results
 
         Returns
         -------
@@ -173,6 +173,6 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         response = client.get(f"{output_url}.html")
         display_html_in_notebook(response.text)
 
-        # download and return data
+        # download and return table
         response = client.get(f"{output_url}.parquet")
         return pd.read_parquet(path=BytesIO(response.content))

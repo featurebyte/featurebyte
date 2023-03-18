@@ -1,5 +1,5 @@
 """
-SCDData API payload schema
+SCDTable API payload schema
 """
 from __future__ import annotations
 
@@ -16,10 +16,10 @@ from featurebyte.schema.table import TableCreate, TableServiceUpdate, TableUpdat
 
 class SCDTableCreate(TableCreate):
     """
-    SCDData Creation Schema
+    SCDTable Creation Schema
     """
 
-    type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
     natural_key_column: StrictStr
     surrogate_key_column: Optional[StrictStr]
     effective_timestamp_column: StrictStr
@@ -37,7 +37,7 @@ class SCDTableList(PaginationMixin):
 
 class SCDDataUpdateMixin(FeatureByteBaseModel):
     """
-    SCDData specific update schema
+    SCDTable specific update schema
     """
 
     end_timestamp_column: Optional[StrictStr]
@@ -46,11 +46,11 @@ class SCDDataUpdateMixin(FeatureByteBaseModel):
 
 class SCDTableUpdate(SCDDataUpdateMixin, TableUpdate):
     """
-    SCDData update payload schema
+    SCDTable update payload schema
     """
 
 
 class SCDTableServiceUpdate(SCDDataUpdateMixin, TableServiceUpdate):
     """
-    SCDData service update schema
+    SCDTable service update schema
     """

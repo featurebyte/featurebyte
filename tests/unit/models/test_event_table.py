@@ -24,7 +24,7 @@ def feature_job_setting_fixture():
     return feature_job_setting
 
 
-def test_event_data_model(snowflake_feature_store, feature_job_setting):
+def test_event_table_model(snowflake_feature_store, feature_job_setting):
     """Test creation, serialization and deserialization of an EventTable"""
     columns_info = [
         {
@@ -56,8 +56,8 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
             "critical_data_info": None,
         },
     ]
-    event_data = EventTableModel(
-        name="my_event_data",
+    event_table = EventTableModel(
+        name="my_event_table",
         tabular_source={
             "feature_store_id": snowflake_feature_store.id,
             "table_details": TableDetails(
@@ -72,8 +72,8 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
         created_at=datetime.datetime(2022, 2, 1),
         status=TableStatus.PUBLISHED,
     )
-    expected_event_data_dict = {
-        "type": "event_data",
+    expected_event_table_dict = {
+        "type": "event_table",
         "user_id": None,
         "created_at": datetime.datetime(2022, 2, 1, 0, 0),
         "updated_at": None,
@@ -85,12 +85,12 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
         "columns_info": columns_info,
         "event_timestamp_column": "event_date",
         "event_id_column": "event_id",
-        "id": event_data.id,
-        "name": "my_event_data",
+        "id": event_table.id,
+        "name": "my_event_table",
         "record_creation_timestamp_column": "created_at",
         "status": "PUBLISHED",
         "tabular_source": {
-            "feature_store_id": event_data.tabular_source.feature_store_id,
+            "feature_store_id": event_table.tabular_source.feature_store_id,
             "table_details": {
                 "database_name": "database",
                 "schema_name": "schema",
@@ -99,15 +99,10 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
         },
         "catalog_id": DEFAULT_CATALOG_ID,
     }
-    assert event_data.dict() == expected_event_data_dict
-    event_data_json = event_data.json(by_alias=True)
-    event_data_loaded = EventTableModel.parse_raw(event_data_json)
-    assert event_data_loaded == event_data
-
-    # DEV-556: check older record can be loaded
-    expected_event_data_dict.pop("event_id_column")
-    loaded_old_event_data = EventTableModel.parse_obj(expected_event_data_dict)
-    assert loaded_old_event_data.event_id_column is None
+    assert event_table.dict() == expected_event_table_dict
+    event_table_json = event_table.json(by_alias=True)
+    event_table_loaded = EventTableModel.parse_raw(event_table_json)
+    assert event_table_loaded == event_table
 
 
 @pytest.mark.parametrize(

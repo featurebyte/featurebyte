@@ -284,11 +284,11 @@ class TableDataType(StrEnum):
     TableDataType enum
     """
 
-    GENERIC = "generic"
-    EVENT_DATA = "event_data"
-    ITEM_DATA = "item_data"
-    DIMENSION_DATA = "dimension_data"
-    SCD_DATA = "scd_data"
+    SOURCE_TABLE = "source_table"
+    EVENT_TABLE = "event_table"
+    ITEM_TABLE = "item_table"
+    DIMENSION_TABLE = "dimension_table"
+    SCD_TABLE = "scd_table"
 
 
 class ViewMode(StrEnum):

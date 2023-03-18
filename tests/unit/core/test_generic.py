@@ -63,7 +63,7 @@ def query_object1_fixture(feature_store_tabular_source):
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
-            "type": "generic",
+            "type": "source_table",
             "columns": ["column"],
             "table_details": {
                 "database_name": "db",

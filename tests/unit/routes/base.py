@@ -696,7 +696,7 @@ class BaseCatalogRelationshipApiTestSuite(BaseRelationshipApiTestSuite, BaseCata
 
 class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
     """
-    BaseTableApiTestSuite contains tests related to data service
+    BaseTableApiTestSuite contains tests related to table service
     """
 
     data_create_schema_class = TableCreate
@@ -808,7 +808,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         self, test_api_client_persistent, data_model_dict, columns_info, snowflake_feature_store
     ):
         """
-        Event data response fixture
+        Event table response fixture
         """
         _ = snowflake_feature_store
         test_api_client, _ = test_api_client_persistent
@@ -1018,7 +1018,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         success_response_dict = create_success_response.json()
 
-        # check that table route can be used to retrieve the created data
+        # check that table route can be used to retrieve the created table
         response = test_api_client.get(f"/table/{success_response_dict['_id']}")
         assert response.json() == success_response_dict
 

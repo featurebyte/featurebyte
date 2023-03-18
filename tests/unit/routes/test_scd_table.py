@@ -26,7 +26,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
     base_route = "/scd_table"
     data_create_schema_class = SCDTableCreate
     payload = BaseTableApiTestSuite.load_payload("tests/fixtures/request_payloads/scd_table.json")
-    document_name = "sf_scd_data"
+    document_name = "sf_scd_table"
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
@@ -71,8 +71,8 @@ class TestSCDTableApi(BaseTableApiTestSuite):
     ]
     update_unprocessable_payload_expected_detail_pairs = []
 
-    @pytest_asyncio.fixture(name="scd_data_semantic_ids")
-    async def scd_data_semantic_ids_fixture(self, user_id, persistent):
+    @pytest_asyncio.fixture(name="scd_table_semantic_ids")
+    async def scd_table_semantic_ids_fixture(self, user_id, persistent):
         """SCD ID semantic IDs fixture"""
         user = mock.Mock()
         user.id = user_id
@@ -85,10 +85,10 @@ class TestSCDTableApi(BaseTableApiTestSuite):
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(
-        self, tabular_source, columns_info, user_id, scd_data_semantic_ids, feature_store_details
+        self, tabular_source, columns_info, user_id, scd_table_semantic_ids, feature_store_details
     ):
         """Fixture for a SCD Data dict"""
-        natural_id, surrogate_id = scd_data_semantic_ids
+        natural_id, surrogate_id = scd_table_semantic_ids
         cols_info = []
         for col_info in columns_info:
             col = col_info.copy()
@@ -98,7 +98,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
                 col["semantic_id"] = surrogate_id
             cols_info.append(col)
 
-        scd_data_dict = {
+        scd_table_dict = {
             "name": "订单表",
             "tabular_source": tabular_source,
             "columns_info": cols_info,
@@ -111,15 +111,15 @@ class TestSCDTableApi(BaseTableApiTestSuite):
             "end_timestamp_column": "end_at",
             "current_flag": "current_value",
         }
-        scd_table_data = SCDTableData(**scd_data_dict)
+        scd_table_data = SCDTableData(**scd_table_dict)
         input_node = scd_table_data.construct_input_node(
             feature_store_details=feature_store_details
         )
         graph = QueryGraph()
         inserted_node = graph.add_node(node=input_node, input_nodes=[])
-        scd_data_dict["graph"] = graph
-        scd_data_dict["node_name"] = inserted_node.name
-        output = SCDTableModel(**scd_data_dict).json_dict()
+        scd_table_dict["graph"] = graph
+        scd_table_dict["node_name"] = inserted_node.name
+        output = SCDTableModel(**scd_table_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None
         return output
@@ -127,7 +127,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
     @pytest.fixture(name="data_update_dict")
     def data_update_dict_fixture(self):
         """
-        SCD data update dict object
+        SCD table update dict object
         """
         return {
             "record_creation_timestamp_column": "created_at",
@@ -148,7 +148,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
         expected_info_response = {
-            "name": "sf_scd_data",
+            "name": self.document_name,
             "record_creation_timestamp_column": None,
             "current_flag_column": "is_active",
             "effective_timestamp_column": "effective_timestamp",

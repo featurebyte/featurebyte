@@ -60,8 +60,8 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         input_node_names: List[str],
     ) -> Tuple[List[str], bool]:
         if node.type == NodeType.GRAPH and node.parameters.type == GraphNodeType.ITEM_VIEW:  # type: ignore
-            # item view consume 2 inputs (item data & event view), when constructing SDK code, we only need to use the
-            # first input (item data).
+            # item view consume 2 inputs (item table & event view), when constructing SDK code, we only need to use the
+            # first input (item table).
             return input_node_names[:1], False
         return input_node_names, False
 
@@ -115,7 +115,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         to_use_saved_data: bool = False,
         feature_store_name: Optional[str] = None,
         feature_store_id: Optional[ObjectId] = None,
-        data_id_to_info: Optional[Dict[ObjectId, Dict[str, Any]]] = None,
+        table_id_to_info: Optional[Dict[ObjectId, Dict[str, Any]]] = None,
         **kwargs: Any,
     ) -> SDKCodeGlobalState:
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
@@ -125,8 +125,8 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
             code_generation_config["feature_store_name"] = feature_store_name
         if feature_store_id:
             code_generation_config["feature_store_id"] = feature_store_id
-        if data_id_to_info:
-            code_generation_config["data_id_to_info"] = data_id_to_info
+        if table_id_to_info:
+            code_generation_config["table_id_to_info"] = table_id_to_info
 
         global_state = SDKCodeGlobalState(
             node_name_to_operation_structure=op_struct_info.operation_structure_map,

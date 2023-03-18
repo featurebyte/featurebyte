@@ -21,7 +21,7 @@ def relationship_info_service_fixture(app_container):
 
 
 @pytest.fixture(name="persistable_relationship_info")
-def persistable_relationship_info_fixture(relationship_info_service, snowflake_event_data):
+def persistable_relationship_info_fixture(relationship_info_service, snowflake_event_table):
     """
     Get a callback function that will persist a relationship info.
     """
@@ -29,7 +29,7 @@ def persistable_relationship_info_fixture(relationship_info_service, snowflake_e
     cust_entity.save()
     user_entity = Entity(name="user", serving_names=["user_id"])
     user_entity.save()
-    snowflake_event_data.save()
+    snowflake_event_table.save()
 
     async def save() -> RelationshipInfo:
         created_relationship = await relationship_info_service.create_document(
@@ -38,7 +38,7 @@ def persistable_relationship_info_fixture(relationship_info_service, snowflake_e
                 relationship_type=RelationshipType.CHILD_PARENT,
                 primary_entity_id=cust_entity.id,
                 related_entity_id=user_entity.id,
-                primary_data_source_id=snowflake_event_data.id,
+                primary_data_source_id=snowflake_event_table.id,
                 is_enabled=False,
                 updated_by=PydanticObjectId(ObjectId()),
             )
@@ -87,8 +87,8 @@ def assert_relationship_info(relationship_info_df):
     assert relationship_info_df["relationship_type"][0] == "child_parent"
     assert relationship_info_df["primary_entity"][0] == "customer"
     assert relationship_info_df["related_entity"][0] == "user"
-    assert relationship_info_df["primary_data_source"][0] == "sf_event_data"
-    assert relationship_info_df["primary_data_type"][0] == "event_data"
+    assert relationship_info_df["primary_data_source"][0] == "sf_event_table"
+    assert relationship_info_df["primary_data_type"][0] == "event_table"
     assert not relationship_info_df["is_enabled"][0]
 
 
