@@ -68,7 +68,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
             Details of the database to use for the feature store.
         credentials: Optional[Credential]
             Credentials to use when connecting to the database.
-            If there are already credentials in your configuration file, these will be ignored.
+            These will be ignored if there are already credentials specified for the feature store in
+            the configuration file.
 
         Returns
         -------
@@ -110,7 +111,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
             Details of the database to use for the feature store.
         credentials: Optional[Credential]
             Credentials to use when connecting to the database.
-            If there are already credentials in your configuration file, these will be ignored.
+            These will be ignored if there are already credentials specified for the feature store in
+            the configuration file.
 
         Returns
         -------

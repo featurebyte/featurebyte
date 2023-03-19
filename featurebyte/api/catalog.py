@@ -96,7 +96,10 @@ class Catalog(CatalogModel, SavableApiObject):
     @classmethod
     def activate(cls, name: str) -> Catalog:
         """
-        Activate catalog by name.
+        Activate catalog with the provided name. Exactly one catalog is active at any time.
+        If no catalog has been activated, the default catalog will be active.
+        All SDK API calls are scoped based on the currently active catalog. Only assets that belong to
+        the active catalog are accessible.
 
         Parameters
         ----------
@@ -109,9 +112,17 @@ class Catalog(CatalogModel, SavableApiObject):
 
         Examples
         --------
+        >>> catalog = Catalog.activate("default")
+        >>> catalog.list_tables()[["name", "type"]]
+        Empty DataFrame
+        Columns: [name, type]
+        Index: []
         >>> catalog = Catalog.activate("grocery")
-        >>> catalog.name
-        'grocery'
+        >>> catalog.list_tables()[["name", "type"]]
+                      name         type
+        0  GROCERYCUSTOMER    scd_table
+        1     INVOICEITEMS   item_table
+        2   GROCERYINVOICE  event_table
         """
         catalog = cls.get(name)
         activate_catalog(catalog.id)
