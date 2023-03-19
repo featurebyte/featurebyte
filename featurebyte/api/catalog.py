@@ -98,8 +98,7 @@ class Catalog(CatalogModel, SavableApiObject):
         """
         Activate catalog with the provided name. Exactly one catalog is active at any time.
         If no catalog has been activated, the default catalog will be active.
-        All SDK API calls are scoped based on the currently active catalog. Only assets that belong to
-        the active catalog are accessible.
+        Only assets that belong to the active catalog are accessible.
 
         Parameters
         ----------
