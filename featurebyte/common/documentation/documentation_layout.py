@@ -16,7 +16,7 @@ class DocLayoutItem:
     # menu will have a top level item of "Data" and a sub item of "Explore".
     menu_header: List[str]
     # This should represent the API path that users are able to access the SDK through. For example, if the API path
-    # is `featurebyte.Data`, the user will be able to access the SDK through `featurebyte.Data` (even if that is
+    # is `featurebyte.Table`, the user will be able to access the SDK through `featurebyte.Table` (even if that is
     # not necessarily the path to the class in the codebase).
     api_path: str
     # This should represent a path to a markdown file that will be used to override the documentation. This is to
@@ -29,8 +29,9 @@ ANNOTATE = "Annotate"
 CATALOG = "Catalog"
 CREATE = "Create"
 DEFAULT_FEATURE_JOB = "DefaultFeatureJob"
-DATA = "Data"
-DATA_COLUMN = "DataColumn"
+TABLE = "Table"
+TABLE_COLUMN = "TableColumn"
+DATA_SOURCE = "DataSource"
 ENRICH = "Enrich"
 ENTITY = "Entity"
 EXPLORE = "Explore"
@@ -64,184 +65,201 @@ def _get_data_layout() -> List[DocLayoutItem]:
     """
     return [
         # DATA
-        DocLayoutItem([DATA], "featurebyte.Data"),
-        DocLayoutItem([DATA, CATALOG, "featurebyte.Data.get"], "featurebyte.Data.get"),
-        DocLayoutItem([DATA, CATALOG, "featurebyte.Data.get_by_id"], "featurebyte.Data.get_by_id"),
-        DocLayoutItem([DATA, CATALOG, "featurebyte.Data.list"], "featurebyte.Data.list"),
+        DocLayoutItem([TABLE], "featurebyte.Table"),
+        DocLayoutItem([TABLE, CATALOG, "featurebyte.Table.get"], "featurebyte.Table.get"),
         DocLayoutItem(
-            [DATA, CREATE, "featurebyte.Data.save"],
+            [TABLE, CATALOG, "featurebyte.Table.get_by_id"], "featurebyte.Table.get_by_id"
+        ),
+        DocLayoutItem([TABLE, CATALOG, "featurebyte.Table.list"], "featurebyte.Table.list"),
+        DocLayoutItem(
+            [TABLE, CREATE, "featurebyte.Table.save"],
             "",
-            "featurebyte.api.base_data.DataApiObject.save.md",
+            "featurebyte.api.base_table.TableApiObject.save.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [DATA, CREATE, "featurebyte.DimensionData.from_tabular_source"],
-            "featurebyte.DimensionData.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.DimensionTable.from_tabular_source"],
+            "featurebyte.DimensionTable.from_tabular_source",
         ),
         DocLayoutItem(
-            [DATA, CREATE, "featurebyte.EventData.from_tabular_source"],
-            "featurebyte.EventData.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.EventTable.from_tabular_source"],
+            "featurebyte.EventTable.from_tabular_source",
         ),
         DocLayoutItem(
-            [DATA, CREATE, "featurebyte.ItemData.from_tabular_source"],
-            "featurebyte.ItemData.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.ItemTable.from_tabular_source"],
+            "featurebyte.ItemTable.from_tabular_source",
         ),
         DocLayoutItem(
-            [DATA, CREATE, "featurebyte.SlowlyChangingData.from_tabular_source"],
-            "featurebyte.SlowlyChangingData.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.SlowlyChangingTable.from_tabular_source"],
+            "featurebyte.SlowlyChangingTable.from_tabular_source",
         ),
         DocLayoutItem(
             [
-                DATA,
+                TABLE,
                 DEFAULT_FEATURE_JOB,
-                "featurebyte.EventData.create_new_feature_job_setting_analysis",
+                "featurebyte.EventTable.create_new_feature_job_setting_analysis",
             ],
-            "featurebyte.EventData.create_new_feature_job_setting_analysis",
+            "featurebyte.EventTable.create_new_feature_job_setting_analysis",
         ),
         DocLayoutItem(
             [
-                DATA,
+                TABLE,
                 DEFAULT_FEATURE_JOB,
-                "featurebyte.EventData.initialize_default_feature_job_setting",
+                "featurebyte.EventTable.initialize_default_feature_job_setting",
             ],
-            "featurebyte.EventData.initialize_default_feature_job_setting",
+            "featurebyte.EventTable.initialize_default_feature_job_setting",
         ),
         DocLayoutItem(
-            [DATA, DEFAULT_FEATURE_JOB, "featurebyte.EventData.list_feature_job_setting_analysis"],
-            "featurebyte.EventData.list_feature_job_setting_analysis",
+            [
+                TABLE,
+                DEFAULT_FEATURE_JOB,
+                "featurebyte.EventTable.list_feature_job_setting_analysis",
+            ],
+            "featurebyte.EventTable.list_feature_job_setting_analysis",
         ),
         DocLayoutItem(
-            [DATA, DEFAULT_FEATURE_JOB, "featurebyte.EventData.update_default_feature_job_setting"],
-            "featurebyte.EventData.update_default_feature_job_setting",
+            [
+                TABLE,
+                DEFAULT_FEATURE_JOB,
+                "featurebyte.EventTable.update_default_feature_job_setting",
+            ],
+            "featurebyte.EventTable.update_default_feature_job_setting",
         ),
         DocLayoutItem(
-            [DATA, EXPLORE, "featurebyte.Data.describe"],
+            [TABLE, EXPLORE, "featurebyte.Table.describe"],
             "",
-            "featurebyte.api.base_data.DataApiObject.describe.md",
+            "featurebyte.api.base_table.TableApiObject.describe.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [DATA, EXPLORE, "featurebyte.Data.preview"],
+            [TABLE, EXPLORE, "featurebyte.Table.preview"],
             "",
-            "featurebyte.api.base_data.DataApiObject.preview.md",
+            "featurebyte.api.base_table.TableApiObject.preview.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [DATA, EXPLORE, "featurebyte.Data.sample"],
+            [TABLE, EXPLORE, "featurebyte.Table.sample"],
             "",
-            "featurebyte.api.base_data.DataApiObject.sample.md",
+            "featurebyte.api.base_table.TableApiObject.sample.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [DATA, INFO, "featurebyte.Data.column_cleaning_operations"],
-            "featurebyte.Data.column_cleaning_operations",
+            [TABLE, INFO, "featurebyte.Table.column_cleaning_operations"],
+            "featurebyte.Table.column_cleaning_operations",
         ),
         DocLayoutItem(
-            [DATA, INFO, "featurebyte.Data.columns"],
+            [TABLE, INFO, "featurebyte.Table.columns"],
             "",
-            "featurebyte.api.base_data.DataApiObject.columns.md",
+            "featurebyte.api.base_table.TableApiObject.columns.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [DATA, INFO, "featurebyte.Data.columns_info"], "featurebyte.Data.columns_info"
+            [TABLE, INFO, "featurebyte.Table.columns_info"], "featurebyte.Table.columns_info"
         ),
-        DocLayoutItem([DATA, INFO, "featurebyte.Data.created_at"], "featurebyte.Data.created_at"),
         DocLayoutItem(
-            [DATA, INFO, "featurebyte.Data.dtypes"],
+            [TABLE, INFO, "featurebyte.Table.created_at"], "featurebyte.Table.created_at"
+        ),
+        DocLayoutItem(
+            [TABLE, INFO, "featurebyte.Table.dtypes"],
             "",
-            "featurebyte.api.base_data.DataApiObject.dtypes.md",
+            "featurebyte.api.base_table.TableApiObject.dtypes.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
-        DocLayoutItem([DATA, INFO, "featurebyte.Data.info"], "featurebyte.Data.info"),
-        DocLayoutItem([DATA, INFO, "featurebyte.Data.name"], "featurebyte.Data.name"),
+        DocLayoutItem([TABLE, INFO, "featurebyte.Table.info"], "featurebyte.Table.info"),
+        DocLayoutItem([TABLE, INFO, "featurebyte.Table.name"], "featurebyte.Table.name"),
         DocLayoutItem(
-            [DATA, INFO, "featurebyte.Data.primary_key_columns"],
-            "featurebyte.Data.primary_key_columns",
+            [TABLE, INFO, "featurebyte.Table.primary_key_columns"],
+            "featurebyte.Table.primary_key_columns",
         ),
         DocLayoutItem(
-            [DATA, INFO, "featurebyte.Data.record_creation_timestamp_column"],
-            "featurebyte.Data.record_creation_timestamp_column",
+            [TABLE, INFO, "featurebyte.Table.record_creation_timestamp_column"],
+            "featurebyte.Table.record_creation_timestamp_column",
         ),
-        DocLayoutItem([DATA, INFO, "featurebyte.Data.saved"], "featurebyte.Data.saved"),
-        DocLayoutItem([DATA, INFO, "featurebyte.Data.status"], "featurebyte.Data.status"),
-        DocLayoutItem([DATA, INFO, "featurebyte.Data.table_data"], "featurebyte.Data.table_data"),
-        DocLayoutItem([DATA, INFO, "featurebyte.Data.type"], "featurebyte.Data.type"),
-        DocLayoutItem([DATA, INFO, "featurebyte.Data.updated_at"], "featurebyte.Data.updated_at"),
-        DocLayoutItem([DATA, INFO, "featurebyte.Data.catalog_id"], "featurebyte.Data.catalog_id"),
+        DocLayoutItem([TABLE, INFO, "featurebyte.Table.saved"], "featurebyte.Table.saved"),
+        DocLayoutItem([TABLE, INFO, "featurebyte.Table.status"], "featurebyte.Table.status"),
         DocLayoutItem(
-            [DATA, INFO, "featurebyte.ItemData.default_feature_job_setting"],
-            "featurebyte.ItemData.default_feature_job_setting",
+            [TABLE, INFO, "featurebyte.Table.table_data"], "featurebyte.Table.table_data"
         ),
+        DocLayoutItem([TABLE, INFO, "featurebyte.Table.type"], "featurebyte.Table.type"),
         DocLayoutItem(
-            [DATA, LINEAGE, "featurebyte.Data.entity_ids"], "featurebyte.Data.entity_ids"
+            [TABLE, INFO, "featurebyte.Table.updated_at"], "featurebyte.Table.updated_at"
         ),
         DocLayoutItem(
-            [DATA, LINEAGE, "featurebyte.Data.feature_store"],
+            [TABLE, INFO, "featurebyte.Table.catalog_id"], "featurebyte.Table.catalog_id"
+        ),
+        DocLayoutItem(
+            [TABLE, INFO, "featurebyte.ItemTable.default_feature_job_setting"],
+            "featurebyte.ItemTable.default_feature_job_setting",
+        ),
+        DocLayoutItem(
+            [TABLE, LINEAGE, "featurebyte.Table.entity_ids"], "featurebyte.Table.entity_ids"
+        ),
+        DocLayoutItem(
+            [TABLE, LINEAGE, "featurebyte.Table.feature_store"],
             "",
-            "featurebyte.api.base_data.DataApiObject.feature_store.md",
+            "featurebyte.api.base_table.TableApiObject.feature_store.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
-        DocLayoutItem([DATA, LINEAGE, "featurebyte.Data.id"], "featurebyte.Data.id"),
+        DocLayoutItem([TABLE, LINEAGE, "featurebyte.Table.id"], "featurebyte.Table.id"),
         DocLayoutItem(
-            [DATA, LINEAGE, "featurebyte.Data.preview_clean_data_sql"],
+            [TABLE, LINEAGE, "featurebyte.Table.preview_clean_data_sql"],
             "",
-            "featurebyte.api.base_data.DataApiObject.preview_clean_data_sql.md",
+            "featurebyte.api.base_table.TableApiObject.preview_clean_data_sql.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [DATA, LINEAGE, "featurebyte.Data.preview_sql"],
+            [TABLE, LINEAGE, "featurebyte.Table.preview_sql"],
             "",
-            "featurebyte.api.base_data.DataApiObject.preview_sql.md",
+            "featurebyte.api.base_table.TableApiObject.preview_sql.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [DATA, LINEAGE, "featurebyte.Data.tabular_source"], "featurebyte.Data.tabular_source"
+            [TABLE, LINEAGE, "featurebyte.Table.tabular_source"], "featurebyte.Table.tabular_source"
         ),
         DocLayoutItem(
-            [DATA, LINEAGE, "featurebyte.ItemData.event_data_id"],
-            "featurebyte.ItemData.event_data_id",
+            [TABLE, LINEAGE, "featurebyte.ItemTable.event_data_id"],
+            "featurebyte.ItemTable.event_data_id",
         ),
-        DocLayoutItem([DATA, TYPE, "featurebyte.DimensionData"], "featurebyte.DimensionData"),
-        DocLayoutItem([DATA, TYPE, "featurebyte.EventData"], "featurebyte.EventData"),
-        DocLayoutItem([DATA, TYPE, "featurebyte.ItemData"], "featurebyte.ItemData"),
+        DocLayoutItem([TABLE, TYPE, "featurebyte.DimensionTable"], "featurebyte.DimensionTable"),
+        DocLayoutItem([TABLE, TYPE, "featurebyte.EventTable"], "featurebyte.EventTable"),
+        DocLayoutItem([TABLE, TYPE, "featurebyte.ItemTable"], "featurebyte.ItemTable"),
+        DocLayoutItem([TABLE, TYPE, "featurebyte.SCDTable"], "featurebyte.SCDTable"),
         DocLayoutItem(
-            [DATA, TYPE, "featurebyte.SlowlyChangingData"], "featurebyte.SlowlyChangingData"
-        ),
-        DocLayoutItem(
-            [DATA, UPDATE, "featurebyte.Data.update_record_creation_timestamp_column"],
+            [TABLE, UPDATE, "featurebyte.Table.update_record_creation_timestamp_column"],
             "",
-            "featurebyte.api.base_data.DataApiObject.update_record_creation_timestamp_column.md",
+            "featurebyte.api.base_table.TableApiObject.update_record_creation_timestamp_column.md",
         ),  # TODO: this is technically not correct?
     ]
 
 
-def _get_data_column_layout() -> List[DocLayoutItem]:
+def _get_table_column_layout() -> List[DocLayoutItem]:
     """
-    Returns the layout for the data column documentation
+    Returns the layout for the table column documentation
 
     Returns
     -------
     List[DocLayoutItem]
-        The layout for the data column documentation
+        The layout for the table column documentation
     """
     return [
-        DocLayoutItem([DATA_COLUMN], "featurebyte.DataColumn"),
+        DocLayoutItem([TABLE_COLUMN], "featurebyte.TableColumn"),
         DocLayoutItem(
-            [DATA_COLUMN, ANNOTATE, "featurebyte.DataColumn.as_entity"],
-            "featurebyte.DataColumn.as_entity",
+            [TABLE_COLUMN, ANNOTATE, "featurebyte.TableColumn.as_entity"],
+            "featurebyte.TableColumn.as_entity",
         ),
         DocLayoutItem(
-            [DATA_COLUMN, ANNOTATE, "featurebyte.DataColumn.update_critical_data_info"],
-            "featurebyte.DataColumn.update_critical_data_info",
+            [TABLE_COLUMN, ANNOTATE, "featurebyte.TableColumn.update_critical_data_info"],
+            "featurebyte.TableColumn.update_critical_data_info",
         ),
         DocLayoutItem(
-            [DATA_COLUMN, EXPLORE, "featurebyte.DataColumn.describe"],
-            "featurebyte.DataColumn.describe",
+            [TABLE_COLUMN, EXPLORE, "featurebyte.TableColumn.describe"],
+            "featurebyte.TableColumn.describe",
         ),
         DocLayoutItem(
-            [DATA_COLUMN, EXPLORE, "featurebyte.DataColumn.preview"],
-            "featurebyte.DataColumn.preview",
+            [TABLE_COLUMN, EXPLORE, "featurebyte.TableColumn.preview"],
+            "featurebyte.TableColumn.preview",
         ),
         DocLayoutItem(
-            [DATA_COLUMN, EXPLORE, "featurebyte.DataColumn.sample"], "featurebyte.DataColumn.sample"
+            [TABLE_COLUMN, EXPLORE, "featurebyte.TableColumn.sample"],
+            "featurebyte.TableColumn.sample",
         ),
         DocLayoutItem(
-            [DATA_COLUMN, INFO, "featurebyte.DataColumn.name"], "featurebyte.DataColumn.name"
+            [TABLE_COLUMN, INFO, "featurebyte.TableColumn.name"], "featurebyte.TableColumn.name"
         ),
         DocLayoutItem(
-            [DATA_COLUMN, LINEAGE, "featurebyte.DataColumn.preview_sql"],
-            "featurebyte.DataColumn.preview_sql",
+            [TABLE_COLUMN, LINEAGE, "featurebyte.TableColumn.preview_sql"],
+            "featurebyte.TableColumn.preview_sql",
         ),
     ]
 
@@ -702,26 +720,6 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
             "featurebyte.FeatureStore.get_or_create",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, CREATE, "featurebyte.FeatureStore.save"],
-            "featurebyte.FeatureStore.save",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, EXPLORE, "featurebyte.FeatureStore.get_table"],
-            "featurebyte.FeatureStore.get_table",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, EXPLORE, "featurebyte.FeatureStore.list_databases"],
-            "featurebyte.FeatureStore.list_databases",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, EXPLORE, "featurebyte.FeatureStore.list_schemas"],
-            "featurebyte.FeatureStore.list_schemas",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, EXPLORE, "featurebyte.FeatureStore.list_tables"],
-            "featurebyte.FeatureStore.list_tables",
-        ),
-        DocLayoutItem(
             [FEATURE_STORE, INFO, "featurebyte.FeatureStore.created_at"],
             "featurebyte.FeatureStore.created_at",
         ),
@@ -752,6 +750,39 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem(
             [FEATURE_STORE, LINEAGE, "featurebyte.FeatureStore.id"], "featurebyte.FeatureStore.id"
+        ),
+    ]
+
+
+def _get_data_source_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the DataSource class.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the DataSource class.
+    """
+    return [
+        DocLayoutItem([DATA_SOURCE], "featurebyte.DataSource"),
+        DocLayoutItem(
+            [DATA_SOURCE, EXPLORE, "featurebyte.DataSource.get_table"],
+            "featurebyte.DataSource.get_table",
+        ),
+        DocLayoutItem(
+            [DATA_SOURCE, EXPLORE, "featurebyte.DataSource.list_databases"],
+            "featurebyte.DataSource.list_databases",
+        ),
+        DocLayoutItem(
+            [DATA_SOURCE, EXPLORE, "featurebyte.DataSource.list_schemas"],
+            "featurebyte.DataSource.list_schemas",
+        ),
+        DocLayoutItem(
+            [DATA_SOURCE, EXPLORE, "featurebyte.DataSource.list_tables"],
+            "featurebyte.DataSource.list_tables",
+        ),
+        DocLayoutItem(
+            [DATA_SOURCE, INFO, "featurebyte.DataSource.type"], "featurebyte.DataSource.type"
         ),
     ]
 
@@ -1112,10 +1143,6 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
             [CATALOG, ACTIVATE, "featurebyte.Catalog.activate"],
             "featurebyte.Catalog.activate",
         ),
-        DocLayoutItem(
-            [CATALOG, ACTIVATE, "featurebyte.Catalog.activate_catalog"],
-            "featurebyte.Catalog.activate_catalog",
-        ),
         DocLayoutItem([CATALOG, CATALOG, "featurebyte.Catalog.get"], "featurebyte.Catalog.get"),
         DocLayoutItem(
             [CATALOG, CATALOG, "featurebyte.Catalog.get_active"],
@@ -1133,7 +1160,6 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
             [CATALOG, CREATE, "featurebyte.Catalog.get_or_create"],
             "featurebyte.Catalog.get_or_create",
         ),
-        DocLayoutItem([CATALOG, CREATE, "featurebyte.Catalog.save"], "featurebyte.Catalog.save"),
         DocLayoutItem(
             [CATALOG, INFO, "featurebyte.Catalog.created_at"],
             "featurebyte.Catalog.created_at",
@@ -1165,12 +1191,13 @@ def get_overall_layout() -> List[DocLayoutItem]:
     # TODO: fix code edit links that are coming from parent classes
     return [
         *_get_data_layout(),
-        *_get_data_column_layout(),
+        *_get_table_column_layout(),
         *_get_entity_layout(),
         *_get_feature_layout(),
         *_get_feature_group_layout(),
         *_get_feature_list_layout(),
         *_get_feature_store_layout(),
+        *_get_data_source_layout(),
         *_get_relationship_layout(),
         *_get_view_layout(),
         *_get_view_column_layout(),

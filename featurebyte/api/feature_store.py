@@ -20,6 +20,9 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     """
     FeatureStore class to represent a feature store in FeatureByte.
     This class is used to manage a feature store in FeatureByte.
+
+    The purpose of a Feature Store is to centralize pre-calculated values,
+    which can significantly reduce the latency of feature serving during training and inference.
     """
 
     # documentation metadata
@@ -50,22 +53,23 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         credentials: Optional[Credential] = None,
     ) -> FeatureStore:
         """
-        Save and return a new instance of a feature store.
-        We prefer to use this over the default constructor of `FeatureStore` because
-        we want to perform some additional validation checks.
-        Note that this function should only be called once for a specific set of details.
+        Create and return an instance of a feature store.
+
+        Database details and credentials provided are validated.
+        Note that only one feature store can be created for a specific set of database details.
 
         Parameters
         ----------
         name: str
-            feature store name
+            Name of the feature store.
         source_type: SourceType
-            type of feature store
+            Type of the feature store.
         details: DatabaseDetails
-            details of the database we want to connect to
+            Details of the database to use for the feature store.
         credentials: Optional[Credential]
-            Credentials for the data warehouse. If there are already credentials in your configuration file,
-            these will be ignored.
+            Credentials to use when connecting to the database.
+            These will be ignored if there are already credentials specified for the feature store in
+            the configuration file.
 
         Returns
         -------
@@ -73,7 +77,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
         See Also
         --------
-        - [FeatureStore.create](/reference/featurebyte.api.feature_store.FeatureStore.get_or_create/): Get or create FeatureStore
+        - [FeatureStore.get_or_create](/reference/featurebyte.api.feature_store.FeatureStore.get_or_create/): Get or create FeatureStore
         """
         # Construct object, and save to persistent layer.
         feature_store = FeatureStore(
@@ -91,20 +95,24 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         credentials: Optional[Credential] = None,
     ) -> FeatureStore:
         """
-        Save and return a new instance of a feature store. If a feature store with the same name already exists,
-        return that feature store instead.
+        Create and return an instance of a feature store. If a feature store with the same name already exists,
+        return that instead.
+
+        Database details and credentials provided are validated.
+        Note that only one feature store can be created for a specific set of database details.
 
         Parameters
         ----------
         name: str
-            feature store name
+            Name of the feature store.
         source_type: SourceType
-            type of feature store
+            Type of the feature store.
         details: DatabaseDetails
-            details of the database we want to connect to
+            Details of the database to use for the feature store.
         credentials: Optional[Credential]
-            Credentials for the data warehouse. If there are already credentials in your configuration file,
-            these will be ignored.
+            Credentials to use when connecting to the database.
+            These will be ignored if there are already credentials specified for the feature store in
+            the configuration file.
 
         Returns
         -------
@@ -114,7 +122,6 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         --------
         Create a feature store housed in a Snowflake database
 
-        >>> import featurebyte as fb
         >>> feature_store = fb.FeatureStore.get_or_create(
         ...     name="playground",
         ...     source_type=SourceType.SPARK,
@@ -149,11 +156,15 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
     def get_data_source(self) -> DataSource:
         """
-        Get the table source associated with the feature store
+        Get the data source associated with the feature store.
 
         Returns
         -------
         DataSource
             DataSource object
+
+        See Also
+        --------
+        - [DataSource](/reference/featurebyte.api.data_source.DataSource/): DataSource class
         """
         return DataSource(feature_store_model=self)

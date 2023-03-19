@@ -66,14 +66,10 @@ def setup() -> None:
         grocery_customer_table = fb.Table.get("GROCERYCUSTOMER")
 
     # register new entities
-    entity1 = fb.Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
-    entity1.save(conflict_resolution="retrieve")
-    entity2 = fb.Entity(name="groceryinvoice", serving_names=["GROCERYINVOICEGUID"])
-    entity2.save(conflict_resolution="retrieve")
-    entity3 = fb.Entity(name="groceryproduct", serving_names=["GROCERYPRODUCTGUID"])
-    entity3.save(conflict_resolution="retrieve")
-    entity4 = fb.Entity(name="frenchstate", serving_names=["FRENCHSTATE"])
-    entity4.save(conflict_resolution="retrieve")
+    fb.Entity.get_or_create(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
+    fb.Entity.get_or_create(name="groceryinvoice", serving_names=["GROCERYINVOICEGUID"])
+    fb.Entity.get_or_create(name="groceryproduct", serving_names=["GROCERYPRODUCTGUID"])
+    fb.Entity.get_or_create(name="frenchstate", serving_names=["FRENCHSTATE"])
 
     # tag the entities for the grocery customer table
     grocery_customer_table.GroceryCustomerGuid.as_entity("grocerycustomer")

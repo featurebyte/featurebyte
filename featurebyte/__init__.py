@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
+from featurebyte.api.data_source import DataSource
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.entity import Entity
@@ -115,6 +116,7 @@ __all__ = [
     "FeatureJobSettingAnalysis",
     "FeatureList",
     "FeatureStore",
+    "DataSource",
     "ItemTable",
     "ItemView",
     "Relationship",
