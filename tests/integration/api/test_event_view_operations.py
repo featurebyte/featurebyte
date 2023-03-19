@@ -972,6 +972,12 @@ def get_non_time_based_feature_fixture(item_table):
     This is a non-time-based feature as it is built from ItemTable.
     """
     item_view = item_table.get_view()
+
+    # Compute count feature for only even order numbers. When the feature is added to the EventView,
+    # for odd numbered order ids, the feature value should be 0 instead of NaN.
+    item_view["order_number"] = item_view["order_id"].str.replace("T", "").astype(int)
+    item_view = item_view[item_view["order_number"] % 2 == 0]
+
     return item_view.groupby("order_id").aggregate(
         method=AggFunc.COUNT,
         feature_name="non_time_count_feature",
@@ -987,12 +993,21 @@ def test_add_feature(event_view, non_time_based_feature, scd_table):
 
     # add feature
     event_view.add_feature("transaction_count", non_time_based_feature, "TRANSACTION_ID")
+    event_view.add_feature("transaction_count_2", non_time_based_feature, "TRANSACTION_ID")
 
     # test columns are updated as expected
-    event_view_preview = event_view.preview()
+    event_view_preview = event_view.preview(5000)
     new_columns = event_view_preview.columns.tolist()
-    expected_updated_column_names = [*original_column_names, "transaction_count"]
+    expected_updated_column_names = [
+        *original_column_names,
+        "transaction_count",
+        "transaction_count_2",
+    ]
     assert new_columns == expected_updated_column_names
+
+    # test that count feature should not have any missing values
+    assert event_view_preview["transaction_count"].isna().sum() == 0
+    assert event_view_preview["transaction_count"].equals(event_view_preview["transaction_count_2"])
 
     # test that one of the feature join keys is correct
     order_id_to_match = "T0"
@@ -1021,7 +1036,7 @@ def test_add_feature(event_view, non_time_based_feature, scd_table):
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp(timestamp_str),
         "PRODUCT_ACTION": "purchase",
-        "transaction_count_sum_24h": 108,
+        "transaction_count_sum_24h": 56,
     }
 
 

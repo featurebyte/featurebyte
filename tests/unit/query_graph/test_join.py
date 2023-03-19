@@ -232,29 +232,32 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
     expected = textwrap.dedent(
         """
         SELECT
-          L."ts" AS "ts",
-          L."cust_id" AS "cust_id",
-          L."order_id" AS "order_id",
-          L."order_method" AS "order_method",
-          R."__FB_TEMP_FEATURE_NAME" AS "ord_size"
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "order_id" AS "order_id",
+          "order_method" AS "order_method",
+          (
+            "count_None_0e627034a1351a74" + 123
+          ) AS "ord_size"
         FROM (
           SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "order_id" AS "order_id",
-            "order_method" AS "order_method"
-          FROM "db"."public"."event_table"
-        ) AS L
-        LEFT JOIN (
-          SELECT
-            (
-              "order_size" + 123
-            ) AS "__FB_TEMP_FEATURE_NAME",
-            "order_id"
+            REQ."ts",
+            REQ."cust_id",
+            REQ."order_id",
+            REQ."order_method",
+            "T0"."count_None_0e627034a1351a74" AS "count_None_0e627034a1351a74"
           FROM (
             SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
               "order_id" AS "order_id",
-              COUNT(*) AS "order_size"
+              "order_method" AS "order_method"
+            FROM "db"."public"."event_table"
+          ) AS REQ
+          LEFT JOIN (
+            SELECT
+              ITEM."order_id" AS "order_id",
+              COUNT(*) AS "count_None_0e627034a1351a74"
             FROM (
               SELECT
                 "order_id" AS "order_id",
@@ -262,12 +265,12 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
                 "item_name" AS "item_name",
                 "item_type" AS "item_type"
               FROM "db"."public"."item_table"
-            )
+            ) AS ITEM
             GROUP BY
-              "order_id"
-          )
-        ) AS R
-          ON L."order_id" = R."order_id"
+              ITEM."order_id"
+          ) AS T0
+            ON REQ."order_id" = T0."order_id"
+        )
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -338,29 +341,32 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
               *
             FROM (
               SELECT
-                L."ts" AS "ts",
-                L."cust_id" AS "cust_id",
-                L."order_id" AS "order_id",
-                L."order_method" AS "order_method",
-                R."__FB_TEMP_FEATURE_NAME" AS "ord_size"
+                "ts" AS "ts",
+                "cust_id" AS "cust_id",
+                "order_id" AS "order_id",
+                "order_method" AS "order_method",
+                (
+                  "count_None_0e627034a1351a74" + 123
+                ) AS "ord_size"
               FROM (
                 SELECT
-                  "ts" AS "ts",
-                  "cust_id" AS "cust_id",
-                  "order_id" AS "order_id",
-                  "order_method" AS "order_method"
-                FROM "db"."public"."event_table"
-              ) AS L
-              LEFT JOIN (
-                SELECT
-                  (
-                    "order_size" + 123
-                  ) AS "__FB_TEMP_FEATURE_NAME",
-                  "order_id"
+                  REQ."ts",
+                  REQ."cust_id",
+                  REQ."order_id",
+                  REQ."order_method",
+                  "T0"."count_None_0e627034a1351a74" AS "count_None_0e627034a1351a74"
                 FROM (
                   SELECT
+                    "ts" AS "ts",
+                    "cust_id" AS "cust_id",
                     "order_id" AS "order_id",
-                    COUNT(*) AS "order_size"
+                    "order_method" AS "order_method"
+                  FROM "db"."public"."event_table"
+                ) AS REQ
+                LEFT JOIN (
+                  SELECT
+                    ITEM."order_id" AS "order_id",
+                    COUNT(*) AS "count_None_0e627034a1351a74"
                   FROM (
                     SELECT
                       "order_id" AS "order_id",
@@ -368,12 +374,12 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
                       "item_name" AS "item_name",
                       "item_type" AS "item_type"
                     FROM "db"."public"."item_table"
-                  )
+                  ) AS ITEM
                   GROUP BY
-                    "order_id"
-                )
-              ) AS R
-                ON L."order_id" = R."order_id"
+                    ITEM."order_id"
+                ) AS T0
+                  ON REQ."order_id" = T0."order_id"
+              )
             )
             WHERE
               "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
