@@ -3,12 +3,14 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 
-from featurebyte import DimensionTable, Entity, EventTable, FeatureList, SCDTable
+from featurebyte import DimensionTable, Entity, EventTable, FeatureList, SCDTable, Table
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
+table_prefix = "TEST_SERVING_PARENT_FEATURES"
 
-@pytest_asyncio.fixture(name="feature_list_with_child_entities", scope="session")
-async def feature_list_with_child_entities_fixture(session, data_source):
+
+@pytest_asyncio.fixture(name="tables", scope="session")
+async def tables_fixture(session, data_source):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
     """
@@ -46,7 +48,6 @@ async def feature_list_with_child_entities_fixture(session, data_source):
             "country": ["france", "japan"],
         }
     )
-    table_prefix = "TEST_SERVING_PARENT_FEATURES"
     await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
     await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
     await session.register_table(f"{table_prefix}_DIMENSION_1", df_dimension_1, temporary=False)
@@ -118,17 +119,41 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     dimension_table_2["state"].as_entity(state_entity.name)
     dimension_table_2["country"].as_entity(country_entity.name)
 
-    dimension_view = dimension_table_2.get_view()
-    feature = dimension_view["country"].as_feature("Country Name")
 
-    feature_list = FeatureList([feature], name=f"{table_prefix}_feature_list")
-    feature_list.save()
+@pytest.fixture(name="country_feature", scope="session")
+def country_feature_fixture(tables):
+    _ = tables
+    view = Table.get(f"{table_prefix}_dimension_table_2").get_view()
+    feature = view["country"].as_feature("Country Name")
+    return feature
 
+
+@pytest.fixture(name="city_feature", scope="session")
+def city_feature_fixture(tables):
+    _ = tables
+    view = Table.get(f"{table_prefix}_scd_table").get_view()
+    feature = view["scd_city"].as_feature("Customer City")
+    return feature
+
+
+@pytest.fixture(name="feature_list_with_child_entities", scope="session")
+def feature_list_with_child_entities_fixture(country_feature):
+    feature_list = FeatureList([country_feature], name=f"{table_prefix}_country_list")
+    feature_list.save(conflict_resolution="retrieve")
     try:
         feature_list.deploy(enable=True, make_production_ready=True)
         yield feature_list
     finally:
         feature_list.deploy(enable=False)
+
+
+@pytest.fixture(name="feature_list_with_parent_child_features", scope="session")
+def feature_list_with_parent_child_features_fixture(country_feature, city_feature):
+    feature_list = FeatureList(
+        [city_feature, country_feature], name=f"{table_prefix}_city_country_list"
+    )
+    feature_list.save(conflict_resolution="retrieve")
+    yield feature_list
 
 
 @pytest.mark.asyncio
@@ -243,3 +268,18 @@ def test_online_features(config, feature_list_with_child_entities):
     )
     assert res.status_code == 200
     assert res.json() == {"features": [{"serving_event_id": 1, "Country Name": "japan"}]}
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_feature_info_main_entities(feature_list_with_parent_child_features):
+    """
+    Test that the main_entities field is correctly populated in feature list info
+    """
+    info = feature_list_with_parent_child_features.info()
+    assert info["main_entities"] == [
+        {
+            "catalog_name": "default",
+            "name": "TEST_SERVING_PARENT_FEATURES_customer",
+            "serving_names": ["serving_cust_id"],
+        },
+    ]

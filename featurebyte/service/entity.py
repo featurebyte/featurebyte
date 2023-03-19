@@ -3,7 +3,7 @@ EntityService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List
 
 from bson import ObjectId
 
@@ -75,3 +75,30 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         """
         docs = self.list_documents_iterator(query_filter={"_id": {"$in": list(entity_ids)}})
         return [EntityModel(**doc) async for doc in docs]
+
+    @staticmethod
+    def derive_main_entities(entities: List[EntityModel]) -> List[EntityModel]:
+        """
+        Derive main entities from a list of entities
+
+        Parameters
+        ----------
+        entities: List[EntityModel]
+            List of entities
+
+        Returns
+        -------
+        List[EntityModel]
+            List of main entities
+        """
+
+        all_ancestors_ids = set()
+        for entity in entities:
+            all_ancestors_ids.update(entity.ancestor_ids)
+
+        main_entities = {}
+        for entity in entities:
+            if entity.id not in all_ancestors_ids:
+                main_entities[entity.id] = entity
+
+        return sorted(main_entities.values(), key=lambda e: e.id)

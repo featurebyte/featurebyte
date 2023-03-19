@@ -272,6 +272,9 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
+            "main_entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+            ],
             "tabular_data": [
                 {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
             ],

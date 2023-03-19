@@ -222,6 +222,7 @@ class NamespaceInfo(BaseInfo):
     """
 
     entities: EntityBriefInfoList
+    main_entities: EntityBriefInfoList
     tabular_data: TableBriefInfoList
     default_version_mode: DefaultVersionMode
     version_count: int
