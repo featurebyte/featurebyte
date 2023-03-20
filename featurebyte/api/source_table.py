@@ -3,7 +3,7 @@ SourceTable class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, TypeVar, Union
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -34,6 +34,11 @@ if TYPE_CHECKING:
     from featurebyte.api.event_table import EventTable
     from featurebyte.api.item_table import ItemTable
     from featurebyte.api.scd_table import SCDTable
+else:
+    DimensionTable = TypeVar("DimensionTable")
+    EventTable = TypeVar("EventTable")
+    ItemTable = TypeVar("ItemTable")
+    SCDTable = TypeVar("SCDTable")
 
 
 class TableDataFrame(BaseFrame):
@@ -436,17 +441,13 @@ class SourceTable(AbstractTableData):
         from featurebyte.api.item_table import ItemTable
 
         event_table = EventTable.get(event_table_name)
-        if event_table.event_id_column is None:
-            raise ValueError("EventTable without event_id_column is not supported")
-        event_table_id = event_table.id
-
         return ItemTable.create(
             tabular_source=self,
             name=name,
             record_creation_timestamp_column=record_creation_timestamp_column,
             event_id_column=event_id_column,
             item_id_column=item_id_column,
-            event_table_id=event_table_id,
+            event_table_id=event_table.id,
             _id=_id,
         )
 
