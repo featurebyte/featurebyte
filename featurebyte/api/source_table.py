@@ -393,7 +393,7 @@ class SourceTable(AbstractTableData):
         from featurebyte.api.event_table import EventTable
 
         return EventTable.create(
-            tabular_source=self,
+            source_table=self,
             name=name,
             record_creation_timestamp_column=record_creation_timestamp_column,
             event_timestamp_column=event_timestamp_column,
@@ -439,7 +439,7 @@ class SourceTable(AbstractTableData):
 
         event_table = EventTable.get(event_table_name)
         return ItemTable.create(
-            tabular_source=self,
+            source_table=self,
             name=name,
             record_creation_timestamp_column=record_creation_timestamp_column,
             event_id_column=event_id_column,
@@ -478,7 +478,7 @@ class SourceTable(AbstractTableData):
         from featurebyte.api.dimension_table import DimensionTable
 
         return DimensionTable.create(
-            tabular_source=self,
+            source_table=self,
             name=name,
             record_creation_timestamp_column=record_creation_timestamp_column,
             dimension_id_column=dimension_id_column,
@@ -527,7 +527,7 @@ class SourceTable(AbstractTableData):
         from featurebyte.api.scd_table import SCDTable
 
         return SCDTable.create(
-            tabular_source=self,
+            source_table=self,
             name=name,
             record_creation_timestamp_column=record_creation_timestamp_column,
             _id=_id,
