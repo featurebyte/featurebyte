@@ -41,8 +41,6 @@ class SCDTable(TableApiObject):
     - an end date or timestamp and\n
     - a current flag
 
-    To create an instance of this class, see the `from_tabular_source` method.
-
     To build features, users can create SlowlyChangingViews from SCDTable.
     """
 
@@ -351,80 +349,3 @@ class SCDTable(TableApiObject):
         Optional[str]
         """
         return self.effective_timestamp_column
-
-    @classmethod
-    @typechecked
-    def from_tabular_source(
-        cls,
-        tabular_source: SourceTable,
-        name: str,
-        natural_key_column: str,
-        effective_timestamp_column: str,
-        end_timestamp_column: Optional[str] = None,
-        surrogate_key_column: Optional[str] = None,
-        current_flag_column: Optional[str] = None,
-        record_creation_timestamp_column: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
-    ) -> SCDTable:
-        """
-        Create SCDTable object from tabular source
-
-        Parameters
-        ----------
-        tabular_source: SourceTable
-            DatabaseTable object constructed from FeatureStore
-        name: str
-            SlowlyChanging table name
-        natural_key_column: str
-            Natural key column from the given tabular source
-        effective_timestamp_column: str
-            Effective timestamp column from the given tabular source
-        end_timestamp_column: Optional[str]
-            End timestamp column from the given tabular source
-        surrogate_key_column: Optional[str]
-            Surrogate key column from the given tabular source
-        current_flag_column: Optional[str]
-            Column to indicates whether the keys are for the current table point
-        record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
-        _id: Optional[ObjectId]
-            Identity value for constructed object
-
-        Returns
-        -------
-        SCDTable
-
-        Examples
-        --------
-        Create SCDTable from a table in the feature store
-
-        >>> user_profiles = SCDTable.from_tabular_source(  # doctest: +SKIP
-        ...    name="User Profiles",
-        ...    tabular_source=feature_store.get_table(
-        ...      database_name="DEMO",
-        ...      schema_name="USER",
-        ...      table_name="PROFILES"
-        ...    ),
-        ...    natural_key_column="USER_ID",
-        ...    effective_timestamp_column="EFFECTIVE_AT",
-        ...    end_timestamp_column="END_AT",
-        ...    surrogate_key_column="ID",
-        ...    current_flag_column="IS_CURRENT",
-        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
-        ... )
-
-        Get information about the SCDTable
-
-        >>> user_profiles.info(verbose=True)  # doctest: +SKIP
-        """
-        return super().create(
-            tabular_source=tabular_source,
-            name=name,
-            record_creation_timestamp_column=record_creation_timestamp_column,
-            _id=_id,
-            natural_key_column=natural_key_column,
-            surrogate_key_column=surrogate_key_column,
-            effective_timestamp_column=effective_timestamp_column,
-            end_timestamp_column=end_timestamp_column,
-            current_flag_column=current_flag_column,
-        )

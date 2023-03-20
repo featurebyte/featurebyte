@@ -17,16 +17,13 @@ from snowflake.connector.constants import QueryStatus
 
 from featurebyte import FeatureJobSetting, MissingValueImputation, SnowflakeDetails
 from featurebyte.api.api_object import ApiObject
-from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import DefaultVersionMode, Feature
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
-from featurebyte.api.scd_table import SCDTable
 from featurebyte.app import User, app
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import AggFunc, DBVarType, InternalName

@@ -389,6 +389,7 @@ class SourceTable(AbstractTableData):
         -------
         EventTable
         """
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.event_table import EventTable
 
         return EventTable.create(
@@ -431,12 +432,8 @@ class SourceTable(AbstractTableData):
         Returns
         -------
         ItemTable
-
-        Raises
-        ------
-        ValueError
-            If the associated EventTable does not have event_id_column defined
         """
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.event_table import EventTable
         from featurebyte.api.item_table import ItemTable
 
@@ -477,6 +474,7 @@ class SourceTable(AbstractTableData):
         -------
         DimensionTable
         """
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.dimension_table import DimensionTable
 
         return DimensionTable.create(
@@ -525,6 +523,7 @@ class SourceTable(AbstractTableData):
         -------
         SCDTable
         """
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.scd_table import SCDTable
 
         return SCDTable.create(
