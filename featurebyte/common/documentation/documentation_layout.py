@@ -1112,6 +1112,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         The layout for the Catalog module.
     """
     return [
+        DocLayoutItem([CATALOG], "featurebyte.Catalog"),
         DocLayoutItem(
             [CATALOG, ACTIVATE, "featurebyte.Catalog.activate"],
             "featurebyte.Catalog.activate",
