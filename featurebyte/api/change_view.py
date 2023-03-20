@@ -30,35 +30,42 @@ class ChangeViewColumn(LaggableViewColumn):
 
 class ChangeView(View, GroupByMixin):
     """
-    ChangeView is used to capture changes in SCDTable in an easy manner. This is useful as changes in
-    SCDTable may constitute powerful features such as:\n
-    - how many times has a customer moved in the past 6 months?\n
-    - if they moved the past 6 months, where did they use to live?\n
-    - did they get divorced recently?\n
-    - did they have any new kids in the family?\n
+    `ChangeView` is used to capture changes in SCDTable in an easy manner. This is useful as changes in
+    `SCDTable` may constitute powerful features such as:
+
+    - how many times has a customer moved in the past 6 months?
+    - if they moved the past 6 months, where did they use to live?
+    - did they get divorced recently?
+    - did they have any new kids in the family?
     - do they have a new job?
 
-    To support such important features, users can create a Change View from SCDTable.
+    To support such important features, users can create a `ChangeView` from a `SCDTable`.
 
-    This new view tracks all changes for a given column. The resulting view has 5 columns:\n
-    - past_valid_from_timestamp\n
+    This new view tracks all changes for a given column. The resulting view has 5 columns:
+
+    - past_valid_from_timestamp
     - new_valid_from_timestamp (which is the event timestamp of the event view and equal to the effective, or start,
-      timestamp of the SCD)\n
-    - the natural key of the SCD View\n
-    - past_NAME_OF_COLUMN: value of the column before the change\n
+      timestamp of the SCD)
+    - the natural key of the SCD View
+    - past_NAME_OF_COLUMN: value of the column before the change
     - new_NAME_OF_COLUMN: value of the column after the change
 
-    To create this Change View, Users need to provide:\n
-    - the name of the SCD table\n
+    To create this `ChangeView`, users need to provide:
+
+    - the name of the SCD table
     - the name of the SCD column for which they want to track changes
 
-    Optionally, the default Feature Job Setting for the View. If non is provided, we will default to once a day, at the
+    Optionally, the default Feature Job Setting for the View. If none is provided, we will default to once a day, at the
     time of the creation of the view.
 
-    Optionally, users can also provide a prefix parameter. This will allow users to specify a custom prefix for the new
-    column values if they prefer.
+    Optionally, users can also provide a `prefix` parameter. This will allow users to specify a custom prefix for the
+    new column values if they prefer.
 
     Features can be created the same way as features from an Event View.
+
+    See Also
+    --------
+    - [get_change_view](/reference/featurebyte.api.scd_table.SCDTable.get_change_view/): get change view from a SCDTable
     """
 
     # documentation metadata
