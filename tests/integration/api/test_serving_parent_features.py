@@ -271,12 +271,12 @@ def test_online_features(config, feature_list_with_child_entities):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_feature_info_main_entities(feature_list_with_parent_child_features):
+def test_feature_info_primary_entities(feature_list_with_parent_child_features):
     """
-    Test that the main_entities field is correctly populated in feature list info
+    Test that the primary_entities field is correctly populated in feature list info
     """
     info = feature_list_with_parent_child_features.info()
-    assert info["main_entities"] == [
+    assert info["primary_entities"] == [
         {
             "catalog_name": "default",
             "name": "TEST_SERVING_PARENT_FEATURES_customer",

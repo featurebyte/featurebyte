@@ -77,7 +77,7 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         return [EntityModel(**doc) async for doc in docs]
 
     @staticmethod
-    def derive_main_entities(entities: List[EntityModel]) -> List[EntityModel]:
+    def derive_primary_entities(entities: List[EntityModel]) -> List[EntityModel]:
         """
         Derive main entities from a list of entities
 
@@ -96,9 +96,9 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         for entity in entities:
             all_ancestors_ids.update(entity.ancestor_ids)
 
-        main_entities = {}
+        primary_entities = {}
         for entity in entities:
             if entity.id not in all_ancestors_ids:
-                main_entities[entity.id] = entity
+                primary_entities[entity.id] = entity
 
-        return sorted(main_entities.values(), key=lambda e: e.id)
+        return sorted(primary_entities.values(), key=lambda e: e.id)

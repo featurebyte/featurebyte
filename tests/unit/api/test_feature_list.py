@@ -486,7 +486,7 @@ def test_info(saved_feature_list):
         "name": "my_feature_list",
         "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
         "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}],
-        "main_entities": [
+        "primary_entities": [
             {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
         ],
         "tabular_data": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],

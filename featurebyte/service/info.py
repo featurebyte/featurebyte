@@ -635,7 +635,7 @@ class InfoService(BaseService):
         entities = await self.entity_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
-        main_entities = self._get_main_entities_from_entities(entities=entities)
+        primary_entities = self._get_primary_entities_from_entities(entities=entities)
 
         tabular_data = await self.table_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
@@ -655,7 +655,7 @@ class InfoService(BaseService):
             created_at=namespace.created_at,
             updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
-            main_entities=EntityBriefInfoList.from_paginated_data(main_entities),
+            primary_entities=EntityBriefInfoList.from_paginated_data(primary_entities),
             tabular_data=TableBriefInfoList.from_paginated_data(tabular_data),
             default_version_mode=namespace.default_version_mode,
             default_feature_id=namespace.default_feature_id,
@@ -719,7 +719,7 @@ class InfoService(BaseService):
             else None,
         )
 
-    def _get_main_entities_from_entities(self, entities: dict[str, Any]) -> dict[str, Any]:
+    def _get_primary_entities_from_entities(self, entities: dict[str, Any]) -> dict[str, Any]:
         """
         Get main entities from entities
 
@@ -735,13 +735,13 @@ class InfoService(BaseService):
         """
         main_entity_ids = {
             entity.id
-            for entity in self.entity_service.derive_main_entities(
+            for entity in self.entity_service.derive_primary_entities(
                 [EntityModel(**entity_dict) for entity_dict in entities["data"]]
             )
         }
-        main_entities = copy.deepcopy(entities)
-        main_entities["data"] = [d for d in entities["data"] if d["_id"] in main_entity_ids]
-        return main_entities
+        primary_entities = copy.deepcopy(entities)
+        primary_entities["data"] = [d for d in entities["data"] if d["_id"] in main_entity_ids]
+        return primary_entities
 
     async def get_feature_list_namespace_info(
         self, document_id: ObjectId, verbose: bool
@@ -765,7 +765,7 @@ class InfoService(BaseService):
         entities = await self.entity_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
-        main_entities = self._get_main_entities_from_entities(entities)
+        primary_entities = self._get_primary_entities_from_entities(entities)
 
         tabular_data = await self.table_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
@@ -785,7 +785,7 @@ class InfoService(BaseService):
             created_at=namespace.created_at,
             updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
-            main_entities=EntityBriefInfoList.from_paginated_data(main_entities),
+            primary_entities=EntityBriefInfoList.from_paginated_data(primary_entities),
             tabular_data=TableBriefInfoList.from_paginated_data(tabular_data),
             default_version_mode=namespace.default_version_mode,
             default_feature_list_id=namespace.default_feature_list_id,
