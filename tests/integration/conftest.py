@@ -1032,8 +1032,7 @@ def create_transactions_event_table_from_data_source(
         }
     )
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)
-    event_table = EventTable.from_tabular_source(
-        tabular_source=database_table,
+    event_table = database_table.create_event_table(
         name=event_table_name,
         event_id_column="TRANSACTION_ID",
         event_timestamp_column="ËVENT_TIMESTAMP",
@@ -1112,8 +1111,7 @@ def item_table_fixture(
         schema_name=session.schema_name,
         table_name="ITEM_DATA_TABLE",
     )
-    item_table = ItemTable.from_tabular_source(
-        tabular_source=database_table,
+    item_table = database_table.create_item_table(
         name=item_table_name,
         event_id_column="order_id",
         item_id_column="item_id",
@@ -1150,8 +1148,7 @@ def dimension_table_fixture(
         schema_name=session.schema_name,
         table_name=dimension_data_table_name,
     )
-    dimension_table = DimensionTable.from_tabular_source(
-        tabular_source=database_table,
+    dimension_table = database_table.create_dimension_table(
         name=dimension_table_name,
         dimension_id_column="item_id",
     )
@@ -1196,18 +1193,17 @@ def scd_table_fixture(
     """
     Fixture for a SlowlyChangingData in integration tests
     """
-    data = SCDTable.from_tabular_source(
-        tabular_source=scd_data_tabular_source,
+    scd_table = scd_data_tabular_source.create_scd_table(
         name=scd_table_name,
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
     )
-    data.save()
-    data = SCDTable.get(scd_table_name)
-    data["User ID"].as_entity(user_entity.name)
-    data["User Status"].as_entity(status_entity.name)
-    return data
+    scd_table.save()
+    scd_table = SCDTable.get(scd_table_name)
+    scd_table["User ID"].as_entity(user_entity.name)
+    scd_table["User Status"].as_entity(status_entity.name)
+    return scd_table
 
 
 @pytest.fixture(name="dimension_view", scope="session")
