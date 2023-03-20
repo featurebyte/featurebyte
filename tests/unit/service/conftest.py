@@ -38,7 +38,6 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_table import ItemTableService
-from featurebyte.service.relationship_analysis import RelationshipAnalysisService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_update import TableUpdateService
@@ -78,12 +77,6 @@ def feature_store_service_fixture(user, persistent):
 def entity_service_fixture(user, persistent):
     """Entity service"""
     return EntityService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
-
-
-@pytest.fixture(name="relationship_analysis_service")
-def relationship_analysis_service_fixture():
-    """RelationshipAnalysis service"""
-    return RelationshipAnalysisService()
 
 
 @pytest.fixture(name="semantic_service")

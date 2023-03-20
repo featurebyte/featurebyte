@@ -58,7 +58,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
-from featurebyte.service.relationship_analysis import RelationshipAnalysisService
+from featurebyte.service.relationship_analysis import derive_primary_entity
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
@@ -119,7 +119,6 @@ class InfoService(BaseService):
             user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.user_service = UserService(user=user, persistent=persistent, catalog_id=catalog_id)
-        self.relationship_analysis_service = RelationshipAnalysisService()
 
     @staticmethod
     async def _get_list_object(
@@ -737,7 +736,7 @@ class InfoService(BaseService):
         """
         main_entity_ids = {
             entity.id
-            for entity in self.relationship_analysis_service.derive_primary_entity(
+            for entity in derive_primary_entity(
                 [EntityModel(**entity_dict) for entity_dict in entities["data"]]
             )
         }

@@ -4,21 +4,22 @@ Unit tests for RelationshipAnalysisService
 from bson import ObjectId
 
 from featurebyte.models import EntityModel
+from featurebyte.service.relationship_analysis import derive_primary_entity
 
 
-def test_derive_primary_entity__not_related(relationship_analysis_service):
+def test_derive_primary_entity__not_related():
     """
     Test deriving primary entity when entities are not related
     """
     entity_a = EntityModel(id=ObjectId(), name="A", serving_names=["A"])
     entity_b = EntityModel(id=ObjectId(), name="B", serving_names=["B"])
-    assert relationship_analysis_service.derive_primary_entity([entity_a, entity_b]) == [
+    assert derive_primary_entity([entity_a, entity_b]) == [
         entity_a,
         entity_b,
     ]
 
 
-def test_derive_primary_entity__related(relationship_analysis_service):
+def test_derive_primary_entity__related():
     """
     Test deriving primary entity when entities are related
     """
@@ -37,10 +38,10 @@ def test_derive_primary_entity__related(relationship_analysis_service):
         ],
         ancestor_ids=[entity_a.id],
     )
-    assert relationship_analysis_service.derive_primary_entity([entity_a, entity_b]) == [entity_b]
+    assert derive_primary_entity([entity_a, entity_b]) == [entity_b]
 
 
-def test_derive_primary_entity__multiple_levels(relationship_analysis_service):
+def test_derive_primary_entity__multiple_levels():
     """
     Test deriving primary entity when entities are related on multiple levels
     """
@@ -73,6 +74,6 @@ def test_derive_primary_entity__multiple_levels(relationship_analysis_service):
         ],
         ancestor_ids=[entity_b.id],
     )
-    assert relationship_analysis_service.derive_primary_entity([entity_a, entity_b, entity_c]) == [
+    assert derive_primary_entity([entity_a, entity_b, entity_c]) == [
         entity_c,
     ]
