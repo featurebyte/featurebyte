@@ -320,6 +320,9 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
+        primary_entity=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+        ],
         tabular_data=[
             TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
         ],
@@ -433,6 +436,9 @@ def expected_feature_iet_info_fixture(feature_iet):
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
+        primary_entity=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+        ],
         tabular_data=[
             TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
         ],
@@ -530,6 +536,9 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
+        primary_entity=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+        ],
         tabular_data=[
             TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
         ],
@@ -556,6 +565,9 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
     expected_info = FeatureListInfo(
         name="sf_feature_list",
         entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+        ],
+        primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         tabular_data=[
@@ -603,6 +615,9 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
     expected_info = FeatureListNamespaceInfo(
         name="sf_feature_list",
         entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+        ],
+        primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         tabular_data=[
