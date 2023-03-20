@@ -98,12 +98,11 @@ def import_dataset(dataset_name: str) -> None:
                     )
 
         sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")
-        for line in DockerClient().execute(  # type:ignore
+        logger.debug("Importing dataset to local Spark")
+        DockerClient().execute(
             container="featurebyte-server",
             command=["python", "-m", "featurebyte.datasets.__main__", sql_b64],
-            tty=True,
-        ):
-            logger.debug(line)
+        )
 
 
 if __name__ == "__main__":
