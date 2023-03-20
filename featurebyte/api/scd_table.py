@@ -28,17 +28,24 @@ if TYPE_CHECKING:
 
 class SCDTable(TableApiObject):
     """
-    SCDTable is a table source object connected with a Slowly Changing Dimension table of Type 2 in
-    the data warehouse that has:\n
-    - a natural key (key for which there is one unique active record)\n
-    - a surrogate key (the primary key of the SCD)\n
-    - an effective date or timestamp\n
+    An SCD table is a type of FeatureByte table that represents a table in a data warehouse that contains data
+    that changes slowly and unpredictably over time.
 
-    and optionally,\n
-    - an end date or timestamp and\n
-    - a current flag
+    There are two main types of SCDs: Type 1, which overwrites old data with new data, and Type 2, which maintains a
+    history of changes by creating a new record for each change. FeatureByte only supports the use of Type 2 SCDs since
+    SCDs of Type 1 may cause data leaks during model training and poor performance during inference.
 
-    To build features, users can create SCDViews from SCDTable.
+    An SCD table of Type 2 utilizes a natural key to distinguish each active row and facilitate tracking of changes
+    over time. The SCD table employs effective and expiration date columns to determine the active status of a row.
+    In certain instances, an active flag column may replace the expiration date column to indicate if a row is
+    currently active.
+
+    To create an SCD table in FeatureByte, it is necessary to identify columns for the natural key, effective timestamp,
+    and optionally surrogate key, expiration timestamp, and active flag.
+
+    See Also
+    --------
+    - [create_scd_table](/reference/featurebyte.api.source_table.SourceTable.create_scd_table/): create SCD table from data source
     """
 
     # documentation metadata
