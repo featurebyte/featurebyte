@@ -5,13 +5,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, cast
 
-from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
-from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.event_table import EventTable
-from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import join_tabular_data_ids
 from featurebyte.common.validator import construct_data_model_root_validator
@@ -265,79 +262,3 @@ class ItemTable(TableApiObject):
             return self.cached_model.item_id_column
         except RecordRetrievalException:
             return self.internal_item_id_column
-
-    @classmethod
-    @typechecked
-    def from_tabular_source(
-        cls,
-        tabular_source: SourceTable,
-        name: str,
-        event_id_column: str,
-        item_id_column: str,
-        event_table_name: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
-    ) -> ItemTable:
-        """
-        Create ItemTable object from tabular source
-
-        Parameters
-        ----------
-        tabular_source: SourceTable
-            DatabaseTable object constructed from FeatureStore
-        name: str
-            Item table name
-        event_id_column: str
-            Event ID column from the given tabular source
-        item_id_column: str
-            Item ID column from the given tabular source
-        event_table_name: str
-            Name of the EventTable associated with this ItemTable
-        record_creation_timestamp_column: Optional[str]
-            Record creation timestamp column from the given tabular source
-        _id: Optional[ObjectId]
-            Identity value for constructed object
-
-        Returns
-        -------
-        EventTable
-
-        Raises
-        ------
-        ValueError
-            If the associated EventTable does not have event_id_column defined
-
-        Examples
-        --------
-        Create ItemTable from a table in the feature store
-
-        >>> order_items = ItemTable.from_tabular_source(  # doctest: +SKIP
-        ...    name="Order Items",
-        ...    tabular_source=feature_store.get_table(
-        ...      database_name="DEMO",
-        ...      schema_name="ORDERS",
-        ...      table_name="ORDER_ITEMS"
-        ...    ),
-        ...    event_id_column="ORDER_ID",
-        ...    item_id_column="ITEM_ID",
-        ...    event_table_name="Order List",
-        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
-        ... )
-
-        Get information about the ItemTable
-
-        >>> order_items.info(verbose=True)  # doctest: +SKIP
-        """
-        event_table = EventTable.get(event_table_name)
-        if event_table.event_id_column is None:
-            raise ValueError("EventTable without event_id_column is not supported")
-        event_table_id = event_table.id
-        return super().create(
-            tabular_source=tabular_source,
-            name=name,
-            record_creation_timestamp_column=record_creation_timestamp_column,
-            _id=_id,
-            event_id_column=event_id_column,
-            item_id_column=item_id_column,
-            event_table_id=event_table_id,
-        )

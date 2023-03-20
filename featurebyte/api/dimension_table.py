@@ -5,12 +5,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, List, Literal, Optional, Type, cast
 
-from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
-from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
-from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
@@ -151,60 +148,3 @@ class DimensionTable(TableApiObject):
             return self.cached_model.dimension_id_column
         except RecordRetrievalException:
             return self.internal_dimension_id_column
-
-    @classmethod
-    @typechecked
-    def from_tabular_source(
-        cls,
-        tabular_source: SourceTable,
-        name: str,
-        dimension_id_column: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
-    ) -> DimensionTable:
-        """
-        Create DimensionTable object from tabular source.
-
-        Parameters
-        ----------
-        tabular_source: SourceTable
-            DatabaseTable object constructed from FeatureStore
-        name: str
-            Dimension table name
-        dimension_id_column: str
-            Dimension table ID column from the given tabular source
-        record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
-        _id: Optional[ObjectId]
-            Identity value for constructed object
-
-        Returns
-        -------
-        DimensionTable
-
-        Examples
-        --------
-        Create DimensionTable from a table in the feature store
-
-        >>> us_postal_codes = DimensionTable.from_tabular_source(  # doctest: +SKIP
-        ...    name="US Postal Codes",
-        ...    tabular_source=feature_store.get_table(
-        ...      database_name="DEMO",
-        ...      schema_name="US",
-        ...      table_name="POSTAL_CODES"
-        ...    ),
-        ...    dimension_id_column="POSTAL_CODE_ID",
-        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
-        ... )
-
-        Get information about the DimensionTable
-
-        >>> us_postal_codes.info(verbose=True)  # doctest: +SKIP
-        """
-        return super().create(
-            tabular_source=tabular_source,
-            name=name,
-            record_creation_timestamp_column=record_creation_timestamp_column,
-            _id=_id,
-            dimension_id_column=dimension_id_column,
-        )
