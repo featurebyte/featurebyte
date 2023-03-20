@@ -5,12 +5,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, List, Literal, Optional, Type, cast
 
-from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
-from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
-from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
@@ -29,9 +26,19 @@ if TYPE_CHECKING:
 
 class DimensionTable(TableApiObject):
     """
-    Dimension Table is a table source object connected with a Dimension table in the data warehouse that has static table.
+    A Dimension table is a FeatureByte table that represents a table in the data warehouse that stores static
+    descriptive information such as a birth date.
 
-    To build features, users create Dimension Views from Dimension Table
+    Using a Dimension table requires special attention. If the data in the table changes slowly, it is not advisable to
+    use it because these changes can cause significant data leaks during model training and adversely affect the
+    inference performance. In such cases, it is recommended to use a Slowly Changing Dimension (SCD) table of Type
+    2 that maintains a history of changes.
+
+    To create a Dimension Table in FeatureByte, it is necessary to identify which column represents the primary key.
+
+    See Also
+    --------
+    - [create_dimension_table](/reference/featurebyte.api.source_table.SourceTable.create_dimension_table/): create dimension table from source table
     """
 
     # documentation metadata
@@ -151,60 +158,3 @@ class DimensionTable(TableApiObject):
             return self.cached_model.dimension_id_column
         except RecordRetrievalException:
             return self.internal_dimension_id_column
-
-    @classmethod
-    @typechecked
-    def from_tabular_source(
-        cls,
-        tabular_source: SourceTable,
-        name: str,
-        dimension_id_column: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
-    ) -> DimensionTable:
-        """
-        Create DimensionTable object from tabular source.
-
-        Parameters
-        ----------
-        tabular_source: SourceTable
-            DatabaseTable object constructed from FeatureStore
-        name: str
-            Dimension table name
-        dimension_id_column: str
-            Dimension table ID column from the given tabular source
-        record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
-        _id: Optional[ObjectId]
-            Identity value for constructed object
-
-        Returns
-        -------
-        DimensionTable
-
-        Examples
-        --------
-        Create DimensionTable from a table in the feature store
-
-        >>> us_postal_codes = DimensionTable.from_tabular_source(  # doctest: +SKIP
-        ...    name="US Postal Codes",
-        ...    tabular_source=feature_store.get_table(
-        ...      database_name="DEMO",
-        ...      schema_name="US",
-        ...      table_name="POSTAL_CODES"
-        ...    ),
-        ...    dimension_id_column="POSTAL_CODE_ID",
-        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
-        ... )
-
-        Get information about the DimensionTable
-
-        >>> us_postal_codes.info(verbose=True)  # doctest: +SKIP
-        """
-        return super().create(
-            tabular_source=tabular_source,
-            name=name,
-            record_creation_timestamp_column=record_creation_timestamp_column,
-            _id=_id,
-            dimension_id_column=dimension_id_column,
-        )

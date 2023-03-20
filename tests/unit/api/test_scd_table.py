@@ -169,12 +169,11 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table):
     }
 
 
-def test_from_tabular_source(snowflake_database_table_scd_table, scd_table_dict):
+def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict):
     """
     Test SCDTable creation using tabular source
     """
-    scd_table = SCDTable.from_tabular_source(
-        tabular_source=snowflake_database_table_scd_table,
+    scd_table = snowflake_database_table_scd_table.create_scd_table(
         name="sf_scd_table",
         natural_key_column="col_text",
         surrogate_key_column="col_int",
@@ -200,8 +199,7 @@ def test_from_tabular_source(snowflake_database_table_scd_table, scd_table_dict)
 
     # user input validation
     with pytest.raises(TypeError) as exc:
-        SCDTable.from_tabular_source(
-            tabular_source=snowflake_database_table_scd_table,
+        snowflake_database_table_scd_table.create_scd_table(
             name=123,
             natural_key_column="col_text",
             surrogate_key_column="col_int",
@@ -214,13 +212,12 @@ def test_from_tabular_source(snowflake_database_table_scd_table, scd_table_dict)
 
 
 @pytest.mark.usefixtures("saved_scd_table")
-def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_table):
+def test_create_scd_table__duplicated_record(snowflake_database_table_scd_table):
     """
     Test SCDTable creation failure due to duplicated dimension table name
     """
     with pytest.raises(DuplicatedRecordException) as exc:
-        SCDTable.from_tabular_source(
-            tabular_source=snowflake_database_table_scd_table,
+        snowflake_database_table_scd_table.create_scd_table(
             name="sf_scd_table",
             natural_key_column="col_text",
             surrogate_key_column="col_int",
@@ -232,14 +229,13 @@ def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_tab
     assert 'SCDTable (scd_table.name: "sf_scd_table") exists in saved record.' in str(exc.value)
 
 
-def test_from_tabular_source__retrieval_exception(snowflake_database_table_scd_table):
+def test_create_scd_table__retrieval_exception(snowflake_database_table_scd_table):
     """
     Test SCDTable creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.base_table.Configurations"):
-            SCDTable.from_tabular_source(
-                tabular_source=snowflake_database_table_scd_table,
+            snowflake_database_table_scd_table.create_scd_table(
                 name="sf_scd_table",
                 natural_key_column="col_text",
                 surrogate_key_column="col_int",
@@ -338,8 +334,7 @@ def test_accessing_saved_scd_table_attributes(saved_scd_table):
 
 def test_sdk_code_generation(snowflake_database_table_scd_table, update_fixtures):
     """Check SDK code generation for unsaved table"""
-    scd_table = SCDTable.from_tabular_source(
-        tabular_source=snowflake_database_table_scd_table,
+    scd_table = snowflake_database_table_scd_table.create_scd_table(
         name="sf_scd_table",
         natural_key_column="col_text",
         surrogate_key_column="col_int",

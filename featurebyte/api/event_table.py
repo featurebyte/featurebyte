@@ -8,13 +8,11 @@ from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, 
 from datetime import datetime
 
 import pandas as pd
-from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
-from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
@@ -35,20 +33,22 @@ if TYPE_CHECKING:
 
 class EventTable(TableApiObject):
     """
-    EventTable is an object connected with an event table in the data warehouse. These tables must have the following
-    properties:\n
-    - and an event_id column as a primary key\n
-    - an event timestamp
+    An Event table is a type of FeatureByte table that represents a Transaction Fact Table in the data warehouse.
+    Each row in this table indicates a specific business event that was measured at a particular moment in time.
 
-    Users are strongly encouraged to annotate the table by tagging entities and defining:
+    Event tables can take various forms, such as an Order table in E-commerce, Credit Card Transactions in Banking,
+    Doctor Visits in Healthcare, and Clickstream on the Internet.
 
-    - the semantic of the table field
-    - critical data information on the data quality that requires cleaning before feature engineering.
+    To create an Event table in FeatureByte, it is necessary to identify the columns that represent the event key
+    and the event timestamp.
 
-    Before registering a new EventTable, users are asked to set the default for the FeatureJob scheduling for features
-    that will be extracted from the EventTable.
+    Additionally, the column that represents the record creation timestamp may be identified to enable an automatic
+    analysis of data availability and freshness of the source table. This analysis can assist in selecting the default
+    scheduling of the computation of features associated with the Event table.
 
-    To build features, users create Event Views from EventTable.
+    See Also
+    --------
+    - [create_event_table](/reference/featurebyte.api.source_table.SourceTable.create_event_table/): create event table from source table
     """
 
     # documentation metadata
@@ -222,92 +222,6 @@ class EventTable(TableApiObject):
         list[dict[str, Any]]
         """
         return self._get_audit_history(field_name="default_feature_job_setting")
-
-    @classmethod
-    @typechecked
-    def from_tabular_source(
-        cls,
-        tabular_source: SourceTable,
-        name: str,
-        event_timestamp_column: str,
-        event_id_column: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
-    ) -> EventTable:
-        """
-        Create EventTable object from tabular source
-
-        Parameters
-        ----------
-        tabular_source: SourceTable
-            DatabaseTable object constructed from FeatureStore
-        name: str
-            Event table name
-        event_id_column: str
-            Event ID column from the given tabular source
-        event_timestamp_column: str
-            Event timestamp column from the given tabular source
-        record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
-        _id: Optional[ObjectId]
-            Identity value for constructed object
-
-        Returns
-        -------
-        EventTable
-
-        Examples
-        --------
-
-        Create EventTable from a table in the feature store
-
-        >>> credit_card_transactions = EventTable.from_tabular_source(  # doctest: +SKIP
-        ...    name="Credit Card Transactions",
-        ...    tabular_source=feature_store.get_table(
-        ...      database_name="DEMO",
-        ...      schema_name="CREDIT_CARD",
-        ...      table_name="TRANSACTIONS"
-        ...    ),
-        ...    event_id_column="TRANSACTIONID",
-        ...    event_timestamp_column="TIMESTAMP",
-        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
-        ... )
-
-        Get information about the EventTable
-
-        >>> credit_card_transactions.info(verbose=True)  # doctest: +SKIP
-        {'name': 'CCDEMOTRANSACTIONS',
-        'created_at': '2022-10-17T08:09:15.730000',
-        'updated_at': '2022-11-14T12:15:59.707000',
-        'status': 'DRAFT',
-        'event_timestamp_column': 'TIMESTAMP',
-        'record_creation_timestamp_column': 'RECORD_AVAILABLE_AT',
-        'table_details': {'database_name': 'DEMO',
-        'schema_name': 'CREDIT_CARD',
-        'table_name': 'TRANSACTIONS'},
-        'default_feature_job_setting': {'blind_spot': '30s',
-        'frequency': '60m',
-        'time_modulo_frequency': '15s'},
-        'entities': [{'name': 'ACCOUNTID', 'serving_names': ['ACCOUNTID']}],
-        'column_count': 6,
-        'columns_info': [{'name': 'TRANSACTIONID',
-        'dtype': 'VARCHAR',
-        'entity': None},
-        {'name': 'ACCOUNTID', 'dtype': 'VARCHAR', 'entity': 'ACCOUNTID'},
-        {'name': 'TIMESTAMP', 'dtype': 'TIMESTAMP', 'entity': None},
-        {'name': 'RECORD_AVAILABLE_AT', 'dtype': 'TIMESTAMP', 'entity': None},
-        {'name': 'DESCRIPTION', 'dtype': 'VARCHAR', 'entity': None},
-        {'name': 'AMOUNT', 'dtype': 'FLOAT', 'entity': None}]}
-
-        """
-        return super().create(
-            tabular_source=tabular_source,
-            name=name,
-            record_creation_timestamp_column=record_creation_timestamp_column,
-            _id=_id,
-            event_timestamp_column=event_timestamp_column,
-            event_id_column=event_id_column,
-        )
 
     @typechecked
     def update_default_feature_job_setting(self, feature_job_setting: FeatureJobSetting) -> None:

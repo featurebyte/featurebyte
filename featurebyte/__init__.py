@@ -18,7 +18,7 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_table import SCDTable
-from featurebyte.api.scd_view import SlowlyChangingView
+from featurebyte.api.scd_view import SCDView
 from featurebyte.api.table import Table
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations
@@ -122,7 +122,7 @@ __all__ = [
     "Relationship",
     "Series",
     "SCDTable",
-    "SlowlyChangingView",
+    "SCDView",
     "to_timedelta",
     "SnowflakeDetails",
     "SparkDetails",

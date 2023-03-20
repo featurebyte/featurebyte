@@ -1,5 +1,5 @@
 """
-SlowlyChangingView class
+SCDView class
 """
 from __future__ import annotations
 
@@ -15,30 +15,34 @@ from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.node.generic import SCDBaseParameters
 
 
-class SlowlyChangingViewColumn(ViewColumn):
+class SCDViewColumn(ViewColumn):
     """
-    SlowlyChangingViewColumn class
+    SCDViewColumn class
     """
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["Column"])
 
 
-class SlowlyChangingView(View, GroupByMixin):
+class SCDView(View, GroupByMixin):
     """
-    SlowlyChangingViews allow users to transform SCDTable
+    A `SCDView` allows a user to transform a `SCDTable`.
 
-    Transformations supported are the same as for EventView or ItemView except for lag that is not supported.
+    Transformations supported are the same as for `EventView` or `ItemView` except for lag that is not supported.
+
+    See Also
+    --------
+    - [scd_table#get_view](/reference/featurebyte.api.scd_table.SCDTable.get_view/): get SCD view from a `SCDTable`
     """
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
         section=["View"],
-        proxy_class="featurebyte.SlowlyChangingView",
+        proxy_class="featurebyte.SCDView",
     )
 
     # class variables
-    _series_class = SlowlyChangingViewColumn
+    _series_class = SCDViewColumn
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.SCD_VIEW
 
     # pydantic instance variables
@@ -108,10 +112,10 @@ class SlowlyChangingView(View, GroupByMixin):
         Raises
         ------
         JoinViewMismatchError
-            raised when the other view is a slowly changing view
+            raised when the other view is a slowly changing dimension view
         """
-        if isinstance(other_view, SlowlyChangingView):
-            logger.error("columns from a SlowlyChangingView can’t be added to a SlowlyChangingView")
+        if isinstance(other_view, SCDView):
+            logger.error("columns from a SCDView can’t be added to a SCDView")
             raise JoinViewMismatchError
 
     def get_join_column(self) -> str:
@@ -119,7 +123,7 @@ class SlowlyChangingView(View, GroupByMixin):
 
     def get_common_scd_parameters(self) -> SCDBaseParameters:
         """
-        Get parameters related to Slowly Changing Data (SCD)
+        Get parameters related to SCDTable
 
         Returns
         -------
@@ -135,7 +139,7 @@ class SlowlyChangingView(View, GroupByMixin):
     def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
 
         # When calling_view doesn't have the timestamp_column attribute, it means that it is a
-        # DimensionView. It is invalid to join DimensionView with SlowlyChangingView on the right
+        # DimensionView. It is invalid to join DimensionView with SCDView on the right
         # side. A validation error would have been raised before reaching here.
         assert hasattr(calling_view, "timestamp_column") and isinstance(
             calling_view.timestamp_column, str

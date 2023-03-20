@@ -33,7 +33,7 @@ class GroupBy:
     @typechecked
     def __init__(
         self,
-        obj: Union[EventView, ItemView, ChangeView, SlowlyChangingView],
+        obj: Union[EventView, ItemView, ChangeView, SCDView],
         keys: Union[str, List[str]],
         category: Optional[str] = None,
     ):
@@ -172,7 +172,7 @@ class GroupBy:
         skip_fill_na: bool = False,
     ) -> Feature:
         """
-        Aggregate a column in SlowlyChangingView as at a point in time
+        Aggregate a column in SCDView as at a point in time
 
         Parameters
         ----------

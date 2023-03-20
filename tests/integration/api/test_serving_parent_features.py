@@ -63,12 +63,12 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     country_entity = Entity(name=f"{table_prefix}_country", serving_names=["country_id"])
     country_entity.save()
 
-    event_table = EventTable.from_tabular_source(
-        tabular_source=data_source.get_table(
-            table_name=f"{table_prefix}_EVENT",
-            database_name=session.database_name,
-            schema_name=session.schema_name,
-        ),
+    event_source_table = data_source.get_table(
+        table_name=f"{table_prefix}_EVENT",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    event_table = event_source_table.create_event_table(
         name=f"{table_prefix}_event_table",
         event_id_column="event_id",
         event_timestamp_column="ts",
@@ -77,12 +77,12 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     event_table["event_id"].as_entity(event_entity.name)
     event_table["cust_id"].as_entity(customer_entity.name)
 
-    scd_table = SCDTable.from_tabular_source(
-        tabular_source=data_source.get_table(
-            table_name=f"{table_prefix}_SCD",
-            database_name=session.database_name,
-            schema_name=session.schema_name,
-        ),
+    scd_source_table = data_source.get_table(
+        table_name=f"{table_prefix}_SCD",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    scd_table = scd_source_table.create_scd_table(
         name=f"{table_prefix}_scd_table",
         natural_key_column="scd_cust_id",
         effective_timestamp_column="effective_ts",
@@ -92,12 +92,12 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     scd_table["scd_cust_id"].as_entity(customer_entity.name)
     scd_table["scd_city"].as_entity(city_entity.name)
 
-    dimension_table_1 = DimensionTable.from_tabular_source(
-        tabular_source=data_source.get_table(
-            table_name=f"{table_prefix}_DIMENSION_1",
-            database_name=session.database_name,
-            schema_name=session.schema_name,
-        ),
+    dimension_source_table_1 = data_source.get_table(
+        table_name=f"{table_prefix}_DIMENSION_1",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    dimension_table_1 = dimension_source_table_1.create_dimension_table(
         name=f"{table_prefix}_dimension_table_1",
         dimension_id_column="city",
     )
@@ -105,12 +105,12 @@ async def feature_list_with_child_entities_fixture(session, data_source):
     dimension_table_1["city"].as_entity(city_entity.name)
     dimension_table_1["state"].as_entity(state_entity.name)
 
-    dimension_table_2 = DimensionTable.from_tabular_source(
-        tabular_source=data_source.get_table(
-            table_name=f"{table_prefix}_DIMENSION_2",
-            database_name=session.database_name,
-            schema_name=session.schema_name,
-        ),
+    dimension_source_table_2 = data_source.get_table(
+        table_name=f"{table_prefix}_DIMENSION_2",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    dimension_table_2 = dimension_source_table_2.create_dimension_table(
         name=f"{table_prefix}_dimension_table_2",
         dimension_id_column="state",
     )

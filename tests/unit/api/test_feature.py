@@ -1148,21 +1148,20 @@ def test_feature_create_new_version__multiple_event_table(
     main_data_from_event_table,
 ):
     """Test create new version with multiple feature job settings"""
-    another_event_event = EventTable.from_tabular_source(
-        tabular_source=snowflake_database_table_scd_table,
+    another_event_table = snowflake_database_table_scd_table.create_event_table(
         name="another_event_table",
         event_id_column="col_int",
         event_timestamp_column="effective_timestamp",
         record_creation_timestamp_column="end_timestamp",
     )
-    another_event_event.save()
+    another_event_table.save()
 
     # label entity column
     saved_event_table.cust_id.as_entity(cust_id_entity.name)
-    another_event_event.col_text.as_entity(cust_id_entity.name)
+    another_event_table.col_text.as_entity(cust_id_entity.name)
 
     event_view = saved_event_table.get_view()
-    another_event_view = another_event_event.get_view()
+    another_event_view = another_event_table.get_view()
     if main_data_from_event_table:
         event_view.join(
             another_event_view,
@@ -1172,7 +1171,7 @@ def test_feature_create_new_version__multiple_event_table(
         )
         event_view_used = event_view
         entity_col_name = "cust_id"
-        main_data_name, non_main_data_name = saved_event_table.name, another_event_event.name
+        main_data_name, non_main_data_name = saved_event_table.name, another_event_table.name
     else:
         another_event_view.join(
             event_view,
@@ -1182,7 +1181,7 @@ def test_feature_create_new_version__multiple_event_table(
         )
         event_view_used = another_event_view
         entity_col_name = "col_text"
-        main_data_name, non_main_data_name = another_event_event.name, saved_event_table.name
+        main_data_name, non_main_data_name = another_event_table.name, saved_event_table.name
 
     feature = event_view_used.groupby(entity_col_name).aggregate_over(
         method="count",

@@ -5,13 +5,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, cast
 
-from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
-from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.event_table import EventTable
-from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import join_tabular_data_ids
 from featurebyte.common.validator import construct_data_model_root_validator
@@ -33,26 +30,21 @@ if TYPE_CHECKING:
 
 class ItemTable(TableApiObject):
     """
-    ItemTable is an object connected with an item table that has a ‘one to many’ relationship with an event table.
-    Example:\n
-    - Order item table -> Order table\n
-    - Drug prescriptions -> Doctor visits.
+    An Item table is a type of FeatureByte table that represents a table in the data warehouse containing in-depth
+    details about a business event.
 
-    The table does not explicitly contain any timestamp, but is implicitly related to an event timestamp via its
-    relationship with the event table.
+    For instance, an Item table can contain information about Product Items purchased in Customer Orders or Drug
+    Prescriptions issued during Doctor Visits by Patients.
 
-    To register a new ItemTable, users are asked to provide:\n
-    - the name of the column of the item id\n
-    - the name of the column of the event id\n
-    - the name of the event table it is related to
+    Typically, an Item table has a 'one-to-many' relationship with an Event table. Despite not explicitly including a
+    timestamp, it is inherently linked to an event timestamp through its association with the Event table.
 
-    The ItemTable inherits the default FeatureJob setting of the Event table.
+    To create an Item table, it is necessary to identify the columns that represent the item key and the event key and
+    determine which Event table is associated with the Item table.
 
-    Like for Event Data, users are strongly encouraged to annotate the table by tagging entities and defining:\n
-    - the semantic of the table field\n
-    - critical data information on the data quality that requires cleaning before feature engineering
-
-    To create features from an ItemTable, users create an ItemView.
+    See Also
+    --------
+    - [create_item_table](/reference/featurebyte.api.source_table.SourceTable.create_item_table/): create item table from source table
     """
 
     # documentation metadata
@@ -265,79 +257,3 @@ class ItemTable(TableApiObject):
             return self.cached_model.item_id_column
         except RecordRetrievalException:
             return self.internal_item_id_column
-
-    @classmethod
-    @typechecked
-    def from_tabular_source(
-        cls,
-        tabular_source: SourceTable,
-        name: str,
-        event_id_column: str,
-        item_id_column: str,
-        event_table_name: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
-    ) -> ItemTable:
-        """
-        Create ItemTable object from tabular source
-
-        Parameters
-        ----------
-        tabular_source: SourceTable
-            DatabaseTable object constructed from FeatureStore
-        name: str
-            Item table name
-        event_id_column: str
-            Event ID column from the given tabular source
-        item_id_column: str
-            Item ID column from the given tabular source
-        event_table_name: str
-            Name of the EventTable associated with this ItemTable
-        record_creation_timestamp_column: Optional[str]
-            Record creation timestamp column from the given tabular source
-        _id: Optional[ObjectId]
-            Identity value for constructed object
-
-        Returns
-        -------
-        EventTable
-
-        Raises
-        ------
-        ValueError
-            If the associated EventTable does not have event_id_column defined
-
-        Examples
-        --------
-        Create ItemTable from a table in the feature store
-
-        >>> order_items = ItemTable.from_tabular_source(  # doctest: +SKIP
-        ...    name="Order Items",
-        ...    tabular_source=feature_store.get_table(
-        ...      database_name="DEMO",
-        ...      schema_name="ORDERS",
-        ...      table_name="ORDER_ITEMS"
-        ...    ),
-        ...    event_id_column="ORDER_ID",
-        ...    item_id_column="ITEM_ID",
-        ...    event_table_name="Order List",
-        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
-        ... )
-
-        Get information about the ItemTable
-
-        >>> order_items.info(verbose=True)  # doctest: +SKIP
-        """
-        event_table = EventTable.get(event_table_name)
-        if event_table.event_id_column is None:
-            raise ValueError("EventTable without event_id_column is not supported")
-        event_table_id = event_table.id
-        return super().create(
-            tabular_source=tabular_source,
-            name=name,
-            record_creation_timestamp_column=record_creation_timestamp_column,
-            _id=_id,
-            event_id_column=event_id_column,
-            item_id_column=item_id_column,
-            event_table_id=event_table_id,
-        )

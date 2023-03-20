@@ -217,7 +217,7 @@ class ClassEnum(Enum):
     EVENT_VIEW = ("featurebyte", "EventView")
     ITEM_VIEW = ("featurebyte", "ItemView")
     DIMENSION_VIEW = ("featurebyte", "DimensionView")
-    SCD_VIEW = ("featurebyte", "SlowlyChangingView")
+    SCD_VIEW = ("featurebyte", "SCDView")
     CHANGE_VIEW = ("featurebyte", "ChangeView")
 
     # imputations

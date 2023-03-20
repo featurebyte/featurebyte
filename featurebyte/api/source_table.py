@@ -3,13 +3,14 @@ SourceTable class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, TypeVar, Union
 
 from abc import ABC, abstractmethod
 from datetime import datetime
 from http import HTTPStatus
 
 import pandas as pd
+from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
@@ -27,6 +28,17 @@ from featurebyte.query_graph.model.table import AllTableDataT, SouceTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
+
+if TYPE_CHECKING:
+    from featurebyte.api.dimension_table import DimensionTable
+    from featurebyte.api.event_table import EventTable
+    from featurebyte.api.item_table import ItemTable
+    from featurebyte.api.scd_table import SCDTable
+else:
+    DimensionTable = TypeVar("DimensionTable")
+    EventTable = TypeVar("EventTable")
+    ItemTable = TypeVar("ItemTable")
+    SCDTable = TypeVar("SCDTable")
 
 
 class TableDataFrame(BaseFrame):
@@ -246,7 +258,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     def sample(
         self,
         size: int = 10,
-        seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
         after_cleaning: bool = False,
@@ -259,8 +270,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         ----------
         size: int
             Maximum number of rows to sample
-        seed: int
-            Seed to use for random sampling
         from_timestamp: Optional[datetime]
             Start of date range to sample from
         to_timestamp: Optional[datetime]
@@ -276,7 +285,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         """
         return self.frame.sample(  # type: ignore[misc]
             size=size,
-            seed=seed,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             after_cleaning=after_cleaning,
@@ -287,7 +295,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     def describe(
         self,
         size: int = 0,
-        seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
         after_cleaning: bool = False,
@@ -300,8 +307,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         ----------
         size: int
             Maximum number of rows to sample
-        seed: int
-            Seed to use for random sampling
         from_timestamp: Optional[datetime]
             Start of date range to sample from
         to_timestamp: Optional[datetime]
@@ -317,7 +322,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         """
         return self.frame.describe(  # type: ignore[misc]
             size=size,
-            seed=seed,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             after_cleaning=after_cleaning,
@@ -347,3 +351,181 @@ class SourceTable(AbstractTableData):
     @property
     def columns_info(self) -> List[ColumnInfo]:
         return self.internal_columns_info
+
+    @typechecked
+    def create_event_table(
+        self,
+        name: str,
+        event_timestamp_column: str,
+        event_id_column: str,
+        record_creation_timestamp_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> EventTable:
+        """
+        Create event table from this source table
+
+        Parameters
+        ----------
+        name: str
+            Event table name
+        event_id_column: str
+            Event ID column from the given tabular source
+        event_timestamp_column: str
+            Event timestamp column from the given tabular source
+        record_creation_timestamp_column: str
+            Record creation timestamp column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
+
+        Returns
+        -------
+        EventTable
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.event_table import EventTable
+
+        return EventTable.create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            event_timestamp_column=event_timestamp_column,
+            event_id_column=event_id_column,
+            _id=_id,
+        )
+
+    @typechecked
+    def create_item_table(
+        self,
+        name: str,
+        event_id_column: str,
+        item_id_column: str,
+        event_table_name: str,
+        record_creation_timestamp_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> ItemTable:
+        """
+        Create item table from this source table
+
+        Parameters
+        ----------
+        name: str
+            Item table name
+        event_id_column: str
+            Event ID column from the given tabular source
+        item_id_column: str
+            Item ID column from the given tabular source
+        event_table_name: str
+            Name of the EventTable associated with this ItemTable
+        record_creation_timestamp_column: Optional[str]
+            Record creation timestamp column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
+
+        Returns
+        -------
+        ItemTable
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.event_table import EventTable
+        from featurebyte.api.item_table import ItemTable
+
+        event_table = EventTable.get(event_table_name)
+        return ItemTable.create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            event_id_column=event_id_column,
+            item_id_column=item_id_column,
+            event_table_id=event_table.id,
+            _id=_id,
+        )
+
+    @typechecked
+    def create_dimension_table(
+        self,
+        name: str,
+        dimension_id_column: str,
+        record_creation_timestamp_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> DimensionTable:
+        """
+        Create dimension table from this source table
+
+        Parameters
+        ----------
+        name: str
+            Dimension table name
+        dimension_id_column: str
+            Dimension table ID column from the given tabular source
+        record_creation_timestamp_column: str
+            Record creation timestamp column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
+
+        Returns
+        -------
+        DimensionTable
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.dimension_table import DimensionTable
+
+        return DimensionTable.create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            dimension_id_column=dimension_id_column,
+            _id=_id,
+        )
+
+    @typechecked
+    def create_scd_table(
+        self,
+        name: str,
+        natural_key_column: str,
+        effective_timestamp_column: str,
+        end_timestamp_column: Optional[str] = None,
+        surrogate_key_column: Optional[str] = None,
+        current_flag_column: Optional[str] = None,
+        record_creation_timestamp_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> SCDTable:
+        """
+        Create SCD table from this source table
+
+        Parameters
+        ----------
+        name: str
+            SCDTable name
+        natural_key_column: str
+            Natural key column from the given tabular source
+        effective_timestamp_column: str
+            Effective timestamp column from the given tabular source
+        end_timestamp_column: Optional[str]
+            End timestamp column from the given tabular source
+        surrogate_key_column: Optional[str]
+            Surrogate key column from the given tabular source
+        current_flag_column: Optional[str]
+            Column to indicates whether the keys are for the current table point
+        record_creation_timestamp_column: str
+            Record creation timestamp column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
+
+        Returns
+        -------
+        SCDTable
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.scd_table import SCDTable
+
+        return SCDTable.create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            _id=_id,
+            natural_key_column=natural_key_column,
+            surrogate_key_column=surrogate_key_column,
+            effective_timestamp_column=effective_timestamp_column,
+            end_timestamp_column=end_timestamp_column,
+            current_flag_column=current_flag_column,
+        )

@@ -104,27 +104,29 @@ async def test_scd_join_small(session, data_source, source_type):
     table_prefix = "TEST_SCD_JOIN_SMALL"
     await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
     await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
-    event_view = EventTable.from_tabular_source(
-        tabular_source=data_source.get_table(
-            table_name=f"{table_prefix}_EVENT",
-            database_name=session.database_name,
-            schema_name=session.schema_name,
-        ),
+    event_source_table = data_source.get_table(
+        table_name=f"{table_prefix}_EVENT",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    event_table = event_source_table.create_event_table(
         name=f"{source_type}_{table_prefix}_EVENT_DATA",
         event_id_column="event_id",
         event_timestamp_column="ts",
-    ).get_view()
-    scd_view = SCDTable.from_tabular_source(
-        tabular_source=data_source.get_table(
-            table_name=f"{table_prefix}_SCD",
-            database_name=session.database_name,
-            schema_name=session.schema_name,
-        ),
+    )
+    event_view = event_table.get_view()
+    scd_source_table = data_source.get_table(
+        table_name=f"{table_prefix}_SCD",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    scd_table = scd_source_table.create_scd_table(
         name=f"{source_type}_{table_prefix}_SCD_DATA",
         natural_key_column="scd_cust_id",
         effective_timestamp_column="effective_ts",
         surrogate_key_column="scd_cust_id",
-    ).get_view()
+    )
+    scd_view = scd_table.get_view()
     event_view.join(scd_view, on="cust_id", rsuffix="_latest")
     event_view.join(scd_view, on="cust_id", rsuffix="_latest_v2")
     df_actual = event_view.preview()
@@ -187,7 +189,7 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_scd_lookup_feature(event_table, dimension_table, scd_table, scd_dataframe):
     """
-    Test creating lookup feature from a SlowlyChangingView
+    Test creating lookup feature from a SCDView
     """
     # SCD lookup feature
     scd_view = scd_table.get_view()
@@ -243,7 +245,7 @@ def test_scd_lookup_feature(event_table, dimension_table, scd_table, scd_datafra
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_scd_lookup_feature_with_offset(scd_table, scd_dataframe):
     """
-    Test creating lookup feature from a SlowlyChangingView with offset
+    Test creating lookup feature from a SCDView with offset
     """
     # SCD lookup feature
     offset = "90d"
@@ -271,7 +273,7 @@ def test_scd_lookup_feature_with_offset(scd_table, scd_dataframe):
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_asat(scd_table, scd_dataframe):
     """
-    Test aggregate_asat aggregation on SlowlyChangingView
+    Test aggregate_asat aggregation on SCDView
     """
     scd_view = scd_table.get_view()
     feature = scd_view.groupby("User Status").aggregate_asat(
@@ -332,7 +334,7 @@ def test_aggregate_asat(scd_table, scd_dataframe):
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
     """
-    Test aggregate_asat aggregation on SlowlyChangingView without entity
+    Test aggregate_asat aggregation on SCDView without entity
     """
     scd_view = scd_table.get_view()
     feature = scd_view.groupby([]).aggregate_asat(
@@ -383,10 +385,9 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
 @pytest.fixture(name="scd_table_with_minimal_cols", scope="session")
 def snowflake_scd_table_fixture_with_minimal_cols(source_type, scd_data_tabular_source):
     """
-    Fixture for a SlowlyChangingData in integration tests
+    Fixture for a SCDTable in integration tests
     """
-    return SCDTable.from_tabular_source(
-        tabular_source=scd_data_tabular_source,
+    return scd_data_tabular_source.create_scd_table(
         name=f"{source_type}_scd_data_with_minimal_cols",
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",

@@ -59,7 +59,7 @@ def test_get_item_table(snowflake_item_table, saved_item_table):
 
 def test_get_scd_table(saved_scd_table, snowflake_scd_table):
     """
-    Test Table.get function to retrieve SlowlyChangingData
+    Test Table.get function to retrieve SCDTable
     """
     # load the scd table from the persistent
     loaded_scd_table = Table.get(snowflake_scd_table.name)

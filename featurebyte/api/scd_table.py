@@ -5,12 +5,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, List, Literal, Optional, Tuple, Type, cast
 
-from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
-from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
-from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
@@ -26,24 +23,29 @@ from featurebyte.schema.scd_table import SCDTableCreate, SCDTableUpdate
 
 if TYPE_CHECKING:
     from featurebyte.api.change_view import ChangeView
-    from featurebyte.api.scd_view import SlowlyChangingView
+    from featurebyte.api.scd_view import SCDView
 
 
 class SCDTable(TableApiObject):
     """
-    SCDTable is a table source object connected with a Slowly Changing Dimension table of Type 2 in
-    the data warehouse that has:\n
-    - a natural key (key for which there is one unique active record)\n
-    - a surrogate key (the primary key of the SCD)\n
-    - an effective date or timestamp\n
+    An SCD (slowly changing dimension) table is a type of FeatureByte table that represents a table in a data warehouse
+    that contains data that changes slowly and unpredictably over time.
 
-    and optionally,\n
-    - an end date or timestamp and\n
-    - a current flag
+    There are two main types of SCDs: Type 1, which overwrites old data with new data, and Type 2, which maintains a
+    history of changes by creating a new record for each change. FeatureByte only supports the use of Type 2 SCDs since
+    SCDs of Type 1 may cause data leaks during model training and poor performance during inference.
 
-    To create an instance of this class, see the `from_tabular_source` method.
+    An SCD table of Type 2 utilizes a natural key to distinguish each active row and facilitate tracking of changes
+    over time. The SCD table employs effective and expiration date columns to determine the active status of a row.
+    In certain instances, an active flag column may replace the expiration date column to indicate if a row is
+    currently active.
 
-    To build features, users can create SlowlyChangingViews from SCDTable.
+    To create an SCD table in FeatureByte, it is necessary to identify columns for the natural key, effective timestamp,
+    and optionally surrogate key, expiration timestamp, and active flag.
+
+    See Also
+    --------
+    - [create_scd_table](/reference/featurebyte.api.source_table.SourceTable.create_scd_table/): create SCD table from source table
     """
 
     # documentation metadata
@@ -93,9 +95,9 @@ class SCDTable(TableApiObject):
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
-    ) -> SlowlyChangingView:
+    ) -> SCDView:
         """
-        Construct an SlowlyChangingView object
+        Construct a SCDView object
 
         Parameters
         ----------
@@ -109,11 +111,11 @@ class SCDTable(TableApiObject):
 
         Returns
         -------
-        SlowlyChangingView
-            constructed SlowlyChangingView object
+        SCDView
+            constructed SCDView object
         """
         # pylint: disable=import-outside-toplevel
-        from featurebyte.api.scd_view import SlowlyChangingView
+        from featurebyte.api.scd_view import SCDView
 
         self._validate_view_mode_params(
             view_mode=view_mode,
@@ -153,7 +155,7 @@ class SCDTable(TableApiObject):
             ),
         )
         inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
-        return SlowlyChangingView(
+        return SCDView(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
             columns_info=columns_info,
@@ -351,80 +353,3 @@ class SCDTable(TableApiObject):
         Optional[str]
         """
         return self.effective_timestamp_column
-
-    @classmethod
-    @typechecked
-    def from_tabular_source(
-        cls,
-        tabular_source: SourceTable,
-        name: str,
-        natural_key_column: str,
-        effective_timestamp_column: str,
-        end_timestamp_column: Optional[str] = None,
-        surrogate_key_column: Optional[str] = None,
-        current_flag_column: Optional[str] = None,
-        record_creation_timestamp_column: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
-    ) -> SCDTable:
-        """
-        Create SCDTable object from tabular source
-
-        Parameters
-        ----------
-        tabular_source: SourceTable
-            DatabaseTable object constructed from FeatureStore
-        name: str
-            SlowlyChanging table name
-        natural_key_column: str
-            Natural key column from the given tabular source
-        effective_timestamp_column: str
-            Effective timestamp column from the given tabular source
-        end_timestamp_column: Optional[str]
-            End timestamp column from the given tabular source
-        surrogate_key_column: Optional[str]
-            Surrogate key column from the given tabular source
-        current_flag_column: Optional[str]
-            Column to indicates whether the keys are for the current table point
-        record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
-        _id: Optional[ObjectId]
-            Identity value for constructed object
-
-        Returns
-        -------
-        SCDTable
-
-        Examples
-        --------
-        Create SCDTable from a table in the feature store
-
-        >>> user_profiles = SCDTable.from_tabular_source(  # doctest: +SKIP
-        ...    name="User Profiles",
-        ...    tabular_source=feature_store.get_table(
-        ...      database_name="DEMO",
-        ...      schema_name="USER",
-        ...      table_name="PROFILES"
-        ...    ),
-        ...    natural_key_column="USER_ID",
-        ...    effective_timestamp_column="EFFECTIVE_AT",
-        ...    end_timestamp_column="END_AT",
-        ...    surrogate_key_column="ID",
-        ...    current_flag_column="IS_CURRENT",
-        ...    record_creation_timestamp_column="RECORD_AVAILABLE_AT",
-        ... )
-
-        Get information about the SCDTable
-
-        >>> user_profiles.info(verbose=True)  # doctest: +SKIP
-        """
-        return super().create(
-            tabular_source=tabular_source,
-            name=name,
-            record_creation_timestamp_column=record_creation_timestamp_column,
-            _id=_id,
-            natural_key_column=natural_key_column,
-            surrogate_key_column=surrogate_key_column,
-            effective_timestamp_column=effective_timestamp_column,
-            end_timestamp_column=end_timestamp_column,
-            current_flag_column=current_flag_column,
-        )

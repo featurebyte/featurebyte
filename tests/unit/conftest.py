@@ -17,16 +17,13 @@ from snowflake.connector.constants import QueryStatus
 
 from featurebyte import FeatureJobSetting, MissingValueImputation, SnowflakeDetails
 from featurebyte.api.api_object import ApiObject
-from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import DefaultVersionMode, Feature
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
-from featurebyte.api.scd_table import SCDTable
 from featurebyte.app import User, app
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import AggFunc, DBVarType, InternalName
@@ -403,8 +400,7 @@ def transaction_entity_id_fixture():
 @pytest.fixture(name="snowflake_event_table")
 def snowflake_event_table_fixture(snowflake_database_table, snowflake_event_table_id):
     """EventTable object fixture"""
-    event_table = EventTable.from_tabular_source(
-        tabular_source=snowflake_database_table,
+    event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
@@ -418,8 +414,7 @@ def snowflake_event_table_fixture(snowflake_database_table, snowflake_event_tabl
 @pytest.fixture(name="snowflake_dimension_table")
 def snowflake_dimension_table_fixture(snowflake_database_table, snowflake_dimension_table_id):
     """DimensionTable object fixture"""
-    dimension_table = DimensionTable.from_tabular_source(
-        tabular_source=snowflake_database_table,
+    dimension_table = snowflake_database_table.create_dimension_table(
         name="sf_dimension_table",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
@@ -432,8 +427,7 @@ def snowflake_dimension_table_fixture(snowflake_database_table, snowflake_dimens
 @pytest.fixture(name="snowflake_scd_table")
 def snowflake_scd_table_fixture(snowflake_database_table_scd_table, snowflake_scd_table_id):
     """SCDTable object fixture"""
-    scd_table = SCDTable.from_tabular_source(
-        tabular_source=snowflake_database_table_scd_table,
+    scd_table = snowflake_database_table_scd_table.create_scd_table(
         name="sf_scd_table",
         natural_key_column="col_text",
         surrogate_key_column="col_int",
@@ -467,8 +461,7 @@ def snowflake_item_table_fixture(
     """
     _ = mock_get_persistent
     snowflake_event_table.save()
-    item_table = ItemTable.from_tabular_source(
-        tabular_source=snowflake_database_table_item_table,
+    item_table = snowflake_database_table_item_table.create_item_table(
         name="sf_item_table",
         event_id_column="event_id_col",
         item_id_column="item_id_col",
@@ -494,8 +487,7 @@ def snowflake_item_table_same_event_id_fixture(
     _ = snowflake_item_table
     event_id_column = "col_int"
     assert snowflake_event_table.event_id_column == event_id_column
-    yield ItemTable.from_tabular_source(
-        tabular_source=snowflake_database_table_item_table_same_event_id,
+    yield snowflake_database_table_item_table_same_event_id.create_item_table(
         name="sf_item_table_2",
         event_id_column=event_id_column,
         item_id_column="item_id_col",
