@@ -30,20 +30,27 @@ class ItemViewColumn(ViewColumn):
 
 class ItemView(View, GroupByMixin):
     """
-    ItemViews allow users to transform ItemTable to support the table preparation necessary before creating features.
+    An `ItemView` allows a user to transform an `ItemTable` to support the table preparation necessary before
+    creating features.
 
-    When an ItemView is created, the event_timestamp and the entities of the event table the item table is associated
+    When an `ItemView` is created, the event_timestamp and the entities of the event table the item table is associated
     with are automatically added. Users can join more columns from the event table if desired.
 
-    Transformations supported are the same as for EventView except for:\n
+    Transformations supported are the same as an `EventView` except for:
+
     - lag (and inter event time) can be computed only for entities that are not inherited from the event table
 
     Features can be easily created from ItemViews in a similar way as for features created from EventViews, with a
-    few differences:\n
+    few differences:
+
     - features for the event_id and its children (item_id) are not time based. Features for other entities are time
-      based like for EventViews.\n
+      based like for EventViews.
     - columns imported from the event table or their derivatives can not be aggregated per an entity inherited from
       the event table. Those features should be engineered directly from the event table.
+
+    See Also
+    --------
+    - [item_table#get_view](/reference/featurebyte.api.item_table.ItemTable.get_view/): get item view from an `ItemTable`
     """
 
     # documentation metadata

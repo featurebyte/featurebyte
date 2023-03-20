@@ -26,9 +26,13 @@ class SCDViewColumn(ViewColumn):
 
 class SCDView(View, GroupByMixin):
     """
-    SCDViews allow users to transform SCDTable
+    A `SCDView` allows a user to transform a `SCDTable`.
 
-    Transformations supported are the same as for EventView or ItemView except for lag that is not supported.
+    Transformations supported are the same as for `EventView` or `ItemView` except for lag that is not supported.
+
+    See Also
+    --------
+    - [scd_table#get_view](/reference/featurebyte.api.scd_table.SCDTable.get_view/): get SCD view from a `SCDTable`
     """
 
     # documentation metadata

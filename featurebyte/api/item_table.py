@@ -30,26 +30,21 @@ if TYPE_CHECKING:
 
 class ItemTable(TableApiObject):
     """
-    ItemTable is an object connected with an item table that has a ‘one to many’ relationship with an event table.
-    Example:\n
-    - Order item table -> Order table\n
-    - Drug prescriptions -> Doctor visits.
+    An Item table is a type of FeatureByte table that represents a table in the data warehouse containing in-depth
+    details about a business event.
 
-    The table does not explicitly contain any timestamp, but is implicitly related to an event timestamp via its
-    relationship with the event table.
+    For instance, an Item table can contain information about Product Items purchased in Customer Orders or Drug
+    Prescriptions issued during Doctor Visits by Patients.
 
-    To register a new ItemTable, users are asked to provide:\n
-    - the name of the column of the item id\n
-    - the name of the column of the event id\n
-    - the name of the event table it is related to
+    Typically, an Item table has a 'one-to-many' relationship with an Event table. Despite not explicitly including a
+    timestamp, it is inherently linked to an event timestamp through its association with the Event table.
 
-    The ItemTable inherits the default FeatureJob setting of the Event table.
+    To create an Item table, it is necessary to identify the columns that represent the item key and the event key and
+    determine which Event table is associated with the Item table.
 
-    Like for Event Data, users are strongly encouraged to annotate the table by tagging entities and defining:\n
-    - the semantic of the table field\n
-    - critical data information on the data quality that requires cleaning before feature engineering
-
-    To create features from an ItemTable, users create an ItemView.
+    See Also
+    --------
+    - [create_item_table](/reference/featurebyte.api.source_table.SourceTable.create_item_table/): create item table from source table
     """
 
     # documentation metadata

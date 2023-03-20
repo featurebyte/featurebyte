@@ -26,9 +26,13 @@ class DimensionViewColumn(ViewColumn):
 
 class DimensionView(View):
     """
-    DimensionViews allow users to transform DimensionTable.
+    A `DimensionView` allows a user to transform a `DimensionTable`.
 
-    Transformations supported are the same as for EventView or ItemView except for lag that is not supported.
+    Transformations supported are the same as for `EventView` or `ItemView` except for lag that is not supported.
+
+    See Also
+    --------
+    - [dimension_table#get_view](/reference/featurebyte.api.dimension_table.DimensionTable.get_view/): get dimension view from a `DimensionTable`
     """
 
     # documentation metadata

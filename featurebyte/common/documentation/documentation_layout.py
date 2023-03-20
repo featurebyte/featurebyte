@@ -76,20 +76,20 @@ def _get_data_layout() -> List[DocLayoutItem]:
             "featurebyte.api.base_table.TableApiObject.save.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.DimensionTable.from_tabular_source"],
-            "featurebyte.DimensionTable.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.SourceTable.create_dimension_table"],
+            "featurebyte.SourceTable.create_dimension_table",
         ),
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.EventTable.from_tabular_source"],
-            "featurebyte.EventTable.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.SourceTable.create_event_table"],
+            "featurebyte.SourceTable.create_event_table",
         ),
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.ItemTable.from_tabular_source"],
-            "featurebyte.ItemTable.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.SourceTable.create_item_table"],
+            "featurebyte.SourceTable.create_item_table",
         ),
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.SlowlyChangingTable.from_tabular_source"],
-            "featurebyte.SlowlyChangingTable.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.SourceTable.create_scd_table"],
+            "featurebyte.SourceTable.create_scd_table",
         ),
         DocLayoutItem(
             [
@@ -278,8 +278,9 @@ def _get_entity_layout() -> List[DocLayoutItem]:
             [ENTITY, CATALOG, "featurebyte.Entity.get_by_id"], "featurebyte.Entity.get_by_id"
         ),
         DocLayoutItem([ENTITY, CATALOG, "featurebyte.Entity.list"], "featurebyte.Entity.list"),
+        DocLayoutItem([ENTITY, CREATE, "featurebyte.Entity.create"], "featurebyte.Entity.create"),
         DocLayoutItem(
-            [ENTITY, CREATE, "featurebyte.Entity"], "", "featurebyte.api.entity.Entity.md"
+            [ENTITY, CREATE, "featurebyte.Entity.get_or_create"], "featurebyte.Entity.get_or_create"
         ),
         DocLayoutItem([ENTITY, CREATE, "featurebyte.Entity.save"], "featurebyte.Entity.save"),
         DocLayoutItem(
@@ -844,6 +845,26 @@ def _get_view_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([VIEW], "featurebyte.View"),
         DocLayoutItem(
+            [VIEW, CREATE, "featurebyte.SCDTable.get_change_view"],
+            "featurebyte.SCDTable.get_change_view",
+        ),
+        DocLayoutItem(
+            [VIEW, CREATE, "featurebyte.DimensionTable.get_view"],
+            "featurebyte.DimensionTable.get_view",
+        ),
+        DocLayoutItem(
+            [VIEW, CREATE, "featurebyte.EventTable.get_view"],
+            "featurebyte.EventTable.get_view",
+        ),
+        DocLayoutItem(
+            [VIEW, CREATE, "featurebyte.SCDTable.get_view"],
+            "featurebyte.SCDTable.get_view",
+        ),
+        DocLayoutItem(
+            [VIEW, CREATE, "featurebyte.ItemTable.get_view"],
+            "featurebyte.ItemTable.get_view",
+        ),
+        DocLayoutItem(
             [VIEW, ENRICH, "featurebyte.EventView.add_feature"], "featurebyte.EventView.add_feature"
         ),
         DocLayoutItem(
@@ -1112,6 +1133,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         The layout for the Catalog module.
     """
     return [
+        DocLayoutItem([CATALOG], "featurebyte.Catalog"),
         DocLayoutItem(
             [CATALOG, ACTIVATE, "featurebyte.Catalog.activate"],
             "featurebyte.Catalog.activate",
