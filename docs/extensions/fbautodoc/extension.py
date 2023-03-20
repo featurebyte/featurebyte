@@ -557,11 +557,13 @@ class FBAutoDocProcessor(AutoDocProcessor):
         block = blocks.pop(0)
         m = self.RE.search(block)
         if m:
+            print("block1", block)
             block = block[m.end() :]  # removes the first line
 
         block, theRest = self.detab(block)
 
         if m:
+            print("block2", block)
             # get the resource descriptor
             # e.g. "featurebyte.api.feature.Feature", "featurebyte.api.feature.Feature::save"
             resource_descriptor = m.group(1)
@@ -592,6 +594,14 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 elif line.startswith(":members:"):
                     members = line.split()[1:] or None
                     self.render_members(docstring_elem, resource_details, members=members)
+                elif line.startswith(":api_to_use:"):
+                    api_to_use = line.split()[1]
+                    print("api_to_use", api_to_use)
+                    split_api_to_use = api_to_use.split(".")
+                    name_element = split_api_to_use[-1]
+                    path_element = ".".join(split_api_to_use[:-1]) + "."
+                    path_elem.text = path_element
+                    name_elem.text = name_element
 
         if theRest:
             # This block contained unindented line(s) after the first indented

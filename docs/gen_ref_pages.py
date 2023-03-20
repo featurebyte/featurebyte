@@ -301,11 +301,14 @@ def write_to_file(filepath, local_path, output):
             local_file.writelines(output)
 
 
-def build_markdown_format_str(obj_path, obj_type):
+def build_markdown_format_str(obj_path, obj_type, api_to_use):
     format_str = f"::: {obj_path}\n    :docstring:\n"
 
     if obj_type == "class":
         format_str += "    :members:\n"
+
+    if api_to_use:
+        format_str += f"    :api_to_use: {api_to_use}\n"
     return format_str
 
 
@@ -340,10 +343,13 @@ def get_paths_to_document():
 
     These should represent the fully qualified paths of the objects that we want to document.
     """
-    paths = set()
+    paths = {}
     for item in get_overall_layout():
         path = item.doc_path_override or item.api_path
-        paths.add(path.lower())
+        value = item.api_path
+        if value == "":
+            value = item.menu_header[-1]
+        paths[path.lower()] = value
     return paths
 
 
@@ -378,11 +384,15 @@ def generate_documentation_for_docs(doc_groups):
             # Skip if this is not a path we want to document.
             continue
 
+        api_to_use = paths_to_document.get(lookup_path, None)
+        if not api_to_use:
+            api_to_use = paths_to_document.get(doc_path.lower(), None)
+
         # add obj_path to reverse lookup map
         reverse_lookup_map[lookup_path] = doc_path
 
         # build string to write to file
-        format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type)
+        format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
 
         # write documentation page to file
         full_doc_path = Path("reference", doc_path)
