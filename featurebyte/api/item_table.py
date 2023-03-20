@@ -44,7 +44,7 @@ class ItemTable(TableApiObject):
 
     See Also
     --------
-    - [create_item_table](/reference/featurebyte.api.source_table.SourceTable.create_item_table/): create item table from data source
+    - [create_item_table](/reference/featurebyte.api.source_table.SourceTable.create_item_table/): create item table from source table
     """
 
     # documentation metadata

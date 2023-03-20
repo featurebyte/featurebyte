@@ -46,9 +46,9 @@ class ChangeView(View, GroupByMixin):
     - past_valid_from_timestamp
     - new_valid_from_timestamp (which is the event timestamp of the event view and equal to the effective, or start,
       timestamp of the SCD)
-    - the natural key of the SCD View
-    - past_NAME_OF_COLUMN: value of the column before the change
-    - new_NAME_OF_COLUMN: value of the column after the change
+    - the natural key of the SCDView
+    - past_<name_of_column_tracked>: value of the column before the change
+    - new_<name_of_column_tracked>: value of the column after the change
 
     To create this `ChangeView`, users need to provide:
 

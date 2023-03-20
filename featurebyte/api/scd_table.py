@@ -28,8 +28,8 @@ if TYPE_CHECKING:
 
 class SCDTable(TableApiObject):
     """
-    An SCD table is a type of FeatureByte table that represents a table in a data warehouse that contains data
-    that changes slowly and unpredictably over time.
+    An SCD (slowly changing dimension) table is a type of FeatureByte table that represents a table in a data warehouse
+    that contains data that changes slowly and unpredictably over time.
 
     There are two main types of SCDs: Type 1, which overwrites old data with new data, and Type 2, which maintains a
     history of changes by creating a new record for each change. FeatureByte only supports the use of Type 2 SCDs since
@@ -45,7 +45,7 @@ class SCDTable(TableApiObject):
 
     See Also
     --------
-    - [create_scd_table](/reference/featurebyte.api.source_table.SourceTable.create_scd_table/): create SCD table from data source
+    - [create_scd_table](/reference/featurebyte.api.source_table.SourceTable.create_scd_table/): create SCD table from source table
     """
 
     # documentation metadata

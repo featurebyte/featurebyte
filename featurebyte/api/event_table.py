@@ -48,7 +48,7 @@ class EventTable(TableApiObject):
 
     See Also
     --------
-    - [create_event_table](/reference/featurebyte.api.source_table.SourceTable.create_event_table/): create event table from data source
+    - [create_event_table](/reference/featurebyte.api.source_table.SourceTable.create_event_table/): create event table from source table
     """
 
     # documentation metadata

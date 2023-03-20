@@ -604,7 +604,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
     @typechecked
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
-        Construct summary info of the object.
+        Construct summary info of the object. This method is only available for objects that are saved in the
+        persistent data store.
 
         Parameters
         ----------
@@ -619,7 +620,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         Raises
         ------
         RecordRetrievalException
-            When the object not found or unexpected response status code.
+            When the object cannot be found, or we have received an unexpected response status code.
         """
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})

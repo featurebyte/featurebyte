@@ -31,14 +31,14 @@ class DimensionTable(TableApiObject):
 
     Using a Dimension table requires special attention. If the data in the table changes slowly, it is not advisable to
     use it because these changes can cause significant data leaks during model training and adversely affect the
-    inference performance. In such cases, it is recommended to use a Slowly Changing Dimension table of type
+    inference performance. In such cases, it is recommended to use a Slowly Changing Dimension (SCD) table of Type
     2 that maintains a history of changes.
 
     To create a Dimension Table in FeatureByte, it is necessary to identify which column represents the primary key.
 
     See Also
     --------
-    - [create_dimension_table](/reference/featurebyte.api.source_table.SourceTable.create_dimension_table/): create dimension table from data source
+    - [create_dimension_table](/reference/featurebyte.api.source_table.SourceTable.create_dimension_table/): create dimension table from source table
     """
 
     # documentation metadata
