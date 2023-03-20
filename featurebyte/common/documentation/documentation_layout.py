@@ -29,8 +29,6 @@ ANNOTATE = "Annotate"
 CATALOG = "Catalog"
 CREATE = "Create"
 DEFAULT_FEATURE_JOB = "DefaultFeatureJob"
-TABLE = "Table"
-TABLE_COLUMN = "TableColumn"
 DATA_SOURCE = "DataSource"
 ENRICH = "Enrich"
 ENTITY = "Entity"
@@ -45,13 +43,14 @@ LINEAGE = "Lineage"
 PREVIEW = "Preview"
 RELATIONSHIP = "Relationship"
 SERVING = "Serving"
+TABLE = "Table"
+TABLE_COLUMN = "TableColumn"
 TRANSFORMATION = "Transformation"
 TYPE = "Type"
 UPDATE = "Update"
 VERSIONING = "Versioning"
 VIEW = "View"
 VIEW_COLUMN = "ViewColumn"
-CATALOG = "Catalog"
 
 
 def _get_data_layout() -> List[DocLayoutItem]:
@@ -274,7 +273,6 @@ def _get_entity_layout() -> List[DocLayoutItem]:
         The layout for the entity documentation
     """
     return [
-        DocLayoutItem([ENTITY], "", "featurebyte.api.entity.Entity.md"),
         DocLayoutItem([ENTITY, CATALOG, "featurebyte.Entity.get"], "featurebyte.Entity.get"),
         DocLayoutItem(
             [ENTITY, CATALOG, "featurebyte.Entity.get_by_id"], "featurebyte.Entity.get_by_id"
@@ -314,7 +312,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         The layout for the feature documentation
     """
     return [
-        DocLayoutItem([FEATURE], "", "featurebyte.api.feature.Feature.md"),
         DocLayoutItem([FEATURE, CATALOG, "featurebyte.Feature.get"], "featurebyte.Feature.get"),
         DocLayoutItem(
             [FEATURE, CATALOG, "featurebyte.Feature.get_by_id"], "featurebyte.Feature.get_by_id"
@@ -797,7 +794,6 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
         The layout for the Relationship class.
     """
     return [
-        DocLayoutItem([RELATIONSHIP], "", "featurebyte.api.relationship.Relationship.md"),
         DocLayoutItem(
             [RELATIONSHIP, CATALOG, "featurebyte.Relationship.get"], "featurebyte.Relationship.get"
         ),
@@ -848,22 +844,6 @@ def _get_view_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([VIEW], "featurebyte.View"),
         DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.ChangeView.from_slowly_changing_data"],
-            "featurebyte.ChangeView.from_slowly_changing_data",
-        ),
-        DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.DimensionView.from_dimension_data"],
-            "featurebyte.DimensionView.from_dimension_data",
-        ),
-        DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.EventView.from_event_data"],
-            "featurebyte.EventView.from_event_data",
-        ),
-        DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.SlowlyChangingView.from_slowly_changing_data"],
-            "featurebyte.SlowlyChangingView.from_slowly_changing_data",
-        ),
-        DocLayoutItem(
             [VIEW, ENRICH, "featurebyte.EventView.add_feature"], "featurebyte.EventView.add_feature"
         ),
         DocLayoutItem(
@@ -904,10 +884,6 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [VIEW, INFO, "featurebyte.ItemView.event_id_column"],
             "featurebyte.ItemView.event_id_column",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "featurebyte.ItemView.from_item_data"],
-            "featurebyte.ItemView.from_item_data",
         ),
         DocLayoutItem(
             [VIEW, INFO, "featurebyte.ItemView.item_id_column"],
@@ -1138,7 +1114,6 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         The layout for the Catalog module.
     """
     return [
-        DocLayoutItem([CATALOG], "", "featurebyte.api.catalog.Catalog.md"),
         DocLayoutItem(
             [CATALOG, ACTIVATE, "featurebyte.Catalog.activate"],
             "featurebyte.Catalog.activate",
