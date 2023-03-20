@@ -320,7 +320,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        primary_entities=[
+        primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         tabular_data=[
@@ -436,7 +436,7 @@ def expected_feature_iet_info_fixture(feature_iet):
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        primary_entities=[
+        primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         tabular_data=[
@@ -536,7 +536,7 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        primary_entities=[
+        primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         tabular_data=[
@@ -567,7 +567,7 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        primary_entities=[
+        primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         tabular_data=[
@@ -617,7 +617,7 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        primary_entities=[
+        primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         tabular_data=[

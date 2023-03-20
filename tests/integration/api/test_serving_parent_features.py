@@ -275,9 +275,9 @@ def test_online_features(config, feature_list_with_child_entities):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_feature_info_primary_entities(feature_list_with_parent_child_features):
+def test_feature_info_primary_entity(feature_list_with_parent_child_features):
     """
-    Test that the primary_entities field is correctly populated in feature list info
+    Test that the primary_entity field is correctly populated in feature list info
     """
     info = feature_list_with_parent_child_features.info()
     assert info["entities"] == [
@@ -292,7 +292,7 @@ def test_feature_info_primary_entities(feature_list_with_parent_child_features):
             "catalog_name": "default",
         },
     ]
-    assert info["primary_entities"] == [
+    assert info["primary_entity"] == [
         {
             "catalog_name": "default",
             "name": "TEST_SERVING_PARENT_FEATURES_customer",
@@ -302,11 +302,11 @@ def test_feature_info_primary_entities(feature_list_with_parent_child_features):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_online_serving_code_uses_primary_entities(
+def test_online_serving_code_uses_primary_entity(
     feature_list_with_parent_child_features, update_fixtures
 ):
     """
-    Check that online serving code is based on primary entities
+    Check that online serving code is based on primary entity
     """
     online_serving_code = feature_list_with_parent_child_features.get_online_serving_code("python")
     expected_signature = 'request_features([{"serving_cust_id": 1000}])'

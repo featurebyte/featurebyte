@@ -11,13 +11,13 @@ from featurebyte.models.entity import EntityModel
 class RelationshipAnalysisService:
     """
     RelationshipAnalysisService is responsible for deriving feature or feature list attributes such
-    as primary entities, serving entities, etc based on the relationships between entities.
+    as primary entity, serving entity, etc based on the relationships between entities.
     """
 
     @staticmethod
-    def derive_primary_entities(entities: List[EntityModel]) -> List[EntityModel]:
+    def derive_primary_entity(entities: List[EntityModel]) -> List[EntityModel]:
         """
-        Derive primary entities from a list of entities
+        Derive the primary entity from a list of entities
 
         Parameters
         ----------
@@ -35,9 +35,9 @@ class RelationshipAnalysisService:
             all_ancestors_ids.update(entity.ancestor_ids)
 
         # Primary entities are entities that are not ancestors of any other entities
-        primary_entities = {}
+        primary_entity = {}
         for entity in entities:
             if entity.id not in all_ancestors_ids:
-                primary_entities[entity.id] = entity
+                primary_entity[entity.id] = entity
 
-        return sorted(primary_entities.values(), key=lambda e: e.id)
+        return sorted(primary_entity.values(), key=lambda e: e.id)

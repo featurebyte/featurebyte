@@ -1178,7 +1178,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         info = self.info()
         entities = {
             Entity.get(entity["name"]).id: {"serving_name": entity["serving_names"]}
-            for entity in info["primary_entities"]
+            for entity in info["primary_entity"]
         }
         for tabular_source in info["tabular_data"]:
             data = Table.get(tabular_source["name"])
