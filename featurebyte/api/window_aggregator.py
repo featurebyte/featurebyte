@@ -1,0 +1,235 @@
+"""
+This module contains window aggregator related class
+"""
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Type, cast
+
+from featurebyte.api.base_aggregator import BaseAggregator
+from featurebyte.api.change_view import ChangeView
+from featurebyte.api.event_view import EventView
+from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.item_view import ItemView
+from featurebyte.api.view import View
+from featurebyte.api.window_validator import validate_window
+from featurebyte.common.typing import OptionalScalar
+from featurebyte.enum import AggFunc
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.agg_func import construct_agg_func
+from featurebyte.query_graph.transform.reconstruction import (
+    GroupByNode,
+    add_pruning_sensitive_operation,
+)
+
+
+class WindowAggregator(BaseAggregator):
+    """
+    WindowAggregator implements the aggregate_over method for GroupBy
+    """
+
+    @property
+    def supported_views(self) -> List[Type[View]]:
+        return [EventView, ItemView, ChangeView]
+
+    @property
+    def aggregation_method_name(self) -> str:
+        return "aggregate_over"
+
+    def aggregate_over(
+        self,
+        value_column: Optional[str] = None,
+        method: Optional[str] = None,
+        windows: Optional[List[Optional[str]]] = None,
+        feature_names: Optional[List[str]] = None,
+        timestamp_column: Optional[str] = None,
+        feature_job_setting: Optional[Dict[str, str]] = None,
+        fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
+    ) -> FeatureGroup:
+        """
+        Aggregate given value_column for each group specified in keys over a list of time windows
+
+        Parameters
+        ----------
+        value_column: Optional[str]
+            Column to be aggregated
+        method: str
+            Aggregation method
+        windows: List[str | None]
+            List of aggregation window sizes. Use None to indicated unbounded window size (only
+            applicable to "latest" method)
+        feature_names: List[str]
+            Output feature names
+        timestamp_column: Optional[str]
+            Timestamp column used to specify the window (if not specified, event table timestamp is used)
+        feature_job_setting: Optional[Dict[str, str]]
+            Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
+            feature job setting parameters
+        fill_value: OptionalScalar
+            Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
+
+        Returns
+        -------
+        FeatureGroup
+        """
+
+        self._validate_parameters(
+            value_column=value_column,
+            method=method,
+            windows=windows,
+            feature_names=feature_names,
+            feature_job_setting=feature_job_setting,
+            fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
+        )
+        self.view.validate_aggregate_over_parameters(
+            keys=self.keys,
+            value_column=value_column,
+        )
+
+        node_params = self._prepare_node_parameters(
+            value_column=value_column,
+            method=method,
+            windows=windows,
+            feature_names=feature_names,
+            timestamp_column=timestamp_column,
+            value_by_column=self.category,
+            feature_job_setting=feature_job_setting,
+        )
+        groupby_node = add_pruning_sensitive_operation(
+            graph=self.view.graph,
+            node_cls=GroupByNode,
+            node_params=node_params,
+            input_node=self.view.node,
+        )
+        assert isinstance(feature_names, list)
+        assert method is not None
+        agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
+
+        items = []
+        for feature_name in feature_names:
+            feature = self._project_feature_from_groupby_node(
+                agg_method=agg_method,
+                feature_name=feature_name,
+                groupby_node=groupby_node,
+                method=method,
+                value_column=value_column,
+                fill_value=fill_value,
+                skip_fill_na=skip_fill_na,
+            )
+            items.append(feature)
+        feature_group = FeatureGroup(items)
+        return feature_group
+
+    def _validate_parameters(
+        self,
+        value_column: Optional[str],
+        method: Optional[str],
+        windows: Optional[list[Optional[str]]],
+        feature_names: Optional[list[str]],
+        feature_job_setting: Optional[Dict[str, str]],
+        fill_value: OptionalScalar,
+        skip_fill_na: bool,
+    ) -> None:
+
+        self._validate_method_and_value_column(method=method, value_column=value_column)
+        self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
+
+        if not isinstance(windows, list) or len(windows) == 0:
+            raise ValueError(f"windows is required and should be a non-empty list; got {windows}")
+
+        if not isinstance(feature_names, list):
+            raise ValueError(
+                f"feature_names is required and should be a non-empty list; got {feature_names}"
+            )
+
+        if len(windows) != len(feature_names):
+            raise ValueError(
+                "Window length must be the same as the number of output feature names."
+            )
+
+        if len(windows) != len(set(feature_names)) or len(set(windows)) != len(feature_names):
+            raise ValueError("Window sizes or feature names contains duplicated value(s).")
+
+        number_of_unbounded_windows = len([w for w in windows if w is None])
+
+        if number_of_unbounded_windows > 0:
+
+            if method != AggFunc.LATEST:
+                raise ValueError('Unbounded window is only supported for the "latest" method')
+
+            if self.category is not None:
+                raise ValueError("category is not supported for aggregation with unbounded window")
+
+        if windows is not None:
+            parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
+            for window in windows:
+                if window is not None:
+                    validate_window(window, parsed_feature_job_setting.frequency)
+
+    def _get_job_setting_params(
+        self, feature_job_setting: Optional[dict[str, str]]
+    ) -> FeatureJobSetting:
+        feature_job_setting = feature_job_setting or {}
+        frequency = feature_job_setting.get("frequency")
+        time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
+        blind_spot = feature_job_setting.get("blind_spot")
+
+        # Check that feature job setting is not specified partially (must be all or nothing)
+        settings_overridden = [
+            frequency is not None,
+            time_modulo_frequency is not None,
+            blind_spot is not None,
+        ]
+        is_settings_provided = any(settings_overridden)
+        if is_settings_provided and not all(settings_overridden):
+            raise ValueError(
+                "All of frequency, time_modulo_frequency and blind_spot must be specified in"
+                " feature_job_setting"
+            )
+
+        if not is_settings_provided:
+            default_setting = self.view.default_feature_job_setting
+            if default_setting is None:
+                raise ValueError(
+                    f"feature_job_setting is required as the {type(self.view).__name__} does not "
+                    "have a default feature job setting"
+                )
+            frequency = default_setting.frequency
+            time_modulo_frequency = default_setting.time_modulo_frequency
+            blind_spot = default_setting.blind_spot
+
+        return FeatureJobSetting(
+            frequency=frequency,
+            time_modulo_frequency=time_modulo_frequency,
+            blind_spot=blind_spot,
+        )
+
+    def _prepare_node_parameters(
+        self,
+        value_column: Optional[str],
+        method: Optional[str],
+        windows: Optional[list[Optional[str]]],
+        feature_names: Optional[list[str]],
+        timestamp_column: Optional[str] = None,
+        value_by_column: Optional[str] = None,
+        feature_job_setting: Optional[dict[str, str]] = None,
+    ) -> dict[str, Any]:
+
+        parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
+        return {
+            "keys": self.keys,
+            "parent": value_column,
+            "agg_func": method,
+            "value_by": value_by_column,
+            "windows": windows,
+            "timestamp": timestamp_column or self.view.timestamp_column,
+            "blind_spot": parsed_feature_job_setting.blind_spot_seconds,
+            "time_modulo_frequency": parsed_feature_job_setting.time_modulo_frequency_seconds,
+            "frequency": parsed_feature_job_setting.frequency_seconds,
+            "names": feature_names,
+            "serving_names": self.serving_names,
+            "entity_ids": self.entity_ids,
+        }
