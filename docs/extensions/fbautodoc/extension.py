@@ -678,9 +678,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
         if resource_details.returns:
             returns = resource_details.returns
             if returns.type not in NONE_TYPES:
-                content = _render_list_item_with_multiple_paragraphs(
-                    returns.type, [returns.description]
-                )
+                bullet_point = [returns.description] if returns.description else []
+                content = _render_list_item_with_multiple_paragraphs(returns.type, bullet_point)
                 _render("Returns", content)
 
         # Render raises
