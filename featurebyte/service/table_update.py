@@ -293,17 +293,17 @@ class TableUpdateService(BaseService):
     async def _update_entity_relationship(
         self,
         document: TableModel,
-        old_primary_entity: set[ObjectId],
+        old_primary_entities: set[ObjectId],
         old_parent_entities: set[ObjectId],
-        new_primary_entity: set[ObjectId],
+        new_primary_entities: set[ObjectId],
         new_parent_entities: set[ObjectId],
     ) -> None:
-        new_diff_old_primary_entity = new_primary_entity.difference(old_primary_entity)
-        old_diff_new_primary_entity = old_primary_entity.difference(new_primary_entity)
-        common_primary_entity = new_primary_entity.intersection(old_primary_entity)
-        if new_diff_old_primary_entity:
+        new_diff_old_primary_entities = new_primary_entities.difference(old_primary_entities)
+        old_diff_new_primary_entities = old_primary_entities.difference(new_primary_entities)
+        common_primary_entities = new_primary_entities.intersection(old_primary_entities)
+        if new_diff_old_primary_entities:
             # new primary entities are introduced
-            for entity_id in new_diff_old_primary_entity:
+            for entity_id in new_diff_old_primary_entities:
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
                 _, new_parent_entity_ids = self._include_parent_entities(
                     parents=primary_entity.parents,
@@ -324,9 +324,9 @@ class TableUpdateService(BaseService):
                     entity_id, document.id, new_parent_entity_ids
                 )
 
-        if old_diff_new_primary_entity:
+        if old_diff_new_primary_entities:
             # old primary entities are removed
-            for entity_id in old_diff_new_primary_entity:
+            for entity_id in old_diff_new_primary_entities:
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
                 _, removed_parent_entity_ids = self._exclude_parent_entities(
                     parents=primary_entity.parents,
@@ -342,9 +342,9 @@ class TableUpdateService(BaseService):
                 # Remove relationship info links for old parent entity relationships
                 await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
 
-        if common_primary_entity:
+        if common_primary_entities:
             # change of non-primary entities
-            for entity_id in common_primary_entity:
+            for entity_id in common_primary_entities:
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
                 parents, removed_parent_entity_ids = self._exclude_parent_entities(
                     parents=primary_entity.parents,
@@ -400,9 +400,9 @@ class TableUpdateService(BaseService):
         primary_keys = document.primary_key_columns
         entity_update: dict[ObjectId, int] = defaultdict(int)
         primary_entity_update: dict[ObjectId, int] = defaultdict(int)
-        old_primary_entity: set[ObjectId] = set()
+        old_primary_entities: set[ObjectId] = set()
         old_parent_entities: set[ObjectId] = set()
-        new_primary_entity: set[ObjectId] = set()
+        new_primary_entities: set[ObjectId] = set()
         new_parent_entities: set[ObjectId] = set()
         for column_info in document.columns_info:
             if column_info.entity_id:
@@ -410,7 +410,7 @@ class TableUpdateService(BaseService):
                 entity_update[column_info.entity_id] -= 1
                 if column_info.name in primary_keys:
                     primary_entity_update[column_info.entity_id] -= 1
-                    old_primary_entity.add(column_info.entity_id)
+                    old_primary_entities.add(column_info.entity_id)
                 else:
                     old_parent_entities.add(column_info.entity_id)
 
@@ -420,7 +420,7 @@ class TableUpdateService(BaseService):
                 entity_update[column_info.entity_id] += 1
                 if column_info.name in primary_keys:
                     primary_entity_update[column_info.entity_id] += 1
-                    new_primary_entity.add(column_info.entity_id)
+                    new_primary_entities.add(column_info.entity_id)
                 else:
                     new_parent_entities.add(column_info.entity_id)
 
@@ -432,8 +432,8 @@ class TableUpdateService(BaseService):
         )
         await self._update_entity_relationship(
             document=document,
-            old_primary_entity=old_primary_entity,
+            old_primary_entities=old_primary_entities,
             old_parent_entities=old_parent_entities,
-            new_primary_entity=new_primary_entity,
+            new_primary_entities=new_primary_entities,
             new_parent_entities=new_parent_entities,
         )

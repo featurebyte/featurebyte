@@ -322,7 +322,7 @@ def event_table_entity_initializer_fixture(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "old_primary_entity,old_parent_entities,new_primary_entity,new_parent_entities,"
+    "old_primary_entities,old_parent_entities,new_primary_entities,new_parent_entities,"
     "expected_old_primary_parents,expected_new_primary_parents",
     [
         # table has no entity at all
@@ -360,29 +360,29 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
     event_table,
     entity_service,
     entity_docs,
-    old_primary_entity,
+    old_primary_entities,
     old_parent_entities,
-    new_primary_entity,
+    new_primary_entities,
     new_parent_entities,
     expected_old_primary_parents,
     expected_new_primary_parents,
 ):
     """Test _update_entity_relationship"""
     # setup old primary entity
-    old_primary_entity = convert_entity_name_to_ids(old_primary_entity, entity_docs)
+    old_primary_entities = convert_entity_name_to_ids(old_primary_entities, entity_docs)
     old_parent_entities = convert_entity_name_to_ids(old_parent_entities, entity_docs)
-    new_primary_entity = convert_entity_name_to_ids(new_primary_entity, entity_docs)
+    new_primary_entities = convert_entity_name_to_ids(new_primary_entities, entity_docs)
     new_parent_entities = convert_entity_name_to_ids(new_parent_entities, entity_docs)
-    for entity_id in old_primary_entity:
+    for entity_id in old_primary_entities:
         # Initialize the primary entity
         await event_table_entity_initializer(entity_id, old_parent_entities)
 
     # call update entity relationship
     await table_update_service._update_entity_relationship(
         document=event_table,
-        old_primary_entity=old_primary_entity,
+        old_primary_entities=old_primary_entities,
         old_parent_entities=old_parent_entities,
-        new_primary_entity=new_primary_entity,
+        new_primary_entities=new_primary_entities,
         new_parent_entities=new_parent_entities,
     )
 
@@ -391,7 +391,7 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
         # helper function used to sort list of parent entity
         return parent_entity.id
 
-    for entity_id in old_primary_entity:
+    for entity_id in old_primary_entities:
         primary_entity = await entity_service.get_document(document_id=entity_id)
         expected_parent_ids = convert_entity_name_to_ids(expected_old_primary_parents, entity_docs)
         expected_parents = [
@@ -402,7 +402,7 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
             expected_parents, key=key_sorter
         )
 
-    for entity_id in new_primary_entity:
+    for entity_id in new_primary_entities:
         primary_entity = await entity_service.get_document(document_id=entity_id)
         expected_parent_ids = convert_entity_name_to_ids(expected_new_primary_parents, entity_docs)
         expected_parents = [
@@ -436,7 +436,7 @@ def assert_relationships_match(relationship_list_a, relationship_list_b):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "old_primary_entity,old_parent_entities,new_primary_entity,new_parent_entities,"
+    "old_primary_entities,old_parent_entities,new_primary_entities,new_parent_entities,"
     "expected_additions,expected_removals",
     [
         # table has no entity at all
@@ -475,9 +475,9 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
     entity_docs,
     user,
     relationship_info_service,
-    old_primary_entity,
+    old_primary_entities,
     old_parent_entities,
-    new_primary_entity,
+    new_primary_entities,
     new_parent_entities,
     expected_additions,
     expected_removals,
@@ -486,7 +486,7 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
     Test _update_entity_relationship when relationship infos are added
     """
     # setup old primary entity
-    old_primary_entity_ids = convert_entity_name_to_ids(old_primary_entity, entity_docs)
+    old_primary_entity_ids = convert_entity_name_to_ids(old_primary_entities, entity_docs)
     old_parent_entity_ids = convert_entity_name_to_ids(old_parent_entities, entity_docs)
 
     # Initialize entities
@@ -496,7 +496,7 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
 
     # Create tuples of expected relationships
     initial_relationships = []
-    for old_primary_entity in old_primary_entity:
+    for old_primary_entity in old_primary_entities:
         for old_parent_entity in old_parent_entities:
             initial_relationships.append((old_primary_entity, old_parent_entity))
 
@@ -507,9 +507,9 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
     # Call update entity relationship
     await table_update_service._update_entity_relationship(
         document=event_table,
-        old_primary_entity=old_primary_entity_ids,
+        old_primary_entities=old_primary_entity_ids,
         old_parent_entities=old_parent_entity_ids,
-        new_primary_entity=convert_entity_name_to_ids(new_primary_entity, entity_docs),
+        new_primary_entities=convert_entity_name_to_ids(new_primary_entities, entity_docs),
         new_parent_entities=convert_entity_name_to_ids(new_parent_entities, entity_docs),
     )
 
