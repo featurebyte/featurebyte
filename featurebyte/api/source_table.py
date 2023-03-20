@@ -503,7 +503,7 @@ class SourceTable(AbstractTableData):
         Parameters
         ----------
         name: str
-            SlowlyChanging table name
+            SCDTable name
         natural_key_column: str
             Natural key column from the given tabular source
         effective_timestamp_column: str

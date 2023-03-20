@@ -58,7 +58,7 @@ def test_constructor__wrong_input_type(snowflake_event_view):
     expected_msg = (
         'type of argument "obj" must be one of (featurebyte.api.event_view.EventView, '
         "featurebyte.api.item_view.ItemView, featurebyte.api.change_view.ChangeView, "
-        "featurebyte.api.scd_view.SlowlyChangingView); got bool instead"
+        "featurebyte.api.scd_view.SCDView); got bool instead"
     )
     assert expected_msg in str(exc.value)
 

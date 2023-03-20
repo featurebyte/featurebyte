@@ -100,7 +100,7 @@ class DocGroupKey:
     --------
     DocGroupKey(
         module_path='featurebyte.api.scd_view',
-        class_name='SlowlyChangingViewColumn'
+        class_name='SCDViewColumn'
     )
 
     DocGroupKey(

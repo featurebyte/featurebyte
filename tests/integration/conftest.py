@@ -1178,7 +1178,7 @@ def scd_data_tabular_source_fixture(
 @pytest.fixture(name="scd_table_name", scope="session")
 def scd_table_name_fixture(source_type):
     """
-    Fixture for the SlowlyChangingData name
+    Fixture for the SCDTable name
     """
     return f"{source_type}_scd_table"
 
@@ -1191,7 +1191,7 @@ def scd_table_fixture(
     status_entity,
 ):
     """
-    Fixture for a SlowlyChangingData in integration tests
+    Fixture for a SCDTable in integration tests
     """
     scd_table = scd_data_tabular_source.create_scd_table(
         name=scd_table_name,

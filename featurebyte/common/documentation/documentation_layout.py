@@ -890,24 +890,24 @@ def _get_view_layout() -> List[DocLayoutItem]:
             "featurebyte.ItemView.item_id_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.SlowlyChangingView.current_flag_column"],
-            "featurebyte.SlowlyChangingView.current_flag_column",
+            [VIEW, INFO, "featurebyte.SCDView.current_flag_column"],
+            "featurebyte.SCDView.current_flag_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.SlowlyChangingView.effective_timestamp_column"],
-            "featurebyte.SlowlyChangingView.effective_timestamp_column",
+            [VIEW, INFO, "featurebyte.SCDView.effective_timestamp_column"],
+            "featurebyte.SCDView.effective_timestamp_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.SlowlyChangingView.end_timestamp_column"],
-            "featurebyte.SlowlyChangingView.end_timestamp_column",
+            [VIEW, INFO, "featurebyte.SCDView.end_timestamp_column"],
+            "featurebyte.SCDView.end_timestamp_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.SlowlyChangingView.natural_key_column"],
-            "featurebyte.SlowlyChangingView.natural_key_column",
+            [VIEW, INFO, "featurebyte.SCDView.natural_key_column"],
+            "featurebyte.SCDView.natural_key_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.SlowlyChangingView.surrogate_key_column"],
-            "featurebyte.SlowlyChangingView.surrogate_key_column",
+            [VIEW, INFO, "featurebyte.SCDView.surrogate_key_column"],
+            "featurebyte.SCDView.surrogate_key_column",
         ),
         DocLayoutItem([VIEW, INFO, "featurebyte.View.columns"], "featurebyte.View.columns"),
         DocLayoutItem(
@@ -938,9 +938,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, TYPE, "featurebyte.DimensionView"], "featurebyte.DimensionView"),
         DocLayoutItem([VIEW, TYPE, "featurebyte.EventView"], "featurebyte.EventView"),
         DocLayoutItem([VIEW, TYPE, "featurebyte.ItemView"], "featurebyte.ItemView"),
-        DocLayoutItem(
-            [VIEW, TYPE, "featurebyte.SlowlyChangingView"], "featurebyte.SlowlyChangingView"
-        ),
+        DocLayoutItem([VIEW, TYPE, "featurebyte.SCDView"], "featurebyte.SCDView"),
     ]
 
 

@@ -7,7 +7,7 @@ from typing import Any, ClassVar
 
 from pydantic import Field
 
-from featurebyte.api.scd_view import SlowlyChangingView
+from featurebyte.api.scd_view import SCDView
 from featurebyte.api.view import View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
@@ -80,10 +80,10 @@ class DimensionView(View):
         Raises
         ------
         JoinViewMismatchError
-            raised when the other view is a slowly changing view
+            raised when the other view is a slowly changing dimension view
         """
-        if isinstance(other_view, SlowlyChangingView):
-            logger.error("columns from a SlowlyChangingView can’t be added to a DimensionView")
+        if isinstance(other_view, SCDView):
+            logger.error("columns from a SCDView can’t be added to a DimensionView")
             raise JoinViewMismatchError
 
     def get_join_column(self) -> str:

@@ -189,7 +189,7 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_scd_lookup_feature(event_table, dimension_table, scd_table, scd_dataframe):
     """
-    Test creating lookup feature from a SlowlyChangingView
+    Test creating lookup feature from a SCDView
     """
     # SCD lookup feature
     scd_view = scd_table.get_view()
@@ -245,7 +245,7 @@ def test_scd_lookup_feature(event_table, dimension_table, scd_table, scd_datafra
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_scd_lookup_feature_with_offset(scd_table, scd_dataframe):
     """
-    Test creating lookup feature from a SlowlyChangingView with offset
+    Test creating lookup feature from a SCDView with offset
     """
     # SCD lookup feature
     offset = "90d"
@@ -273,7 +273,7 @@ def test_scd_lookup_feature_with_offset(scd_table, scd_dataframe):
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_asat(scd_table, scd_dataframe):
     """
-    Test aggregate_asat aggregation on SlowlyChangingView
+    Test aggregate_asat aggregation on SCDView
     """
     scd_view = scd_table.get_view()
     feature = scd_view.groupby("User Status").aggregate_asat(
@@ -334,7 +334,7 @@ def test_aggregate_asat(scd_table, scd_dataframe):
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
     """
-    Test aggregate_asat aggregation on SlowlyChangingView without entity
+    Test aggregate_asat aggregation on SCDView without entity
     """
     scd_view = scd_table.get_view()
     feature = scd_view.groupby([]).aggregate_asat(
@@ -385,7 +385,7 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
 @pytest.fixture(name="scd_table_with_minimal_cols", scope="session")
 def snowflake_scd_table_fixture_with_minimal_cols(source_type, scd_data_tabular_source):
     """
-    Fixture for a SlowlyChangingData in integration tests
+    Fixture for a SCDTable in integration tests
     """
     return scd_data_tabular_source.create_scd_table(
         name=f"{source_type}_scd_data_with_minimal_cols",
