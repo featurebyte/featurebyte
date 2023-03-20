@@ -390,7 +390,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 exc_class = import_resource(f"{resource.__module__}.{exc_type.type_name}")
                 exc_class = self.format_param_type(exc_class)
             except ValueError:
-                exc_class = str(exc_type)
+                exc_class = str(exc_type.type_name)
             raises.append(
                 ExceptionDetails(
                     type=exc_class,
@@ -671,7 +671,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
         if resource_details.raises:
             content = "\n".join(
                 [
-                    f"- **{exc_type.type}**\n> {exc_type.description}\n"
+                    f"- **{exc_type.type}**\n{exc_type.description}\n"
                     for exc_type in resource_details.raises
                 ]
             )
