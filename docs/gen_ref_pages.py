@@ -361,7 +361,12 @@ def generate_documentation_for_docs(doc_groups):
         is_str = "StringAccessor" in doc_path
         is_cd = "CountDictAccessor" in doc_path
         # TODO: fix the str/cd hacks
-        if lookup_path not in paths_to_document and not is_str and not is_cd:
+        if (
+            lookup_path not in paths_to_document
+            and doc_path.lower() not in paths_to_document
+            and not is_str
+            and not is_cd
+        ):
             # Skip if this is not a path we want to document.
             continue
 
