@@ -5,13 +5,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, cast
 
-from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
-from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.event_table import EventTable
-from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import join_tabular_data_ids
 from featurebyte.common.validator import construct_data_model_root_validator
