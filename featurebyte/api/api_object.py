@@ -604,21 +604,22 @@ class ApiObject(FeatureByteBaseDocumentModel):
     @typechecked
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
-        Construct summary info of the API object
+        Construct summary info of the object.
 
         Parameters
         ----------
         verbose: bool
-            Control verbose level of the summary
+            Control verbose level of the summary.
 
         Returns
         -------
         Dict[str, Any]
+            Key-value mapping of properties of the object.
 
         Raises
         ------
         RecordRetrievalException
-            When the object not found or unexpected response status code
+            When the object not found or unexpected response status code.
         """
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
