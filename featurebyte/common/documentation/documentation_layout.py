@@ -273,7 +273,6 @@ def _get_entity_layout() -> List[DocLayoutItem]:
         The layout for the entity documentation
     """
     return [
-        DocLayoutItem([ENTITY], "", "featurebyte.api.entity.Entity.md"),
         DocLayoutItem([ENTITY, CATALOG, "featurebyte.Entity.get"], "featurebyte.Entity.get"),
         DocLayoutItem(
             [ENTITY, CATALOG, "featurebyte.Entity.get_by_id"], "featurebyte.Entity.get_by_id"
@@ -313,7 +312,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         The layout for the feature documentation
     """
     return [
-        DocLayoutItem([FEATURE], "", "featurebyte.api.feature.Feature.md"),
         DocLayoutItem([FEATURE, CATALOG, "featurebyte.Feature.get"], "featurebyte.Feature.get"),
         DocLayoutItem(
             [FEATURE, CATALOG, "featurebyte.Feature.get_by_id"], "featurebyte.Feature.get_by_id"
@@ -796,7 +794,6 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
         The layout for the Relationship class.
     """
     return [
-        DocLayoutItem([RELATIONSHIP], "", "featurebyte.api.relationship.Relationship.md"),
         DocLayoutItem(
             [RELATIONSHIP, CATALOG, "featurebyte.Relationship.get"], "featurebyte.Relationship.get"
         ),
@@ -1117,7 +1114,6 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         The layout for the Catalog module.
     """
     return [
-        DocLayoutItem([CATALOG], "", "featurebyte.api.catalog.Catalog.md"),
         DocLayoutItem(
             [CATALOG, ACTIVATE, "featurebyte.Catalog.activate"],
             "featurebyte.Catalog.activate",
