@@ -844,6 +844,26 @@ def _get_view_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([VIEW], "featurebyte.View"),
         DocLayoutItem(
+            [VIEW, CREATE, "featurebyte.SCDTable.get_change_view"],
+            "featurebyte.SCDTable.get_change_view",
+        ),
+        DocLayoutItem(
+            [VIEW, CREATE, "featurebyte.DimensionTable.get_view"],
+            "featurebyte.DimensionTable.get_view",
+        ),
+        DocLayoutItem(
+            [VIEW, CREATE, "featurebyte.EventTable.get_view"],
+            "featurebyte.EventTable.get_view",
+        ),
+        DocLayoutItem(
+            [VIEW, CREATE, "featurebyte.SCDTable.get_view"],
+            "featurebyte.SCDTable.get_view",
+        ),
+        DocLayoutItem(
+            [VIEW, CREATE, "featurebyte.ItemTable.get_view"],
+            "featurebyte.ItemTable.get_view",
+        ),
+        DocLayoutItem(
             [VIEW, ENRICH, "featurebyte.EventView.add_feature"], "featurebyte.EventView.add_feature"
         ),
         DocLayoutItem(
