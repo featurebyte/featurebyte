@@ -570,6 +570,10 @@ async def _update_table_columns_info(
     expected_parents = [ParentEntity(id=parent_entity.id, table_type=table.type, table_id=table.id)]
     assert updated_child_entity.parents == expected_parents
 
+    # check updated ancestor_ids value
+    expected_ancestor_ids = [parent_entity.id]
+    assert updated_child_entity.ancestor_ids == expected_ancestor_ids
+
 
 @pytest.mark.asyncio
 async def test_event_table_update_columns_info__entity_relationship(
