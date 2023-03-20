@@ -9,7 +9,7 @@ from typeguard import typechecked
 
 from featurebyte.api.base_aggregator import BaseAggregator
 from featurebyte.api.feature import Feature
-from featurebyte.api.scd_view import SlowlyChangingView
+from featurebyte.api.scd_view import SCDView
 from featurebyte.api.view import View
 from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import OptionalScalar
@@ -25,7 +25,7 @@ class AsAtAggregator(BaseAggregator):
 
     @property
     def supported_views(self) -> List[Type[View]]:
-        return [SlowlyChangingView]
+        return [SCDView]
 
     @property
     def aggregation_method_name(self) -> str:
@@ -88,7 +88,7 @@ class AsAtAggregator(BaseAggregator):
             skip_fill_na=skip_fill_na,
         )
 
-        view = cast(SlowlyChangingView, self.view)
+        view = cast(SCDView, self.view)
         node_params = {
             "keys": self.keys,
             "parent": value_column,
@@ -144,7 +144,7 @@ class AsAtAggregator(BaseAggregator):
         if self.category is not None:
             raise ValueError("category is not supported for aggregate_asat")
 
-        view = cast(SlowlyChangingView, self.view)
+        view = cast(SCDView, self.view)
         for key in self.keys:
             if key == view.natural_key_column:
                 raise ValueError(

@@ -14,7 +14,7 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.item_view import ItemView
-from featurebyte.api.scd_view import SlowlyChangingView
+from featurebyte.api.scd_view import SCDView
 from featurebyte.api.simple_aggregator import SimpleAggregator
 from featurebyte.api.window_aggregator import WindowAggregator
 from featurebyte.common.doc_util import FBAutoDoc
@@ -33,7 +33,7 @@ class GroupBy:
     @typechecked
     def __init__(
         self,
-        obj: Union[EventView, ItemView, ChangeView, SlowlyChangingView],
+        obj: Union[EventView, ItemView, ChangeView, SCDView],
         keys: Union[str, List[str]],
         category: Optional[str] = None,
     ):
