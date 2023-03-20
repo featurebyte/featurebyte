@@ -28,7 +28,7 @@ class ViewType(StrEnum):
     ITEM_VIEW = "item_view"
     EVENT_VIEW = "event_view"
     DIMENSION_VIEW = "dimension_view"
-    SLOWLY_CHANGING_VIEW = "slowly_changing_view"
+    SCD_VIEW = "scd_view"
 
 
 class BaseViewTestSuite:
@@ -51,7 +51,7 @@ class BaseViewTestSuite:
             ViewType.DIMENSION_VIEW: "snowflake_dimension_view",
             ViewType.EVENT_VIEW: "snowflake_event_view",
             ViewType.ITEM_VIEW: "snowflake_item_view",
-            ViewType.SLOWLY_CHANGING_VIEW: "snowflake_scd_view",
+            ViewType.SCD_VIEW: "snowflake_scd_view",
         }
         if self.view_type not in view_type_map:
             pytest.fail(
@@ -66,7 +66,7 @@ class BaseViewTestSuite:
             ViewType.DIMENSION_VIEW: "snowflake_dimension_table",
             ViewType.EVENT_VIEW: "snowflake_event_table",
             ViewType.ITEM_VIEW: "snowflake_item_table",
-            ViewType.SLOWLY_CHANGING_VIEW: "snowflake_scd_table",
+            ViewType.SCD_VIEW: "snowflake_scd_table",
         }
         if self.view_type not in data_type_map:
             pytest.fail(

@@ -1,25 +1,25 @@
 """
-Unit tests for SlowlyChangingView class
+Unit tests for SCDView class
 """
 import textwrap
 
 import pytest
 
-from featurebyte.api.scd_view import SlowlyChangingView
+from featurebyte.api.scd_view import SCDView
 from featurebyte.exception import JoinViewMismatchError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import check_sdk_code_generation, get_node
 
 
-class TestSlowlyChangingView(BaseViewTestSuite):
+class TestSCDView(BaseViewTestSuite):
     """
-    SlowlyChangingView test suite
+    SCDView test suite
     """
 
     protected_columns = ["col_int", "col_text", "effective_timestamp", "is_active"]
-    view_type = ViewType.SLOWLY_CHANGING_VIEW
+    view_type = ViewType.SCD_VIEW
     col = "cust_id"
-    view_class = SlowlyChangingView
+    view_class = SCDView
     bool_col = "col_boolean"
     expected_view_with_raw_accessor_sql = """
     SELECT
@@ -136,7 +136,7 @@ def test_event_view_join_scd_view(
 
 def test_scd_view_as_feature(snowflake_scd_table, cust_id_entity):
     """
-    Test SlowlyChangingView as_feature configures additional parameters
+    Test SCDView as_feature configures additional parameters
     """
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = snowflake_scd_table.get_view()
@@ -183,7 +183,7 @@ def test_scd_view_as_feature(snowflake_scd_table, cust_id_entity):
 
 def test_scd_view_as_feature__invalid_duration(snowflake_scd_table, cust_id_entity):
     """
-    Test SlowlyChangingView as_feature configures additional parameters
+    Test SCDView as_feature configures additional parameters
     """
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = snowflake_scd_table.get_view()
@@ -194,7 +194,7 @@ def test_scd_view_as_feature__invalid_duration(snowflake_scd_table, cust_id_enti
 
 def test_scd_view_inherited__columns(snowflake_scd_view):
     """
-    Test SlowlyChangingView inherited columns include both natural key column and effective
+    Test SCDView inherited columns include both natural key column and effective
     timestamp column
     """
     subset_view = snowflake_scd_view[["col_float"]]
@@ -203,7 +203,7 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
 
 def test_scd_view_as_feature__special_column(snowflake_scd_table, cust_id_entity):
     """
-    Test SlowlyChangingView as_feature selects a special column that is excluded by default
+    Test SCDView as_feature selects a special column that is excluded by default
     """
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = snowflake_scd_table.get_view()

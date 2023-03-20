@@ -255,9 +255,9 @@ def snowflake_dimension_view_fixture(snowflake_dimension_table):
 
 
 @pytest.fixture(name="snowflake_scd_view")
-def snowflake_slowly_changing_view_fixture(snowflake_scd_table):
+def snowflake_scd_view_fixture(snowflake_scd_table):
     """
-    SlowlyChangingView fixture
+    SCDView fixture
     """
     scd_view = snowflake_scd_table.get_view()
     yield scd_view

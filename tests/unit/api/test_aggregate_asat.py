@@ -18,7 +18,7 @@ def entity_col_int():
 @pytest.fixture
 def scd_view_with_entity(snowflake_scd_table, entity_col_int):
     """
-    Fixture for an SlowlyChangingView with entity configured
+    Fixture for an SCDView with entity configured
     """
     Entity(name="col_text_entity", serving_names=["col_text"]).save()
     snowflake_scd_table["col_text"].as_entity("col_text_entity")

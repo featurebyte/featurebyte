@@ -15,7 +15,7 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.item_view import ItemView
-from featurebyte.api.scd_view import SlowlyChangingView
+from featurebyte.api.scd_view import SCDView
 from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
 from featurebyte.common.doc_util import FBAutoDoc
@@ -411,7 +411,7 @@ class AsAtAggregator(BaseAggregator):
 
     @property
     def supported_views(self) -> List[Type[View]]:
-        return [SlowlyChangingView]
+        return [SCDView]
 
     @property
     def aggregation_method_name(self) -> str:
@@ -429,7 +429,7 @@ class AsAtAggregator(BaseAggregator):
         skip_fill_na: bool = False,
     ) -> Feature:
         """
-        Aggregate a column in SlowlyChangingView as at a point in time
+        Aggregate a column in SCDView as at a point in time
 
         Parameters
         ----------
@@ -474,7 +474,7 @@ class AsAtAggregator(BaseAggregator):
             skip_fill_na=skip_fill_na,
         )
 
-        view = cast(SlowlyChangingView, self.view)
+        view = cast(SCDView, self.view)
         node_params = {
             "keys": self.keys,
             "parent": value_column,
@@ -530,7 +530,7 @@ class AsAtAggregator(BaseAggregator):
         if self.category is not None:
             raise ValueError("category is not supported for aggregate_asat")
 
-        view = cast(SlowlyChangingView, self.view)
+        view = cast(SCDView, self.view)
         for key in self.keys:
             if key == view.natural_key_column:
                 raise ValueError(
@@ -632,7 +632,7 @@ class GroupBy:
     @typechecked
     def __init__(
         self,
-        obj: Union[EventView, ItemView, ChangeView, SlowlyChangingView],
+        obj: Union[EventView, ItemView, ChangeView, SCDView],
         keys: Union[str, List[str]],
         category: Optional[str] = None,
     ):
@@ -771,7 +771,7 @@ class GroupBy:
         skip_fill_na: bool = False,
     ) -> Feature:
         """
-        Aggregate a column in SlowlyChangingView as at a point in time
+        Aggregate a column in SCDView as at a point in time
 
         Parameters
         ----------

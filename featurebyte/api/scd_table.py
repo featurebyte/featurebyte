@@ -23,7 +23,7 @@ from featurebyte.schema.scd_table import SCDTableCreate, SCDTableUpdate
 
 if TYPE_CHECKING:
     from featurebyte.api.change_view import ChangeView
-    from featurebyte.api.scd_view import SlowlyChangingView
+    from featurebyte.api.scd_view import SCDView
 
 
 class SCDTable(TableApiObject):
@@ -38,7 +38,7 @@ class SCDTable(TableApiObject):
     - an end date or timestamp and\n
     - a current flag
 
-    To build features, users can create SlowlyChangingViews from SCDTable.
+    To build features, users can create SCDViews from SCDTable.
     """
 
     # documentation metadata
@@ -88,9 +88,9 @@ class SCDTable(TableApiObject):
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
-    ) -> SlowlyChangingView:
+    ) -> SCDView:
         """
-        Construct an SlowlyChangingView object
+        Construct a SCDView object
 
         Parameters
         ----------
@@ -104,11 +104,11 @@ class SCDTable(TableApiObject):
 
         Returns
         -------
-        SlowlyChangingView
-            constructed SlowlyChangingView object
+        SCDView
+            constructed SCDView object
         """
         # pylint: disable=import-outside-toplevel
-        from featurebyte.api.scd_view import SlowlyChangingView
+        from featurebyte.api.scd_view import SCDView
 
         self._validate_view_mode_params(
             view_mode=view_mode,
@@ -148,7 +148,7 @@ class SCDTable(TableApiObject):
             ),
         )
         inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
-        return SlowlyChangingView(
+        return SCDView(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
             columns_info=columns_info,
