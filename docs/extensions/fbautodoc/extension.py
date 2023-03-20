@@ -394,7 +394,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             raises.append(
                 ExceptionDetails(
                     type=exc_class,
-                    description=parameters_desc.get(exc_type.description),
+                    description=exc_type.description,
                 )
             )
 
