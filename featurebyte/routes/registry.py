@@ -238,6 +238,7 @@ app_container_config.add_controller(
         "online_serving_service",
         "feature_store_warehouse_service",
         "feature_service",
+        "task_controller",
     ],
 )
 app_container_config.add_controller(
