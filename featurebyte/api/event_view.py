@@ -37,7 +37,12 @@ class EventViewColumn(LaggableViewColumn):
 
 class EventView(View, GroupByMixin):
     """
-    EventViews allow users to transform EventTable to support the table preparation necessary before creating features.
+    An `EventView` allows a user to transform an `EventTable` to support the table preparation necessary before
+    creating features.
+
+    See Also
+    --------
+    - [event_table#get_view](/reference/featurebyte.api.event_table.EventTable.get_view/): get event view from an `EventTable`
     """
 
     # documentation metadata

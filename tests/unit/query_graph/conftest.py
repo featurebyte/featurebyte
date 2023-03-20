@@ -144,7 +144,7 @@ def item_table_input_node_fixture(global_graph, item_table_input_details):
 
 @pytest.fixture(name="scd_table_input_details")
 def scd_table_input_details_fixture(input_details):
-    """Similar to input_details but for an SlowlyChangingView table"""
+    """Similar to input_details but for an SCDView table"""
     input_details = copy.deepcopy(input_details)
     input_details["table_details"]["table_name"] = "customer_profile_table"
     return input_details
@@ -152,7 +152,7 @@ def scd_table_input_details_fixture(input_details):
 
 @pytest.fixture(name="scd_table_input_node")
 def scd_table_input_node_fixture(global_graph, scd_table_input_details):
-    """Fixture of an SlowlyChangingView input node"""
+    """Fixture of an SCDView input node"""
     node_params = {
         "type": "scd_table",
         "columns": [

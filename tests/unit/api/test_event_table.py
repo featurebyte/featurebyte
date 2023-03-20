@@ -119,12 +119,11 @@ def event_table_dict_fixture(snowflake_database_table):
     }
 
 
-def test_from_tabular_source(snowflake_database_table, event_table_dict):
+def test_create_event_table(snowflake_database_table, event_table_dict):
     """
     Test EventTable creation using tabular source
     """
-    event_table = EventTable.from_tabular_source(
-        tabular_source=snowflake_database_table,
+    event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
@@ -146,8 +145,7 @@ def test_from_tabular_source(snowflake_database_table, event_table_dict):
 
     # user input validation
     with pytest.raises(TypeError) as exc:
-        EventTable.from_tabular_source(
-            tabular_source=snowflake_database_table,
+        snowflake_database_table.create_event_table(
             name=123,
             event_id_column="col_int",
             event_timestamp_column=234,
@@ -156,14 +154,13 @@ def test_from_tabular_source(snowflake_database_table, event_table_dict):
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
 
-def test_from_tabular_source__duplicated_record(saved_event_table, snowflake_database_table):
+def test_create_event_table__duplicated_record(saved_event_table, snowflake_database_table):
     """
     Test EventTable creation failure due to duplicated event table name
     """
     _ = saved_event_table
     with pytest.raises(DuplicatedRecordException) as exc:
-        EventTable.from_tabular_source(
-            tabular_source=snowflake_database_table,
+        snowflake_database_table.create_event_table(
             name="sf_event_table",
             event_id_column="col_int",
             event_timestamp_column="event_timestamp",
@@ -174,14 +171,13 @@ def test_from_tabular_source__duplicated_record(saved_event_table, snowflake_dat
     )
 
 
-def test_from_tabular_source__retrieval_exception(snowflake_database_table):
+def test_create_event_table__retrieval_exception(snowflake_database_table):
     """
     Test EventTable creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.base_table.Configurations"):
-            EventTable.from_tabular_source(
-                tabular_source=snowflake_database_table,
+            snowflake_database_table.create_event_table(
                 name="sf_event_table",
                 event_id_column="col_int",
                 event_timestamp_column="event_timestamp",
@@ -280,8 +276,7 @@ class TestEventTableTestSuite(BaseTableTestSuite):
 
 def test_info__event_table_without_record_creation_date(snowflake_database_table):
     """Test info on event table with record creation timestamp is None"""
-    event_table = EventTable.from_tabular_source(
-        tabular_source=snowflake_database_table,
+    event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
@@ -624,8 +619,7 @@ async def test_update_default_job_setting__feature_job_setting_analysis_failure(
 
 def test_update_record_creation_timestamp_column__unsaved_object(snowflake_database_table):
     """Test update record creation timestamp column (unsaved event table)"""
-    event_table = EventTable.from_tabular_source(
-        tabular_source=snowflake_database_table,
+    event_table = snowflake_database_table.create_event_table(
         name="event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
@@ -986,8 +980,7 @@ def test_accessing_saved_event_table_attributes(saved_event_table):
 
 def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     """Check SDK code generation for unsaved table"""
-    event_table = EventTable.from_tabular_source(
-        tabular_source=snowflake_database_table,
+    event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",

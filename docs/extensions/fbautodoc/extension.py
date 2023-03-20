@@ -390,11 +390,11 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 exc_class = import_resource(f"{resource.__module__}.{exc_type.type_name}")
                 exc_class = self.format_param_type(exc_class)
             except ValueError:
-                exc_class = str(exc_type)
+                exc_class = str(exc_type.type_name)
             raises.append(
                 ExceptionDetails(
                     type=exc_class,
-                    description=parameters_desc.get(exc_type.description),
+                    description=exc_type.description,
                 )
             )
 
@@ -624,6 +624,18 @@ class FBAutoDocProcessor(AutoDocProcessor):
             content_elem.set("class", "autodoc-content")
             content_elem.text = self._md.convert(content)
 
+        def _render_list_item_with_multiple_paragraphs(
+            title: str, other_paragraphs: List[str]
+        ) -> str:
+            """
+            Helper method to render a list item with multiple paragraphs.
+            """
+            list_item_str = f"- **{title}**"
+            for other_para in other_paragraphs:
+                list_item_str += f"<br>\t{other_para}"
+            list_item_str += "<br><br>"
+            return list_item_str
+
         # Render base classes
         if resource_details.base_classes:
             _render("Base Classes", ", ".join(resource_details.base_classes))
@@ -639,39 +651,44 @@ class FBAutoDocProcessor(AutoDocProcessor):
         if resource_details.parameters:
             content = ""
             for param in resource_details.parameters:
+                items_to_render = []
                 param_name = param.name.replace("*", "\\*")
                 param_type = f": *{param.type}*" if param.type else ""
                 param_default = (
-                    f"<div>**default**: *{param.default}*</div>\n"
+                    f"**default**: *{param.default}*\n"
                     if param.default and param.default != "None"
                     else ""
                 )
+                if param_default:
+                    items_to_render.append(param_default)
+                formatted_description = ""
                 if param.description:
                     # ignore line breaks added to keep within line limits
                     formatted_description = re.sub(r"\n\b", " ", param.description)
                     formatted_description = formatted_description.replace("\n", "<br/>")
-                else:
-                    formatted_description = ""
-                formatted_description = (
-                    f"<div>{formatted_description}</div>" if formatted_description else ""
+                if formatted_description:
+                    items_to_render.append(formatted_description)
+                content += _render_list_item_with_multiple_paragraphs(
+                    f"{param_name}{param_type}", items_to_render
                 )
-                param_description = f"{param_default}{formatted_description}"
-                content += f"\n- **{param_name}**{param_type}{param_description}\n"
+                content += "\n"
             _render("Parameters", content)
 
         # Render returns:
         if resource_details.returns:
             returns = resource_details.returns
             if returns.type not in NONE_TYPES:
-                return_desc = f"\n> {returns.description}" if returns.description else ""
-                content = f"- **{returns.type}**{return_desc}\n"
+                bullet_point = [returns.description] if returns.description else []
+                content = _render_list_item_with_multiple_paragraphs(returns.type, bullet_point)
                 _render("Returns", content)
 
         # Render raises
         if resource_details.raises:
             content = "\n".join(
                 [
-                    f"- **{exc_type.type}**\n> {exc_type.description}\n"
+                    _render_list_item_with_multiple_paragraphs(
+                        exc_type.type, [exc_type.description]
+                    )
                     for exc_type in resource_details.raises
                 ]
             )

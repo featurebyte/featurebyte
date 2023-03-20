@@ -153,12 +153,11 @@ def dimension_table_dict_fixture(snowflake_database_table):
     }
 
 
-def test_from_tabular_source(snowflake_database_table, dimension_table_dict):
+def test_create_dimension_table(snowflake_database_table, dimension_table_dict):
     """
     Test DimensionTable creation using tabular source
     """
-    dimension_table = DimensionTable.from_tabular_source(
-        tabular_source=snowflake_database_table,
+    dimension_table = snowflake_database_table.create_dimension_table(
         name="sf_dimension_table",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
@@ -179,8 +178,7 @@ def test_from_tabular_source(snowflake_database_table, dimension_table_dict):
 
     # user input validation
     with pytest.raises(TypeError) as exc:
-        DimensionTable.from_tabular_source(
-            tabular_source=snowflake_database_table,
+        snowflake_database_table.create_dimension_table(
             name=123,
             dimension_id_column="col_int",
             record_creation_timestamp_column=345,
@@ -188,14 +186,13 @@ def test_from_tabular_source(snowflake_database_table, dimension_table_dict):
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
 
-def test_from_tabular_source__duplicated_record(saved_dimension_table, snowflake_database_table):
+def test_create_dimension_table__duplicated_record(saved_dimension_table, snowflake_database_table):
     """
     Test DimensionTable creation failure due to duplicated dimension table name
     """
     _ = saved_dimension_table
     with pytest.raises(DuplicatedRecordException) as exc:
-        DimensionTable.from_tabular_source(
-            tabular_source=snowflake_database_table,
+        snowflake_database_table.create_dimension_table(
             name="sf_dimension_table",
             dimension_id_column="col_int",
             record_creation_timestamp_column="created_at",
@@ -206,14 +203,13 @@ def test_from_tabular_source__duplicated_record(saved_dimension_table, snowflake
     )
 
 
-def test_from_tabular_source__retrieval_exception(snowflake_database_table):
+def test_create_dimension_table__retrieval_exception(snowflake_database_table):
     """
     Test DimensionTable creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.base_table.Configurations"):
-            DimensionTable.from_tabular_source(
-                tabular_source=snowflake_database_table,
+            snowflake_database_table.create_dimension_table(
                 name="sf_dimension_table",
                 dimension_id_column="col_int",
                 record_creation_timestamp_column="created_at",
@@ -269,8 +265,7 @@ def test_accessing_saved_dimension_table_attributes(saved_dimension_table):
 
 def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     """Check SDK code generation for unsaved table"""
-    dimension_table = DimensionTable.from_tabular_source(
-        tabular_source=snowflake_database_table,
+    dimension_table = snowflake_database_table.create_dimension_table(
         name="sf_dimension_table",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",

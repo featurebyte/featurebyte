@@ -94,14 +94,11 @@ def item_table_dict_fixture(snowflake_database_table_item_table):
     }
 
 
-def test_from_tabular_source(
-    snowflake_database_table_item_table, item_table_dict, saved_event_table
-):
+def test_create_item_table(snowflake_database_table_item_table, item_table_dict, saved_event_table):
     """
     Test ItemTable creation using tabular source
     """
-    item_table = ItemTable.from_tabular_source(
-        tabular_source=snowflake_database_table_item_table,
+    item_table = snowflake_database_table_item_table.create_item_table(
         name="sf_item_table",
         event_id_column="event_id_col",
         item_id_column="item_id_col",
@@ -123,8 +120,7 @@ def test_from_tabular_source(
 
     # user input validation
     with pytest.raises(TypeError) as exc:
-        ItemTable.from_tabular_source(
-            tabular_source=snowflake_database_table_item_table,
+        snowflake_database_table_item_table.create_item_table(
             name=123,
             event_id_column="event_id_col",
             item_id_column="item_id_col",
@@ -133,7 +129,7 @@ def test_from_tabular_source(
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
 
-def test_from_tabular_source__duplicated_record(
+def test_create_item_table__duplicated_record(
     saved_item_table, snowflake_database_table_item_table
 ):
     """
@@ -141,8 +137,7 @@ def test_from_tabular_source__duplicated_record(
     """
     _ = saved_item_table
     with pytest.raises(DuplicatedRecordException) as exc:
-        ItemTable.from_tabular_source(
-            tabular_source=snowflake_database_table_item_table,
+        snowflake_database_table_item_table.create_item_table(
             name="sf_item_table",
             event_id_column="event_id_col",
             item_id_column="item_id_col",
@@ -151,40 +146,18 @@ def test_from_tabular_source__duplicated_record(
     assert 'ItemTable (item_table.name: "sf_item_table") exists in saved record.' in str(exc.value)
 
 
-def test_from_tabular_source__retrieval_exception(snowflake_database_table_item_table):
+def test_create_item_table__retrieval_exception(snowflake_database_table_item_table):
     """
     Test ItemTable creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.base_table.Configurations"):
-            ItemTable.from_tabular_source(
-                tabular_source=snowflake_database_table_item_table,
+            snowflake_database_table_item_table.create_item_table(
                 name="sf_item_table",
                 event_id_column="event_id_col",
                 item_id_column="item_id_col",
                 event_table_name="sf_event_table",
             )
-
-
-def test_from_tabular_source__event_table_without_event_id_column(
-    snowflake_database_table_item_table,
-):
-    """
-    Test attempting to create ItemTable using old EventTable without event_id_column
-
-    Can probably be removed once DEV-556 is resolved
-    """
-    with patch("featurebyte.api.item_table.EventTable") as patched_cls:
-        patched_cls.get.return_value = Mock(event_id_column=None)
-        with pytest.raises(ValueError) as exc:
-            _ = ItemTable.from_tabular_source(
-                tabular_source=snowflake_database_table_item_table,
-                name="sf_item_table",
-                event_id_column="event_id_col",
-                item_id_column="item_id_col",
-                event_table_name="sf_event_table",
-            )
-        assert str(exc.value) == "EventTable without event_id_column is not supported"
 
 
 def test_deserialization(
@@ -382,8 +355,7 @@ def test_inherit_default_feature_job_setting(
         time_modulo_frequency="2m",
     )
     saved_event_table.update_default_feature_job_setting(feature_job_setting=feature_job_setting)
-    item_table = ItemTable.from_tabular_source(
-        tabular_source=snowflake_database_table_item_table,
+    item_table = snowflake_database_table_item_table.create_item_table(
         name="sf_item_table",
         event_id_column="event_id_col",
         item_id_column="item_id_col",
@@ -461,8 +433,7 @@ def test_sdk_code_generation(
     snowflake_database_table_item_table, saved_event_table, update_fixtures
 ):
     """Check SDK code generation for unsaved table"""
-    item_table = ItemTable.from_tabular_source(
-        tabular_source=snowflake_database_table_item_table,
+    item_table = snowflake_database_table_item_table.create_item_table(
         name="sf_item_table",
         event_id_column="event_id_col",
         item_id_column="item_id_col",

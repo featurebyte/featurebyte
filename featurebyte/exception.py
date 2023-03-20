@@ -241,7 +241,7 @@ class JoinViewMismatchError(Exception):
 
     This ccould occur when
     - columns from a SCD View are trying to be added to a Dimension or SCD View. This operation is not allowed.
-    - the target view to be joined with is not a SlowlyChangingView, or a DimensionView.
+    - the target view to be joined with is not a SCDView, or a DimensionView.
     """
 
 

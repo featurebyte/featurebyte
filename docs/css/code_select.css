@@ -87,9 +87,7 @@ div.autodoc-param-group-multi {
 }
 
 div.autodoc-docstring {
-  padding-left: 20px;
   margin-bottom: 30px;
-  border-left: 5px solid rgba(230, 230, 230);
 }
 
 div.autodoc-members {

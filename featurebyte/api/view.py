@@ -397,7 +397,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Returns any additional query node parameters for as_feature operation (LookupNode)
 
         This is a no-op unless the lookup is time-aware (currently only available for
-        SlowlyChangingView)
+        SCDView)
 
         Parameters
         ----------
@@ -623,13 +623,13 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         rsuffix: str = "",
     ) -> None:
         """
-        Joins the current view with another view. Note that this other view should only be a SlowlyChangingView,
+        Joins the current view with another view. Note that this other view should only be a SCDView,
         or a DimensionView.
 
         Parameters
         ----------
         other_view: View
-            the other view that we want to join with. This should only be a SlowlyChangingView, or DimensionView.
+            the other view that we want to join with. This should only be a SCDView, or DimensionView.
         on: Optional[str]
             Column name in the caller to join on the index in other_view. ‘on’ argument is optional if:
             - the name of the key column in the calling view is the same name as the natural (primary) key in the

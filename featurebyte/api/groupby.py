@@ -172,7 +172,7 @@ class GroupBy:
         skip_fill_na: bool = False,
     ) -> Feature:
         """
-        Aggregate a column in SlowlyChangingView as at a point in time
+        Aggregate a column in SCDView as at a point in time
 
         Parameters
         ----------

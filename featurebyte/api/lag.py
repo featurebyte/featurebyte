@@ -23,14 +23,18 @@ class LaggableViewColumn(ViewColumn):
         self: LagColumnTypeT, entity_columns: Union[str, List[str]], offset: int = 1
     ) -> LagColumnTypeT:
         """
-        Lag operation
+        Lag is a transform that enables the retrieval of the preceding value associated with a particular entity in
+        a view.
+
+        This makes it feasible to compute essential features, such as those that depend on inter-event time
+        and the proximity to the previous point.
 
         Parameters
         ----------
         entity_columns : str | list[str]
-            Entity columns used when retrieving the lag value
+            Entity columns used when retrieving the lag value.
         offset : int
-            The number of rows backward from which to retrieve a value. Default is 1.
+            The number of rows backward from which to retrieve a value.
 
         Returns
         -------
@@ -39,7 +43,7 @@ class LaggableViewColumn(ViewColumn):
         Raises
         ------
         ValueError
-            If a lag operation has already been applied to the column
+            If a lag operation has already been applied to the column.
         """
         if not isinstance(entity_columns, list):
             entity_columns = [entity_columns]

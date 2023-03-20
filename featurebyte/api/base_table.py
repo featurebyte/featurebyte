@@ -312,7 +312,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @typechecked
     def create(
         cls: Type[SourceTableApiObjectT],
-        tabular_source: SourceTable,
+        source_table: SourceTable,
         name: str,
         record_creation_timestamp_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
@@ -323,8 +323,8 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
 
         Parameters
         ----------
-        tabular_source: SourceTable
-            DatabaseTable object constructed from FeatureStore
+        source_table: SourceTable
+            Source table object used to construct the table
         name: str
             Object name
         record_creation_timestamp_column: str
@@ -350,10 +350,10 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         # construct an input node & insert into the global graph
         data_id_value = _id or ObjectId()
         graph, inserted_node = cls.construct_graph_and_node(
-            feature_store_details=tabular_source.feature_store.get_feature_store_details(),
+            feature_store_details=source_table.feature_store.get_feature_store_details(),
             table_data_dict={
-                "tabular_source": tabular_source.tabular_source,
-                "columns_info": tabular_source.columns_info,
+                "tabular_source": source_table.tabular_source,
+                "columns_info": source_table.columns_info,
                 "_id": data_id_value,
                 **kwargs,
             },
@@ -363,8 +363,8 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         data = cls._create_schema_class(  # pylint: disable=not-callable
             _id=data_id_value,
             name=name,
-            tabular_source=tabular_source.tabular_source,
-            columns_info=tabular_source.columns_info,
+            tabular_source=source_table.tabular_source,
+            columns_info=source_table.columns_info,
             record_creation_timestamp_column=record_creation_timestamp_column,
             graph=graph,
             node_name=inserted_node.name,
@@ -378,7 +378,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
             if not response_dict["data"]:
                 return cls(
                     **data.json_dict(),
-                    feature_store=tabular_source.feature_store,
+                    feature_store=source_table.feature_store,
                     _validate_schema=True,
                 )
             existing_record = response_dict["data"][0]

@@ -79,8 +79,7 @@ def snowflake_event_table_fixture(
     Snowflake EventTable object fixture (using config object)
     """
     _ = mock_get_persistent
-    yield EventTable.from_tabular_source(
-        tabular_source=snowflake_database_table,
+    yield snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
@@ -169,8 +168,7 @@ def snowflake_item_table_fixture(
     _ = mock_get_persistent
     saved_event_table.update_default_feature_job_setting(arbitrary_default_feature_job_setting)
     saved_event_table["cust_id"].as_entity(cust_id_entity.name)
-    item_table = ItemTable.from_tabular_source(
-        tabular_source=snowflake_database_table_item_table,
+    item_table = snowflake_database_table_item_table.create_item_table(
         name="sf_item_table",
         event_id_column="event_id_col",
         item_id_column="item_id_col",
@@ -257,9 +255,9 @@ def snowflake_dimension_view_fixture(snowflake_dimension_table):
 
 
 @pytest.fixture(name="snowflake_scd_view")
-def snowflake_slowly_changing_view_fixture(snowflake_scd_table):
+def snowflake_scd_view_fixture(snowflake_scd_table):
     """
-    SlowlyChangingView fixture
+    SCDView fixture
     """
     scd_view = snowflake_scd_table.get_view()
     yield scd_view

@@ -226,7 +226,6 @@ async def get_data_sample(
     request: Request,
     sample: FeatureStoreSample,
     size: int = Query(default=10, gt=0, le=10000),
-    seed: int = Query(default=1234),
 ) -> Dict[str, Any]:
     """
     Retrieve data sample for query graph node
@@ -235,7 +234,7 @@ async def get_data_sample(
     return cast(
         Dict[str, Any],
         await controller.sample(
-            sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
+            sample=sample, size=size, get_credential=request.state.get_credential
         ),
     )
 
@@ -245,7 +244,6 @@ async def get_data_description(
     request: Request,
     sample: FeatureStoreSample,
     size: int = Query(default=0, gte=0, le=1000000),
-    seed: int = Query(default=1234),
 ) -> Dict[str, Any]:
     """
     Retrieve data description for query graph node
@@ -254,6 +252,6 @@ async def get_data_description(
     return cast(
         Dict[str, Any],
         await controller.describe(
-            sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
+            sample=sample, size=size, get_credential=request.state.get_credential
         ),
     )
