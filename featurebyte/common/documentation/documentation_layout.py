@@ -847,22 +847,6 @@ def _get_view_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([VIEW], "featurebyte.View"),
         DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.ChangeView.from_slowly_changing_data"],
-            "featurebyte.ChangeView.from_slowly_changing_data",
-        ),
-        DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.DimensionView.from_dimension_data"],
-            "featurebyte.DimensionView.from_dimension_data",
-        ),
-        DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.EventView.from_event_data"],
-            "featurebyte.EventView.from_event_data",
-        ),
-        DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.SlowlyChangingView.from_slowly_changing_data"],
-            "featurebyte.SlowlyChangingView.from_slowly_changing_data",
-        ),
-        DocLayoutItem(
             [VIEW, ENRICH, "featurebyte.EventView.add_feature"], "featurebyte.EventView.add_feature"
         ),
         DocLayoutItem(
@@ -903,10 +887,6 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [VIEW, INFO, "featurebyte.ItemView.event_id_column"],
             "featurebyte.ItemView.event_id_column",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "featurebyte.ItemView.from_item_data"],
-            "featurebyte.ItemView.from_item_data",
         ),
         DocLayoutItem(
             [VIEW, INFO, "featurebyte.ItemView.item_id_column"],
