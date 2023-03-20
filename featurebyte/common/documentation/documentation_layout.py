@@ -278,8 +278,9 @@ def _get_entity_layout() -> List[DocLayoutItem]:
             [ENTITY, CATALOG, "featurebyte.Entity.get_by_id"], "featurebyte.Entity.get_by_id"
         ),
         DocLayoutItem([ENTITY, CATALOG, "featurebyte.Entity.list"], "featurebyte.Entity.list"),
+        DocLayoutItem([ENTITY, CREATE, "featurebyte.Entity.create"], "featurebyte.Entity.create"),
         DocLayoutItem(
-            [ENTITY, CREATE, "featurebyte.Entity"], "", "featurebyte.api.entity.Entity.md"
+            [ENTITY, CREATE, "featurebyte.Entity.get_or_create"], "featurebyte.Entity.get_or_create"
         ),
         DocLayoutItem([ENTITY, CREATE, "featurebyte.Entity.save"], "featurebyte.Entity.save"),
         DocLayoutItem(
