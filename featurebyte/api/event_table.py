@@ -33,20 +33,22 @@ if TYPE_CHECKING:
 
 class EventTable(TableApiObject):
     """
-    EventTable is an object connected with an event table in the data warehouse. These tables must have the following
-    properties:\n
-    - and an event_id column as a primary key\n
-    - an event timestamp
+    An Event table is a type of FeatureByte table that represents a Transaction Fact Table in the data warehouse.
+    Each row in this table indicates a specific business event that was measured at a particular moment in time.
 
-    Users are strongly encouraged to annotate the table by tagging entities and defining:
+    Event tables can take various forms, such as an Order table in E-commerce, Credit Card Transactions in Banking,
+    Doctor Visits in Healthcare, and Clickstream on the Internet.
 
-    - the semantic of the table field
-    - critical data information on the data quality that requires cleaning before feature engineering.
+    To create an Event table in FeatureByte, it is necessary to identify the columns that represent the event key
+    and the event timestamp.
 
-    Before registering a new EventTable, users are asked to set the default for the FeatureJob scheduling for features
-    that will be extracted from the EventTable.
+    Additionally, the column that represents the record creation timestamp may be identified to enable an automatic
+    analysis of data availability and freshness of the source table. This analysis can assist in selecting the default
+    scheduling of the computation of features associated with the Event table.
 
-    To build features, users create Event Views from EventTable.
+    See Also
+    --------
+    - [create_event_table](/reference/featurebyte.api.source_table.SourceTable.create_event_table/): create event table from data source
     """
 
     # documentation metadata
