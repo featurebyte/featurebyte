@@ -28,6 +28,7 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.relationship import EntityRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
@@ -58,6 +59,9 @@ class TableUpdateService(BaseService):
         )
         self.entity_service = EntityService(user=user, persistent=persistent, catalog_id=catalog_id)
         self.relationship_info_service = RelationshipInfoService(
+            user=user, persistent=persistent, catalog_id=catalog_id
+        )
+        self.entity_relationship_service = EntityRelationshipService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
 
@@ -307,9 +311,13 @@ class TableUpdateService(BaseService):
                     table_type=document.type,
                     parent_entity_ids=list(new_parent_entities),
                 )
-                await self.entity_service.update_document(
-                    document_id=primary_entity.id, data=EntityServiceUpdate(parents=parents)
-                )
+                for parent_id in new_parent_entity_ids:
+                    await self.entity_relationship_service.add_relationship(
+                        parent=ParentEntity(
+                            id=parent_id, table_id=document.id, table_type=document.type
+                        ),
+                        child_id=entity_id,
+                    )
 
                 # Add relationship info links for new parent entity relationships
                 await self._add_new_child_parent_relationships(
@@ -326,10 +334,11 @@ class TableUpdateService(BaseService):
                     table_type=document.type,
                     parent_entity_ids=list(old_parent_entities),
                 )
-                await self.entity_service.update_document(
-                    document_id=primary_entity.id, data=EntityServiceUpdate(parents=parents)
-                )
-
+                for parent_id in removed_parent_entity_ids:
+                    await self.entity_relationship_service.remove_relationship(
+                        parent_id=parent_id,
+                        child_id=entity_id,
+                    )
                 # Remove relationship info links for old parent entity relationships
                 await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
 
@@ -350,9 +359,18 @@ class TableUpdateService(BaseService):
                     parent_entity_ids=list(new_parent_entities.difference(old_parent_entities)),
                 )
                 if parents != primary_entity.parents:
-                    await self.entity_service.update_document(
-                        document_id=primary_entity.id, data=EntityServiceUpdate(parents=parents)
-                    )
+                    for parent_id in new_parent_entity_ids:
+                        await self.entity_relationship_service.add_relationship(
+                            parent=ParentEntity(
+                                id=parent_id, table_id=document.id, table_type=document.type
+                            ),
+                            child_id=entity_id,
+                        )
+                    for parent_id in removed_parent_entity_ids:
+                        await self.entity_relationship_service.remove_relationship(
+                            parent_id=parent_id,
+                            child_id=entity_id,
+                        )
                     # Add relationship info links for new parent entity relationships
                     await self._add_new_child_parent_relationships(
                         entity_id, document.id, new_parent_entity_ids
