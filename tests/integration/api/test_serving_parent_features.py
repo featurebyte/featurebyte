@@ -276,6 +276,18 @@ def test_feature_info_primary_entities(feature_list_with_parent_child_features):
     Test that the primary_entities field is correctly populated in feature list info
     """
     info = feature_list_with_parent_child_features.info()
+    assert info["entities"] == [
+        {
+            "name": "TEST_SERVING_PARENT_FEATURES_state",
+            "serving_names": ["serving_state_id"],
+            "catalog_name": "default",
+        },
+        {
+            "name": "TEST_SERVING_PARENT_FEATURES_customer",
+            "serving_names": ["serving_cust_id"],
+            "catalog_name": "default",
+        },
+    ]
     assert info["primary_entities"] == [
         {
             "catalog_name": "default",
