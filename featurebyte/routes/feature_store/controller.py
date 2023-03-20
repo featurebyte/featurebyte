@@ -316,7 +316,7 @@ class FeatureStoreController(
         )
 
     async def sample(
-        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
+        self, sample: FeatureStoreSample, size: int, get_credential: Any
     ) -> dict[str, Any]:
         """
         Retrieve data sample for query graph node
@@ -327,8 +327,6 @@ class FeatureStoreController(
             FeatureStoreSample object
         size: int
             Maximum rows to sample
-        seed: int
-            Random seed to use for sampling
         get_credential: Any
             Get credential handler function
 
@@ -338,11 +336,11 @@ class FeatureStoreController(
             Dataframe converted to json string
         """
         return await self.preview_service.sample(
-            sample=sample, size=size, seed=seed, get_credential=get_credential
+            sample=sample, size=size, get_credential=get_credential
         )
 
     async def describe(
-        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
+        self, sample: FeatureStoreSample, size: int, get_credential: Any
     ) -> dict[str, Any]:
         """
         Retrieve data description for query graph node
@@ -353,8 +351,6 @@ class FeatureStoreController(
             FeatureStoreSample object
         size: int
             Maximum rows to sample
-        seed: int
-            Random seed to use for sampling
         get_credential: Any
             Get credential handler function
 
@@ -364,7 +360,7 @@ class FeatureStoreController(
             Dataframe converted to json string
         """
         return await self.preview_service.describe(
-            sample=sample, size=size, seed=seed, get_credential=get_credential
+            sample=sample, size=size, get_credential=get_credential
         )
 
     async def get_info(
