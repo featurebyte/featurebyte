@@ -301,7 +301,7 @@ def build_markdown_format_str(obj_path, obj_type):
     return format_str
 
 
-def populate_reverse_lookup_map(reverse_lookup_map, obj_path, doc_path):
+def infer_api_path_from_obj_path(obj_path):
     # add obj_path to reverse lookup map
     # featurebyte.api.event_view.EventView::add_feature#featurebyte.EventView
     # or featurebyte.api.change_view.ChangeViewColumn::lag
@@ -311,19 +311,32 @@ def populate_reverse_lookup_map(reverse_lookup_map, obj_path, doc_path):
         split_by_hash = split_obj_path[1].split("#")
         if len(split_by_hash) == 2:
             joined = ".".join([split_by_hash[1], split_by_hash[0]]).lower()
-            reverse_lookup_map[joined] = doc_path
+            return joined.lower()
         else:
             # converts to featurebyte.changeviewcolumn.lag
             class_name = split_obj_path[0].split(".")[-1].lower()
-            reverse_lookup_map[f"featurebyte.{class_name}.{split_obj_path[1]}"] = doc_path
+            return f"featurebyte.{class_name}.{split_obj_path[1]}".lower()
     elif len(split_obj_path) == 1:
         # featurebyte.api.item_view.ItemView#featurebyte
         split_by_hash = split_obj_path[0].split("#")
         if len(split_by_hash) == 2:
             class_str = split_by_hash[0].split(".")[-1]
             joined = ".".join([split_by_hash[1], class_str]).lower()
-            reverse_lookup_map[joined] = doc_path
-    return reverse_lookup_map
+            return joined.lower()
+    return obj_path.lower()
+
+
+def get_paths_to_document():
+    """
+    Get all the object paths that we want to document.
+
+    These should represent the fully qualified paths of the objects that we want to document.
+    """
+    paths = set()
+    for item in get_overall_layout():
+        path = item.doc_path_override or item.api_path
+        paths.add(path.lower())
+    return paths
 
 
 def generate_documentation_for_docs(doc_groups):
@@ -332,6 +345,7 @@ def generate_documentation_for_docs(doc_groups):
     # This reverse lookup map has a key of the user-accessible API path, and the value of the markdown file for
     # the documentation.
     reverse_lookup_map = {}
+    paths_to_document = get_paths_to_document()
     # create documentation page for each object
     for doc_group_key, doc_group_value in doc_groups.items():
         path_components = doc_group_key.module_path.split(".")
@@ -343,9 +357,13 @@ def generate_documentation_for_docs(doc_groups):
 
         # generate markdown for documentation page
         obj_path = doc_group_key.get_obj_path(doc_group_value)
+        lookup_path = infer_api_path_from_obj_path(obj_path)
+        if lookup_path not in paths_to_document:
+            # Skip if this is not a path we want to document.
+            continue
 
         # add obj_path to reverse lookup map
-        reverse_lookup_map = populate_reverse_lookup_map(reverse_lookup_map, obj_path, doc_path)
+        reverse_lookup_map[lookup_path] = doc_path
 
         # build string to write to file
         format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type)
