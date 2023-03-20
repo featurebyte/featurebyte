@@ -305,7 +305,7 @@ class TableUpdateService(BaseService):
             # new primary entities are introduced
             for entity_id in new_diff_old_primary_entities:
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
-                parents, new_parent_entity_ids = self._include_parent_entities(
+                _, new_parent_entity_ids = self._include_parent_entities(
                     parents=primary_entity.parents,
                     table_id=document.id,
                     table_type=document.type,
@@ -328,7 +328,7 @@ class TableUpdateService(BaseService):
             # old primary entities are removed
             for entity_id in old_diff_new_primary_entities:
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
-                parents, removed_parent_entity_ids = self._exclude_parent_entities(
+                _, removed_parent_entity_ids = self._exclude_parent_entities(
                     parents=primary_entity.parents,
                     table_id=document.id,
                     table_type=document.type,
