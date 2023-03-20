@@ -76,20 +76,20 @@ def _get_data_layout() -> List[DocLayoutItem]:
             "featurebyte.api.base_table.TableApiObject.save.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.DimensionTable.from_tabular_source"],
-            "featurebyte.DimensionTable.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.SourceTable.create_dimension_table"],
+            "featurebyte.SourceTable.create_dimension_table",
         ),
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.EventTable.from_tabular_source"],
-            "featurebyte.EventTable.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.SourceTable.create_event_table"],
+            "featurebyte.SourceTable.create_event_table",
         ),
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.ItemTable.from_tabular_source"],
-            "featurebyte.ItemTable.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.SourceTable.create_item_table"],
+            "featurebyte.SourceTable.create_item_table",
         ),
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.SlowlyChangingTable.from_tabular_source"],
-            "featurebyte.SlowlyChangingTable.from_tabular_source",
+            [TABLE, CREATE, "featurebyte.SourceTable.create_scd_table"],
+            "featurebyte.SourceTable.create_scd_table",
         ),
         DocLayoutItem(
             [
