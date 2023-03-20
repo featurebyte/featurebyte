@@ -723,7 +723,7 @@ class InfoService(BaseService):
 
     def _get_primary_entities_from_entities(self, entities: dict[str, Any]) -> dict[str, Any]:
         """
-        Get main entities from entities
+        Get primary entities from entities data
 
         Parameters
         ----------

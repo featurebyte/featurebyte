@@ -17,7 +17,7 @@ class RelationshipAnalysisService:
     @staticmethod
     def derive_primary_entities(entities: List[EntityModel]) -> List[EntityModel]:
         """
-        Derive main entities from a list of entities
+        Derive primary entities from a list of entities
 
         Parameters
         ----------
