@@ -666,7 +666,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
                     # ignore line breaks added to keep within line limits
                     formatted_description = re.sub(r"\n\b", " ", param.description)
                     formatted_description = formatted_description.replace("\n", "<br/>")
-                # Wrap in div
                 if formatted_description:
                     items_to_render.append(formatted_description)
                 content += _render_list_item_with_multiple_paragraphs(
