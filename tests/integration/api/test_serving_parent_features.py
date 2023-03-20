@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 
-from featurebyte import DimensionTable, Entity, EventTable, FeatureList, SCDTable, Table
+from featurebyte import Entity, FeatureList, Table
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 table_prefix = "TEST_SERVING_PARENT_FEATURES"
@@ -136,7 +136,7 @@ def city_feature_fixture(tables):
     return feature
 
 
-@pytest.fixture(name="feature_list_with_child_entities", scope="session")
+@pytest.fixture(name="feature_list_with_child_entities", scope="module")
 def feature_list_with_child_entities_fixture(country_feature):
     feature_list = FeatureList([country_feature], name=f"{table_prefix}_country_list")
     feature_list.save(conflict_resolution="retrieve")
@@ -147,13 +147,17 @@ def feature_list_with_child_entities_fixture(country_feature):
         feature_list.deploy(enable=False)
 
 
-@pytest.fixture(name="feature_list_with_parent_child_features", scope="session")
+@pytest.fixture(name="feature_list_with_parent_child_features", scope="module")
 def feature_list_with_parent_child_features_fixture(country_feature, city_feature):
     feature_list = FeatureList(
         [city_feature, country_feature], name=f"{table_prefix}_city_country_list"
     )
     feature_list.save(conflict_resolution="retrieve")
-    yield feature_list
+    try:
+        feature_list.deploy(enable=True, make_production_ready=True)
+        yield feature_list
+    finally:
+        feature_list.deploy(enable=False)
 
 
 @pytest.mark.asyncio
@@ -295,3 +299,15 @@ def test_feature_info_primary_entities(feature_list_with_parent_child_features):
             "serving_names": ["serving_cust_id"],
         },
     ]
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_online_serving_code_uses_primary_entities(
+    feature_list_with_parent_child_features, update_fixtures
+):
+    """
+    Check that online serving code is based on primary entities
+    """
+    online_serving_code = feature_list_with_parent_child_features.get_online_serving_code("python")
+    expected_signature = 'request_features([{"serving_cust_id": 1000}])'
+    assert expected_signature in online_serving_code
