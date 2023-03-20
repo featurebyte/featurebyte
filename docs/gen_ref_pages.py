@@ -358,7 +358,10 @@ def generate_documentation_for_docs(doc_groups):
         # generate markdown for documentation page
         obj_path = doc_group_key.get_obj_path(doc_group_value)
         lookup_path = infer_api_path_from_obj_path(obj_path)
-        if lookup_path not in paths_to_document:
+        is_str = "StringAccessor" in doc_path
+        is_cd = "CountDictAccessor" in doc_path
+        # TODO: fix the str/cd hacks
+        if lookup_path not in paths_to_document and not is_str and not is_cd:
             # Skip if this is not a path we want to document.
             continue
 
