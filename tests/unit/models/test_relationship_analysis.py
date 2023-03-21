@@ -4,7 +4,7 @@ Unit tests for RelationshipAnalysisService
 from bson import ObjectId
 
 from featurebyte.models import EntityModel
-from featurebyte.service.relationship_analysis import derive_primary_entity
+from featurebyte.models.relationship_analysis import derive_primary_entity
 
 
 def test_derive_primary_entity__not_related():

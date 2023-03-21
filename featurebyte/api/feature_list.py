@@ -80,6 +80,7 @@ from featurebyte.models.feature_list import (
     FrozenFeatureListModel,
     FrozenFeatureListNamespaceModel,
 )
+from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.feature_list import (
@@ -142,6 +143,27 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         list[str]
         """
         return list(self.feature_objects)
+
+    @property
+    def primary_entity(self) -> List[Entity]:
+        """
+        Return the primary entity of the feature list or feature group.
+
+        The main focus of a feature list is determined by its primary entity, which typically
+        corresponds to the primary entity of the Use Case that the feature list was created for.
+
+        Returns
+        -------
+        List[Entity]
+            Primary entity
+        """
+        entity_ids = set()
+        for feature in self._features:
+            entity_ids.update(feature.entity_ids)
+        primary_entity = derive_primary_entity(
+            [Entity.get_by_id(entity_id) for entity_id in entity_ids]
+        )
+        return primary_entity
 
     @root_validator
     @classmethod
