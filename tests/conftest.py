@@ -33,6 +33,13 @@ def mock_settings_env_vars():
         yield
 
 
+@pytest.fixture(autouse=True)
+def mock_send_telemetry():
+    """Mock __send_telemetry in featurebyte.middleware"""
+    with patch("featurebyte.middleware.__send_telemetry") as mock_send_telemetry:
+        yield mock_send_telemetry
+
+
 @pytest.fixture(name="test_dir")
 def test_directory_fixture():
     """Test directory"""
