@@ -172,10 +172,22 @@ def print_logs(app_name: ApplicationName, service_name: str, tail: int) -> None:
 
 ### WARNING THIS NEEDS TO BE REMOVED AFTER BETA ###
 def __backup_docker_conf() -> None:
-    with open(os.path.expanduser("~/.docker/config.json"), encoding="utf-8") as docker_cfg_file:
-        with open(
-            os.path.expanduser("~/.docker/config.json.old"), "w", encoding="utf-8"
-        ) as backup_file:
+    # If docker folder does not exist, create it
+    docker_folder = os.path.expanduser("~/.docker")
+    if not os.path.isdir(docker_folder):
+        os.mkdir(docker_folder)
+
+    docker_cfg = os.path.expanduser("~/.docker/config.json")
+    docker_cfg_old = os.path.expanduser("~/.docker/config.json.old")
+
+    # If docker config file does not exist, create it
+    if not os.path.isfile(docker_cfg):
+        with open(docker_cfg, "w", encoding="utf-8") as docker_cfg_file:
+            docker_cfg_file.write("{}")
+
+    # Backup docker config file
+    with open(docker_cfg, encoding="utf-8") as docker_cfg_file:
+        with open(docker_cfg_old, "w", encoding="utf-8") as backup_file:
             backup_file.write(docker_cfg_file.read())
 
 
