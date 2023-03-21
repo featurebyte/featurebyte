@@ -218,17 +218,34 @@ class ApiObject(FeatureByteBaseDocumentModel):
     @classmethod
     def get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
         """
-        Retrieve object from the persistent given object name
+        Retrieve the object from the persistent data store given the object's name.
+
+        This assumes that the object has been saved to the persistent data store. If the object has not been saved,
+        an exception will be raised and you should create and save the object first.
 
         Parameters
         ----------
         name: str
-            Object name
+            Name of the object to retrieve.
 
         Returns
         -------
         ApiObjectT
-            Retrieved object with the specified name
+            Retrieved object with the specified name.
+
+        Examples
+        --------
+        Note that the examples below are not exhaustive.
+
+        Get an Entity object that is already saved.
+
+        >>> grocery_customer_entity = fb.Entity.get("grocerycustomer")
+        Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
+
+        Get an Entity object that is not saved.
+
+        >>> grocery_customer_entity = fb.Entity.get("random_entity")
+        'Entity (name: "random_entity") not found. Please save the Entity object first.'
         """
         return cls._get(name)
 
@@ -262,17 +279,36 @@ class ApiObject(FeatureByteBaseDocumentModel):
         cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> ApiObjectT:
         """
-        Get the object from the persistent given the object ID
+        Retrieve the object from the persistent data store given the object's ID.
+
+        This assumes that the object has been saved to the persistent data store. If the object has not been saved,
+        an exception will be raised and you should create and save the object first.
 
         Parameters
         ----------
         id: ObjectId
-            Object ID value
+            Object ID value.
 
         Returns
         -------
         ApiObjectT
-            ApiObject object of the given object ID
+            ApiObject object of the given object ID.
+
+        Examples
+        --------
+        Note that the examples below are not exhaustive.
+
+        Get an Entity object that is already saved.
+
+        >>> grocery_customer_entity = fb.Entity.get("grocerycustomer")
+        >>> grocery_customer_entity_by_id = fb.Entity.get_by_id(grocery_customer_entity.id)
+        Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
+
+        Get an Entity object that is not saved.
+
+        >>> random_object_id = ObjectId()
+        >>> grocery_customer_entity = fb.Entity.get_by_id(random_object_id)
+        'Entity (id: <random_object_id.id>) not found. Please save the Entity object first.'
         """
         return cls._get_by_id(id)
 
@@ -623,6 +659,51 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ------
         RecordRetrievalException
             When the object cannot be found, or we have received an unexpected response status code.
+
+        Examples
+        --------
+        Most objects can have their info accessed in a similar manner. The example below is not exhaustive.
+
+        Get info of a Table object.
+
+        >>> catalog = fb.Catalog.get_or_create("grocery")
+        >>> table = catalog.get_table("INVOICEITEMS")
+        >>> table.info()
+        {
+          'name': 'INVOICEITEMS',
+          'status': 'DRAFT',
+          'catalog_name': 'grocery',
+          'record_creation_timestamp_column': None,
+          'table_details': {
+            'database_name': 'spark_catalog',
+            'schema_name': 'GROCERY',
+            'table_name': 'INVOICEITEMS'
+          },
+          'entities': [
+            {
+              'name': 'groceryproduct',
+              'serving_names': [
+                'GROCERYPRODUCTGUID'
+              ],
+              'catalog_name': 'grocery'
+            },
+            {
+              'name': 'groceryinvoice',
+              'serving_names': [
+                'GROCERYINVOICEGUID'
+              ],
+              'catalog_name': 'grocery'
+            }
+          ],
+          'semantics': [
+            'item_id'
+          ],
+          'column_count': 8,
+          'columns_info': None,
+          'event_id_column': 'GroceryInvoiceGuid',
+          'item_id_column': 'GroceryInvoiceItemGuid',
+          'event_data_name': 'GROCERYINVOICE'
+        }
         """
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
@@ -768,24 +849,45 @@ class SavableApiObject(ApiObject):
     @typechecked
     def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
         """
-        Save object to the persistent. Conflict could be triggered when the object
-        being saved has violated uniqueness check at the persistent (for example,
-        same ID has been used by another record stored at the persistent).
+        Save an object to the persistent data store.
+
+        A conflict could be triggered when the object being saved has violated a uniqueness check at the persistent
+        data store. For example, the same object ID could have been used by another record that is already stored.
+
+        In these scenarios, we can either raise an error or retrieve the object with the same name, depending on the
+        conflict resolution parameter passed in. The default behavior is to raise an error.
 
         Parameters
         ----------
         conflict_resolution: ConflictResolution
-            "raise" raises error when then counters conflict error (default)
-            "retrieve" handle conflict error by retrieving the object with the same name
+            "raise" will raise an error when we encounter a conflict error.
+            "retrieve" will handle the conflict error by retrieving the object with the same name.
 
         Raises
         ------
         ObjectHasBeenSavedError
-            If the object has been saved before
+            If the object has been saved before.
         DuplicatedRecordException
-            When record with the same key exists at the persistent
+            When a record with the same key exists at the persistent data store.
         RecordCreationException
-            When fail to save the new object (general failure)
+            When we fail to save the new object (general failure).
+
+        Examples
+        --------
+        Note that the examples below are not exhaustive.
+
+        Save a new Entity object.
+
+        >>> entity = fb.Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
+        >>> entity.save()
+        None
+
+        Calling save again returns an error.
+
+        >>> entity = fb.Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
+        >>> entity.save()
+        >>> entity.save()
+        Entity (id: <entity.id>) has been saved before.
         """
         if self.saved and conflict_resolution == "raise":
             raise ObjectHasBeenSavedError(

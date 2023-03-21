@@ -213,7 +213,7 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     )
     name: Optional[StrictStr] = Field(description="Record name")
     created_at: Optional[datetime] = Field(
-        default=None, allow_mutation=False, description="Record creation time"
+        default=None, allow_mutation=False, description="Record creation time."
     )
     updated_at: Optional[datetime] = Field(
         default=None, allow_mutation=False, description="Record last updated time"
