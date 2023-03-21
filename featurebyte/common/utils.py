@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Union
 
+import functools
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
@@ -271,6 +272,7 @@ def enforce_observation_set_row_order(function: Any) -> Any:
         Decorated function
     """
 
+    @functools.wraps(function)
     def wrapper(self: Any, observation_set: pd.DataFrame, **kwargs: Any) -> pd.DataFrame:
         observation_set = observation_set.copy()
         observation_set[InternalName.ROW_INDEX] = range(observation_set.shape[0])

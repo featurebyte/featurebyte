@@ -108,6 +108,15 @@ def setup() -> None:
     )
     invoice_count_60days["InvoiceCount_60days"].save(conflict_resolution="retrieve")
 
+    # Feature: InvoiceAmountAvg_60days
+    invoice_amount_avg_60days = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
+        value_column="Amount",
+        method="avg",
+        feature_names=["InvoiceAmountAvg_60days"],
+        windows=["60d"],
+    )
+    invoice_amount_avg_60days["InvoiceAmountAvg_60days"].save(conflict_resolution="retrieve")
+
     # FeatureList:
     FeatureList([invoice_count_60days], name="invoice_feature_list").save(
         conflict_resolution="retrieve"
