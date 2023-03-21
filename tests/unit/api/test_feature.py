@@ -678,7 +678,7 @@ def test_feature__as_default_version(saved_feature):
     assert Feature.get(name=saved_feature.name, version=new_version.version.to_str()) == new_version
 
 
-def test_composite_features(snowflake_event_table_with_entity):
+def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
     """Test composite features' property"""
     entity = Entity(name="binary", serving_names=["col_binary"])
     entity.save()
@@ -711,6 +711,11 @@ def test_composite_features(snowflake_event_table_with_entity):
         + feature_group_by_binary["sum_30m_by_binary"]
     )
     assert set(composite_feature.entity_identifiers) == {"cust_id", "col_binary"}
+
+    assert composite_feature.primary_entity == [
+        cust_id_entity,
+        entity,
+    ]
 
 
 def test_update_readiness_and_default_version_mode(saved_feature):
