@@ -592,6 +592,12 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 elif line.startswith(":members:"):
                     members = line.split()[1:] or None
                     self.render_members(docstring_elem, resource_details, members=members)
+                elif line.startswith(":api_to_use:"):
+                    # example - line = ":api_to_use: featurebyte.ChangeViewColumn.lag"
+                    api_to_use = line.split()[1]
+                    path_element, name_element = api_to_use.rsplit(".", 1)
+                    path_elem.text = path_element + "."  # featurebyte.ChangeViewColumn.
+                    name_elem.text = name_element
 
         if theRest:
             # This block contained unindented line(s) after the first indented
