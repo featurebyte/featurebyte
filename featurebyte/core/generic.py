@@ -20,6 +20,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 
 if TYPE_CHECKING:
@@ -79,7 +80,9 @@ class QueryObject(FeatureByteBaseModel):
         """
         out = []
         pruned_graph, pruned_node = self.extract_pruned_graph_and_node()
-        for node in dfs_traversal(pruned_graph, pruned_node):
+        flattened_graph, node_name_map = GraphFlatteningTransformer(graph=pruned_graph).transform()
+        flattened_node = flattened_graph.get_node_by_name(node_name_map[pruned_node.name])
+        for node in dfs_traversal(flattened_graph, flattened_node):
             out.append(node.type)
         return out
 
