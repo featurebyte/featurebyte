@@ -84,7 +84,9 @@ def stop() -> None:
     _stop_app(ApplicationName.SPARK, verbose=False)
 
 
-def playground(local: bool = False, datasets: Optional[List[str]] = None) -> None:
+def playground(
+    local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True
+) -> None:
     """
     Start playground environment
 
@@ -94,8 +96,10 @@ def playground(local: bool = False, datasets: Optional[List[str]] = None) -> Non
         Do not pull new images from registry, by default False
     datasets : Optional[List[str]]
         List of datasets to import, by default None (import all datasets)
+    docs_enabled: bool
+        Enable featurebyte-docs, by default True
     """
-    _start_playground(local=local, datasets=datasets)
+    _start_playground(local=local, datasets=datasets, docs_enabled=docs_enabled)
 
 
 __all__ = [
