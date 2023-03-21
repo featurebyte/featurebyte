@@ -1,6 +1,7 @@
 ## Publish Beta ##
 ### REQUIREMENTS ###
 # Given a branch name of release/beta/0.3 and a version of 0.3.4
+# Documentation image must be published with the same version
 
 # == GIT TAG ==
 # git tag will be created based on the branch name: release/beta/0.3.4
@@ -8,7 +9,7 @@
 # pypi version is based on the version input: 0.3.4
 # == DOCKER ==
 # docker images will be tagged based on the above version
-# tags: [SHORT_HASH, 0.3, 0.3.4]
+# image-tags: [SHORT_HASH, 0.3, 0.3.4]
 
 name: publish-beta
 # SECRETS NAME                   | Description                     | PERMISSIONS
