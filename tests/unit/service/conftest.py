@@ -404,6 +404,19 @@ async def feature_non_time_based_fixture(
         return feature
 
 
+@pytest_asyncio.fixture(name="feature_item_event")
+async def feature_item_event_fixture(
+    test_dir, event_table, item_table, entity_transaction, feature_service
+):
+    """Feature model (item-event feature)"""
+    _ = event_table, item_table, entity_transaction
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_item_event.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        feature = await feature_service.create_document(data=FeatureCreate(**payload))
+        return feature
+
+
 @pytest_asyncio.fixture(name="production_ready_feature")
 async def production_ready_feature_fixture(feature_readiness_service, feature):
     """Production ready readiness feature fixture"""

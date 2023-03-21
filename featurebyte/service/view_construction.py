@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from collections import defaultdict
+
 from bson import ObjectId
 
 from featurebyte import ColumnCleaningOperation, TableCleaningOperation
@@ -16,6 +18,7 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.metadata.operation import OperationStructure, ViewDataColumnType
 from featurebyte.query_graph.node.nested import (
     BaseGraphNode,
     BaseViewGraphNodeParameters,
@@ -103,15 +106,8 @@ class ViewConstructionService(BaseService):
         query_graph: QueryGraphModel,
         view_node_name_to_table_info: dict[str, tuple[Node, list[ColumnInfo], InputNode]],
         input_node_names: list[str],
-        node_name: str,
-        keep_target_node_names: set[str],
-        available_column_names: list[str],
+        table_id_to_source_column_names: dict[ObjectId, list[str]],
     ) -> tuple[list[str], list[Node]]:
-        target_columns = query_graph.get_target_nodes_required_column_names(
-            node_name=node_name,
-            keep_target_node_names=keep_target_node_names,
-            available_column_names=available_column_names,
-        )
         input_nodes = []
         for input_node_name in input_node_names:
             if input_node_name in view_node_name_to_table_info:
@@ -119,6 +115,11 @@ class ViewConstructionService(BaseService):
                 input_nodes.append(view_node)
             else:
                 input_nodes.append(query_graph.get_node_by_name(input_node_name))
+
+        # the first input node to the view graph node is the source table input node
+        source_table_input_node = input_nodes[0]
+        assert isinstance(source_table_input_node, InputNode)
+        target_columns = table_id_to_source_column_names[source_table_input_node.parameters.id]  # type: ignore
         return target_columns, input_nodes
 
     async def _construct_view_graph_node(
@@ -172,6 +173,22 @@ class ViewConstructionService(BaseService):
         )
         return new_view_graph_node, new_view_columns_info
 
+    @staticmethod
+    def _prepare_table_id_to_table_column_names(
+        operation_structure: OperationStructure,
+    ) -> dict[ObjectId, list[str]]:
+        # prepare table ID to source column names mapping, use this mapping to prune the view graph node parameters
+        table_id_to_source_column_names = defaultdict(list)
+        for col in operation_structure.columns:
+            if col.type == ViewDataColumnType.SOURCE:
+                table_id_to_source_column_names[col.tabular_data_id].append(col.name)
+            else:
+                for derived_source_col in col.columns:
+                    table_id_to_source_column_names[derived_source_col.tabular_data_id].append(
+                        derived_source_col.name
+                    )
+        return table_id_to_source_column_names
+
     async def prepare_view_node_name_to_replacement_node(
         self,
         query_graph: QueryGraphModel,
@@ -213,11 +230,12 @@ class ViewConstructionService(BaseService):
 
         # prepare operation structure of nodes
         operation_structure_info = OperationStructureExtractor(graph=query_graph).extract(
-            node=target_node
+            node=target_node,
+            keep_all_source_columns=True,
         )
-        keep_target_node_names = operation_structure_info.operation_structure_map[
-            target_node.name
-        ].all_node_names
+        table_id_to_source_column_names = self._prepare_table_id_to_table_column_names(
+            operation_structure=operation_structure_info.operation_structure_map[target_node.name]
+        )
 
         # since the graph node is topologically sorted, input to the view graph node will always be
         # processed before the view graph node itself
@@ -240,17 +258,12 @@ class ViewConstructionService(BaseService):
                 view_node_name_to_table_info=view_node_name_to_table_info,
             )
 
-            # construct list of columns name of view graph node output
-            operation_structure = operation_structure_info.operation_structure_map[graph_node.name]
-
             # prepare required output columns & input nodes for the view graph node
             target_columns, input_nodes = self._prepare_target_columns_and_input_nodes(
                 query_graph=query_graph,
                 view_node_name_to_table_info=view_node_name_to_table_info,
                 input_node_names=input_node_names,
-                node_name=graph_node.name,
-                keep_target_node_names=keep_target_node_names,
-                available_column_names=operation_structure.output_column_names,
+                table_id_to_source_column_names=table_id_to_source_column_names,
             )
 
             # create a new view graph node

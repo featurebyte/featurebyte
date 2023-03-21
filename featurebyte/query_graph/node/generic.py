@@ -947,15 +947,27 @@ class JoinNode(BasePrunableNode):
             for col in inputs[0].columns
             if col.name in left_col_map
         }
-        right_columns = {
-            col.name: col.clone(
-                name=right_col_map[col.name],  # type: ignore
-                node_names=col.node_names.union([self.name]),
-                node_name=self.name,
-            )
-            for col in inputs[1].columns
-            if col.name in right_col_map
-        }
+        right_columns = {}
+        right_on_col = next(
+            col for col in inputs[1].columns if col.name == self.parameters.right_on
+        )
+        for col in inputs[1].columns:
+            if col.name in right_col_map:
+                if global_state.keep_all_source_columns:
+                    right_columns[col.name] = DerivedDataColumn.create(
+                        name=right_col_map[col.name],
+                        columns=[right_on_col, col],
+                        transform=self.transform_info,
+                        node_name=self.name,
+                        dtype=col.dtype,
+                        other_node_names=col.node_names,
+                    )
+                else:
+                    right_columns[col.name] = col.clone(
+                        name=right_col_map[col.name],  # type: ignore
+                        node_names=col.node_names.union([self.name]),
+                        node_name=self.name,
+                    )
 
         if self.parameters.join_type == "left":
             row_index_lineage = inputs[0].row_index_lineage

@@ -763,6 +763,21 @@ def get_non_time_based_feature_fixture(snowflake_item_table, transaction_entity)
     )
 
 
+@pytest.fixture(name="item_event_feature")
+def item_event_feature_fixture(snowflake_item_table, transaction_entity):
+    """
+    Feature that is built from both item and event table
+    """
+    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
+    item_table = ItemTable(**{**snowflake_item_table.json_dict(), "item_id_column": "event_id_col"})
+    item_view = item_table.get_view(event_suffix="_event_table")
+    return item_view.groupby("event_id_col").aggregate(
+        value_column="cust_id_event_table",
+        method=AggFunc.SUM,
+        feature_name="item_event_sum_cust_id_feature",
+    )
+
+
 @pytest.fixture(name="float_feature")
 def float_feature_fixture(feature_group):
     """
@@ -1066,6 +1081,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     snowflake_event_view_with_entity,
     feature_group,
     non_time_based_feature,
+    item_event_feature,
     cust_id_entity,
     transaction_entity,
 ):
@@ -1152,7 +1168,8 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (snowflake_scd_table, "scd_table"),
             (feature_sum_30m, "feature_sum_30m"),
             (feature_sum_2h, "feature_sum_2h"),
-            (non_time_based_feature, "feature_non_time_based"),
+            (non_time_based_feature, "feature_item_event"),
+            (item_event_feature, "feature_item_event"),
             (feature_iet, "feature_iet"),
             (feature_list, "feature_list_single"),
             (feature_list_multiple, "feature_list_multi"),

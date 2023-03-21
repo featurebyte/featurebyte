@@ -589,12 +589,12 @@ def item_metadata_fixture(item_table, event_metadata, event_table):
     [
         # case 1: update item table only
         (
-            [create_table_cleaning_operations("sf_item_table", ["item_amount"])],
+            [create_table_cleaning_operations("sf_item_table", ["event_id_col"])],
             {},  # no change in event metadata
             {
                 "column_cleaning_operations": [
                     {
-                        "column_name": "item_amount",
+                        "column_name": "event_id_col",
                         "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
                     }
                 ],
@@ -624,7 +624,7 @@ def item_metadata_fixture(item_table, event_metadata, event_table):
         (
             [
                 create_table_cleaning_operations("sf_event_table", ["col_int"]),
-                create_table_cleaning_operations("sf_item_table", ["item_amount"]),
+                create_table_cleaning_operations("sf_item_table", ["event_id_col"]),
             ],
             {
                 "column_cleaning_operations": [
@@ -637,7 +637,7 @@ def item_metadata_fixture(item_table, event_metadata, event_table):
             {
                 "column_cleaning_operations": [
                     {
-                        "column_name": "item_amount",
+                        "column_name": "event_id_col",
                         "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
                     }
                 ],
@@ -651,9 +651,9 @@ def item_metadata_fixture(item_table, event_metadata, event_table):
         ),
     ],
 )
-async def test_create_new_feature_version__with_non_time_based_feature(
+async def test_create_new_feature_version__with_item_event_feature(
     version_service,
-    feature_non_time_based,
+    feature_item_event,
     event_metadata,
     item_metadata,
     table_cleaning_operations,
@@ -661,15 +661,15 @@ async def test_create_new_feature_version__with_non_time_based_feature(
     expected_item_metadata,
 ):
     """Test create new feature version with event table cleaning operations"""
-    event_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_1")
-    item_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_2")
+    event_view_graph_node = feature_item_event.graph.get_node_by_name("graph_1")
+    item_view_graph_node = feature_item_event.graph.get_node_by_name("graph_2")
     assert event_view_graph_node.parameters.metadata == event_metadata
     assert item_view_graph_node.parameters.metadata == item_metadata
 
     # create a new feature version with relevant table cleaning operations
     new_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
-            source_feature_id=feature_non_time_based.id,
+            source_feature_id=feature_item_event.id,
             table_cleaning_operations=table_cleaning_operations,
         )
     )
@@ -691,7 +691,7 @@ async def test_create_new_feature_version__with_non_time_based_feature(
     assert item_metadata.event_drop_column_names == event_metadata.drop_column_names
 
     # graph structure (edges) should be the same
-    assert new_version.graph.edges == feature_non_time_based.graph.edges
+    assert new_version.graph.edges == feature_item_event.graph.edges
 
 
 @pytest.mark.asyncio

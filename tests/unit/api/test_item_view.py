@@ -835,13 +835,14 @@ def test_validate_aggregate_over_parameters(snowflake_item_table, transaction_en
     snowflake_item_view.validate_aggregate_over_parameters(group_by.keys, None)
 
 
-@pytest.fixture(name="non_time_based_saved_feature")
-def non_time_based_saved_feature_fixture(saved_item_table, transaction_entity):
-    """Non-time-based saved feature fixture"""
+@pytest.fixture(name="item_event_saved_feature")
+def item_event_saved_feature_fixture(saved_item_table, transaction_entity):
+    """Item event saved feature fixture"""
     saved_item_table["event_id_col"].as_entity(transaction_entity.name)
     snowflake_item_view = saved_item_table.get_view(event_suffix="_event_table")
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
-        method="count",
+        "cust_id_event_table",
+        method="sum",
         feature_name="order_size",
     )
     derived_feature = feature + 123
@@ -850,12 +851,12 @@ def non_time_based_saved_feature_fixture(saved_item_table, transaction_entity):
     return derived_feature
 
 
-def test_non_time_based_feature__create_new_version(non_time_based_saved_feature):
+def test_non_time_based_feature__create_new_version(item_event_saved_feature):
     """
     Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
     """
     with pytest.raises(RecordCreationException) as exc:
-        non_time_based_saved_feature.create_new_version(
+        item_event_saved_feature.create_new_version(
             table_feature_job_settings=[
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
@@ -875,14 +876,14 @@ def test_non_time_based_feature__create_new_version(non_time_based_saved_feature
 
 
 def test_non_time_based_feature__create_new_version_with_data_cleaning(
-    saved_item_table, non_time_based_saved_feature, update_fixtures
+    saved_item_table, item_event_saved_feature, update_fixtures
 ):
     """Test creation of new version with table cleaning operations"""
     # check sdk code generation of source feature
-    check_sdk_code_generation(non_time_based_saved_feature, to_use_saved_data=True)
+    check_sdk_code_generation(item_event_saved_feature, to_use_saved_data=True)
 
     # create a new version with table cleaning operations
-    new_version = non_time_based_saved_feature.create_new_version(
+    new_version = item_event_saved_feature.create_new_version(
         table_feature_job_settings=None,
         table_cleaning_operations=[
             TableCleaningOperation(
@@ -922,7 +923,7 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
     check_sdk_code_generation(
         new_version,
         to_use_saved_data=True,
-        fixture_path="tests/fixtures/sdk_code/feature_non_time_based_with_data_cleaning_operations.py",
+        fixture_path="tests/fixtures/sdk_code/feature_item_event_with_data_cleaning_operations.py",
         update_fixtures=update_fixtures,
         table_id=saved_item_table.id,
         event_table_id=saved_item_table.event_table_id,
