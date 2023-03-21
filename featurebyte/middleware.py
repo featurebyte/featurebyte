@@ -4,8 +4,10 @@ Handles API requests middleware
 from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 
 import inspect
+import uuid
 from http import HTTPStatus
 
+import requests
 from fastapi import Request, Response
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
@@ -206,10 +208,40 @@ async def request_handler(
     try:
         async with ExecutionContext(request, call_next) as executor:
             response: Response = await executor.execute()
+            __send_telemetry(request, str(response.status_code))
     except Exception as exc:  # pylint: disable=broad-except
         logger.exception(str(exc))
+        __send_telemetry(request, str(exc))
         response = JSONResponse(
             content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
 
     return response
+
+
+def __send_telemetry(request: Request, trace: str) -> None:
+    # Do not send telemetry for health check
+    if request.url.path.startswith("/status"):
+        return
+
+    payload = {
+        "method": request.method,
+        "path": request.url.path,
+        "user": __get_server_uuid(),
+        "trace": trace,
+    }
+    try:
+        requests.post(
+            url="https://log.int.featurebyte.com",
+            headers={"Content-Type": "Application/json"},
+            json=payload,
+            timeout=1,
+        )  # 1sec timeout
+    except:  # pylint: disable=bare-except
+        pass
+
+
+# Refer https://www.geeksforgeeks.org/extracting-mac-address-using-python/
+# joins elements of getnode() after each 2 digits.
+def __get_server_uuid() -> str:
+    return ":".join([f"{(uuid.getnode() >> ele) & 0xff:02x}" for ele in range(0, 8 * 6, 8)][::-1])
