@@ -22,6 +22,18 @@ def graph_with_window_function_filter(global_graph, input_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[input_node],
     )
+    proj_cust_id = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["cust_id"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    proj_ts = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["ts"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
     non_window_based_condition = graph.add_operation(
         node_type=NodeType.EQ,
         node_params={"value": 123},
@@ -38,7 +50,7 @@ def graph_with_window_function_filter(global_graph, input_node):
         node_type=NodeType.LAG,
         node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[proj_a],
+        input_nodes=[proj_a, proj_cust_id, proj_ts],
     )
     window_based_condition = graph.add_operation(
         node_type=NodeType.GT,
@@ -93,11 +105,23 @@ def test_window_function(global_graph, input_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[filtered_input_node],
     )
+    proj_cust_id = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["cust_id"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[filtered_input_node],
+    )
+    proj_ts = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["ts"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[filtered_input_node],
+    )
     lagged_a = graph.add_operation(
         node_type=NodeType.LAG,
         node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[proj_a],
+        input_nodes=[proj_a, proj_cust_id, proj_ts],
     )
     assign_node = graph.add_operation(
         node_type=NodeType.ASSIGN,
@@ -164,7 +188,7 @@ def test_window_function(global_graph, input_node):
             DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          COUNT(*) AS value_count_8993ef6979471d1101f5b0ef345c1c144695cc87
+          COUNT(*) AS value_count_bdd430697527efc219056ed856d0fc44ad2388ed
         FROM (
           SELECT
             *,
@@ -211,11 +235,23 @@ def test_window_function__as_filter(global_graph, input_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[input_node],
     )
+    proj_cust_id = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["cust_id"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    proj_ts = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["ts"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
     lagged_a = graph.add_operation(
         node_type=NodeType.LAG,
         node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[proj_a],
+        input_nodes=[proj_a, proj_cust_id, proj_ts],
     )
     assign_node = graph.add_operation(
         node_type=NodeType.ASSIGN,
