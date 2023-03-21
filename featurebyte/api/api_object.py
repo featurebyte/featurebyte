@@ -702,7 +702,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
           'columns_info': None,
           'event_id_column': 'GroceryInvoiceGuid',
           'item_id_column': 'GroceryInvoiceItemGuid',
-          'event_data_name': 'GROCERYINVOICE'
+          'event_table_name': 'GROCERYINVOICE'
         }
         """
         client = Configurations().get_client()
@@ -878,7 +878,7 @@ class SavableApiObject(ApiObject):
 
         Save a new Entity object.
 
-        >>> entity = fb.Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
+        >>> entity = fb.Entity(name="grocerycustomer_example", serving_names=["GROCERYCUSTOMERGUID"])
         >>> entity.save()
         None
 
