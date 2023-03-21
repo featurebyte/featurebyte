@@ -172,6 +172,11 @@ def print_logs(app_name: ApplicationName, service_name: str, tail: int) -> None:
 
 ### WARNING THIS NEEDS TO BE REMOVED AFTER BETA ###
 def __backup_docker_conf() -> None:
+    # If docker folder does not exist, create it
+    docker_folder = os.path.expanduser("~/.docker")
+    if not os.path.isdir(docker_folder):
+        os.mkdir(docker_folder)
+
     docker_cfg = os.path.expanduser("~/.docker/config.json")
     docker_cfg_old = os.path.expanduser("~/.docker/config.json.old")
 
