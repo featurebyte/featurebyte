@@ -256,7 +256,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 if "#" in object_name:
                     object_name = object_name.split("#")[-1]
                 if "featurebyte" in type_class_path:
-                    return f'<a href="/reference/{type_class_path}">{object_name}</a>'
+                    return f'<a href=\'javascript:window.location=new URL("../{type_class_path}/", window.location.href.split("#")[0]).href\'>{object_name}</a>'
                 return object_name
             return type_class_path
 
@@ -486,7 +486,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
         if resource_details.type == "method":
             # add reference link for methods
             name_elem = etree.SubElement(name_elem, "a")
-            name_elem.set("href", f"/reference/{resource_details.path}.{resource_details.realname}")
+            name_elem.set(
+                "href",
+                f'javascript:window.location=new URL("../{resource_details.path}.{resource_details.realname}/", window.location.href.split("#")[0]).href',
+            )
 
         main_name_elem = etree.SubElement(name_elem, "strong")
         main_name_elem.text = resource_details.name
