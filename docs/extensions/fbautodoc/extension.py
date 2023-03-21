@@ -595,12 +595,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 elif line.startswith(":api_to_use:"):
                     # example - line = ":api_to_use: featurebyte.ChangeViewColumn.lag"
                     api_to_use = line.split()[1]
-                    split_api_to_use = api_to_use.split(".")
-                    name_element = split_api_to_use[-1]  # lag
-                    path_element = (
-                        ".".join(split_api_to_use[:-1]) + "."
-                    )  # featurebyte.ChangeViewColumn.
-                    path_elem.text = path_element
+                    path_element, name_element = api_to_use.rsplit(".", 1)
+                    path_elem.text = path_element + "."  # featurebyte.ChangeViewColumn.
                     name_elem.text = name_element
 
         if theRest:
