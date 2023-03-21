@@ -48,8 +48,6 @@ services:
     depends_on:
       mongo-rs:
         condition: service_healthy
-      featurebyte-docs:
-        condition: service_started
     ports:
       - "127.0.0.1:8088:8088"
     environment:

@@ -128,7 +128,7 @@ def get_service_names(app_name: ApplicationName) -> List[str]:
     List[str]
     """
     if app_name == ApplicationName.FEATUREBYTE:
-        return ["featurebyte-server", "featurebyte-worker"]
+        return ["featurebyte-server", "featurebyte-worker", "featurebyte-docs"]
     if app_name == ApplicationName.SPARK:
         return ["spark-thrift"]
     raise ValueError("Not a valid application name")
