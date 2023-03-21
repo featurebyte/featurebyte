@@ -80,6 +80,7 @@ from featurebyte.models.feature_list import (
     FrozenFeatureListModel,
     FrozenFeatureListNamespaceModel,
 )
+from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.feature_list import (
@@ -91,7 +92,6 @@ from featurebyte.schema.feature_list import (
     FeatureVersionInfo,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
-from featurebyte.service.relationship_analysis import derive_primary_entity
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):

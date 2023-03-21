@@ -41,6 +41,7 @@ from featurebyte.models.feature import (
     FrozenFeatureNamespaceModel,
 )
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -54,7 +55,6 @@ from featurebyte.query_graph.node.generic import (
 )
 from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
-from featurebyte.service.relationship_analysis import derive_primary_entity
 
 
 class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
