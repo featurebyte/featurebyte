@@ -147,7 +147,10 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     @property
     def primary_entity(self) -> List[Entity]:
         """
-        Return the primary entity of the FeatureList or FeatureGroup.
+        Return the primary entity of the feature list or feature group.
+
+        The main focus of a feature list is determined by its primary entity, which typically
+        corresponds to the primary entity of the Use Case that the feature list was created for.
 
         Returns
         -------

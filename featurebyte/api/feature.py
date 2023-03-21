@@ -579,9 +579,12 @@ class Feature(
         """
         Primary entity of this feature
 
+        The primary entity of a feature defines the level of analysis for that feature.
+
         Returns
         -------
         list[Entity]
+            Primary entity
         """
         entities = []
         for entity_id in self.entity_ids:
