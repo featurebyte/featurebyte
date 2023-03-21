@@ -2,6 +2,7 @@
 Integration test for online enabling features
 """
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pytest
 
@@ -38,13 +39,15 @@ def online_enabled_feature_list_fixture(event_table, config):
         features, name="My Feature List (tests/integration/api/test_feature.py)"
     )
     feature_list.save()
-    feature_list.deploy(enable=True, make_production_ready=True)
-    feature_list_deploy_sync(feature_list.id, enable=True)
 
-    yield feature_list
+    with patch("featurebyte.api.feature_list.FeatureList.post_async_task") as _:
+        feature_list.deploy(enable=True, make_production_ready=True)
+        feature_list_deploy_sync(feature_list.id, enable=True)
 
-    feature_list.deploy(enable=False, make_production_ready=True)
-    feature_list_deploy_sync(feature_list.id, enable=False)
+        yield feature_list
+
+        feature_list.deploy(enable=False, make_production_ready=True)
+        feature_list_deploy_sync(feature_list.id, enable=False)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

@@ -54,10 +54,11 @@ def deployed_feature_list_fixture(event_table):
         "featurebyte.feature_manager.manager.get_next_job_datetime",
         return_value=next_job_datetime,
     ):
-        features.deploy(make_production_ready=True, enable=True)
-        feature_list_deploy_sync(features.id, enable=True)
+        with patch("featurebyte.api.feature_list.FeatureList.post_async_task") as _:
+            features.deploy(make_production_ready=True, enable=True)
+            feature_list_deploy_sync(features.id, enable=True)
 
-        yield features
+            yield features
 
 
 def make_online_request(client, feature_list, entity_serving_names):

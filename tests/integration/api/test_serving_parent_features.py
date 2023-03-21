@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -147,13 +149,14 @@ def customer_num_city_change_feature_fixture(tables):
 def feature_list_with_child_entities_fixture(country_feature):
     feature_list = FeatureList([country_feature], name=f"{table_prefix}_country_list")
     feature_list.save(conflict_resolution="retrieve")
-    try:
-        feature_list.deploy(enable=True, make_production_ready=True)
-        feature_list_deploy_sync(feature_list.id, enable=True)
-        yield feature_list
-    finally:
-        feature_list.deploy(enable=False)
-        feature_list_deploy_sync(feature_list.id, enable=False)
+    with patch("featurebyte.api.feature_list.FeatureList.post_async_task") as _:
+        try:
+            feature_list.deploy(enable=True, make_production_ready=True)
+            feature_list_deploy_sync(feature_list.id, enable=True)
+            yield feature_list
+        finally:
+            feature_list.deploy(enable=False)
+            feature_list_deploy_sync(feature_list.id, enable=False)
 
 
 @pytest.fixture(name="feature_list_with_parent_child_features", scope="module")
@@ -162,13 +165,14 @@ def feature_list_with_parent_child_features_fixture(country_feature, city_featur
         [city_feature, country_feature], name=f"{table_prefix}_city_country_list"
     )
     feature_list.save(conflict_resolution="retrieve")
-    try:
-        feature_list.deploy(enable=True, make_production_ready=True)
-        feature_list_deploy_sync(feature_list.id, enable=True)
-        yield feature_list
-    finally:
-        feature_list.deploy(enable=False)
-        feature_list_deploy_sync(feature_list.id, enable=False)
+    with patch("featurebyte.api.feature_list.FeatureList.post_async_task") as _:
+        try:
+            feature_list.deploy(enable=True, make_production_ready=True)
+            feature_list_deploy_sync(feature_list.id, enable=True)
+            yield feature_list
+        finally:
+            feature_list.deploy(enable=False)
+            feature_list_deploy_sync(feature_list.id, enable=False)
 
 
 @pytest.mark.asyncio
