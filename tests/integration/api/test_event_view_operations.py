@@ -1055,7 +1055,6 @@ def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_fea
 
     # ensure the updated view continues to work as expected
     event_view["User Status New"] = event_view["User Status"] + "_suffix"
-    event_view = event_view[event_view["User Status"].notnull()]
 
     # test columns are updated as expected
     event_view_preview = event_view.sample()

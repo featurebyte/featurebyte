@@ -274,6 +274,7 @@ class GraphInterpreter:
         self,
         node_name: str,
         num_rows: int = 10,
+        seed: int = 1234,
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
@@ -287,6 +288,8 @@ class GraphInterpreter:
             Query graph node name
         num_rows : int
             Number of rows to sample, no sampling if None
+        seed: int
+            Random seed to use for sampling
         from_timestamp: Optional[datetime]
             Start of date range to filter on
         to_timestamp: Optional[datetime]
@@ -352,21 +355,10 @@ class GraphInterpreter:
 
         if num_rows > 0:
             # apply random sampling
-            sql_tree = (
-                expressions.Select()
-                .select(
-                    *[
-                        quoted_identifier(col_expr.alias or col_expr.name)
-                        for col_expr in sql_tree.expressions
-                    ]
-                )
-                .from_(
-                    expressions.TableSample(
-                        this=expressions.Subquery(this=sql_tree),
-                        rows=make_literal_value(num_rows),
-                    )
-                )
+            sql_tree = sql_tree.order_by(
+                expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])
             )
+            sql_tree = sql_tree.limit(num_rows)
 
         return sql_tree, type_conversions
 
@@ -397,6 +389,7 @@ class GraphInterpreter:
         self,
         node_name: str,
         num_rows: int = 10,
+        seed: int = 1234,
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
@@ -409,6 +402,8 @@ class GraphInterpreter:
             Query graph node name
         num_rows : int
             Number of rows to include in the preview
+        seed: int
+            Random seed to use for sampling
         from_timestamp: Optional[datetime]
             Start of date range to filter on
         to_timestamp: Optional[datetime]
@@ -425,6 +420,7 @@ class GraphInterpreter:
         sql_tree, type_conversions = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
+            seed=seed,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
@@ -910,6 +906,7 @@ class GraphInterpreter:
         self,
         node_name: str,
         num_rows: int = 10,
+        seed: int = 1234,
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
@@ -922,6 +919,8 @@ class GraphInterpreter:
             Query graph node name
         num_rows : int
             Number of rows to include in the preview
+        seed: int
+            Random seed to use for sampling
         from_timestamp: Optional[datetime]
             Start of date range to filter on
         to_timestamp: Optional[datetime]
@@ -941,6 +940,7 @@ class GraphInterpreter:
         sql_tree, type_conversions = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
+            seed=seed,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
