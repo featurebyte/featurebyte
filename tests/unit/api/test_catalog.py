@@ -76,8 +76,6 @@ class MethodMetadata:
 def catalog_list_methods_to_test_list():
     return [
         MethodMetadata("list_features", Feature, "_list_versions", "list_versions"),
-        MethodMetadata("list_feature_namespaces", FeatureNamespace, "list"),
-        MethodMetadata("list_feature_list_namespaces", FeatureListNamespace, "list"),
         MethodMetadata("list_feature_lists", FeatureList, "_list_versions", "list_versions"),
         MethodMetadata("list_tables", Table, "list"),
         MethodMetadata("list_relationships", Relationship, "list"),
@@ -91,8 +89,6 @@ def catalog_list_methods_to_test_list():
 def catalog_get_methods_to_test_list():
     return [
         MethodMetadata("get_feature", Feature, "get"),
-        MethodMetadata("get_feature_namespace", FeatureNamespace, "get"),
-        MethodMetadata("get_feature_list_namespace", FeatureListNamespace, "get"),
         MethodMetadata("get_feature_list", FeatureList, "get"),
         MethodMetadata("get_table", Table, "get"),
         MethodMetadata("get_relationship", Relationship, "get"),
@@ -173,6 +169,8 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         DimensionTable,  # accessible as part of catalog.(list|get)_table
         EventTable,  # accessible as part of catalog.(list|get)_table
         FeatureJobMixin,
+        FeatureListNamespace,  # same as (list|get)_feature_list
+        FeatureNamespace,  # same as (list|get)_feature
         ItemTable,  # accessible as part of catalog.(list|get)_table
         SCDTable,  # accessible as part of catalog.(list|get)_table
         SavableApiObject,
