@@ -54,7 +54,6 @@ from featurebyte.query_graph.node.generic import (
 )
 from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
-from featurebyte.schema.info import EntityBriefInfoList
 from featurebyte.service.relationship_analysis import derive_primary_entity
 
 
@@ -576,36 +575,19 @@ class Feature(
         )
 
     @property
-    def primary_entity(self) -> list[dict[str, Any]]:
+    def primary_entity(self) -> List[Entity]:
         """
         Primary entity of this feature
 
         Returns
         -------
-        list[dict[str, Any]]
+        list[Entity]
         """
-        from featurebyte.api.catalog import Catalog
-
         entity_models = []
         for entity_id in self.entity_ids:
             entity_models.append(Entity.get_by_id(entity_id))
-
         primary_entity = derive_primary_entity(entity_models)
-
-        data = {"data": []}
-        catalog_name = None
-        catalog_id = None
-        for entity in primary_entity:
-            entity_dict = entity.dict()
-            if catalog_name is None:
-                catalog_id = catalog_id
-                catalog_name = Catalog.get_by_id(entity.catalog_id).name
-            else:
-                assert catalog_id == entity.catalog_id
-            entity_dict["catalog_name"] = catalog_name
-            data["data"].append(entity_dict)
-        entity_info = EntityBriefInfoList.from_paginated_data(data)
-        return entity_info.dict()["__root__"]
+        return primary_entity
 
     def binary_op_series_params(
         self, other: Scalar | FrozenSeries | ScalarSequence
