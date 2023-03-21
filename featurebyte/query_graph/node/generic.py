@@ -915,7 +915,7 @@ class JoinNode(BasePrunableNode):
         metadata = node_params.get("metadata") or {}
         if metadata.get("type") == "join_event_table_attributes":
             node_params["metadata"]["columns"] = [
-                col for col in node_params["metadata"]["columns"] if col in left_avail_columns
+                col for col in node_params["metadata"]["columns"] if col in right_avail_columns
             ]
         return self.clone(parameters=node_params)
 
@@ -994,9 +994,9 @@ class JoinNode(BasePrunableNode):
             node_output_category=NodeOutputCategory.VIEW,
         )
         statements = left_statements + right_statements
+        var_name = left_var_name
         assert self.parameters.metadata is not None, "Join node metadata is not set."
         if isinstance(self.parameters.metadata, JoinMetadata):
-            var_name = left_var_name
             other_var_name = right_var_name
             statement = StatementStr(
                 f"{var_name}.join({other_var_name}, "
@@ -1005,7 +1005,6 @@ class JoinNode(BasePrunableNode):
                 f"rsuffix={ValueStr.create(self.parameters.metadata.rsuffix)})"
             )
         else:
-            var_name = right_var_name
             statement = StatementStr(
                 f"{var_name}.join_event_table_attributes("
                 f"columns={ValueStr.create(self.parameters.metadata.columns)}, "

@@ -213,12 +213,11 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
     ) -> Dict[str, Any]:
         _ = input_nodes
         metadata = self.metadata.dict(by_alias=True)
-        if target_columns:
-            metadata["column_cleaning_operations"] = [
-                col
-                for col in self.metadata.column_cleaning_operations
-                if col.column_name in target_columns
-            ]
+        metadata["column_cleaning_operations"] = [
+            col
+            for col in self.metadata.column_cleaning_operations
+            if col.column_name in target_columns
+        ]
         return metadata
 
     @staticmethod

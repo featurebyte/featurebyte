@@ -36,6 +36,44 @@ class TestItemView(BaseViewTestSuite):
     view_type = ViewType.ITEM_VIEW
     col = "item_amount"
     view_class = ItemView
+    expected_view_with_raw_accessor_sql = """
+    SELECT
+      L."event_id_col" AS "event_id_col",
+      L."item_id_col" AS "item_id_col",
+      L."item_type" AS "item_type",
+      L."item_amount" AS "item_amount",
+      CAST(L."created_at" AS STRING) AS "created_at",
+      CAST(L."event_timestamp" AS STRING) AS "event_timestamp",
+      CAST(R."event_timestamp" AS STRING) AS "event_timestamp_event_table",
+      R."cust_id" AS "cust_id_event_table",
+      (
+        "item_amount" + 1
+      ) AS "new_col"
+    FROM (
+      SELECT
+        "event_id_col" AS "event_id_col",
+        "item_id_col" AS "item_id_col",
+        "item_type" AS "item_type",
+        "item_amount" AS "item_amount",
+        "created_at" AS "created_at",
+        "event_timestamp" AS "event_timestamp"
+      FROM "sf_database"."sf_schema"."items_table"
+    ) AS L
+    LEFT JOIN (
+      SELECT
+        "col_int" AS "col_int",
+        "col_float" AS "col_float",
+        "col_char" AS "col_char",
+        "col_text" AS "col_text",
+        "col_binary" AS "col_binary",
+        "col_boolean" AS "col_boolean",
+        "event_timestamp" AS "event_timestamp",
+        "cust_id" AS "cust_id"
+      FROM "sf_database"."sf_schema"."sf_table"
+    ) AS R
+      ON L."event_id_col" = R."col_int"
+    LIMIT 10
+    """
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
         assert row_subset.event_id_column == view_under_test.event_id_column
@@ -84,8 +122,8 @@ def test_get_view__auto_join_columns(
             "graph": {
                 "edges": [
                     {"source": "proxy_input_1", "target": "project_1"},
-                    {"source": "proxy_input_2", "target": "join_1"},
                     {"source": "project_1", "target": "join_1"},
+                    {"source": "proxy_input_2", "target": "join_1"},
                 ],
                 "nodes": [
                     {
@@ -119,29 +157,29 @@ def test_get_view__auto_join_columns(
                         "name": "join_1",
                         "output_type": "frame",
                         "parameters": {
-                            "join_type": "inner",
-                            "left_input_columns": ["event_timestamp", "cust_id"],
-                            "left_on": "col_int",
+                            "join_type": "left",
+                            "left_input_columns": [
+                                "event_id_col",
+                                "item_id_col",
+                                "item_type",
+                                "item_amount",
+                                "created_at",
+                                "event_timestamp",
+                            ],
+                            "left_on": "event_id_col",
                             "left_output_columns": [
+                                "event_id_col",
+                                "item_id_col",
+                                "item_type",
+                                "item_amount",
+                                "created_at",
+                                "event_timestamp",
+                            ],
+                            "right_input_columns": ["event_timestamp", "cust_id"],
+                            "right_on": "col_int",
+                            "right_output_columns": [
                                 "event_timestamp_event_table",
                                 "cust_id_event_table",
-                            ],
-                            "right_input_columns": [
-                                "event_id_col",
-                                "item_id_col",
-                                "item_type",
-                                "item_amount",
-                                "created_at",
-                                "event_timestamp",
-                            ],
-                            "right_on": "event_id_col",
-                            "right_output_columns": [
-                                "event_id_col",
-                                "item_id_col",
-                                "item_type",
-                                "item_amount",
-                                "created_at",
-                                "event_timestamp",
                             ],
                             "scd_parameters": None,
                             "metadata": {
@@ -199,15 +237,25 @@ def test_get_view__auto_join_columns(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          CAST(L."event_timestamp" AS STRING) AS "event_timestamp_event_table",
-          L."cust_id" AS "cust_id_event_table",
-          R."event_id_col" AS "event_id_col",
-          R."item_id_col" AS "item_id_col",
-          R."item_type" AS "item_type",
-          R."item_amount" AS "item_amount",
-          CAST(R."created_at" AS STRING) AS "created_at",
-          CAST(R."event_timestamp" AS STRING) AS "event_timestamp"
+          L."event_id_col" AS "event_id_col",
+          L."item_id_col" AS "item_id_col",
+          L."item_type" AS "item_type",
+          L."item_amount" AS "item_amount",
+          CAST(L."created_at" AS STRING) AS "created_at",
+          CAST(L."event_timestamp" AS STRING) AS "event_timestamp",
+          CAST(R."event_timestamp" AS STRING) AS "event_timestamp_event_table",
+          R."cust_id" AS "cust_id_event_table"
         FROM (
+          SELECT
+            "event_id_col" AS "event_id_col",
+            "item_id_col" AS "item_id_col",
+            "item_type" AS "item_type",
+            "item_amount" AS "item_amount",
+            "created_at" AS "created_at",
+            "event_timestamp" AS "event_timestamp"
+          FROM "sf_database"."sf_schema"."items_table"
+        ) AS L
+        LEFT JOIN (
           SELECT
             "col_int" AS "col_int",
             "col_float" AS "col_float",
@@ -218,18 +266,8 @@ def test_get_view__auto_join_columns(
             "event_timestamp" AS "event_timestamp",
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
-        ) AS L
-        INNER JOIN (
-          SELECT
-            "event_id_col" AS "event_id_col",
-            "item_id_col" AS "item_id_col",
-            "item_type" AS "item_type",
-            "item_amount" AS "item_amount",
-            "created_at" AS "created_at",
-            "event_timestamp" AS "event_timestamp"
-          FROM "sf_database"."sf_schema"."items_table"
         ) AS R
-          ON L."col_int" = R."event_id_col"
+          ON L."event_id_col" = R."col_int"
         LIMIT 10
         """
     ).strip()
@@ -291,11 +329,8 @@ def test_join_event_table_attributes__more_columns(
         "type": "join",
         "output_type": "frame",
         "parameters": {
-            "left_on": "col_int",
-            "right_on": "event_id_col",
-            "left_input_columns": ["col_float"],
-            "left_output_columns": ["col_float"],
-            "right_input_columns": [
+            "left_on": "event_id_col",
+            "left_input_columns": [
                 "event_id_col",
                 "item_id_col",
                 "item_type",
@@ -305,7 +340,7 @@ def test_join_event_table_attributes__more_columns(
                 "event_timestamp_event_table",
                 "cust_id_event_table",
             ],
-            "right_output_columns": [
+            "left_output_columns": [
                 "event_id_col",
                 "item_id_col",
                 "item_type",
@@ -315,7 +350,10 @@ def test_join_event_table_attributes__more_columns(
                 "event_timestamp_event_table",
                 "cust_id_event_table",
             ],
-            "join_type": "inner",
+            "right_on": "col_int",
+            "right_input_columns": ["col_float"],
+            "right_output_columns": ["col_float"],
+            "join_type": "left",
             "scd_parameters": None,
             "metadata": {
                 "type": "join_event_table_attributes",
@@ -356,38 +394,36 @@ def test_join_event_table_attributes__more_columns(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          L."col_float" AS "col_float",
-          R."event_id_col" AS "event_id_col",
-          R."item_id_col" AS "item_id_col",
-          R."item_type" AS "item_type",
-          R."item_amount" AS "item_amount",
-          CAST(R."created_at" AS STRING) AS "created_at",
-          CAST(R."event_timestamp" AS STRING) AS "event_timestamp",
-          CAST(R."event_timestamp_event_table" AS STRING) AS "event_timestamp_event_table",
-          R."cust_id_event_table" AS "cust_id_event_table"
+          L."event_id_col" AS "event_id_col",
+          L."item_id_col" AS "item_id_col",
+          L."item_type" AS "item_type",
+          L."item_amount" AS "item_amount",
+          CAST(L."created_at" AS STRING) AS "created_at",
+          CAST(L."event_timestamp" AS STRING) AS "event_timestamp",
+          CAST(L."event_timestamp_event_table" AS STRING) AS "event_timestamp_event_table",
+          L."cust_id_event_table" AS "cust_id_event_table",
+          R."col_float" AS "col_float"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
-            "cust_id" AS "cust_id"
-          FROM "sf_database"."sf_schema"."sf_table"
-        ) AS L
-        INNER JOIN (
-          SELECT
-            L."event_timestamp" AS "event_timestamp_event_table",
-            L."cust_id" AS "cust_id_event_table",
-            R."event_id_col" AS "event_id_col",
-            R."item_id_col" AS "item_id_col",
-            R."item_type" AS "item_type",
-            R."item_amount" AS "item_amount",
-            R."created_at" AS "created_at",
-            R."event_timestamp" AS "event_timestamp"
+            L."event_id_col" AS "event_id_col",
+            L."item_id_col" AS "item_id_col",
+            L."item_type" AS "item_type",
+            L."item_amount" AS "item_amount",
+            L."created_at" AS "created_at",
+            L."event_timestamp" AS "event_timestamp",
+            R."event_timestamp" AS "event_timestamp_event_table",
+            R."cust_id" AS "cust_id_event_table"
           FROM (
+            SELECT
+              "event_id_col" AS "event_id_col",
+              "item_id_col" AS "item_id_col",
+              "item_type" AS "item_type",
+              "item_amount" AS "item_amount",
+              "created_at" AS "created_at",
+              "event_timestamp" AS "event_timestamp"
+            FROM "sf_database"."sf_schema"."items_table"
+          ) AS L
+          LEFT JOIN (
             SELECT
               "col_int" AS "col_int",
               "col_float" AS "col_float",
@@ -398,20 +434,22 @@ def test_join_event_table_attributes__more_columns(
               "event_timestamp" AS "event_timestamp",
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
-          ) AS L
-          INNER JOIN (
-            SELECT
-              "event_id_col" AS "event_id_col",
-              "item_id_col" AS "item_id_col",
-              "item_type" AS "item_type",
-              "item_amount" AS "item_amount",
-              "created_at" AS "created_at",
-              "event_timestamp" AS "event_timestamp"
-            FROM "sf_database"."sf_schema"."items_table"
           ) AS R
-            ON L."col_int" = R."event_id_col"
+            ON L."event_id_col" = R."col_int"
+        ) AS L
+        LEFT JOIN (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
         ) AS R
-          ON L."col_int" = R."event_id_col"
+          ON L."event_id_col" = R."col_int"
         LIMIT 10
         """
     ).strip()
@@ -456,8 +494,8 @@ def test_item_view__item_table_same_event_id_column_as_event_table(
             "graph": {
                 "edges": [
                     {"source": "proxy_input_1", "target": "project_1"},
-                    {"source": "proxy_input_2", "target": "join_1"},
                     {"source": "project_1", "target": "join_1"},
+                    {"source": "proxy_input_2", "target": "join_1"},
                 ],
                 "nodes": [
                     {
@@ -484,12 +522,12 @@ def test_item_view__item_table_same_event_id_column_as_event_table(
                         "output_type": "frame",
                         "parameters": {
                             "left_on": "col_int",
+                            "left_input_columns": ["col_int", "item_id_col", "created_at"],
+                            "left_output_columns": ["col_int", "item_id_col", "created_at"],
                             "right_on": "col_int",
-                            "left_input_columns": ["event_timestamp", "cust_id"],
-                            "left_output_columns": ["event_timestamp", "cust_id"],
-                            "right_input_columns": ["col_int", "item_id_col", "created_at"],
-                            "right_output_columns": ["col_int", "item_id_col", "created_at"],
-                            "join_type": "inner",
+                            "right_input_columns": ["event_timestamp", "cust_id"],
+                            "right_output_columns": ["event_timestamp", "cust_id"],
+                            "join_type": "left",
                             "scd_parameters": None,
                             "metadata": {
                                 "type": "join_event_table_attributes",

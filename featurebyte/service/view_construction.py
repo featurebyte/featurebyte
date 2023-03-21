@@ -104,11 +104,12 @@ class ViewConstructionService(BaseService):
         view_node_name_to_table_info: dict[str, tuple[Node, list[ColumnInfo], InputNode]],
         input_node_names: list[str],
         node_name: str,
+        keep_target_node_names: set[str],
         available_column_names: list[str],
     ) -> tuple[list[str], list[Node]]:
         target_columns = query_graph.get_target_nodes_required_column_names(
             node_name=node_name,
-            keep_target_node_names=None,
+            keep_target_node_names=keep_target_node_names,
             available_column_names=available_column_names,
         )
         input_nodes = []
@@ -214,6 +215,9 @@ class ViewConstructionService(BaseService):
         operation_structure_info = OperationStructureExtractor(graph=query_graph).extract(
             node=target_node
         )
+        keep_target_node_names = operation_structure_info.operation_structure_map[
+            target_node.name
+        ].all_node_names
 
         # since the graph node is topologically sorted, input to the view graph node will always be
         # processed before the view graph node itself
@@ -245,6 +249,7 @@ class ViewConstructionService(BaseService):
                 view_node_name_to_table_info=view_node_name_to_table_info,
                 input_node_names=input_node_names,
                 node_name=graph_node.name,
+                keep_target_node_names=keep_target_node_names,
                 available_column_names=operation_structure.output_column_names,
             )
 

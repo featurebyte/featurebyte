@@ -3,7 +3,7 @@ This module contains graph pruning related classes.
 """
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from featurebyte.query_graph.enum import NodeOutputType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BasePrunableNode
@@ -346,19 +346,22 @@ class GraphStructurePruningExtractor(
         proxy_input_operation_structures: List[OperationStructure],
         aggressive: bool,
     ) -> Node:
-        nested_graph = node.parameters.graph
         output_node_name = node.parameters.output_node_name
-        nested_target_node = nested_graph.get_node_by_name(output_node_name)
-        pruned_graph, _, output_node_name = prune_query_graph(
-            graph=nested_graph,
-            node=nested_target_node,
-            target_columns=target_columns,
-            proxy_input_operation_structures=proxy_input_operation_structures,
-            aggressive=aggressive,
-        )
+        graph = node.parameters.graph
+        if node.parameters.type not in GraphNodeType.view_graph_node_types():
+            # skip view graph node pruning (as it will be pruned in view construction service)
+            nested_target_node = graph.get_node_by_name(output_node_name)
+            graph, _, output_node_name = prune_query_graph(
+                graph=graph,
+                node=nested_target_node,
+                target_columns=target_columns,
+                proxy_input_operation_structures=proxy_input_operation_structures,
+                aggressive=aggressive,
+            )
+
         return node.clone(
             parameters={
-                "graph": pruned_graph,
+                "graph": graph,
                 "output_node_name": output_node_name,
                 "type": node.parameters.type,
                 "metadata": node.parameters.metadata,  # type: ignore

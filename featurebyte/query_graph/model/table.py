@@ -157,22 +157,22 @@ class ItemTableData(BaseTableData):
                 raise ValueError(f"Column does not exist in EventTable: {col}")
 
         # ItemTable columns
-        right_on = item_view_event_id_column
-        right_input_columns = item_view_columns
-        right_output_columns = item_view_columns
+        left_on = item_view_event_id_column
+        left_input_columns = item_view_columns
+        left_output_columns = item_view_columns
 
         # EventTable columns
-        left_on = event_view_event_id_column
+        right_on = event_view_event_id_column
         # EventTable's event_id_column will be excluded from the result since that would be same as
         # ItemView's event_id_column. There is no need to specify event_suffix if the
         # event_id_column is the only common column name between EventTable and ItemView.
-        columns_excluding_event_id = filter_columns(columns_to_join, [left_on])
+        columns_excluding_event_id = filter_columns(columns_to_join, [right_on])
         renamed_event_view_columns = append_rsuffix_to_columns(
             columns_excluding_event_id, event_suffix
         )
-        left_output_columns = renamed_event_view_columns
+        right_output_columns = renamed_event_view_columns
 
-        repeated_column_names = sorted(set(right_output_columns).intersection(left_output_columns))
+        repeated_column_names = sorted(set(left_output_columns).intersection(right_output_columns))
         if repeated_column_names:
             raise RepeatedColumnNamesError(
                 f"Duplicate column names {repeated_column_names} found between EventTable and"
@@ -183,11 +183,11 @@ class ItemTableData(BaseTableData):
         return JoinNodeParameters(
             left_on=left_on,
             right_on=right_on,
-            left_input_columns=columns_excluding_event_id,
+            left_input_columns=left_input_columns,
             left_output_columns=left_output_columns,
-            right_input_columns=right_input_columns,
+            right_input_columns=columns_excluding_event_id,
             right_output_columns=right_output_columns,
-            join_type="inner",
+            join_type="left",
             metadata=JoinEventTableAttributesMetadata(
                 columns=columns_to_join,
                 event_suffix=event_suffix,
@@ -247,10 +247,10 @@ class ItemTableData(BaseTableData):
             node_type=NodeType.JOIN,
             node_params=join_parameters.dict(),
             node_output_type=NodeOutputType.FRAME,
-            input_nodes=[event_view_node, item_view_node],
+            input_nodes=[item_view_node, event_view_node],
         )
         # Construct new columns_info
-        renamed_event_view_columns = join_parameters.left_output_columns
+        renamed_event_view_columns = join_parameters.right_output_columns
         joined_columns_info = combine_column_info_of_views(
             item_view_columns_info,
             append_rsuffix_to_column_info(event_view_columns_info, rsuffix=event_suffix),
@@ -319,9 +319,9 @@ class ItemTableData(BaseTableData):
             event_suffix=event_suffix,
         )
 
-        # left output columns is the renamed event timestamp column
+        # right output columns is the renamed event timestamp column
         # (see `columns` parameter in above `_join_event_table_attributes` method)
-        renamed_event_timestamp_column = join_parameters.left_output_columns[0]
+        renamed_event_timestamp_column = join_parameters.right_output_columns[0]
         return view_graph_node, columns_info, renamed_event_timestamp_column
 
 
