@@ -12,6 +12,7 @@ class FeatureListDeployTaskPayload(BaseTaskPayload):
     """
 
     command = WorkerCommand.FEATURE_LIST_DEPLOY
+    output_collection_name = "feature_list"
 
     feature_list_id: PydanticObjectId
     deployed: bool

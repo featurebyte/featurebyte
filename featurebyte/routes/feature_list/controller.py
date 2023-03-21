@@ -171,6 +171,7 @@ class FeatureListController(
                 feature_list_id=feature_list_id,
                 deployed=data.deployed,
                 catalog_id=self.service.catalog_id,
+                output_document_id=feature_list_id,
             )
 
             task_id = await self.task_controller.task_manager.submit(payload=payload)

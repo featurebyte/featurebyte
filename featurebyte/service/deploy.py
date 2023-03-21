@@ -263,7 +263,7 @@ class DeployService(BaseService):
 
                     if update_progress:
                         percent = 20 + 60 // len(document.feature_ids) * (ind + 1)
-                        update_progress(percent, f"Finish updating feature {feature_id}")
+                        update_progress(percent, f"Finish updating feature {feature.name}")
 
                 if update_progress:
                     update_progress(
