@@ -3,8 +3,6 @@ FastAPI Application
 """
 from typing import Callable
 
-import os
-
 import aioredis
 import uvicorn
 from bson import ObjectId
@@ -39,10 +37,9 @@ from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import ConfigCredentialProvider
+from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
-
-REDIS_URI = os.environ.get("REDIS_URI", "redis://localhost:6379")
 
 
 def _get_api_deps() -> Callable[[Request], None]:
