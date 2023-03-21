@@ -590,7 +590,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 if line.startswith(":docstring:"):
                     self.render_docstring(docstring_elem, resource_details)
                 elif line.startswith(":members:"):
-                    members = line.split()[1:] or Nones
+                    members = line.split()[1:] or None
                     self.render_members(docstring_elem, resource_details, members=members)
                 elif line.startswith(":api_to_use:"):
                     # example - line = ":api_to_use: featurebyte.ChangeViewColumn.lag"
