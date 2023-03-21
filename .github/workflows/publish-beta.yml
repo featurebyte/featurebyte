@@ -61,6 +61,7 @@ jobs:
               exit 1
           fi
           echo "REF_VERSION=$(grep -oP '^release/beta/\K.+$' <<< "${{ github.ref_name }}")" >> $GITHUB_ENV
+          echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - name: Setup Docker
         uses: docker/setup-buildx-action@v2
       - name: Docker Login Beta Artifact Registry
@@ -120,10 +121,6 @@ jobs:
           make install
           poetry config repositories.beta_pypi https://${BETA_PYPI_LOCATION}-python.pkg.dev/${BETA_PYPI_PROJECT_ID}/${BETA_PYPI_REPO}
           poetry publish --build -r beta_pypi --username='_json_key_base64' --password='${{ secrets.BETA_ARTIFACT_REGISTRY_RW_B64 }}'
-      - name: featurebyte-server args and requirements
-        run: |
-          echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          poetry build
       - name: Build & Tag & Push Image to Beta
         uses: docker/build-push-action@v4
         with:
