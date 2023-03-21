@@ -1121,24 +1121,19 @@ def test_graph_interpreter_sample(simple_graph):
     graph, node = simple_graph
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
 
-    sql_code = interpreter.construct_sample_sql(node.name, num_rows=10)[0]
+    sql_code = interpreter.construct_sample_sql(node.name, num_rows=10, seed=1234)[0]
     expected = textwrap.dedent(
         """
         SELECT
-          "ts",
-          "cust_id",
-          "a",
-          "b",
-          "a_copy"
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b",
-            "a" AS "a_copy"
-          FROM "db"."public"."event_table"
-        ) TABLESAMPLE(10 ROWS)
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          "a" AS "a_copy"
+        FROM "db"."public"."event_table"
+        ORDER BY
+          RANDOM(1234)
+        LIMIT 10
         """
     ).strip()
     assert sql_code == expected
@@ -1152,6 +1147,7 @@ def test_graph_interpreter_sample_date_range(simple_graph):
     sql_code = interpreter.construct_sample_sql(
         node.name,
         num_rows=10,
+        seed=10,
         timestamp_column="ts",
         from_timestamp=pd.to_datetime("2020-01-01"),
         to_timestamp=pd.to_datetime("2020-01-03"),
@@ -1159,23 +1155,18 @@ def test_graph_interpreter_sample_date_range(simple_graph):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts",
-          "cust_id",
-          "a",
-          "b",
-          "a_copy"
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b",
-            "a" AS "a_copy"
-          FROM "db"."public"."event_table"
-          WHERE
-            "ts" >= CAST('2020-01-01T00:00:00' AS TIMESTAMPNTZ)
-            AND "ts" < CAST('2020-01-03T00:00:00' AS TIMESTAMPNTZ)
-        ) TABLESAMPLE(10 ROWS)
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          "a" AS "a_copy"
+        FROM "db"."public"."event_table"
+        WHERE
+          "ts" >= CAST('2020-01-01T00:00:00' AS TIMESTAMPNTZ)
+          AND "ts" < CAST('2020-01-03T00:00:00' AS TIMESTAMPNTZ)
+        ORDER BY
+          RANDOM(10)
+        LIMIT 10
         """
     ).strip()
     assert sql_code == expected
@@ -1189,6 +1180,7 @@ def test_graph_interpreter_sample_date_range_no_timestamp_column(simple_graph):
     sql_code = interpreter.construct_sample_sql(
         node.name,
         num_rows=30,
+        seed=20,
         timestamp_column=None,
         from_timestamp=pd.to_datetime("2020-01-01"),
         to_timestamp=pd.to_datetime("2020-01-03"),
@@ -1196,20 +1188,15 @@ def test_graph_interpreter_sample_date_range_no_timestamp_column(simple_graph):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts",
-          "cust_id",
-          "a",
-          "b",
-          "a_copy"
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b",
-            "a" AS "a_copy"
-          FROM "db"."public"."event_table"
-        ) TABLESAMPLE(30 ROWS)
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          "a" AS "a_copy"
+        FROM "db"."public"."event_table"
+        ORDER BY
+          RANDOM(20)
+        LIMIT 30
         """
     ).strip()
     assert sql_code == expected
