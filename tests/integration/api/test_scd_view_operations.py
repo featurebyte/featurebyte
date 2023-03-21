@@ -9,7 +9,7 @@ import pytest
 
 from featurebyte import EventTable, FeatureList, SCDTable
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
-from tests.util.helper import assert_preview_result_equal
+from tests.util.helper import assert_preview_result_equal, feature_list_deploy_sync
 
 
 def get_expected_scd_join_result(
@@ -373,6 +373,8 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
     # check online serving
     feature_list.save()
     feature_list.deploy(enable=True, make_production_ready=True)
+    feature_list_deploy_sync(feature_list.id, enable=True)
+
     data = FeatureListGetOnlineFeatures(entity_serving_names=[{"row_number": 1}])
     res = config.get_client().post(
         f"/feature_list/{str(feature_list.id)}/online_features",

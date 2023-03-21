@@ -14,6 +14,7 @@ from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.working_schema import drop_all_objects
 from featurebyte.utils.credential import get_credential
+from tests.util.helper import feature_list_deploy_sync
 
 
 @pytest.fixture(scope="session")
@@ -54,6 +55,7 @@ def deployed_feature_list_fixture(event_table):
         return_value=next_job_datetime,
     ):
         features.deploy(make_production_ready=True, enable=True)
+        feature_list_deploy_sync(features.id, enable=True)
 
         yield features
 

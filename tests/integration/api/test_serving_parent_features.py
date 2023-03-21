@@ -5,6 +5,7 @@ import pytest_asyncio
 
 from featurebyte import Entity, FeatureList, Table
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from tests.util.helper import feature_list_deploy_sync
 
 table_prefix = "TEST_SERVING_PARENT_FEATURES"
 
@@ -148,9 +149,11 @@ def feature_list_with_child_entities_fixture(country_feature):
     feature_list.save(conflict_resolution="retrieve")
     try:
         feature_list.deploy(enable=True, make_production_ready=True)
+        feature_list_deploy_sync(feature_list.id, enable=True)
         yield feature_list
     finally:
         feature_list.deploy(enable=False)
+        feature_list_deploy_sync(feature_list.id, enable=False)
 
 
 @pytest.fixture(name="feature_list_with_parent_child_features", scope="module")
@@ -161,9 +164,11 @@ def feature_list_with_parent_child_features_fixture(country_feature, city_featur
     feature_list.save(conflict_resolution="retrieve")
     try:
         feature_list.deploy(enable=True, make_production_ready=True)
+        feature_list_deploy_sync(feature_list.id, enable=True)
         yield feature_list
     finally:
         feature_list.deploy(enable=False)
+        feature_list_deploy_sync(feature_list.id, enable=False)
 
 
 @pytest.mark.asyncio

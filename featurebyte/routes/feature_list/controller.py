@@ -51,6 +51,7 @@ from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
 
+# pylint: disable=too-many-instance-attributes
 class FeatureListController(
     BaseDocumentController[FeatureListModel, FeatureListService, FeatureListPaginatedList]
 ):
@@ -60,6 +61,7 @@ class FeatureListController(
 
     paginated_document_class = FeatureListPaginatedList
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         service: FeatureListService,
@@ -150,7 +152,7 @@ class FeatureListController(
         data: FeatureListUpdate,
     ) -> Optional[Task]:
         """
-        Update FeatureList at persistent
+        Update FeatureList at persistent asynchronously
 
         Parameters
         ----------
@@ -161,8 +163,8 @@ class FeatureListController(
 
         Returns
         -------
-        FeatureListModel
-            FeatureList object with updated attribute(s)
+        Task
+            Task object created for deployment
         """
         if data.deployed is not None:
             payload = FeatureListDeployTaskPayload(
@@ -173,6 +175,41 @@ class FeatureListController(
 
             task_id = await self.task_controller.task_manager.submit(payload=payload)
             return await self.task_controller.get_task(task_id=str(task_id))
+
+        return None
+
+    async def deploy_feature_list_sync(
+        self,
+        feature_list_id: ObjectId,
+        data: FeatureListUpdate,
+        get_credential: Any,
+    ) -> FeatureListModel:
+        """
+        Update FeatureList at persistent synchronously
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            FeatureList ID
+        data: FeatureListUpdate
+            FeatureList update payload
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        FeatureListModel
+            FeatureList object with updated attribute(s)
+        """
+        if data.deployed is not None:
+            await self.deploy_service.update_feature_list(
+                feature_list_id=feature_list_id,
+                deployed=data.deployed,
+                get_credential=get_credential,
+                return_document=False,
+            )
+
+        return await self.get(document_id=feature_list_id)
 
     async def list_feature_lists(
         self,

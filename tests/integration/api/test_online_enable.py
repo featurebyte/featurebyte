@@ -8,6 +8,7 @@ import pytest
 from featurebyte import FeatureList
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from tests.util.helper import feature_list_deploy_sync
 
 
 @pytest.fixture(name="online_enabled_feature_list", scope="module")
@@ -38,10 +39,12 @@ def online_enabled_feature_list_fixture(event_table, config):
     )
     feature_list.save()
     feature_list.deploy(enable=True, make_production_ready=True)
+    feature_list_deploy_sync(feature_list.id, enable=True)
 
     yield feature_list
 
     feature_list.deploy(enable=False, make_production_ready=True)
+    feature_list_deploy_sync(feature_list.id, enable=False)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -80,6 +83,8 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
 
     try:
         feature_list.deploy(enable=True, make_production_ready=True)
+        feature_list_deploy_sync(feature_list.id, enable=True)
+
         # Check feature request
         client = config.get_client()
         entity_serving_names = [{"order_id": "T1"}]
@@ -90,6 +95,7 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
         )
     finally:
         feature_list.deploy(enable=False, make_production_ready=False)
+        feature_list_deploy_sync(feature_list.id, enable=False)
 
     assert res.status_code == 200
     assert res.json() == {

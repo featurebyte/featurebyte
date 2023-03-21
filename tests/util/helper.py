@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype
 
+from featurebyte import Configurations
 from featurebyte.api.source_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.enum import AggFunc
@@ -297,3 +298,15 @@ def iet_entropy(view, group_by_col, window, name, feature_job_setting=None):
 
     feature.name = name
     return feature
+
+
+def feature_list_deploy_sync(feature_list_id, enable):
+    """
+    Deploy or undeploy a feature list synchronously
+    """
+    route = f"/feature_list/{feature_list_id}/deploy-sync"
+    payload = {
+        "deployed": enable,
+    }
+    client = Configurations().get_client()
+    client.post(url=route, json=payload)

@@ -1246,7 +1246,6 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             route=f"{self._route}/{self.id}/deploy",
             payload={
                 "deployed": enable,
-                "ignore_guardrails": ignore_guardrails,
             },
         )
 
