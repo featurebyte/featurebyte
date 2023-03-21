@@ -583,10 +583,10 @@ class Feature(
         -------
         list[Entity]
         """
-        entity_models = []
+        entities = []
         for entity_id in self.entity_ids:
-            entity_models.append(Entity.get_by_id(entity_id))
-        primary_entity = derive_primary_entity(entity_models)
+            entities.append(Entity.get_by_id(entity_id))
+        primary_entity = derive_primary_entity(entities)
         return primary_entity
 
     def binary_op_series_params(
