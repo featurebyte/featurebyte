@@ -1312,3 +1312,17 @@ def test_feature_list_properties_from_cached_model__after_save(saved_feature_lis
     assert saved_feature_list.is_default is True
     assert saved_feature_list.default_version_mode == DefaultVersionMode.AUTO
     assert saved_feature_list.status == FeatureListStatus.DRAFT
+
+
+def test_primary_entity__unsaved_feature_list(feature_list, cust_id_entity):
+    """
+    Test primary_entity attribute for an unsaved feature list
+    """
+    assert feature_list.primary_entity == [cust_id_entity]
+
+
+def test_primary_entity__saved_feature_list(saved_feature_list, cust_id_entity):
+    """
+    Test primary_entity attribute for an unsaved feature list
+    """
+    assert saved_feature_list.primary_entity == [cust_id_entity]

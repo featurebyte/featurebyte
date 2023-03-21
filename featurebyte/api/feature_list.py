@@ -91,6 +91,7 @@ from featurebyte.schema.feature_list import (
     FeatureVersionInfo,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
+from featurebyte.service.relationship_analysis import derive_primary_entity
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):
@@ -142,6 +143,24 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         list[str]
         """
         return list(self.feature_objects)
+
+    @property
+    def primary_entity(self) -> List[Entity]:
+        """
+        Return the primary entity of the FeatureList or FeatureGroup.
+
+        Returns
+        -------
+        List[Entity]
+            Primary entity
+        """
+        entity_ids = set()
+        for feature in self._features:
+            entity_ids.update(feature.entity_ids)
+        primary_entity = derive_primary_entity(
+            [Entity.get_by_id(entity_id) for entity_id in entity_ids]
+        )
+        return primary_entity
 
     @root_validator
     @classmethod
