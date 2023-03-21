@@ -126,7 +126,8 @@ def mock_client_fixture():
                 response_dict={"status": TaskStatus.STARTED, "id": "failure_id"},
             ),
             "/post_success_task_failure": FakeResponse(
-                status_code=HTTPStatus.CREATED, response_dict={"status": TaskStatus.FAILURE}
+                status_code=HTTPStatus.CREATED,
+                response_dict={"status": TaskStatus.FAILURE, "id": "failure_id"},
             ),
             "/post_success_get_task_failure": FakeResponse(
                 status_code=HTTPStatus.CREATED,
@@ -134,7 +135,11 @@ def mock_client_fixture():
             ),
             "/post_success_get_result_failure": FakeResponse(
                 status_code=HTTPStatus.CREATED,
-                response_dict={"status": TaskStatus.SUCCESS, "output_path": "/get_result_failure"},
+                response_dict={
+                    "status": TaskStatus.SUCCESS,
+                    "id": "get_failure_id",
+                    "output_path": "/get_result_failure",
+                },
             ),
         }[url]
 
@@ -165,6 +170,8 @@ def mock_client_fixture():
         mock_client = mock_config.return_value.get_client.return_value
         mock_client.post.side_effect = post_side_effect
         mock_client.get.side_effect = get_side_effect
+        mock_websocket_client = mock_config.return_value.get_websocket_client.return_value
+        mock_websocket_client.__enter__.return_value.receive_json.return_value = None
         yield mock_client
 
 

@@ -3,9 +3,11 @@ FastAPI Application
 """
 from typing import Callable
 
+import aioredis
 import uvicorn
 from bson import ObjectId
 from fastapi import Depends, FastAPI, Request
+from starlette.websockets import WebSocket
 
 import featurebyte.routes.catalog.api as catalog_api
 import featurebyte.routes.context.api as context_api
@@ -27,12 +29,15 @@ import featurebyte.routes.table.api as table_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
 from featurebyte.common.utils import get_version
+from featurebyte.logger import logger
 from featurebyte.middleware import request_handler
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema import APIServiceStatus
+from featurebyte.schema.task import TaskId
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import ConfigCredentialProvider
+from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
 
@@ -123,14 +128,51 @@ def get_app() -> FastAPI:
     @_app.get("/status", description="Get API status.", response_model=APIServiceStatus)
     async def get_status() -> APIServiceStatus:
         """
-        Service alive health check
+        Service alive health check.
 
         Returns
         -------
         APIServiceStatus
-            APIServiceStatus object
+            APIServiceStatus object.
         """
         return APIServiceStatus(sdk_version=get_version())
+
+    @_app.websocket("/ws/{task_id}")
+    async def websocket_endpoint(
+        websocket: WebSocket,
+        task_id: TaskId,
+    ) -> None:
+        """
+        Websocket for getting task progress updates.
+
+        Parameters
+        ----------
+        websocket: WebSocket
+            Websocket object.
+        task_id: TaskId
+            Task ID.
+        """
+        await websocket.accept()
+        user = User()
+        channel = f"task_{user.id}_{task_id}_progress"
+
+        logger.debug("Listening to channel", extra={"channel": channel})
+        redis = await aioredis.from_url(REDIS_URI)
+        sub = redis.pubsub()
+        await sub.subscribe(channel)
+
+        # listen for messages
+        async for message in sub.listen():
+            if message and isinstance(message, dict):
+                data = message.get("data")
+                if isinstance(data, bytes):
+                    await websocket.send_bytes(data)
+
+        # clean up
+        logger.debug("Unsubscribing from channel", extra={"channel": channel})
+        await sub.unsubscribe(channel)
+        await sub.close()
+        redis.close()
 
     _app.middleware("http")(request_handler)
     return _app

@@ -12,6 +12,7 @@ from functools import partial
 from http import HTTPStatus
 
 import pandas as pd
+from alive_progress import alive_bar
 from bson.objectid import ObjectId
 from cachetools import TTLCache, cachedmethod
 from cachetools.keys import hashkey
@@ -20,8 +21,9 @@ from pydantic import Field
 from rich.pretty import pretty_repr
 from typeguard import typechecked
 
+from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.utils import construct_repr_string
-from featurebyte.config import Configurations
+from featurebyte.config import Configurations, WebsocketClient
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -662,16 +664,56 @@ class ApiObject(FeatureByteBaseDocumentModel):
         if create_response.status_code == HTTPStatus.CREATED:
             create_response_dict = create_response.json()
             status = create_response_dict["status"]
+            task_id = create_response_dict["id"]
+
+            def _update_progress_bar(progress_bar: Any, websocket_client: WebsocketClient) -> None:
+                """
+                Update progress bar based on websocket message
+
+                Parameters
+                ----------
+                progress_bar: Any
+                    Alive progress bar
+                websocket_client: WebsocketClient
+                    Websocket client
+                """
+                # receive message from websocket
+                while True:
+                    message = websocket_client.receive_json()
+                    if not message:
+                        break
+                    # update progress bar
+                    description = message.get("message")
+                    if description:
+                        progress_bar.text(description)
+                    percent = message.get("percent")
+                    if percent:
+                        # end of stream
+                        if percent == -1:
+                            break
+                        progress_bar(percent / 100)  # pylint: disable=not-callable
 
             # poll the task route (if the task is still running)
             task_get_response = None
-            while status in [TaskStatus.STARTED, TaskStatus.PENDING]:
-                task_get_response = client.get(url=f'/task/{create_response_dict["id"]}')
-                if task_get_response.status_code == HTTPStatus.OK:
-                    status = task_get_response.json()["status"]
-                    time.sleep(delay)
-                else:
-                    raise RecordRetrievalException(task_get_response)
+            with alive_bar(
+                manual=True,
+                title="Working...",
+                **get_alive_bar_additional_params(),
+            ) as progress_bar:
+                with Configurations().get_websocket_client(task_id=task_id) as websocket_client:
+                    while status in [TaskStatus.STARTED, TaskStatus.PENDING]:
+                        # update progress bar
+                        _update_progress_bar(progress_bar, websocket_client)
+
+                        # retrieve task status
+                        task_get_response = client.get(url=f"/task/{task_id}")
+                        if task_get_response.status_code == HTTPStatus.OK:
+                            status = task_get_response.json()["status"]
+                            time.sleep(delay)
+                        else:
+                            raise RecordRetrievalException(task_get_response)
+                progress_bar.title = "Done!"
+                progress_bar(1)  # pylint: disable=not-callable
 
             # check the task status
             if status != TaskStatus.SUCCESS:

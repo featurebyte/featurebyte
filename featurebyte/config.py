@@ -1,13 +1,16 @@
 """
 Read configurations from ini file
 """
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
+import json
 import os
+from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
 
 import requests
+import websocket
 import yaml
 from bson import ObjectId
 from pydantic import AnyHttpUrl, BaseModel, Field, validator
@@ -20,6 +23,7 @@ from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
+from featurebyte.schema.task import TaskId
 
 # data source to credential mapping
 Credentials = Dict[str, Optional[Credential]]
@@ -154,7 +158,7 @@ class APIClient(BaseAPIClient):
         api_url: str
             URL of FeatureByte API service
         api_token: Optional[str]
-            API token to used for authentication
+            Access token to used for authentication
         """
         super().__init__()
         self.base_url = api_url
@@ -210,6 +214,58 @@ class APIClient(BaseAPIClient):
             raise InvalidSettingsError(
                 f"Service endpoint is inaccessible: {self.base_url}"
             ) from None
+
+
+class WebsocketClient:
+    """
+    Websocket client for accessing the FeatureByte Application API
+    """
+
+    def __init__(self, url: str, access_token: Optional[str]) -> None:
+        """
+        Initialize api settings
+
+        Parameters
+        ----------
+        url: str
+            URL of FeatureByte websocket service
+        access_token: Optional[str]
+            Access token to used for authentication
+        """
+        if access_token:
+            url = f"{url}?token={access_token}"
+        self._ws = websocket.create_connection(url)
+
+    def close(self) -> None:
+        """
+        Close websocket connection
+        """
+        self._ws.close()
+
+    def receive_bytes(self) -> bytes:
+        """
+        Receive message from websocket server as bytes
+
+        Returns
+        -------
+        bytes
+            Message
+        """
+        return cast(bytes, self._ws.recv())
+
+    def receive_json(self) -> Optional[Dict[str, Any]]:
+        """
+        Receive message from websocket server as json
+
+        Returns
+        -------
+        Dict[str, Any]
+            Message as json dictionary
+        """
+        message_bytes = self.receive_bytes()
+        if message_bytes:
+            return cast(Dict[str, Any], json.loads(message_bytes.decode("utf8")))
+        return None
 
 
 class Configurations:
@@ -384,7 +440,7 @@ class Configurations:
 
     def get_client(self) -> APIClient:
         """
-        Retrieve API client
+        Get a client for the configured profile.
 
         Returns
         -------
@@ -408,6 +464,37 @@ class Configurations:
             raise InvalidSettingsError("No profile setting specified")
 
         return client
+
+    @contextmanager
+    def get_websocket_client(self, task_id: TaskId) -> Iterator[WebsocketClient]:
+        """
+        Get websocket client for the configured profile.
+
+        Parameters
+        ----------
+        task_id: TaskId
+            Task ID
+
+        Yields
+        -------
+        WebsocketClient
+            Websocket client
+
+        Raises
+        ------
+        InvalidSettingsError
+            Invalid settings
+        """
+        if self.profile:
+            url = self.profile.api_url.replace("http://", "ws://")
+            url = f"{url}/ws/{task_id}"
+            websocket_client = WebsocketClient(url=url, access_token=self.profile.api_token)
+            try:
+                yield websocket_client
+            finally:
+                websocket_client.close()
+        else:
+            raise InvalidSettingsError("No profile setting specified")
 
     def write_creds(self, credential: Credential, feature_store_name: str) -> bool:
         """
