@@ -1,3 +1,4 @@
+import time
 from unittest.mock import patch
 
 import numpy as np
@@ -323,6 +324,7 @@ def test_online_serving_code_uses_primary_entity(
     """
     Check that online serving code is based on primary entity
     """
+    time.sleep(1)
     online_serving_code = feature_list_with_parent_child_features.get_online_serving_code("python")
     expected_signature = 'request_features([{"serving_cust_id": 1000}])'
     assert expected_signature in online_serving_code

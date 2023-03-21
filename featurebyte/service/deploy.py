@@ -3,7 +3,7 @@ DeployService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from bson.objectid import ObjectId
 
@@ -191,6 +191,7 @@ class DeployService(BaseService):
         deployed: bool,
         get_credential: Any,
         return_document: bool = True,
+        update_progress: Optional[Callable[[int, str], None]] = None,
     ) -> Optional[FeatureListModel]:
         """
         Update deployed status in feature list
@@ -205,6 +206,8 @@ class DeployService(BaseService):
             Get credential handler function
         return_document: bool
             Whether to return updated document
+        update_progress: Callable[[int, str], None]
+            Update progress handler function
 
         Returns
         -------
@@ -215,6 +218,9 @@ class DeployService(BaseService):
         Exception
             When there is an unexpected error during feature online_enabled status update
         """
+        if update_progress:
+            update_progress(0, "Start updating feature list")
+
         document = await self.feature_list_service.get_document(document_id=feature_list_id)
         if document.deployed != deployed:
             await self._validate_deployed_operation(document, deployed)
@@ -232,8 +238,12 @@ class DeployService(BaseService):
                 )
                 assert isinstance(feature_list, FeatureListModel)
 
+                if update_progress:
+                    update_progress(20, "Start updating features")
+
                 # make each feature online enabled first
-                for feature_id in document.feature_ids:
+                for ind, feature_id in enumerate(document.feature_ids):
+
                     async with self.persistent.start_transaction():
                         feature = await self.feature_service.get_document(document_id=feature_id)
                         feature_online_enabled_map[feature.id] = feature.online_enabled
@@ -251,6 +261,15 @@ class DeployService(BaseService):
                             get_credential=get_credential,
                         )
 
+                    if update_progress:
+                        percent = 20 + 60 // len(document.feature_ids) * (ind + 1)
+                        update_progress(percent, f"Finish updating feature {feature_id}")
+
+                if update_progress:
+                    update_progress(
+                        80, "Finish updating features. Start updating feature_list_namespace"
+                    )
+
                 async with self.persistent.start_transaction():
                     await self._update_feature_list_namespace(
                         feature_list_namespace_id=feature_list.feature_list_namespace_id,
@@ -261,6 +280,9 @@ class DeployService(BaseService):
                         return await self.feature_list_service.get_document(
                             document_id=feature_list_id
                         )
+
+                if update_progress:
+                    update_progress(100, "Finish updating feature list")
 
             except Exception as exc:
                 try:

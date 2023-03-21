@@ -45,4 +45,5 @@ class FeatureListDeployTask(BaseTask):
             deployed=payload.deployed,
             get_credential=self.get_credential,
             return_document=False,
+            update_progress=self.update_progress,
         )
