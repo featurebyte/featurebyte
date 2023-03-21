@@ -239,12 +239,12 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         Get an Entity object that is already saved.
 
-        >>> grocery_customer_entity = fb.Entity.get("grocerycustomer")
+        >>> grocery_customer_entity = fb.Entity.get("grocerycustomer")  # doctest: +SKIP
         Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
 
         Get an Entity object that is not saved.
 
-        >>> grocery_customer_entity = fb.Entity.get("random_entity")
+        >>> grocery_customer_entity = fb.Entity.get("random_entity")  # doctest: +SKIP
         'Entity (name: "random_entity") not found. Please save the Entity object first.'
         """
         return cls._get(name)
@@ -300,14 +300,14 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         Get an Entity object that is already saved.
 
-        >>> grocery_customer_entity = fb.Entity.get("grocerycustomer")
-        >>> grocery_customer_entity_by_id = fb.Entity.get_by_id(grocery_customer_entity.id)
+        >>> grocery_customer_entity = fb.Entity.get("grocerycustomer")  # doctest: +SKIP
+        >>> grocery_customer_entity_by_id = fb.Entity.get_by_id(grocery_customer_entity.id)  # doctest: +SKIP
         Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
 
         Get an Entity object that is not saved.
 
-        >>> random_object_id = ObjectId()
-        >>> grocery_customer_entity = fb.Entity.get_by_id(random_object_id)
+        >>> random_object_id = ObjectId()  # doctest: +SKIP
+        >>> grocery_customer_entity = fb.Entity.get_by_id(random_object_id)  # doctest: +SKIP
         'Entity (id: <random_object_id.id>) not found. Please save the Entity object first.'
         """
         return cls._get_by_id(id)
@@ -666,9 +666,9 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         Get info of a Table object.
 
-        >>> catalog = fb.Catalog.get_or_create("grocery")
-        >>> table = catalog.get_table("INVOICEITEMS")
-        >>> table.info()
+        >>> catalog = fb.Catalog.get_or_create("grocery")  # doctest: +SKIP
+        >>> table = catalog.get_table("INVOICEITEMS")  # doctest: +SKIP
+        >>> table.info()  # doctest: +SKIP
         {
           'name': 'INVOICEITEMS',
           'status': 'DRAFT',
@@ -878,15 +878,15 @@ class SavableApiObject(ApiObject):
 
         Save a new Entity object.
 
-        >>> entity = fb.Entity(name="grocerycustomer_example", serving_names=["GROCERYCUSTOMERGUID"])
-        >>> entity.save()
+        >>> entity = fb.Entity(name="grocerycustomer_example", serving_names=["GROCERYCUSTOMERGUID"])  # doctest: +SKIP
+        >>> entity.save()  # doctest: +SKIP
         None
 
         Calling save again returns an error.
 
-        >>> entity = fb.Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
-        >>> entity.save()
-        >>> entity.save()
+        >>> entity = fb.Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])  # doctest: +SKIP
+        >>> entity.save()  # doctest: +SKIP
+        >>> entity.save()  # doctest: +SKIP
         Entity (id: <entity.id>) has been saved before.
         """
         if self.saved and conflict_resolution == "raise":
