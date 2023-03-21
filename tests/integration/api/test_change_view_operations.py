@@ -41,7 +41,7 @@ def test_change_view(scd_table):
         "past_User Status",
     ]
 
-    # check lag works
+    # check creating additional lag works
     column_name = "lagged_status_offset2"
     change_view[column_name] = change_view["new_User Status"].lag("User ID", 2)
     df = change_view.preview(10)
