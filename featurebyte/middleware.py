@@ -242,10 +242,8 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
 
     async def __send_telemetry(self, payload: Dict[str, Any]):
         try:
-            result = requests.post(
-                self.endpoint, json=payload, timeout=1
-            )  # set timeout to 1 second
-        except Exception as exc:  # pylint: disable=broad-except
+            requests.post(self.endpoint, json=payload, timeout=1)  # set timeout to 1 second
+        except Exception:  # pylint: disable=broad-except
             pass
 
     async def dispatch(
