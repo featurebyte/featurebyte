@@ -203,7 +203,7 @@ async def get_historical_features(
     )
 
     # Execute feature SQL code
-    await session.register_table(request_table_name, training_events)
+    await session.register_table(request_table_name, training_events, temporary=False)
 
     # Compute tiles on demand if required
     if not is_feature_list_deployed:
@@ -219,6 +219,8 @@ async def get_historical_features(
         logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
 
     # Execute feature query
+    logger.info("=== get_historical_features_sql === ")
+    logger.info(sql)
     result = session.get_async_query_stream(sql)
 
     logger.debug(f"get_historical_features in total took {time.time() - tic_:.2f}s")
