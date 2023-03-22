@@ -420,13 +420,6 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         Returns
         -------
         SourceTableApiObjectT
-
-        Raises
-        ------
-        DuplicatedRecordException
-            When record with the same key exists at the persistent layer
-        RecordRetrievalException
-            When unexpected retrieval failure
         """
         try:
             return cls.get(name=name)
