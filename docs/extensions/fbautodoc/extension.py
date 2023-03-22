@@ -634,7 +634,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             content: str
                 Section content
             """
-            headers_ref = etree.SubElement(elem, "h3")
+            headers_ref = etree.SubElement(elem, "h2")
             headers_ref.set("class", "autodoc-section-header")
             headers_ref.text = title
             content_elem = etree.SubElement(elem, "div")

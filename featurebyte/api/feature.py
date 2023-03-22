@@ -244,19 +244,28 @@ class Feature(
     @classmethod
     def get(cls, name: str, version: Optional[str] = None) -> Feature:
         """
-        Get a feature by name and version
+        Retrieve the Feature from the persistent data store given the object's name, and version.
+
+        This assumes that the object has been saved to the persistent data store. If the object has not been saved,
+        an exception will be raised and you should create and save the object first.
 
         Parameters
         ----------
         name: str
-            Feature name
+            Name of the Feature to retrieve.
         version: Optional[str]
-            Feature version, if None, the default version will be returned
+            Feature version, if None, the default version will be returned.
 
         Returns
         -------
         Feature
-            Feature object
+            Feature object.
+
+        Examples
+        --------
+        Get a Feature object that is already saved.
+
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
         """
         if version is None:
             feature_namespace = FeatureNamespace.get(name=name)

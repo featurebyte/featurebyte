@@ -2,6 +2,7 @@
 Setup for running doctests.
 """
 import featurebyte as fb
+from featurebyte import FeatureList
 
 
 def setup() -> None:
@@ -64,6 +65,16 @@ def setup() -> None:
     else:
         grocery_customer_table = fb.Table.get("GROCERYCUSTOMER")
 
+    # DimensionTable: GROCERYPRODUCT
+    if "GROCERYPRODUCT" not in fb.Table.list()["name"].tolist():
+        dimension_source_table = data_source.get_table(
+            database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYPRODUCT"
+        )
+        dimension_source_table.create_dimension_table(
+            name="GROCERYPRODUCT",
+            dimension_id_column="GroceryProductGuid",
+        ).save(conflict_resolution="retrieve")
+
     # register new entities
     fb.Entity.get_or_create(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
     fb.Entity.get_or_create(name="groceryinvoice", serving_names=["GROCERYINVOICEGUID"])
@@ -96,6 +107,11 @@ def setup() -> None:
         value_column=None, method="count", feature_names=["InvoiceCount_60days"], windows=["60d"]
     )
     invoice_count_60days["InvoiceCount_60days"].save(conflict_resolution="retrieve")
+
+    # FeatureList:
+    FeatureList([invoice_count_60days], name="invoice_feature_list").save(
+        conflict_resolution="retrieve"
+    )
 
 
 if __name__ == "__main__":

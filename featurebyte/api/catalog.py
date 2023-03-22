@@ -120,10 +120,11 @@ class Catalog(CatalogModel, SavableApiObject):
         Index: []
         >>> catalog = Catalog.activate("grocery")
         >>> catalog.list_tables()[["name", "type"]]
-                      name         type
-        0  GROCERYCUSTOMER    scd_table
-        1     INVOICEITEMS   item_table
-        2   GROCERYINVOICE  event_table
+                        name             type
+        0     GROCERYPRODUCT  dimension_table
+        1    GROCERYCUSTOMER        scd_table
+        2       INVOICEITEMS       item_table
+        3     GROCERYINVOICE      event_table
         """
         catalog = cls.get(name)
         activate_catalog(catalog.id)
