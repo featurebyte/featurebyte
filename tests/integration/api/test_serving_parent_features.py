@@ -330,8 +330,17 @@ def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_f
     feature_list = FeatureList(
         [customer_num_city_change_feature], name="customer_num_city_change_list"
     )
+    # The feature's entity is Customer. It is not provided in the observations set, so it has to
+    # be looked up from the parent entity Event.
     observations_set = pd.DataFrame(
-        [{"POINT_IN_TIME": "2022-04-16 10:00:00", "serving_event_id": 1}]
+        {
+            "POINT_IN_TIME": pd.to_datetime(
+                ["2022-03-15 10:00:00", "2022-04-16 10:00:00", "2022-04-25 10:00:00"]
+            ),
+            "serving_event_id": [1, 1, 1],
+        }
     )
+    expected = observations_set.copy()
+    expected["user_city_changes_count_4w"] = [0, 1, 2]
     df = feature_list.get_historical_features(observations_set)
-    assert df.shape[0] == 1
+    pd.testing.assert_frame_equal(df, expected, check_dtype=False)
