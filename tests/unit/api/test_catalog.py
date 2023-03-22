@@ -3,7 +3,7 @@ Unit test for Catalog class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -68,15 +68,12 @@ class MethodMetadata:
     class_object: Any
     # Method we delegate to (eg. list/get)
     class_method_delegated: str
-    # Method to patch. We might need to patch if we do some descriptor overrides so that we can get the right
-    # method to compare signatures with.
-    delegated_method_to_patch: Optional[str] = None
 
 
 def catalog_list_methods_to_test_list():
     return [
-        MethodMetadata("list_features", Feature, "_list_versions", "list_versions"),
-        MethodMetadata("list_feature_lists", FeatureList, "_list_versions", "list_versions"),
+        MethodMetadata("list_features", Feature, "list"),
+        MethodMetadata("list_feature_lists", FeatureList, "list"),
         MethodMetadata("list_tables", Table, "list"),
         MethodMetadata("list_relationships", Relationship, "list"),
         MethodMetadata("list_feature_job_setting_analyses", FeatureJobSettingAnalysis, "list"),
@@ -230,7 +227,7 @@ def test_methods_call_the_correct_delegated_method(method_item):
     Test catalog methods call the correct delegated method.
     """
     # Assert that the delegated list method is called
-    method_name = method_item.delegated_method_to_patch or method_item.class_method_delegated
+    method_name = method_item.class_method_delegated
     catalog = Catalog.get_active()
     with patch.object(method_item.class_object, method_name) as mocked_list:
         _invoke_method(catalog, method_item)
@@ -479,7 +476,7 @@ def test_functions_are_called_from_active_catalog(method_item):
     """
     Test that catalog_obj.(list|get)_<x> functions are able to be called from the active, or inactive catalog.
     """
-    method_name = method_item.delegated_method_to_patch or method_item.class_method_delegated
+    method_name = method_item.class_method_delegated
     with patch.object(method_item.class_object, method_name):
         credit_card_catalog = Catalog.create("creditcard")
         grocery_catalog = Catalog.create(name="grocery")
