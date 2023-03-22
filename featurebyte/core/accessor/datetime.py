@@ -3,7 +3,7 @@ This module contains datetime accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Iterable
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.util import series_unary_operation
@@ -109,6 +109,96 @@ class DatetimeAccessor:
         return self._property_node_params_map.keys()
 
     @property
+    def year(self) -> FrozenSeries:
+        """
+        Return the year component of each element.
+
+        Returns
+        -------
+        FrozenSeries
+            Column or Feature containing the year component values
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view["TimestampYear"] = view["Timestamp"].dt.year
+        >>> view.preview(5).filter(regex="Timestamp")
+        """
+        return self._make_operation("year")
+
+    @property
+    def quarter(self) -> FrozenSeries:
+        """
+        Return the quarter component of each element.
+
+        Returns
+        -------
+        FrozenSeries
+            Column or Feature containing the quarter component values
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view["TimestampQuarter"] = view["Timestamp"].dt.quarter
+        >>> view.preview(5).filter(regex="Timestamp")
+        """
+        return self._make_operation("quarter")
+
+    @property
+    def month(self) -> FrozenSeries:
+        """
+        Return the day component of each element.
+
+        Returns
+        -------
+        FrozenSeries
+            Column or Feature containing the day component values
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view["TimestampMonth"] = view["Timestamp"].dt.month
+        >>> view.preview(5).filter(regex="Timestamp")
+        """
+        return self._make_operation("month")
+
+    @property
+    def week(self) -> FrozenSeries:
+        """
+        Return the week component of each element.
+
+        Returns
+        -------
+        FrozenSeries
+            Column or Feature containing the week component values
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view["TimestampWeek"] = view["Timestamp"].dt.week
+        >>> view.preview(5).filter(regex="Timestamp")
+        """
+        return self._make_operation("week")
+
+    @property
+    def day(self) -> FrozenSeries:
+        """
+        Return the day component of each element.
+
+        Returns
+        -------
+        FrozenSeries
+            Column or Feature containing the day of week component values
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view["TimestampDay"] = view["Timestamp"].dt.day
+        >>> view.preview(5).filter(regex="Timestamp")
+        """
+        return self._make_operation("day")
+
+    @property
     def day_of_week(self) -> FrozenSeries:
         """
         Return the day-of-week component of each element.
@@ -188,14 +278,45 @@ class DatetimeAccessor:
         """
         return self._make_operation("second")
 
+    @property
+    def millisecond(self) -> FrozenSeries:
+        """
+        Return the millisecond component of each element.
+
+        This is available only for Series containing timedelta values, which is a result of taking
+        the difference between two datetime Series.
+
+        Returns
+        -------
+        FrozenSeries
+            Column or Feature containing the millisecond component values
+        """
+        return self._make_operation("millisecond")
+
+    @property
+    def microsecond(self) -> FrozenSeries:
+        """
+        Return the microsecond component of each element.
+
+        This is available only for Series containing timedelta values, which is a result of taking
+        the difference between two datetime Series.
+
+        Returns
+        -------
+        FrozenSeries
+            Column or Feature containing the microsecond component values
+        """
+        return self._make_operation("microsecond")
+
     def _make_operation(self, field_name: str) -> FrozenSeries:
         var_type = (
             DBVarType.FLOAT if self._node_type == NodeType.TIMEDELTA_EXTRACT else DBVarType.INT
         )
         if field_name not in self._property_node_params_map:
             raise ValueError(
-                f"Datetime attribute {field_name} is not available for {self.obj}. Available"
-                f" attributes are: {', '.join(self._property_node_params_map.keys())}"
+                f"Datetime attribute {field_name} is not available for Series with"
+                f" {self._obj.dtype} type. Available attributes:"
+                f" {', '.join(self._property_node_params_map.keys())}."
             )
         return series_unary_operation(
             input_series=self._obj,
@@ -204,20 +325,3 @@ class DatetimeAccessor:
             node_params={"property": self._property_node_params_map[field_name]},
             **self._obj.unary_op_series_params(),
         )
-
-    def __getattr__(self, item: str) -> Any:
-        try:
-            return object.__getattribute__(self, item)
-        except AttributeError as exc:
-            var_type = (
-                DBVarType.FLOAT if self._node_type == NodeType.TIMEDELTA_EXTRACT else DBVarType.INT
-            )
-            if item in self._property_node_params_map:
-                return series_unary_operation(
-                    input_series=self._obj,
-                    node_type=self._node_type,
-                    output_var_type=var_type,
-                    node_params={"property": self._property_node_params_map[item]},
-                    **self._obj.unary_op_series_params(),
-                )
-            raise exc
