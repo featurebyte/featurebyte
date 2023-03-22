@@ -304,9 +304,17 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         Get an Entity object that is already saved.
 
-        >>> grocery_customer_entity = fb.Entity.get("grocerycustomer")
-        >>> fb.Entity.get_by_id(grocery_customer_entity.id)
-        Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
+        >>> fb.Entity.get_by_id(grocery_customer_entity_id)
+        <featurebyte.api.entity.Entity at 0x7f511dda3bb0>
+        {
+          'name': 'grocerycustomer',
+          'created_at': '2023-03-22T04:08:21.668000',
+          'updated_at': '2023-03-22T04:08:22.050000',
+          'serving_names': [
+            'GROCERYCUSTOMERGUID'
+          ],
+          'catalog_name': 'grocery'
+        }
 
         Get an Entity object that is not saved.
 
@@ -316,8 +324,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         Get a Feature object that is already saved.
 
-        >>> feature = fb.Feature.get("InvoiceCount_60days")
-        >>> feature_from_id = fb.Feature.get_by_id(feature.id)
+        >>> feature_from_id = fb.Feature.get_by_id(invoice_count_60_days_feature_id)
         """
         return cls._get_by_id(id)
 
