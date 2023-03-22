@@ -29,12 +29,8 @@ from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
 from featurebyte import DatabricksDetails, FeatureJobSetting, SnowflakeDetails
-from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_table import EventTable
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.item_table import ItemTable
-from featurebyte.api.scd_table import SCDTable
 from featurebyte.app import app
 from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.config import Configurations
@@ -1051,7 +1047,6 @@ def create_transactions_event_table_from_data_source(
     event_table["ÜSER ID"].as_entity("User")
     event_table["PRODUCT_ACTION"].as_entity("ProductAction")
     event_table["CUST_ID"].as_entity("Customer")
-    event_table = EventTable.get(event_table_name)
     return event_table
 
 
