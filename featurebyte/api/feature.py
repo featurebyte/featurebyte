@@ -41,6 +41,7 @@ from featurebyte.models.feature import (
     FrozenFeatureNamespaceModel,
 )
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -572,6 +573,24 @@ class Feature(
                 to_format=True, to_use_saved_data=True, table_id_to_info=data_id_to_doc
             )
         )
+
+    @property
+    def primary_entity(self) -> List[Entity]:
+        """
+        Primary entity of this feature
+
+        The primary entity of a feature defines the level of analysis for that feature.
+
+        Returns
+        -------
+        list[Entity]
+            Primary entity
+        """
+        entities = []
+        for entity_id in self.entity_ids:
+            entities.append(Entity.get_by_id(entity_id))
+        primary_entity = derive_primary_entity(entities)
+        return primary_entity
 
     def binary_op_series_params(
         self, other: Scalar | FrozenSeries | ScalarSequence

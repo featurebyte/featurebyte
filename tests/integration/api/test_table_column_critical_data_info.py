@@ -65,8 +65,8 @@ def test_event_table_update_critical_data_info(event_table):
     clean_df = event_table.preview(after_cleaning=True)
     pd.testing.assert_frame_equal(view_df, clean_df)
 
-    view_sample_df = event_view.preview()
-    clean_sample_df = event_table.preview(after_cleaning=True)
+    view_sample_df = event_view.sample()
+    clean_sample_df = event_table.sample(after_cleaning=True)
     pd.testing.assert_frame_equal(view_sample_df, clean_sample_df)
 
     # check describe operation between post-clean event table & event view

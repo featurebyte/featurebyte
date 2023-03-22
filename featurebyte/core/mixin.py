@@ -244,6 +244,7 @@ class SampleMixin:
     def sample(
         self: HasExtractPrunedGraphAndNode,
         size: int = 10,
+        seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
         **kwargs: Any,
@@ -255,6 +256,8 @@ class SampleMixin:
         ----------
         size: int
             Maximum number of rows to sample
+        seed: int
+            Seed to use for random sampling
         from_timestamp: Optional[datetime]
             Start of date range to sample from
         to_timestamp: Optional[datetime]
@@ -284,7 +287,9 @@ class SampleMixin:
             timestamp_column=self.timestamp_column,
         )
         client = Configurations().get_client()
-        response = client.post(url=f"/feature_store/sample?size={size}", json=payload.json_dict())
+        response = client.post(
+            url=f"/feature_store/sample?size={size}&seed={seed}", json=payload.json_dict()
+        )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         return dataframe_from_json(response.json())
@@ -293,6 +298,7 @@ class SampleMixin:
     def describe(
         self: HasExtractPrunedGraphAndNode,
         size: int = 0,
+        seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
         **kwargs: Any,
@@ -304,6 +310,8 @@ class SampleMixin:
         ----------
         size: int
             Maximum number of rows to sample
+        seed: int
+            Seed to use for random sampling
         from_timestamp: Optional[datetime]
             Start of date range to sample from
         to_timestamp: Optional[datetime]
@@ -334,7 +342,7 @@ class SampleMixin:
         )
         client = Configurations().get_client()
         response = client.post(
-            url=f"/feature_store/description?size={size}", json=payload.json_dict()
+            url=f"/feature_store/description?size={size}&seed={seed}", json=payload.json_dict()
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)

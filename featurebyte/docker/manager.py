@@ -30,9 +30,9 @@ class ApplicationName(str, Enum):
     """
     Enum for application names
     """
-
     FEATUREBYTE = "featurebyte"
     SPARK = "spark"
+    DOCS = "docs"
 
 
 # Application messages
@@ -131,6 +131,8 @@ def get_service_names(app_name: ApplicationName) -> List[str]:
         return ["featurebyte-server", "featurebyte-worker"]
     if app_name == ApplicationName.SPARK:
         return ["spark-thrift"]
+    if app_name == ApplicationName.DOCS:
+        return ["featurebyte-docs"]
     raise ValueError("Not a valid application name")
 
 
@@ -172,10 +174,22 @@ def print_logs(app_name: ApplicationName, service_name: str, tail: int) -> None:
 
 ### WARNING THIS NEEDS TO BE REMOVED AFTER BETA ###
 def __backup_docker_conf() -> None:
-    with open(os.path.expanduser("~/.docker/config.json"), encoding="utf-8") as docker_cfg_file:
-        with open(
-            os.path.expanduser("~/.docker/config.json.old"), "w", encoding="utf-8"
-        ) as backup_file:
+    # If docker folder does not exist, create it
+    docker_folder = os.path.expanduser("~/.docker")
+    if not os.path.isdir(docker_folder):
+        os.mkdir(docker_folder)
+
+    docker_cfg = os.path.expanduser("~/.docker/config.json")
+    docker_cfg_old = os.path.expanduser("~/.docker/config.json.old")
+
+    # If docker config file does not exist, create it
+    if not os.path.isfile(docker_cfg):
+        with open(docker_cfg, "w", encoding="utf-8") as docker_cfg_file:
+            docker_cfg_file.write("{}")
+
+    # Backup docker config file
+    with open(docker_cfg, encoding="utf-8") as docker_cfg_file:
+        with open(docker_cfg_old, "w", encoding="utf-8") as backup_file:
             backup_file.write(docker_cfg_file.read())
 
 
@@ -272,7 +286,7 @@ def start_app(
         __delete_docker_backup()
 
 
-def start_playground(local: bool = False, datasets: Optional[List[str]] = None) -> None:
+def start_playground(local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True) -> None:
     """
     Start featurebyte playground environment
 
@@ -282,11 +296,16 @@ def start_playground(local: bool = False, datasets: Optional[List[str]] = None) 
         Do not pull new images from registry, by default False
     datasets : Optional[List[str]]
         List of datasets to import, by default None (import all datasets)
+    docs_enabled : bool
+        Enable documentation service, by default True
     """
     logger.info("Starting featurebyte service")
     start_app(ApplicationName.FEATUREBYTE, local=local, verbose=False)
     logger.info("Starting local spark service")
     start_app(ApplicationName.SPARK, local=local, verbose=False)
+    if docs_enabled:
+        logger.info("Starting documentation service")
+        start_app(ApplicationName.DOCS, local=local, verbose=False)
 
     # import datasets
     datasets = datasets or ["grocery", "healthcare", "creditcard"]

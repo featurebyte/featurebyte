@@ -41,6 +41,12 @@ def test_change_view(scd_table):
         "past_User Status",
     ]
 
+    # check creating additional lag works
+    column_name = "lagged_status_offset2"
+    change_view[column_name] = change_view["new_User Status"].lag("User ID", 2)
+    df = change_view.preview(10)
+    assert df[column_name].notnull().sum() > 0
+
     # assert that we can get features
     count_1w_feature = change_view.groupby("User ID").aggregate_over(
         method=AggFunc.COUNT,

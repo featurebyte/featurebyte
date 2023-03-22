@@ -4,7 +4,12 @@ Test API View objects describe function
 import pandas as pd
 from pandas.testing import assert_series_equal
 
-from tests.integration.api.feature_preview_utils import _to_utc_no_offset
+
+def _to_utc_no_offset(date):
+    """
+    Comvert timestamp to timezone naive UTC
+    """
+    return pd.to_datetime(date, utc=True).tz_localize(None)
 
 
 def test_event_view_describe(event_table):

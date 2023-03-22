@@ -9,7 +9,7 @@ def setup() -> None:
     Setup featurebyte environment for running doctests.
     """
     # start playground
-    fb.playground(local=True, datasets=["grocery"])
+    fb.playground(local=True, datasets=["grocery"], docs_enabled=False)
 
     # create catalog
     fb.Catalog.get_or_create("grocery")

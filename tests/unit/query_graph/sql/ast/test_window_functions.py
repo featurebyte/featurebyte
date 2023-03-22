@@ -10,6 +10,41 @@ from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 
+def make_lag_node(graph, input_node, column_name, entity_column_name, timestamp_column_name):
+    """
+    Helper function to create a LagNode in the query graph
+    """
+    proj_column = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": [column_name]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    proj_entity = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": [entity_column_name]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    proj_ts = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": [timestamp_column_name]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    lagged_node = graph.add_operation(
+        node_type=NodeType.LAG,
+        node_params={
+            "timestamp_column": timestamp_column_name,
+            "entity_columns": [entity_column_name],
+            "offset": 1,
+        },
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_column, proj_entity, proj_ts],
+    )
+    return lagged_node
+
+
 @pytest.fixture
 def graph_with_window_function_filter(global_graph, input_node):
     """
@@ -34,12 +69,7 @@ def graph_with_window_function_filter(global_graph, input_node):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[input_node, non_window_based_condition],
     )
-    lagged_a = graph.add_operation(
-        node_type=NodeType.LAG,
-        node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[proj_a],
-    )
+    lagged_a = make_lag_node(graph, filtered_node, "a", "cust_id", "ts")
     window_based_condition = graph.add_operation(
         node_type=NodeType.GT,
         node_params={"value": 0},
@@ -87,18 +117,7 @@ def test_window_function(global_graph, input_node):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[input_node, binary_node],
     )
-    proj_a = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["a"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[filtered_input_node],
-    )
-    lagged_a = graph.add_operation(
-        node_type=NodeType.LAG,
-        node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[proj_a],
-    )
+    lagged_a = make_lag_node(graph, filtered_input_node, "a", "cust_id", "ts")
     assign_node = graph.add_operation(
         node_type=NodeType.ASSIGN,
         node_params={"name": "prev_a"},
@@ -164,7 +183,7 @@ def test_window_function(global_graph, input_node):
             DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          COUNT(*) AS value_count_8993ef6979471d1101f5b0ef345c1c144695cc87
+          COUNT(*) AS value_count_bdd430697527efc219056ed856d0fc44ad2388ed
         FROM (
           SELECT
             *,
@@ -205,18 +224,7 @@ def test_window_function(global_graph, input_node):
 def test_window_function__as_filter(global_graph, input_node):
     """Test when condition derived from window function is used as filter"""
     graph = global_graph
-    proj_a = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["a"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[input_node],
-    )
-    lagged_a = graph.add_operation(
-        node_type=NodeType.LAG,
-        node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[proj_a],
-    )
+    lagged_a = make_lag_node(graph, input_node, "a", "cust_id", "ts")
     assign_node = graph.add_operation(
         node_type=NodeType.ASSIGN,
         node_params={"name": "prev_a"},
