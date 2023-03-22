@@ -583,13 +583,13 @@ class SourceTable(AbstractTableData):
         >>>   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYCUSTOMER"
         >>> )
         >>> grocery_customer_table = scd_source_table.create_scd_table(
-        >>>   name="GROCERYCUSTOMER",
-        >>>   surrogate_key_column="RowID",
-        >>>   natural_key_column="GroceryCustomerGuid",
-        >>>   effective_timestamp_column="ValidFrom",
-        >>>   current_flag_column="CurrentRecord",
-        >>>   record_creation_timestamp_column="record_available_at",
-        >>> )
+        ...   name="GROCERYCUSTOMER",
+        ...   surrogate_key_column="RowID",
+        ...   natural_key_column="GroceryCustomerGuid",
+        ...   effective_timestamp_column="ValidFrom",
+        ...   current_flag_column="CurrentRecord",
+        ...   record_creation_timestamp_column="record_available_at",
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.scd_table import SCDTable
