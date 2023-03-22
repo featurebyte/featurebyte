@@ -179,39 +179,6 @@ class FeatureListController(
 
         return None
 
-    async def deploy_feature_list_sync(
-        self,
-        feature_list_id: ObjectId,
-        data: FeatureListUpdate,
-        get_credential: Any,
-    ) -> FeatureListModel:
-        """
-        Update FeatureList at persistent synchronously
-
-        Parameters
-        ----------
-        feature_list_id: ObjectId
-            FeatureList ID
-        data: FeatureListUpdate
-            FeatureList update payload
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        FeatureListModel
-            FeatureList object with updated attribute(s)
-        """
-        if data.deployed is not None:
-            await self.deploy_service.update_feature_list(
-                feature_list_id=feature_list_id,
-                deployed=data.deployed,
-                get_credential=get_credential,
-                return_document=False,
-            )
-
-        return await self.get(document_id=feature_list_id)
-
     async def list_feature_lists(
         self,
         page: int = 1,

@@ -14,7 +14,6 @@ from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.working_schema import drop_all_objects
 from featurebyte.utils.credential import get_credential
-from tests.util.helper import feature_list_deploy_sync
 
 
 @pytest.fixture(scope="session")

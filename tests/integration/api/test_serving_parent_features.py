@@ -1,5 +1,4 @@
 import time
-from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -8,7 +7,6 @@ import pytest_asyncio
 
 from featurebyte import Entity, FeatureList, Table
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
-from tests.util.helper import feature_list_deploy_sync
 
 table_prefix = "TEST_SERVING_PARENT_FEATURES"
 
@@ -147,7 +145,11 @@ def customer_num_city_change_feature_fixture(tables):
 
 
 @pytest.fixture(name="feature_list_with_child_entities", scope="module")
-def feature_list_with_child_entities_fixture(country_feature):
+def feature_list_with_child_entities_fixture(
+    country_feature, mock_task_manager, mock_post_async_task
+):
+    _ = mock_task_manager, mock_post_async_task
+
     feature_list = FeatureList([country_feature], name=f"{table_prefix}_country_list")
     feature_list.save(conflict_resolution="retrieve")
     try:
@@ -158,7 +160,11 @@ def feature_list_with_child_entities_fixture(country_feature):
 
 
 @pytest.fixture(name="feature_list_with_parent_child_features", scope="module")
-def feature_list_with_parent_child_features_fixture(country_feature, city_feature):
+def feature_list_with_parent_child_features_fixture(
+    country_feature, city_feature, mock_task_manager, mock_post_async_task
+):
+    _ = mock_task_manager, mock_post_async_task
+
     feature_list = FeatureList(
         [city_feature, country_feature], name=f"{table_prefix}_city_country_list"
     )

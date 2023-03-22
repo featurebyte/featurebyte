@@ -856,7 +856,6 @@ def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowfla
 
     # Set ignore_guardrails to be True - verify that the feature list deploys without errors
     feature_list.deploy(enable=True, make_production_ready=True, ignore_guardrails=True)
-    feature_list_deploy_sync(feature_list.id, True)
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
 
@@ -884,7 +883,6 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
 
     # first deploy feature list
     feature_list.deploy(enable=True, make_production_ready=True)
-    feature_list_deploy_sync(feature_list.id, True)
 
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)
@@ -893,7 +891,6 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
 
     # deploy another feature list
     another_feature_list.deploy(enable=True)
-    feature_list_deploy_sync(another_feature_list.id, True)
 
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)
@@ -909,7 +906,6 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
 
     # disable feature list deployment
     feature_list.deploy(enable=False)
-    feature_list_deploy_sync(feature_list.id, False)
 
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)
@@ -922,7 +918,6 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
 
     # disable another feature list deployment
     another_feature_list.deploy(enable=False)
-    feature_list_deploy_sync(another_feature_list.id, False)
 
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)
@@ -1123,7 +1118,6 @@ def test_get_online_serving_code(mock_preview, feature_list):
     feature_list.save()
     assert feature_list.saved is True
     feature_list.deploy(enable=True, make_production_ready=True)
-    feature_list_deploy_sync(feature_list.id, True)
     assert (
         feature_list.get_online_serving_code().strip()
         == textwrap.dedent(
@@ -1190,7 +1184,6 @@ def test_get_online_serving_code_unsupported_language(feature_list):
     """Test feature get_online_serving_code with unsupported language"""
     feature_list.save()
     feature_list.deploy(enable=True, make_production_ready=True)
-    feature_list_deploy_sync(feature_list.id, True)
     with pytest.raises(NotImplementedError) as exc:
         feature_list.get_online_serving_code(language="java")
     assert "Supported languages: ['python', 'sh']" in str(exc.value)
@@ -1272,7 +1265,6 @@ def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache)
     assert saved_feature_list.deployed is False
     assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.DRAFT
     saved_feature_list.deploy(enable=True, make_production_ready=True)
-    feature_list_deploy_sync(saved_feature_list.id, True)
     assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.PRODUCTION_READY
     assert saved_feature_list.deployed is True
 

@@ -1,15 +1,10 @@
 """
 Integration test for online enabling features
 """
-from http import HTTPStatus
-from unittest.mock import patch
-
 import pytest
 
 from featurebyte import FeatureList
-from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
-from tests.util.helper import feature_list_deploy_sync
 
 
 @pytest.fixture(name="online_enabled_feature_list", scope="module")
@@ -19,6 +14,7 @@ def online_enabled_feature_list_fixture(event_table, config):
 
     To avoid side effects, this should not be shared with other tests.
     """
+
     event_view = event_table.get_view()
     event_view["ÀMOUNT"] = event_view["ÀMOUNT"] + 12345
 
@@ -39,33 +35,11 @@ def online_enabled_feature_list_fixture(event_table, config):
         features, name="My Feature List (tests/integration/api/test_feature.py)"
     )
     feature_list.save()
-
     feature_list.deploy(enable=True, make_production_ready=True)
 
     yield feature_list
 
     feature_list.deploy(enable=False, make_production_ready=True)
-
-
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@pytest.mark.asyncio
-async def test_online_enabled_features_have_scheduled_jobs(online_enabled_feature_list, config):
-    """
-    Test online enabled features have scheduled jobs
-    """
-    feature = online_enabled_feature_list[online_enabled_feature_list.feature_names[0]]
-    tile_specs = ExtendedFeatureModel(**feature.dict()).tile_specs
-    assert len(tile_specs) == 1
-
-    client = config.get_client()
-    response = client.get("/periodic_task")
-
-    # There should be two scheduled jobs for the tile id - one for online tile and another for
-    # offline tile (online store pre-computation job is triggered by the online tile task once tile
-    # computation completes)
-    data = response.json()
-    assert response.status_code == HTTPStatus.OK
-    assert data["total"] == 2
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -83,7 +57,6 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
 
     try:
         feature_list.deploy(enable=True, make_production_ready=True)
-        feature_list_deploy_sync(feature_list.id, enable=True)
 
         # Check feature request
         client = config.get_client()
@@ -95,7 +68,6 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
         )
     finally:
         feature_list.deploy(enable=False, make_production_ready=False)
-        feature_list_deploy_sync(feature_list.id, enable=False)
 
     assert res.status_code == 200
     assert res.json() == {

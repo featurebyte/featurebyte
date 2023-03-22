@@ -96,26 +96,6 @@ async def deploy_feature_list(
     return task
 
 
-@router.post(
-    "/{feature_list_id}/deploy-sync",
-    response_model=FeatureListModel,
-    status_code=HTTPStatus.CREATED,
-)
-async def deploy_feature_list_sync(
-    request: Request, feature_list_id: PydanticObjectId, data: FeatureListUpdate
-) -> FeatureListModel:
-    """
-    Update FeatureList
-    """
-    controller = request.state.app_container.feature_list_controller
-    result: FeatureListModel = await controller.deploy_feature_list_sync(
-        feature_list_id=feature_list_id,
-        data=data,
-        get_credential=request.state.get_credential,
-    )
-    return result
-
-
 @router.get("", response_model=FeatureListPaginatedList)
 async def list_feature_list(
     request: Request,

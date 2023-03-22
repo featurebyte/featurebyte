@@ -41,6 +41,7 @@ def task_manager_fixture(user_id, persistent):
 
 
 @pytest.mark.asyncio
+@pytest.mark.disable_autouse
 async def test_task_manager__long_running_tasks(task_manager, celery, user_id, persistent):
     """Test task manager service"""
     expected_tasks = []
@@ -89,6 +90,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
 
 
 @pytest.mark.asyncio
+@pytest.mark.disable_autouse
 async def test_task_manager__list_tasks(task_manager, celery, user_id, persistent):
     """Test task manager service -- list task status"""
     task_num = 10
