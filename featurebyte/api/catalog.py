@@ -493,7 +493,7 @@ class Catalog(CatalogModel, SavableApiObject):
         return feature_store.get_data_source()
 
     @update_and_reset_catalog
-    def get_view(self, table_name: str) -> View:  # type: ignore[no-any-return]
+    def get_view(self, table_name: str) -> View:
         """
         Get view by name
 
@@ -508,7 +508,7 @@ class Catalog(CatalogModel, SavableApiObject):
             View object
         """
         table = Table.get(name=table_name)
-        return table.get_view()
+        return table.get_view()  # type: ignore[no-any-return]
 
     @update_and_reset_catalog
     def get_feature(self, name: str, version: Optional[str] = None) -> Feature:
