@@ -1052,14 +1052,14 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Retrieve materialized historical features.
         >>> feature_list.get_historical_features(observation_set)
           POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days  InvoiceAmountAvg_60days
-        0    2022-04-15  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                    9                10.223333
-        1    2022-04-17  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                    9                10.223333
-        2    2022-04-19  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                    9                10.223333
-        3    2022-04-21  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                   10                 9.799000
-        4    2022-04-23  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                   10                 9.799000
-        5    2022-04-25  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                    9                 9.034444
-        6    2022-04-27  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                   10                 9.715000
-        7    2022-04-29  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                   10                 9.715000
+        0    2022-04-15  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
+        1    2022-04-17  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
+        2    2022-04-19  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
+        3    2022-04-21  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 9.799000
+        4    2022-04-23  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 9.799000
+        5    2022-04-25  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                 9.034444
+        6    2022-04-27  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 9.715000
+        7    2022-04-29  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 9.715000
 
         See Also
         --------
