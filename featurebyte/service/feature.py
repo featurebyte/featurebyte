@@ -87,7 +87,11 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         version_name = get_version()
         _, count = await self.persistent.find(
             collection_name=self.collection_name,
-            query_filter={"name": name, "version.name": version_name},
+            query_filter={
+                "name": name,
+                "version.name": version_name,
+                "catalog_id": self.catalog_id,
+            },
         )
         return VersionIdentifier(name=version_name, suffix=count or None)
 

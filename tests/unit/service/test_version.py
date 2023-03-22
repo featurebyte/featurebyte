@@ -770,3 +770,92 @@ async def test_create_new_feature_version_using_source_settings__no_changes_in_f
     with pytest.raises(NoFeatureJobSettingInSourceError) as exc:
         await version_service.create_new_feature_version_using_source_settings(feature.id)
     assert "No feature job setting found in source" in str(exc)
+
+
+@pytest.mark.asyncio
+async def test_feature_and_feature_list_version__catalog_id_used_in_query(
+    version_service, feature, feature_list, user, persistent
+):
+    """Test feature version & feature list version - catalog_id used in query"""
+    assert feature.version.suffix is None
+    assert feature_list.version.suffix is None
+
+    # create new feature version & new feature list version and check their version suffix
+    new_feat_version = await version_service.create_new_feature_version(
+        data=FeatureNewVersionCreate(
+            source_feature_id=feature.id,
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name="sf_event_table",
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                    ),
+                )
+            ],
+        )
+    )
+    assert new_feat_version.version.suffix == 1
+
+    new_feat_list_version = await version_service.create_new_feature_list_version(
+        data=FeatureListNewVersionCreate(
+            source_feature_list_id=feature_list.id,
+            mode="manual",
+            features=[FeatureVersionInfo(name=feature.name, version=new_feat_version.version)],
+        )
+    )
+    assert new_feat_list_version.version.suffix == 1
+
+    # create another feature & feature list with the same name using different catalog ID
+    another_catalog_id = ObjectId()
+    feature_id_another_catalog = await persistent.insert_one(
+        collection_name="feature",
+        document={
+            "name": feature.name,
+            "version": {"name": feature.version.name},
+            "catalog_id": another_catalog_id,
+        },
+        user_id=user.id,
+    )
+    feat_another_catalog = await persistent.find_one(
+        collection_name="feature", query_filter={"_id": feature_id_another_catalog}
+    )
+    feat_list_id_another_catalog = await persistent.insert_one(
+        collection_name="feature_list",
+        document={
+            "name": feature_list.name,
+            "version": {"name": feature_list.version.name},
+            "catalog_id": another_catalog_id,
+        },
+        user_id=user.id,
+    )
+    feat_list_another_catalog = await persistent.find_one(
+        collection_name="feature_list", query_filter={"_id": feat_list_id_another_catalog}
+    )
+    # make sure version is in correct format
+    assert feat_another_catalog["version"] == {"name": feature.version.name}
+    assert feat_list_another_catalog["version"] == {"name": feature_list.version.name}
+
+    # check that the version suffix is 2 but not 3
+    new_feat_version = await version_service.create_new_feature_version(
+        data=FeatureNewVersionCreate(
+            source_feature_id=feature.id,
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name="sf_event_table",
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h30s"
+                    ),
+                )
+            ],
+        )
+    )
+    assert new_feat_version.version.suffix == 2
+
+    new_feat_list_version = await version_service.create_new_feature_list_version(
+        data=FeatureListNewVersionCreate(
+            source_feature_list_id=feature_list.id,
+            mode="manual",
+            features=[FeatureVersionInfo(name=feature.name, version=new_feat_version.version)],
+        )
+    )
+    assert new_feat_list_version.version.suffix == 2
