@@ -240,7 +240,7 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
             [f"{(uuid.getnode() >> ele) & 0xff:02x}" for ele in range(0, 8 * 6, 8)][::-1]
         )
 
-    async def __send_telemetry(self, payload: Dict[str, Any]):
+    async def __send_telemetry(self, payload: Dict[str, Any]) -> None:
         try:
             requests.post(self.endpoint, json=payload, timeout=1)  # set timeout to 1 second
         except Exception:  # pylint: disable=broad-except
