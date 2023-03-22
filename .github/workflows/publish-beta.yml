@@ -35,7 +35,9 @@ env:
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64 # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
   # Docker
-  IMAGE_REPO: "us-central1-docker.pkg.dev/beta-testing-373907/docker/featurebyte-server"
+  SERVER_IMAGE_REPO: "us-central1-docker.pkg.dev/beta-testing-373907/docker/featurebyte-server"
+  DOCS_IMAGE_REPO: "us-central1-docker.pkg.dev/beta-testing-373907/docker/featurebyte-docs"
+
 concurrency:
   cancel-in-progress: false
   group: ${{ github.workflow }}
@@ -75,7 +77,7 @@ jobs:
         run: |
           # Check if the documentation image with the corresponding version has been published
           # If this fails go to documentation repo and publish the a version according to the tag required
-          docker manifest inspect "${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}"
+          docker manifest inspect "${{ env.DOCS_MAGE_REPO }}:${{ github.event.inputs.version }}"
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -103,15 +105,15 @@ jobs:
       - name: Replace docker-compose image tag (server)
         uses: mikefarah/yq@master
         with:
-          cmd: yq -i '.services.featurebyte-server.image = "${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
+          cmd: yq -i '.services.featurebyte-server.image = "${{ env.SERVER_IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
       - name: Replace docker-compose image tag (worker)
         uses: mikefarah/yq@master
         with:
-          cmd: yq -i '.services.featurebyte-worker.image = "${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
+          cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
       - name: Replace docker-compose image tag (docs)
         uses: mikefarah/yq@master
         with:
-          cmd: yq -i '.services.featurebyte-docs.image = "${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
+          cmd: yq -i '.services.featurebyte-docs.image = "${{ env.DOCS_IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
       - name: Authenticate to Google Cloud
         id: 'auth'
         uses: 'google-github-actions/auth@v1'
@@ -127,15 +129,15 @@ jobs:
         with:
           push: true
           tags: |
-            ${{ env.IMAGE_REPO }}:${{ env.SHORT_HASH }}
-            ${{ env.IMAGE_REPO }}:${{ env.REF_VERSION }}
-            ${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}
+            ${{ env.SERVER_IMAGE_REPO }}:${{ env.SHORT_HASH }}
+            ${{ env.SERVER_IMAGE_REPO }}:${{ env.REF_VERSION }}
+            ${{ env.SERVER_IMAGE_REPO }}:${{ github.event.inputs.version }}
           context: .
           platforms: |
             linux/amd64
             linux/arm64
           file: docker/Dockerfile
-          cache-from: type=registry,ref=${{ env.IMAGE_REPO }}:${{ env.REF_VERSION }}
+          cache-from: type=registry,ref=${{ env.SERVER_IMAGE_REPO }}:${{ env.REF_VERSION }}
           cache-to: type=inline
           build-args: FEATUREBYTE_NP_PASSWORD=${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
       - name: Tagging version

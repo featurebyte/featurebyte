@@ -28,9 +28,10 @@ import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.table.api as table_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
+from featurebyte import Configurations
 from featurebyte.common.utils import get_version
 from featurebyte.logger import logger
-from featurebyte.middleware import request_handler
+from featurebyte.middleware import ExceptionMiddleware, TelemetryMiddleware
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema import APIServiceStatus
@@ -174,7 +175,14 @@ def get_app() -> FastAPI:
         await sub.close()
         redis.close()
 
-    _app.middleware("http")(request_handler)
+    config = Configurations()
+    # Add telemetry middleware if enabled
+    if config.logging.telemetry:
+        _app.add_middleware(TelemetryMiddleware, endpoint=config.logging.telemetry_url)
+
+    # Add exception middleware
+    _app.add_middleware(ExceptionMiddleware)
+
     return _app
 
 
