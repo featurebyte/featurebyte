@@ -13,6 +13,7 @@ from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundEr
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.schema.feature import FeatureCreate
+from featurebyte.service.feature import FeatureService
 
 
 @pytest.fixture(name="feature_model_dict")
@@ -72,6 +73,24 @@ async def test_get_document_by_name_and_version(feature_service, feature):
     )
     assert doc == feature
 
+    # check get document by name and version using different catalog ID
+    with pytest.raises(DocumentNotFoundError) as exc:
+        another_feat_service = FeatureService(
+            user=feature_service.user,
+            persistent=feature_service.persistent,
+            catalog_id=ObjectId(),
+        )
+        await another_feat_service.get_document_by_name_and_version(
+            name=feature.name, version=feature.version
+        )
+
+    expected_msg = (
+        f'Feature (name: "{feature.name}", version: "{feature.version.to_str()}") not found. '
+        f"Please save the Feature object first."
+    )
+    assert expected_msg in str(exc.value)
+
+    # check get document by name and version using random name
     with pytest.raises(DocumentNotFoundError) as exc:
         await feature_service.get_document_by_name_and_version(
             name="random_name", version=feature.version

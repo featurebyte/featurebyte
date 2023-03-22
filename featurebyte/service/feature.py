@@ -220,7 +220,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         """
         document_dict = await self.persistent.find_one(
             collection_name=self.collection_name,
-            query_filter={"name": name, "version": version.dict()},
+            query_filter={"name": name, "version": version.dict(), "catalog_id": self.catalog_id},
             user_id=self.user.id,
         )
         if document_dict is None:
