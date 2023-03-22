@@ -31,6 +31,7 @@ async def wait_for_async_task(
 
 
 @pytest.fixture(name="task_manager")
+@pytest.mark.disable_autouse
 def task_manager_fixture(celery_service):
     """Task manager fixture"""
     persistent = celery_service
@@ -52,6 +53,7 @@ async def test_submit_task(task_manager):
 
 
 @pytest.mark.asyncio
+@pytest.mark.disable_autouse
 async def test_schedule_interval_task(task_manager):
     """Test task manager service"""
     payload = TestTaskPayload(
