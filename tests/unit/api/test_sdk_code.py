@@ -1,6 +1,13 @@
 """Unit tests for SDK code generation"""
+import pytest
+
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc
+from featurebyte.exception import RecordUpdateException
+from featurebyte.query_graph.node.cleaning_operation import (
+    ColumnCleaningOperation,
+    MissingValueImputation,
+)
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -120,7 +127,7 @@ def test_sdk_code_generation__complex_string_related_operations(saved_event_tabl
     )
 
 
-def test_skd_code_generation__complex_feature(
+def test_sdk_code_generation__complex_feature(
     saved_event_table, saved_item_table, transaction_entity, update_fixtures
 ):
     """SDK code generation for complex feature"""
@@ -165,3 +172,90 @@ def test_skd_code_generation__complex_feature(
         table_id=saved_event_table.id,
         item_table_id=saved_item_table.id,
     )
+
+
+def test_sdk_code_generation__multi_table_feature(
+    saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
+):
+    """Test SDK code generation for multi-table feature"""
+    # add critical data info to the table
+    saved_event_table.col_char.update_critical_data_info(
+        cleaning_operations=[MissingValueImputation(imputed_value="missing")]
+    )
+    for col in ["col_float", "col_int", "cust_id"]:
+        saved_event_table[col].update_critical_data_info(
+            cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
+        )
+    for col in ["event_id_col", "item_id_col", "item_amount"]:
+        saved_item_table[col].update_critical_data_info(
+            cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
+        )
+
+    # tag entities
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+    saved_item_table.event_id_col.as_entity(transaction_entity.name)
+
+    # create views
+    event_suffix = "_event_table"
+    event_view = saved_event_table.get_view()
+    item_view = saved_item_table.get_view(event_suffix=event_suffix)
+    item_view.join_event_table_attributes(
+        ["col_float", "col_char", "col_boolean"], event_suffix=event_suffix
+    )
+    item_view["percent"] = item_view["item_amount"] / item_view[f"col_float{event_suffix}"]
+    max_percent = item_view.groupby("event_id_col").aggregate(
+        value_column="percent",
+        method=AggFunc.MAX,
+        feature_name="max_percent",
+    )
+
+    event_view.add_feature(max_percent.name, max_percent, "cust_id")
+    output = event_view.groupby("cust_id").aggregate_over(
+        value_column=max_percent.name,
+        method=AggFunc.MAX,
+        windows=["30d"],
+        feature_names=["max_percent_over_30d"],
+    )["max_percent_over_30d"]
+
+    # save feature so that the graph is pruned
+    output.save()
+
+    check_sdk_code_generation(
+        output,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/complex_multi_table_feature.py.jinja2",
+        update_fixtures=update_fixtures,
+        table_id=saved_event_table.id,
+        item_table_id=saved_item_table.id,
+    )
+
+    # check update readiness to production ready won't fail due to production ready guardrail
+    output.update_readiness(readiness="PRODUCTION_READY")
+
+    # check update readiness to production ready should fail due to critical data info guardrail
+    # (though the feature is already production ready)
+    saved_event_table.col_float.update_critical_data_info(cleaning_operations=[])
+    assert output.readiness == "PRODUCTION_READY"
+    with pytest.raises(RecordUpdateException) as exc:
+        output.update_readiness(readiness="PRODUCTION_READY")
+
+    expected_error = (
+        "Discrepancies found between the promoted feature version you are trying to promote to PRODUCTION_READY, "
+        # data source does not have col_float cleaning operations
+        "and the input table.\n{'cleaning_operations': {'data_source': ["
+        "ColumnCleaningOperation(column_name='col_int', "
+        "cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing)]), "
+        "ColumnCleaningOperation(column_name='cust_id', "
+        "cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing)])], "
+        # promoted feature has additional col_float cleaning operations
+        "'promoted_feature': ["
+        "ColumnCleaningOperation(column_name='col_int', "
+        "cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing)]), "
+        "ColumnCleaningOperation(column_name='col_float', "
+        "cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing)]), "
+        "ColumnCleaningOperation(column_name='cust_id', "
+        "cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing)])]}}\n"
+        "Please fix these issues first before trying to promote your feature to PRODUCTION_READY."
+    )
+    assert expected_error in str(exc.value)

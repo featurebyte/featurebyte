@@ -1082,6 +1082,14 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         name="iet_entropy_24h",
         feature_job_setting={"frequency": "6h", "time_modulo_frequency": "3h", "blind_spot": "3h"},
     )
+    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
+    item_view = snowflake_item_table.get_view(event_suffix="_event_table")
+    feature_item_event = item_view.groupby("event_id_col").aggregate(
+        value_column="cust_id_event_table",
+        method=AggFunc.SUM,
+        feature_name="item_event_sum_cust_id_feature",
+    )
+
     feature_list = FeatureList([feature_sum_30m], name="sf_feature_list")
     feature_list_multiple = FeatureList(
         [feature_sum_30m, feature_sum_2h], name="sf_feature_list_multiple"
@@ -1152,7 +1160,8 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (snowflake_scd_table, "scd_table"),
             (feature_sum_30m, "feature_sum_30m"),
             (feature_sum_2h, "feature_sum_2h"),
-            (non_time_based_feature, "feature_non_time_based"),
+            (non_time_based_feature, "feature_item_event"),
+            (feature_item_event, "feature_item_event"),
             (feature_iet, "feature_iet"),
             (feature_list, "feature_list_single"),
             (feature_list_multiple, "feature_list_multi"),

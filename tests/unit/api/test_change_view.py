@@ -410,7 +410,10 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
             FROM (
               SELECT
                 "col_text" AS "col_text",
-                "effective_timestamp" AS "new_effective_timestamp"
+                "effective_timestamp" AS "new_effective_timestamp",
+                LAG("effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS "past_effective_timestamp",
+                "col_int" AS "new_col_int",
+                LAG("col_int", 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS "past_col_int"
               FROM "sf_database"."sf_schema"."scd_table"
             )
             WHERE

@@ -435,7 +435,7 @@ class BaseNode(BaseModel):
         if input_index < 0 or input_index >= self.max_input_count:
             raise ValueError(
                 f"Input index {input_index} is out of range. "
-                f"Input index should be within 0 to {self.max_input_count - 1}."
+                f"Input index should be within 0 to {self.max_input_count - 1} (node_name: {self.name})."
             )
 
     def _assert_empty_required_input_columns(self) -> Sequence[str]:

@@ -213,12 +213,11 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
     ) -> Dict[str, Any]:
         _ = input_nodes
         metadata = self.metadata.dict(by_alias=True)
-        if target_columns:
-            metadata["column_cleaning_operations"] = [
-                col
-                for col in self.metadata.column_cleaning_operations
-                if col.column_name in target_columns
-            ]
+        metadata["column_cleaning_operations"] = [
+            col
+            for col in self.metadata.column_cleaning_operations
+            if col.column_name in target_columns
+        ]
         return metadata
 
     @staticmethod
@@ -328,16 +327,15 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
         self, target_columns: List[str], input_nodes: Sequence[NodeT]
     ) -> Dict[str, Any]:
         metadata = super()._prune_metadata(target_columns=target_columns, input_nodes=input_nodes)
-        if target_columns:
-            # for item view graph node, we need to use the event view graph node's metadata
-            # to generate the event column cleaning operations
-            assert len(input_nodes) == 2
-            event_view_node = input_nodes[1]
-            assert isinstance(event_view_node.parameters, EventViewGraphNodeParameters)
-            event_view_metadata = event_view_node.parameters.metadata
-            metadata[
-                "event_column_cleaning_operations"
-            ] = event_view_metadata.column_cleaning_operations
+        # for item view graph node, we need to use the event view graph node's metadata
+        # to generate the event column cleaning operations
+        assert len(input_nodes) == 2
+        event_view_node = input_nodes[1]
+        assert isinstance(event_view_node.parameters, EventViewGraphNodeParameters)
+        event_view_metadata = event_view_node.parameters.metadata
+        metadata[
+            "event_column_cleaning_operations"
+        ] = event_view_metadata.column_cleaning_operations
         return metadata
 
 

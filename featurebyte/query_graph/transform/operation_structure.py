@@ -84,7 +84,10 @@ class OperationStructureExtractor(
         )
 
     def _derive_nested_graph_operation_structure(
-        self, node: BaseGraphNode, input_operation_structures: List[OperationStructure]
+        self,
+        node: BaseGraphNode,
+        input_operation_structures: List[OperationStructure],
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # extract operation_structure of the nested graph
         node_params = node.parameters
@@ -96,6 +99,7 @@ class OperationStructureExtractor(
         nested_op_structure_info = OperationStructureExtractor(graph=nested_graph).extract(
             node=nested_output_node,
             proxy_input_operation_structures=input_operation_structures,
+            keep_all_source_columns=global_state.keep_all_source_columns,
         )
         nested_operation_structure = nested_op_structure_info.operation_structure_map[
             nested_output_node_name
@@ -121,6 +125,7 @@ class OperationStructureExtractor(
             operation_structure = self._derive_nested_graph_operation_structure(
                 node=node,
                 input_operation_structures=inputs,
+                global_state=global_state,
             )
         else:
             operation_structure = node.derive_node_operation_info(

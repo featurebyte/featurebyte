@@ -88,13 +88,13 @@ def test_item_view_sample(item_table):
     item_view = item_table.get_view()
     sample_df = item_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
+        "order_id",
+        "item_id",
+        "item_type",
         "ËVENT_TIMESTAMP",
         "CUST_ID",
         "ÜSER ID",
         "PRODUCT_ACTION",
-        "order_id",
-        "item_id",
-        "item_type",
     ]
 
     assert sample_df.shape == (10, 7)

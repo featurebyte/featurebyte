@@ -101,11 +101,11 @@ class ItemView(View, GroupByMixin):
 
         # Update timestamp_column_name if event view's timestamp column is joined
         metadata_kwargs = {}
-        for left_in_col, left_out_col in zip(
-            join_parameters.left_input_columns, join_parameters.left_output_columns
+        for right_in_col, right_out_col in zip(
+            join_parameters.right_input_columns, join_parameters.right_output_columns
         ):
-            if left_in_col == self.event_view.timestamp_column:
-                metadata_kwargs["timestamp_column_name"] = left_out_col
+            if right_in_col == self.event_view.timestamp_column:
+                metadata_kwargs["timestamp_column_name"] = right_out_col
 
         # Update metadata only after validation is done & join node is inserted
         joined_tabular_data_ids = join_tabular_data_ids(

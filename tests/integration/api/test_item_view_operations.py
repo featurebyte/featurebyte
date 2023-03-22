@@ -13,14 +13,15 @@ def test_expected_rows_and_columns(item_table, expected_joined_event_item_datafr
     """
     item_view = item_table.get_view()
     df_preview = item_view.preview(limit=50)
+    # item table columns on the left, event table columns on the right
     expected_columns = [
+        "order_id",
+        "item_id",
+        "item_type",
         "ËVENT_TIMESTAMP",
         "CUST_ID",
         "ÜSER ID",
         "PRODUCT_ACTION",
-        "order_id",
-        "item_id",
-        "item_type",
     ]
     assert df_preview.columns.tolist() == expected_columns
     assert df_preview.shape[0] == 50

@@ -123,13 +123,13 @@ def test_item_view_describe(item_table):
 
     describe_df = item_view.describe()
     assert describe_df.columns.tolist() == [
+        "order_id",
+        "item_id",
+        "item_type",
         "ËVENT_TIMESTAMP",
         "CUST_ID",
         "ÜSER ID",
         "PRODUCT_ACTION",
-        "order_id",
-        "item_id",
-        "item_type",
     ]
     expected_row_idx = [
         "dtype",

@@ -493,27 +493,21 @@ class BaseViewTestSuite:
             view_under_test.raw[self.col][mask] = 1
         assert "'FrozenSeries' object does not support item assignment" in str(exc.value)
 
-        # check operation between raw input and view
-        if self.view_type == ViewType.ITEM_VIEW:
-            with pytest.raises(ValueError) as exc:
-                view_under_test[self.col] = view_under_test.raw[self.col] + 1
-            assert "Row indices between " in str(exc.value) and "are not aligned!" in str(exc.value)
-        else:
-            # check normal use raw accessor with view
-            # assignment
-            view_under_test["new_col"] = view_under_test.raw[self.col] + 1
-            assert (
-                view_under_test.preview_sql().strip()
-                == textwrap.dedent(self.expected_view_with_raw_accessor_sql).strip()
-            )
+        # check normal use raw accessor with view
+        # assignment
+        view_under_test["new_col"] = view_under_test.raw[self.col] + 1
+        assert (
+            view_under_test.preview_sql().strip()
+            == textwrap.dedent(self.expected_view_with_raw_accessor_sql).strip()
+        )
 
-            # conditional assignment
-            view_under_test["new_col"][mask] = 0
-            assert view_under_test.node.type == NodeType.ASSIGN
+        # conditional assignment
+        view_under_test["new_col"][mask] = 0
+        assert view_under_test.node.type == NodeType.ASSIGN
 
-            view_under_test[mask, "new_col"] = 0
-            assert view_under_test.node.type == NodeType.ASSIGN
+        view_under_test[mask, "new_col"] = 0
+        assert view_under_test.node.type == NodeType.ASSIGN
 
-            # check filtering
-            filtered_column = view_under_test[self.col][mask]
-            assert filtered_column.node.type == NodeType.FILTER
+        # check filtering
+        filtered_column = view_under_test[self.col][mask]
+        assert filtered_column.node.type == NodeType.FILTER

@@ -915,7 +915,7 @@ class JoinNode(BasePrunableNode):
         metadata = node_params.get("metadata") or {}
         if metadata.get("type") == "join_event_table_attributes":
             node_params["metadata"]["columns"] = [
-                col for col in node_params["metadata"]["columns"] if col in left_avail_columns
+                col for col in node_params["metadata"]["columns"] if col in right_avail_columns
             ]
         return self.clone(parameters=node_params)
 
@@ -947,15 +947,29 @@ class JoinNode(BasePrunableNode):
             for col in inputs[0].columns
             if col.name in left_col_map
         }
-        right_columns = {
-            col.name: col.clone(
-                name=right_col_map[col.name],  # type: ignore
-                node_names=col.node_names.union([self.name]),
-                node_name=self.name,
-            )
-            for col in inputs[1].columns
-            if col.name in right_col_map
-        }
+        right_columns = {}
+        right_on_col = next(
+            col for col in inputs[1].columns if col.name == self.parameters.right_on
+        )
+        for col in inputs[1].columns:
+            if col.name in right_col_map:
+                if global_state.keep_all_source_columns:
+                    # when keep_all_source_columns is True, we should include the right_on column in the join
+                    # so that any changes on the right_on column can be tracked.
+                    right_columns[col.name] = DerivedDataColumn.create(
+                        name=right_col_map[col.name],  # type: ignore
+                        columns=[right_on_col, col],
+                        transform=self.transform_info,
+                        node_name=self.name,
+                        dtype=col.dtype,
+                        other_node_names=col.node_names,
+                    )
+                else:
+                    right_columns[col.name] = col.clone(
+                        name=right_col_map[col.name],  # type: ignore
+                        node_names=col.node_names.union([self.name]),
+                        node_name=self.name,
+                    )
 
         if self.parameters.join_type == "left":
             row_index_lineage = inputs[0].row_index_lineage
@@ -967,7 +981,7 @@ class JoinNode(BasePrunableNode):
         right_cols = [right_columns[col_name] for col_name in params.right_input_columns]
 
         return OperationStructure(
-            columns=left_cols + right_cols,
+            columns=left_cols + right_cols,  # type: ignore
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=row_index_lineage,
@@ -994,9 +1008,9 @@ class JoinNode(BasePrunableNode):
             node_output_category=NodeOutputCategory.VIEW,
         )
         statements = left_statements + right_statements
+        var_name = left_var_name
         assert self.parameters.metadata is not None, "Join node metadata is not set."
         if isinstance(self.parameters.metadata, JoinMetadata):
-            var_name = left_var_name
             other_var_name = right_var_name
             statement = StatementStr(
                 f"{var_name}.join({other_var_name}, "
@@ -1005,7 +1019,6 @@ class JoinNode(BasePrunableNode):
                 f"rsuffix={ValueStr.create(self.parameters.metadata.rsuffix)})"
             )
         else:
-            var_name = right_var_name
             statement = StatementStr(
                 f"{var_name}.join_event_table_attributes("
                 f"columns={ValueStr.create(self.parameters.metadata.columns)}, "
