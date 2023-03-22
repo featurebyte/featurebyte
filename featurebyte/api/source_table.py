@@ -605,21 +605,23 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> EventTable:
         """
-        Get or create EventTable from this source table. Internally, this method calls `EventTable.get` by name,
+        Get or create event table from this source table. Internally, this method calls `EventTable.get` by name,
         if the table does not exist, it will be created.
 
         Parameters
         ----------
         name: str
-            Event table name
+            Event table name.
         event_id_column: str
-            Event ID column from the given tabular source
+            Event ID column from the given source table.
         event_timestamp_column: str
-            Event timestamp column from the given tabular source
+            Event timestamp column from the given source table.
         record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
+            Record creation timestamp column from the given source table.
         _id: Optional[ObjectId]
-            Identity value for constructed object
+            Identity value for constructed object. This should only be used for cases where we want to create an
+            event table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
 
         Returns
         -------
@@ -648,23 +650,25 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> ItemTable:
         """
-        Get or create ItemTable from this source table. Internally, this method calls `ItemTable.get` by name,
+        Get or create item from this source table. Internally, this method calls `ItemTable.get` by name,
         if the table does not exist, it will be created.
 
         Parameters
         ----------
         name: str
-            Item table name
+            Item table name.
         event_id_column: str
-            Event ID column from the given tabular source
+            Event ID column from the given source table.
         item_id_column: str
-            Item ID column from the given tabular source
+            Item ID column from the given source table.
         event_table_name: str
-            Name of the EventTable associated with this ItemTable
+            Name of the EventTable associated with this ItemTable.
         record_creation_timestamp_column: Optional[str]
-            Record creation timestamp column from the given tabular source
+            Record creation timestamp column from the given source table.
         _id: Optional[ObjectId]
-            Identity value for constructed object
+            Identity value for constructed object. This should only be used for cases where we want to create an
+            item table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
 
         Returns
         -------
@@ -694,19 +698,21 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> DimensionTable:
         """
-        Get or create DimensionTable from this source table. Internally, this method calls `DimensionTable.get`
+        Get or create dimension table from this source table. Internally, this method calls `DimensionTable.get`
         by name, if the table does not exist, it will be created.
 
         Parameters
         ----------
         name: str
-            Dimension table name
+            Dimension table name.
         dimension_id_column: str
-            Dimension table ID column from the given tabular source
+            Dimension table ID column from the given tabular source.
         record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
+            Record creation timestamp column from the given tabular source.
         _id: Optional[ObjectId]
-            Identity value for constructed object
+            Identity value for constructed object. This should only be used for cases where we want to create a
+            dimension table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
 
         Returns
         -------
@@ -736,27 +742,30 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> SCDTable:
         """
-        Get or create SCDTable from this source table. Internally, this method calls `SCDTable.get` by name,
+        Get or create SCD table from this source table. Internally, this method calls `SCDTable.get` by name,
         if the table does not exist, it will be created.
 
         Parameters
         ----------
         name: str
-            SCDTable name
+            SCDTable name.
         natural_key_column: str
-            Natural key column from the given tabular source
+            Natural key column from the given source table.
         effective_timestamp_column: str
-            Effective timestamp column from the given tabular source
+            Effective timestamp column from the given source table.
         end_timestamp_column: Optional[str]
-            End timestamp column from the given tabular source
+            End timestamp column from the given source table.
         surrogate_key_column: Optional[str]
-            Surrogate key column from the given tabular source
+            Surrogate key column from the given source table. A surrogate key is a unique identifier assigned to
+            each record, and is used to provide a stable identifier for data even as it changes over time.
         current_flag_column: Optional[str]
-            Column to indicates whether the keys are for the current table point
+            Column to indicate whether the keys are for the current time in point.
         record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
+            Record creation timestamp column from the given source table.
         _id: Optional[ObjectId]
-            Identity value for constructed object
+            Identity value for constructed object. This should only be used for cases where we want to create a
+            SCD table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
 
         Returns
         -------
