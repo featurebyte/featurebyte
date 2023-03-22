@@ -602,19 +602,28 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     @classmethod
     def get(cls, name: str, version: Optional[str] = None) -> FeatureList:
         """
-        Get a feature list by name
+        Retrieve the FeatureList from the persistent data store given the object's name, and version.
+
+        This assumes that the object has been saved to the persistent data store. If the object has not been saved,
+        an exception will be raised and you should create and save the object first.
 
         Parameters
         ----------
         name: str
-            Name of the feature list
+            Name of the FeatureList to retrieve.
         version: Optional[str]
-            Version of the feature list, if None, the default version will be returned
+            FeatureList version, if None, the default version will be returned.
 
         Returns
         -------
         FeatureList
-            Feature list object
+            FeatureList object.
+
+        Examples
+        --------
+        Get a FeatureList object that is already saved.
+
+        >>> feature = fb.FeatureList.get("invoice_feature_list")
         """
         if version is None:
             feature_list_namespace = FeatureListNamespace.get(name=name)

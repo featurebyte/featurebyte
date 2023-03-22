@@ -2,6 +2,7 @@
 Setup for running doctests.
 """
 import featurebyte as fb
+from featurebyte import FeatureList
 
 
 def setup() -> None:
@@ -96,6 +97,11 @@ def setup() -> None:
         value_column=None, method="count", feature_names=["InvoiceCount_60days"], windows=["60d"]
     )
     invoice_count_60days["InvoiceCount_60days"].save(conflict_resolution="retrieve")
+
+    # FeatureList:
+    FeatureList([invoice_count_60days], name="invoice_feature_list").save(
+        conflict_resolution="retrieve"
+    )
 
 
 if __name__ == "__main__":
