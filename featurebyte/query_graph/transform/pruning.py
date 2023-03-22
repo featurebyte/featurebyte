@@ -350,6 +350,10 @@ class GraphStructurePruningExtractor(
         graph = node.parameters.graph
         if node.parameters.type not in GraphNodeType.view_graph_node_types():
             # skip view graph node pruning (as it will be pruned in view construction service)
+            # if we prune the view graph node here, it will cause the issue when the feature is created
+            # from the item table column only. In this case, the proxy input node which represents the
+            # event table will be pruned. This causes issue as the order index in the proxy input node
+            # requires all the proxy input nodes to be present in the nested graph.
             nested_target_node = graph.get_node_by_name(output_node_name)
             graph, _, output_node_name = prune_query_graph(
                 graph=graph,

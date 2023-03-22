@@ -954,6 +954,8 @@ class JoinNode(BasePrunableNode):
         for col in inputs[1].columns:
             if col.name in right_col_map:
                 if global_state.keep_all_source_columns:
+                    # when keep_all_source_columns is True, we should include the right_on column in the join
+                    # so that any changes on the right_on column can be tracked.
                     right_columns[col.name] = DerivedDataColumn.create(
                         name=right_col_map[col.name],  # type: ignore
                         columns=[right_on_col, col],
