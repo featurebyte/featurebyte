@@ -1041,6 +1041,10 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
             [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.dt"], "featurebyte.ViewColumn.dt"
         ),
         DocLayoutItem(
+            [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.dt.minute"],
+            "featurebyte.ViewColumn.dt.minute",
+        ),
+        DocLayoutItem(
             [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.exp"],
             "featurebyte.ViewColumn.exp",
         ),
