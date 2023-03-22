@@ -12,6 +12,7 @@ from bson import ObjectId
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
+from featurebyte.api.data_source import DataSource
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
@@ -20,6 +21,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.table import Table
+from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.exception import RecordRetrievalException
@@ -471,6 +473,42 @@ class Catalog(CatalogModel, SavableApiObject):
             Table of periodic tasks
         """
         return PeriodicTask.list(include_id=include_id)
+
+    @update_and_reset_catalog
+    def get_data_source(self, feature_store_name: str) -> DataSource:
+        """
+        Get data source by name
+
+        Parameters
+        ----------
+        feature_store_name: str
+            Feature store name
+
+        Returns
+        -------
+        DataSource
+            Data source object
+        """
+        feature_store = FeatureStore.get(name=feature_store_name)
+        return feature_store.get_data_source()
+
+    @update_and_reset_catalog
+    def get_view(self, table_name: str) -> View:
+        """
+        Get view by name
+
+        Parameters
+        ----------
+        table_name: str
+            Table name
+
+        Returns
+        -------
+        View
+            View object
+        """
+        table = Table.get(name=table_name)
+        return table.get_view()  # type: ignore[no-any-return]
 
     @update_and_reset_catalog
     def get_feature(self, name: str, version: Optional[str] = None) -> Feature:
