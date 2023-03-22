@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from featurebyte import (
     DimensionTable,
     EventTable,
+    EventView,
     Feature,
     FeatureJobSettingAnalysis,
     FeatureList,
@@ -115,7 +116,7 @@ def test_all_relevant_methods_are_in_list():
 
     # Verify all relevant get methods are present
     get_methods = {method for method in methods if method.startswith("get_")}
-    excluded_methods = {"get_by_id", "get_active", "get_or_create"}
+    excluded_methods = {"get_by_id", "get_active", "get_or_create", "get_data_source", "get_view"}
     assert len(get_methods) - len(excluded_methods) == len(catalog_get_methods_to_test_list())
     for method in catalog_get_methods_to_test_list():
         assert method.catalog_method_name in get_methods
@@ -125,6 +126,25 @@ def test_all_relevant_methods_are_in_list():
     assert len(create_methods) == len(catalog_create_methods_to_test_list())
     for method in catalog_create_methods_to_test_list():
         assert method.catalog_method_name in create_methods
+
+
+def test_get_data_source(snowflake_feature_store):
+    """
+    Test that get_data_source returns the correct data source.
+    """
+    catalog = Catalog.get_active()
+    data_source = catalog.get_data_source(snowflake_feature_store.name)
+    assert data_source.type == "snowflake"
+
+
+def test_get_view(snowflake_event_table):
+    """
+    Test that get_view returns the right view
+    """
+    snowflake_event_table.save()
+    catalog = Catalog.get_active()
+    view = catalog.get_view(snowflake_event_table.name)
+    assert type(view) == EventView
 
 
 def catalog_get_list_and_create_methods():
