@@ -27,6 +27,18 @@ services:
     logging:
       driver: local
 
+  featurebyte-docs:
+    networks:
+      - featurebyte
+    hostname: featurebyte-docs
+    container_name: featurebyte-docs
+    image: featurebyte-docs:latest
+    ports:
+      - "127.0.0.1:8089:80"
+    logging:
+      driver: local
+
+
   featurebyte-server:
     networks:
       - featurebyte
