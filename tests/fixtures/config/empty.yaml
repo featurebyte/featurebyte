@@ -1,0 +1,10 @@
+# featurebyte configuration
+
+profile:
+  - name: local
+    api_url: http://127.0.0.1:8088
+
+logging:
+  level: INFO
+  telemetry: true
+  telemetry_url: https://log.int.featurebyte.com

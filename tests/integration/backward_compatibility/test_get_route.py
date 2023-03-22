@@ -130,6 +130,11 @@ def config_fixture(test_api_client):
                 "api_token": "token",
             }
         ],
+        "logging": {
+            "level": "DEBUG",
+            "telemetry": False,
+            "telemetry_url": "http://127.0.0.1",
+        },
     }
 
     with tempfile.TemporaryDirectory() as tempdir:

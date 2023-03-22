@@ -1,0 +1,3 @@
+logging:
+  telemetry: false
+  telemetry_url: https://telemetry.featurebyte.com

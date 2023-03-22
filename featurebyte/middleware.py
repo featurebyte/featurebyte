@@ -4,10 +4,13 @@ Handles API requests middleware
 from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 
 import inspect
+import uuid
 from http import HTTPStatus
 
-from fastapi import Request, Response
-from pydantic import ValidationError
+import requests
+from fastapi import FastAPI, Request, Response
+from pydantic import AnyHttpUrl, ValidationError
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from featurebyte.exception import (
@@ -183,33 +186,93 @@ ExecutionContext.register(
 )
 
 
-async def request_handler(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    """Middleware used by FastAPI to process each request, featuring:
-
-    - Handle Exception Globally
-
-    Parameters
-    ----------
-    request: Request
-        Request object to be handled
-    call_next: Callable[[Request], Awaitable[Response]]
-        Function that will handle the request
-
-    Returns
-    -------
-    Response
-        Response object to be returned to client
+class ExceptionMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware used by FastAPI to process each request
     """
 
-    try:
-        async with ExecutionContext(request, call_next) as executor:
-            response: Response = await executor.execute()
-    except Exception as exc:  # pylint: disable=broad-except
-        logger.exception(str(exc))
-        response = JSONResponse(
-            content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+    def __init__(self, app: FastAPI):
+        super().__init__(app)
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        """
+        Parameters
+        ----------
+        request: Request
+            Request object to be handled
+        call_next: Callable[[Request], Awaitable[Response]]
+            Function that will handle the request
+
+        Returns
+        -------
+        Response
+            Response object to be returned to client
+        """
+        try:
+            async with ExecutionContext(request, call_next) as executor:
+                response: Response = await executor.execute()
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.exception(str(exc))
+            response: Response = JSONResponse(
+                content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            )
+        return response
+
+
+class TelemetryMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware used by FastAPI to send telemetry logs
+    """
+
+    def __init__(self, app: FastAPI, endpoint: AnyHttpUrl):
+        super().__init__(app)
+        self.endpoint = endpoint
+
+    # Refer https://www.geeksforgeeks.org/extracting-mac-address-using-python/
+    # joins elements of getnode() after each 2 digits.
+    @staticmethod
+    def __get_server_uuid() -> str:
+        return ":".join(
+            [f"{(uuid.getnode() >> ele) & 0xff:02x}" for ele in range(0, 8 * 6, 8)][::-1]
         )
 
-    return response
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        """
+        Parameters
+        ----------
+        request: Request
+            Request object to be handled
+        call_next: Callable[[Request], Awaitable[Response]]
+            Function that will handle the request
+
+        Returns
+        -------
+        Response
+            Response object to be returned to client
+        """
+        # Render the response
+        response = await call_next(request)
+
+        if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
+            jbody = response.body.json()
+            if "detail" in jbody:
+                trace = jbody["detail"]
+            else:
+                trace = "error has occurred"
+        else:
+            trace = str(response.status_code)
+
+        # Render payload to server
+        payload = {
+            "method": request.method,
+            "path": request.url.path,
+            "user": self.__get_server_uuid(),
+            "trace": trace,
+        }
+        requests.post(self.endpoint, json=payload)
+
+        return response
