@@ -353,6 +353,83 @@ def get_paths_to_document():
     return paths
 
 
+def get_api_path_to_use(doc_path, base_path, accessor_property_name):
+    """
+    doc_path -> featurebyte.core.accessor.string.StringAccessor.lower.md
+    base_path_of_class -> featurebyte.ViewColumn
+    accessor_property_name -> str, cd
+
+    returns api_to_use
+
+    caller will know what accessor it is, and pass the base_path_of_class in accordingly
+    """
+    removed_md_path = doc_path.replace(".md", "")
+    function_name = removed_md_path.rsplit(".", 1)[-1]
+    return ".".join([base_path, accessor_property_name, function_name])
+
+
+@dataclass
+class AccessorMetadata:
+
+    """
+    This will be a list of API paths to classes that use the accessor.
+    """
+
+    classes_using_accessor: List[str]
+    """
+    This will be the property name that the classes above use to access the accessor. Eg. str, cd.
+    """
+    property_name: str
+
+
+def get_accessor_to_classes_using():
+    """
+    Return a dict mapping an accessor to its metadata.
+
+    Note that the key should be a unique string that globally identifies the accessor across all API paths. If there
+    are multiple accessors with the same name, then you should include some of the module path in the key.
+    """
+    return {
+        "StringAccessor": AccessorMetadata(
+            classes_using_accessor=[
+                "featurebyte.Feature",
+                "featurebyte.ViewColumn",
+            ],
+            property_name="str",
+        ),
+        "CountDictAccessor": AccessorMetadata(
+            classes_using_accessor=[
+                "featurebyte.Feature",
+            ],
+            property_name="cd",
+        ),
+    }
+
+
+def _build_and_write_to_file(obj_path, doc_group_value, api_to_use, doc_path, path_components):
+    # build string to write to file
+    format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
+
+    # write documentation page to file
+    full_doc_path = Path("reference", doc_path)
+    write_to_file(full_doc_path, doc_path, format_str)
+
+    # Set edit path for the documentation. This will be the link that links back to where the code is defined.
+    source_path = "/".join(path_components) + ".py"
+    set_edit_path(full_doc_path, source_path)
+
+
+def _get_accessor_metadata(doc_path):
+    """
+    Get accessor metadata for a given doc path, or None if it is not an accessor.
+    """
+    accessor_to_classes = get_accessor_to_classes_using()
+    for key in accessor_to_classes:
+        if key in doc_path:
+            return accessor_to_classes[key]
+    return None
+
+
 def generate_documentation_for_docs(doc_groups):
     # A list of all the markdown files generated. Used for debugging.
     all_markdown_files = []
@@ -372,14 +449,11 @@ def generate_documentation_for_docs(doc_groups):
         # generate markdown for documentation page
         obj_path = doc_group_key.get_obj_path(doc_group_value)
         lookup_path = infer_api_path_from_obj_path(obj_path)
-        is_str = "StringAccessor" in doc_path
-        is_cd = "CountDictAccessor" in doc_path
-        # TODO: fix the str/cd hacks
+        accessor_metadata = _get_accessor_metadata(doc_path)
         if (
             lookup_path not in paths_to_document
             and doc_path.lower() not in paths_to_document
-            and not is_str
-            and not is_cd
+            and not accessor_metadata
         ):
             # Skip if this is not a path we want to document.
             continue
@@ -391,17 +465,23 @@ def generate_documentation_for_docs(doc_groups):
         # add obj_path to reverse lookup map
         reverse_lookup_map[lookup_path] = doc_path
 
-        # build string to write to file
-        format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
-
-        # write documentation page to file
-        full_doc_path = Path("reference", doc_path)
-        write_to_file(full_doc_path, doc_path, format_str)
-        all_markdown_files.append(doc_path)
-
-        # Set edit path for the documentation. This will be the link that links back to where the code is defined.
-        source_path = "/".join(path_components) + ".py"
-        set_edit_path(full_doc_path, source_path)
+        if accessor_metadata:
+            # If this is an accessor, then we need to generate documentation for all the classes that use it.
+            for class_to_use in accessor_metadata.classes_using_accessor:
+                api_path = get_api_path_to_use(
+                    doc_path, class_to_use, accessor_metadata.property_name
+                )
+                doc_path = api_path + ".md"
+                reverse_lookup_map[api_path.lower()] = doc_path
+                _build_and_write_to_file(
+                    obj_path, doc_group_value, api_path, doc_path, path_components
+                )
+                all_markdown_files.append(doc_path)
+        else:
+            _build_and_write_to_file(
+                obj_path, doc_group_value, api_to_use, doc_path, path_components
+            )
+            all_markdown_files.append(doc_path)
 
     if DEBUG_MODE:
         with open("debug/proxied_path_to_markdown_path.json", "w") as f:
@@ -416,25 +496,6 @@ def populate_nav(nav, proxied_path_to_markdown_path, all_markdown_files):
         if item.doc_path_override:
             nav[item.menu_header] = item.doc_path_override
             rendered.add(item.doc_path_override)
-            continue
-
-        # if path contains `.str`, we need to point to the string accessor
-        # TODO: cannot do this, must generate different docs for each function
-        if ".str" in item.api_path:
-            split_path = item.api_path.split(".str")
-            function = split_path[1] if len(split_path) > 1 else ""
-            doc_path = f"featurebyte.core.accessor.string.StringAccessor{function}.md"
-            nav[item.menu_header] = doc_path
-            rendered.add(doc_path)
-            continue
-
-        # if path contains `.cd`, point to the cd accessor
-        if ".cd" in item.api_path:
-            split_path = item.api_path.split(".cd")
-            function = split_path[1] if len(split_path) > 1 else ""
-            doc_path = f"featurebyte.core.accessor.count_dict.CountDictAccessor{function}.md"
-            nav[item.menu_header] = doc_path
-            rendered.add(doc_path)
             continue
 
         # Try to infer doc path from path provided
