@@ -3,7 +3,7 @@ Unit test for Catalog class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -20,7 +20,6 @@ from pydantic import ValidationError
 from featurebyte import (
     DimensionTable,
     EventTable,
-    EventView,
     Feature,
     FeatureJobSettingAnalysis,
     FeatureList,
@@ -69,12 +68,17 @@ class MethodMetadata:
     class_object: Any
     # Method we delegate to (eg. list/get)
     class_method_delegated: str
+    # Method to patch. We might need to patch if we do some descriptor overrides so that we can get the right
+    # method to compare signatures with.
+    delegated_method_to_patch: Optional[str] = None
 
 
 def catalog_list_methods_to_test_list():
     return [
-        MethodMetadata("list_features", Feature, "list"),
-        MethodMetadata("list_feature_lists", FeatureList, "list"),
+        MethodMetadata("list_features", Feature, "_list_versions", "list_versions"),
+        MethodMetadata("list_feature_namespaces", FeatureNamespace, "list"),
+        MethodMetadata("list_feature_list_namespaces", FeatureListNamespace, "list"),
+        MethodMetadata("list_feature_lists", FeatureList, "_list_versions", "list_versions"),
         MethodMetadata("list_tables", Table, "list"),
         MethodMetadata("list_relationships", Relationship, "list"),
         MethodMetadata("list_feature_job_setting_analyses", FeatureJobSettingAnalysis, "list"),
@@ -87,6 +91,8 @@ def catalog_list_methods_to_test_list():
 def catalog_get_methods_to_test_list():
     return [
         MethodMetadata("get_feature", Feature, "get"),
+        MethodMetadata("get_feature_namespace", FeatureNamespace, "get"),
+        MethodMetadata("get_feature_list_namespace", FeatureListNamespace, "get"),
         MethodMetadata("get_feature_list", FeatureList, "get"),
         MethodMetadata("get_table", Table, "get"),
         MethodMetadata("get_relationship", Relationship, "get"),
@@ -116,7 +122,7 @@ def test_all_relevant_methods_are_in_list():
 
     # Verify all relevant get methods are present
     get_methods = {method for method in methods if method.startswith("get_")}
-    excluded_methods = {"get_by_id", "get_active", "get_or_create", "get_data_source", "get_view"}
+    excluded_methods = {"get_by_id", "get_active", "get_or_create"}
     assert len(get_methods) - len(excluded_methods) == len(catalog_get_methods_to_test_list())
     for method in catalog_get_methods_to_test_list():
         assert method.catalog_method_name in get_methods
@@ -126,25 +132,6 @@ def test_all_relevant_methods_are_in_list():
     assert len(create_methods) == len(catalog_create_methods_to_test_list())
     for method in catalog_create_methods_to_test_list():
         assert method.catalog_method_name in create_methods
-
-
-def test_get_data_source(snowflake_feature_store):
-    """
-    Test that get_data_source returns the correct data source.
-    """
-    catalog = Catalog.get_active()
-    data_source = catalog.get_data_source(snowflake_feature_store.name)
-    assert data_source.type == "snowflake"
-
-
-def test_get_view(snowflake_event_table):
-    """
-    Test that get_view returns the right view
-    """
-    snowflake_event_table.save()
-    catalog = Catalog.get_active()
-    view = catalog.get_view(snowflake_event_table.name)
-    assert type(view) == EventView
 
 
 def catalog_get_list_and_create_methods():
@@ -186,8 +173,6 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         DimensionTable,  # accessible as part of catalog.(list|get)_table
         EventTable,  # accessible as part of catalog.(list|get)_table
         FeatureJobMixin,
-        FeatureListNamespace,  # same as (list|get)_feature_list
-        FeatureNamespace,  # same as (list|get)_feature
         ItemTable,  # accessible as part of catalog.(list|get)_table
         SCDTable,  # accessible as part of catalog.(list|get)_table
         SavableApiObject,
@@ -247,7 +232,7 @@ def test_methods_call_the_correct_delegated_method(method_item):
     Test catalog methods call the correct delegated method.
     """
     # Assert that the delegated list method is called
-    method_name = method_item.class_method_delegated
+    method_name = method_item.delegated_method_to_patch or method_item.class_method_delegated
     catalog = Catalog.get_active()
     with patch.object(method_item.class_object, method_name) as mocked_list:
         _invoke_method(catalog, method_item)
@@ -496,7 +481,7 @@ def test_functions_are_called_from_active_catalog(method_item):
     """
     Test that catalog_obj.(list|get)_<x> functions are able to be called from the active, or inactive catalog.
     """
-    method_name = method_item.class_method_delegated
+    method_name = method_item.delegated_method_to_patch or method_item.class_method_delegated
     with patch.object(method_item.class_object, method_name):
         credit_card_catalog = Catalog.create("creditcard")
         grocery_catalog = Catalog.create(name="grocery")

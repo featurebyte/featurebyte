@@ -12,7 +12,7 @@ from bson.objectid import ObjectId
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import MissingValueImputation
+from featurebyte import EventTable, MissingValueImputation
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_list import FeatureGroup
@@ -315,9 +315,6 @@ def test_info(saved_feature):
         "name": "sum_1d",
         "dtype": "FLOAT",
         "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}],
-        "primary_entity": [
-            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
-        ],
         "tabular_data": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
         "table_feature_job_setting": {
             "this": [data_feature_job_setting],
@@ -678,7 +675,7 @@ def test_feature__as_default_version(saved_feature):
     assert Feature.get(name=saved_feature.name, version=new_version.version.to_str()) == new_version
 
 
-def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
+def test_composite_features(snowflake_event_table_with_entity):
     """Test composite features' property"""
     entity = Entity(name="binary", serving_names=["col_binary"])
     entity.save()
@@ -711,11 +708,6 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
         + feature_group_by_binary["sum_30m_by_binary"]
     )
     assert set(composite_feature.entity_identifiers) == {"cust_id", "col_binary"}
-
-    assert composite_feature.primary_entity == [
-        cust_id_entity,
-        entity,
-    ]
 
 
 def test_update_readiness_and_default_version_mode(saved_feature):
@@ -1238,24 +1230,3 @@ def test_feature_create_new_version__multiple_event_table(
     assert group_by_params.blind_spot == expected_job_settings["blind_spot"]
     assert group_by_params.frequency == expected_job_settings["frequency"]
     assert group_by_params.time_modulo_frequency == expected_job_settings["time_modulo_frequency"]
-
-
-def test_primary_entity__unsaved_feature(float_feature, cust_id_entity):
-    """
-    Test primary_entity property for an unsaved feature
-    """
-    assert float_feature.primary_entity == [cust_id_entity]
-
-
-def test_primary_entity__saved_feature(saved_feature, cust_id_entity):
-    """
-    Test primary_entity property for a saved feature
-    """
-    assert saved_feature.primary_entity == [cust_id_entity]
-
-
-def test_primary_entity__feature_group(feature_group, cust_id_entity):
-    """
-    Test primary_entity property for a feature group
-    """
-    assert feature_group.primary_entity == [cust_id_entity]

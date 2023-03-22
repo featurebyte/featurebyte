@@ -124,7 +124,7 @@ class PreviewService(BaseService):
         return dataframe_to_json(result, type_conversions)
 
     async def sample(
-        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
+        self, sample: FeatureStoreSample, size: int, get_credential: Any
     ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
@@ -135,8 +135,6 @@ class PreviewService(BaseService):
             FeatureStoreSample object
         size: int
             Maximum rows to sample
-        seed: int
-            Random seed to use for sampling
         get_credential: Any
             Get credential handler function
 
@@ -156,7 +154,6 @@ class PreviewService(BaseService):
         ).construct_sample_sql(
             node_name=sample.node_name,
             num_rows=size,
-            seed=seed,
             from_timestamp=sample.from_timestamp,
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
@@ -165,7 +162,7 @@ class PreviewService(BaseService):
         return dataframe_to_json(result, type_conversions)
 
     async def describe(
-        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
+        self, sample: FeatureStoreSample, size: int, get_credential: Any
     ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
@@ -176,8 +173,6 @@ class PreviewService(BaseService):
             FeatureStoreSample object
         size: int
             Maximum rows to sample
-        seed: int
-            Random seed to use for sampling
         get_credential: Any
             Get credential handler function
 
@@ -198,7 +193,6 @@ class PreviewService(BaseService):
         ).construct_describe_sql(
             node_name=sample.node_name,
             num_rows=size,
-            seed=seed,
             from_timestamp=sample.from_timestamp,
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,

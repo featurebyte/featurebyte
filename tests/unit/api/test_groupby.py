@@ -5,10 +5,9 @@ from typing import List, Type
 
 import pytest
 
-from featurebyte.api.base_aggregator import BaseAggregator
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
-from featurebyte.api.groupby import GroupBy
+from featurebyte.api.groupby import BaseAggregator, GroupBy
 from featurebyte.api.view import View
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError

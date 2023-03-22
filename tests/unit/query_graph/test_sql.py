@@ -440,16 +440,14 @@ def test_cosine_similarity(input_node):
 def test_lag(input_node):
     """Test lag node"""
     column = make_str_expression_node(table_node=input_node, expr="val")
-    entity_col = make_str_expression_node(table_node=input_node, expr="cust_id")
-    ts_col = make_str_expression_node(table_node=input_node, expr="ts")
     node = LagNode.build(
         make_context(
-            input_sql_nodes=[column, entity_col, ts_col],
+            input_sql_nodes=[column],
             node_type=NodeType.LAG,
             parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
         )
     )
-    assert node.sql.sql() == "LAG(val, 1) OVER (PARTITION BY cust_id ORDER BY ts NULLS LAST)"
+    assert node.sql.sql() == 'LAG(val, 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST)'
 
 
 def test_date_difference(input_node):

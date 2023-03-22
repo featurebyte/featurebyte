@@ -119,15 +119,24 @@ class LagNode(ExpressionNode):
     """Node for lag operation"""
 
     expr: ExpressionNode
-    timestamp_node: ExpressionNode
-    entity_nodes: list[ExpressionNode]
+    entity_columns: list[str]
+    timestamp_column: str
     offset: int
     query_node_type = NodeType.LAG
 
     @property
     def sql(self) -> Expression:
-        partition_by = [entity_node.sql for entity_node in self.entity_nodes]
-        order = expressions.Order(expressions=[expressions.Ordered(this=self.timestamp_node.sql)])
+        partition_by = [
+            expressions.Column(this=expressions.Identifier(this=col, quoted=True))
+            for col in self.entity_columns
+        ]
+        order = expressions.Order(
+            expressions=[
+                expressions.Ordered(
+                    this=expressions.Identifier(this=self.timestamp_column, quoted=True)
+                )
+            ]
+        )
         output_expr = expressions.Window(
             this=expressions.Anonymous(
                 this="LAG", expressions=[self.expr.sql, make_literal_value(self.offset)]
@@ -140,13 +149,12 @@ class LagNode(ExpressionNode):
     @classmethod
     def build(cls, context: SQLNodeContext) -> LagNode:
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
-        _, *entity_nodes, timestamp_node = context.input_sql_nodes
         sql_node = LagNode(
             context=context,
             table_node=table_node,
             expr=input_expr_node,
-            timestamp_node=cast(ExpressionNode, timestamp_node),
-            entity_nodes=[cast(ExpressionNode, node) for node in entity_nodes],
+            entity_columns=parameters["entity_columns"],
+            timestamp_column=parameters["timestamp_column"],
             offset=parameters["offset"],
         )
         return sql_node

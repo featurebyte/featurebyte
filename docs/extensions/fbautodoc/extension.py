@@ -13,7 +13,7 @@ from xml.etree import ElementTree as etree
 
 from docstring_parser import parse
 from docstring_parser.common import Docstring as BaseDocstring
-from docstring_parser.common import DocstringExample, DocstringMeta, DocstringReturns
+from docstring_parser.common import DocstringExample, DocstringMeta
 from markdown import Markdown
 from markdown.extensions import Extension
 from mkautodoc.extension import AutoDocProcessor, import_from_string, last_iter, trim_docstring
@@ -256,7 +256,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 if "#" in object_name:
                     object_name = object_name.split("#")[-1]
                 if "featurebyte" in type_class_path:
-                    return f'<a href=\'javascript:window.location=new URL("../{type_class_path}/", window.location.href.split("#")[0]).href\'>{object_name}</a>'
+                    return f'<a href="/reference/{type_class_path}">{object_name}</a>'
                 return object_name
             return type_class_path
 
@@ -431,19 +431,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
             return "\n".join(content)
 
-        def _get_return_param_details(
-            docstring_returns: DocstringReturns, return_type_from_signature: Any
-        ) -> ParameterDetails:
-            current_return_type = self.format_param_type(return_type_from_signature)
-            if not current_return_type and docstring_returns:
-                current_return_type = docstring_returns.type_name
-            return ParameterDetails(
-                name=docstring_returns.return_name if docstring_returns else None,
-                type=current_return_type,
-                default=None,
-                description=docstring_returns.description if docstring_returns else None,
-            )
-
         return ResourceDetails(
             name=resource_name,
             realname=resource_realname,
@@ -463,7 +450,12 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 )
                 for param_name, param_type, param_default in parameters
             ],
-            returns=_get_return_param_details(docstring.returns, return_type),
+            returns=ParameterDetails(
+                name=docstring.returns.return_name if docstring.returns else None,
+                type=self.format_param_type(return_type),
+                default=None,
+                description=docstring.returns.description if docstring.returns else None,
+            ),
             raises=raises,
             examples=[_format_example(example) for example in docstring.examples],
             see_also=docstring.see_also.description if docstring.see_also else None,
@@ -494,10 +486,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
         if resource_details.type == "method":
             # add reference link for methods
             name_elem = etree.SubElement(name_elem, "a")
-            name_elem.set(
-                "href",
-                f'javascript:window.location=new URL("../{resource_details.path}.{resource_details.realname}/", window.location.href.split("#")[0]).href',
-            )
+            name_elem.set("href", f"/reference/{resource_details.path}.{resource_details.realname}")
 
         main_name_elem = etree.SubElement(name_elem, "strong")
         main_name_elem.text = resource_details.name
@@ -600,12 +589,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 elif line.startswith(":members:"):
                     members = line.split()[1:] or None
                     self.render_members(docstring_elem, resource_details, members=members)
-                elif line.startswith(":api_to_use:"):
-                    # example - line = ":api_to_use: featurebyte.ChangeViewColumn.lag"
-                    api_to_use = line.split()[1]
-                    path_element, name_element = api_to_use.rsplit(".", 1)
-                    path_elem.text = path_element + "."  # featurebyte.ChangeViewColumn.
-                    name_elem.text = name_element
 
         if theRest:
             # This block contained unindented line(s) after the first indented

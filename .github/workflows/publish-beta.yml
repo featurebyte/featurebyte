@@ -1,7 +1,6 @@
 ## Publish Beta ##
 ### REQUIREMENTS ###
 # Given a branch name of release/beta/0.3 and a version of 0.3.4
-# Documentation image must be published with the same version
 
 # == GIT TAG ==
 # git tag will be created based on the branch name: release/beta/0.3.4
@@ -9,7 +8,7 @@
 # pypi version is based on the version input: 0.3.4
 # == DOCKER ==
 # docker images will be tagged based on the above version
-# image-tags: [SHORT_HASH, 0.3, 0.3.4]
+# tags: [SHORT_HASH, 0.3, 0.3.4]
 
 name: publish-beta
 # SECRETS NAME                   | Description                     | PERMISSIONS
@@ -62,20 +61,6 @@ jobs:
               exit 1
           fi
           echo "REF_VERSION=$(grep -oP '^release/beta/\K.+$' <<< "${{ github.ref_name }}")" >> $GITHUB_ENV
-          echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - name: Setup Docker
-        uses: docker/setup-buildx-action@v2
-      - name: Docker Login Beta Artifact Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.BETA_DOCKER_LOCATION }}-docker.pkg.dev
-          username: _json_key_base64
-          password: ${{ secrets.BETA_ARTIFACT_REGISTRY_RW_B64 }}
-      - name: Check documentation image has been published
-        run: |
-          # Check if the documentation image with the corresponding version has been published
-          # If this fails go to documentation repo and publish the a version according to the tag required
-          docker manifest inspect "${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}"
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -108,10 +93,6 @@ jobs:
         uses: mikefarah/yq@master
         with:
           cmd: yq -i '.services.featurebyte-worker.image = "${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
-      - name: Replace docker-compose image tag (docs)
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq -i '.services.featurebyte-docs.image = "${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
       - name: Authenticate to Google Cloud
         id: 'auth'
         uses: 'google-github-actions/auth@v1'
@@ -122,6 +103,18 @@ jobs:
           make install
           poetry config repositories.beta_pypi https://${BETA_PYPI_LOCATION}-python.pkg.dev/${BETA_PYPI_PROJECT_ID}/${BETA_PYPI_REPO}
           poetry publish --build -r beta_pypi --username='_json_key_base64' --password='${{ secrets.BETA_ARTIFACT_REGISTRY_RW_B64 }}'
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+      - name: Docker Login Beta Artifact Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.BETA_DOCKER_LOCATION }}-docker.pkg.dev
+          username: _json_key_base64
+          password: ${{ secrets.BETA_ARTIFACT_REGISTRY_RW_B64 }}
+      - name: featurebyte-server args and requirements
+        run: |
+          echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          poetry build
       - name: Build & Tag & Push Image to Beta
         uses: docker/build-push-action@v4
         with:

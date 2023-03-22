@@ -608,13 +608,3 @@ def test_filtered_view_output(saved_scd_table, cust_id_entity):
     LIMIT 10
     """
     assert output_sql.strip() == textwrap.dedent(expected_sql).strip()
-
-
-def test_change_view_column_lag__invalid(snowflake_change_view):
-    """
-    Test attempting to apply lag more than once in a ChangeView raises error
-    """
-    already_lagged_column = snowflake_change_view["past_col_int"]
-    with pytest.raises(ValueError) as exc:
-        snowflake_change_view["x"] = already_lagged_column.lag("col_text")
-    assert "lag can only be applied once per column" in str(exc.value)

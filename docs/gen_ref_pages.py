@@ -13,7 +13,6 @@ from pathlib import Path
 from mkdocs_gen_files import open as gen_files_open
 from mkdocs_gen_files import set_edit_path
 
-import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
@@ -56,17 +55,10 @@ def get_class_members_and_fields_for_class_obj(class_obj):
 
 
 def get_featurebyte_python_files():
-    # this is a set of string of dir in featurebyte that are not part of stuff we want to document.
-    non_sdk_folders = {"docker"}
-    module_root_path = Path(featurebyte.__file__).parent
     # parse every python file in featurebyte folder
-    for path in sorted(module_root_path.rglob("*.py")):
-        # Skip files in non_sdk_folders
-        if path.relative_to(module_root_path.parent).parts[1] in non_sdk_folders:
-            continue
+    for path in sorted(Path("featurebyte").rglob("*.py")):
         # Skip __init__.py files
-        module_path = path.with_suffix("").relative_to(module_root_path.parent)
-        parts = tuple(module_path.parts)
+        parts = tuple(path.with_suffix("").parts)
         if parts[-1] == "__init__":
             continue
         yield ".".join(parts)
@@ -301,14 +293,11 @@ def write_to_file(filepath, local_path, output):
             local_file.writelines(output)
 
 
-def build_markdown_format_str(obj_path, obj_type, api_to_use):
+def build_markdown_format_str(obj_path, obj_type):
     format_str = f"::: {obj_path}\n    :docstring:\n"
 
     if obj_type == "class":
         format_str += "    :members:\n"
-
-    if api_to_use:
-        format_str += f"    :api_to_use: {api_to_use}\n"
     return format_str
 
 
@@ -343,13 +332,10 @@ def get_paths_to_document():
 
     These should represent the fully qualified paths of the objects that we want to document.
     """
-    paths = {}
+    paths = set()
     for item in get_overall_layout():
         path = item.doc_path_override or item.api_path
-        value = item.api_path
-        if value == "":
-            value = item.menu_header[-1]
-        paths[path.lower()] = value
+        paths.add(path.lower())
     return paths
 
 
@@ -384,15 +370,11 @@ def generate_documentation_for_docs(doc_groups):
             # Skip if this is not a path we want to document.
             continue
 
-        api_to_use = paths_to_document.get(lookup_path, None)
-        if not api_to_use:
-            api_to_use = paths_to_document.get(doc_path.lower(), None)
-
         # add obj_path to reverse lookup map
         reverse_lookup_map[lookup_path] = doc_path
 
         # build string to write to file
-        format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
+        format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type)
 
         # write documentation page to file
         full_doc_path = Path("reference", doc_path)

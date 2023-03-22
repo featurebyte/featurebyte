@@ -106,6 +106,7 @@ CREATE OR REPLACE VIEW CREDITCARD.STATEDETAILS(
 	`BelowPovertyLevel`,
 	`Aged65Plus`,
 	`TotalPopulation`,
+	`ValidFrom`,
 	`ValidTo`,
 	`record_available_at`
 ) as

@@ -55,12 +55,4 @@ async def execute_task(self: Any, **payload: Any) -> None:
     """
     progress = Progress(user_id=payload.get("user_id"), task_id=self.request.id)
     executor = TaskExecutor(payload=payload, progress=progress)
-    # send initial progress to indicate task is started
-    progress.put({"percent": 0})
-    try:
-        await executor.execute()
-        # send final progress to indicate task is completed
-        progress.put({"percent": 100})
-    finally:
-        # indicate stream is closed
-        progress.put({"percent": -1})
+    await executor.execute()

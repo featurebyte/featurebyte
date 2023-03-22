@@ -16,7 +16,6 @@ from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import TableModel
 from featurebyte.models.proxy_table import ProxyTableModel
-from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -59,6 +58,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
+from featurebyte.service.relationship_analysis import derive_primary_entity
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
