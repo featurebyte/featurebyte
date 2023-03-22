@@ -4,6 +4,7 @@ Handles API requests middleware
 from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 
 import inspect
+import logging
 import uuid
 from http import HTTPStatus
 
@@ -273,6 +274,6 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
             "user": self.__get_server_uuid(),
             "trace": trace,
         }
-        requests.post(self.endpoint, json=payload)
+        requests.post(self.endpoint, json=payload, timeout=1)  # set timeout to 1 second
 
         return response
