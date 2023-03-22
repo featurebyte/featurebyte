@@ -136,6 +136,16 @@ def city_feature_fixture(tables):
     return feature
 
 
+@pytest.fixture(name="customer_num_city_change_feature", scope="session")
+def customer_num_city_change_feature_fixture(tables):
+    _ = tables
+    view = Table.get(f"{table_prefix}_scd_table").get_change_view(track_changes_column="scd_city")
+    feature = view.groupby("scd_cust_id").aggregate_over(
+        method="count", windows=["4w"], feature_names=["user_city_changes_count_4w"]
+    )["user_city_changes_count_4w"]
+    return feature
+
+
 @pytest.fixture(name="feature_list_with_child_entities", scope="module")
 def feature_list_with_child_entities_fixture(country_feature):
     feature_list = FeatureList([country_feature], name=f"{table_prefix}_country_list")
@@ -311,3 +321,17 @@ def test_online_serving_code_uses_primary_entity(
     online_serving_code = feature_list_with_parent_child_features.get_online_serving_code("python")
     expected_signature = 'request_features([{"serving_cust_id": 1000}])'
     assert expected_signature in online_serving_code
+
+
+def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_feature):
+    """
+    Check historical features work when parent entities lookup is required for tile computation
+    """
+    feature_list = FeatureList(
+        [customer_num_city_change_feature], name="customer_num_city_change_list"
+    )
+    observations_set = pd.DataFrame(
+        [{"POINT_IN_TIME": "2022-04-16 10:00:00", "serving_event_id": 1}]
+    )
+    df = feature_list.get_historical_features(observations_set)
+    assert df.shape[0] == 1
