@@ -246,8 +246,8 @@ class BaseFeatureGroup(FeatureByteBaseModel):
             FeatureList.derive_feature_clusters(cast(List[FeatureModel], self._features)),
         )
 
-    @typechecked
     @enforce_observation_set_row_order
+    @typechecked
     def preview(
         self,
         observation_set: pd.DataFrame,
@@ -994,8 +994,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             response.json(),
         )
 
-    @typechecked
     @enforce_observation_set_row_order
+    @typechecked
     def get_historical_features(
         self,
         observation_set: pd.DataFrame,

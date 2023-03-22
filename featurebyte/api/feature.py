@@ -641,8 +641,8 @@ class Feature(
         feature_dict["node_name"] = mapped_node.name
         return FeatureModel(**feature_dict)
 
-    @typechecked
     @enforce_observation_set_row_order
+    @typechecked
     def preview(
         self,
         observation_set: pd.DataFrame,
