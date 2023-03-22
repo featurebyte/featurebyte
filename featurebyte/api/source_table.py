@@ -390,7 +390,7 @@ class SourceTable(AbstractTableData):
         Returns
         -------
         EventTable
-            Event table from the source table.
+            EventTable created from the source table.
 
         Examples
         --------
@@ -448,7 +448,7 @@ class SourceTable(AbstractTableData):
         Returns
         -------
         ItemTable
-            Item table from the source table.
+            ItemTable created from the source table.
 
         Examples
         --------
@@ -503,7 +503,7 @@ class SourceTable(AbstractTableData):
         Returns
         -------
         DimensionTable
-            DimensionTable from the source table.
+            DimensionTable created from the source table.
 
         Examples
         --------
@@ -565,6 +565,7 @@ class SourceTable(AbstractTableData):
         Returns
         -------
         SCDTable
+            SCDTable created from the source table.
 
         Examples
         --------
