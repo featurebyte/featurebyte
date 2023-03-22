@@ -641,32 +641,64 @@ class Feature(
         feature_dict["node_name"] = mapped_node.name
         return FeatureModel(**feature_dict)
 
-    @typechecked
     @enforce_observation_set_row_order
+    @typechecked
     def preview(
         self,
         observation_set: pd.DataFrame,
     ) -> pd.DataFrame:
         """
-        Preview a Feature
+        Materialize feature using a small observation set of up to 50 rows.
+
+        Unlike get_historical_features, this method does not store partial aggregations (tiles) to
+        speed up future computation. Instead, it computes the feature on the fly, and should be used
+        only for small observation sets for debugging or prototyping unsaved features.
+
+        Tiles are a method of storing partial aggregations in the feature store,
+        which helps to minimize the resources required to fulfill historical, batch and online requests.
 
         Parameters
         ----------
         observation_set : pd.DataFrame
             Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
-            as well as columns with serving names for all entities used by features in the feature list.
+            as well as columns with serving names for all entities used by the feature.
 
         Returns
         -------
         pd.DataFrame
-            Materialized historical features.
+            Materialized feature values.
+            The returned DataFrame will have the same number of rows, and include all columns from the observation set.
 
             **Note**: `POINT_IN_TIME` values will be converted to UTC time.
 
         Raises
         ------
         RecordRetrievalException
-            Failed to preview feature
+            Failed to materialize feature preview.
+
+        Examples
+        --------
+        Preview feature with a small observation set.
+
+        >>> fb.Feature.get("InvoiceCount_60days").preview(
+        ...     observation_set=pd.DataFrame({
+        ...         "POINT_IN_TIME": ["2022-06-01 00:00:00", "2022-06-02 00:00:00"],
+        ...         "GROCERYCUSTOMERGUID": [
+        ...             "a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3",
+        ...             "ac479f28-e0ff-41a4-8e60-8678e670e80b",
+        ...         ],
+        ...     })
+        ... )
+          POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days
+        0    2022-06-01  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                   10
+        1    2022-06-02  ac479f28-e0ff-41a4-8e60-8678e670e80b                    6
+
+        See Also
+        --------
+        - [FeatureGroup.preview](/reference/featurebyte.api.feature_list.FeatureGroup.preview/):
+          Preview feature group.
+        - [FeatureList.get_historical_features](/reference/featurebyte.api.feature_list.FeatureList.get_historical_features/):
+          Get historical features from a feature list.
         """
         tic = time.time()
 

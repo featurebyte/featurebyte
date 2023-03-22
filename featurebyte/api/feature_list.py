@@ -246,25 +246,33 @@ class BaseFeatureGroup(FeatureByteBaseModel):
             FeatureList.derive_feature_clusters(cast(List[FeatureModel], self._features)),
         )
 
-    @typechecked
     @enforce_observation_set_row_order
+    @typechecked
     def preview(
         self,
         observation_set: pd.DataFrame,
     ) -> Optional[pd.DataFrame]:
         """
-        Preview a FeatureGroup
+        Materialize feature group using a small observation set of up to 50 rows.
+
+        Unlike get_historical_features, this method does not store partial aggregations (tiles) to
+        speed up future computation. Instead, it computes the features on the fly, and should be used
+        only for small observation sets for debugging or prototyping unsaved features.
+
+        Tiles are a method of storing partial aggregations in the feature store,
+        which helps to minimize the resources required to fulfill historical, batch and online requests.
 
         Parameters
         ----------
         observation_set : pd.DataFrame
             Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
-            as well as columns with serving names for all entities used by features in the feature list.
+            as well as columns with serving names for all entities used by features in the feature group.
 
         Returns
         -------
         pd.DataFrame
-            Materialized historical features.
+            Materialized feature values.
+            The returned DataFrame will have the same number of rows, and include all columns from the observation set.
 
             **Note**: `POINT_IN_TIME` values will be converted to UTC time.
 
@@ -272,6 +280,36 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         ------
         RecordRetrievalException
             Preview request failed
+
+        Examples
+        --------
+        Create a feature group with two features.
+        >>> features = fb.FeatureGroup([
+        ...     fb.Feature.get("InvoiceCount_60days"),
+        ...     fb.Feature.get("InvoiceAmountAvg_60days"),
+        ... ])
+
+        Prepare observation set with POINT_IN_TIME and serving names columns.
+        >>> observation_set = pd.DataFrame({
+        ...     "POINT_IN_TIME": ["2022-06-01 00:00:00", "2022-06-02 00:00:00"],
+        ...     "GROCERYCUSTOMERGUID": [
+        ...         "a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3",
+        ...         "ac479f28-e0ff-41a4-8e60-8678e670e80b",
+        ...     ],
+        ... })
+
+        Preview the feature group with a small observation set.
+        >>> features.preview(observation_set)
+          POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days  InvoiceAmountAvg_60days
+        0    2022-06-01  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                   10                    7.938
+        1    2022-06-02  ac479f28-e0ff-41a4-8e60-8678e670e80b                    6                    9.870
+
+        See Also
+        --------
+        - [Feature.preview](/reference/featurebyte.api.feature.Feature.preview/):
+          Preview feature group.
+        - [FeatureList.get_historical_features](/reference/featurebyte.api.feature_list.FeatureList.get_historical_features/):
+          Get historical features from a feature list.
         """
         tic = time.time()
 
@@ -956,15 +994,22 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             response.json(),
         )
 
-    @typechecked
     @enforce_observation_set_row_order
+    @typechecked
     def get_historical_features(
         self,
         observation_set: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
         max_batch_size: int = 5000,
     ) -> Optional[pd.DataFrame]:
-        """Get historical features
+        """
+        Materialize feature list using an observation set.
+
+        This method will store partial aggregations (tiles) to speed up future computation, and may take a
+        longer time to complete the first time it is called. Subsequent calls will be faster.
+
+        Tiles are a method of storing partial aggregations in the feature store,
+        which helps to minimize the resources required to fulfill historical, batch and online requests.
 
         Parameters
         ----------
@@ -976,7 +1021,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             columns than those defined in Entities. Mapping from original serving name to new
             serving name.
         max_batch_size: int
-            Maximum number of rows per batch
+            Maximum number of rows per batch.
 
         Returns
         -------
@@ -992,14 +1037,36 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Examples
         --------
-        Prepare dataframe with POINT_IN_TIME and serving names columns
-        >>> df = pd.DataFrame({  # doctest: +SKIP
-        ...     "POINT_IN_TIME": pd.date_range(start="2017-04-15", end="2017-04-30"),
-        ...     "ACCOUNTID": "f501bd26-7ffa-4746-9da2-7124b93f22fe"
+        Create a feature list with two features.
+        >>> feature_list = fb.FeatureList([
+        ...     fb.Feature.get("InvoiceCount_60days"),
+        ...     fb.Feature.get("InvoiceAmountAvg_60days"),
+        ... ], name="InvoiceFeatures")
+
+        Prepare observation set with POINT_IN_TIME and serving names columns.
+        >>> observation_set = pd.DataFrame({
+        ...     "POINT_IN_TIME": pd.date_range(start="2022-04-15", end="2022-04-30", freq="2D"),
+        ...     "GROCERYCUSTOMERGUID": ["a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3"] * 8,
         ... })
 
-        Retrieve materialized historical features
-        >>> feature_list.get_historical_features(df)  # doctest: +SKIP
+        Retrieve materialized historical features.
+        >>> feature_list.get_historical_features(observation_set)
+          POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days  InvoiceAmountAvg_60days
+        0    2022-04-15  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
+        1    2022-04-17  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
+        2    2022-04-19  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
+        3    2022-04-21  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 9.799000
+        4    2022-04-23  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 9.799000
+        5    2022-04-25  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                 9.034444
+        6    2022-04-27  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 9.715000
+        7    2022-04-29  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 9.715000
+
+        See Also
+        --------
+        - [FeatureGroup.preview](/reference/featurebyte.api.feature_list.FeatureGroup.preview/):
+          Preview feature group.
+        - [Feature.preview](/reference/featurebyte.api.feature.Feature.preview/):
+          Preview feature group.
         """
         payload = FeatureListGetHistoricalFeatures(
             feature_list_id=self.id,

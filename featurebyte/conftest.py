@@ -25,6 +25,16 @@ def add_imports(doctest_namespace):
 
 
 @pytest.fixture(autouse=True)
+def pandas_options():
+    """
+    Set pandas options
+    """
+    pandas.set_option("display.max_rows", 500)
+    pandas.set_option("display.max_columns", 500)
+    pandas.set_option("display.width", 1000)
+
+
+@pytest.fixture(autouse=True)
 def activate_playground_catalog():
     """
     Activate the playground catalog automatically
