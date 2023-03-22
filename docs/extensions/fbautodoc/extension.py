@@ -572,6 +572,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             # populate resource path and name as autodoc title
             parent.clear()
             title_elem = etree.SubElement(parent, "h1")
+            title_elem.set("class", "autodoc-overflow-wrap-break-word")
 
             # add div for autodoc body
             autodoc_div = etree.SubElement(parent, "div")

@@ -101,3 +101,7 @@ div.autodoc-content li div {
   padding: 10px;
   font-size: 14px;
 }
+
+.autodoc-overflow-wrap-break-word {
+  overflow-wrap: break-word;
+}
