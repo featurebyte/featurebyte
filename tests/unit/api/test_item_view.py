@@ -779,12 +779,14 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_i
     snowflake_item_view.validate_join(snowflake_item_view)
 
 
-def test_validate_simple_aggregate_parameters(snowflake_item_table, transaction_entity):
+def test_validate_simple_aggregate_parameters(
+    snowflake_item_table, transaction_entity, cust_id_entity
+):
     """
     Test validate_simple_aggregate_parameters
     """
     snowflake_item_table["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_table["item_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_table["item_id_col"].as_entity(cust_id_entity.name)
     snowflake_item_view = snowflake_item_table.get_view(event_suffix="_event_table")
 
     # no error expected as other_col is not from event table
@@ -806,12 +808,14 @@ def test_validate_simple_aggregate_parameters(snowflake_item_table, transaction_
     snowflake_item_view.validate_simple_aggregate_parameters(group_by.keys, None)
 
 
-def test_validate_aggregate_over_parameters(snowflake_item_table, transaction_entity):
+def test_validate_aggregate_over_parameters(
+    snowflake_item_table, transaction_entity, cust_id_entity
+):
     """
     Test validate_aggregate_over_parameters
     """
     snowflake_item_table["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_table["item_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_table["item_id_col"].as_entity(cust_id_entity.name)
     snowflake_item_view = snowflake_item_table.get_view(event_suffix="_event_table")
 
     # no error expected as other_col is not from event table

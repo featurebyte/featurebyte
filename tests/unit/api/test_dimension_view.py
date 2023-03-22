@@ -36,7 +36,7 @@ class TestDimensionView(BaseViewTestSuite):
       (
         "cust_id" + 1
       ) AS "new_col"
-    FROM "sf_database"."sf_schema"."sf_table"
+    FROM "sf_database"."sf_schema"."dimension_table"
     LIMIT 10
     """
 
@@ -337,18 +337,18 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
             """
         WITH _FB_AGGREGATED AS (
           SELECT
-            "T0"."col_float_fd16d12fa4e1f238" AS "col_float_fd16d12fa4e1f238",
-            "T0"."col_char_fd16d12fa4e1f238" AS "col_char_fd16d12fa4e1f238",
-            "T0"."col_binary_fd16d12fa4e1f238" AS "col_binary_fd16d12fa4e1f238",
-            "T0"."col_boolean_fd16d12fa4e1f238" AS "col_boolean_fd16d12fa4e1f238"
+            "T0"."col_float_54b93f19c42021f6" AS "col_float_54b93f19c42021f6",
+            "T0"."col_char_54b93f19c42021f6" AS "col_char_54b93f19c42021f6",
+            "T0"."col_binary_54b93f19c42021f6" AS "col_binary_54b93f19c42021f6",
+            "T0"."col_boolean_54b93f19c42021f6" AS "col_boolean_54b93f19c42021f6"
           FROM REQUEST_TABLE AS REQ
           LEFT JOIN (
             SELECT
               "col_int" AS "cust_id",
-              "col_float" AS "col_float_fd16d12fa4e1f238",
-              "col_char" AS "col_char_fd16d12fa4e1f238",
-              "col_binary" AS "col_binary_fd16d12fa4e1f238",
-              "col_boolean" AS "col_boolean_fd16d12fa4e1f238"
+              "col_float" AS "col_float_54b93f19c42021f6",
+              "col_char" AS "col_char_54b93f19c42021f6",
+              "col_binary" AS "col_binary_54b93f19c42021f6",
+              "col_boolean" AS "col_boolean_54b93f19c42021f6"
             FROM (
               SELECT
                 "col_int" AS "col_int",
@@ -359,16 +359,16 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
                 "col_boolean" AS "col_boolean",
                 "event_timestamp" AS "event_timestamp",
                 "cust_id" AS "cust_id"
-              FROM "sf_database"."sf_schema"."sf_table"
+              FROM "sf_database"."sf_schema"."dimension_table"
             )
           ) AS T0
             ON REQ."cust_id" = T0."cust_id"
         )
         SELECT
-          "col_float_fd16d12fa4e1f238" AS "FloatFeature",
-          "col_char_fd16d12fa4e1f238" AS "CharFeature",
-          "col_binary_fd16d12fa4e1f238" AS "BinaryFeature",
-          "col_boolean_fd16d12fa4e1f238" AS "BoolFeature"
+          "col_float_54b93f19c42021f6" AS "FloatFeature",
+          "col_char_54b93f19c42021f6" AS "CharFeature",
+          "col_binary_54b93f19c42021f6" AS "BinaryFeature",
+          "col_boolean_54b93f19c42021f6" AS "BoolFeature"
         FROM _FB_AGGREGATED AS AGG
         """
         ).strip()

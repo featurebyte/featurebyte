@@ -74,7 +74,6 @@ async def tables_fixture(session, data_source):
         event_id_column="event_id",
         event_timestamp_column="ts",
     )
-    event_table.save()
     event_table["event_id"].as_entity(event_entity.name)
     event_table["cust_id"].as_entity(customer_entity.name)
 
@@ -89,7 +88,6 @@ async def tables_fixture(session, data_source):
         effective_timestamp_column="effective_ts",
         surrogate_key_column="scd_cust_id",
     )
-    scd_table.save()
     scd_table["scd_cust_id"].as_entity(customer_entity.name)
     scd_table["scd_city"].as_entity(city_entity.name)
 
@@ -102,7 +100,6 @@ async def tables_fixture(session, data_source):
         name=f"{table_prefix}_dimension_table_1",
         dimension_id_column="city",
     )
-    dimension_table_1.save()
     dimension_table_1["city"].as_entity(city_entity.name)
     dimension_table_1["state"].as_entity(state_entity.name)
 
@@ -115,7 +112,6 @@ async def tables_fixture(session, data_source):
         name=f"{table_prefix}_dimension_table_2",
         dimension_id_column="state",
     )
-    dimension_table_2.save()
     dimension_table_2["state"].as_entity(state_entity.name)
     dimension_table_2["country"].as_entity(country_entity.name)
 

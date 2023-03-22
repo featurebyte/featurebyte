@@ -10,7 +10,7 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import FeatureJobSetting
+from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import (
     BaseFeatureGroup,
@@ -31,6 +31,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 
 
 @pytest.fixture(name="draft_feature")
@@ -427,7 +428,6 @@ def saved_feature_list_fixture(
     """
     Saved feature list fixture
     """
-    snowflake_event_table.save()
     assert float_feature.tabular_source.feature_store_id == snowflake_event_table.feature_store.id
     feature_list = FeatureList([float_feature], name="my_feature_list")
     assert feature_list.saved is False
@@ -680,8 +680,6 @@ def test_feature_list__feature_list_saving_in_bad_state(
     deprecated_feature,
 ):
     """Test feature list saving in bad state due to some feature has been saved (when the feature id is the same)"""
-    snowflake_event_table.save()
-
     # create a feature list
     feature_list = FeatureList(
         [
@@ -726,8 +724,6 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
     deprecated_feature,
 ):
     """Test feature list saving in bad state due to some feature has been saved (when the feature id is different)"""
-    snowflake_event_table.save()
-
     # save the feature outside the feature list
     production_ready_feature.save()
 
@@ -763,8 +759,6 @@ def feature_list_fixture(
     quarantine_feature,
     deprecated_feature,
 ):
-    snowflake_event_table.save()
-
     # create a feature list
     feature_list = FeatureList(
         [
@@ -1209,7 +1203,7 @@ def test_get_feature_jobs_status_feature_without_tile(
     """
     mock_execute_query.return_value = feature_job_logs[:0]
     saved_scd_table["col_text"].as_entity(cust_id_entity.name)
-    snowflake_event_table.save()
+
     scd_view = saved_scd_table.get_view()
     feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
     feature_list = FeatureList([feature, float_feature], name="FeatureList")
@@ -1318,11 +1312,11 @@ def test_primary_entity__unsaved_feature_list(feature_list, cust_id_entity):
     """
     Test primary_entity attribute for an unsaved feature list
     """
-    assert feature_list.primary_entity == [cust_id_entity]
+    assert feature_list.primary_entity == [Entity.get_by_id(cust_id_entity.id)]
 
 
 def test_primary_entity__saved_feature_list(saved_feature_list, cust_id_entity):
     """
     Test primary_entity attribute for an unsaved feature list
     """
-    assert saved_feature_list.primary_entity == [cust_id_entity]
+    assert saved_feature_list.primary_entity == [Entity.get_by_id(cust_id_entity.id)]

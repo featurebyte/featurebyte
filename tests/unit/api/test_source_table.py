@@ -55,3 +55,125 @@ def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     # check that unsaved & saved version generate the same result for generic table
     sdk_code = snowflake_database_table.frame._generate_code(to_use_saved_data=True)
     assert sdk_code == snowflake_database_table.frame._generate_code(to_use_saved_data=False)
+
+
+def test_get_or_create_event_table__get_from_persistent(
+    snowflake_database_table, snowflake_event_table
+):
+    """Test get or create event table"""
+    assert (
+        snowflake_database_table.get_or_create_event_table(
+            name=snowflake_event_table.name,
+            event_timestamp_column=snowflake_event_table.event_timestamp_column,
+            event_id_column=snowflake_event_table.event_id_column,
+            record_creation_timestamp_column=snowflake_event_table.record_creation_timestamp_column,
+        )
+        == snowflake_event_table
+    )
+
+
+def test_get_or_create_item_table__get_from_persistent(
+    snowflake_database_table_item_table, snowflake_item_table, snowflake_event_table
+):
+    """Test get or create item table"""
+    assert (
+        snowflake_database_table_item_table.get_or_create_item_table(
+            name=snowflake_item_table.name,
+            event_id_column=snowflake_item_table.event_id_column,
+            item_id_column=snowflake_item_table.item_id_column,
+            event_table_name=snowflake_event_table.name,
+            record_creation_timestamp_column=snowflake_item_table.record_creation_timestamp_column,
+        )
+        == snowflake_item_table
+    )
+
+
+def test_get_or_create_dimension_table__get_from_persistent(
+    snowflake_database_table_dimension_table, snowflake_dimension_table
+):
+    """Test get or create dimension table"""
+    assert (
+        snowflake_database_table_dimension_table.get_or_create_dimension_table(
+            name=snowflake_dimension_table.name,
+            dimension_id_column=snowflake_dimension_table.dimension_id_column,
+            record_creation_timestamp_column=snowflake_dimension_table.record_creation_timestamp_column,
+        )
+        == snowflake_dimension_table
+    )
+
+
+def test_get_or_create_scd_table__get_from_persistent(
+    snowflake_database_table_scd_table, snowflake_scd_table
+):
+    """Test get or create scd table"""
+    assert (
+        snowflake_database_table_scd_table.get_or_create_scd_table(
+            name=snowflake_scd_table.name,
+            natural_key_column=snowflake_scd_table.natural_key_column,
+            effective_timestamp_column=snowflake_scd_table.effective_timestamp_column,
+            surrogate_key_column=snowflake_scd_table.surrogate_key_column,
+            current_flag_column=snowflake_scd_table.current_flag_column,
+            record_creation_timestamp_column=snowflake_scd_table.record_creation_timestamp_column,
+        )
+        == snowflake_scd_table
+    )
+
+
+def test_get_or_create_event_table__create(snowflake_database_table):
+    """Test get or create event table"""
+    event_table = snowflake_database_table.get_or_create_event_table(
+        name="some_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        record_creation_timestamp_column="created_at",
+    )
+    assert event_table.name == "some_event_table"
+    assert event_table.event_id_column == "col_int"
+    assert event_table.event_timestamp_column == "event_timestamp"
+    assert event_table.record_creation_timestamp_column == "created_at"
+
+
+def test_get_or_create_item_table__create(
+    snowflake_database_table_item_table, snowflake_event_table
+):
+    """Test get or create item table"""
+    item_table = snowflake_database_table_item_table.get_or_create_item_table(
+        name="some_item_table",
+        event_id_column="event_id_col",
+        item_id_column="item_id_col",
+        event_table_name=snowflake_event_table.name,
+    )
+    assert item_table.name == "some_item_table"
+    assert item_table.event_id_column == "event_id_col"
+    assert item_table.item_id_column == "item_id_col"
+    assert item_table.event_table_id == snowflake_event_table.id
+
+
+def test_get_or_create_dimension_table__create(snowflake_database_table_dimension_table):
+    """Test get or create dimension table"""
+    dimension_table = snowflake_database_table_dimension_table.get_or_create_dimension_table(
+        name="some_dimension_table",
+        dimension_id_column="col_int",
+        record_creation_timestamp_column="created_at",
+    )
+    assert dimension_table.name == "some_dimension_table"
+    assert dimension_table.dimension_id_column == "col_int"
+    assert dimension_table.record_creation_timestamp_column == "created_at"
+
+
+def test_get_or_create_scd_table__create(snowflake_database_table_scd_table):
+    """Test get or create scd table"""
+    scd_table = snowflake_database_table_scd_table.get_or_create_scd_table(
+        name="some_scd_table",
+        natural_key_column="col_text",
+        surrogate_key_column="col_int",
+        effective_timestamp_column="effective_timestamp",
+        end_timestamp_column="end_timestamp",
+        current_flag_column="is_active",
+    )
+    assert scd_table.name == "some_scd_table"
+    assert scd_table.natural_key_column == "col_text"
+    assert scd_table.surrogate_key_column == "col_int"
+    assert scd_table.effective_timestamp_column == "effective_timestamp"
+    assert scd_table.end_timestamp_column == "end_timestamp"
+    assert scd_table.current_flag_column == "is_active"

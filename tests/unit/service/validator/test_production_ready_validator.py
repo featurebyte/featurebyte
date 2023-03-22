@@ -65,7 +65,6 @@ async def test_validate(
     Test the validate method returns an error when there are differences.
     """
     # Generate a feature
-    snowflake_event_table_with_entity.save()
     snowflake_event_table_with_entity.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
     )
@@ -182,7 +181,6 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     Test _check_feature_job_setting_match returns a dictionary when the settings differ
     """
     # update event table w/ a feature job setting
-    snowflake_event_table_with_entity.save()
     snowflake_event_table_with_entity.update_default_feature_job_setting(
         FeatureJobSetting(**feature_group_feature_job_setting)
     )
@@ -236,7 +234,6 @@ async def test_validate__no_diff_in_feature_should_return_none(
     Test validate - no diff returns None
     """
     # Create a feature that has same feature job setting and cleaning operations as it's table source
-    snowflake_event_table_with_entity.save()
     snowflake_event_table_with_entity.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
     )

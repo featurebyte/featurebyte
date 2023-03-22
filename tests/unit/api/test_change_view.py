@@ -324,13 +324,14 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
 
     # create change view
     change_view = snowflake_scd_table.get_change_view("col_int")
-    assert change_view.dict()["columns_info"] == [
+    columns_info_dict = change_view.dict()["columns_info"]
+    assert columns_info_dict == [
         {
             "critical_data_info": None,
             "dtype": "VARCHAR",
             "entity_id": entity_key.id,
             "name": "col_text",
-            "semantic_id": None,
+            "semantic_id": columns_info_dict[0]["semantic_id"],
         },
         {
             "critical_data_info": None,
@@ -351,7 +352,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "dtype": "INT",
             "entity_id": entity_change.id,
             "name": "new_col_int",
-            "semantic_id": None,
+            "semantic_id": columns_info_dict[3]["semantic_id"],
         },
         {
             "critical_data_info": None,

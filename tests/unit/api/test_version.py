@@ -23,8 +23,6 @@ def feature_group_fixture(
     """
     Feature group fixture
     """
-    snowflake_event_table_with_entity.save()
-
     event_view = snowflake_event_table_with_entity.get_view()
     feature_group = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",

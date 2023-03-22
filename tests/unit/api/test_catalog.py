@@ -141,7 +141,6 @@ def test_get_view(snowflake_event_table):
     """
     Test that get_view returns the right view
     """
-    snowflake_event_table.save()
     catalog = Catalog.get_active()
     view = catalog.get_view(snowflake_event_table.name)
     assert type(view) == EventView
