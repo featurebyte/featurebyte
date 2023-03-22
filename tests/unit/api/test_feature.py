@@ -248,7 +248,6 @@ def saved_feature_fixture(
             blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
         )
     )
-    snowflake_event_table.save()
     assert snowflake_event_table.id == event_table_id_before
     feature_id_before = float_feature.id
     assert float_feature.readiness is FeatureReadiness.DRAFT
@@ -354,12 +353,11 @@ def test_feature_save__exception_due_to_event_table_not_saved(float_feature, sno
     """
     Test feature save failure due to event table not saved
     """
+    random_id = ObjectId()
     with pytest.raises(RecordCreationException) as exc:
+        float_feature.__dict__["tabular_data_ids"] = [random_id]  # assign a random table ids
         float_feature.save()
-    expected_msg = (
-        f'Table (id: "{snowflake_event_table.id}") not found. '
-        f"Please save the Table object first."
-    )
+    expected_msg = f'Table (id: "{random_id}") not found. Please save the Table object first.'
     assert expected_msg in str(exc.value)
 
 
@@ -713,8 +711,8 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
     assert set(composite_feature.entity_identifiers) == {"cust_id", "col_binary"}
 
     assert composite_feature.primary_entity == [
-        cust_id_entity,
-        entity,
+        Entity.get_by_id(cust_id_entity.id),
+        Entity.get_by_id(entity.id),
     ]
 
 
@@ -1162,7 +1160,6 @@ def test_feature_create_new_version__multiple_event_table(
         event_timestamp_column="effective_timestamp",
         record_creation_timestamp_column="end_timestamp",
     )
-    another_event_table.save()
 
     # label entity column
     saved_event_table.cust_id.as_entity(cust_id_entity.name)
@@ -1244,18 +1241,18 @@ def test_primary_entity__unsaved_feature(float_feature, cust_id_entity):
     """
     Test primary_entity property for an unsaved feature
     """
-    assert float_feature.primary_entity == [cust_id_entity]
+    assert float_feature.primary_entity == [Entity.get_by_id(cust_id_entity.id)]
 
 
 def test_primary_entity__saved_feature(saved_feature, cust_id_entity):
     """
     Test primary_entity property for a saved feature
     """
-    assert saved_feature.primary_entity == [cust_id_entity]
+    assert saved_feature.primary_entity == [Entity.get_by_id(cust_id_entity.id)]
 
 
 def test_primary_entity__feature_group(feature_group, cust_id_entity):
     """
     Test primary_entity property for a feature group
     """
-    assert feature_group.primary_entity == [cust_id_entity]
+    assert feature_group.primary_entity == [Entity.get_by_id(cust_id_entity.id)]

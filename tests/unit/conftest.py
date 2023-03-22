@@ -15,7 +15,7 @@ from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
-from featurebyte import FeatureJobSetting, MissingValueImputation, SnowflakeDetails
+from featurebyte import DimensionTable, FeatureJobSetting, MissingValueImputation, SnowflakeDetails
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
@@ -265,6 +265,9 @@ def mock_snowflake_execute_query(snowflake_connector):
                 {"name": "PUBLIC"},
             ],
         }
+        query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
+        ]
         res = query_map.get(query)
         if res is not None:
             return pd.DataFrame(res)
@@ -330,7 +333,7 @@ def snowflake_database_table_fixture(
 @pytest.fixture(name="snowflake_database_table_item_table")
 def snowflake_database_table_item_table_fixture(snowflake_data_source):
     """
-    SourceTable object fixture for ItemTable (using config object)
+    SourceTable object fixture for ItemTable
     """
     yield snowflake_data_source.get_table(
         database_name="sf_database",
@@ -342,12 +345,24 @@ def snowflake_database_table_item_table_fixture(snowflake_data_source):
 @pytest.fixture(name="snowflake_database_table_scd_table")
 def snowflake_database_table_scd_table_fixture(snowflake_data_source):
     """
-    SourceTable object fixture for SCDTable (using config object)
+    SourceTable object fixture for SCDTable
     """
     yield snowflake_data_source.get_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="scd_table",
+    )
+
+
+@pytest.fixture(name="snowflake_database_table_dimension_table")
+def snowflake_database_table_dimension_table_fixture(snowflake_data_source):
+    """
+    SourceTable object fixture for DimensionTable
+    """
+    yield snowflake_data_source.get_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="dimension_table",
     )
 
 
@@ -426,9 +441,11 @@ def snowflake_event_table_fixture(snowflake_database_table, snowflake_event_tabl
 
 
 @pytest.fixture(name="snowflake_dimension_table")
-def snowflake_dimension_table_fixture(snowflake_database_table, snowflake_dimension_table_id):
+def snowflake_dimension_table_fixture(
+    snowflake_database_table_dimension_table, snowflake_dimension_table_id
+):
     """DimensionTable object fixture"""
-    dimension_table = snowflake_database_table.create_dimension_table(
+    dimension_table = snowflake_database_table_dimension_table.create_dimension_table(
         name="sf_dimension_table",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
@@ -474,7 +491,6 @@ def snowflake_item_table_fixture(
     Snowflake ItemTable object fixture
     """
     _ = mock_get_persistent
-    snowflake_event_table.save()
     item_table = snowflake_database_table_item_table.create_item_table(
         name="sf_item_table",
         event_id_column="event_id_col",
@@ -729,7 +745,6 @@ def feature_with_cleaning_operations_fixture(
     Fixture to get a feature with cleaning operations
     """
     snowflake_event_table.cust_id.as_entity(cust_id_entity.name)
-    snowflake_event_table.save()
     snowflake_event_table["col_float"].update_critical_data_info(
         cleaning_operations=[
             MissingValueImputation(imputed_value=0.0),

@@ -195,6 +195,10 @@ def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict):
     output = scd_table.dict(by_alias=True)
     scd_table_dict["_id"] = scd_table.id
     scd_table_dict["current_flag_column"] = scd_table_dict.pop("current_flag")  # DEV-556
+    scd_table_dict["created_at"] = scd_table.created_at
+    scd_table_dict["updated_at"] = scd_table.updated_at
+    scd_table_dict["columns_info"][0]["semantic_id"] = scd_table.columns_info[0].semantic_id
+    scd_table_dict["columns_info"][3]["semantic_id"] = scd_table.columns_info[3].semantic_id
     assert output == scd_table_dict
 
     # user input validation
@@ -300,7 +304,7 @@ def test_scd_table__entity_relation_auto_tagging(saved_scd_table):
 
 def test_accessing_scd_table_attributes(snowflake_scd_table):
     """Test accessing event table object attributes"""
-    assert snowflake_scd_table.saved is False
+    assert snowflake_scd_table.saved
     assert snowflake_scd_table.record_creation_timestamp_column is None
     assert snowflake_scd_table.natural_key_column == "col_text"
     assert snowflake_scd_table.effective_timestamp_column == "effective_timestamp"

@@ -116,6 +116,9 @@ def test_create_item_table(snowflake_database_table_item_table, item_table_dict,
 
     output = item_table.dict(by_alias=True)
     item_table_dict["_id"] = item_table.id
+    item_table_dict["created_at"] = item_table.created_at
+    item_table_dict["updated_at"] = item_table.updated_at
+    item_table_dict["columns_info"][1]["semantic_id"] = item_table.columns_info[1].semantic_id
     assert output == item_table_dict
 
     # user input validation
@@ -282,14 +285,24 @@ def test_item_table__save__exceptions(saved_item_table):
     assert expected_msg in str(exc.value)
 
 
-def test_event_table__record_creation_exception(snowflake_item_table):
+def test_item_table__record_creation_exception(
+    snowflake_database_table_item_table, snowflake_event_table, snowflake_item_table_id
+):
     """
     Test save ItemTable failure due to conflict
     """
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
         with patch("featurebyte.api.api_object.Configurations"):
-            snowflake_item_table.save()
+            with patch("featurebyte.api.api_object.ApiObject.get") as mock_get:
+                mock_get.return_value = snowflake_event_table
+                snowflake_database_table_item_table.create_item_table(
+                    name="sf_item_table",
+                    event_id_column="event_id_col",
+                    item_id_column="item_id_col",
+                    event_table_name=snowflake_event_table.name,
+                    _id=snowflake_item_table_id,
+                )
 
 
 def test_update_record_creation_timestamp_column__unsaved_object(
@@ -399,7 +412,7 @@ def test_info(saved_item_table):
 
 def test_accessing_item_table_attributes(snowflake_item_table):
     """Test accessing item table object attributes"""
-    assert snowflake_item_table.saved is False
+    assert snowflake_item_table.saved
     assert snowflake_item_table.record_creation_timestamp_column is None
     assert snowflake_item_table.event_id_column == "event_id_col"
     assert snowflake_item_table.item_id_column == "item_id_col"

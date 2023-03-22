@@ -39,13 +39,13 @@ class TestDimensionTableTestSuite(BaseTableTestSuite):
       CAST("event_timestamp" AS STRING) AS "event_timestamp",
       CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
-    FROM "sf_database"."sf_schema"."sf_table"
+    FROM "sf_database"."sf_schema"."dimension_table"
     LIMIT 10
     """
     expected_data_column_sql = """
     SELECT
       "col_int" AS "col_int"
-    FROM "sf_database"."sf_schema"."sf_table"
+    FROM "sf_database"."sf_schema"."dimension_table"
     LIMIT 10
     """
     expected_clean_data_sql = """
@@ -61,7 +61,7 @@ class TestDimensionTableTestSuite(BaseTableTestSuite):
       CAST("event_timestamp" AS STRING) AS "event_timestamp",
       CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
-    FROM "sf_database"."sf_schema"."sf_table"
+    FROM "sf_database"."sf_schema"."dimension_table"
     LIMIT 10
     """
 
@@ -174,6 +174,11 @@ def test_create_dimension_table(snowflake_database_table, dimension_table_dict):
 
     output = dimension_table.dict(by_alias=True)
     dimension_table_dict["_id"] = dimension_table.id
+    dimension_table_dict["created_at"] = dimension_table.created_at
+    dimension_table_dict["updated_at"] = dimension_table.updated_at
+    dimension_table_dict["columns_info"][0]["semantic_id"] = dimension_table.columns_info[
+        0
+    ].semantic_id
     assert output == dimension_table_dict
 
     # user input validation
@@ -241,7 +246,7 @@ def test_info(saved_dimension_table):
 
 def test_accessing_dimension_table_attributes(snowflake_dimension_table):
     """Test accessing event table object attributes"""
-    assert snowflake_dimension_table.saved is False
+    assert snowflake_dimension_table.saved is True
     assert snowflake_dimension_table.record_creation_timestamp_column == "created_at"
     assert snowflake_dimension_table.dimension_id_column == "col_int"
 

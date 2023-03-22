@@ -94,8 +94,6 @@ def saved_event_table_fixture(snowflake_event_table):
     Saved event table fixture
     """
     previous_id = snowflake_event_table.id
-    assert snowflake_event_table.saved is False
-    snowflake_event_table.save()
     assert snowflake_event_table.saved is True
     assert snowflake_event_table.id == previous_id
     assert snowflake_event_table.status == TableStatus.DRAFT
@@ -125,8 +123,6 @@ def saved_dimension_table_fixture(snowflake_dimension_table):
     Saved dimension table fixture
     """
     previous_id = snowflake_dimension_table.id
-    assert snowflake_dimension_table.saved is False
-    snowflake_dimension_table.save()
     assert snowflake_dimension_table.saved is True
     assert snowflake_dimension_table.id == previous_id
     assert snowflake_dimension_table.status == TableStatus.DRAFT
@@ -142,8 +138,6 @@ def saved_scd_table_fixture(snowflake_scd_table):
     Saved SCD table fixture
     """
     previous_id = snowflake_scd_table.id
-    assert snowflake_scd_table.saved is False
-    snowflake_scd_table.save()
     assert snowflake_scd_table.saved is True
     assert snowflake_scd_table.id == previous_id
     assert snowflake_scd_table.status == TableStatus.DRAFT
@@ -205,9 +199,7 @@ def saved_item_table_fixture(snowflake_feature_store, snowflake_item_table, item
     Saved ItemTable fixture
     """
     previous_id = snowflake_item_table.id
-    assert snowflake_item_table.saved is False
-    snowflake_item_table.save()
-    assert snowflake_item_table.saved is True
+    assert snowflake_item_table.saved
     assert snowflake_item_table.id == previous_id
     assert snowflake_item_table.status == TableStatus.DRAFT
     assert isinstance(snowflake_item_table.created_at, datetime)

@@ -594,3 +594,181 @@ class SourceTable(AbstractTableData):
             end_timestamp_column=end_timestamp_column,
             current_flag_column=current_flag_column,
         )
+
+    @typechecked
+    def get_or_create_event_table(
+        self,
+        name: str,
+        event_timestamp_column: str,
+        event_id_column: str,
+        record_creation_timestamp_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> EventTable:
+        """
+        Get or create event table from this source table
+
+        Parameters
+        ----------
+        name: str
+            Event table name
+        event_id_column: str
+            Event ID column from the given tabular source
+        event_timestamp_column: str
+            Event timestamp column from the given tabular source
+        record_creation_timestamp_column: str
+            Record creation timestamp column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
+
+        Returns
+        -------
+        EventTable
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.event_table import EventTable
+
+        return EventTable.get_or_create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            event_timestamp_column=event_timestamp_column,
+            event_id_column=event_id_column,
+            _id=_id,
+        )
+
+    @typechecked
+    def get_or_create_item_table(
+        self,
+        name: str,
+        event_id_column: str,
+        item_id_column: str,
+        event_table_name: str,
+        record_creation_timestamp_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> ItemTable:
+        """
+        Get or create item table from this source table
+
+        Parameters
+        ----------
+        name: str
+            Item table name
+        event_id_column: str
+            Event ID column from the given tabular source
+        item_id_column: str
+            Item ID column from the given tabular source
+        event_table_name: str
+            Name of the EventTable associated with this ItemTable
+        record_creation_timestamp_column: Optional[str]
+            Record creation timestamp column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
+
+        Returns
+        -------
+        ItemTable
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.event_table import EventTable
+        from featurebyte.api.item_table import ItemTable
+
+        event_table = EventTable.get(event_table_name)
+        return ItemTable.get_or_create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            event_id_column=event_id_column,
+            item_id_column=item_id_column,
+            event_table_id=event_table.id,
+            _id=_id,
+        )
+
+    @typechecked
+    def get_or_create_dimension_table(
+        self,
+        name: str,
+        dimension_id_column: str,
+        record_creation_timestamp_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> DimensionTable:
+        """
+        Get or create dimension table from this source table
+
+        Parameters
+        ----------
+        name: str
+            Dimension table name
+        dimension_id_column: str
+            Dimension table ID column from the given tabular source
+        record_creation_timestamp_column: str
+            Record creation timestamp column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
+
+        Returns
+        -------
+        DimensionTable
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.dimension_table import DimensionTable
+
+        return DimensionTable.get_or_create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            dimension_id_column=dimension_id_column,
+            _id=_id,
+        )
+
+    @typechecked
+    def get_or_create_scd_table(
+        self,
+        name: str,
+        natural_key_column: str,
+        effective_timestamp_column: str,
+        end_timestamp_column: Optional[str] = None,
+        surrogate_key_column: Optional[str] = None,
+        current_flag_column: Optional[str] = None,
+        record_creation_timestamp_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> SCDTable:
+        """
+        Get or create SCD table from this source table
+
+        Parameters
+        ----------
+        name: str
+            SCDTable name
+        natural_key_column: str
+            Natural key column from the given tabular source
+        effective_timestamp_column: str
+            Effective timestamp column from the given tabular source
+        end_timestamp_column: Optional[str]
+            End timestamp column from the given tabular source
+        surrogate_key_column: Optional[str]
+            Surrogate key column from the given tabular source
+        current_flag_column: Optional[str]
+            Column to indicates whether the keys are for the current table point
+        record_creation_timestamp_column: str
+            Record creation timestamp column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
+
+        Returns
+        -------
+        SCDTable
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.scd_table import SCDTable
+
+        return SCDTable.get_or_create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            _id=_id,
+            natural_key_column=natural_key_column,
+            surrogate_key_column=surrogate_key_column,
+            effective_timestamp_column=effective_timestamp_column,
+            end_timestamp_column=end_timestamp_column,
+            current_flag_column=current_flag_column,
+        )

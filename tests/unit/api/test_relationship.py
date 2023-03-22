@@ -29,7 +29,6 @@ def persistable_relationship_info_fixture(relationship_info_service, snowflake_e
     cust_entity.save()
     user_entity = Entity(name="user", serving_names=["user_id"])
     user_entity.save()
-    snowflake_event_table.save()
 
     async def save() -> RelationshipInfo:
         created_relationship = await relationship_info_service.create_document(

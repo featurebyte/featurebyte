@@ -376,17 +376,40 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             if not response_dict["data"]:
-                return cls(
+                table = cls(
                     **data.json_dict(),
                     feature_store=source_table.feature_store,
                     _validate_schema=True,
                 )
+                table.save()
+                return table
             existing_record = response_dict["data"][0]
             raise DuplicatedRecordException(
                 response,
                 f'{cls.__name__} ({existing_record["type"]}.name: "{name}") exists in saved record.',
             )
         raise RecordRetrievalException(response)
+
+    @classmethod
+    @typechecked
+    def get_or_create(
+        cls: Type[SourceTableApiObjectT],
+        source_table: SourceTable,
+        name: str,
+        record_creation_timestamp_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+        **kwargs: Any,
+    ) -> SourceTableApiObjectT:
+        try:
+            return cls.get(name=name)
+        except RecordRetrievalException:
+            return cls.create(
+                source_table=source_table,
+                name=name,
+                record_creation_timestamp_column=record_creation_timestamp_column,
+                _id=_id,
+                **kwargs,
+            )
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}

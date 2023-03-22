@@ -141,6 +141,10 @@ def test_create_event_table(snowflake_database_table, event_table_dict):
 
     output = event_table.dict(by_alias=True)
     event_table_dict["_id"] = event_table.id
+    event_table_dict["created_at"] = event_table.created_at
+    event_table_dict["updated_at"] = event_table.updated_at
+    event_table_dict["columns_info"][0]["semantic_id"] = event_table.columns_info[0].semantic_id
+    event_table_dict["columns_info"][6]["semantic_id"] = event_table.columns_info[6].semantic_id
     assert output == event_table_dict
 
     # user input validation
@@ -274,14 +278,13 @@ class TestEventTableTestSuite(BaseTableTestSuite):
     """
 
 
-def test_info__event_table_without_record_creation_date(snowflake_database_table):
+def test_info__event_table_without_record_creation_date(snowflake_database_table_dimension_table):
     """Test info on event table with record creation timestamp is None"""
-    event_table = snowflake_database_table.create_event_table(
+    event_table = snowflake_database_table_dimension_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
     )
-    event_table.save()
 
     # make sure .info() can be executed without throwing any error
     _ = event_table.info()
@@ -402,42 +405,20 @@ def test_event_table__save__exceptions(saved_event_table):
     assert expected_msg in str(exc.value)
 
 
-def test_event_table__record_creation_exception(snowflake_event_table):
+def test_event_table__record_creation_exception(snowflake_database_table, snowflake_event_table_id):
     """
     Test save event table failure due to conflict
     """
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
         with patch("featurebyte.api.api_object.Configurations"):
-            snowflake_event_table.save()
-
-
-def test_update_default_job_setting(snowflake_event_table, config, mock_api_object_cache):
-    """
-    Test update default job setting on non-saved event table
-    """
-    _ = mock_api_object_cache
-
-    # make sure the event table is not saved
-    client = config.get_client()
-    response = client.get(url=f"/event_table/{snowflake_event_table.id}")
-    assert response.status_code == 404
-    assert snowflake_event_table.saved is False
-
-    assert snowflake_event_table.default_feature_job_setting is None
-    snowflake_event_table.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s",
-            frequency="10m",
-            time_modulo_frequency="2m",
-        )
-    )
-    assert snowflake_event_table.saved is False
-    assert snowflake_event_table.default_feature_job_setting == FeatureJobSetting(
-        blind_spot="1m30s", frequency="10m", time_modulo_frequency="2m"
-    )
-    feature_store_id = snowflake_event_table.tabular_source.feature_store_id
-    assert isinstance(feature_store_id, ObjectId)
+            snowflake_database_table.create_event_table(
+                name="sf_event_table",
+                event_id_column="col_int",
+                event_timestamp_column="event_timestamp",
+                record_creation_timestamp_column="created_at",
+                _id=snowflake_event_table_id,
+            )
 
 
 def test_update_default_job_setting__saved_event_table(
@@ -580,6 +561,7 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure__event
     Test update failure due to event table not saved
     """
     with pytest.raises(RecordCreationException) as exc:
+        snowflake_event_table.__dict__["id"] = ObjectId()  # assign a random ID to event table
         snowflake_event_table.initialize_default_feature_job_setting()
     expected_msg = f'EventTable (id: "{snowflake_event_table.id}") not found. Please save the EventTable object first.'
     assert expected_msg in str(exc)
@@ -651,9 +633,6 @@ def test_get_event_table(snowflake_event_table, mock_config_path_env):
     Test EventTable.get function
     """
     _ = mock_config_path_env
-
-    # create event table & save to persistent
-    snowflake_event_table.save()
 
     # load the event table from the persistent
     loaded_event_table = EventTable.get(snowflake_event_table.name)
@@ -949,7 +928,7 @@ def test_event_table__entity_relation_auto_tagging(saved_event_table):
 
 def test_accessing_event_table_attributes(snowflake_event_table):
     """Test accessing event table object attributes"""
-    assert snowflake_event_table.saved is False
+    assert snowflake_event_table.saved
     assert snowflake_event_table.record_creation_timestamp_column == "created_at"
     assert snowflake_event_table.default_feature_job_setting is None
     assert snowflake_event_table.event_timestamp_column == "event_timestamp"
