@@ -1,6 +1,10 @@
 """Unit tests for SDK code generation"""
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc
+from featurebyte.query_graph.node.cleaning_operation import (
+    ColumnCleaningOperation,
+    MissingValueImputation,
+)
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -156,6 +160,76 @@ def test_skd_code_generation__complex_feature(
         - feat_event_count.cd.unique_count(include_missing=False)
         / feat_event_count.cd.unique_count(include_missing=True)
     )
+    check_sdk_code_generation(
+        output,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/complex_event_item_feature.py.jinja2",
+        update_fixtures=update_fixtures,
+        table_id=saved_event_table.id,
+        item_table_id=saved_item_table.id,
+    )
+
+
+def test_skd_code_generation__multi_table_feature(
+    saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
+):
+    """Test SDK code generation for multi-table feature"""
+    # tag entities
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+    saved_item_table.event_id_col.as_entity(transaction_entity.name)
+
+    # create views
+    event_suffix = "_event_table"
+    event_column_cleaning_operations = [
+        ColumnCleaningOperation(
+            column_name=col, cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
+        )
+        for col in ["col_float", "col_int", "cust_id"]
+    ]
+    event_column_cleaning_operations.append(
+        ColumnCleaningOperation(
+            column_name="col_char",
+            cleaning_operations=[MissingValueImputation(imputed_value="missing")],
+        )
+    )
+
+    event_view = saved_event_table.get_view(
+        view_mode="manual",
+        column_cleaning_operations=event_column_cleaning_operations,
+    )
+    item_view = saved_item_table.get_view(
+        view_mode="manual",
+        event_suffix=event_suffix,
+        column_cleaning_operations=[
+            ColumnCleaningOperation(
+                column_name=col, cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
+            )
+            for col in ["event_id_col", "item_id_col", "item_amount"]
+        ],
+        event_column_cleaning_operations=event_column_cleaning_operations,
+    )
+    item_view.join_event_table_attributes(
+        ["col_float", "cust_id", "col_char", "col_boolean"], event_suffix=event_suffix
+    )
+    item_view["percent"] = item_view["item_amount"] / item_view[f"col_float{event_suffix}"]
+    max_percent = item_view.groupby("event_id_col").aggregate(
+        value_column="percent",
+        method=AggFunc.MAX,
+        feature_name="max_percent",
+    )
+
+    event_view.add_feature(max_percent.name, max_percent, "cust_id")
+    output = event_view.groupby("cust_id").aggregate_over(
+        value_column=max_percent.name,
+        method=AggFunc.MAX,
+        windows=["30d"],
+        feature_names=["max_percent_over_30d"],
+    )["max_percent_over_30d"]
+
+    # save feature so that the graph is pruned
+    output.save()
+
     check_sdk_code_generation(
         output,
         to_use_saved_data=True,
