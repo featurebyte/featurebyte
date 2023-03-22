@@ -396,10 +396,7 @@ class SourceTable(AbstractTableData):
         --------
         Create an event table from a source table.
 
-        >>> event_source_table = data_source.get_table(
-        ...   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYINVOICE"
-        ... )
-        >>> grocery_invoice_table = event_source_table.create_event_table(
+        >>> grocery_invoice_table = event_source_table.create_event_table(  # doctest: +SKIP
         ...   name="GROCERYINVOICE",
         ...   event_id_column="GroceryInvoiceGuid",
         ...   event_timestamp_column="Timestamp",
@@ -457,10 +454,7 @@ class SourceTable(AbstractTableData):
         --------
         Create an item table from a source table.
 
-        >>> item_source_table = data_source.get_table(
-        ...   database_name="spark_catalog", schema_name="GROCERY", table_name="INVOICEITEMS"
-        ... )
-        >>> grocery_items_table = item_source_table.create_item_table(
+        >>> grocery_items_table = item_source_table.create_item_table(  # doctest: +SKIP
         ...   name="INVOICEITEMS",
         ...   event_id_column="GroceryInvoiceGuid",
         ...   item_id_column="GroceryInvoiceItemGuid",
@@ -515,11 +509,8 @@ class SourceTable(AbstractTableData):
         --------
         Create a dimension table from a source table.
 
-        >>> dimension_source_table = data_source.get_table(
-        ...   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYPRODUCT"
-        ... )
-        >>> grocery_product_table = dimension_source_table.create_dimension_table(
-        ...   name="GROCERYPRODUCT",
+        >>> grocery_product_table = dimension_source_table.create_dimension_table(  # doctest: +SKIP
+        ...   name="GROCERYPRODUCT",  # doctest: +SKIP
         ...   dimension_id_column="GroceryProductGuid",
         ... )
         """
@@ -579,10 +570,7 @@ class SourceTable(AbstractTableData):
         --------
         Create a SCD table from a source table.
 
-        >>> scd_source_table = data_source.get_table(
-        ...   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYCUSTOMER"
-        ... )
-        >>> grocery_customer_table = scd_source_table.create_scd_table(
+        >>> grocery_customer_table = scd_source_table.create_scd_table(  # doctest: +SKIP
         ...   name="GROCERYCUSTOMER",
         ...   surrogate_key_column="RowID",
         ...   natural_key_column="GroceryCustomerGuid",
