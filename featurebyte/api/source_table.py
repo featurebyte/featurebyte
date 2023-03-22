@@ -351,7 +351,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
 
 class SourceTable(AbstractTableData):
     """
-    SourceTable class to preview table
+    SourceTable class to preview table.
     """
 
     _table_data_class: ClassVar[Type[AllTableDataT]] = SouceTableData
@@ -370,24 +370,41 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> EventTable:
         """
-        Create event table from this source table
+        Create event table from this source table.
 
         Parameters
         ----------
         name: str
-            Event table name
+            Event table name.
         event_id_column: str
-            Event ID column from the given tabular source
+            Event ID column from the given source table.
         event_timestamp_column: str
-            Event timestamp column from the given tabular source
+            Event timestamp column from the given source table.
         record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
+            Record creation timestamp column from the given source table.
         _id: Optional[ObjectId]
-            Identity value for constructed object
+            Identity value for constructed object. This should only be used for cases where we want to create an
+            event table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
 
         Returns
         -------
         EventTable
+            Event table from the source table.
+
+        Examples
+        --------
+        Create an event table from a source table.
+
+        >>> event_source_table = data_source.get_table(
+        >>>   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYINVOICE"
+        >>> )
+        >>> grocery_invoice_table = event_source_table.create_event_table(
+        >>>   name="GROCERYINVOICE",
+        >>>   event_id_column="GroceryInvoiceGuid",
+        >>>   event_timestamp_column="Timestamp",
+        >>>   record_creation_timestamp_column="record_available_at",
+        >>> )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.event_table import EventTable
@@ -412,26 +429,43 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> ItemTable:
         """
-        Create item table from this source table
+        Create item table from this source table.
 
         Parameters
         ----------
         name: str
-            Item table name
+            Item table name.
         event_id_column: str
-            Event ID column from the given tabular source
+            Event ID column from the given source table.
         item_id_column: str
-            Item ID column from the given tabular source
+            Item ID column from the given source table.
         event_table_name: str
-            Name of the EventTable associated with this ItemTable
+            Name of the EventTable associated with this ItemTable.
         record_creation_timestamp_column: Optional[str]
-            Record creation timestamp column from the given tabular source
+            Record creation timestamp column from the given source table.
         _id: Optional[ObjectId]
-            Identity value for constructed object
+            Identity value for constructed object. This should only be used for cases where we want to create an
+            item table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
 
         Returns
         -------
         ItemTable
+            Item table from the source table.
+
+        Examples
+        --------
+        Create an item table from a source table.
+
+        >>> item_source_table = data_source.get_table(
+        >>>   database_name="spark_catalog", schema_name="GROCERY", table_name="INVOICEITEMS"
+        >>> )
+        >>> grocery_items_table = item_source_table.create_item_table(
+        >>>   name="INVOICEITEMS",
+        >>>   event_id_column="GroceryInvoiceGuid",
+        >>>   item_id_column="GroceryInvoiceItemGuid",
+        >>>   event_table_name="GROCERYINVOICE",
+        >>> )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.event_table import EventTable
@@ -457,22 +491,31 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> DimensionTable:
         """
-        Create dimension table from this source table
+        Create dimension table from this source table.
 
         Parameters
         ----------
         name: str
-            Dimension table name
+            Dimension table name.
         dimension_id_column: str
-            Dimension table ID column from the given tabular source
+            Dimension table ID column from the given tabular source.
         record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
+            Record creation timestamp column from the given tabular source.
         _id: Optional[ObjectId]
-            Identity value for constructed object
+            Identity value for constructed object. This should only be used for cases where we want to create a
+            dimension table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
 
         Returns
         -------
         DimensionTable
+            DimensionTable from the source table.
+
+        Examples
+        --------
+        Create a dimension table from a source table.
+
+        >>> TODO
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.dimension_table import DimensionTable
@@ -498,30 +541,48 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> SCDTable:
         """
-        Create SCD table from this source table
+        Create SCD table from this source table.
 
         Parameters
         ----------
         name: str
-            SCDTable name
+            SCDTable name.
         natural_key_column: str
-            Natural key column from the given tabular source
+            Natural key column from the given source table.
         effective_timestamp_column: str
-            Effective timestamp column from the given tabular source
+            Effective timestamp column from the given source table.
         end_timestamp_column: Optional[str]
-            End timestamp column from the given tabular source
+            End timestamp column from the given source table.
         surrogate_key_column: Optional[str]
-            Surrogate key column from the given tabular source
+            Surrogate key column from the given source table.
         current_flag_column: Optional[str]
-            Column to indicates whether the keys are for the current table point
+            Column to indicates whether the keys are for the current table point.
         record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source
+            Record creation timestamp column from the given source table.
         _id: Optional[ObjectId]
-            Identity value for constructed object
+            Identity value for constructed object. This should only be used for cases where we want to create a
+            SCD table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
 
         Returns
         -------
         SCDTable
+
+        Examples
+        --------
+        Create a SCD table from a source table.
+
+        >>> scd_source_table = data_source.get_table(
+        >>>   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYCUSTOMER"
+        >>> )
+        >>> grocery_customer_table = scd_source_table.create_scd_table(
+        >>>   name="GROCERYCUSTOMER",
+        >>>   surrogate_key_column="RowID",
+        >>>   natural_key_column="GroceryCustomerGuid",
+        >>>   effective_timestamp_column="ValidFrom",
+        >>>   current_flag_column="CurrentRecord",
+        >>>   record_creation_timestamp_column="record_available_at",
+        >>> )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.scd_table import SCDTable
