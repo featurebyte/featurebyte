@@ -304,7 +304,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         Get an Entity object that is already saved.
 
-        >>> fb.Entity.get_by_id(grocery_customer_entity_id)
+        >>> fb.Entity.get_by_id(grocery_customer_entity_id)  # doctest: +SKIP
         <featurebyte.api.entity.Entity at 0x7f511dda3bb0>
         {
           'name': 'grocerycustomer',
