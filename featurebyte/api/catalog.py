@@ -493,7 +493,7 @@ class Catalog(CatalogModel, SavableApiObject):
         return feature_store.get_data_source()
 
     @update_and_reset_catalog
-    def get_view(self, table_name: str) -> View:
+    def get_view(self, table_name: str) -> View:  # type: ignore[no-any-return]
         """
         Get view by name
 
