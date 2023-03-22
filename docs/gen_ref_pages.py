@@ -432,7 +432,6 @@ def _get_accessor_metadata(doc_path):
 
 def generate_documentation_for_docs(doc_groups):
     # A list of all the markdown files generated. Used for debugging.
-    all_markdown_files = []
     # This reverse lookup map has a key of the user-accessible API path, and the value of the markdown file for
     # the documentation.
     reverse_lookup_map = {}
@@ -476,21 +475,19 @@ def generate_documentation_for_docs(doc_groups):
                 _build_and_write_to_file(
                     obj_path, doc_group_value, api_path, doc_path, path_components
                 )
-                all_markdown_files.append(doc_path)
         else:
             _build_and_write_to_file(
                 obj_path, doc_group_value, api_to_use, doc_path, path_components
             )
-            all_markdown_files.append(doc_path)
 
     if DEBUG_MODE:
         with open("debug/proxied_path_to_markdown_path.json", "w") as f:
             f.write(json.dumps(reverse_lookup_map, indent=4))
 
-    return reverse_lookup_map, all_markdown_files
+    return reverse_lookup_map
 
 
-def populate_nav(nav, proxied_path_to_markdown_path, all_markdown_files):
+def populate_nav(nav, proxied_path_to_markdown_path):
     rendered = set()
     for item in get_overall_layout():
         if item.doc_path_override:
@@ -507,14 +504,6 @@ def populate_nav(nav, proxied_path_to_markdown_path, all_markdown_files):
             print("key not found", item_path)
         nav[item.menu_header] = markdown_path
         rendered.add(markdown_path)
-
-    # populate all markdown files generated inside a separate header
-    if DEBUG_MODE:
-        for markdown_path in all_markdown_files:
-            if markdown_path in rendered:
-                continue
-            subsection = ["ignore_only_for_debugging", markdown_path]
-            nav[subsection] = markdown_path
     return nav
 
 
@@ -549,10 +538,8 @@ def build_docs():
     # Build docs
     nav_to_use = BetaWave3Nav()
     doc_groups_to_use = get_doc_groups()
-    proxied_path_to_markdown_path, all_markdown_files = generate_documentation_for_docs(
-        doc_groups_to_use
-    )
-    updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path, all_markdown_files)
+    proxied_path_to_markdown_path = generate_documentation_for_docs(doc_groups_to_use)
+    updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
     write_summary_page(updated_nav)
 
 
