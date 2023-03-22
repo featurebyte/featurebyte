@@ -515,7 +515,13 @@ class SourceTable(AbstractTableData):
         --------
         Create a dimension table from a source table.
 
-        >>> TODO
+        >>> dimension_source_table = data_source.get_table(
+        >>>   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYPRODUCT"
+        >>> )
+        >>> grocery_product_table = dimension_source_table.create_dimension_table(
+        >>>   name="GROCERYPRODUCT",
+        >>>   dimension_id_column="GroceryProductGuid",
+        >>> )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.dimension_table import DimensionTable
