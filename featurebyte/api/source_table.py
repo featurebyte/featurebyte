@@ -397,14 +397,14 @@ class SourceTable(AbstractTableData):
         Create an event table from a source table.
 
         >>> event_source_table = data_source.get_table(
-        >>>   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYINVOICE"
-        >>> )
+        ...   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYINVOICE"
+        ... )
         >>> grocery_invoice_table = event_source_table.create_event_table(
-        >>>   name="GROCERYINVOICE",
-        >>>   event_id_column="GroceryInvoiceGuid",
-        >>>   event_timestamp_column="Timestamp",
-        >>>   record_creation_timestamp_column="record_available_at",
-        >>> )
+        ...   name="GROCERYINVOICE",
+        ...   event_id_column="GroceryInvoiceGuid",
+        ...   event_timestamp_column="Timestamp",
+        ...   record_creation_timestamp_column="record_available_at",
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.event_table import EventTable
@@ -458,14 +458,14 @@ class SourceTable(AbstractTableData):
         Create an item table from a source table.
 
         >>> item_source_table = data_source.get_table(
-        >>>   database_name="spark_catalog", schema_name="GROCERY", table_name="INVOICEITEMS"
-        >>> )
+        ...   database_name="spark_catalog", schema_name="GROCERY", table_name="INVOICEITEMS"
+        ... )
         >>> grocery_items_table = item_source_table.create_item_table(
-        >>>   name="INVOICEITEMS",
-        >>>   event_id_column="GroceryInvoiceGuid",
-        >>>   item_id_column="GroceryInvoiceItemGuid",
-        >>>   event_table_name="GROCERYINVOICE",
-        >>> )
+        ...   name="INVOICEITEMS",
+        ...   event_id_column="GroceryInvoiceGuid",
+        ...   item_id_column="GroceryInvoiceItemGuid",
+        ...   event_table_name="GROCERYINVOICE",
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.event_table import EventTable
@@ -516,12 +516,12 @@ class SourceTable(AbstractTableData):
         Create a dimension table from a source table.
 
         >>> dimension_source_table = data_source.get_table(
-        >>>   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYPRODUCT"
-        >>> )
+        ...   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYPRODUCT"
+        ... )
         >>> grocery_product_table = dimension_source_table.create_dimension_table(
-        >>>   name="GROCERYPRODUCT",
-        >>>   dimension_id_column="GroceryProductGuid",
-        >>> )
+        ...   name="GROCERYPRODUCT",
+        ...   dimension_id_column="GroceryProductGuid",
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.dimension_table import DimensionTable
@@ -580,8 +580,8 @@ class SourceTable(AbstractTableData):
         Create a SCD table from a source table.
 
         >>> scd_source_table = data_source.get_table(
-        >>>   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYCUSTOMER"
-        >>> )
+        ...   database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYCUSTOMER"
+        ... )
         >>> grocery_customer_table = scd_source_table.create_scd_table(
         ...   name="GROCERYCUSTOMER",
         ...   surrogate_key_column="RowID",
