@@ -431,6 +431,17 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
             return "\n".join(content)
 
+        def _get_return_param_details(docstring_returns, return_type_from_signature):
+            current_return_type = self.format_param_type(return_type_from_signature)
+            if not current_return_type and docstring_returns:
+                current_return_type = docstring_returns.type_name
+            return ParameterDetails(
+                name=docstring_returns.return_name if docstring_returns else None,
+                type=current_return_type,
+                default=None,
+                description=docstring_returns.description if docstring_returns else None,
+            )
+
         return ResourceDetails(
             name=resource_name,
             realname=resource_realname,
@@ -450,12 +461,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 )
                 for param_name, param_type, param_default in parameters
             ],
-            returns=ParameterDetails(
-                name=docstring.returns.return_name if docstring.returns else None,
-                type=self.format_param_type(return_type),
-                default=None,
-                description=docstring.returns.description if docstring.returns else None,
-            ),
+            returns=_get_return_param_details(docstring.returns, return_type),
             raises=raises,
             examples=[_format_example(example) for example in docstring.examples],
             see_also=docstring.see_also.description if docstring.see_also else None,
