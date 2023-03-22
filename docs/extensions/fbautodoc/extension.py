@@ -386,14 +386,9 @@ class FBAutoDocProcessor(AutoDocProcessor):
         # get raises
         raises = []
         for exc_type in docstring.raises:
-            try:
-                exc_class = import_resource(f"{resource.__module__}.{exc_type.type_name}")
-                exc_class = self.format_param_type(exc_class)
-            except ValueError:
-                exc_class = str(exc_type.type_name)
             raises.append(
                 ExceptionDetails(
-                    type=exc_class,
+                    type=exc_type.type_name,
                     description=exc_type.description,
                 )
             )
