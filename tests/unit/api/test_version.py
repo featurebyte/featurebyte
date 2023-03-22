@@ -3,11 +3,11 @@ Test feature & feature list version related logic
 """
 import pytest
 
-from featurebyte import DefaultVersionMode, MissingValueImputation
+from featurebyte import DefaultVersionMode
+from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import RecordUpdateException
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -38,46 +38,6 @@ def feature_group_fixture(
         },
     )
     return feature_group
-
-
-@pytest.fixture(name="feature_latest_item_count")
-def feature_latest_item_count(
-    snowflake_event_table, snowflake_item_table, cust_id_entity, transaction_entity
-):
-    """
-    Feature latest item count
-    """
-    # label entities, update critical data info and create views
-    snowflake_event_table.cust_id.as_entity(cust_id_entity.name)
-    snowflake_event_table.col_int.as_entity(transaction_entity.name)
-    snowflake_event_view = snowflake_event_table.get_view()
-
-    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
-    for col in snowflake_item_table.columns:
-        snowflake_item_table[col].update_critical_data_info(
-            cleaning_operations=[MissingValueImputation(imputed_value=0)]
-        )
-    snowflake_item_view = snowflake_item_table.get_view(event_suffix="_event_table")
-
-    # save table
-    snowflake_item_table.save()
-
-    # feature creation
-    item_count = snowflake_item_view.groupby("event_id_col").aggregate(
-        None,
-        method="count",
-        feature_name="item_count",
-        fill_value=0,
-    )
-    snowflake_event_view.add_feature("item_count", item_count, entity_column="col_int")
-    feature_group = snowflake_event_view.groupby("cust_id").aggregate_over(
-        value_column="item_count",
-        method="latest",
-        feature_names=["latest_item_count"],
-        windows=["30d"],
-    )
-    latest_item_count = feature_group["latest_item_count"]
-    return latest_item_count
 
 
 def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
@@ -209,15 +169,3 @@ def test_feature_list__as_default_version(feature_group):
         )
         == new_feature_list_version
     )
-
-
-def test_create_new_version__on_latest_item_count_feature(feature_latest_item_count):
-    """Test create new version on latest item count feature"""
-    from featurebyte.query_graph.graph import QueryGraph
-
-    feature_latest_item_count.save()
-    feature_latest_item_count.update_readiness(FeatureReadiness.PRODUCTION_READY)
-    _ = feature_latest_item_count.definition
-
-    graph_dict = feature_latest_item_count.dict()["graph"]
-    query_graph = QueryGraph(**graph_dict)

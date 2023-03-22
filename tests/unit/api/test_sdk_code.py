@@ -127,7 +127,7 @@ def test_sdk_code_generation__complex_string_related_operations(saved_event_tabl
     )
 
 
-def test_skd_code_generation__complex_feature(
+def test_sdk_code_generation__complex_feature(
     saved_event_table, saved_item_table, transaction_entity, update_fixtures
 ):
     """SDK code generation for complex feature"""
@@ -174,7 +174,7 @@ def test_skd_code_generation__complex_feature(
     )
 
 
-def test_skd_code_generation__multi_table_feature(
+def test_sdk_code_generation__multi_table_feature(
     saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
 ):
     """Test SDK code generation for multi-table feature"""
