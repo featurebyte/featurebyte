@@ -2,10 +2,13 @@
 """
 Common test fixtures used across unit test directories
 """
+import datetime
 import json
 import tempfile
+import traceback
 from unittest import mock
-from unittest.mock import PropertyMock, patch
+from unittest.mock import Mock, PropertyMock, patch
+from uuid import uuid4
 
 import pandas as pd
 import pytest
@@ -33,6 +36,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.relationship import RelationshipType
+from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -42,11 +46,15 @@ from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
+from featurebyte.schema.task import TaskStatus
+from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+from featurebyte.utils.credential import get_credential
+from featurebyte.worker.task.base import TASK_MAP
 from tests.unit.conftest_config import (
     config_file_fixture,
     config_fixture,
@@ -1226,3 +1234,81 @@ def app_container_fixture(persistent):
         storage=LocalTempStorage(),
         container_id=DEFAULT_CATALOG_ID,
     )
+
+
+@pytest.fixture(name="get_credential")
+def get_credential_fixture(config):
+    """
+    get_credential fixture
+    """
+
+    async def get_credential(user_id, feature_store_name):
+        _ = user_id
+        return config.credentials.get(feature_store_name)
+
+    return get_credential
+
+
+@pytest.fixture(autouse=True, scope="function")
+def mock_task_manager(persistent, storage, temp_storage):
+    """
+    Mock celery task manager for testing
+    """
+    task_status = {}
+    with patch("featurebyte.service.task_manager.TaskManager.submit") as mock_submit:
+
+        async def submit(payload: BaseTaskPayload):
+            kwargs = payload.json_dict()
+            kwargs["task_output_path"] = payload.task_output_path
+            task = TASK_MAP[payload.command](
+                payload=kwargs,
+                progress=Mock(),
+                user=User(id=kwargs.get("user_id")),
+                get_credential=get_credential,
+                get_persistent=lambda: persistent,
+                get_storage=lambda: storage,
+                get_temp_storage=lambda: temp_storage,
+            )
+            try:
+                await task.execute()
+                status = TaskStatus.SUCCESS
+                traceback_info = None
+            except Exception:  # pylint: disable=broad-except
+                status = TaskStatus.FAILURE
+                traceback_info = traceback.format_exc()
+
+            task_id = str(uuid4())
+            task_status[task_id] = status
+
+            # insert task into db manually since we are mocking celery
+            task = TaskModel(
+                _id=task_id,
+                status=status,
+                result="",
+                children=[],
+                date_done=datetime.datetime.utcnow(),
+                name=payload.command,
+                args=[],
+                kwargs=kwargs,
+                worker="worker",
+                retries=0,
+                queue="default",
+                traceback=traceback_info,
+            )
+            document = task.dict(by_alias=True)
+            document["_id"] = str(document["_id"])
+            await persistent._db[TaskModel.collection_name()].insert_one(document)
+            return task_id
+
+        mock_submit.side_effect = submit
+
+        with patch("featurebyte.service.task_manager.celery") as mock_celery:
+
+            def get_task(task_id):
+                status = task_status.get(task_id)
+                if status is None:
+                    return None
+                return Mock(status=status)
+
+            mock_celery.AsyncResult.side_effect = get_task
+            yield

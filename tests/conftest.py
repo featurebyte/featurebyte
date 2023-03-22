@@ -119,10 +119,3 @@ def index_to_timestamp_fixture(request):
     Parameterized fixture for index to timestamp conversion
     """
     return request.param
-
-
-@pytest.fixture(autouse=True, scope="function")
-def mock_post_async_task():
-    """Mock post_async_task"""
-    with patch("featurebyte.api.feature_list.FeatureList.post_async_task") as mock_1:
-        yield mock_1

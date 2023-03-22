@@ -822,17 +822,14 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     """
     feature_list.save()
     feature_list.deploy(enable=True, make_production_ready=True)
-    feature_list_deploy_sync(feature_list.id, True)
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
     # Deploy again to show that we don't error
     feature_list.deploy(enable=True, make_production_ready=True)
-    feature_list_deploy_sync(feature_list.id, True)
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
     # Disable feature list
     feature_list.deploy(enable=False, make_production_ready=True)
-    feature_list_deploy_sync(feature_list.id, False)
     _assert_all_features_in_list_with_enabled_status(feature_list, False)
 
 

@@ -40,14 +40,11 @@ def online_enabled_feature_list_fixture(event_table, config):
     )
     feature_list.save()
 
-    with patch("featurebyte.api.feature_list.FeatureList.post_async_task") as _:
-        feature_list.deploy(enable=True, make_production_ready=True)
-        feature_list_deploy_sync(feature_list.id, enable=True)
+    feature_list.deploy(enable=True, make_production_ready=True)
 
-        yield feature_list
+    yield feature_list
 
-        feature_list.deploy(enable=False, make_production_ready=True)
-        feature_list_deploy_sync(feature_list.id, enable=False)
+    feature_list.deploy(enable=False, make_production_ready=True)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

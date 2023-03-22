@@ -239,7 +239,7 @@ class DeployService(BaseService):
                 assert isinstance(feature_list, FeatureListModel)
 
                 if update_progress:
-                    update_progress(20, "Start updating features")
+                    update_progress(20, "Update features")
 
                 # make each feature online enabled first
                 for ind, feature_id in enumerate(document.feature_ids):
@@ -263,12 +263,10 @@ class DeployService(BaseService):
 
                     if update_progress:
                         percent = 20 + 60 // len(document.feature_ids) * (ind + 1)
-                        update_progress(percent, f"Finish updating feature {feature.name}")
+                        update_progress(percent, f"Updated {feature.name}")
 
                 if update_progress:
-                    update_progress(
-                        80, "Finish updating features. Start updating feature_list_namespace"
-                    )
+                    update_progress(80, "Update feature list")
 
                 async with self.persistent.start_transaction():
                     await self._update_feature_list_namespace(
@@ -282,7 +280,7 @@ class DeployService(BaseService):
                         )
 
                 if update_progress:
-                    update_progress(100, "Finish updating feature list")
+                    update_progress(100, "Updated feature list")
 
             except Exception as exc:
                 try:
