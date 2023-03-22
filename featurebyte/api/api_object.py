@@ -305,7 +305,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         Get an Entity object that is already saved.
 
         >>> grocery_customer_entity = fb.Entity.get("grocerycustomer")
-        >>> grocery_customer_entity_by_id = fb.Entity.get_by_id(grocery_customer_entity.id)
+        >>> fb.Entity.get_by_id(grocery_customer_entity.id)
         Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
 
         Get an Entity object that is not saved.
