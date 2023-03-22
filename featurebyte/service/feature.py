@@ -218,11 +218,11 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         DocumentNotFoundError
             If the specified feature name & version cannot be found
         """
-        document_dict = await self.persistent.find_one(
-            collection_name=self.collection_name,
-            query_filter={"name": name, "version": version.dict(), "catalog_id": self.catalog_id},
-            user_id=self.user.id,
-        )
+        document_dict = None
+        query_filter = {"name": name, "version": version.dict()}
+        async for doc_dict in self.list_documents_iterator(query_filter=query_filter, page_size=1):
+            document_dict = doc_dict
+
         if document_dict is None:
             exception_detail = (
                 f'{self.class_name} (name: "{name}", version: "{version.to_str()}") not found. '
