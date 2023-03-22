@@ -82,7 +82,16 @@ class QueryObject(FeatureByteBaseModel):
         pruned_graph, pruned_node = self.extract_pruned_graph_and_node()
         flattened_graph, node_name_map = GraphFlatteningTransformer(graph=pruned_graph).transform()
         flattened_node = flattened_graph.get_node_by_name(node_name_map[pruned_node.name])
-        for node in dfs_traversal(flattened_graph, flattened_node):
+
+        # prune the flattened graph as view graph node is not pruned before flattened
+        graph = QueryGraph(**flattened_graph.dict())
+        pruned_flattened_graph, pruned_node_name_map = graph.prune(flattened_node, aggressive=True)
+        pruned_flattened_node = pruned_flattened_graph.get_node_by_name(
+            pruned_node_name_map[flattened_node.name]
+        )
+
+        # construct the node type lineage
+        for node in dfs_traversal(pruned_flattened_graph, pruned_flattened_node):
             out.append(node.type)
         return out
 
