@@ -27,7 +27,11 @@ from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGra
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.generic import GroupByNode
-from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    DerivedDataColumn,
+    OperationStructure,
+    SourceDataColumn,
+)
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
@@ -69,13 +73,24 @@ class QueryGraph(QueryGraphModel):
             timestamp_col = next(
                 (
                     col
-                    for col in group_by_op_struct.source_columns
+                    for col in group_by_op_struct.columns
                     if col.name == group_by_node.parameters.timestamp
                 ),
                 None,
             )
             assert timestamp_col is not None, "Timestamp column not found"
-            yield group_by_node, timestamp_col.tabular_data_id
+            if isinstance(timestamp_col, SourceDataColumn):
+                table_id = timestamp_col.tabular_data_id
+            else:
+                # for the item view, the timestamp column is from the event table, not the item table
+                # therefore the column is a DerivedDataColumn
+                assert isinstance(timestamp_col, DerivedDataColumn)
+                table_id = None
+                for column in timestamp_col.columns:
+                    table_id = column.tabular_data_id
+
+            assert table_id is not None, "Table ID not found"
+            yield group_by_node, table_id
 
     def load(self, graph: QueryGraphModel) -> Tuple["QueryGraph", Dict[str, str]]:
         """

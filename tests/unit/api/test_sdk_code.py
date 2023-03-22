@@ -199,6 +199,8 @@ def test_sdk_code_generation__multi_table_feature(
     event_suffix = "_event_table"
     event_view = saved_event_table.get_view()
     item_view = saved_item_table.get_view(event_suffix=event_suffix)
+
+    # create feature
     item_view.join_event_table_attributes(
         ["col_float", "col_char", "col_boolean"], event_suffix=event_suffix
     )
@@ -259,3 +261,48 @@ def test_sdk_code_generation__multi_table_feature(
         "Please fix these issues first before trying to promote your feature to PRODUCTION_READY."
     )
     assert expected_error in str(exc.value)
+
+
+def test_sdk_code_generation__item_view_cosine_similarity_feature(
+    saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
+):
+    """Test SDK code generation for item view groupby feature"""
+    # tag entities
+    saved_item_table.event_id_col.as_entity(transaction_entity.name)
+
+    # create views
+    item_view = saved_item_table.get_view(event_suffix="_event_table")
+
+    grouped = item_view.groupby("cust_id_event_table", category="item_id_col").aggregate_over(
+        value_column="item_amount",
+        method=AggFunc.SUM,
+        windows=["30d"],
+        feature_names=["sum_item_amount_over_30d"],
+    )
+    feat = grouped["sum_item_amount_over_30d"]
+
+    grouped_1 = item_view.groupby("cust_id_event_table", category="item_id_col").aggregate_over(
+        value_column="item_amount",
+        method=AggFunc.SUM,
+        windows=["90d"],
+        feature_names=["sum_item_amount_over_90d"],
+    )
+    feat_1 = grouped_1["sum_item_amount_over_90d"]
+    output = feat.cd.cosine_similarity(other=feat_1)
+    output.name = "sum_item_amount_over_30d_cosine_similarity_sum_item_amount_over_90d"
+
+    # save feature so that the graph is pruned
+    output.save()
+
+    check_sdk_code_generation(
+        output,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/feature_item_cosine_similarity.py.jinja2",
+        update_fixtures=update_fixtures,
+        table_id=saved_event_table.id,
+        item_table_id=saved_item_table.id,
+    )
+
+    # check update readiness to production ready won't fail due to production ready guardrail
+    output.update_readiness(readiness="PRODUCTION_READY")
