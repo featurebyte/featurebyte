@@ -560,9 +560,10 @@ class SourceTable(AbstractTableData):
         end_timestamp_column: Optional[str]
             End timestamp column from the given source table.
         surrogate_key_column: Optional[str]
-            Surrogate key column from the given source table.
+            Surrogate key column from the given source table. A surrogate key is a unique identifier assigned to
+            each record, and is used to provide a stable identifier for data even as it changes over time.
         current_flag_column: Optional[str]
-            Column to indicates whether the keys are for the current table point.
+            Column to indicate whether the keys are for the current time in point.
         record_creation_timestamp_column: str
             Record creation timestamp column from the given source table.
         _id: Optional[ObjectId]
