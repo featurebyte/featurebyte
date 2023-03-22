@@ -386,14 +386,9 @@ class FBAutoDocProcessor(AutoDocProcessor):
         # get raises
         raises = []
         for exc_type in docstring.raises:
-            try:
-                exc_class = import_resource(f"{resource.__module__}.{exc_type.type_name}")
-                exc_class = self.format_param_type(exc_class)
-            except ValueError:
-                exc_class = str(exc_type.type_name)
             raises.append(
                 ExceptionDetails(
-                    type=exc_class,
+                    type=exc_type.type_name,
                     description=exc_type.description,
                 )
             )
@@ -577,9 +572,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             # populate resource path and name as autodoc title
             parent.clear()
             title_elem = etree.SubElement(parent, "h1")
-            path_elem = etree.SubElement(title_elem, "span")
-            path_elem.set("class", "autodoc-classpath")
-            name_elem = etree.SubElement(title_elem, "span")
+            title_elem.set("class", "autodoc-overflow-wrap-break-word")
 
             # add div for autodoc body
             autodoc_div = etree.SubElement(parent, "div")
@@ -587,8 +580,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
             # extract information about the resource
             resource_details = self.get_resource_details(resource_descriptor)
-            path_elem.text = (resource_details.proxy_path or resource_details.path) + "."
-            name_elem.text = resource_details.name
+            path = resource_details.proxy_path or resource_details.path
+            title_elem.text = ".".join([path, resource_details.name])
 
             # render autodoc
             self.render_signature(autodoc_div, resource_details)
@@ -602,10 +595,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                     self.render_members(docstring_elem, resource_details, members=members)
                 elif line.startswith(":api_to_use:"):
                     # example - line = ":api_to_use: featurebyte.ChangeViewColumn.lag"
-                    api_to_use = line.split()[1]
-                    path_element, name_element = api_to_use.rsplit(".", 1)
-                    path_elem.text = path_element + "."  # featurebyte.ChangeViewColumn.
-                    name_elem.text = name_element
+                    title_elem.text = line.split()[1]
 
         if theRest:
             # This block contained unindented line(s) after the first indented
