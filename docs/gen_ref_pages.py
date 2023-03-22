@@ -355,13 +355,19 @@ def get_paths_to_document():
 
 def get_api_path_to_use(doc_path, base_path, accessor_property_name):
     """
-    doc_path -> featurebyte.core.accessor.string.StringAccessor.lower.md
-    base_path_of_class -> featurebyte.ViewColumn
-    accessor_property_name -> str, cd
+    Returns
+    -------
+    str
+        API path to use
 
-    returns api_to_use
-
-    caller will know what accessor it is, and pass the base_path_of_class in accordingly
+    Parameters
+    ---------
+    doc_path
+        Example: featurebyte.core.accessor.string.StringAccessor.lower.md
+    base_path
+        Example: featurebyte.ViewColumn
+    accessor_property_name
+        Example: str, cd
     """
     removed_md_path = doc_path.replace(".md", "")
     function_name = removed_md_path.rsplit(".", 1)[-1]
