@@ -9,7 +9,7 @@ from http import HTTPStatus
 
 import requests
 from fastapi import FastAPI, Request, Response
-from pydantic import AnyHttpUrl, ValidationError
+from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
@@ -216,7 +216,7 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
                 response: Response = await executor.execute()
         except Exception as exc:  # pylint: disable=broad-except
             logger.exception(str(exc))
-            response: Response = JSONResponse(
+            return JSONResponse(
                 content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR
             )
         return response
@@ -227,7 +227,7 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
     Middleware used by FastAPI to send telemetry logs
     """
 
-    def __init__(self, app: FastAPI, endpoint: AnyHttpUrl):
+    def __init__(self, app: FastAPI, endpoint: str):
         super().__init__(app)
         self.endpoint = endpoint
 
@@ -264,11 +264,7 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
             return response
 
         if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
-            jbody = response.body.json()
-            if "detail" in jbody:
-                trace = jbody["detail"]
-            else:
-                trace = "error has occurred"
+            trace = response.body.decode("utf-8")
         else:
             trace = str(response.status_code)
 

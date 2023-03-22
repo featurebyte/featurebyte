@@ -93,7 +93,7 @@ class LoggingSettings(BaseModel):
     level: LogLevel = LogLevel.DEBUG
     serialize: bool = False
     telemetry: bool = True
-    telemetry_url: AnyHttpUrl = "https://log.int.featurebyte.com"
+    telemetry_url: str = "https://log.int.featurebyte.com"
 
 
 class LocalStorageSettings(BaseModel):
