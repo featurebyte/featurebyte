@@ -955,7 +955,7 @@ class JoinNode(BasePrunableNode):
             if col.name in right_col_map:
                 if global_state.keep_all_source_columns:
                     right_columns[col.name] = DerivedDataColumn.create(
-                        name=right_col_map[col.name],
+                        name=right_col_map[col.name],  # type: ignore
                         columns=[right_on_col, col],
                         transform=self.transform_info,
                         node_name=self.name,
@@ -979,7 +979,7 @@ class JoinNode(BasePrunableNode):
         right_cols = [right_columns[col_name] for col_name in params.right_input_columns]
 
         return OperationStructure(
-            columns=left_cols + right_cols,
+            columns=left_cols + right_cols,  # type: ignore
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=row_index_lineage,

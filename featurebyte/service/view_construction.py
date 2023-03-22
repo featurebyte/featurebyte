@@ -18,7 +18,12 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.metadata.operation import OperationStructure, ViewDataColumnType
+from featurebyte.query_graph.node.metadata.operation import (
+    DerivedDataColumn,
+    OperationStructure,
+    SourceDataColumn,
+    ViewDataColumnType,
+)
 from featurebyte.query_graph.node.nested import (
     BaseGraphNode,
     BaseViewGraphNodeParameters,
@@ -106,7 +111,7 @@ class ViewConstructionService(BaseService):
         query_graph: QueryGraphModel,
         view_node_name_to_table_info: dict[str, tuple[Node, list[ColumnInfo], InputNode]],
         input_node_names: list[str],
-        table_id_to_source_column_names: dict[ObjectId, list[str]],
+        table_id_to_source_column_names: dict[ObjectId, set[str]],
     ) -> tuple[list[str], list[Node]]:
         input_nodes = []
         for input_node_name in input_node_names:
@@ -120,7 +125,7 @@ class ViewConstructionService(BaseService):
         source_table_input_node = input_nodes[0]
         assert isinstance(source_table_input_node, InputNode)
         target_columns = table_id_to_source_column_names[source_table_input_node.parameters.id]  # type: ignore
-        return target_columns, input_nodes
+        return list(target_columns), input_nodes
 
     async def _construct_view_graph_node(
         self,
@@ -176,15 +181,21 @@ class ViewConstructionService(BaseService):
     @staticmethod
     def _prepare_table_id_to_table_column_names(
         operation_structure: OperationStructure,
-    ) -> dict[ObjectId, list[str]]:
+    ) -> dict[ObjectId, set[str]]:
         # prepare table ID to source column names mapping, use this mapping to prune the view graph node parameters
-        table_id_to_source_column_names = defaultdict(list)
+        table_id_to_source_column_names: dict[ObjectId, set[str]] = defaultdict(set)
         for col in operation_structure.columns:
             if col.type == ViewDataColumnType.SOURCE:
-                table_id_to_source_column_names[col.tabular_data_id].append(col.name)
+                assert isinstance(col, SourceDataColumn)
+                assert col.tabular_data_id is not None, "Source table ID is missing."
+                table_id_to_source_column_names[col.tabular_data_id].add(col.name)
             else:
+                assert isinstance(col, DerivedDataColumn)
                 for derived_source_col in col.columns:
-                    table_id_to_source_column_names[derived_source_col.tabular_data_id].append(
+                    assert (
+                        derived_source_col.tabular_data_id is not None
+                    ), "Source table ID is missing."
+                    table_id_to_source_column_names[derived_source_col.tabular_data_id].add(
                         derived_source_col.name
                     )
         return table_id_to_source_column_names
