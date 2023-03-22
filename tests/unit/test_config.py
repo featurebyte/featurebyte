@@ -87,7 +87,7 @@ def test_configurations_telemetry():
     assert empty_config.logging.telemetry
     assert empty_config.logging.telemetry_url == "https://log.int.featurebyte.com"
 
-    assert config.logging.telemetry == False
+    assert not config.logging.telemetry
     assert config.logging.telemetry_url == "https://telemetry.featurebyte.com"
 
 

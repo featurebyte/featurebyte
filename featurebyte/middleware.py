@@ -198,6 +198,8 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         """
+        Exception middleware "main" call
+
         Parameters
         ----------
         request: Request
@@ -208,7 +210,6 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         Returns
         -------
         Response
-            Response object to be returned to client
         """
         try:
             async with ExecutionContext(request, call_next) as executor:
@@ -242,6 +243,8 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         """
+        Telemetry middleware "main" call
+
         Parameters
         ----------
         request: Request
@@ -252,7 +255,6 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
         Returns
         -------
         Response
-            Response object to be returned to client
         """
         # Render the response
         response = await call_next(request)
