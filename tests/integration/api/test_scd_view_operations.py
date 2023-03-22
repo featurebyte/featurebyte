@@ -382,27 +382,6 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
     assert res.json() == {"features": [{"row_number": 1, "Current Number of Users": 9}]}
 
 
-@pytest.fixture(name="scd_table_with_minimal_cols", scope="session")
-def snowflake_scd_table_fixture_with_minimal_cols(source_type, scd_data_tabular_source):
-    """
-    Fixture for a SCDTable in integration tests
-    """
-    return scd_data_tabular_source.create_scd_table(
-        name=f"{source_type}_scd_data_with_minimal_cols",
-        natural_key_column="User ID",
-        effective_timestamp_column="Effective Timestamp",
-    )
-
-
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_scd_view__create_with_minimal_params(scd_table_with_minimal_cols):
-    """
-    Test SCD view creation with minimal params
-    """
-    # Able to create view
-    scd_table_with_minimal_cols.get_view()
-
-
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table):
     """

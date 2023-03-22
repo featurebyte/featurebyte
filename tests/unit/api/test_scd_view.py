@@ -59,6 +59,19 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view):
     snowflake_scd_view.validate_join(snowflake_dimension_view)
 
 
+def test_scd_view__create_with_minimal_params(snowflake_database_table_scd_table):
+    """
+    Test SCD view creation with minimal params
+    """
+    scd_table_with_minimal_params = snowflake_database_table_scd_table.create_scd_table(
+        name="sf_scd_table",
+        natural_key_column="col_text",
+        effective_timestamp_column="effective_timestamp",
+    )
+    # Able to create view
+    scd_table_with_minimal_params.get_view()
+
+
 def test_get_join_column(snowflake_scd_view):
     """
     Test get join column

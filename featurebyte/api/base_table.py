@@ -400,6 +400,34 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         _id: Optional[ObjectId] = None,
         **kwargs: Any,
     ) -> SourceTableApiObjectT:
+        """
+        Get or derived instances of TableApiObject from tabular source. Internally, this method calls `get`
+        by table name first, if the table is not found, it will call `create` to create a new table.
+
+        Parameters
+        ----------
+        source_table: SourceTable
+            Source table object used to construct the table
+        name: str
+            Object name
+        record_creation_timestamp_column: str
+            Record creation timestamp column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
+        **kwargs: Any
+            Additional parameters specific to variants of TableApiObject
+
+        Returns
+        -------
+        SourceTableApiObjectT
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When record with the same key exists at the persistent layer
+        RecordRetrievalException
+            When unexpected retrieval failure
+        """
         try:
             return cls.get(name=name)
         except RecordRetrievalException:

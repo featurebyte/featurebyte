@@ -1051,7 +1051,6 @@ def create_transactions_event_table_from_data_source(
     event_table["ÜSER ID"].as_entity("User")
     event_table["PRODUCT_ACTION"].as_entity("ProductAction")
     event_table["CUST_ID"].as_entity("Customer")
-    event_table.save()
     event_table = EventTable.get(event_table_name)
     return event_table
 
@@ -1122,8 +1121,6 @@ def item_table_fixture(
         item_id_column="item_id",
         event_table_name=event_table.name,
     )
-    item_table.save()
-    item_table = ItemTable.get(item_table_name)
     item_table["order_id"].as_entity(order_entity.name)
     item_table["item_id"].as_entity(item_entity.name)
     return item_table
@@ -1157,8 +1154,6 @@ def dimension_table_fixture(
         name=dimension_table_name,
         dimension_id_column="item_id",
     )
-    dimension_table.save()
-    dimension_table = DimensionTable.get(dimension_table_name)
     dimension_table["item_id"].as_entity(item_entity.name)
     return dimension_table
 
@@ -1204,8 +1199,6 @@ def scd_table_fixture(
         effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
     )
-    scd_table.save()
-    scd_table = SCDTable.get(scd_table_name)
     scd_table["User ID"].as_entity(user_entity.name)
     scd_table["User Status"].as_entity(status_entity.name)
     return scd_table

@@ -605,7 +605,8 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> EventTable:
         """
-        Get or create event table from this source table
+        Get or create EventTable from this source table. Internally, this method calls `EventTable.get` by name,
+        if the table does not exist, it will be created.
 
         Parameters
         ----------
@@ -647,7 +648,8 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> ItemTable:
         """
-        Get or create item table from this source table
+        Get or create ItemTable from this source table. Internally, this method calls `ItemTable.get` by name,
+        if the table does not exist, it will be created.
 
         Parameters
         ----------
@@ -692,7 +694,8 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> DimensionTable:
         """
-        Get or create dimension table from this source table
+        Get or create DimensionTable from this source table. Internally, this method calls `DimensionTable.get`
+        by name, if the table does not exist, it will be created.
 
         Parameters
         ----------
@@ -733,7 +736,8 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> SCDTable:
         """
-        Get or create SCD table from this source table
+        Get or create SCDTable from this source table. Internally, this method calls `SCDTable.get` by name,
+        if the table does not exist, it will be created.
 
         Parameters
         ----------
