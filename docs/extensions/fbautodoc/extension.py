@@ -13,7 +13,7 @@ from xml.etree import ElementTree as etree
 
 from docstring_parser import parse
 from docstring_parser.common import Docstring as BaseDocstring
-from docstring_parser.common import DocstringExample, DocstringMeta
+from docstring_parser.common import DocstringExample, DocstringMeta, DocstringReturns
 from markdown import Markdown
 from markdown.extensions import Extension
 from mkautodoc.extension import AutoDocProcessor, import_from_string, last_iter, trim_docstring
@@ -431,7 +431,9 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
             return "\n".join(content)
 
-        def _get_return_param_details(docstring_returns, return_type_from_signature):
+        def _get_return_param_details(
+            docstring_returns: DocstringReturns, return_type_from_signature: Any
+        ) -> ParameterDetails:
             current_return_type = self.format_param_type(return_type_from_signature)
             if not current_return_type and docstring_returns:
                 current_return_type = docstring_returns.type_name
