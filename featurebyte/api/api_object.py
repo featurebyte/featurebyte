@@ -246,6 +246,10 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         >>> grocery_customer_entity = fb.Entity.get("random_entity")  # doctest: +SKIP
         'Entity (name: "random_entity") not found. Please save the Entity object first.'
+
+        Get a Feature object that is already saved.
+
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
         """
         return cls._get(name)
 
@@ -300,8 +304,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         Get an Entity object that is already saved.
 
-        >>> grocery_customer_entity = fb.Entity.get("grocerycustomer")  # doctest: +SKIP
-        >>> grocery_customer_entity_by_id = fb.Entity.get_by_id(grocery_customer_entity.id)  # doctest: +SKIP
+        >>> grocery_customer_entity = fb.Entity.get("grocerycustomer")
+        >>> grocery_customer_entity_by_id = fb.Entity.get_by_id(grocery_customer_entity.id)
         Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
 
         Get an Entity object that is not saved.
@@ -309,6 +313,11 @@ class ApiObject(FeatureByteBaseDocumentModel):
         >>> random_object_id = ObjectId()  # doctest: +SKIP
         >>> grocery_customer_entity = fb.Entity.get_by_id(random_object_id)  # doctest: +SKIP
         'Entity (id: <random_object_id.id>) not found. Please save the Entity object first.'
+
+        Get a Feature object that is already saved.
+
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature_from_id = fb.Feature.get_by_id(feature.id)
         """
         return cls._get_by_id(id)
 
