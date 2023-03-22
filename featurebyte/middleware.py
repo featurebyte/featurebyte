@@ -4,7 +4,6 @@ Handles API requests middleware
 from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 
 import inspect
-import logging
 import uuid
 from http import HTTPStatus
 
@@ -257,6 +256,10 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
         """
         # Render the response
         response = await call_next(request)
+
+        # Ignore telemetry for status endpoint
+        if request.url.path in ["/status"]:
+            return response
 
         if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
             jbody = response.body.json()
