@@ -241,12 +241,10 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
         )
 
     async def __send_telemetry(self, payload: Dict[str, Any]):
-        print("I have to send telemetry")
         try:
             result = requests.post(
-                self.endpoint, json=payload, timeout=5
+                self.endpoint, json=payload, timeout=1
             )  # set timeout to 1 second
-            print(result.text)
         except Exception as exc:  # pylint: disable=broad-except
             pass
 
@@ -287,12 +285,10 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
             "trace": trace,
         }
         if response.background is None:
-            print("Background task is none")
             background = BackgroundTasks()
             background.add_task(self.__send_telemetry, payload)
             response.background = background
         else:
-            print("Background task is not none")
             background = BackgroundTasks()
             background.add_task(response.background)
             background.add_task(self.__send_telemetry, payload)
