@@ -235,6 +235,6 @@ min-similarity-lines = 10
 addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure", "--ignore-glob=tests/fixtures/*"] # Extra options:
 doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 markers = [
-    "disable_autouse: disable use of autouse fixtures",
+    "disable_task_manager_mock: disable use of autouse task manager fixture",
 ]
 norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]

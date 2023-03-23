@@ -1254,7 +1254,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
     """
     Mock celery task manager for testing
     """
-    if "disable_autouse" in request.keywords:
+    if "disable_task_manager_mock" in request.keywords:
         yield
     else:
         task_status = {}
