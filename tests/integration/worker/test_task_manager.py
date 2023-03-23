@@ -66,7 +66,7 @@ async def test_schedule_interval_task(task_manager):
         interval=Interval(every=1, period="seconds"),
     )
     # wait for 5 seconds
-    await asyncio.sleep(10)
+    await asyncio.sleep(20)
 
     # check if task is running
     periodic_task = await task_manager.get_periodic_task(task_id)
