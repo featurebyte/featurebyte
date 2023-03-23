@@ -571,7 +571,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
             parent.clear()
             style_elem = etree.SubElement(parent, "style")
             style_elem.text = ".md-sidebar.md-sidebar--secondary { display: none; }"
-            # md-sidebar md-sidebar--secondary
             title_elem = etree.SubElement(parent, "h1")
             title_elem.set("class", "autodoc-overflow-wrap-break-word")
 
