@@ -107,7 +107,7 @@ class DataSource:
         --------
         >>> data_source = fb.FeatureStore.get("playground").get_data_source()
         >>> data_source.list_schemas(database_name="spark_catalog")
-        ['default', 'grocery', 'playground']
+        ['default', 'doctest_grocery', 'playground']
         """
         client = Configurations().get_client()
         response = client.post(
@@ -149,9 +149,9 @@ class DataSource:
         >>> data_source = fb.FeatureStore.get("playground").get_data_source()
         >>> data_source.list_tables(
         ...     database_name="spark_catalog",
-        ...     schema_name="grocery",
+        ...     schema_name="doctest_grocery",
         ... )[:3]
-        ['__grocerycustomer', '__groceryinvoice', '__invoiceitems']
+        ['grocerycustomer', 'groceryinvoice', 'groceryproduct']
         """
         client = Configurations().get_client()
         response = client.post(
@@ -192,7 +192,7 @@ class DataSource:
         >>> source_table = data_source.get_table(
         ...     table_name="groceryinvoice",
         ...     database_name="spark_catalog",
-        ...     schema_name="grocery",
+        ...     schema_name="doctest_grocery",
         ... )
         >>> source_table.columns
         ['GroceryInvoiceGuid', 'GroceryCustomerGuid', 'Timestamp', 'record_available_at', 'Amount']

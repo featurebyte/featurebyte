@@ -679,13 +679,12 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         >>> view = fb.Table.get("GROCERYCUSTOMER").get_view()
         >>> view["LongitudeAbs"] = view["Longitude"].abs()
         >>> view.preview(5).filter(regex="Longitude")
-            Longitude  LongitudeAbs
-        0  -1.563748      1.563748
-        1   2.178242      2.178242
-        2   1.941437      1.941437
-        3   5.386148      5.386148
-        4   2.403298      2.403298
-
+           Longitude  LongitudeAbs
+        0   5.209627      5.209627
+        1   7.423195      7.423195
+        2   2.990572      2.990572
+        3 -61.069866     61.069866
+        4   3.120654      3.120654
 
         Compute absolute values for a Feature:
 

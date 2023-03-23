@@ -10,7 +10,7 @@ def setup() -> None:
     Setup featurebyte environment for running doctests.
     """
     # start playground
-    fb.playground(local=True, datasets=["grocery"], docs_enabled=False)
+    fb.playground(local=True, datasets=["doctest_grocery"], docs_enabled=False)
 
     # create catalog
     fb.Catalog.get_or_create("grocery")
@@ -21,7 +21,9 @@ def setup() -> None:
     # EventTable: GROCERYINVOICE
     if "GROCERYINVOICE" not in fb.Table.list()["name"].tolist():
         event_source_table = data_source.get_table(
-            database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYINVOICE"
+            database_name="spark_catalog",
+            schema_name="doctest_grocery",
+            table_name="GROCERYINVOICE",
         )
         grocery_invoice_table = event_source_table.create_event_table(
             name="GROCERYINVOICE",
@@ -36,7 +38,7 @@ def setup() -> None:
     # ItemTable: INVOICEITEMS
     if "INVOICEITEMS" not in fb.Table.list()["name"].tolist():
         item_source_table = data_source.get_table(
-            database_name="spark_catalog", schema_name="GROCERY", table_name="INVOICEITEMS"
+            database_name="spark_catalog", schema_name="doctest_grocery", table_name="INVOICEITEMS"
         )
         grocery_items_table = item_source_table.create_item_table(
             name="INVOICEITEMS",
@@ -51,7 +53,9 @@ def setup() -> None:
     # SCDTable: GROCERYCUSTOMER
     if "GROCERYCUSTOMER" not in fb.Table.list()["name"].tolist():
         scd_source_table = data_source.get_table(
-            database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYCUSTOMER"
+            database_name="spark_catalog",
+            schema_name="doctest_grocery",
+            table_name="GROCERYCUSTOMER",
         )
         grocery_customer_table = scd_source_table.create_scd_table(
             name="GROCERYCUSTOMER",
@@ -68,7 +72,9 @@ def setup() -> None:
     # DimensionTable: GROCERYPRODUCT
     if "GROCERYPRODUCT" not in fb.Table.list()["name"].tolist():
         dimension_source_table = data_source.get_table(
-            database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYPRODUCT"
+            database_name="spark_catalog",
+            schema_name="doctest_grocery",
+            table_name="GROCERYPRODUCT",
         )
         dimension_source_table.create_dimension_table(
             name="GROCERYPRODUCT",
