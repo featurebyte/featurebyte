@@ -243,9 +243,22 @@ class CountDictAccessor:
 
         Preview the features:
         >>> features = fb.FeatureGroup([feature_1, feature_2, similarity])
-        >>> features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
-                POINT_IN_TIME                   GROCERYCUSTOMERGUID                      CustomerProductGroupCounts_7d                     CustomerProductGroupCounts_90d  CustomerProductGroupCounts_7d_90d_similarity
-        0 2022-04-15 10:00:00  2f4c1578-29d6-44b7-83da-7c5bfb981fa0  {"Chips et Tortillas":1,"Colas, Thés glacés et...  {"Biscuits apéritifs":1,"Biscuits":1,"Bonbons"...                                      0.865385
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature 1:
+        >>> df["CustomerProductGroupCounts_7d"].iloc[0]
+         '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+
+
+        Dictionary feature 2:
+        >>> df["CustomerProductGroupCounts_90d"].iloc[0]
+        '{"Biscuits apéritifs":1,"Biscuits":1,"Bonbons":1,"Chips et Tortillas":2,"Colas, Thés glacés et Sodas":12,"Confitures":1,"Crèmes et Chantilly":2,"Céréales":1,"Emballages et sacs":1,"Fromages":3,"Glaces et Sorbets":1,"Glaçons":1,"Laits":4,"Noix":1,"Pains":4,"Petit-déjeuner":2,"Viande Surgelée":1,"Œufs":1}'
+
+
+        Similarity feature:
+        >>> df["CustomerProductGroupCounts_7d_90d_similarity"].iloc[0]
+        0.8653846153846161
         """
         series_operator = CountDictSeriesOperator(self._feature_obj, other)
         return series_operator.operate(
