@@ -42,7 +42,7 @@ $$
         for (const [i, element] of col_list.entries()) {
 
             insert_cols.push("b."+element)
-            filter_cols.push("a." + element + " = b."+ element)
+            filter_cols.push(`EQUAL_NULL(a.${element}, b.${element})`)
         }
         insert_cols_str = insert_cols.join(",")
         filter_cols_str = filter_cols.join(" AND ")
