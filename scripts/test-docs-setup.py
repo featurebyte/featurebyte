@@ -130,6 +130,7 @@ def setup() -> None:
     invoice_amount_avg_60days["InvoiceAmountAvg_60days"].save(conflict_resolution="retrieve")
 
     # Feature: CustomerProductGroupCounts
+    grocery_items_table = fb.Table.get("INVOICEITEMS")
     grocery_item_view = grocery_items_table.get_view()
     grocery_product_view = grocery_product_table.get_view()
     grocery_item_view.join(grocery_product_view)
