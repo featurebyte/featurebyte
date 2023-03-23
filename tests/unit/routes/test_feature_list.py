@@ -453,9 +453,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
-            "tabular_data": [
-                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
-            ],
+            "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
             "default_version_mode": "AUTO",
             "version_count": 1,
             "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
@@ -492,9 +490,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
-            "tabular_data": [
-                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
-            ],
+            "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
             "default_version_mode": "AUTO",
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
             "version_count": 1,

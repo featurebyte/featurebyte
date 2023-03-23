@@ -402,47 +402,47 @@ class InfoService(BaseService):
         )
 
     @staticmethod
-    def _get_main_data(tabular_data_list: list[ProxyTableModel]) -> ProxyTableModel:
+    def _get_main_data(tables: list[ProxyTableModel]) -> ProxyTableModel:
         """
         Get the main table from the list of tables
 
         Parameters
         ----------
-        tabular_data_list: list[TabularDataModel]
+        tables: list[ProxyTableModel]
             List of table models
 
         Returns
         -------
         ProxyTableModel
         """
-        data_priority_map = {}
-        for tabular_data in tabular_data_list:
-            if tabular_data.type == TableDataType.ITEM_TABLE:
-                data_priority_map[3] = tabular_data
-            elif tabular_data.type == TableDataType.EVENT_TABLE:
-                data_priority_map[2] = tabular_data
-            elif tabular_data.entity_ids:
-                data_priority_map[1] = tabular_data
+        priority_to_table = {}
+        for table in tables:
+            if table.type == TableDataType.ITEM_TABLE:
+                priority_to_table[3] = table
+            elif table.type == TableDataType.EVENT_TABLE:
+                priority_to_table[2] = table
+            elif table.entity_ids:
+                priority_to_table[1] = table
             else:
-                data_priority_map[0] = tabular_data
-        return data_priority_map[max(data_priority_map)]
+                priority_to_table[0] = table
+        return priority_to_table[max(priority_to_table)]
 
     async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
         # retrieve related tables & semantics
-        tabular_data_list = await self._get_list_object(
+        table_list = await self._get_list_object(
             self.table_service, op_struct.tabular_data_ids, TableList
         )
         semantic_list = await self._get_list_object(
-            self.semantic_service, tabular_data_list.semantic_ids, SemanticList
+            self.semantic_service, table_list.semantic_ids, SemanticList
         )
 
         # prepare column mapping
         column_map: dict[tuple[Optional[ObjectId], str], Any] = {}
         semantic_map = {semantic.id: semantic.name for semantic in semantic_list.data}
-        for tabular_data in tabular_data_list.data:
-            for column in tabular_data.columns_info:
-                column_map[(tabular_data.id, column.name)] = {
-                    "table_name": tabular_data.name,
+        for table in table_list.data:
+            for column in table.columns_info:
+                column_map[(table.id, column.name)] = {
+                    "table_name": table.name,
                     "semantic": semantic_map.get(column.semantic_id),  # type: ignore
                 }
 
@@ -491,7 +491,7 @@ class InfoService(BaseService):
                 "transforms": op_struct.post_aggregation.transforms,
             }
 
-        main_data = self._get_main_data(tabular_data_list.data)
+        main_data = self._get_main_data(table_list.data)
         return {
             "main_data": {"name": main_data.name, "table_type": main_data.type, "id": main_data.id},
             "input_columns": source_columns,
@@ -638,7 +638,7 @@ class InfoService(BaseService):
         )
         primary_entity = self._get_primary_entity_from_entities(entities=entities)
 
-        tabular_data = await self.table_service.list_documents(
+        tables = await self.table_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
         )
 
@@ -647,9 +647,9 @@ class InfoService(BaseService):
         for entity in entities["data"]:
             assert entity["catalog_id"] == catalog.id
             entity["catalog_name"] = catalog.name
-        for data in tabular_data["data"]:
-            assert data["catalog_id"] == catalog.id
-            data["catalog_name"] = catalog.name
+        for table in tables["data"]:
+            assert table["catalog_id"] == catalog.id
+            table["catalog_name"] = catalog.name
 
         return FeatureNamespaceInfo(
             name=namespace.name,
@@ -657,7 +657,7 @@ class InfoService(BaseService):
             updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
             primary_entity=EntityBriefInfoList.from_paginated_data(primary_entity),
-            tabular_data=TableBriefInfoList.from_paginated_data(tabular_data),
+            tables=TableBriefInfoList.from_paginated_data(tables),
             default_version_mode=namespace.default_version_mode,
             default_feature_id=namespace.default_feature_id,
             dtype=namespace.dtype,
@@ -768,7 +768,7 @@ class InfoService(BaseService):
         )
         primary_entity = self._get_primary_entity_from_entities(entities)
 
-        tabular_data = await self.table_service.list_documents(
+        tables = await self.table_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
         )
 
@@ -777,9 +777,9 @@ class InfoService(BaseService):
         for entity in entities["data"]:
             assert entity["catalog_id"] == catalog.id
             entity["catalog_name"] = catalog.name
-        for data in tabular_data["data"]:
-            assert data["catalog_id"] == catalog.id
-            data["catalog_name"] = catalog.name
+        for table in tables["data"]:
+            assert table["catalog_id"] == catalog.id
+            table["catalog_name"] = catalog.name
 
         return FeatureListNamespaceInfo(
             name=namespace.name,
@@ -787,7 +787,7 @@ class InfoService(BaseService):
             updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
             primary_entity=EntityBriefInfoList.from_paginated_data(primary_entity),
-            tabular_data=TableBriefInfoList.from_paginated_data(tabular_data),
+            tables=TableBriefInfoList.from_paginated_data(tables),
             default_version_mode=namespace.default_version_mode,
             default_feature_list_id=namespace.default_feature_list_id,
             dtype_distribution=namespace.dtype_distribution,

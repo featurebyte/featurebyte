@@ -1278,7 +1278,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             Entity.get(entity["name"]).id: {"serving_name": entity["serving_names"]}
             for entity in info["primary_entity"]
         }
-        for tabular_source in info["tabular_data"]:
+        for tabular_source in info["tables"]:
             data = Table.get(tabular_source["name"])
             entity_columns = [
                 column for column in data.columns_info if column.entity_id in entities

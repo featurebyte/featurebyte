@@ -452,9 +452,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
-            "tabular_data": [
-                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
-            ],
+            "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
             "dtype": "FLOAT",
             "default_version_mode": "AUTO",
             "version_count": 1,
