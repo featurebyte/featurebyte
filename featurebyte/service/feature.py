@@ -85,10 +85,10 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
 
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()
-        _, count = await self.persistent.find(
-            collection_name=self.collection_name,
-            query_filter={"name": name, "version.name": version_name},
+        query_result = await self.list_documents(
+            query_filter={"name": name, "version.name": version_name}
         )
+        count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
     async def prepare_graph_to_store(self, feature: FeatureModel) -> tuple[QueryGraphModel, str]:
@@ -214,11 +214,11 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         DocumentNotFoundError
             If the specified feature name & version cannot be found
         """
-        document_dict = await self.persistent.find_one(
-            collection_name=self.collection_name,
-            query_filter={"name": name, "version": version.dict()},
-            user_id=self.user.id,
-        )
+        document_dict = None
+        query_filter = {"name": name, "version": version.dict()}
+        async for doc_dict in self.list_documents_iterator(query_filter=query_filter, page_size=1):
+            document_dict = doc_dict
+
         if document_dict is None:
             exception_detail = (
                 f'{self.class_name} (name: "{name}", version: "{version.to_str()}") not found. '
