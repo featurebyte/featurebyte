@@ -985,7 +985,7 @@ def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayout
     assert series_type in {"ViewColumn", "Feature"}
     return [
         DocLayoutItem(
-            [series_type, TRANSFORMATION, f"featurebyte.{series_type}.dt.{field}"],
+            [series_type, TRANSFORM, f"featurebyte.{series_type}.dt.{field}"],
             f"featurebyte.{series_type}.dt.{field}",
         )
         for field in [
