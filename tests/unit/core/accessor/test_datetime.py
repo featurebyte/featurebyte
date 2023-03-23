@@ -231,3 +231,29 @@ def test_datetime_property_extraction__timedelta_from_int(
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
     assert series.preview_sql() == expected_sql
+
+
+@pytest.mark.parametrize("property_name", ["millisecond", "microsecond"])
+def test_invalid_property__timestamp(timestamp_series, property_name):
+    """
+    Test invalid property for datetime series
+    """
+    with pytest.raises(ValueError) as exc_info:
+        _ = getattr(timestamp_series.dt, property_name)
+    expected_msg = (
+        f"Datetime attribute {property_name} is not available for Series with TIMESTAMP type"
+    )
+    assert expected_msg in str(exc_info.value)
+
+
+@pytest.mark.parametrize("property_name", ["year", "quarter", "month", "week", "day_of_week"])
+def test_invalid_property__timedelta(timedelta_series, property_name):
+    """
+    Test invalid property for timedelta Series
+    """
+    with pytest.raises(ValueError) as exc_info:
+        _ = getattr(timedelta_series.dt, property_name)
+    expected_msg = (
+        f"Datetime attribute {property_name} is not available for Series with TIMEDELTA type"
+    )
+    assert expected_msg in str(exc_info.value)

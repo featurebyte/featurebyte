@@ -432,6 +432,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [FEATURE, TRANSFORMATION, "featurebyte.Feature.dt"], "featurebyte.Feature.dt"
         ),
+        *_get_datetime_accessor_properties_layout(FEATURE),
         DocLayoutItem(
             [FEATURE, TRANSFORMATION, "featurebyte.Feature.exp"], "featurebyte.Feature.exp"
         ),
@@ -963,6 +964,41 @@ def _get_view_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayoutItem]:
+    """
+    The layout for the DatetimeAccessor related properties
+
+    Parameters
+    ----------
+    series_type : str
+        The type of the series, either "ViewColumn" or "Feature"
+
+    Returns
+    -------
+    List[DocLayoutItem]
+    """
+    assert series_type in {"ViewColumn", "Feature"}
+    return [
+        DocLayoutItem(
+            [series_type, TRANSFORMATION, f"featurebyte.{series_type}.dt.{field}"],
+            f"featurebyte.{series_type}.dt.{field}",
+        )
+        for field in [
+            "year",
+            "quarter",
+            "month",
+            "week",
+            "day",
+            "day_of_week",
+            "hour",
+            "minute",
+            "second",
+            "millisecond",
+            "microsecond",
+        ]
+    ]
+
+
 def _get_view_column_layout() -> List[DocLayoutItem]:
     """
     The layout for the ViewColumn class.
@@ -1040,6 +1076,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.dt"], "featurebyte.ViewColumn.dt"
         ),
+        *_get_datetime_accessor_properties_layout(VIEW_COLUMN),
         DocLayoutItem(
             [VIEW_COLUMN, TRANSFORMATION, "featurebyte.ViewColumn.exp"],
             "featurebyte.ViewColumn.exp",

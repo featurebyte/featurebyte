@@ -409,6 +409,13 @@ def get_accessor_to_classes_using():
             ],
             property_name="cd",
         ),
+        "DatetimeAccessor": AccessorMetadata(
+            classes_using_accessor=[
+                "featurebyte.Feature",
+                "featurebyte.ViewColumn",
+            ],
+            property_name="dt",
+        ),
     }
 
 
