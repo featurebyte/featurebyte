@@ -70,10 +70,13 @@ def setup() -> None:
         dimension_source_table = data_source.get_table(
             database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYPRODUCT"
         )
-        dimension_source_table.create_dimension_table(
+        grocery_product_table = dimension_source_table.create_dimension_table(
             name="GROCERYPRODUCT",
             dimension_id_column="GroceryProductGuid",
-        ).save(conflict_resolution="retrieve")
+        )
+        grocery_product_table.save(conflict_resolution="retrieve")
+    else:
+        grocery_product_table = fb.Table.get("GROCERYPRODUCT")
 
     # register new entities
     fb.Entity.get_or_create(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])
@@ -116,6 +119,21 @@ def setup() -> None:
         windows=["60d"],
     )
     invoice_amount_avg_60days["InvoiceAmountAvg_60days"].save(conflict_resolution="retrieve")
+
+    # Feature: CustomerProductGroupCounts
+    grocery_item_view = grocery_items_table.get_view()
+    grocery_product_view = grocery_product_table.get_view()
+    grocery_item_view.join(grocery_product_view)
+    feature_group = grocery_item_view.groupby(
+        "GroceryCustomerGuid", category="ProductGroup"
+    ).aggregate_over(
+        value_column=None,
+        method="count",
+        feature_names=["CustomerProductGroupCounts_7d", "CustomerProductGroupCounts_90d"],
+        windows=["7d", "90d"],
+    )
+    feature_group["CustomerProductGroupCounts_7d"].save(conflict_resolution="retrieve")
+    feature_group["CustomerProductGroupCounts_90d"].save(conflict_resolution="retrieve")
 
     # FeatureList:
     FeatureList([invoice_count_60days], name="invoice_feature_list").save(

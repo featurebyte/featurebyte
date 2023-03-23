@@ -98,11 +98,38 @@ class CountDictAccessor:
 
     def entropy(self) -> Feature:
         """
-        Compute the entropy of the count dictionary
+        Compute the entropy of the dictionary over the keys. The values are normalized to sum to 1
+        and used as the probability of each key in the entropy calculation.
 
         Returns
         -------
         Feature
+            A new Feature object that computes the entropy of the original dictionary feature
+
+        Examples
+        --------
+
+        Create a new feature by calculating the entropy of the dictionary feature:
+
+        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> new_feature = counts.cd.entropy()
+        >>> new_feature.name = "CustomerProductGroupCountsEntropy_7d"
+
+
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([counts, new_feature])
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature:
+        >>> df["CustomerProductGroupCounts_7d"].iloc[0]
+        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+
+
+        New feature:
+        >>> df["CustomerProductGroupCountsEntropy_7d"].iloc[0]
+        1.475076311054695
         """
         return self._make_operation("entropy", DBVarType.FLOAT)
 
@@ -138,7 +165,7 @@ class CountDictAccessor:
 
     def cosine_similarity(self, other: Feature) -> Feature:
         """
-        Compute the cosine similarity with another dictionary Feature
+        Compute the cosine similarity with another dictionary Feature.
 
         Parameters
         ----------
@@ -148,6 +175,23 @@ class CountDictAccessor:
         Returns
         -------
         Feature
+            A new Feature object that computes the cosine similarity between the two dictionary features
+
+        Examples
+        --------
+        Create a similarity feature between two dictionary features:
+
+        >>> feature_1 = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> feature_2 = fb.Feature.get("CustomerProductGroupCounts_90d")
+        >>> similarity = feature_1.cd.cosine_similarity(feature_2)
+        >>> similarity.name = "CustomerProductGroupCounts_7d_90d_similarity"
+
+
+        Preview the features:
+        >>> features = fb.FeatureGroup([feature_1, feature_2, similarity])
+        >>> features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+                POINT_IN_TIME                   GROCERYCUSTOMERGUID                      CustomerProductGroupCounts_7d                     CustomerProductGroupCounts_90d  CustomerProductGroupCounts_7d_90d_similarity
+        0 2022-04-15 10:00:00  2f4c1578-29d6-44b7-83da-7c5bfb981fa0  {"Chips et Tortillas":1,"Colas, Thés glacés et...  {"Biscuits apéritifs":1,"Biscuits":1,"Bonbons"...                                      0.865385
         """
         series_operator = CountDictSeriesOperator(self._feature_obj, other)
         return series_operator.operate(
