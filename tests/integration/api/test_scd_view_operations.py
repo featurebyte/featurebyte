@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import EventTable, FeatureList, SCDTable
+from featurebyte import FeatureList
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from tests.util.helper import assert_preview_result_equal
 
@@ -373,6 +373,7 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
     # check online serving
     feature_list.save()
     feature_list.deploy(enable=True, make_production_ready=True)
+
     data = FeatureListGetOnlineFeatures(entity_serving_names=[{"row_number": 1}])
     res = config.get_client().post(
         f"/feature_list/{str(feature_list.id)}/online_features",

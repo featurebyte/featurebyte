@@ -12,11 +12,14 @@ import shutil
 import sqlite3
 import tempfile
 import textwrap
+import traceback
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from unittest import mock
+from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
@@ -28,22 +31,28 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
-from featurebyte import DatabricksDetails, FeatureJobSetting, SnowflakeDetails
+from featurebyte import Configurations, DatabricksDetails, FeatureJobSetting, SnowflakeDetails
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
 from featurebyte.common.tile_util import tile_manager_from_session
-from featurebyte.config import Configurations
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.logger import logger
+from featurebyte.models.base import User
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.task import Task as TaskModel
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
+from featurebyte.schema.task import TaskStatus
+from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.manager import SessionManager
+from featurebyte.storage import LocalStorage
 from featurebyte.tile.snowflake_tile import TileSpec
+from featurebyte.utils.credential import get_credential
+from featurebyte.worker.task.base import TASK_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
 MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
@@ -1218,3 +1227,105 @@ def get_get_cred(config):
         return config.credentials.get(feature_store_name)
 
     return get_credential
+
+
+@pytest.fixture(name="storage", scope="module")
+def storage_fixture():
+    """
+    Storage object fixture
+    """
+    with tempfile.TemporaryDirectory() as tempdir:
+        yield LocalStorage(base_path=tempdir)
+
+
+@pytest.fixture(name="temp_storage", scope="module")
+def temp_storage_fixture():
+    """
+    Storage object fixture
+    """
+    with tempfile.TemporaryDirectory() as tempdir:
+        yield LocalStorage(base_path=tempdir)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def mock_task_manager(request, persistent, storage, temp_storage):
+    """
+    Mock celery task manager for testing
+    """
+    if "disable_task_manager_mock" in request.keywords:
+        yield
+    else:
+        task_status = {}
+        with patch("featurebyte.service.task_manager.TaskManager.submit") as mock_submit:
+
+            async def submit(payload: BaseTaskPayload):
+                kwargs = payload.json_dict()
+                kwargs["task_output_path"] = payload.task_output_path
+                task = TASK_MAP[payload.command](
+                    payload=kwargs,
+                    progress=Mock(),
+                    user=User(id=kwargs.get("user_id")),
+                    get_credential=get_credential,
+                    get_persistent=lambda: persistent,
+                    get_storage=lambda: storage,
+                    get_temp_storage=lambda: temp_storage,
+                )
+                try:
+                    await task.execute()
+                    status = TaskStatus.SUCCESS
+                    traceback_info = None
+                except Exception:  # pylint: disable=broad-except
+                    status = TaskStatus.FAILURE
+                    traceback_info = traceback.format_exc()
+
+                task_id = str(uuid4())
+                task_status[task_id] = status
+
+                # insert task into db manually since we are mocking celery
+                task = TaskModel(
+                    _id=task_id,
+                    status=status,
+                    result="",
+                    children=[],
+                    date_done=datetime.utcnow(),
+                    name=payload.command,
+                    args=[],
+                    kwargs=kwargs,
+                    worker="worker",
+                    retries=0,
+                    queue="default",
+                    traceback=traceback_info,
+                )
+                document = task.dict(by_alias=True)
+                document["_id"] = str(document["_id"])
+                await persistent._db[TaskModel.collection_name()].insert_one(document)
+                return task_id
+
+            mock_submit.side_effect = submit
+
+            with patch("featurebyte.service.task_manager.celery") as mock_celery:
+
+                def get_task(task_id):
+                    status = task_status.get(task_id)
+                    if status is None:
+                        return None
+                    return Mock(status=status)
+
+                mock_celery.AsyncResult.side_effect = get_task
+                yield
+
+
+@pytest.fixture(autouse=True, scope="module")
+def mock_post_async_task():
+    """Mock post_async_task"""
+
+    def post_async_task(route, payload):
+        """Mock post_async_task"""
+        client = Configurations().get_client()
+        return client.post(url=route, json=payload)
+
+    with mock.patch(
+        "featurebyte.api.feature_list.FeatureList.post_async_task"
+    ) as mock_post_async_task:
+        mock_post_async_task.side_effect = post_async_task
+        yield mock_post_async_task

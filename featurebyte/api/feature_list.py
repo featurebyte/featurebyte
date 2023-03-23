@@ -1236,11 +1236,17 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         """
         self.update(
             update_payload={
-                "deployed": enable,
                 "make_production_ready": make_production_ready,
                 "ignore_guardrails": ignore_guardrails,
             },
             allow_update_local=False,
+        )
+
+        self.post_async_task(
+            route=f"{self._route}/{self.id}/deploy",
+            payload={
+                "deployed": enable,
+            },
         )
 
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
