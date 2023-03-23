@@ -967,6 +967,15 @@ def _get_view_layout() -> List[DocLayoutItem]:
 def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayoutItem]:
     """
     The layout for the DatetimeAccessor related properties
+
+    Parameters
+    ----------
+    series_type : str
+        The type of the series, either "ViewColumn" or "Feature"
+
+    Returns
+    -------
+    List[DocLayoutItem]
     """
     assert series_type in {"ViewColumn", "Feature"}
     return [
