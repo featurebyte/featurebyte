@@ -106,7 +106,7 @@ CREATE OR REPLACE VIEW CREDITCARD.STATEDETAILS(
 	`BelowPovertyLevel`,
 	`Aged65Plus`,
 	`TotalPopulation`,
-	`ValidTo`,
+	`ValidFrom`,
 	`record_available_at`
 ) as
 SELECT * FROM CREDITCARD.__STATEDETAILS
