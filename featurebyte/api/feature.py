@@ -333,6 +333,22 @@ class Feature(
         -------
         pd.DataFrame
             Table of features
+
+        Examples
+        --------
+        List saved Feature versions
+
+        >>> Feature.list_versions()  # doctest: +SKIP
+            name        version  dtype readiness  online_enabled             table    entities              created_at
+        0  new_feat2  V230323  FLOAT     DRAFT           False      [sf_event_table]  [customer] 2023-03-23 07:16:21.244
+        1  new_feat1  V230323  FLOAT     DRAFT           False      [sf_event_table]  [customer] 2023-03-23 07:16:21.166
+        2     sum_1d  V230323  FLOAT     DRAFT           False      [sf_event_table]  [customer] 2023-03-23 07:16:21.009
+
+        List Feature versions with the same name
+
+        >>> saved_feature.list_versions()  # doctest: +SKIP
+                name  version  dtype readiness  online_enabled             table    entities              created_at
+            0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838
         """
         params = {}
         if feature_list_id:
@@ -361,6 +377,10 @@ class Feature(
         -------
         pd.DataFrame
             Table of features with the same name
+
+        >>> saved_feature.list_versions()  # doctest: +SKIP
+                name  version  dtype readiness  online_enabled             table    entities              created_at
+            0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838
         """
         return self._list(include_id=include_id, params={"name": self.name})
 
@@ -827,6 +847,10 @@ class Feature(
             Allow a user to specify if they want to  ignore any guardrails when updating this feature. This should
             currently only apply of the FeatureReadiness value is being updated to PRODUCTION_READY. This should
             be a no-op for all other scenarios.
+
+        Examples
+        --------
+        >>> new_feature.update_readiness(readiness="PRODUCTION_READY")  # doctest: +SKIP
         """
         self.update(
             update_payload={"readiness": str(readiness), "ignore_guardrails": ignore_guardrails},
@@ -844,6 +868,11 @@ class Feature(
         ----------
         default_version_mode: Literal[tuple(DefaultVersionMode)]
             Feature default version mode
+
+        Examples
+        --------
+
+        >>> saved_feature.update_default_version_mode("MANUAL")  # doctest: +SKIP
         """
         self.feature_namespace.update(
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
@@ -853,6 +882,11 @@ class Feature(
     def as_default_version(self) -> None:
         """
         Set the feature as default version
+
+        Examples
+        --------
+
+        >>> saved_feature.as_default_version()  # doctest: +SKIP
         """
         self.feature_namespace.update(
             update_payload={"default_feature_id": self.id},

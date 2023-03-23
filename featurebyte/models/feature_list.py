@@ -425,7 +425,7 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
-    version: VersionIdentifier = Field(allow_mutation=False)
+    version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )

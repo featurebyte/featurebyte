@@ -53,7 +53,9 @@ class EventView(View, GroupByMixin):
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.EVENT_VIEW
 
     # pydantic instance variables
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
+    default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+        allow_mutation=False, description="default job setting for the view"
+    )
     event_id_column: Optional[str] = Field(allow_mutation=False)
 
     @property

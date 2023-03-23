@@ -46,7 +46,9 @@ class FrozenFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     FrozenFeatureNamespaceModel store all the attributes that are fixed after object construction.
     """
 
-    dtype: DBVarType = Field(allow_mutation=False)
+    dtype: DBVarType = Field(
+        allow_mutation=False, description="database variable type for the feature"
+    )
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
@@ -132,11 +134,15 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
     FrozenFeatureModel store all the attributes that are fixed after object construction.
     """
 
-    dtype: DBVarType = Field(allow_mutation=False)
+    dtype: DBVarType = Field(
+        allow_mutation=False, description="database variable type for the feature"
+    )
     graph: QueryGraph = Field(allow_mutation=False)
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
-    version: VersionIdentifier = Field(allow_mutation=False, default=None)
+    version: VersionIdentifier = Field(
+        allow_mutation=False, default=None, description="Feature Version"
+    )
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)

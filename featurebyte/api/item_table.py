@@ -61,7 +61,7 @@ class ItemTable(TableApiObject):
     type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
     event_table_id: PydanticObjectId = Field(allow_mutation=False)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        exclude=True, allow_mutation=False
+        exclude=True, allow_mutation=False, description="Default feature job setting for this table"
     )
 
     # pydantic instance variable (internal use)

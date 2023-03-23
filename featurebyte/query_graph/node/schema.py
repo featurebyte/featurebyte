@@ -69,7 +69,7 @@ DatabaseDetails = Union[
 class FeatureStoreDetails(FeatureByteBaseModel):
     """FeatureStoreDetail"""
 
-    type: SourceType
+    type: SourceType = Field(description="Type of the feature store")
     details: DatabaseDetails
 
 

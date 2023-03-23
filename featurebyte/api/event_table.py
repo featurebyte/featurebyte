@@ -244,6 +244,25 @@ class EventTable(TableApiObject):
         ----------
         feature_job_setting: FeatureJobSetting
             Feature job setting object
+
+        Examples
+        --------
+
+        Configure a feature job to run daily at 12am
+
+        >>> from featurebyte import FeatureJobSetting
+        >>> new_feature_job_setting = FeatureJobSetting(
+        ...   blind_spot="0",
+        ...   frequency="24h",
+        ...   time_modulo_frequency="0",
+        ... )
+
+        Update default feature job setting to the new feature job setting
+
+        >>> catalog = fb.Catalog.get_active()
+        >>> saved_event_table = catalog.get_table("GROCERYINVOICE")
+        >>> saved_event_table.update_default_feature_job_setting(new_feature_job_setting)
+
         """
         self.update(
             update_payload={"default_feature_job_setting": feature_job_setting.dict()},
@@ -285,6 +304,26 @@ class EventTable(TableApiObject):
         Returns
         -------
         FeatureJobSettingAnalysis
+
+        Examples
+        --------
+
+        Create new feature job setting analysis on the saved event table. It could also be called without
+        any parameters with default values.
+
+        >>> from datetime import datetime
+        >>> catalog = fb.Catalog.get_active()
+        >>> saved_event_table = catalog.get_table("GROCERYINVOICE")
+        >>> saved_event_table.create_new_feature_job_setting_analysis(  # doctest: +SKIP
+        ...   analysis_date=datetime.utcnow(),
+        ...   analysis_length=3600,
+        ...   min_featurejob_period=100,
+        ...   exclude_late_job=True,
+        ...   blind_spot_buffer_setting=10,
+        ...   job_time_buffer_setting=5,
+        ...   late_data_allowance=0.1,
+        ... )
+
         """
         payload = FeatureJobSettingAnalysisCreate(
             event_table_id=self.id,
@@ -312,6 +351,16 @@ class EventTable(TableApiObject):
         ------
         InvalidSettingsError
             Default feature job setting is already initialized
+
+        Examples
+        --------
+
+        Initialize default feature job setting for the event table
+
+        >>> catalog = fb.Catalog.get_active()
+        >>> saved_event_table = catalog.get_table("GROCERYINVOICE")
+        >>> saved_event_table.initialize_default_feature_job_setting()  # doctest: +SKIP
+
         """
         if self.default_feature_job_setting:
             raise InvalidSettingsError("Default feature job setting is already initialized")
@@ -328,5 +377,15 @@ class EventTable(TableApiObject):
         -------
         Optional[DataFrame]
             Table of feature job analysis
+
+        Examples
+        --------
+
+        List feature job setting analysis
+
+        >>> catalog = fb.Catalog.get_active()
+        >>> saved_event_table = catalog.get_table("GROCERYINVOICE")
+        >>> analysis_list = saved_event_table.list_feature_job_setting_analysis()
+
         """
         return FeatureJobSettingAnalysis.list(event_table_id=self.id)
