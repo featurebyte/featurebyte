@@ -13,9 +13,6 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from mkdocs_gen_files import open as gen_files_open
-from mkdocs_gen_files import set_edit_path
-
 import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
@@ -27,12 +24,15 @@ DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
 MISSING_DEBUG_MARKDOWN = "missing.md"
 
 
-def initialize_missing_debug_doc():
+def initialize_missing_debug_doc(gen_files_open):
     """
     This function initializes the debug doc file if it doesn't exist.
     """
     write_to_file(
-        f"reference/{MISSING_DEBUG_MARKDOWN}", MISSING_DEBUG_MARKDOWN, "The docstring is missing."
+        f"reference/{MISSING_DEBUG_MARKDOWN}",
+        MISSING_DEBUG_MARKDOWN,
+        "The docstring is missing.",
+        gen_files_open,
     )
 
 
@@ -288,7 +288,7 @@ def should_skip_path(components) -> bool:
     return False
 
 
-def write_nav_to_file(filepath, local_path, nav):
+def write_nav_to_file(filepath, local_path, nav, gen_files_open):
     with gen_files_open(filepath, "w") as fd:
         fd.writelines(nav.build_literate_nav())
     if DEBUG_MODE:
@@ -296,7 +296,7 @@ def write_nav_to_file(filepath, local_path, nav):
             local_file.writelines(nav.build_literate_nav())
 
 
-def write_to_file(filepath, local_path, output):
+def write_to_file(filepath, local_path, output, gen_files_open):
     with gen_files_open(filepath, "w") as fd:
         fd.writelines(output)
     if DEBUG_MODE:
@@ -422,13 +422,15 @@ def get_accessor_to_classes_using():
     }
 
 
-def _build_and_write_to_file(obj_path, doc_group_value, api_to_use, doc_path, path_components):
+def _build_and_write_to_file(
+    obj_path, doc_group_value, api_to_use, doc_path, path_components, set_edit_path, gen_files_open
+):
     # build string to write to file
     format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
 
     # write documentation page to file
     full_doc_path = Path("reference", doc_path)
-    write_to_file(full_doc_path, doc_path, format_str)
+    write_to_file(full_doc_path, doc_path, format_str, gen_files_open)
 
     # Set edit path for the documentation. This will be the link that links back to where the code is defined.
     source_path = "/".join(path_components) + ".py"
@@ -446,7 +448,7 @@ def _get_accessor_metadata(doc_path):
     return None
 
 
-def generate_documentation_for_docs(doc_groups):
+def generate_documentation_for_docs(doc_groups, set_edit_path, gen_files_open):
     # A list of all the markdown files generated. Used for debugging.
     # This reverse lookup map has a key of the user-accessible API path, and the value of the markdown file for
     # the documentation.
@@ -489,11 +491,23 @@ def generate_documentation_for_docs(doc_groups):
                 doc_path = api_path + ".md"
                 reverse_lookup_map[api_path.lower()] = doc_path
                 _build_and_write_to_file(
-                    obj_path, doc_group_value, api_path, doc_path, path_components
+                    obj_path,
+                    doc_group_value,
+                    api_path,
+                    doc_path,
+                    path_components,
+                    set_edit_path,
+                    gen_files_open,
                 )
         else:
             _build_and_write_to_file(
-                obj_path, doc_group_value, api_to_use, doc_path, path_components
+                obj_path,
+                doc_group_value,
+                api_to_use,
+                doc_path,
+                path_components,
+                set_edit_path,
+                gen_files_open,
             )
 
     if DEBUG_MODE:
@@ -523,17 +537,17 @@ def populate_nav(nav, proxied_path_to_markdown_path):
     return nav
 
 
-def write_summary_page(nav):
+def write_summary_page(nav, gen_files_open):
     """
     Write the SUMMARY.md file for the API Reference section.
 
     The summary page is what mkdocs uses to generate the navigation for the API Reference section.
     """
     logger.info("Writing API Reference SUMMARY")
-    write_nav_to_file("reference/SUMMARY.md", "summary", nav)
+    write_nav_to_file("reference/SUMMARY.md", "summary", nav, gen_files_open)
 
 
-def build_docs():
+def build_docs(set_edit_path_fn, gen_files_open_fn):
     """
     In order to generate the documentation, we perform the following steps:
 
@@ -549,11 +563,13 @@ def build_docs():
     write_summary_page()
     - Generate a summary file which contains the navigation for the API Reference section
     """
-    initialize_missing_debug_doc()
+    initialize_missing_debug_doc(gen_files_open_fn)
 
     # Build docs
     nav_to_use = BetaWave3Nav()
     doc_groups_to_use = get_doc_groups()
-    proxied_path_to_markdown_path = generate_documentation_for_docs(doc_groups_to_use)
+    proxied_path_to_markdown_path = generate_documentation_for_docs(
+        doc_groups_to_use, set_edit_path_fn, gen_files_open_fn
+    )
     updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
-    write_summary_page(updated_nav)
+    write_summary_page(updated_nav, gen_files_open_fn)
