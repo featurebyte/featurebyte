@@ -162,7 +162,7 @@ CREATE OR REPLACE VIEW HEALTHCARE.STATEDETAILS(
   `BelowPovertyLevel`,
   `Aged65Plus`,
   `TotalPopulation`,
-  `ValidTo`,
+  `ValidFrom`,
   `record_available_at`
 ) as
 SELECT * FROM HEALTHCARE.__STATEDETAILS
