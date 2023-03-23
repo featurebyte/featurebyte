@@ -15,7 +15,7 @@ from typing import (
     cast,
 )
 
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 
 from bson import ObjectId
 from pydantic import Field
@@ -72,30 +72,15 @@ class QueryGraph(QueryGraphModel):
             keep_all_source_columns=True,
         )
         target_op_struct = operation_structure_info.operation_structure_map[node_name]
-        main_input_node_names = set()
-        if target_op_struct.output_category == NodeOutputCategory.VIEW:
-            for column in target_op_struct.columns:
-                if isinstance(column, SourceDataColumn):
-                    main_input_node_names.add(self.get_input_node(node_name=column.node_name).name)
-                else:
-                    assert isinstance(column, DerivedDataColumn)
-                    for source_col in column.columns:
-                        main_input_node_names.add(
-                            self.get_input_node(node_name=source_col.node_name).name
-                        )
-        else:
-            for aggregation in target_op_struct.aggregations:
-                if isinstance(aggregation, AggregationColumn):
-                    main_input_node_names.add(
-                        self.get_input_node(node_name=aggregation.node_name).name
-                    )
-                else:
-                    assert isinstance(aggregation, PostAggregationColumn)
-                    for source_agg in aggregation.columns:
-                        main_input_node_names.add(
-                            self.get_input_node(node_name=source_agg.node_name).name
-                        )
-        return [self.get_node_by_name(node_name) for node_name in sorted(main_input_node_names)]
+        node_name_to_input_node = OrderedDict()
+        for column in target_op_struct.output_flattened_column_iterator():
+            # get_input_node performs a depth-first search to find the input node
+            # during the search, it will traverse the left input node first before the right input node.
+            # This is important because left input node is the main table for all existing join operations.
+            input_node = self.get_input_node(node_name=column.node_name)
+            if input_node.name not in node_name_to_input_node:
+                node_name_to_input_node[input_node.name] = input_node
+        return list(node_name_to_input_node.values())
 
     def iterate_group_by_node_and_table_id_pairs(
         self, target_node: Node

@@ -23,6 +23,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
 )
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (
@@ -401,33 +402,9 @@ class InfoService(BaseService):
             current_flag_column=scd_table.current_flag_column,
         )
 
-    @staticmethod
-    def _get_main_data(tables: list[ProxyTableModel]) -> ProxyTableModel:
-        """
-        Get the main table from the list of tables
-
-        Parameters
-        ----------
-        tables: list[ProxyTableModel]
-            List of table models
-
-        Returns
-        -------
-        ProxyTableModel
-        """
-        priority_to_table = {}
-        for table in tables:
-            if table.type == TableDataType.ITEM_TABLE:
-                priority_to_table[3] = table
-            elif table.type == TableDataType.EVENT_TABLE:
-                priority_to_table[2] = table
-            elif table.entity_ids:
-                priority_to_table[1] = table
-            else:
-                priority_to_table[0] = table
-        return priority_to_table[max(priority_to_table)]
-
-    async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
+    async def _extract_feature_metadata(
+        self, op_struct: GroupOperationStructure, main_input_nodes: list[InputNode]
+    ) -> dict[str, Any]:
         # retrieve related tables & semantics
         table_list = await self._get_list_object(
             self.table_service, op_struct.tabular_data_ids, TableList
@@ -491,9 +468,13 @@ class InfoService(BaseService):
                 "transforms": op_struct.post_aggregation.transforms,
             }
 
-        main_data = self._get_main_data(table_list.data)
+        table_id_to_model = {table.id: table for table in table_list.data}
+        primary_tables = [table_id_to_model[node.parameters.id] for node in main_input_nodes]
         return {
-            "main_data": {"name": main_data.name, "table_type": main_data.type, "id": main_data.id},
+            "primary_tables": [
+                {"name": table.name, "table_type": table.type, "id": table.id}
+                for table in primary_tables
+            ],
             "input_columns": source_columns,
             "derived_columns": derived_columns,
             "aggregations": aggregation_columns,
@@ -584,12 +565,10 @@ class InfoService(BaseService):
             )
 
         op_struct = feature.extract_operation_structure()
-        if op_struct.tabular_data_ids:
-            metadata = await self._extract_feature_metadata(op_struct=op_struct)
-        else:
-            # DEV-556: handle the case before tracking this field in the input node
-            metadata = None
-
+        main_input_nodes = feature.graph.get_main_input_nodes(node_name=feature.node_name)
+        metadata = await self._extract_feature_metadata(
+            op_struct=op_struct, main_input_nodes=main_input_nodes
+        )
         return FeatureInfo(
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},

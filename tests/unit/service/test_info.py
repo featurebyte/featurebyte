@@ -283,11 +283,13 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         document_id=production_ready_feature.id, verbose=False
     )
     expected_metadata = {
-        "main_data": {
-            "name": "sf_event_table",
-            "table_type": "event_table",
-            "id": feature_namespace.tabular_data_ids[0],
-        },
+        "primary_tables": [
+            {
+                "name": "sf_event_table",
+                "table_type": "event_table",
+                "id": feature_namespace.tabular_data_ids[0],
+            }
+        ],
         "input_columns": {
             "Input0": {"data": "sf_event_table", "column_name": "col_float", "semantic": None}
         },
@@ -372,11 +374,13 @@ def expected_feature_iet_info_fixture(feature_iet):
         "function": "sum",
     }
     expected_metadata = {
-        "main_data": {
-            "name": "sf_event_table",
-            "table_type": "event_table",
-            "id": feature_iet.tabular_data_ids[0],
-        },
+        "primary_tables": [
+            {
+                "name": "sf_event_table",
+                "table_type": "event_table",
+                "id": feature_iet.tabular_data_ids[0],
+            }
+        ],
         "input_columns": {
             "Input0": {
                 "data": "sf_event_table",
@@ -629,31 +633,6 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         document_id=feature_list_namespace.id, verbose=True
     )
     assert info == expected_info
-
-
-def test_get_main_data(info_service, item_table, event_table, dimension_table):
-    """Test _get_main_data logic"""
-    new_columns_info = []
-    for i, col in enumerate(dimension_table.columns_info):
-        new_columns_info.append({**col.dict(), "entity_id": ObjectId() if i == 0 else None})
-    dimension_table_with_entity = DimensionTableModel(
-        **{**dimension_table.dict(), "columns_info": new_columns_info}
-    )
-    assert (
-        info_service._get_main_data(
-            [item_table, event_table, dimension_table, dimension_table_with_entity]
-        )
-        == item_table
-    )
-    assert (
-        info_service._get_main_data([event_table, dimension_table, dimension_table_with_entity])
-        == event_table
-    )
-    assert (
-        info_service._get_main_data([dimension_table, dimension_table_with_entity])
-        == dimension_table_with_entity
-    )
-    assert info_service._get_main_data([dimension_table]) == dimension_table
 
 
 @pytest.fixture(name="transaction_entity")
