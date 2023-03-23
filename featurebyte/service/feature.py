@@ -85,14 +85,10 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
 
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()
-        _, count = await self.persistent.find(
-            collection_name=self.collection_name,
-            query_filter={
-                "name": name,
-                "version.name": version_name,
-                "catalog_id": self.catalog_id,
-            },
+        query_result = await self.list_documents(
+            query_filter={"name": name, "version.name": version_name}
         )
+        count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
     async def prepare_graph_to_store(self, feature: FeatureModel) -> tuple[QueryGraphModel, str]:
