@@ -61,7 +61,7 @@ class Persistent(ABC):
     ) -> ObjectId:
         """
         Insert record into collection. Note that when using this method inside a non BaseDocumentService,
-        please use with caution as it does not inject user_id and catalog_id the document automatically.
+        please use with caution as it does not inject user_id and catalog_id into the document automatically.
 
         Parameters
         ----------
@@ -89,7 +89,7 @@ class Persistent(ABC):
     ) -> List[ObjectId]:
         """
         Insert records into collection. Note that when using this method inside a non BaseDocumentService,
-        please use with caution as it does not inject user_id and catalog_id the document automatically.
+        please use with caution as it does not inject user_id and catalog_id into the document automatically.
 
         Parameters
         ----------
