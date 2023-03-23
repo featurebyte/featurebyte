@@ -124,11 +124,13 @@ class CountDictAccessor:
 
 
         Dictionary feature:
+
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
         '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
 
 
         New feature:
+
         >>> df["CustomerProductGroupCountsEntropy_7d"].iloc[0]
         1.475076311054695
         """
@@ -148,7 +150,7 @@ class CountDictAccessor:
         Examples
         --------
 
-        Create a new feature by calculating the entropy of the dictionary feature:
+        Create a new feature by retrieving the most frequent key of the dictionary feature:
 
         >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
         >>> new_feature = counts.cd.most_frequent()
@@ -162,11 +164,13 @@ class CountDictAccessor:
 
 
         Dictionary feature:
+
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
         '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
 
 
         New feature:
+
         >>> df["CustomerProductGroupCountsMostFrequent_7d"].iloc[0]
         'Colas, Thés glacés et Sodas'
         """
@@ -190,7 +194,7 @@ class CountDictAccessor:
         Examples
         --------
 
-        Create a new feature by calculating the entropy of the dictionary feature:
+        Create a new feature by counting the number of keys in the dictionary feature:
 
         >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
         >>> new_feature = counts.cd.unique_count()
@@ -204,11 +208,13 @@ class CountDictAccessor:
 
 
         Dictionary feature:
+
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
         '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
 
 
         New feature:
+
         >>> df["CustomerProductGroupCountsUniqueCount_7d"].iloc[0]
         5
         """
@@ -243,21 +249,25 @@ class CountDictAccessor:
 
 
         Preview the features:
+
         >>> features = fb.FeatureGroup([feature_1, feature_2, similarity])
         >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
 
 
         Dictionary feature 1:
+
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
          '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
 
 
         Dictionary feature 2:
+
         >>> df["CustomerProductGroupCounts_90d"].iloc[0]
         '{"Biscuits apéritifs":1,"Biscuits":1,"Bonbons":1,"Chips et Tortillas":2,"Colas, Thés glacés et Sodas":12,"Confitures":1,"Crèmes et Chantilly":2,"Céréales":1,"Emballages et sacs":1,"Fromages":3,"Glaces et Sorbets":1,"Glaçons":1,"Laits":4,"Noix":1,"Pains":4,"Petit-déjeuner":2,"Viande Surgelée":1,"Œufs":1}'
 
 
         Similarity feature:
+
         >>> df["CustomerProductGroupCounts_7d_90d_similarity"].iloc[0]
         0.8653846153846161
         """
@@ -303,11 +313,13 @@ class CountDictAccessor:
 
 
         Dictionary feature:
+
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
         '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
 
 
         New feature:
+
         >>> df["Chips et Tortillas Value"].iloc[0]
         1
         """
@@ -330,9 +342,9 @@ class CountDictAccessor:
 
     def get_rank(self, key: Union[Scalar, Feature], descending: bool = False) -> Feature:
         """
-        Compute the rank of a particular key in the dictionary feature.
-
-        This key could be either
+        Compute the rank of a particular key in the dictionary feature. If multiple keys have the
+        same value, these keys will have the same rank which is equal to the smallest rank among
+        these keys.
 
         - a lookup feature, or
 
@@ -366,11 +378,13 @@ class CountDictAccessor:
 
 
         Dictionary feature:
+
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
         '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
 
 
         New feature:
+
         >>> df["Chips et Tortillas Rank"].iloc[0]
         1.0
         """
@@ -427,11 +441,13 @@ class CountDictAccessor:
 
 
         Dictionary feature:
+
         >>> df["CustomerProductGroupCounts_7d"].iloc[0]
         '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
 
 
         New feature:
+
         >>> df["Chips et Tortillas Relative Frequency"].iloc[0]
         0.14285714285714302
         """
