@@ -332,9 +332,9 @@ class EventView(View, GroupByMixin):
         Parameters
         ----------
         new_column_name: str
-            the new column name to be added to the EventView
+            The new column name to be added to the EventView.
         feature: Feature
-            the feature we want to add to the EventView
+            The feature we want to add to the EventView.
         entity_column: Optional[str]
             The entity column to use in the EventView. The type of this entity should match the entity of the feature.
         """
