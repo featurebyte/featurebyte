@@ -80,7 +80,7 @@ jobs:
         run: |
           # Check if the documentation image with the corresponding version has been published
           # If this fails go to documentation repo and publish the a version according to the tag required
-          docker manifest inspect "${{ env.DOCS_MAGE_REPO }}:${{ github.event.inputs.version }}"
+          docker manifest inspect "${{ env.DOCS_IMAGE_REPO }}:${{ github.event.inputs.version }}"
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
