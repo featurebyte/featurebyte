@@ -285,8 +285,8 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         --------
         Create a feature group with two features.
         >>> features = fb.FeatureGroup([
-        ...     fb.Feature.get("InvoiceCount_60days"),
-        ...     fb.Feature.get("InvoiceAmountAvg_60days"),
+        ...     catalog.get_feature("InvoiceCount_60days"),
+        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
         ... ])
 
         Prepare observation set with POINT_IN_TIME and serving names columns.
@@ -661,7 +661,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         --------
         Get a FeatureList object that is already saved.
 
-        >>> feature = fb.FeatureList.get("invoice_feature_list")
+        >>> feature = catalog.get_feature_list("invoice_feature_list")
         """
         if version is None:
             feature_list_namespace = FeatureListNamespace.get(name=name)
@@ -1039,8 +1039,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         --------
         Create a feature list with two features.
         >>> feature_list = fb.FeatureList([
-        ...     fb.Feature.get("InvoiceCount_60days"),
-        ...     fb.Feature.get("InvoiceAmountAvg_60days"),
+        ...     catalog.get_feature("InvoiceCount_60days"),
+        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
         ... ], name="InvoiceFeatures")
 
         Prepare observation set with POINT_IN_TIME and serving names columns.
@@ -1133,14 +1133,14 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Create new version of feature list with auto mode. Parameter `features` has no effect if `mode` is `auto`.
 
-        >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
+        >>> feature_list = catalog.get_feature_list("my_feature_list")  # doctest: +SKIP
         >>> feature_list.create_new_version(mode="auto")  # doctest: +SKIP
 
 
         Create new version of feature list with manual mode (only the versions of the features that are specified are
         changed). The versions of other features are the same as the origin feature list version.
 
-        >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
+        >>> feature_list = catalog.get_feature_list("my_feature_list")  # doctest: +SKIP
         >>> feature_list.create_new_version(
         ...   mode="manual",
         ...   features=[
@@ -1153,7 +1153,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Create new version of feature list with semi-auto mode (uses the current default versions of features except
         for the features versions that are specified).
 
-        >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
+        >>> feature_list = catalog.get_feature_list("my_feature_list")  # doctest: +SKIP
         >>> feature_list.create_new_version(
         ...   mode="semi-auto",
         ...   features=[

@@ -680,7 +680,7 @@ class Feature(
         --------
         Preview feature with a small observation set.
 
-        >>> fb.Feature.get("InvoiceCount_60days").preview(
+        >>> catalog.get_feature("InvoiceCount_60days").preview(
         ...     observation_set=pd.DataFrame({
         ...         "POINT_IN_TIME": ["2022-06-01 00:00:00", "2022-06-02 00:00:00"],
         ...         "GROCERYCUSTOMERGUID": [
@@ -751,7 +751,7 @@ class Feature(
         Create a new version of a feature with different feature job setting
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature = catalog.get_feature("my_magic_feature")  # doctest: +SKIP
         >>> feature.create_new_version(
         ...   table_feature_job_settings=[
         ...     fb.TableFeatureJobSetting(
@@ -769,7 +769,7 @@ class Feature(
         Create a new version of a feature with table cleaning operations
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature = catalog.get_feature("my_magic_feature")  # doctest: +SKIP
         >>> feature.create_new_version(
         ...   table_cleaning_operations=[
         ...     fb.TableCleaningOperation(

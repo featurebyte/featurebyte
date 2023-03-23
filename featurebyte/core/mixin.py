@@ -197,23 +197,47 @@ class SampleMixin:
     @typechecked
     def preview(self: HasExtractPrunedGraphAndNode, limit: int = 10, **kwargs: Any) -> pd.DataFrame:
         """
-        Preview transformed table/column partial output
+        Retrieve a preview of the view / column.
 
         Parameters
         ----------
         limit: int
-            maximum number of return rows
+            Maximum number of return rows.
         **kwargs: Any
-            Additional keyword parameters
+            Additional keyword parameters.
 
         Returns
         -------
         pd.DataFrame
+            Preview rows of the data.
 
         Raises
         ------
         RecordRetrievalException
-            Preview request failed
+            Preview request failed.
+
+        Examples
+        --------
+        Preview 3 rows of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").preview(3)
+                             GroceryProductGuid ProductGroup
+        0  10355516-5582-4358-b5f9-6e1ea7d5dc9f      Glaçons
+        1  116c9284-2c41-446e-8eee-33901e0acdef      Glaçons
+        2  3a45a5e8-1b71-42e8-b84e-43ddaf692375      Glaçons
+
+        Preview 3 rows of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["GroceryProductGuid"].preview(3)
+                             GroceryProductGuid
+        0  10355516-5582-4358-b5f9-6e1ea7d5dc9f
+        1  116c9284-2c41-446e-8eee-33901e0acdef
+        2  3a45a5e8-1b71-42e8-b84e-43ddaf692375
+
+        See Also
+        --------
+        - [View.sample](/reference/featurebyte.api.view.View.sample/):
+          Retrieve a sample of a view.
+        - [View.describe](/reference/featurebyte.api.view.View.describe/):
+          Retrieve a summary of a view.
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStorePreview(
@@ -250,29 +274,53 @@ class SampleMixin:
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
-        Sample transformed table/column
+        Retrieve a random sample of the view / column.
 
         Parameters
         ----------
         size: int
-            Maximum number of rows to sample
+            Maximum number of rows to sample.
         seed: int
-            Seed to use for random sampling
+            Seed to use for random sampling.
         from_timestamp: Optional[datetime]
-            Start of date range to sample from
+            Start of date range to sample from.
         to_timestamp: Optional[datetime]
-            End of date range to sample from
+            End of date range to sample from.
         **kwargs: Any
-            Additional keyword parameters
+            Additional keyword parameters.
 
         Returns
         -------
         pd.DataFrame
+            Sampled rows of the data.
 
         Raises
         ------
         RecordRetrievalException
-            Sample request failed
+            Sample request failed.
+
+        Examples
+        --------
+        Sample rows of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").sample(3)
+                             GroceryProductGuid ProductGroup
+        0  e890c5cb-689b-4caf-8e49-6b97bb9420c0       Épices
+        1  5720e4df-2996-4443-a1bc-3d896bf98140         Chat
+        2  96fc4d80-8cb0-4f1b-af01-e71ad7e7104a        Pains
+
+        Sample 3 rows of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].sample(3)
+          ProductGroup
+        0       Épices
+        1         Chat
+        2        Pains
+
+        See Also
+        --------
+        - [View.preview](/reference/featurebyte.api.view.View.preview/):
+          Retrieve a preview of a view.
+        - [View.sample](/reference/featurebyte.api.view.View.sample/):
+          Retrieve a sample of a view.
         """
         from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
         to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
@@ -304,29 +352,61 @@ class SampleMixin:
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
-        Describe transformed table/column
+        Retrieve a summary of the view / column.
 
         Parameters
         ----------
         size: int
-            Maximum number of rows to sample
+            Maximum number of rows to sample.
         seed: int
-            Seed to use for random sampling
+            Seed to use for random sampling.
         from_timestamp: Optional[datetime]
-            Start of date range to sample from
+            Start of date range to sample from.
         to_timestamp: Optional[datetime]
-            End of date range to sample from
+            End of date range to sample from.
         **kwargs: Any
-            Additional keyword parameters
+            Additional keyword parameters.
 
         Returns
         -------
         pd.DataFrame
+            Summary of the view.
 
         Raises
         ------
         RecordRetrievalException
-            Describe request failed
+            Describe request failed.
+
+        Examples
+        --------
+        Get summary of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").describe()
+                                    GroceryProductGuid        ProductGroup
+        dtype                                  VARCHAR             VARCHAR
+        unique                                   29099                  87
+        %missing                                   0.0                 0.0
+        %empty                                       0                   0
+        entropy                               6.214608             4.13031
+        top       017fe5ed-80a2-4e70-ae48-78aabfdee856  Chips et Tortillas
+        freq                                         1                1319
+
+        Get summary of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].describe()
+                        ProductGroup
+        dtype                VARCHAR
+        unique                    87
+        %missing                 0.0
+        %empty                     0
+        entropy              4.13031
+        top       Chips et Tortillas
+        freq                    1319
+
+        See Also
+        --------
+        - [View.preview](/reference/featurebyte.api.view.View.preview/):
+          Retrieve a preview of a view.
+        - [View.sample](/reference/featurebyte.api.view.View.sample/):
+          Retrieve a sample of a view.
         """
         from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
         to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
