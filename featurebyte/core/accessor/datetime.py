@@ -217,6 +217,9 @@ class DatetimeAccessor:
         """
         Return the day component of each element.
 
+        This is also available for Series containing timedelta values, which is a result of taking
+        the difference between two timestamp Series.
+
         Returns
         -------
         FrozenSeries
@@ -235,6 +238,20 @@ class DatetimeAccessor:
         2 2022-01-07 16:20:04             7
         3 2022-01-10 16:18:32            10
         4 2022-01-12 17:36:23            12
+
+
+        Compute the interval since the previous event in terms of days:
+
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view["PreviousTimestamp"] = view["Timestamp"].lag("GroceryCustomerGuid")
+        >>> view["DaysSincePreviousTimestamp"] = (view["Timestamp"] - view["PreviousTimestamp"]).dt.day
+        >>> view.preview(5).filter(regex="Timestamp|Customer")
+                            GroceryCustomerGuid           Timestamp   PreviousTimestamp  DaysSincePreviousTimestamp
+        0  007a07da-1525-49be-94d1-fc7251f46a66 2022-01-07 12:02:17                 NaT                         NaN
+        1  007a07da-1525-49be-94d1-fc7251f46a66 2022-01-11 19:46:41 2022-01-07 12:02:17                    4.322500
+        2  007a07da-1525-49be-94d1-fc7251f46a66 2022-02-04 13:06:35 2022-01-11 19:46:41                   23.722153
+        3  007a07da-1525-49be-94d1-fc7251f46a66 2022-03-09 18:51:16 2022-02-04 13:06:35                   33.239363
+        4  007a07da-1525-49be-94d1-fc7251f46a66 2022-03-15 15:08:34 2022-03-09 18:51:16                    5.845347
         """
         return self._make_operation("day")
 
@@ -269,6 +286,9 @@ class DatetimeAccessor:
         """
         Return the hour component of each element.
 
+        This is also available for Series containing timedelta values, which is a result of taking
+        the difference between two timestamp Series.
+
         Returns
         -------
         FrozenSeries
@@ -295,6 +315,9 @@ class DatetimeAccessor:
         """
         Return the minute component of each element.
 
+        This is also available for Series containing timedelta values, which is a result of taking
+        the difference between two timestamp Series.
+
         Returns
         -------
         FrozenSeries
@@ -302,6 +325,8 @@ class DatetimeAccessor:
 
         Examples
         --------
+        Compute the minute component of a timestamp column:
+
         >>> view = fb.Table.get("GROCERYINVOICE").get_view()
         >>> view["TimestampMinute"] = view["Timestamp"].dt.minute
         >>> view.preview(5).filter(regex="Timestamp")
@@ -318,6 +343,9 @@ class DatetimeAccessor:
     def second(self) -> FrozenSeries:
         """
         Return the second component of each element.
+
+        This is also available for Series containing timedelta values, which is a result of taking
+        the difference between two timestamp Series.
 
         Returns
         -------
@@ -347,7 +375,7 @@ class DatetimeAccessor:
         Return the millisecond component of each element.
 
         This is available only for Series containing timedelta values, which is a result of taking
-        the difference between two datetime Series.
+        the difference between two timestamp Series.
 
         Returns
         -------
@@ -362,7 +390,7 @@ class DatetimeAccessor:
         Return the microsecond component of each element.
 
         This is available only for Series containing timedelta values, which is a result of taking
-        the difference between two datetime Series.
+        the difference between two timestamp Series.
 
         Returns
         -------
