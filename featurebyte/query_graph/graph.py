@@ -27,9 +27,13 @@ from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGra
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.generic import GroupByNode
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import (
+    AggregationColumn,
     DerivedDataColumn,
+    NodeOutputCategory,
     OperationStructure,
+    PostAggregationColumn,
     SourceDataColumn,
 )
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
@@ -42,6 +46,56 @@ class QueryGraph(QueryGraphModel):
     """
     Graph data structure
     """
+
+    def get_main_input_nodes(self, node_name: str) -> List[InputNode]:
+        """
+        Get the main input node of the query graph
+
+        Parameters
+        ----------
+        node_name: str
+            Name of node to get input node for
+
+        Raises
+        ------
+        GraphInconsistencyError
+            Invalid graph structure
+
+        Returns
+        -------
+        List[InputNode]
+            Main InputNode objects
+        """
+        target_node = self.get_node_by_name(node_name)
+        operation_structure_info = OperationStructureExtractor(graph=self).extract(
+            node=target_node,
+            keep_all_source_columns=True,
+        )
+        target_op_struct = operation_structure_info.operation_structure_map[node_name]
+        main_input_node_names = set()
+        if target_op_struct.output_category == NodeOutputCategory.VIEW:
+            for column in target_op_struct.columns:
+                if isinstance(column, SourceDataColumn):
+                    main_input_node_names.add(self.get_input_node(node_name=column.node_name).name)
+                else:
+                    assert isinstance(column, DerivedDataColumn)
+                    for source_col in column.columns:
+                        main_input_node_names.add(
+                            self.get_input_node(node_name=source_col.node_name).name
+                        )
+        else:
+            for aggregation in target_op_struct.aggregations:
+                if isinstance(aggregation, AggregationColumn):
+                    main_input_node_names.add(
+                        self.get_input_node(node_name=aggregation.node_name).name
+                    )
+                else:
+                    assert isinstance(aggregation, PostAggregationColumn)
+                    for source_agg in aggregation.columns:
+                        main_input_node_names.add(
+                            self.get_input_node(node_name=source_agg.node_name).name
+                        )
+        return [self.get_node_by_name(node_name) for node_name in sorted(main_input_node_names)]
 
     def iterate_group_by_node_and_table_id_pairs(
         self, target_node: Node
