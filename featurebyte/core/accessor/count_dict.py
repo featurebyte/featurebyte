@@ -63,6 +63,7 @@ class CountDictSeriesOperator(SeriesBinaryOperator):
 
 
 class CountDictAccessor:
+    # pylint: disable=line-too-long
     """
     CountDictAccessor used to manipulate dict-like type Feature object
     """
