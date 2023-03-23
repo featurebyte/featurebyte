@@ -65,7 +65,8 @@ ViewT = TypeVar("ViewT", bound="View")
 
 class ViewColumn(Series, SampleMixin):
     """
-    ViewColumn class that is the base class of columns returned from any View (e.g. EventView)
+    ViewColumn class that is the base class of columns returned from any View. It is a series-like object that
+    can be used to create features, or perform operations with other series-like objects.
     """
 
     # documentation metadata

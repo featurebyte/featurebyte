@@ -901,7 +901,8 @@ def _get_view_layout() -> List[DocLayoutItem]:
             "featurebyte.ItemView.default_feature_job_setting",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.ItemView.event_data_id"], "featurebyte.ItemView.event_data_id"
+            [VIEW, INFO, "featurebyte.ItemView.event_table_id"],
+            "featurebyte.ItemView.event_table_id",
         ),
         DocLayoutItem(
             [VIEW, INFO, "featurebyte.ItemView.event_id_column"],

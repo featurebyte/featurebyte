@@ -606,22 +606,32 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
     ) -> FrozenSeriesT:
         """
-        Convert Series to have a new type
+        Convert a Series to have a new type.
+
+        This is useful for converting a series between a string, and numerical types, or vice-versa.
 
         Parameters
         ----------
         new_type : Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]])
-            Desired type after conversion. Type can be provided directly or as a string
+            Desired type after conversion. Type can be provided directly, or as a string.
 
         Returns
         -------
         FrozenSeriesT
-            A new Series with converted variable type
+            A new Series with converted variable type.
 
         Raises
         ------
         TypeError
-            if the Series dtype does not support type conversion
+            If the Series dtype does not support type conversion.
+
+        Examples
+        --------
+        Convert a numerical series to a string series, and back to an int series.
+
+        >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> event_view["Amount"] = event_view["Amount"].astype(str)
+        >>> event_view["Amount"] = event_view["Amount"].astype(int)
         """
         supported_source_dtype = {DBVarType.BOOL, DBVarType.INT, DBVarType.FLOAT, DBVarType.VARCHAR}
         if self.dtype not in supported_source_dtype:

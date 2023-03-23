@@ -93,22 +93,34 @@ class EventTable(TableApiObject):
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> EventView:
         """
-        Construct an EventView object
+        Get an EventView from the source table.
+
+        You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
+        constructed from the source table without any changes to the cleaning operations, or dropping column names.
+        In manual mode, you are able to specify some overrides. However, the manual mode should not be commonly used
+        as it might lead to unexpected behaviour if used wrongly.
 
         Parameters
         ----------
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
-            View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
-            from the table and the record creation timestamp column will be dropped
+            View mode to use (manual or auto). When auto, the view will be constructed with cleaning operations
+            from the table, the record creation timestamp column will be dropped.
         drop_column_names: Optional[List[str]]
-            List of column names to drop (manual mode only)
+            List of column names to drop (manual mode only).
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            Column cleaning operations to apply (manual mode only)
+            Column cleaning operations to apply (manual mode only).
 
         Returns
         -------
         EventView
-            constructed EventView object
+            EventView object constructed from the source table.
+
+        Examples
+        --------
+        Get an EventView.
+
+        >>> event_table = fb.Table.get("GROCERYINVOICE")
+        >>> event_view = event_table.get_view()
         """
         from featurebyte.api.event_view import EventView  # pylint: disable=import-outside-toplevel
 
