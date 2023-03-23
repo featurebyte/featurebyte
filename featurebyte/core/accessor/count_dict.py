@@ -330,7 +330,7 @@ class CountDictAccessor:
 
     def get_rank(self, key: Union[Scalar, Feature], descending: bool = False) -> Feature:
         """
-        Computes the rank of a particular key in the dictionary feature.
+        Compute the rank of a particular key in the dictionary feature.
 
         This key could be either
 
@@ -392,7 +392,7 @@ class CountDictAccessor:
 
     def get_relative_frequency(self, key: Union[Scalar, Feature]) -> Feature:
         """
-        Gets the relative frequency of a particular key in the dictionary feature.
+        Compute the relative frequency of a particular key in the dictionary feature.
 
         This key could be either
 
