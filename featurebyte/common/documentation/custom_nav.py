@@ -52,7 +52,7 @@ class BetaWave3Nav(Nav):
     }
 
     @classmethod
-    def _get_items_for_level(cls, data: Mapping, custom_order: List[str]) -> Any:
+    def _get_items_for_level(cls, data: Mapping, custom_order: List[str]) -> Any:  # type: ignore[type-arg]
         """
         Helper method to get items sorted by a custom ordering.
 
@@ -95,7 +95,7 @@ class BetaWave3Nav(Nav):
         else:
             # sort by alphabetical order for other levels
             items_with_key = [item for item in data.items() if item[0]]
-            items = sorted(items_with_key, key=lambda item: item[0])  # type: ignore[assignment, no-any-return]
+            items = sorted(items_with_key, key=lambda item: item[0])  # type: ignore[no-any-return]
 
         for key, value in items:
             yield cls.Item(level=level, title=key, filename=value.get(None))
