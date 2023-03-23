@@ -106,6 +106,9 @@ def setup() -> None:
     invoice_count_60days = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
         value_column=None, method="count", feature_names=["InvoiceCount_60days"], windows=["60d"]
     )
+    invoice_count_60days["InvoiceCount_60days"] = invoice_count_60days[
+        "InvoiceCount_60days"
+    ].astype(float)
     invoice_count_60days["InvoiceCount_60days"].save(conflict_resolution="retrieve")
 
     # Feature: InvoiceAmountAvg_60days
