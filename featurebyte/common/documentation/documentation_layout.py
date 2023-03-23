@@ -25,12 +25,10 @@ class DocLayoutItem:
 
 
 ACTIVATE = "Activate"
-ANNOTATE = "Annotate"
+ADD_METADATA = "Add Metadata"
 CATALOG = "Catalog"
 CREATE = "Create"
-DEFAULT_FEATURE_JOB = "DefaultFeatureJob"
 DATA_SOURCE = "DataSource"
-ENRICH = "Enrich"
 ENTITY = "Entity"
 EXPLORE = "Explore"
 FEATURE = "Feature"
@@ -39,6 +37,7 @@ FEATURE_LIST = "FeatureList"
 FEATURE_STORE = "FeatureStore"
 GET = "Get"
 INFO = "Info"
+JOIN = "Join"
 LAGS = "Lags"
 LINEAGE = "Lineage"
 LIST = "List"
@@ -66,9 +65,13 @@ def _get_data_layout() -> List[DocLayoutItem]:
     return [
         # DATA
         DocLayoutItem([TABLE], "featurebyte.Table"),
-        DocLayoutItem([TABLE, GET, "featurebyte.Table.get"], "featurebyte.Table.get"),
+        DocLayoutItem(
+            [TABLE, GET, "featurebyte.Catalog.get_table"], "featurebyte.Catalog.get_table"
+        ),
         DocLayoutItem([TABLE, GET, "featurebyte.Table.get_by_id"], "featurebyte.Table.get_by_id"),
-        DocLayoutItem([TABLE, LIST, "featurebyte.Table.list"], "featurebyte.Table.list"),
+        DocLayoutItem(
+            [TABLE, LIST, "featurebyte.Catalog.list_tables"], "featurebyte.Catalog.list_tables"
+        ),
         DocLayoutItem(
             [TABLE, CREATE, "featurebyte.Table.save"],
             "",
@@ -93,7 +96,7 @@ def _get_data_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [
                 TABLE,
-                DEFAULT_FEATURE_JOB,
+                ADD_METADATA,
                 "featurebyte.EventTable.create_new_feature_job_setting_analysis",
             ],
             "featurebyte.EventTable.create_new_feature_job_setting_analysis",
@@ -101,7 +104,7 @@ def _get_data_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [
                 TABLE,
-                DEFAULT_FEATURE_JOB,
+                ADD_METADATA,
                 "featurebyte.EventTable.initialize_default_feature_job_setting",
             ],
             "featurebyte.EventTable.initialize_default_feature_job_setting",
@@ -109,7 +112,7 @@ def _get_data_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [
                 TABLE,
-                DEFAULT_FEATURE_JOB,
+                ADD_METADATA,
                 "featurebyte.EventTable.list_feature_job_setting_analysis",
             ],
             "featurebyte.EventTable.list_feature_job_setting_analysis",
@@ -117,7 +120,7 @@ def _get_data_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [
                 TABLE,
-                DEFAULT_FEATURE_JOB,
+                ADD_METADATA,
                 "featurebyte.EventTable.update_default_feature_job_setting",
             ],
             "featurebyte.EventTable.update_default_feature_job_setting",
@@ -233,11 +236,11 @@ def _get_table_column_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([TABLE_COLUMN], "featurebyte.TableColumn"),
         DocLayoutItem(
-            [TABLE_COLUMN, ANNOTATE, "featurebyte.TableColumn.as_entity"],
+            [TABLE_COLUMN, ADD_METADATA, "featurebyte.TableColumn.as_entity"],
             "featurebyte.TableColumn.as_entity",
         ),
         DocLayoutItem(
-            [TABLE_COLUMN, ANNOTATE, "featurebyte.TableColumn.update_critical_data_info"],
+            [TABLE_COLUMN, ADD_METADATA, "featurebyte.TableColumn.update_critical_data_info"],
             "featurebyte.TableColumn.update_critical_data_info",
         ),
         DocLayoutItem(
@@ -273,12 +276,19 @@ def _get_entity_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([ENTITY], "featurebyte.Entity"),
-        DocLayoutItem([ENTITY, GET, "featurebyte.Entity.get"], "featurebyte.Entity.get"),
+        DocLayoutItem(
+            [ENTITY, GET, "featurebyte.Catalog.get_entity"], "featurebyte.Catalog.get_entity"
+        ),
         DocLayoutItem(
             [ENTITY, GET, "featurebyte.Entity.get_by_id"], "featurebyte.Entity.get_by_id"
         ),
-        DocLayoutItem([ENTITY, LIST, "featurebyte.Entity.list"], "featurebyte.Entity.list"),
-        DocLayoutItem([ENTITY, CREATE, "featurebyte.Entity.create"], "featurebyte.Entity.create"),
+        DocLayoutItem(
+            [ENTITY, LIST, "featurebyte.Catalog.list_entities"], "featurebyte.Catalog.list_entities"
+        ),
+        DocLayoutItem(
+            [ENTITY, CREATE, "featurebyte.Catalog.create_entity"],
+            "featurebyte.Catalog.create_entity",
+        ),
         DocLayoutItem(
             [ENTITY, CREATE, "featurebyte.Entity.get_or_create"], "featurebyte.Entity.get_or_create"
         ),
@@ -314,11 +324,16 @@ def _get_feature_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([FEATURE], "featurebyte.Feature"),
-        DocLayoutItem([FEATURE, GET, "featurebyte.Feature.get"], "featurebyte.Feature.get"),
+        DocLayoutItem(
+            [FEATURE, GET, "featurebyte.Catalog.get_feature"], "featurebyte.Catalog.get_feature"
+        ),
         DocLayoutItem(
             [FEATURE, GET, "featurebyte.Feature.get_by_id"], "featurebyte.Feature.get_by_id"
         ),
-        DocLayoutItem([FEATURE, LIST, "featurebyte.Feature.list"], "featurebyte.Feature.list"),
+        DocLayoutItem(
+            [FEATURE, LIST, "featurebyte.Catalog.list_features"],
+            "featurebyte.Catalog.list_features",
+        ),
         DocLayoutItem([FEATURE, CREATE, "featurebyte.Feature.save"], "featurebyte.Feature.save"),
         DocLayoutItem(
             [FEATURE, CREATE, "featurebyte.View.as_features"], "featurebyte.View.as_features"
@@ -375,6 +390,9 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem([FEATURE, LINEAGE, "featurebyte.Feature.graph"], "featurebyte.Feature.graph"),
         DocLayoutItem([FEATURE, LINEAGE, "featurebyte.Feature.id"], "featurebyte.Feature.id"),
+        DocLayoutItem(
+            [FEATURE, LINEAGE, "featurebyte.Feature.definition"], "featurebyte.Feature.definition"
+        ),
         DocLayoutItem(
             [FEATURE, LINEAGE, "featurebyte.Feature.preview_sql"], "featurebyte.Feature.preview_sql"
         ),
@@ -569,14 +587,16 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([FEATURE_LIST], "featurebyte.FeatureList"),
         DocLayoutItem(
-            [FEATURE_LIST, GET, "featurebyte.FeatureList.get"], "featurebyte.FeatureList.get"
+            [FEATURE_LIST, GET, "featurebyte.Catalog.get_feature_list"],
+            "featurebyte.Catalog.get_feature_list",
         ),
         DocLayoutItem(
             [FEATURE_LIST, GET, "featurebyte.FeatureList.get_by_id"],
             "featurebyte.FeatureList.get_by_id",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, LIST, "featurebyte.FeatureList.list"], "featurebyte.FeatureList.list"
+            [FEATURE_LIST, LIST, "featurebyte.Catalog.list_feature_lists"],
+            "featurebyte.Catalog.list_feature_lists",
         ),
         DocLayoutItem([FEATURE_LIST, CREATE, "featurebyte.FeatureList"], "featurebyte.FeatureList"),
         DocLayoutItem(
@@ -680,15 +700,16 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([FEATURE_STORE], "featurebyte.FeatureStore"),
         DocLayoutItem(
-            [FEATURE_STORE, GET, "featurebyte.FeatureStore.get"], "featurebyte.FeatureStore.get"
+            [FEATURE_STORE, GET, "featurebyte.Catalog.get_feature_store"],
+            "featurebyte.Catalog.get_feature_store",
         ),
         DocLayoutItem(
             [FEATURE_STORE, GET, "featurebyte.FeatureStore.get_by_id"],
             "featurebyte.FeatureStore.get_by_id",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, LIST, "featurebyte.FeatureStore.list"],
-            "featurebyte.FeatureStore.list",
+            [FEATURE_STORE, LIST, "featurebyte.Catalog.list_feature_stores"],
+            "featurebyte.Catalog.list_feature_stores",
         ),
         DocLayoutItem(
             [FEATURE_STORE, CREATE, "featurebyte.FeatureStore.create"],
@@ -778,15 +799,16 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([RELATIONSHIP], "featurebyte.Relationship"),
         DocLayoutItem(
-            [RELATIONSHIP, GET, "featurebyte.Relationship.get"], "featurebyte.Relationship.get"
+            [RELATIONSHIP, GET, "featurebyte.Catalog.get_relationship"],
+            "featurebyte.Catalog.get_relationship",
         ),
         DocLayoutItem(
             [RELATIONSHIP, GET, "featurebyte.Relationship.get_by_id"],
             "featurebyte.Relationship.get_by_id",
         ),
         DocLayoutItem(
-            [RELATIONSHIP, LIST, "featurebyte.Relationship.list"],
-            "featurebyte.Relationship.list",
+            [RELATIONSHIP, LIST, "featurebyte.Catalog.list_relationships"],
+            "featurebyte.Catalog.list_relationships",
         ),
         DocLayoutItem(
             [RELATIONSHIP, INFO, "featurebyte.Relationship.created_at"],
@@ -847,13 +869,13 @@ def _get_view_layout() -> List[DocLayoutItem]:
             "featurebyte.ItemTable.get_view",
         ),
         DocLayoutItem(
-            [VIEW, ENRICH, "featurebyte.EventView.add_feature"], "featurebyte.EventView.add_feature"
+            [VIEW, JOIN, "featurebyte.EventView.add_feature"], "featurebyte.EventView.add_feature"
         ),
         DocLayoutItem(
-            [VIEW, ENRICH, "featurebyte.ItemView.join_event_data_attributes"],
+            [VIEW, JOIN, "featurebyte.ItemView.join_event_data_attributes"],
             "featurebyte.ItemView.join_event_data_attributes",
         ),
-        DocLayoutItem([VIEW, ENRICH, "featurebyte.View.join"], "featurebyte.View.join"),
+        DocLayoutItem([VIEW, JOIN, "featurebyte.View.join"], "featurebyte.View.join"),
         DocLayoutItem([VIEW, EXPLORE, "featurebyte.View.describe"], "featurebyte.View.describe"),
         DocLayoutItem([VIEW, EXPLORE, "featurebyte.View.preview"], "featurebyte.View.preview"),
         DocLayoutItem([VIEW, EXPLORE, "featurebyte.View.sample"], "featurebyte.View.sample"),
