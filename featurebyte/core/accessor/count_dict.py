@@ -179,7 +179,7 @@ class CountDictAccessor:
         Parameters
         ----------
         include_missing : bool
-            Whether to include missing value when counting the number of distinct keys
+            Whether to include missing value when counting the number of distinct keys.
 
         Returns
         -------
@@ -224,7 +224,7 @@ class CountDictAccessor:
         Parameters
         ----------
         other : Feature
-            Another dictionary feature
+            Another dictionary feature.
 
         Returns
         -------
@@ -259,9 +259,9 @@ class CountDictAccessor:
 
         This key could be either
 
-        - the value in the lookup feature, or
+        - a lookup feature, or
 
-        - a scalar value passed in.
+        - a scalar value.
 
         Parameters
         ----------
@@ -318,12 +318,18 @@ class CountDictAccessor:
         """
         Computes the rank of a particular key in the dictionary feature.
 
+        This key could be either
+
+        - a lookup feature, or
+
+        - a scalar value.
+
         Parameters
         ----------
         key: Union[Scalar, Feature]
-            key to lookup the value for
+            Key to lookup the value for.
         descending: bool
-            defaults to ranking in ascending order. Set to true to rank in descending order.
+            Defaults to ranking in ascending order. Set to true to rank in descending order.
 
         Returns
         -------
@@ -374,10 +380,16 @@ class CountDictAccessor:
         """
         Gets the relative frequency of a particular key in the dictionary feature.
 
+        This key could be either
+
+        - a lookup feature, or
+
+        - a scalar value.
+
         Parameters
         ----------
         key: Union[Scalar, Feature]
-            key to lookup the value for
+            Key to lookup the value for.
 
         Returns
         -------
