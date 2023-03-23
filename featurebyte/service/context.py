@@ -77,34 +77,26 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
             raise DocumentUpdateError("Context view must be a view but not a feature.")
 
         # check that table document can be retrieved from the persistent
-        tabular_data_map = {}
-        tabular_data_ids = list(
-            set(col.tabular_data_id for col in operation_structure.source_columns)
-        )
-        for tabular_data_id in tabular_data_ids:
-            if tabular_data_id is None:
+        table_id_to_doc = {}
+        table_ids = list(set(col.tabular_data_id for col in operation_structure.source_columns))
+        for table_id in table_ids:
+            if table_id is None:
                 raise DocumentUpdateError("Data record has not been stored at the persistent.")
-            tabular_data_map[tabular_data_id] = await table_service.get_document(
-                document_id=tabular_data_id
-            )
+            table_id_to_doc[table_id] = await table_service.get_document(document_id=table_id)
 
         # check that entities can be found on the view
         # TODO: add entity id to operation structure column (DEV-957)
         found_entity_ids = set()
         for source_col in operation_structure.source_columns:
             assert source_col.tabular_data_id is not None
-            tabular_data = tabular_data_map[source_col.tabular_data_id]
+            table = table_id_to_doc[source_col.tabular_data_id]
             column_info = next(
-                (
-                    col_info
-                    for col_info in tabular_data.columns_info
-                    if col_info.name == source_col.name
-                ),
+                (col_info for col_info in table.columns_info if col_info.name == source_col.name),
                 None,
             )
             if column_info is None:
                 raise DocumentUpdateError(
-                    f'Column "{source_col.name}" not found in table "{tabular_data.name}".'
+                    f'Column "{source_col.name}" not found in table "{table.name}".'
                 )
             if column_info.entity_id:
                 found_entity_ids.add(column_info.entity_id)

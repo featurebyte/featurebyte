@@ -68,8 +68,8 @@ class TableList(PaginationMixin):
         List[PydanticObjectId]
         """
         output = set()
-        for tabular_data in self.data:
-            output.update(tabular_data.entity_ids)
+        for table in self.data:
+            output.update(table.entity_ids)
         return list(output)
 
     @property
@@ -82,6 +82,6 @@ class TableList(PaginationMixin):
         List[PydanticObjectId]
         """
         output = set()
-        for tabular_data in self.data:
-            output.update(tabular_data.semantic_ids)
+        for table in self.data:
+            output.update(table.semantic_ids)
         return list(output)

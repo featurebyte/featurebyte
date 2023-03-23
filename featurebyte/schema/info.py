@@ -223,7 +223,7 @@ class NamespaceInfo(BaseInfo):
 
     entities: EntityBriefInfoList
     primary_entity: EntityBriefInfoList
-    tabular_data: TableBriefInfoList
+    tables: TableBriefInfoList
     default_version_mode: DefaultVersionMode
     version_count: int
     catalog_name: str

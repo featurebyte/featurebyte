@@ -323,9 +323,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[
-            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
-        ],
+        tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -439,9 +437,7 @@ def expected_feature_iet_info_fixture(feature_iet):
         primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[
-            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
-        ],
+        tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -539,9 +535,7 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
         primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[
-            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
-        ],
+        tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -570,9 +564,7 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
         primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[
-            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
-        ],
+        tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -620,9 +612,7 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tabular_data=[
-            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
-        ],
+        tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],

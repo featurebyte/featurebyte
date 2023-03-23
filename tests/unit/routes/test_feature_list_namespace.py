@@ -275,9 +275,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "primary_entity": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
-            "tabular_data": [
-                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
-            ],
+            "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
             "default_version_mode": "AUTO",
             "default_feature_list_id": response_dict["default_feature_list_id"],
             "dtype_distribution": [{"count": 2, "dtype": "FLOAT"}],
