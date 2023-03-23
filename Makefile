@@ -64,7 +64,7 @@ lint-style:
 	find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
 
 lint-type:
-	poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude featurebyte/conftest.py .
+	poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py|featurebyte/common/documentation/*)' .
 
 lint-safety:
 	poetry run pip-licenses --packages $(shell poetry export --without-hashes --without-urls --extras server | cut -d '=' -f1 | xargs) --allow-only=${PERMISSIVE_LICENSES}
