@@ -15,18 +15,18 @@ class BetaWave3Nav(Nav):
     """
 
     _custom_root_level_order = [
+        "FeatureStore",
         "Catalog",
         "DataSource",
+        "Table",
+        "TableColumn",
         "Entity",
+        "Relationship",
+        "View",
+        "ViewColumn",
         "Feature",
         "FeatureGroup",
         "FeatureList",
-        "FeatureStore",
-        "Relationship",
-        "Table",
-        "TableColumn",
-        "View",
-        "ViewColumn",
     ]
 
     @classmethod
