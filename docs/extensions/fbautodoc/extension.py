@@ -255,8 +255,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 object_name = parts[-1]
                 if "#" in object_name:
                     object_name = object_name.split("#")[-1]
-                if "featurebyte" in type_class_path:
-                    return f'<a href=\'javascript:window.location=new URL("../{type_class_path}/", window.location.href.split("#")[0]).href\'>{object_name}</a>'
                 return object_name
             return type_class_path
 
