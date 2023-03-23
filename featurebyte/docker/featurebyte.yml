@@ -5,6 +5,7 @@ services:
     networks:
       - featurebyte
     hostname: mongo-rs
+    restart: unless-stopped
     container_name: mongo-rs
     image: "mongo:6.0.3"
     entrypoint: ["/bin/bash", "./scripts/entrypoint.sh"]
@@ -20,6 +21,7 @@ services:
     networks:
       - featurebyte
     hostname: redis
+    restart: unless-stopped
     container_name: redis
     image: "redis:6.2.5"
     healthcheck:
@@ -31,6 +33,7 @@ services:
     networks:
       - featurebyte
     hostname: featurebyte-docs
+    restart: unless-stopped
     container_name: featurebyte-docs
     image: featurebyte-docs:latest
     ports:
@@ -43,13 +46,14 @@ services:
     networks:
       - featurebyte
     hostname: featurebyte-server
+    restart: unless-stopped
     container_name: featurebyte-server
     image: featurebyte-server:latest
     depends_on:
       mongo-rs:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8088:8088"
+      - "0.0.0.0:8088:8088"
     environment:
       - "FEATUREBYTE_HOME=/app/.featurebyte"
       - "MPLCONFIGDIR=/app/matplotlib"
@@ -74,6 +78,7 @@ services:
     networks:
       - featurebyte
     hostname: featurebyte-worker
+    restart: unless-stopped
     container_name: featurebyte-worker
     image: featurebyte-server:latest
     depends_on:
