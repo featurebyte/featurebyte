@@ -94,31 +94,44 @@ class ItemTable(TableApiObject):
         event_join_column_names: Optional[List[str]] = None,
     ) -> ItemView:
         """
-        Construct an ItemView object
+        Get an ItemView from the source table.
+
+        You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
+        constructed from the source table without any changes to the cleaning operations, or dropping column names.
+        In manual mode, you are able to specify some overrides. However, the manual mode should not be commonly used
+        as it might lead to unexpected behaviour if used wrongly.
 
         Parameters
         ----------
         event_suffix : Optional[str]
-            A suffix to append on to the columns from the EventTable
+            A suffix to append on to the columns from the EventTable. This is useful to prevent column name
+            collisions.
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
-            View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
+            View mode to use (manual or auto). When auto, the view will be constructed with cleaning operations
             from the table, the record creation timestamp column will be dropped and the columns to join from the
-            EventView will be automatically selected
+            EventView will be automatically selected.
         drop_column_names: Optional[List[str]]
-            List of column names to drop for the ItemView (manual mode only)
+            List of column names to drop for the ItemView (manual mode only).
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            Column cleaning operations to apply to the ItemView (manual mode only)
+            Column cleaning operations to apply to the ItemView (manual mode only).
         event_drop_column_names: Optional[List[str]]
-            List of column names to drop for the EventView (manual mode only)
+            List of column names to drop for the EventView (manual mode only).
         event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            Column cleaning operations to apply to the EventView (manual mode only)
+            Column cleaning operations to apply to the EventView (manual mode only).
         event_join_column_names: Optional[List[str]]
-            List of column names to join from the EventView (manual mode only)
+            List of column names to join from the EventView (manual mode only).
 
         Returns
         -------
         ItemView
-            constructed ItemView object
+            ItemView object constructed from the source table.
+
+        Examples
+        --------
+        Get an ItemView.
+
+        >>> item_table = fb.Table.get("INVOICEITEMS")
+        >>> item_view = item_table.get_view()
         """
         from featurebyte.api.item_view import ItemView  # pylint: disable=import-outside-toplevel
 

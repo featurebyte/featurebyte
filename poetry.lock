@@ -1053,13 +1053,13 @@ url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featureby
 category = "main"
 description = "Free utilities from FeatureByte"
 files = [
-    {file = "featurebyte_freeware-0.1.11-py3-none-any.whl", hash = "sha256:f15e0d21f219c0954067aeb0d81a1fec07db6347ceb03ae0fde76e9766fc3447"},
-    {file = "featurebyte_freeware-0.1.11.tar.gz", hash = "sha256:a7102a52dc13a1abbfd65bcf12f1909b8694c05985a55448af5db36850b70a7a"},
+    {file = "featurebyte_freeware-0.1.12-py3-none-any.whl", hash = "sha256:989f9892539ba7d7afb7cd0869be2a732d13fa64b5ea542542f5cf1f7c8ec90c"},
+    {file = "featurebyte_freeware-0.1.12.tar.gz", hash = "sha256:759ca5c1965db9e6c4303963c08c1d9c37f11e849cbdfc11747f991bef2e79d4"},
 ]
 name = "featurebyte-freeware"
 optional = false
 python-versions = ">=3.8,<3.11"
-version = "0.1.11"
+version = "0.1.12"
 
 [package.dependencies]
 Jinja2 = ">=3.1.2,<4.0.0"

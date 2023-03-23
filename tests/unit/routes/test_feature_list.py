@@ -409,7 +409,15 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             )
             assert response.status_code == HTTPStatus.OK
         # deploy the feature list
-        response = client.patch(f"{self.base_route}/{doc_id}", json={"deployed": True})
+        response = client.patch(f"{self.base_route}/{doc_id}", json={})
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["deployed"] is False
+
+        response = client.post(f"{self.base_route}/{doc_id}/deploy", json={"deployed": True})
+        assert response.status_code == HTTPStatus.CREATED
+        assert response.json()["status"] == "SUCCESS"
+
+        response = client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["deployed"] is True
 
@@ -423,7 +431,13 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         self._make_production_ready_and_deploy(test_api_client, create_response_dict)
 
         # disable deployment
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"deployed": False})
+        response = test_api_client.post(
+            f"{self.base_route}/{doc_id}/deploy", json={"deployed": False}
+        )
+        assert response.status_code == HTTPStatus.CREATED
+        assert response.json()["status"] == "SUCCESS"
+
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["deployed"] is False
 
@@ -437,8 +451,17 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # deploy the feature list
         response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"deployed": True, "make_production_ready": True}
+            f"{self.base_route}/{doc_id}", json={"make_production_ready": True}
         )
+        assert response.status_code == HTTPStatus.OK
+
+        response = test_api_client.post(
+            f"{self.base_route}/{doc_id}/deploy", json={"deployed": True}
+        )
+        assert response.status_code == HTTPStatus.CREATED
+        assert response.json()["status"] == "SUCCESS"
+
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["deployed"] is True
 
@@ -453,9 +476,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
-            "tabular_data": [
-                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
-            ],
+            "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
             "default_version_mode": "AUTO",
             "version_count": 1,
             "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
@@ -473,7 +494,13 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response_dict.items() > expected_info_response.items(), response_dict
 
         # disable deployment
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"deployed": False})
+        response = test_api_client.post(
+            f"{self.base_route}/{doc_id}/deploy", json={"deployed": False}
+        )
+        assert response.status_code == HTTPStatus.CREATED
+        assert response.json()["status"] == "SUCCESS"
+
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["deployed"] is False
 
@@ -492,9 +519,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
-            "tabular_data": [
-                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
-            ],
+            "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
             "default_version_mode": "AUTO",
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
             "version_count": 1,

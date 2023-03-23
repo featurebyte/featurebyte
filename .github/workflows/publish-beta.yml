@@ -49,6 +49,9 @@ jobs:
       matrix:
         python-version: ["3.8.0"]
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Check Version
         run: |
           if (grep -vqP "^[0-9]+[.][0-9]+[.][0-9]+" <<< "${{ github.event.inputs.version }}"); then
@@ -78,9 +81,6 @@ jobs:
           # Check if the documentation image with the corresponding version has been published
           # If this fails go to documentation repo and publish the a version according to the tag required
           docker manifest inspect "${{ env.DOCS_MAGE_REPO }}:${{ github.event.inputs.version }}"
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:

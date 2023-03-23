@@ -43,6 +43,7 @@ def test_features_without_entity(event_table):
     try:
         feature_list_1.save()
         feature_list_1.deploy(enable=True, make_production_ready=True)
+
         feature_list_2.save()
         feature_list_2.deploy(enable=True, make_production_ready=True)
 

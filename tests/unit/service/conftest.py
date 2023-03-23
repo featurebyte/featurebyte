@@ -478,7 +478,9 @@ async def deployed_feature_list_fixture(
     return updated_feature_list
 
 
-async def insert_feature_into_persistent(test_dir, user, persistent, readiness, name=None):
+async def insert_feature_into_persistent(
+    test_dir, user, persistent, readiness, name=None, catalog_id=None, version=None
+):
     """Insert a feature into persistent"""
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
     with open(fixture_path) as fhandle:
@@ -486,9 +488,11 @@ async def insert_feature_into_persistent(test_dir, user, persistent, readiness, 
         payload = FeatureCreate(**payload, user_id=user.id).dict(by_alias=True)
         payload["_id"] = ObjectId()
         payload["readiness"] = readiness
-        payload["catalog_id"] = DEFAULT_CATALOG_ID
+        payload["catalog_id"] = catalog_id or DEFAULT_CATALOG_ID
         if name:
             payload["name"] = name
+        if version:
+            payload["version"] = version
         feature_id = await persistent.insert_one(
             collection_name="feature",
             document=payload,

@@ -489,7 +489,7 @@ def test_info(saved_feature_list):
         "primary_entity": [
             {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
         ],
-        "tabular_data": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
+        "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
         "default_version_mode": "AUTO",
         "status": "DRAFT",
         "feature_count": 1,

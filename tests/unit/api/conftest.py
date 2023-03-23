@@ -3,12 +3,14 @@ Common test fixtures used across api test directories
 """
 import textwrap
 from datetime import datetime
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte import Configurations
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -287,3 +289,17 @@ def feature_job_logs_fixture():
     job_logs = pd.read_csv("tests/fixtures/feature_job_status/job_logs.csv")
     job_logs["CREATED_AT"] = pd.to_datetime(job_logs["CREATED_AT"])
     return job_logs
+
+
+@pytest.fixture(autouse=True, scope="function")
+def mock_post_async_task():
+    """Mock post_async_task"""
+
+    def post_async_task(route, payload, **kwargs):
+        """Mock post_async_task"""
+        client = Configurations().get_client()
+        return client.post(url=route, json=payload)
+
+    with patch("featurebyte.api.feature_list.FeatureList.post_async_task") as mock_post_async_task:
+        mock_post_async_task.side_effect = post_async_task
+        yield mock_post_async_task

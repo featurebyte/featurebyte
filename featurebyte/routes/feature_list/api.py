@@ -38,6 +38,7 @@ from featurebyte.schema.feature_list import (
     OnlineFeaturesResponseModel,
 )
 from featurebyte.schema.info import FeatureListInfo
+from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/feature_list")
 
@@ -60,6 +61,7 @@ async def get_feature_list(request: Request, feature_list_id: PydanticObjectId) 
     Get FeatureList
     """
     controller = request.state.app_container.feature_list_controller
+
     feature_list: FeatureListModel = await controller.get(document_id=feature_list_id)
     return feature_list
 
@@ -75,9 +77,23 @@ async def update_feature_list(
     feature_list: FeatureListModel = await controller.update_feature_list(
         feature_list_id=feature_list_id,
         data=data,
-        get_credential=request.state.get_credential,
     )
     return feature_list
+
+
+@router.post("/{feature_list_id}/deploy", response_model=Task, status_code=HTTPStatus.CREATED)
+async def deploy_feature_list(
+    request: Request, feature_list_id: PydanticObjectId, data: FeatureListUpdate
+) -> Optional[Task]:
+    """
+    Update FeatureList
+    """
+    controller = request.state.app_container.feature_list_controller
+    task: Task = await controller.deploy_feature_list(
+        feature_list_id=feature_list_id,
+        data=data,
+    )
+    return task
 
 
 @router.get("", response_model=FeatureListPaginatedList)

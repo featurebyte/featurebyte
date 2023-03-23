@@ -680,7 +680,7 @@ class Feature(
         --------
         Preview feature with a small observation set.
 
-        >>> fb.Feature.get("InvoiceCount_60days").preview(
+        >>> catalog.get_feature("InvoiceCount_60days").preview(
         ...     observation_set=pd.DataFrame({
         ...         "POINT_IN_TIME": ["2022-06-01 00:00:00", "2022-06-02 00:00:00"],
         ...         "GROCERYCUSTOMERGUID": [
@@ -690,8 +690,8 @@ class Feature(
         ...     })
         ... )
           POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days
-        0    2022-06-01  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                   10
-        1    2022-06-02  ac479f28-e0ff-41a4-8e60-8678e670e80b                    6
+        0    2022-06-01  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0
+        1    2022-06-02  ac479f28-e0ff-41a4-8e60-8678e670e80b                  6.0
 
         See Also
         --------
@@ -751,7 +751,7 @@ class Feature(
         Create a new version of a feature with different feature job setting
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature = catalog.get_feature("my_magic_feature")  # doctest: +SKIP
         >>> feature.create_new_version(
         ...   table_feature_job_settings=[
         ...     fb.TableFeatureJobSetting(
@@ -769,7 +769,7 @@ class Feature(
         Create a new version of a feature with table cleaning operations
 
         >>> import featurebyte as fb
-        >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature = catalog.get_feature("my_magic_feature")  # doctest: +SKIP
         >>> feature.create_new_version(
         ...   table_cleaning_operations=[
         ...     fb.TableCleaningOperation(

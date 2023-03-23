@@ -237,20 +237,37 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @typechecked
     def preview(self, limit: int = 10, after_cleaning: bool = False, **kwargs: Any) -> pd.DataFrame:
         """
-        Preview raw or clean table
+        Retrieve a preview of the table.
 
         Parameters
         ----------
         limit: int
-            Maximum number of return rows
+            Maximum number of return rows.
         after_cleaning: bool
-            Whether to apply cleaning operations
+            Whether to apply cleaning operations.
         **kwargs: Any
-            Additional keyword parameters
+            Additional keyword parameters.
 
         Returns
         -------
         pd.DataFrame
+            Preview rows of the table.
+
+        Examples
+        --------
+        Preview 3 rows of the table.
+        >>> catalog.get_table("GROCERYPRODUCT").preview(3)
+                             GroceryProductGuid ProductGroup
+        0  10355516-5582-4358-b5f9-6e1ea7d5dc9f      Glaçons
+        1  116c9284-2c41-446e-8eee-33901e0acdef      Glaçons
+        2  3a45a5e8-1b71-42e8-b84e-43ddaf692375      Glaçons
+
+        See Also
+        --------
+        - [Table.sample](/reference/featurebyte.api.base_table.TableApiObject.sample/):
+          Retrieve a sample of a table.
+        - [Table.describe](/reference/featurebyte.api.base_table.TableApiObject.describe/):
+          Retrieve a summary of a table.
         """
         return self.frame.preview(limit=limit, after_cleaning=after_cleaning, **kwargs)  # type: ignore[misc]
 
@@ -265,26 +282,43 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
-        Sample raw or clean table
+        Retrieve a random sample of the table.
 
         Parameters
         ----------
         size: int
-            Maximum number of rows to sample
+            Maximum number of rows to sample.
         seed: int
-            Seed to use for random sampling
+            Seed to use for random sampling.
         from_timestamp: Optional[datetime]
-            Start of date range to sample from
+            Start of date range to sample from.
         to_timestamp: Optional[datetime]
-            End of date range to sample from
+            End of date range to sample from.
         after_cleaning: bool
-            Whether to apply cleaning operations
+            Whether to apply cleaning operations.
         **kwargs: Any
-            Additional keyword parameters
+            Additional keyword parameters.
 
         Returns
         -------
         pd.DataFrame
+            Sampled rows from the table.
+
+        Examples
+        --------
+        Sample 3 rows from the table.
+        >>> catalog.get_table("GROCERYPRODUCT").sample(3)
+                             GroceryProductGuid ProductGroup
+        0  e890c5cb-689b-4caf-8e49-6b97bb9420c0       Épices
+        1  5720e4df-2996-4443-a1bc-3d896bf98140         Chat
+        2  96fc4d80-8cb0-4f1b-af01-e71ad7e7104a        Pains
+
+        See Also
+        --------
+        - [Table.preview](/reference/featurebyte.api.base_table.TableApiObject.preview/):
+          Retrieve a preview of a table.
+        - [Table.describe](/reference/featurebyte.api.base_table.TableApiObject.describe/):
+          Retrieve a summary of a table.
         """
         return self.frame.sample(  # type: ignore[misc]
             size=size,
@@ -306,26 +340,48 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
-        Describe raw or clean table
+        Retrieve a summary of the contents in the table.
+        This includes columns names, column types, missing and unique counts, and other statistics.
 
         Parameters
         ----------
         size: int
-            Maximum number of rows to sample
+            Maximum number of rows to sample. If 0, all rows will be used.
         seed: int
-            Seed to use for random sampling
+            Seed to use for random sampling.
         from_timestamp: Optional[datetime]
-            Start of date range to sample from
+            Start of date range to sample from.
         to_timestamp: Optional[datetime]
-            End of date range to sample from
+            End of date range to sample from.
         after_cleaning: bool
-            Whether to apply cleaning operations
+            Whether to apply cleaning operations.
         **kwargs: Any
-            Additional keyword parameters
+            Additional keyword parameters.
 
         Returns
         -------
         pd.DataFrame
+            Summary of the table.
+
+        Examples
+        --------
+        Get a summary of a view.
+        >>> catalog.get_table("GROCERYPRODUCT").describe()
+                                    GroceryProductGuid        ProductGroup
+        dtype                                  VARCHAR             VARCHAR
+        unique                                   29099                  87
+        %missing                                   0.0                 0.0
+        %empty                                       0                   0
+        entropy                               6.214608             4.13031
+        top       017fe5ed-80a2-4e70-ae48-78aabfdee856  Chips et Tortillas
+        freq                                         1                1319
+
+        See Also
+        --------
+        - [Table.preview](/reference/featurebyte.api.base_table.TableApiObject.preview/):
+          Retrieve a preview of a table.
+        - [Table.sample](/reference/featurebyte.api.base_table.TableApiObject.sample/):
+          Retrieve a sample of a table.
         """
         return self.frame.describe(  # type: ignore[misc]
             size=size,

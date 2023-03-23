@@ -20,8 +20,9 @@ services:
       - 6379:6379
 
   spark-thrift:
+    hostname: spark-thrift
+    container_name: spark-thrift-test
     image: featurebyte/cluster-apache-spark:3.3.1
-    container_name: spark-thrift
     ports:
       - "10000:10000"
       - "4040:4040"

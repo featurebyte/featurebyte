@@ -127,10 +127,10 @@ class FeatureListService(
 
     async def _get_feature_list_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()
-        _, count = await self.persistent.find(
-            collection_name=self.collection_name,
-            query_filter={"name": name, "version.name": version_name},
+        query_result = await self.list_documents(
+            query_filter={"name": name, "version.name": version_name}
         )
+        count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
     async def create_document(self, data: FeatureListCreate) -> FeatureListModel:

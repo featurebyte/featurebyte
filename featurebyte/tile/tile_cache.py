@@ -21,7 +21,6 @@ from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
-    REQUEST_TABLE_NAME,
     apply_serving_names_mapping,
     quoted_identifier,
     sql_to_string,
@@ -110,6 +109,7 @@ class TileCache:
         graph: QueryGraph,
         nodes: list[Node],
         request_id: str,
+        request_table_name: str,
         serving_names_mapping: dict[str, str] | None = None,
     ) -> None:
         """Check tile status for the provided features and compute missing tiles if required
@@ -124,12 +124,15 @@ class TileCache:
             Optional mapping from original serving name to new serving name
         request_id : str
             Request ID
+        request_table_name: str
+            Request table name to use
         """
         tic = time.time()
         required_requests = await self.get_required_computation(
             request_id=request_id,
             graph=graph,
             nodes=nodes,
+            request_table_name=request_table_name,
             serving_names_mapping=serving_names_mapping,
         )
         elapsed = time.time() - tic
@@ -174,6 +177,7 @@ class TileCache:
         request_id: str,
         graph: QueryGraph,
         nodes: list[Node],
+        request_table_name: str,
         serving_names_mapping: dict[str, str] | None = None,
     ) -> list[OnDemandTileComputeRequest]:
         """Query the entity tracker tables and obtain a list of tile computations that are required
@@ -186,6 +190,8 @@ class TileCache:
             Query graph
         nodes : list[Node]
             List of query graph node
+        request_table_name : str
+            Request table name to use
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
 
@@ -208,6 +214,7 @@ class TileCache:
             tile_ids_with_tracker=tile_ids_with_tracker,
             tile_ids_no_tracker=tile_ids_without_tracker,
             request_id=request_id,
+            request_table_name=request_table_name,
         )
 
         # Create a validity flag for each tile id
@@ -307,6 +314,7 @@ class TileCache:
         tile_ids_with_tracker: list[str],
         tile_ids_no_tracker: list[str],
         request_id: str,
+        request_table_name: str,
     ) -> None:
         """Register a temp table from which we can query whether each (POINT_IN_TIME, ENTITY_ID,
         TILE_ID) pair has updated tile cache: a null value in this table indicates that the pair has
@@ -341,9 +349,11 @@ class TileCache:
             List of tile ids without existing tracker table
         request_id : str
             Request ID
+        request_table_name : str
+            Name of the request table
         """
         # pylint: disable=too-many-locals
-        table_expr = select().from_(f"{REQUEST_TABLE_NAME}_{request_id} AS REQ")
+        table_expr = select().from_(f"{request_table_name} AS REQ")
 
         columns = []
         for table_index, tile_id in enumerate(tile_ids_with_tracker):

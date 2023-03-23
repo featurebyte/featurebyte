@@ -606,22 +606,32 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
     ) -> FrozenSeriesT:
         """
-        Convert Series to have a new type
+        Convert a Series to have a new type.
+
+        This is useful for converting a series between a string, and numerical types, or vice-versa.
 
         Parameters
         ----------
         new_type : Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]])
-            Desired type after conversion. Type can be provided directly or as a string
+            Desired type after conversion. Type can be provided directly, or as a string.
 
         Returns
         -------
         FrozenSeriesT
-            A new Series with converted variable type
+            A new Series with converted variable type.
 
         Raises
         ------
         TypeError
-            if the Series dtype does not support type conversion
+            If the Series dtype does not support type conversion.
+
+        Examples
+        --------
+        Convert a numerical series to a string series, and back to an int series.
+
+        >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> event_view["Amount"] = event_view["Amount"].astype(str)
+        >>> event_view["Amount"] = event_view["Amount"].astype(int)
         """
         supported_source_dtype = {DBVarType.BOOL, DBVarType.INT, DBVarType.FLOAT, DBVarType.VARCHAR}
         if self.dtype not in supported_source_dtype:
@@ -669,13 +679,12 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         >>> view = fb.Table.get("GROCERYCUSTOMER").get_view()
         >>> view["LongitudeAbs"] = view["Longitude"].abs()
         >>> view.preview(5).filter(regex="Longitude")
-            Longitude  LongitudeAbs
-        0  -1.563748      1.563748
-        1   2.178242      2.178242
-        2   1.941437      1.941437
-        3   5.386148      5.386148
-        4   2.403298      2.403298
-
+           Longitude  LongitudeAbs
+        0   5.209627      5.209627
+        1   7.423195      7.423195
+        2   2.990572      2.990572
+        3 -61.069866     61.069866
+        4   3.120654      3.120654
 
         Compute absolute values for a Feature:
 

@@ -44,6 +44,11 @@ class LaggableViewColumn(ViewColumn):
         ------
         ValueError
             If a lag operation has already been applied to the column.
+
+        Examples
+        --------
+        >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> lagged_column = event_view["Timestamp"].lag("GroceryCustomerGuid")
         """
         if not isinstance(entity_columns, list):
             entity_columns = [entity_columns]

@@ -83,6 +83,7 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
         request_id=request_id,
         graph=feature.graph,
         nodes=[feature.node],
+        request_table_name=request_table_name,
     )
     assert len(requests) == 1
     await check_entity_table_sql_and_tile_compute_sql(
@@ -100,6 +101,7 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
         request_id=request_id,
         graph=feature.graph,
         nodes=[feature.node],
+        request_table_name=request_table_name,
     )
     assert len(requests) == 0
 
@@ -117,6 +119,7 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
         request_id=request_id,
         graph=feature.graph,
         nodes=[feature.node],
+        request_table_name=request_table_name,
     )
     assert len(requests) == 1
     await check_entity_table_sql_and_tile_compute_sql(
@@ -144,6 +147,7 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
         request_id=request_id,
         graph=feature.graph,
         nodes=[feature.node],
+        request_table_name=request_table_name,
     )
     assert len(requests) == 1
     await check_entity_table_sql_and_tile_compute_sql(

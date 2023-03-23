@@ -60,7 +60,8 @@ class Persistent(ABC):
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> ObjectId:
         """
-        Insert record into collection
+        Insert record into collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject user_id and catalog_id into the document automatically.
 
         Parameters
         ----------
@@ -87,7 +88,8 @@ class Persistent(ABC):
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> List[ObjectId]:
         """
-        Insert records into collection
+        Insert records into collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject user_id and catalog_id into the document automatically.
 
         Parameters
         ----------
@@ -116,7 +118,8 @@ class Persistent(ABC):
         user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> Optional[Document]:
         """
-        Find one record from collection
+        Find one record from collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject catalog_id into the query filter automatically.
 
         Parameters
         ----------
@@ -145,7 +148,8 @@ class Persistent(ABC):
         user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> Tuple[Iterable[Document], int]:
         """
-        Find all records from collection
+        Find all records from collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject catalog_id into the query filter automatically.
 
         Parameters
         ----------
@@ -187,7 +191,9 @@ class Persistent(ABC):
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> int:
         """
-        Update one record in collection
+        Update one record in collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject catalog_id into the query filter automatically, and
+        it does not inject user_id and catalog_id into the update automatically.
 
         Parameters
         ----------
@@ -231,7 +237,9 @@ class Persistent(ABC):
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> int:
         """
-        Update many records in collection
+        Update many records in collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject catalog_id into the query filter automatically, and
+        it does not inject user_id and catalog_id into the update automatically.
 
         Parameters
         ----------
@@ -275,7 +283,9 @@ class Persistent(ABC):
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> int:
         """
-        Replace one record in collection
+        Replace one record in collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject catalog_id into the query filter automatically, and
+        it does not inject user_id and catalog_id into the update automatically.
 
         Parameters
         ----------
@@ -308,7 +318,8 @@ class Persistent(ABC):
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> int:
         """
-        Delete one record from collection
+        Delete one record from collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject catalog_id into the query filter automatically.
 
         Parameters
         ----------
@@ -334,7 +345,8 @@ class Persistent(ABC):
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> int:
         """
-        Delete many records from collection
+        Delete many records from collection. Note that when using this method inside a non BaseDocumentService,
+        please use with caution as it does not inject catalog_id into the query filter automatically.
 
         Parameters
         ----------
