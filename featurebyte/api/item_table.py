@@ -97,9 +97,9 @@ class ItemTable(TableApiObject):
         Get an ItemView from the source table.
 
         You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
-        constructed from the source table without any changes to the cleaning operations, or column names. In manual
-        mode, you are able to specify some overrides. However, the manual mode should not be commonly used as it
-        might lead to unexpected behaviour if used wrongly.
+        constructed from the source table without any changes to the cleaning operations, or dropping column names.
+        In manual mode, you are able to specify some overrides. However, the manual mode should not be commonly used
+        as it might lead to unexpected behaviour if used wrongly.
 
         Parameters
         ----------
