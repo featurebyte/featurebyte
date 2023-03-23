@@ -48,7 +48,7 @@ class LaggableViewColumn(ViewColumn):
         Examples
         --------
         >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
-        >>> lagged_column = event_view.timestamp_column.lag("GroceryCustomerGuid")
+        >>> lagged_column = event_view["timestamp_column"].lag("GroceryCustomerGuid")
         """
         if not isinstance(entity_columns, list):
             entity_columns = [entity_columns]

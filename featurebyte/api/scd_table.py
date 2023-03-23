@@ -229,7 +229,7 @@ class SCDTable(TableApiObject):
 
         >>> scd_table = fb.Table.get("GROCERYCUSTOMER")
         >>> change_view = scd_table.get_change_view(
-        ...     track_changes_column="ValidFrom",
+        ...     track_changes_column="CurrentRecord",
         ...     prefixes=("previous_", "next_"),
         ... )
         """
