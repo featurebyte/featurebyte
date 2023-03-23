@@ -643,10 +643,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
             list_item_str += "<br><br>"
             return list_item_str
 
-        # Render base classes
-        if resource_details.base_classes:
-            _render("Base Classes", ", ".join(resource_details.base_classes))
-
         # Render description
         content = " ".join(
             [resource_details.short_description or "", resource_details.long_description or ""]
@@ -741,33 +737,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
         # sort by alphabetical order
         members = sorted(set(members) - set(autodoc_config.skipped_members))
 
-        def _render_member(resource_details_list: List[Any], title: str) -> None:
-            """
-            Render member resources
-
-            Parameters
-            ----------
-            resource_details_list: List[ResourceDetails]
-                List of resource details to render
-            title: str
-                Title to use for the section
-            """
-            members_ref = etree.SubElement(elem, "h3")
-            members_ref.set("class", "autodoc-members")
-            members_ref.text = title
-            members_elem = etree.SubElement(elem, "div")
-            members_elem.set("class", "autodoc-members")
-
-            for member_resource_details in resource_details_list:
-                row_elem = etree.SubElement(members_elem, "div")
-                row_elem.set("class", "autodoc-summary")
-                toc_elem = etree.SubElement(row_elem, "h4")
-                toc_elem.text = member_resource_details.name
-                self.render_signature(row_elem, member_resource_details)
-                desc_elem = etree.SubElement(row_elem, "div")
-                desc_elem.set("class", "autodoc-desc")
-                desc_elem.text = self._md.convert(member_resource_details.short_description or "")
-
         method_resource_details = []
         property_resource_details = []
 
@@ -779,9 +748,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 method_resource_details.append(member_resource_details)
             elif member_resource_details.type == "property":
                 property_resource_details.append(member_resource_details)
-
-        _render_member(property_resource_details, "Properties")
-        _render_member(method_resource_details, "Methods")
 
 
 class FBAutoDocExtension(Extension):
