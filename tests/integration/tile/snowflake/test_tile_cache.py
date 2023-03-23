@@ -59,6 +59,21 @@ async def check_temp_tables_cleaned_up(session):
     assert InternalName.TILE_CACHE_WORKING_TABLE.value not in temp_table_names
 
 
+async def invoke_tile_manager_and_check_tracker_table(session, tile_cache, requests):
+    """
+    Call tile_cache.invoke_tile_manager() and check that the tracker table is updated correctly
+    """
+    await tile_cache.invoke_tile_manager(requests)
+
+    for request in requests:
+
+        tracker_table_name = f"{request.aggregation_id}_entity_tracker"
+        df_entity_tracker = await session.execute_query(f"SELECT * FROM {tracker_table_name}")
+
+        # The üser id column should be the primary key (unique) of the tracker table
+        assert (df_entity_tracker["üser id".upper()].value_counts(dropna=False) == 1).all()
+
+
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.parametrize("groupby_category", [None, "PRODUCT_ACTION"])
 @pytest.mark.asyncio
@@ -68,12 +83,10 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
     tile_cache = TileCache(session)
     _ = groupby_category
 
-    await check_entity_column_has_missing_values(session, feature, tile_cache)
-
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
-            "üser id": [1, 2, 3, 4, 5],
+            "üser id": [1, 2, 3, 4, np.nan],
         }
     )
 
@@ -93,9 +106,9 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
         session,
         requests[0],
         "ÜSER ID",
-        [1, 2, 3, 4, 5],
+        [1, 2, 3, 4, np.nan],
     )
-    await tile_cache.invoke_tile_manager(requests)
+    await invoke_tile_manager_and_check_tracker_table(session, tile_cache, requests)
     await tile_cache.cleanup_temp_tables()
     await check_temp_tables_cleaned_up(session)
 
@@ -114,7 +127,7 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
             "POINT_IN_TIME": pd.to_datetime(
                 ["2001-01-02 10:00:00"] * 2 + ["2001-01-03 10:00:00"] * 3
             ),
-            "üser id": [1, 2, 3, 4, 5],
+            "üser id": [1, 2, 3, 4, np.nan],
         }
     )
     await session.register_table(request_table_name, df_training_events)
@@ -129,11 +142,20 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
         session,
         requests[0],
         "ÜSER ID",
-        [3, 4, 5],
+        [3, 4, np.nan],
     )
-    await tile_cache.invoke_tile_manager(requests)
+    await invoke_tile_manager_and_check_tracker_table(session, tile_cache, requests)
     await tile_cache.cleanup_temp_tables()
     await check_temp_tables_cleaned_up(session)
+
+    # Cache now exists. No additional compute required for the same request table
+    requests = await tile_cache.get_required_computation(
+        request_id=request_id,
+        graph=feature.graph,
+        nodes=[feature.node],
+        request_table_name=request_table_name,
+    )
+    assert len(requests) == 0
 
     # Check using training events with new entities
     df_training_events = pd.DataFrame(
@@ -159,39 +181,6 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
         "ÜSER ID",
         [6, 7],
     )
-    await tile_cache.invoke_tile_manager(requests)
+    await invoke_tile_manager_and_check_tracker_table(session, tile_cache, requests)
     await tile_cache.cleanup_temp_tables()
     await check_temp_tables_cleaned_up(session)
-
-
-async def check_entity_column_has_missing_values(session, feature, tile_cache):
-
-    # First run: user id nan first encountered
-    df_observations = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"]),
-            "üser id": [np.nan],
-        }
-    )
-    request_id = session.generate_session_unique_id()
-    request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
-    await session.register_table(request_table_name, df_observations)
-    requests = await tile_cache.get_required_computation(
-        request_id=request_id,
-        graph=feature.graph,
-        nodes=[feature.node],
-        request_table_name=request_table_name,
-    )
-    assert len(requests) == 1
-    await tile_cache.invoke_tile_manager(requests)
-    await tile_cache.cleanup_temp_tables()
-    await check_temp_tables_cleaned_up(session)
-
-    # Second run using the same request table, shouldn't need to recompute
-    requests = await tile_cache.get_required_computation(
-        request_id=request_id,
-        graph=feature.graph,
-        nodes=[feature.node],
-        request_table_name=request_table_name,
-    )
-    assert len(requests) == 0

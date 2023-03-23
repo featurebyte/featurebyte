@@ -55,7 +55,7 @@ class TileGenerateEntityTracking(BaseModel):
         for element in self.entity_column_names:
             element = element.strip()
             entity_insert_cols.append(f"b.`{element}`")
-            entity_filter_cols.append(f"a.`{element}` = b.`{element}`")
+            entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
             escaped_entity_column_names.append(f"`{element}`")
         escaped_entity_column_names_str = ",".join(escaped_entity_column_names)
 
