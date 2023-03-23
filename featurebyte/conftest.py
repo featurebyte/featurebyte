@@ -15,6 +15,9 @@ def add_imports(doctest_namespace):
     doctest_namespace["fb"] = featurebyte
     doctest_namespace["pd"] = pandas
 
+    # catalog
+    doctest_namespace["catalog"] = featurebyte.Catalog.get("grocery")
+
     # get entity id
     grocery_customer_entity = featurebyte.Entity.get("grocerycustomer")
     doctest_namespace["grocery_customer_entity_id"] = grocery_customer_entity.id
