@@ -19,6 +19,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
+from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import TileCache
 
@@ -143,6 +144,71 @@ def get_historical_features_sql(
     return sql
 
 
+async def compute_tiles_on_demand(
+    session: BaseSession,
+    graph: QueryGraph,
+    nodes: list[Node],
+    request_id: str,
+    request_table_name: str,
+    request_table_columns: list[str],
+    serving_names_mapping: Optional[dict[str, str]],
+    parent_serving_preparation: Optional[ParentServingPreparation] = None,
+) -> None:
+    """
+    Compute tiles on demand
+
+    Parameters
+    ----------
+    session: BaseSession
+        Session to use to make queries
+    graph: QueryGraph
+        Query graph
+    nodes: list[Node]
+        List of query graph node
+    request_id: str
+        Request ID to be used as suffix of table names when creating temporary tables
+    request_table_name: str
+        Name of request table
+    request_table_columns: list[str]
+        List of column names in the observations set
+    serving_names_mapping : dict[str, str] | None
+        Optional serving names mapping if the training events data has different serving name
+        columns than those defined in Entities
+    parent_serving_preparation: Optional[ParentServingPreparation]
+        Preparation required for serving parent features
+    """
+    tic = time.time()
+    tile_cache = TileCache(session=session)
+
+    if parent_serving_preparation is None:
+        effective_request_table_name = request_table_name
+    else:
+        # Lookup parent entities and join them with the request table since tile computation
+        # requires these entity columns to be present in the request table.
+        request_table_expr, _ = construct_request_table_with_parent_entities(
+            request_table_name=request_table_name,
+            request_table_columns=request_table_columns,
+            join_steps=parent_serving_preparation.join_steps,
+            feature_store_details=parent_serving_preparation.feature_store_details,
+        )
+        request_table_query = sql_to_string(request_table_expr, session.source_type)
+        effective_request_table_name = "JOINED_PARENTS_" + request_table_name
+        await session.register_table_with_query(
+            effective_request_table_name,
+            request_table_query,
+        )
+
+    await tile_cache.compute_tiles_on_demand(
+        graph=graph,
+        nodes=nodes,
+        request_id=request_id,
+        request_table_name=effective_request_table_name,
+        serving_names_mapping=serving_names_mapping,
+    )
+    elapsed = time.time() - tic
+    logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
+
+
 async def get_historical_features(
     session: BaseSession,
     graph: QueryGraph,
@@ -168,8 +234,8 @@ async def get_historical_features(
     source_type : SourceType
         Source type information
     serving_names_mapping : dict[str, str] | None
-        Optional serving names mapping if the training events data has different serving name
-        columns than those defined in Entities
+        Optional serving names mapping if the observations set has different serving name columns
+        than those defined in Entities
     is_feature_list_deployed : bool
         Whether the feature list that triggered this historical request is deployed. If so, tile
         tables would have already been back-filled and there is no need to check and calculate tiles
@@ -192,10 +258,11 @@ async def get_historical_features(
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
 
     # Generate SQL code that computes the features
+    request_table_columns = training_events.columns.tolist()
     sql = get_historical_features_sql(
         graph=graph,
         nodes=nodes,
-        request_table_columns=training_events.columns.tolist(),
+        request_table_columns=request_table_columns,
         serving_names_mapping=serving_names_mapping,
         source_type=source_type,
         request_table_name=request_table_name,
@@ -207,16 +274,16 @@ async def get_historical_features(
 
     # Compute tiles on demand if required
     if not is_feature_list_deployed:
-        tic = time.time()
-        tile_cache = TileCache(session=session)
-        await tile_cache.compute_tiles_on_demand(
+        await compute_tiles_on_demand(
+            session=session,
             graph=graph,
             nodes=nodes,
             request_id=request_id,
+            request_table_name=request_table_name,
+            request_table_columns=request_table_columns,
             serving_names_mapping=serving_names_mapping,
+            parent_serving_preparation=parent_serving_preparation,
         )
-        elapsed = time.time() - tic
-        logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
 
     # Execute feature query
     result = session.get_async_query_stream(sql)
