@@ -55,6 +55,18 @@ class BetaWave3Nav(Nav):
     def _get_items_for_level(cls, data: Mapping, custom_order: List[str]) -> Any:
         """
         Helper method to get items sorted by a custom ordering.
+
+        Parameters
+        ----------
+        data: Mapping
+            The data to be sorted
+        custom_order: List[str]
+            The custom order
+
+        Returns
+        -------
+        Any
+            The sorted items
         """
         available_keys = set([item[0] for item in data.items() if item[0]])
         customized_keys = [key for key in custom_order if key in available_keys]
