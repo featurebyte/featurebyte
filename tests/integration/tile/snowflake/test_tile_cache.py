@@ -1,6 +1,7 @@
 """
 Integration tests for SnowflakeTileCache
 """
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -66,6 +67,8 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
     feature = feature_for_tile_cache_tests
     tile_cache = TileCache(session)
     _ = groupby_category
+
+    await check_entity_column_has_missing_values(session, feature, tile_cache)
 
     df_training_events = pd.DataFrame(
         {
@@ -159,3 +162,36 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
     await tile_cache.invoke_tile_manager(requests)
     await tile_cache.cleanup_temp_tables()
     await check_temp_tables_cleaned_up(session)
+
+
+async def check_entity_column_has_missing_values(session, feature, tile_cache):
+
+    # First run: user id nan first encountered
+    df_observations = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"]),
+            "üser id": [np.nan],
+        }
+    )
+    request_id = session.generate_session_unique_id()
+    request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
+    await session.register_table(request_table_name, df_observations)
+    requests = await tile_cache.get_required_computation(
+        request_id=request_id,
+        graph=feature.graph,
+        nodes=[feature.node],
+        request_table_name=request_table_name,
+    )
+    assert len(requests) == 1
+    await tile_cache.invoke_tile_manager(requests)
+    await tile_cache.cleanup_temp_tables()
+    await check_temp_tables_cleaned_up(session)
+
+    # Second run using the same request table, shouldn't need to recompute
+    requests = await tile_cache.get_required_computation(
+        request_id=request_id,
+        graph=feature.graph,
+        nodes=[feature.node],
+        request_table_name=request_table_name,
+    )
+    assert len(requests) == 0

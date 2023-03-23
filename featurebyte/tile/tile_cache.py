@@ -368,7 +368,7 @@ class TileCache:
             for serving_name, key in zip(tile_info.serving_names, tile_info.entity_columns):
                 join_conditions.append(
                     parse_one(
-                        f"REQ.{quoted_identifier(serving_name).sql()} = {table_alias}.{quoted_identifier(key).sql()}"
+                        f"REQ.{quoted_identifier(serving_name).sql()} <=> {table_alias}.{quoted_identifier(key).sql()}"
                     )
                 )
             join_conditions.append(
