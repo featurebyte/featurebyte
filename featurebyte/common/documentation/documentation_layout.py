@@ -40,7 +40,6 @@ FEATURE_STORE = "FeatureStore"
 INFO = "Info"
 LAGS = "Lags"
 LINEAGE = "Lineage"
-PREVIEW = "Preview"
 RELATIONSHIP = "Relationship"
 SERVING = "Serving"
 TABLE = "Table"
@@ -273,6 +272,7 @@ def _get_entity_layout() -> List[DocLayoutItem]:
         The layout for the entity documentation
     """
     return [
+        DocLayoutItem([ENTITY], "featurebyte.Entity"),
         DocLayoutItem([ENTITY, CATALOG, "featurebyte.Entity.get"], "featurebyte.Entity.get"),
         DocLayoutItem(
             [ENTITY, CATALOG, "featurebyte.Entity.get_by_id"], "featurebyte.Entity.get_by_id"
@@ -313,6 +313,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         The layout for the feature documentation
     """
     return [
+        DocLayoutItem([FEATURE], "featurebyte.Feature"),
         DocLayoutItem([FEATURE, CATALOG, "featurebyte.Feature.get"], "featurebyte.Feature.get"),
         DocLayoutItem(
             [FEATURE, CATALOG, "featurebyte.Feature.get_by_id"], "featurebyte.Feature.get_by_id"
@@ -570,7 +571,7 @@ def _get_feature_group_layout() -> List[DocLayoutItem]:
             [FEATURE_GROUP, LINEAGE, "featurebyte.FeatureGroup.sql"], "featurebyte.FeatureGroup.sql"
         ),
         DocLayoutItem(
-            [FEATURE_GROUP, PREVIEW, "featurebyte.FeatureGroup.preview"],
+            [FEATURE_GROUP, EXPLORE, "featurebyte.FeatureGroup.preview"],
             "featurebyte.FeatureGroup.preview",
         ),
     ]
@@ -795,6 +796,7 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
         The layout for the Relationship class.
     """
     return [
+        DocLayoutItem([RELATIONSHIP], "featurebyte.Relationship"),
         DocLayoutItem(
             [RELATIONSHIP, CATALOG, "featurebyte.Relationship.get"], "featurebyte.Relationship.get"
         ),
