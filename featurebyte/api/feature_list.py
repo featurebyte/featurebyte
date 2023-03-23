@@ -661,7 +661,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         --------
         Get a FeatureList object that is already saved.
 
-        >>> feature = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         """
         if version is None:
             feature_list_namespace = FeatureListNamespace.get(name=name)
