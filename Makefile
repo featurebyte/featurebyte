@@ -60,7 +60,7 @@ lint-style:
 	poetry run pylint --disable=${PYLINT_DISABLE} --rcfile pyproject.toml featurebyte
 	poetry run pylint --disable=${PYLINT_DISABLE_FOR_TESTS} --rcfile pyproject.toml tests
 
-	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" ! -path "featurebyte/__main__.py" ! -path "featurebyte/datasets/*" ! -path "featurebyte/conftest.py" | xargs poetry run darglint --verbosity 2
+	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" ! -path "featurebyte/__main__.py" ! -path "featurebyte/datasets/*" ! -path "featurebyte/conftest.py" ! -path "featurebyte/common/documentation/*" | xargs poetry run darglint --verbosity 2
 	find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
 
 lint-type:
