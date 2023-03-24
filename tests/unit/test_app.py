@@ -8,6 +8,7 @@ from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
+import toml
 from bson.objectid import ObjectId
 
 from featurebyte.app import get_app
@@ -54,5 +55,7 @@ def test_get_app__loading_time():
 def test_get_status():
     """Test app get status"""
     response = Configurations().get_client().get("/status")
+    data = toml.load("pyproject.toml")
+    version = data["tool"]["poetry"]["version"]
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {"sdk_version": "0.1.0"}
+    assert response.json() == {"sdk_version": version}
