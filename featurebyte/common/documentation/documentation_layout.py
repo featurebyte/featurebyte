@@ -73,11 +73,6 @@ def _get_data_layout() -> List[DocLayoutItem]:
             [TABLE, LIST, "featurebyte.Catalog.list_tables"], "featurebyte.Catalog.list_tables"
         ),
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.Table.save"],
-            "",
-            "featurebyte.api.base_table.TableApiObject.save.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
-        DocLayoutItem(
             [TABLE, CREATE, "featurebyte.SourceTable.create_dimension_table"],
             "featurebyte.SourceTable.create_dimension_table",
         ),
@@ -292,7 +287,6 @@ def _get_entity_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [ENTITY, CREATE, "featurebyte.Entity.get_or_create"], "featurebyte.Entity.get_or_create"
         ),
-        DocLayoutItem([ENTITY, CREATE, "featurebyte.Entity.save"], "featurebyte.Entity.save"),
         DocLayoutItem(
             [ENTITY, INFO, "featurebyte.Entity.created_at"], "featurebyte.Entity.created_at"
         ),
