@@ -1292,7 +1292,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
         """
-        Get python code template for serving online features from a deployed featurelist
+        Retrive either Python or shell script template for serving online features from a deployed featurelist, defaulted to python.
 
         Parameters
         ----------
@@ -1312,7 +1312,11 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Examples
         --------
-        >>> feature_list.get_online_serving_code()  # doctest: +SKIP
+
+        Retrieve python code template when "language" is set to "python"
+
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.get_online_serving_code(language="python")
             from typing import Any, Dict
             import pandas as pd
             import requests
@@ -1336,6 +1340,15 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                 assert response.status_code == 200, response.json()
                 return pd.DataFrame.from_dict(response.json()["features"])
             request_features([{{"cust_id": "sample_cust_id"}}])
+
+        Retrieve shell script template when "language" is set to "sh"
+
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.get_online_serving_code(language="sh")
+            \\#!/bin/sh
+            curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
+                '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
+                http://localhost:8080/feature_list/641cf594f74f839cf9297884/online_features?catalog_id=63eda344d0313fb925f7883a
         """
         if not self.deployed:
             raise FeatureListNotOnlineEnabledError("Feature list is not deployed.")
