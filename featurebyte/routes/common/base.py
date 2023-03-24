@@ -319,20 +319,3 @@ class DerivePrimaryEntityAndTableMixin:
 
         entities = [EntityModel(**entity_id_to_entity[entity_id]) for entity_id in entity_ids]
         return [entity.id for entity in derive_primary_entity(entities=entities)]
-
-    @staticmethod
-    def derive_primary_table_ids(feature: FeatureModel) -> list[ObjectId]:
-        """
-        Derive primary table IDs from a feature
-
-        Parameters
-        ----------
-        feature: FeatureModel
-            Feature model
-
-        Returns
-        -------
-        list[ObjectId]
-        """
-        primary_input_nodes = feature.graph.get_primary_input_nodes(node_name=feature.node_name)
-        return [node.parameters.id for node in primary_input_nodes if node.parameters.id]

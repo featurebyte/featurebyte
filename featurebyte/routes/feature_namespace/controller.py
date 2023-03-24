@@ -72,7 +72,7 @@ class FeatureNamespaceController(
         )
         output = FeatureNamespaceModelResponse(
             **document.dict(by_alias=True),
-            primary_table_ids=self.derive_primary_table_ids(feature=default_feature),
+            primary_table_ids=default_feature.primary_table_ids,
             primary_entity_ids=await self.derive_primary_entity_ids(
                 entity_ids=default_feature.entity_ids
             ),
@@ -106,9 +106,7 @@ class FeatureNamespaceController(
             query_filter={"_id": {"$in": list(default_feature_ids)}}
         ):
             feature = FeatureModel(**feature_dict)
-            feature_id_to_primary_table_ids[feature.id] = self.derive_primary_table_ids(
-                feature=feature
-            )
+            feature_id_to_primary_table_ids[feature.id] = feature.primary_table_ids
 
         # construct primary entity IDs and primary table IDs & add these attributes to feature namespace docs
         output = []
