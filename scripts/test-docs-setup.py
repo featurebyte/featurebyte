@@ -149,7 +149,7 @@ def setup() -> None:
     invoice_amount_avg = grocery_item_view.groupby("GroceryCustomerGuid").aggregate(
         value_column="Amount",
         method="avg",
-        feature_names="InvoiceAmountAvg",
+        feature_name="InvoiceAmountAvg",
     )
     invoice_amount_avg.save(conflict_resolution="retrieve")
 
