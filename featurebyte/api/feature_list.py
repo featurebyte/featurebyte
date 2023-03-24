@@ -555,7 +555,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         cls,
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
-        data: Optional[str] = None,
+        table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved feature lists
@@ -566,7 +566,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             Whether to include id in the list
         entity: Optional[str]
             Name of entity used to filter results
-        data: Optional[str]
+        table: Optional[str]
             Name of table used to filter results
 
         Returns
@@ -579,9 +579,9 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             feature_lists = feature_lists[
                 feature_lists.entities.apply(lambda entities: entity in entities)
             ]
-        if data:
+        if table:
             feature_lists = feature_lists[
-                feature_lists.table.apply(lambda data_list: data in data_list)
+                feature_lists.table.apply(lambda table_list: table in table_list)
             ]
         return feature_lists
 
@@ -905,7 +905,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         cls,
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
-        data: Optional[str] = None,
+        table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved feature lists
@@ -916,7 +916,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             Whether to include id in the list
         entity: Optional[str]
             Name of entity used to filter results
-        data: Optional[str]
+        table: Optional[str]
             Name of table used to filter results
 
         Returns
@@ -924,10 +924,10 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         pd.DataFrame
             Table of feature lists
         """
-        return FeatureListNamespace.list(include_id=include_id, entity=entity, data=data)
+        return FeatureListNamespace.list(include_id=include_id, entity=entity, table=table)
 
     def list_features(
-        self, entity: Optional[str] = None, data: Optional[str] = None
+        self, entity: Optional[str] = None, table: Optional[str] = None
     ) -> pd.DataFrame:
         """
         List features in the feature list
@@ -936,7 +936,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ----------
         entity: Optional[str]
             Name of entity used to filter results
-        data: Optional[str]
+        table: Optional[str]
             Name of table used to filter results
 
         Returns
@@ -944,7 +944,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         pd.DataFrame
             Table of features
         """
-        return Feature.list_versions(feature_list_id=self.id, entity=entity, data=data)
+        return Feature.list_versions(feature_list_id=self.id, entity=entity, table=table)
 
     @typechecked
     def get_historical_features_sql(

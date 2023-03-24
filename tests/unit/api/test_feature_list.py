@@ -963,10 +963,10 @@ def test_get_sql(feature_list):
 def test_list_filter(saved_feature_list):
     """Test filters in list"""
     # test filter by table and entity
-    feature_lists = FeatureList.list(data="sf_event_table")
+    feature_lists = FeatureList.list(table="sf_event_table")
     assert feature_lists.shape[0] == 1
 
-    feature_lists = FeatureList.list(data="other_data", include_id=True)
+    feature_lists = FeatureList.list(table="other_data", include_id=True)
     assert feature_lists.shape[0] == 0
 
     feature_lists = FeatureList.list(entity="customer")
@@ -975,13 +975,13 @@ def test_list_filter(saved_feature_list):
     feature_lists = FeatureList.list(entity="other_entity")
     assert feature_lists.shape[0] == 0
 
-    feature_lists = FeatureList.list(data="sf_event_table", entity="customer")
+    feature_lists = FeatureList.list(table="sf_event_table", entity="customer")
     assert feature_lists.shape[0] == 1
 
-    feature_lists = FeatureList.list(data="sf_event_table", entity="other_entity")
+    feature_lists = FeatureList.list(table="sf_event_table", entity="other_entity")
     assert feature_lists.shape[0] == 0
 
-    feature_lists = FeatureList.list(data="other_data", entity="customer")
+    feature_lists = FeatureList.list(table="other_data", entity="customer")
     assert feature_lists.shape[0] == 0
 
 

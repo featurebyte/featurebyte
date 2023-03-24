@@ -117,9 +117,11 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             assert response.status_code == HTTPStatus.CREATED
 
         payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        doc = FeatureCreate(**payload).dict(by_alias=True)
+        doc["catalog_id"] = DEFAULT_CATALOG_ID
         await persistent.insert_one(
             collection_name="feature",
-            document=FeatureCreate(**payload).dict(by_alias=True),
+            document=doc,
             user_id=user_id,
         )
 
@@ -254,6 +256,9 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
             "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
+            "primary_table": [
+                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
+            ],
             "default_version_mode": "AUTO",
             "default_feature_id": response_dict["default_feature_id"],
             "dtype": "FLOAT",

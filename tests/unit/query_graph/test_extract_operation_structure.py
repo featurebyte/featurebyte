@@ -584,6 +584,10 @@ def test_extract_operation__lookup_feature(
     assert op_struct.row_index_lineage == ("lookup_1",)
     assert op_struct.is_time_based is False
 
+    # check main input nodes
+    primary_input_nodes = global_graph.get_primary_input_nodes(node_name=lookup_feature_node.name)
+    assert primary_input_nodes == [dimension_table_input_node]
+
 
 def test_extract_operation__event_lookup_feature(
     global_graph,
@@ -621,6 +625,12 @@ def test_extract_operation__event_lookup_feature(
     assert op_struct.row_index_lineage == ("lookup_1",)
     assert op_struct.is_time_based is True
 
+    # check main input nodes
+    primary_input_nodes = global_graph.get_primary_input_nodes(
+        node_name=event_lookup_feature_node.name
+    )
+    assert primary_input_nodes == [event_table_input_node]
+
 
 def test_extract_operation__scd_lookup_feature(
     global_graph,
@@ -656,6 +666,12 @@ def test_extract_operation__scd_lookup_feature(
     assert op_struct.output_type == "series"
     assert op_struct.row_index_lineage == ("lookup_1",)
     assert op_struct.is_time_based is True
+
+    # check main input nodes
+    primary_input_nodes = global_graph.get_primary_input_nodes(
+        node_name=scd_lookup_feature_node.name
+    )
+    assert primary_input_nodes == [scd_table_input_node]
 
 
 def test_extract_operation__aggregate_asat_feature(
@@ -694,6 +710,12 @@ def test_extract_operation__aggregate_asat_feature(
     assert op_struct.output_type == "series"
     assert op_struct.row_index_lineage == ("aggregate_as_at_1",)
     assert op_struct.is_time_based is True
+
+    # check main input nodes
+    primary_input_nodes = global_graph.get_primary_input_nodes(
+        node_name=aggregate_asat_feature_node.name
+    )
+    assert primary_input_nodes == [scd_table_input_node]
 
 
 def test_extract_operation__alias(global_graph, input_node):

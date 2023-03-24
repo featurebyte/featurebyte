@@ -277,7 +277,7 @@ class Catalog(CatalogModel, SavableApiObject):
         self,
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
-        data: Optional[str] = None,
+        table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved feature versions
@@ -288,7 +288,7 @@ class Catalog(CatalogModel, SavableApiObject):
             Whether to include id in the list
         entity: Optional[str]
             Name of entity used to filter results
-        data: Optional[str]
+        table: Optional[str]
             Name of table used to filter results
 
         Returns
@@ -296,14 +296,14 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Table of features
         """
-        return Feature.list(include_id=include_id, entity=entity, data=data)
+        return Feature.list(include_id=include_id, entity=entity, table=table)
 
     @update_and_reset_catalog
     def list_feature_lists(
         self,
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
-        data: Optional[str] = None,
+        table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved feature lists
@@ -314,7 +314,7 @@ class Catalog(CatalogModel, SavableApiObject):
             Whether to include id in the list
         entity: Optional[str]
             Name of entity used to filter results
-        data: Optional[str]
+        table: Optional[str]
             Name of table used to filter results
 
         Returns
@@ -322,7 +322,7 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Table of feature lists
         """
-        return FeatureList.list(include_id=include_id, entity=entity, data=data)
+        return FeatureList.list(include_id=include_id, entity=entity, table=table)
 
     @update_and_reset_catalog
     def list_tables(

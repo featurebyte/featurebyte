@@ -235,6 +235,7 @@ class FeatureNamespaceInfo(NamespaceInfo):
     """
 
     dtype: DBVarType
+    primary_table: TableBriefInfoList
     default_feature_id: PydanticObjectId
 
 

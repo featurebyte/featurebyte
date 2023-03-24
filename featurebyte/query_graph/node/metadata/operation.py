@@ -5,6 +5,7 @@ from typing import (
     Any,
     DefaultDict,
     Dict,
+    Iterator,
     List,
     Literal,
     Optional,
@@ -555,6 +556,35 @@ class OperationStructure(FeatureByteBaseModel):
                 input_column_map = BaseDerivedColumn.insert_column(input_column_map, column)
 
         return list(input_column_map.values()), list(derived_column_map)
+
+    def iterate_source_columns_or_aggregations(
+        self,
+    ) -> Iterator[Union[SourceDataColumn, AggregationColumn]]:
+        """
+        Iterate source columns or aggregations. For view category, it returns SourceDataColumn. For feature category,
+        it returns AggregationColumn.
+
+        Yields
+        ------
+        Union[SourceDataColumn, AggregationColumn]
+            Column/Aggregation that directly contributes to the output
+        """
+        if self.output_category == NodeOutputCategory.VIEW:
+            for column in self.columns:
+                if isinstance(column, SourceDataColumn):
+                    yield column
+                else:
+                    assert isinstance(column, DerivedDataColumn)
+                    for source_col in column.columns:
+                        yield source_col
+        else:
+            for aggregation in self.aggregations:
+                if isinstance(aggregation, AggregationColumn):
+                    yield aggregation
+                else:
+                    assert isinstance(aggregation, PostAggregationColumn)
+                    for source_agg in aggregation.columns:
+                        yield source_agg
 
     def to_group_operation_structure(self) -> GroupOperationStructure:
         """

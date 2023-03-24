@@ -4,10 +4,7 @@ import pytest
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc
 from featurebyte.exception import RecordUpdateException
-from featurebyte.query_graph.node.cleaning_operation import (
-    ColumnCleaningOperation,
-    MissingValueImputation,
-)
+from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -173,6 +170,22 @@ def test_sdk_code_generation__complex_feature(
         item_table_id=saved_item_table.id,
     )
 
+    # check main input nodes
+    primary_input_nodes = output.graph.get_primary_input_nodes(node_name=output.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [saved_event_table.id]
+
+    primary_input_nodes = feat_item_sum.graph.get_primary_input_nodes(
+        node_name=feat_item_sum.node_name
+    )
+    assert [node.parameters.id for node in primary_input_nodes] == [saved_item_table.id]
+
+    temp = feat_item_sum + output
+    primary_input_nodes = temp.graph.get_primary_input_nodes(node_name=temp.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [
+        saved_item_table.id,
+        saved_event_table.id,
+    ]
+
 
 def test_sdk_code_generation__multi_table_feature(
     saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
@@ -262,6 +275,20 @@ def test_sdk_code_generation__multi_table_feature(
     )
     assert expected_error in str(exc.value)
 
+    # check main input nodes
+    primary_input_nodes = output.graph.get_primary_input_nodes(node_name=output.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [saved_event_table.id]
+
+    primary_input_nodes = max_percent.graph.get_primary_input_nodes(node_name=max_percent.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [saved_item_table.id]
+
+    temp = output + max_percent
+    primary_input_nodes = temp.graph.get_primary_input_nodes(node_name=temp.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [
+        saved_event_table.id,
+        saved_item_table.id,
+    ]
+
 
 def test_sdk_code_generation__item_view_cosine_similarity_feature(
     saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
@@ -306,3 +333,7 @@ def test_sdk_code_generation__item_view_cosine_similarity_feature(
 
     # check update readiness to production ready won't fail due to production ready guardrail
     output.update_readiness(readiness="PRODUCTION_READY")
+
+    # check the main input nodes
+    primary_input_nodes = output.graph.get_primary_input_nodes(node_name=output.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [saved_item_table.id]

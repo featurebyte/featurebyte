@@ -10,12 +10,10 @@ import copy
 from bson.objectid import ObjectId
 
 from featurebyte import TableCleaningOperation
-from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import TableModel
-from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import GraphNodeType
@@ -401,32 +399,6 @@ class InfoService(BaseService):
             current_flag_column=scd_table.current_flag_column,
         )
 
-    @staticmethod
-    def _get_main_data(tables: list[ProxyTableModel]) -> ProxyTableModel:
-        """
-        Get the main table from the list of tables
-
-        Parameters
-        ----------
-        tables: list[ProxyTableModel]
-            List of table models
-
-        Returns
-        -------
-        ProxyTableModel
-        """
-        priority_to_table = {}
-        for table in tables:
-            if table.type == TableDataType.ITEM_TABLE:
-                priority_to_table[3] = table
-            elif table.type == TableDataType.EVENT_TABLE:
-                priority_to_table[2] = table
-            elif table.entity_ids:
-                priority_to_table[1] = table
-            else:
-                priority_to_table[0] = table
-        return priority_to_table[max(priority_to_table)]
-
     async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
         # retrieve related tables & semantics
         table_list = await self._get_list_object(
@@ -490,10 +462,7 @@ class InfoService(BaseService):
                 "inputs": [reference_map[col] for col in op_struct.post_aggregation.columns],
                 "transforms": op_struct.post_aggregation.transforms,
             }
-
-        main_data = self._get_main_data(table_list.data)
         return {
-            "main_data": {"name": main_data.name, "table_type": main_data.type, "id": main_data.id},
             "input_columns": source_columns,
             "derived_columns": derived_columns,
             "aggregations": aggregation_columns,
@@ -557,12 +526,15 @@ class InfoService(BaseService):
         FeatureInfo
         """
         feature = await self.feature_service.get_document(document_id=document_id)
-        data_id_to_name = {
-            doc["_id"]: doc["name"]
-            async for doc in self.table_service.list_documents_iterator(
-                query_filter={"_id": {"$in": feature.tabular_data_ids}}
-            )
-        }
+        catalog = await self.catalog_service.get_document(feature.catalog_id)
+        data_id_to_doc = {}
+        async for doc in self.table_service.list_documents_iterator(
+            query_filter={"_id": {"$in": feature.tabular_data_ids}}
+        ):
+            doc["catalog_name"] = catalog.name
+            data_id_to_doc[doc["_id"]] = doc
+
+        data_id_to_name = {key: value["name"] for key, value in data_id_to_doc.items()}
         namespace_info = await self.get_feature_namespace_info(
             document_id=feature.feature_namespace_id,
             verbose=verbose,
@@ -584,12 +556,7 @@ class InfoService(BaseService):
             )
 
         op_struct = feature.extract_operation_structure()
-        if op_struct.tabular_data_ids:
-            metadata = await self._extract_feature_metadata(op_struct=op_struct)
-        else:
-            # DEV-556: handle the case before tracking this field in the input node
-            metadata = None
-
+        metadata = await self._extract_feature_metadata(op_struct=op_struct)
         return FeatureInfo(
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
@@ -651,6 +618,12 @@ class InfoService(BaseService):
             assert table["catalog_id"] == catalog.id
             table["catalog_name"] = catalog.name
 
+        # derive primary tables
+        table_id_to_doc = {table["_id"]: table for table in tables["data"]}
+        feature = await self.feature_service.get_document(document_id=namespace.default_feature_id)
+        primary_input_nodes = feature.graph.get_primary_input_nodes(node_name=feature.node_name)
+        primary_tables = [table_id_to_doc[node.parameters.id] for node in primary_input_nodes]
+
         return FeatureNamespaceInfo(
             name=namespace.name,
             created_at=namespace.created_at,
@@ -658,6 +631,7 @@ class InfoService(BaseService):
             entities=EntityBriefInfoList.from_paginated_data(entities),
             primary_entity=EntityBriefInfoList.from_paginated_data(primary_entity),
             tables=TableBriefInfoList.from_paginated_data(tables),
+            primary_table=primary_tables,
             default_version_mode=namespace.default_version_mode,
             default_feature_id=namespace.default_feature_id,
             dtype=namespace.dtype,
