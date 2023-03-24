@@ -146,12 +146,11 @@ def setup() -> None:
     feature_group["CustomerProductGroupCounts_90d"].save(conflict_resolution="retrieve")
 
     # Feature: InvoiceAmountAvg - non time based
-    invoice_amount_avg = grocery_item_view.groupby("GroceryCustomerGuid").aggregate(
-        value_column="Amount",
-        method="avg",
-        feature_name="InvoiceAmountAvg",
+    invoice_count = grocery_item_view.groupby("GroceryCustomerGuid").aggregate(
+        method="count",
+        feature_name="InvoiceCount",
     )
-    invoice_amount_avg.save(conflict_resolution="retrieve")
+    invoice_count.save(conflict_resolution="retrieve")
 
     # FeatureList:
     FeatureList([invoice_count_60days], name="invoice_feature_list").save(
