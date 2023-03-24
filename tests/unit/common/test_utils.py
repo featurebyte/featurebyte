@@ -4,6 +4,7 @@ Test helper functions in featurebyte.common.utils
 import numpy as np
 import pandas as pd
 import pytest
+import toml
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.utils import (
@@ -82,4 +83,5 @@ def test_get_version():
     """
     Test get_version
     """
-    assert get_version() == "0.1.0"
+    data = toml.load("pyproject.toml")
+    assert get_version() == data["tool"]["poetry"]["version"]

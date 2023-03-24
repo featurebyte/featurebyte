@@ -10,6 +10,7 @@ from unittest.mock import patch
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte import get_version
 from featurebyte.app import get_app
 from featurebyte.config import Configurations
 from featurebyte.utils import persistent
@@ -55,4 +56,4 @@ def test_get_status():
     """Test app get status"""
     response = Configurations().get_client().get("/status")
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {"sdk_version": "0.1.0"}
+    assert response.json() == {"sdk_version": get_version()}
