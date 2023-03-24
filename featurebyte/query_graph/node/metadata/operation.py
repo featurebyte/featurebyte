@@ -557,13 +557,12 @@ class OperationStructure(FeatureByteBaseModel):
 
         return list(input_column_map.values()), list(derived_column_map)
 
-    def output_flattened_column_iterator(
+    def iterate_source_or_aggregation_columns(
         self,
     ) -> Iterator[Union[SourceDataColumn, AggregationColumn]]:
         """
-        Iterator of flattened output columns. A flattened column is a column (aggregation) that is not derived from
-        other columns (aggregation). For view category, it returns SourceDataColumn. For feature category, it returns
-        AggregationColumn.
+        Iterate source or aggregation columns. For view category, it returns SourceDataColumn. For feature category,
+        it returns AggregationColumn.
 
         Yields
         ------
