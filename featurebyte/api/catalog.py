@@ -293,7 +293,7 @@ class Catalog(CatalogModel, SavableApiObject):
         table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
-        List features that have bee nsaved.
+        List features that have been saved.
 
         Parameters
         ----------
@@ -455,7 +455,7 @@ class Catalog(CatalogModel, SavableApiObject):
 
         Examples
         --------
-        List saved features.
+        List saved feature job setting analyses.
 
         >>> feature_job_setting_analyses = catalog.list_feature_job_setting_analyses()
         """
@@ -641,7 +641,7 @@ class Catalog(CatalogModel, SavableApiObject):
         Returns
         -------
         Any
-            Retrieved source table.
+            Retrieved table.
 
         Examples
         --------
