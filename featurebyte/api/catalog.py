@@ -147,6 +147,12 @@ class Catalog(CatalogModel, SavableApiObject):
         -------
         Catalog
 
+        Examples
+        --------
+        Create a new catalog.
+
+        >>> catalog = fb.Catalog.create("new_catalog")  # doctest: +SKIP
+
         See Also
         --------
         - [Catalog.get_or_create](/reference/featurebyte.api.catalog.Catalog.get_or_create/): Get or create Catalog
@@ -257,7 +263,7 @@ class Catalog(CatalogModel, SavableApiObject):
     @update_and_reset_catalog
     def create_entity(self, name: str, serving_names: List[str]) -> Entity:
         """
-        Create entity
+        Create a new entity with the provided name and serving names.
 
         Parameters
         ----------
@@ -269,6 +275,13 @@ class Catalog(CatalogModel, SavableApiObject):
         Returns
         -------
         Entity
+            Newly created entity.
+
+        Examples
+        --------
+        Create a new entity.
+
+        >>> entity = catalog.create_entity("customer", ["customer_id"])
         """
         return Entity.create(name=name, serving_names=serving_names)
 
@@ -280,21 +293,27 @@ class Catalog(CatalogModel, SavableApiObject):
         table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
-        List saved feature versions
+        List features that have been saved.
 
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include id in the list.
         entity: Optional[str]
-            Name of entity used to filter results
+            Name of entity used to filter results.
         table: Optional[str]
-            Name of table used to filter results
+            Name of table used to filter results.
 
         Returns
         -------
         pd.DataFrame
             Table of features
+
+        Examples
+        --------
+        List saved features.
+
+        >>> features = catalog.list_features()
         """
         return Feature.list(include_id=include_id, entity=entity, table=table)
 
@@ -306,21 +325,27 @@ class Catalog(CatalogModel, SavableApiObject):
         table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
-        List saved feature lists
+        List saved feature lists.
 
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include id in the list.
         entity: Optional[str]
-            Name of entity used to filter results
+            Name of entity used to filter results.
         table: Optional[str]
-            Name of table used to filter results
+            Name of table used to filter results.
 
         Returns
         -------
         pd.DataFrame
-            Table of feature lists
+            Table of feature lists.
+
+        Examples
+        --------
+        List saved feature lists.
+
+        >>> feature_lists = catalog.list_feature_lists()
         """
         return FeatureList.list(include_id=include_id, entity=entity, table=table)
 
@@ -329,19 +354,25 @@ class Catalog(CatalogModel, SavableApiObject):
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
-        List saved tables
+        List saved tables.
 
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include id in the list.
         entity: Optional[str]
-            Name of entity used to filter results
+            Name of entity used to filter results.
 
         Returns
         -------
         pd.DataFrame
             Dataframe of tables
+
+        Examples
+        --------
+        List saved tables.
+
+        >>> tables = catalog.list_tables()
         """
         return Table.list(include_id=include_id, entity=entity)
 
@@ -366,20 +397,20 @@ class Catalog(CatalogModel, SavableApiObject):
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include the id in the dataframe
+            Whether to include the id in the dataframe.
         relationship_type: Optional[Literal[tuple[RelationshipType]]]
-            The type of relationship to list
+            The type of relationship to list.
 
         Returns
         -------
         pd.DataFrame
-            A dataframe containing the relationships
+            A dataframe containing the relationships.
 
         Examples
         --------
-        List all relationships
+        List all relationships.
 
-        >>> fb.Relationship.list()[[
+        >>> catalog.list_relationships()[[
         ...     "relationship_type",
         ...     "primary_entity",
         ...     "related_entity",
@@ -388,9 +419,9 @@ class Catalog(CatalogModel, SavableApiObject):
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
 
-        List all child-parent relationships
+        List all child-parent relationships.
 
-        >>> fb.Relationship.list(relationship_type="child_parent")[[
+        >>> catalog.list_relationships(relationship_type="child_parent")[[
         ...     "relationship_type",
         ...     "primary_entity",
         ...     "related_entity",
@@ -408,87 +439,117 @@ class Catalog(CatalogModel, SavableApiObject):
         event_table_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
         """
-        List saved feature job setting analyses
+        List saved feature job setting analyses.
 
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include id in the list.
         event_table_id: Optional[ObjectId]
-            EventTable id used to filter results
+            EventTable id used to filter results.
 
         Returns
         -------
         pd.DataFrame
-            Table of feature job setting analysis
+            Table of feature job setting analysis.
+
+        Examples
+        --------
+        List saved feature job setting analyses.
+
+        >>> feature_job_setting_analyses = catalog.list_feature_job_setting_analyses()
         """
         return FeatureJobSettingAnalysis.list(include_id=include_id, event_table_id=event_table_id)
 
     @update_and_reset_catalog
     def list_feature_stores(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
-        List saved feature stores
+        List saved feature stores.
 
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include id in the list.
 
         Returns
         -------
         pd.DataFrame
             Table of feature stores
+
+        Examples
+        --------
+        List saved feature stores.
+
+        >>> feature_stores = catalog.list_feature_stores()
         """
         return FeatureStore.list(include_id=include_id)
 
     @update_and_reset_catalog
     def list_entities(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
-        List saved entities
+        List saved entities.
 
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include id in the list.
 
         Returns
         -------
         pd.DataFrame
-            Table of entities
+            Table of entities.
+
+        Examples
+        --------
+        List saved entities.
+
+        >>> entities = catalog.list_entities()
         """
         return Entity.list(include_id=include_id)
 
     @update_and_reset_catalog
     def list_periodic_tasks(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
-        List saved periodic tasks
+        List saved periodic tasks.
 
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include id in the list.
 
         Returns
         -------
         pd.DataFrame
-            Table of periodic tasks
+            Table of periodic tasks.
+
+        Examples
+        --------
+        List saved periodic tasks.
+
+        >>> periodic_tasks = catalog.list_periodic_tasks()
         """
         return PeriodicTask.list(include_id=include_id)
 
     @update_and_reset_catalog
     def get_data_source(self, feature_store_name: str) -> DataSource:
         """
-        Get data source by name
+        Get data source by a given feature store name.
 
         Parameters
         ----------
         feature_store_name: str
-            Feature store name
+            Feature store name.
 
         Returns
         -------
         DataSource
             Data source object
+
+        Examples
+        --------
+        Get data source.
+
+        >>> data_source = catalog.get_data_source("playground")
         """
         feature_store = FeatureStore.get(name=feature_store_name)
         return feature_store.get_data_source()
@@ -496,17 +557,23 @@ class Catalog(CatalogModel, SavableApiObject):
     @update_and_reset_catalog
     def get_view(self, table_name: str) -> View:
         """
-        Get view by name
+        Get view for a given table name.
 
         Parameters
         ----------
         table_name: str
-            Table name
+            Table name.
 
         Returns
         -------
         View
-            View object
+            View object.
+
+        Examples
+        --------
+        Get an event view from an event table.
+
+        >>> event_view = catalog.get_view("GROCERYINVOICE")
         """
         table = Table.get(name=table_name)
         return table.get_view()  # type: ignore[no-any-return]
@@ -514,139 +581,187 @@ class Catalog(CatalogModel, SavableApiObject):
     @update_and_reset_catalog
     def get_feature(self, name: str, version: Optional[str] = None) -> Feature:
         """
-        Get a feature by name and version
+        Get a feature by name and version.
 
         Parameters
         ----------
         name: str
-            Feature name
+            Feature name.
         version: Optional[str]
-            Feature version, if None, the default version will be returned
+            Feature version. If None is provided, the default version will be returned.
 
         Returns
         -------
         Feature
-            Feature object
+            Feature object.
+
+        Examples
+        --------
+        Get a saved feature.
+
+        >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
         """
         return Feature.get(name=name, version=version)
 
     @update_and_reset_catalog
     def get_feature_list(self, name: str, version: Optional[str] = None) -> FeatureList:
         """
-        Get feature list by name
+        Get feature list by name.
 
         Parameters
         ----------
         name: str
-            Feature list name
+            Feature list name.
         version: Optional[str]
-            Version of the feature list, if None, the default version will be returned
+            Version of the feature list. If None, the default version will be returned.
 
         Returns
         -------
         FeatureList
-            Feature list object
+            Feature list object.
+
+        Examples
+        --------
+        Get a saved feature list.
+
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         """
         return FeatureList.get(name=name, version=version)
 
     @update_and_reset_catalog
     def get_table(self, name: str) -> Any:
         """
-        Get table by name
+        Get table by name.
 
         Parameters
         ----------
         name: str
-            Table name
+            Table name.
 
         Returns
         -------
         Any
-            Retrieved source table
+            Retrieved table.
+
+        Examples
+        --------
+        Get a saved table.
+
+        >>> item_table = catalog.get_table("INVOICEITEMS")
         """
         return Table.get(name=name)
 
     @update_and_reset_catalog
     def get_relationship(self, name: str) -> Relationship:
         """
-        Get relationship by name
+        Get relationship by name.
 
         Parameters
         ----------
         name: str
-            Relationship name
+            Relationship name.
 
         Returns
         -------
         Relationship
-            Relationship object
+            Relationship object.
+
+        Examples
+        --------
+        Get a saved relationship.
+
+        >>> relationship = catalog.get_relationship("relationship_name")  # doctest: +SKIP
         """
         return Relationship.get(name=name)
 
     @update_and_reset_catalog
     def get_feature_job_setting_analysis(self, name: str) -> FeatureJobSettingAnalysis:
         """
-        Get feature job setting analysis by name
+        Get feature job setting analysis by name.
 
         Parameters
         ----------
         name: str
-            Feature job setting analysis name
+            Feature job setting analysis name.
 
         Returns
         -------
         FeatureJobSettingAnalysis
-            Feature job setting analysis object
+            Feature job setting analysis object.
+
+        Examples
+        --------
+        Get a saved feature job setting analysis.
+
+        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis("analysis_name")  # doctest: +SKIP
         """
         return FeatureJobSettingAnalysis.get(name=name)
 
     @update_and_reset_catalog
     def get_feature_store(self, name: str) -> FeatureStore:
         """
-        Get feature store by name
+        Get feature store by name.
 
         Parameters
         ----------
         name: str
-            Feature store name
+            Feature store name.
 
         Returns
         -------
         FeatureStore
-            Feature store object
+            Feature store object.
+
+        Examples
+        --------
+        Get a saved feature store.
+
+        >>> feature_store = catalog.get_feature_store("playground")
         """
         return FeatureStore.get(name=name)
 
     @update_and_reset_catalog
     def get_entity(self, name: str) -> Entity:
         """
-        Get entity by name
+        Get entity by name.
 
         Parameters
         ----------
         name: str
-            Entity name
+            Entity name.
 
         Returns
         -------
         Entity
-            Entity object
+            Entity object.
+
+        Examples
+        --------
+        Get a saved entity.
+
+        >>> entity = catalog.get_entity("grocerycustomer")
         """
         return Entity.get(name=name)
 
     @update_and_reset_catalog
     def get_periodic_task(self, name: str) -> PeriodicTask:
         """
-        Get periodic task by name
+        Get periodic task by name.
 
         Parameters
         ----------
         name: str
-            Periodic task name
+            Periodic task name.
 
         Returns
         -------
         PeriodicTask
-            Periodic task object
+            Periodic task object.
+
+        Examples
+        --------
+        Get a saved periodic task.
+
+        >>> periodic_task = catalog.get_periodic_task("task_name")  # doctest: +SKIP
         """
         return PeriodicTask.get(name=name)
