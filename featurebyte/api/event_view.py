@@ -337,6 +337,15 @@ class EventView(View, GroupByMixin):
             The feature we want to add to the EventView.
         entity_column: Optional[str]
             The entity column to use in the EventView. The type of this entity should match the entity of the feature.
+
+        Examples
+        --------
+        Add feature to an EventView.
+
+        >>> event_view = catalog.get_view("GROCERYINVOICE")
+        >>> feature = catalog.get_feature("CustomerProductGroupCounts_7d")
+        >>> event_view.add_feature("customer_product_group_counts_7d", feature)
+
         """
         validate_type_is_feature(feature, "feature")
 
