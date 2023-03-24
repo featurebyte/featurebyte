@@ -62,7 +62,7 @@ class StringAccessor:
 
     def len(self) -> FrozenSeries:
         """
-        Compute len of each string element.
+        Compute length of each string element.
 
         Returns
         -------
