@@ -527,7 +527,6 @@ class InfoService(BaseService):
         """
         feature = await self.feature_service.get_document(document_id=document_id)
         catalog = await self.catalog_service.get_document(feature.catalog_id)
-        main_input_nodes = feature.graph.get_main_input_nodes(node_name=feature.node_name)
         data_id_to_doc = {}
         async for doc in self.table_service.list_documents_iterator(
             query_filter={"_id": {"$in": feature.tabular_data_ids}}
@@ -536,7 +535,6 @@ class InfoService(BaseService):
             data_id_to_doc[doc["_id"]] = doc
 
         data_id_to_name = {key: value["name"] for key, value in data_id_to_doc.items()}
-        primary_tables = [data_id_to_doc[node.parameters.id] for node in main_input_nodes]
         namespace_info = await self.get_feature_namespace_info(
             document_id=feature.feature_namespace_id,
             verbose=verbose,
@@ -563,7 +561,6 @@ class InfoService(BaseService):
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
-            primary_table=primary_tables,
             table_feature_job_setting={
                 "this": self._extract_table_feature_job_settings(
                     feature=feature, table_id_to_name=data_id_to_name
@@ -621,6 +618,12 @@ class InfoService(BaseService):
             assert table["catalog_id"] == catalog.id
             table["catalog_name"] = catalog.name
 
+        # derive primary tables
+        table_id_to_doc = {table["_id"]: table for table in tables["data"]}
+        feature = await self.feature_service.get_document(document_id=namespace.default_feature_id)
+        main_input_nodes = feature.graph.get_main_input_nodes(node_name=feature.node_name)
+        primary_tables = [table_id_to_doc[node.parameters.id] for node in main_input_nodes]
+
         return FeatureNamespaceInfo(
             name=namespace.name,
             created_at=namespace.created_at,
@@ -628,6 +631,7 @@ class InfoService(BaseService):
             entities=EntityBriefInfoList.from_paginated_data(entities),
             primary_entity=EntityBriefInfoList.from_paginated_data(primary_entity),
             tables=TableBriefInfoList.from_paginated_data(tables),
+            primary_table=primary_tables,
             default_version_mode=namespace.default_version_mode,
             default_feature_id=namespace.default_feature_id,
             dtype=namespace.dtype,

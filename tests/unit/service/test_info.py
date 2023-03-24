@@ -531,6 +531,9 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
+        primary_table=[
+            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",

@@ -235,6 +235,7 @@ class FeatureNamespaceInfo(NamespaceInfo):
     """
 
     dtype: DBVarType
+    primary_table: TableBriefInfoList
     default_feature_id: PydanticObjectId
 
 
@@ -246,7 +247,6 @@ class FeatureInfo(FeatureNamespaceInfo):
     dtype: DBVarType
     version: VersionComparison
     readiness: ReadinessComparison
-    primary_table: TableBriefInfoList
     table_feature_job_setting: TableFeatureJobSettingComparison
     table_cleaning_operation: TableCleaningOperationComparison
     versions_info: Optional[FeatureBriefInfoList]
