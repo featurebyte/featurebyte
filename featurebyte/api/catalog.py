@@ -151,7 +151,7 @@ class Catalog(CatalogModel, SavableApiObject):
         --------
         Create a new catalog.
 
-        >>> catalog = fb.Catalog.create("new_catalog")  # doctest: SKIP
+        >>> catalog = fb.Catalog.create("new_catalog")  # doctest: +SKIP
 
         See Also
         --------
