@@ -769,10 +769,10 @@ def test_get_sql(float_feature):
 def test_list_filter(saved_feature):
     """Test filters in list"""
     # test filter by table and entity
-    feature_list = Feature.list(data="sf_event_table")
+    feature_list = Feature.list(table="sf_event_table")
     assert feature_list.shape[0] == 1
 
-    feature_list = Feature.list(data="other_data", include_id=True)
+    feature_list = Feature.list(table="other_data", include_id=True)
     assert feature_list.shape[0] == 0
 
     feature_list = Feature.list(entity="customer")
@@ -781,13 +781,13 @@ def test_list_filter(saved_feature):
     feature_list = Feature.list(entity="other_entity")
     assert feature_list.shape[0] == 0
 
-    feature_list = Feature.list(data="sf_event_table", entity="customer")
+    feature_list = Feature.list(table="sf_event_table", entity="customer")
     assert feature_list.shape[0] == 1
 
-    feature_list = Feature.list(data="sf_event_table", entity="other_entity")
+    feature_list = Feature.list(table="sf_event_table", entity="other_entity")
     assert feature_list.shape[0] == 0
 
-    feature_list = Feature.list(data="other_data", entity="customer")
+    feature_list = Feature.list(table="other_data", entity="customer")
     assert feature_list.shape[0] == 0
 
 

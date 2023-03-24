@@ -151,7 +151,7 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
         cls,
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
-        data: Optional[str] = None,
+        table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved features
@@ -162,7 +162,7 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
             Whether to include id in the list
         entity: Optional[str]
             Name of entity used to filter results
-        data: Optional[str]
+        table: Optional[str]
             Name of table used to filter results
 
         Returns
@@ -175,9 +175,9 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
             feature_list = feature_list[
                 feature_list.entities.apply(lambda entities: entity in entities)
             ]
-        if data:
+        if table:
             feature_list = feature_list[
-                feature_list.table.apply(lambda data_list: data in data_list)
+                feature_list.table.apply(lambda table_list: table in table_list)
             ]
         return feature_list
 
@@ -277,7 +277,7 @@ class Feature(
         cls,
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
-        data: Optional[str] = None,
+        table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved features
@@ -288,7 +288,7 @@ class Feature(
             Whether to include id in the list
         entity: Optional[str]
             Name of entity used to filter results
-        data: Optional[str]
+        table: Optional[str]
             Name of table used to filter results
 
         Returns
@@ -296,7 +296,7 @@ class Feature(
         pd.DataFrame
             Table of features
         """
-        return FeatureNamespace.list(include_id=include_id, entity=entity, data=data)
+        return FeatureNamespace.list(include_id=include_id, entity=entity, table=table)
 
     @classmethod
     def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
@@ -313,7 +313,7 @@ class Feature(
         include_id: Optional[bool] = False,
         feature_list_id: Optional[ObjectId] = None,
         entity: Optional[str] = None,
-        data: Optional[str] = None,
+        table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved features versions
@@ -326,7 +326,7 @@ class Feature(
             Include only features in specified feature list
         entity: Optional[str]
             Name of entity used to filter results
-        data: Optional[str]
+        table: Optional[str]
             Name of table used to filter results
 
         Returns
@@ -342,9 +342,9 @@ class Feature(
             feature_list = feature_list[
                 feature_list.entities.apply(lambda entities: entity in entities)
             ]
-        if data:
+        if table:
             feature_list = feature_list[
-                feature_list.data.apply(lambda data_list: data in data_list)
+                feature_list.data.apply(lambda table_list: table in table_list)
             ]
         return feature_list
 

@@ -29,11 +29,8 @@ from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import (
-    AggregationColumn,
     DerivedDataColumn,
-    NodeOutputCategory,
     OperationStructure,
-    PostAggregationColumn,
     SourceDataColumn,
 )
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
@@ -55,11 +52,6 @@ class QueryGraph(QueryGraphModel):
         ----------
         node_name: str
             Name of node to get input node for
-
-        Raises
-        ------
-        GraphInconsistencyError
-            Invalid graph structure
 
         Returns
         -------

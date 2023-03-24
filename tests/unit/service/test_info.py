@@ -12,7 +12,6 @@ from featurebyte import (
     TableCleaningOperation,
 )
 from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
-from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.node.schema import SnowflakeDetails, TableDetails
 from featurebyte.schema.feature import (

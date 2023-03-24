@@ -10,12 +10,10 @@ import copy
 from bson.objectid import ObjectId
 
 from featurebyte import TableCleaningOperation
-from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import TableModel
-from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import GraphNodeType
@@ -23,7 +21,6 @@ from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
 )
-from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (
