@@ -145,7 +145,7 @@ def test_default_local_storage():
     config = Configurations("tests/fixtures/config/config_no_profile.yaml")
     assert config.storage.local_path == Path(
         os.environ.get("FEATUREBYTE_HOME", str(DEFAULT_HOME_PATH))
-    ).joinpath("data")
+    ).joinpath("data/files")
 
 
 @patch("requests.Session.send")
