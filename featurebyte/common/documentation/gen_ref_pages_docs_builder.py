@@ -348,8 +348,8 @@ def get_paths_to_document():
     """
     paths = {}
     for item in get_overall_layout():
-        path = item.doc_path_override or item.api_path
-        value = item.api_path
+        path = item.get_doc_path_override() or item.get_api_path_override()
+        value = item.get_api_path_override()
         if value == "":
             value = item.menu_header[-1]
         paths[path.lower()] = value
@@ -520,13 +520,13 @@ def generate_documentation_for_docs(doc_groups, set_edit_path, gen_files_open):
 def populate_nav(nav, proxied_path_to_markdown_path):
     rendered = set()
     for item in get_overall_layout():
-        if item.doc_path_override:
-            nav[item.menu_header] = item.doc_path_override
-            rendered.add(item.doc_path_override)
+        if item.get_doc_path_override():
+            nav[item.menu_header] = item.get_doc_path_override()
+            rendered.add(item.get_doc_path_override())
             continue
 
         # Try to infer doc path from path provided
-        item_path = f"{item.api_path}".lower()
+        item_path = f"{item.get_api_path_override()}".lower()
         markdown_path = MISSING_DEBUG_MARKDOWN
         if item_path in proxied_path_to_markdown_path:
             markdown_path = proxied_path_to_markdown_path[item_path]

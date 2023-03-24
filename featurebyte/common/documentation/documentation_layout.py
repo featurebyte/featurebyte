@@ -15,13 +15,21 @@ class DocLayoutItem:
     # Represents the menu header. For example, if the menu header is ["Data", "Explore"], the left side bar in the
     # menu will have a top level item of "Data" and a sub item of "Explore".
     menu_header: List[str]
-    # This should represent the API path that users are able to access the SDK through. For example, if the API path
-    # is `featurebyte.Table`, the user will be able to access the SDK through `featurebyte.Table` (even if that is
-    # not necessarily the path to the class in the codebase).
+    # This should represent the API path that users are able to access the SDK through, without the featurebyte.prefix.
+    # For example, if the API path provided is `Table`, the user will be able to access the SDK through
+    # `featurebyte.Table` (even if that is not necessarily the path to the class in the codebase).
     api_path: str
     # This should represent a path to a markdown file that will be used to override the documentation. This is to
     # provide an exit hatch in case we are not able to easily infer the documentation from the API path.
     doc_path_override: Optional[str] = None
+
+    def get_api_path_override(self) -> str:
+        return "featurebyte." + self.api_path
+
+    def get_doc_path_override(self) -> Optional[str]:
+        if self.doc_path_override is None:
+            return None
+        return "featurebyte." + self.doc_path_override
 
 
 ACTIVATE = "Activate"
@@ -64,157 +72,139 @@ def _get_table_layout() -> List[DocLayoutItem]:
     """
     return [
         # DATA
-        DocLayoutItem([TABLE], "featurebyte.Table"),
+        DocLayoutItem([TABLE], "Table"),
+        DocLayoutItem([TABLE, GET, "Catalog.get_table"], "Catalog.get_table"),
+        DocLayoutItem([TABLE, GET, "Table.get_by_id"], "Table.get_by_id"),
+        DocLayoutItem([TABLE, LIST, "Catalog.list_tables"], "Catalog.list_tables"),
         DocLayoutItem(
-            [TABLE, GET, "featurebyte.Catalog.get_table"], "featurebyte.Catalog.get_table"
-        ),
-        DocLayoutItem([TABLE, GET, "featurebyte.Table.get_by_id"], "featurebyte.Table.get_by_id"),
-        DocLayoutItem(
-            [TABLE, LIST, "featurebyte.Catalog.list_tables"], "featurebyte.Catalog.list_tables"
-        ),
-        DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.SourceTable.create_dimension_table"],
-            "featurebyte.SourceTable.create_dimension_table",
+            [TABLE, CREATE, "SourceTable.create_dimension_table"],
+            "SourceTable.create_dimension_table",
         ),
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.SourceTable.create_event_table"],
-            "featurebyte.SourceTable.create_event_table",
+            [TABLE, CREATE, "SourceTable.create_event_table"],
+            "SourceTable.create_event_table",
         ),
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.SourceTable.create_item_table"],
-            "featurebyte.SourceTable.create_item_table",
+            [TABLE, CREATE, "SourceTable.create_item_table"],
+            "SourceTable.create_item_table",
         ),
         DocLayoutItem(
-            [TABLE, CREATE, "featurebyte.SourceTable.create_scd_table"],
-            "featurebyte.SourceTable.create_scd_table",
+            [TABLE, CREATE, "SourceTable.create_scd_table"],
+            "SourceTable.create_scd_table",
         ),
         DocLayoutItem(
             [
                 TABLE,
                 ADD_METADATA,
-                "featurebyte.EventTable.create_new_feature_job_setting_analysis",
+                "EventTable.create_new_feature_job_setting_analysis",
             ],
-            "featurebyte.EventTable.create_new_feature_job_setting_analysis",
+            "EventTable.create_new_feature_job_setting_analysis",
         ),
         DocLayoutItem(
             [
                 TABLE,
                 ADD_METADATA,
-                "featurebyte.EventTable.initialize_default_feature_job_setting",
+                "EventTable.initialize_default_feature_job_setting",
             ],
-            "featurebyte.EventTable.initialize_default_feature_job_setting",
+            "EventTable.initialize_default_feature_job_setting",
         ),
         DocLayoutItem(
             [
                 TABLE,
                 ADD_METADATA,
-                "featurebyte.EventTable.list_feature_job_setting_analysis",
+                "EventTable.list_feature_job_setting_analysis",
             ],
-            "featurebyte.EventTable.list_feature_job_setting_analysis",
+            "EventTable.list_feature_job_setting_analysis",
         ),
         DocLayoutItem(
             [
                 TABLE,
                 ADD_METADATA,
-                "featurebyte.EventTable.update_default_feature_job_setting",
+                "EventTable.update_default_feature_job_setting",
             ],
-            "featurebyte.EventTable.update_default_feature_job_setting",
+            "EventTable.update_default_feature_job_setting",
         ),
         DocLayoutItem(
-            [TABLE, EXPLORE, "featurebyte.Table.describe"],
+            [TABLE, EXPLORE, "Table.describe"],
             "",
-            "featurebyte.api.base_table.TableApiObject.describe.md",
+            "api.base_table.TableApiObject.describe.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [TABLE, EXPLORE, "featurebyte.Table.preview"],
+            [TABLE, EXPLORE, "Table.preview"],
             "",
-            "featurebyte.api.base_table.TableApiObject.preview.md",
+            "api.base_table.TableApiObject.preview.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [TABLE, EXPLORE, "featurebyte.Table.sample"],
+            [TABLE, EXPLORE, "Table.sample"],
             "",
-            "featurebyte.api.base_table.TableApiObject.sample.md",
+            "api.base_table.TableApiObject.sample.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [TABLE, INFO, "featurebyte.Table.column_cleaning_operations"],
-            "featurebyte.Table.column_cleaning_operations",
+            [TABLE, INFO, "Table.column_cleaning_operations"],
+            "Table.column_cleaning_operations",
         ),
         DocLayoutItem(
-            [TABLE, INFO, "featurebyte.Table.columns"],
+            [TABLE, INFO, "Table.columns"],
             "",
-            "featurebyte.api.base_table.TableApiObject.columns.md",
+            "api.base_table.TableApiObject.columns.md",
+        ),  # TODO: this is technically not correct since this operations are on the impl classes
+        DocLayoutItem([TABLE, INFO, "Table.columns_info"], "Table.columns_info"),
+        DocLayoutItem([TABLE, INFO, "Table.created_at"], "Table.created_at"),
+        DocLayoutItem(
+            [TABLE, INFO, "Table.dtypes"],
+            "",
+            "api.base_table.TableApiObject.dtypes.md",
+        ),  # TODO: this is technically not correct since this operations are on the impl classes
+        DocLayoutItem([TABLE, INFO, "Table.info"], "Table.info"),
+        DocLayoutItem([TABLE, INFO, "Table.name"], "Table.name"),
+        DocLayoutItem(
+            [TABLE, INFO, "Table.primary_key_columns"],
+            "Table.primary_key_columns",
+        ),
+        DocLayoutItem(
+            [TABLE, INFO, "Table.record_creation_timestamp_column"],
+            "Table.record_creation_timestamp_column",
+        ),
+        DocLayoutItem([TABLE, INFO, "Table.saved"], "Table.saved"),
+        DocLayoutItem([TABLE, INFO, "Table.status"], "Table.status"),
+        DocLayoutItem([TABLE, INFO, "Table.table_data"], "Table.table_data"),
+        DocLayoutItem([TABLE, INFO, "Table.type"], "Table.type"),
+        DocLayoutItem([TABLE, INFO, "Table.updated_at"], "Table.updated_at"),
+        DocLayoutItem([TABLE, INFO, "Table.catalog_id"], "Table.catalog_id"),
+        DocLayoutItem(
+            [TABLE, INFO, "ItemTable.default_feature_job_setting"],
+            "ItemTable.default_feature_job_setting",
+        ),
+        DocLayoutItem([TABLE, LINEAGE, "Table.entity_ids"], "Table.entity_ids"),
+        DocLayoutItem(
+            [TABLE, LINEAGE, "Table.feature_store"],
+            "",
+            "api.base_table.TableApiObject.feature_store.md",
+        ),  # TODO: this is technically not correct since this operations are on the impl classes
+        DocLayoutItem([TABLE, LINEAGE, "Table.id"], "Table.id"),
+        DocLayoutItem(
+            [TABLE, LINEAGE, "Table.preview_clean_data_sql"],
+            "",
+            "api.base_table.TableApiObject.preview_clean_data_sql.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
-            [TABLE, INFO, "featurebyte.Table.columns_info"], "featurebyte.Table.columns_info"
-        ),
-        DocLayoutItem(
-            [TABLE, INFO, "featurebyte.Table.created_at"], "featurebyte.Table.created_at"
-        ),
-        DocLayoutItem(
-            [TABLE, INFO, "featurebyte.Table.dtypes"],
+            [TABLE, LINEAGE, "Table.preview_sql"],
             "",
-            "featurebyte.api.base_table.TableApiObject.dtypes.md",
+            "api.base_table.TableApiObject.preview_sql.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
-        DocLayoutItem([TABLE, INFO, "featurebyte.Table.info"], "featurebyte.Table.info"),
-        DocLayoutItem([TABLE, INFO, "featurebyte.Table.name"], "featurebyte.Table.name"),
+        DocLayoutItem([TABLE, LINEAGE, "Table.tabular_source"], "Table.tabular_source"),
         DocLayoutItem(
-            [TABLE, INFO, "featurebyte.Table.primary_key_columns"],
-            "featurebyte.Table.primary_key_columns",
+            [TABLE, LINEAGE, "ItemTable.event_table_id"],
+            "ItemTable.event_table_id",
         ),
+        DocLayoutItem([TABLE, TYPE, "DimensionTable"], "DimensionTable"),
+        DocLayoutItem([TABLE, TYPE, "EventTable"], "EventTable"),
+        DocLayoutItem([TABLE, TYPE, "ItemTable"], "ItemTable"),
+        DocLayoutItem([TABLE, TYPE, "SCDTable"], "SCDTable"),
         DocLayoutItem(
-            [TABLE, INFO, "featurebyte.Table.record_creation_timestamp_column"],
-            "featurebyte.Table.record_creation_timestamp_column",
-        ),
-        DocLayoutItem([TABLE, INFO, "featurebyte.Table.saved"], "featurebyte.Table.saved"),
-        DocLayoutItem([TABLE, INFO, "featurebyte.Table.status"], "featurebyte.Table.status"),
-        DocLayoutItem(
-            [TABLE, INFO, "featurebyte.Table.table_data"], "featurebyte.Table.table_data"
-        ),
-        DocLayoutItem([TABLE, INFO, "featurebyte.Table.type"], "featurebyte.Table.type"),
-        DocLayoutItem(
-            [TABLE, INFO, "featurebyte.Table.updated_at"], "featurebyte.Table.updated_at"
-        ),
-        DocLayoutItem(
-            [TABLE, INFO, "featurebyte.Table.catalog_id"], "featurebyte.Table.catalog_id"
-        ),
-        DocLayoutItem(
-            [TABLE, INFO, "featurebyte.ItemTable.default_feature_job_setting"],
-            "featurebyte.ItemTable.default_feature_job_setting",
-        ),
-        DocLayoutItem(
-            [TABLE, LINEAGE, "featurebyte.Table.entity_ids"], "featurebyte.Table.entity_ids"
-        ),
-        DocLayoutItem(
-            [TABLE, LINEAGE, "featurebyte.Table.feature_store"],
+            [TABLE, UPDATE, "Table.update_record_creation_timestamp_column"],
             "",
-            "featurebyte.api.base_table.TableApiObject.feature_store.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
-        DocLayoutItem([TABLE, LINEAGE, "featurebyte.Table.id"], "featurebyte.Table.id"),
-        DocLayoutItem(
-            [TABLE, LINEAGE, "featurebyte.Table.preview_clean_data_sql"],
-            "",
-            "featurebyte.api.base_table.TableApiObject.preview_clean_data_sql.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
-        DocLayoutItem(
-            [TABLE, LINEAGE, "featurebyte.Table.preview_sql"],
-            "",
-            "featurebyte.api.base_table.TableApiObject.preview_sql.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
-        DocLayoutItem(
-            [TABLE, LINEAGE, "featurebyte.Table.tabular_source"], "featurebyte.Table.tabular_source"
-        ),
-        DocLayoutItem(
-            [TABLE, LINEAGE, "featurebyte.ItemTable.event_table_id"],
-            "featurebyte.ItemTable.event_table_id",
-        ),
-        DocLayoutItem([TABLE, TYPE, "featurebyte.DimensionTable"], "featurebyte.DimensionTable"),
-        DocLayoutItem([TABLE, TYPE, "featurebyte.EventTable"], "featurebyte.EventTable"),
-        DocLayoutItem([TABLE, TYPE, "featurebyte.ItemTable"], "featurebyte.ItemTable"),
-        DocLayoutItem([TABLE, TYPE, "featurebyte.SCDTable"], "featurebyte.SCDTable"),
-        DocLayoutItem(
-            [TABLE, UPDATE, "featurebyte.Table.update_record_creation_timestamp_column"],
-            "",
-            "featurebyte.api.base_table.TableApiObject.update_record_creation_timestamp_column.md",
+            "api.base_table.TableApiObject.update_record_creation_timestamp_column.md",
         ),  # TODO: this is technically not correct?
     ]
 
@@ -229,33 +219,31 @@ def _get_table_column_layout() -> List[DocLayoutItem]:
         The layout for the table column documentation
     """
     return [
-        DocLayoutItem([TABLE_COLUMN], "featurebyte.TableColumn"),
+        DocLayoutItem([TABLE_COLUMN], "TableColumn"),
         DocLayoutItem(
-            [TABLE_COLUMN, ADD_METADATA, "featurebyte.TableColumn.as_entity"],
-            "featurebyte.TableColumn.as_entity",
+            [TABLE_COLUMN, ADD_METADATA, "TableColumn.as_entity"],
+            "TableColumn.as_entity",
         ),
         DocLayoutItem(
-            [TABLE_COLUMN, ADD_METADATA, "featurebyte.TableColumn.update_critical_data_info"],
-            "featurebyte.TableColumn.update_critical_data_info",
+            [TABLE_COLUMN, ADD_METADATA, "TableColumn.update_critical_data_info"],
+            "TableColumn.update_critical_data_info",
         ),
         DocLayoutItem(
-            [TABLE_COLUMN, EXPLORE, "featurebyte.TableColumn.describe"],
-            "featurebyte.TableColumn.describe",
+            [TABLE_COLUMN, EXPLORE, "TableColumn.describe"],
+            "TableColumn.describe",
         ),
         DocLayoutItem(
-            [TABLE_COLUMN, EXPLORE, "featurebyte.TableColumn.preview"],
-            "featurebyte.TableColumn.preview",
+            [TABLE_COLUMN, EXPLORE, "TableColumn.preview"],
+            "TableColumn.preview",
         ),
         DocLayoutItem(
-            [TABLE_COLUMN, EXPLORE, "featurebyte.TableColumn.sample"],
-            "featurebyte.TableColumn.sample",
+            [TABLE_COLUMN, EXPLORE, "TableColumn.sample"],
+            "TableColumn.sample",
         ),
+        DocLayoutItem([TABLE_COLUMN, INFO, "TableColumn.name"], "TableColumn.name"),
         DocLayoutItem(
-            [TABLE_COLUMN, INFO, "featurebyte.TableColumn.name"], "featurebyte.TableColumn.name"
-        ),
-        DocLayoutItem(
-            [TABLE_COLUMN, LINEAGE, "featurebyte.TableColumn.preview_sql"],
-            "featurebyte.TableColumn.preview_sql",
+            [TABLE_COLUMN, LINEAGE, "TableColumn.preview_sql"],
+            "TableColumn.preview_sql",
         ),
     ]
 
@@ -270,40 +258,24 @@ def _get_entity_layout() -> List[DocLayoutItem]:
         The layout for the entity documentation
     """
     return [
-        DocLayoutItem([ENTITY], "featurebyte.Entity"),
+        DocLayoutItem([ENTITY], "Entity"),
+        DocLayoutItem([ENTITY, GET, "Catalog.get_entity"], "Catalog.get_entity"),
+        DocLayoutItem([ENTITY, GET, "Entity.get_by_id"], "Entity.get_by_id"),
+        DocLayoutItem([ENTITY, LIST, "Catalog.list_entities"], "Catalog.list_entities"),
         DocLayoutItem(
-            [ENTITY, GET, "featurebyte.Catalog.get_entity"], "featurebyte.Catalog.get_entity"
+            [ENTITY, CREATE, "Catalog.create_entity"],
+            "Catalog.create_entity",
         ),
-        DocLayoutItem(
-            [ENTITY, GET, "featurebyte.Entity.get_by_id"], "featurebyte.Entity.get_by_id"
-        ),
-        DocLayoutItem(
-            [ENTITY, LIST, "featurebyte.Catalog.list_entities"], "featurebyte.Catalog.list_entities"
-        ),
-        DocLayoutItem(
-            [ENTITY, CREATE, "featurebyte.Catalog.create_entity"],
-            "featurebyte.Catalog.create_entity",
-        ),
-        DocLayoutItem(
-            [ENTITY, CREATE, "featurebyte.Entity.get_or_create"], "featurebyte.Entity.get_or_create"
-        ),
-        DocLayoutItem(
-            [ENTITY, INFO, "featurebyte.Entity.created_at"], "featurebyte.Entity.created_at"
-        ),
-        DocLayoutItem([ENTITY, INFO, "featurebyte.Entity.info"], "featurebyte.Entity.info"),
-        DocLayoutItem([ENTITY, INFO, "featurebyte.Entity.name"], "featurebyte.Entity.name"),
-        DocLayoutItem([ENTITY, INFO, "featurebyte.Entity.parents"], "featurebyte.Entity.parents"),
-        DocLayoutItem([ENTITY, INFO, "featurebyte.Entity.saved"], "featurebyte.Entity.saved"),
-        DocLayoutItem(
-            [ENTITY, INFO, "featurebyte.Entity.serving_names"], "featurebyte.Entity.serving_names"
-        ),
-        DocLayoutItem(
-            [ENTITY, INFO, "featurebyte.Entity.update_name"], "featurebyte.Entity.update_name"
-        ),
-        DocLayoutItem(
-            [ENTITY, INFO, "featurebyte.Entity.updated_at"], "featurebyte.Entity.updated_at"
-        ),
-        DocLayoutItem([ENTITY, LINEAGE, "featurebyte.Entity.id"], "featurebyte.Entity.id"),
+        DocLayoutItem([ENTITY, CREATE, "Entity.get_or_create"], "Entity.get_or_create"),
+        DocLayoutItem([ENTITY, INFO, "Entity.created_at"], "Entity.created_at"),
+        DocLayoutItem([ENTITY, INFO, "Entity.info"], "Entity.info"),
+        DocLayoutItem([ENTITY, INFO, "Entity.name"], "Entity.name"),
+        DocLayoutItem([ENTITY, INFO, "Entity.parents"], "Entity.parents"),
+        DocLayoutItem([ENTITY, INFO, "Entity.saved"], "Entity.saved"),
+        DocLayoutItem([ENTITY, INFO, "Entity.serving_names"], "Entity.serving_names"),
+        DocLayoutItem([ENTITY, INFO, "Entity.update_name"], "Entity.update_name"),
+        DocLayoutItem([ENTITY, INFO, "Entity.updated_at"], "Entity.updated_at"),
+        DocLayoutItem([ENTITY, LINEAGE, "Entity.id"], "Entity.id"),
     ]
 
 
@@ -317,214 +289,178 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         The layout for the feature documentation
     """
     return [
-        DocLayoutItem([FEATURE], "featurebyte.Feature"),
+        DocLayoutItem([FEATURE], "Feature"),
+        DocLayoutItem([FEATURE, GET, "Catalog.get_feature"], "Catalog.get_feature"),
+        DocLayoutItem([FEATURE, GET, "Feature.get_by_id"], "Feature.get_by_id"),
         DocLayoutItem(
-            [FEATURE, GET, "featurebyte.Catalog.get_feature"], "featurebyte.Catalog.get_feature"
+            [FEATURE, LIST, "Catalog.list_features"],
+            "Catalog.list_features",
         ),
+        DocLayoutItem([FEATURE, CREATE, "Feature.save"], "Feature.save"),
+        DocLayoutItem([FEATURE, CREATE, "View.as_features"], "View.as_features"),
+        DocLayoutItem([FEATURE, CREATE, "view.GroupBy"], "", "api.groupby.GroupBy.md"),  # TODO:
         DocLayoutItem(
-            [FEATURE, GET, "featurebyte.Feature.get_by_id"], "featurebyte.Feature.get_by_id"
-        ),
-        DocLayoutItem(
-            [FEATURE, LIST, "featurebyte.Catalog.list_features"],
-            "featurebyte.Catalog.list_features",
-        ),
-        DocLayoutItem([FEATURE, CREATE, "featurebyte.Feature.save"], "featurebyte.Feature.save"),
-        DocLayoutItem(
-            [FEATURE, CREATE, "featurebyte.View.as_features"], "featurebyte.View.as_features"
-        ),
-        DocLayoutItem(
-            [FEATURE, CREATE, "featurebyte.view.GroupBy"], "", "featurebyte.api.groupby.GroupBy.md"
-        ),  # TODO:
-        DocLayoutItem(
-            [FEATURE, CREATE, "featurebyte.view.GroupBy.aggregate"],
+            [FEATURE, CREATE, "view.GroupBy.aggregate"],
             "",
-            "featurebyte.api.groupby.GroupBy.aggregate.md",
+            "api.groupby.GroupBy.aggregate.md",
         ),  # TODO:
         DocLayoutItem(
-            [FEATURE, CREATE, "featurebyte.view.GroupBy.aggregate_asat"],
+            [FEATURE, CREATE, "view.GroupBy.aggregate_asat"],
             "",
-            "featurebyte.api.groupby.GroupBy.aggregate_asat.md",
+            "api.groupby.GroupBy.aggregate_asat.md",
         ),  # TODO:
         DocLayoutItem(
-            [FEATURE, CREATE, "featurebyte.view.GroupBy.aggregate_over"],
+            [FEATURE, CREATE, "view.GroupBy.aggregate_over"],
             "",
-            "featurebyte.api.groupby.GroupBy.aggregate_over.md",
+            "api.groupby.GroupBy.aggregate_over.md",
         ),  # TODO:
         DocLayoutItem(
-            [FEATURE, CREATE, "featurebyte.ViewColumn.as_feature"],
-            "featurebyte.ViewColumn.as_feature",
+            [FEATURE, CREATE, "ViewColumn.as_feature"],
+            "ViewColumn.as_feature",
+        ),
+        DocLayoutItem([FEATURE, EXPLORE, "Feature.preview"], "Feature.preview"),
+        DocLayoutItem([FEATURE, INFO, "Feature.created_at"], "Feature.created_at"),
+        DocLayoutItem([FEATURE, INFO, "Feature.dtype"], "Feature.dtype"),
+        DocLayoutItem([FEATURE, INFO, "Feature.info"], "Feature.info"),
+        DocLayoutItem([FEATURE, INFO, "Feature.name"], "Feature.name"),
+        DocLayoutItem([FEATURE, INFO, "Feature.saved"], "Feature.saved"),
+        DocLayoutItem([FEATURE, INFO, "Feature.updated_at"], "Feature.updated_at"),
+        DocLayoutItem([FEATURE, LINEAGE, "Feature.entity_ids"], "Feature.entity_ids"),
+        DocLayoutItem(
+            [FEATURE, LINEAGE, "Feature.feature_list_ids"],
+            "Feature.feature_list_ids",
         ),
         DocLayoutItem(
-            [FEATURE, EXPLORE, "featurebyte.Feature.preview"], "featurebyte.Feature.preview"
+            [FEATURE, LINEAGE, "Feature.feature_namespace_id"],
+            "Feature.feature_namespace_id",
         ),
         DocLayoutItem(
-            [FEATURE, INFO, "featurebyte.Feature.created_at"], "featurebyte.Feature.created_at"
+            [FEATURE, LINEAGE, "Feature.feature_store"],
+            "Feature.feature_store",
         ),
-        DocLayoutItem([FEATURE, INFO, "featurebyte.Feature.dtype"], "featurebyte.Feature.dtype"),
-        DocLayoutItem([FEATURE, INFO, "featurebyte.Feature.info"], "featurebyte.Feature.info"),
-        DocLayoutItem([FEATURE, INFO, "featurebyte.Feature.name"], "featurebyte.Feature.name"),
-        DocLayoutItem([FEATURE, INFO, "featurebyte.Feature.saved"], "featurebyte.Feature.saved"),
+        DocLayoutItem([FEATURE, LINEAGE, "Feature.graph"], "Feature.graph"),
+        DocLayoutItem([FEATURE, LINEAGE, "Feature.id"], "Feature.id"),
+        DocLayoutItem([FEATURE, LINEAGE, "Feature.definition"], "Feature.definition"),
+        DocLayoutItem([FEATURE, LINEAGE, "Feature.preview_sql"], "Feature.preview_sql"),
         DocLayoutItem(
-            [FEATURE, INFO, "featurebyte.Feature.updated_at"], "featurebyte.Feature.updated_at"
-        ),
-        DocLayoutItem(
-            [FEATURE, LINEAGE, "featurebyte.Feature.entity_ids"], "featurebyte.Feature.entity_ids"
-        ),
-        DocLayoutItem(
-            [FEATURE, LINEAGE, "featurebyte.Feature.feature_list_ids"],
-            "featurebyte.Feature.feature_list_ids",
+            [FEATURE, LINEAGE, "Feature.tabular_source"],
+            "Feature.tabular_source",
         ),
         DocLayoutItem(
-            [FEATURE, LINEAGE, "featurebyte.Feature.feature_namespace_id"],
-            "featurebyte.Feature.feature_namespace_id",
+            [FEATURE, LINEAGE, "Feature.catalog_id"],
+            "Feature.catalog_id",
         ),
         DocLayoutItem(
-            [FEATURE, LINEAGE, "featurebyte.Feature.feature_store"],
-            "featurebyte.Feature.feature_store",
+            [FEATURE, SERVE, "Feature.get_feature_jobs_status"],
+            "Feature.get_feature_jobs_status",
         ),
-        DocLayoutItem([FEATURE, LINEAGE, "featurebyte.Feature.graph"], "featurebyte.Feature.graph"),
-        DocLayoutItem([FEATURE, LINEAGE, "featurebyte.Feature.id"], "featurebyte.Feature.id"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.abs"], "Feature.abs"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.astype"], "Feature.astype"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd"], "Feature.cd"),
         DocLayoutItem(
-            [FEATURE, LINEAGE, "featurebyte.Feature.definition"], "featurebyte.Feature.definition"
-        ),
-        DocLayoutItem(
-            [FEATURE, LINEAGE, "featurebyte.Feature.preview_sql"], "featurebyte.Feature.preview_sql"
-        ),
-        DocLayoutItem(
-            [FEATURE, LINEAGE, "featurebyte.Feature.tabular_source"],
-            "featurebyte.Feature.tabular_source",
+            [FEATURE, TRANSFORM, "Feature.cd.cosine_similarity"],
+            "Feature.cd.cosine_similarity",
         ),
         DocLayoutItem(
-            [FEATURE, LINEAGE, "featurebyte.Feature.catalog_id"],
-            "featurebyte.Feature.catalog_id",
+            [FEATURE, TRANSFORM, "Feature.cd.entropy"],
+            "Feature.cd.entropy",
         ),
         DocLayoutItem(
-            [FEATURE, SERVE, "featurebyte.Feature.get_feature_jobs_status"],
-            "featurebyte.Feature.get_feature_jobs_status",
-        ),
-        DocLayoutItem([FEATURE, TRANSFORM, "featurebyte.Feature.abs"], "featurebyte.Feature.abs"),
-        DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.astype"], "featurebyte.Feature.astype"
-        ),
-        DocLayoutItem([FEATURE, TRANSFORM, "featurebyte.Feature.cd"], "featurebyte.Feature.cd"),
-        DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.cd.cosine_similarity"],
-            "featurebyte.Feature.cd.cosine_similarity",
+            [FEATURE, TRANSFORM, "Feature.cd.get_rank"],
+            "Feature.cd.get_rank",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.cd.entropy"],
-            "featurebyte.Feature.cd.entropy",
+            [FEATURE, TRANSFORM, "Feature.cd.get_relative_frequency"],
+            "Feature.cd.get_relative_frequency",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.cd.get_rank"],
-            "featurebyte.Feature.cd.get_rank",
+            [FEATURE, TRANSFORM, "Feature.cd.get_value"],
+            "Feature.cd.get_value",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.cd.get_relative_frequency"],
-            "featurebyte.Feature.cd.get_relative_frequency",
+            [FEATURE, TRANSFORM, "Feature.cd.most_frequent"],
+            "Feature.cd.most_frequent",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.cd.get_value"],
-            "featurebyte.Feature.cd.get_value",
+            [FEATURE, TRANSFORM, "Feature.cd.unique_count"],
+            "Feature.cd.unique_count",
         ),
-        DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.cd.most_frequent"],
-            "featurebyte.Feature.cd.most_frequent",
-        ),
-        DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.cd.unique_count"],
-            "featurebyte.Feature.cd.unique_count",
-        ),
-        DocLayoutItem([FEATURE, TRANSFORM, "featurebyte.Feature.ceil"], "featurebyte.Feature.ceil"),
-        DocLayoutItem([FEATURE, TRANSFORM, "featurebyte.Feature.dt"], "featurebyte.Feature.dt"),
-        DocLayoutItem([FEATURE, TRANSFORM, "featurebyte.Feature.exp"], "featurebyte.Feature.exp"),
-        DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.fillna"], "featurebyte.Feature.fillna"
-        ),
-        DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.floor"], "featurebyte.Feature.floor"
-        ),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.ceil"], "Feature.ceil"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.dt"], "Feature.dt"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.exp"], "Feature.exp"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.fillna"], "Feature.fillna"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.floor"], "Feature.floor"),
         *_get_datetime_accessor_properties_layout(FEATURE),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.is_datetime"],
-            "featurebyte.Feature.is_datetime",
+            [FEATURE, TRANSFORM, "Feature.is_datetime"],
+            "Feature.is_datetime",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.is_numeric"],
-            "featurebyte.Feature.is_numeric",
+            [FEATURE, TRANSFORM, "Feature.is_numeric"],
+            "Feature.is_numeric",
         ),
-        DocLayoutItem([FEATURE, TRANSFORM, "featurebyte.Feature.isin"], "featurebyte.Feature.isin"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.isin"], "Feature.isin"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.isnull"], "Feature.isnull"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.log"], "Feature.log"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.notnull"], "Feature.notnull"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.pow"], "Feature.pow"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.sqrt"], "Feature.sqrt"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str"], "Feature.str"),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.isnull"], "featurebyte.Feature.isnull"
+            [FEATURE, TRANSFORM, "Feature.str.contains"],
+            "Feature.str.contains",
         ),
-        DocLayoutItem([FEATURE, TRANSFORM, "featurebyte.Feature.log"], "featurebyte.Feature.log"),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.len"], "Feature.str.len"),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.notnull"], "featurebyte.Feature.notnull"
-        ),
-        DocLayoutItem([FEATURE, TRANSFORM, "featurebyte.Feature.pow"], "featurebyte.Feature.pow"),
-        DocLayoutItem([FEATURE, TRANSFORM, "featurebyte.Feature.sqrt"], "featurebyte.Feature.sqrt"),
-        DocLayoutItem([FEATURE, TRANSFORM, "featurebyte.Feature.str"], "featurebyte.Feature.str"),
-        DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.str.contains"],
-            "featurebyte.Feature.str.contains",
-        ),
-        DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.str.len"], "featurebyte.Feature.str.len"
+            [FEATURE, TRANSFORM, "Feature.str.lower"],
+            "Feature.str.lower",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.str.lower"],
-            "featurebyte.Feature.str.lower",
+            [FEATURE, TRANSFORM, "Feature.str.lstrip"],
+            "Feature.str.lstrip",
+        ),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.pad"], "Feature.str.pad"),
+        DocLayoutItem(
+            [FEATURE, TRANSFORM, "Feature.str.replace"],
+            "Feature.str.replace",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.str.lstrip"],
-            "featurebyte.Feature.str.lstrip",
+            [FEATURE, TRANSFORM, "Feature.str.rstrip"],
+            "Feature.str.rstrip",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.str.pad"], "featurebyte.Feature.str.pad"
+            [FEATURE, TRANSFORM, "Feature.str.slice"],
+            "Feature.str.slice",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.str.replace"],
-            "featurebyte.Feature.str.replace",
+            [FEATURE, TRANSFORM, "Feature.str.strip"],
+            "Feature.str.strip",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.str.rstrip"],
-            "featurebyte.Feature.str.rstrip",
+            [FEATURE, TRANSFORM, "Feature.str.upper"],
+            "Feature.str.upper",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.str.slice"],
-            "featurebyte.Feature.str.slice",
+            [FEATURE, VERSION, "Feature.as_default_version"],
+            "Feature.as_default_version",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.str.strip"],
-            "featurebyte.Feature.str.strip",
+            [FEATURE, VERSION, "Feature.create_new_version"],
+            "Feature.create_new_version",
         ),
         DocLayoutItem(
-            [FEATURE, TRANSFORM, "featurebyte.Feature.str.upper"],
-            "featurebyte.Feature.str.upper",
+            [FEATURE, VERSION, "Feature.list_versions"],
+            "Feature.list_versions",
         ),
         DocLayoutItem(
-            [FEATURE, VERSION, "featurebyte.Feature.as_default_version"],
-            "featurebyte.Feature.as_default_version",
+            [FEATURE, VERSION, "Feature.update_default_version_mode"],
+            "Feature.update_default_version_mode",
         ),
         DocLayoutItem(
-            [FEATURE, VERSION, "featurebyte.Feature.create_new_version"],
-            "featurebyte.Feature.create_new_version",
+            [FEATURE, VERSION, "Feature.update_readiness"],
+            "Feature.update_readiness",
         ),
-        DocLayoutItem(
-            [FEATURE, VERSION, "featurebyte.Feature.list_versions"],
-            "featurebyte.Feature.list_versions",
-        ),
-        DocLayoutItem(
-            [FEATURE, VERSION, "featurebyte.Feature.update_default_version_mode"],
-            "featurebyte.Feature.update_default_version_mode",
-        ),
-        DocLayoutItem(
-            [FEATURE, VERSION, "featurebyte.Feature.update_readiness"],
-            "featurebyte.Feature.update_readiness",
-        ),
-        DocLayoutItem(
-            [FEATURE, VERSION, "featurebyte.Feature.version"], "featurebyte.Feature.version"
-        ),
+        DocLayoutItem([FEATURE, VERSION, "Feature.version"], "Feature.version"),
     ]
 
 
@@ -539,33 +475,29 @@ def _get_feature_group_layout() -> List[DocLayoutItem]:
     """
     return [
         # FEATURE_GROUP
-        # DocLayout([FEATURE_GROUP], "", "featurebyte.api.feature_list.FeatureGroup.md"),
+        # DocLayout([FEATURE_GROUP], "", "api.feature_list.FeatureGroup.md"),
         DocLayoutItem(
-            [FEATURE_GROUP, CREATE, "featurebyte.FeatureGroup"],
+            [FEATURE_GROUP, CREATE, "FeatureGroup"],
             "",
-            "featurebyte.api.feature_list.FeatureGroup.md",
+            "api.feature_list.FeatureGroup.md",
         ),
         DocLayoutItem(
-            [FEATURE_GROUP, CREATE, "featurebyte.FeatureGroup.drop"],
-            "featurebyte.FeatureGroup.drop",
+            [FEATURE_GROUP, CREATE, "FeatureGroup.drop"],
+            "FeatureGroup.drop",
         ),
         DocLayoutItem(
-            [FEATURE_GROUP, CREATE, "featurebyte.FeatureGroup.save"],
-            "featurebyte.FeatureGroup.save",
+            [FEATURE_GROUP, CREATE, "FeatureGroup.save"],
+            "FeatureGroup.save",
         ),
+        DocLayoutItem([FEATURE_GROUP, CREATE, "FeatureList.drop"], "FeatureList.drop"),
         DocLayoutItem(
-            [FEATURE_GROUP, CREATE, "featurebyte.FeatureList.drop"], "featurebyte.FeatureList.drop"
+            [FEATURE_GROUP, INFO, "FeatureGroup.feature_names"],
+            "FeatureGroup.feature_names",
         ),
+        DocLayoutItem([FEATURE_GROUP, LINEAGE, "FeatureGroup.sql"], "FeatureGroup.sql"),
         DocLayoutItem(
-            [FEATURE_GROUP, INFO, "featurebyte.FeatureGroup.feature_names"],
-            "featurebyte.FeatureGroup.feature_names",
-        ),
-        DocLayoutItem(
-            [FEATURE_GROUP, LINEAGE, "featurebyte.FeatureGroup.sql"], "featurebyte.FeatureGroup.sql"
-        ),
-        DocLayoutItem(
-            [FEATURE_GROUP, EXPLORE, "featurebyte.FeatureGroup.preview"],
-            "featurebyte.FeatureGroup.preview",
+            [FEATURE_GROUP, EXPLORE, "FeatureGroup.preview"],
+            "FeatureGroup.preview",
         ),
     ]
 
@@ -580,105 +512,93 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         The layout for the FeatureList class.
     """
     return [
-        DocLayoutItem([FEATURE_LIST], "featurebyte.FeatureList"),
+        DocLayoutItem([FEATURE_LIST], "FeatureList"),
         DocLayoutItem(
-            [FEATURE_LIST, GET, "featurebyte.Catalog.get_feature_list"],
-            "featurebyte.Catalog.get_feature_list",
+            [FEATURE_LIST, GET, "Catalog.get_feature_list"],
+            "Catalog.get_feature_list",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, GET, "featurebyte.FeatureList.get_by_id"],
-            "featurebyte.FeatureList.get_by_id",
+            [FEATURE_LIST, GET, "FeatureList.get_by_id"],
+            "FeatureList.get_by_id",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, LIST, "featurebyte.Catalog.list_feature_lists"],
-            "featurebyte.Catalog.list_feature_lists",
+            [FEATURE_LIST, LIST, "Catalog.list_feature_lists"],
+            "Catalog.list_feature_lists",
         ),
-        DocLayoutItem([FEATURE_LIST, CREATE, "featurebyte.FeatureList"], "featurebyte.FeatureList"),
+        DocLayoutItem([FEATURE_LIST, CREATE, "FeatureList"], "FeatureList"),
+        DocLayoutItem([FEATURE_LIST, CREATE, "FeatureList.save"], "FeatureList.save"),
         DocLayoutItem(
-            [FEATURE_LIST, CREATE, "featurebyte.FeatureList.save"], "featurebyte.FeatureList.save"
-        ),
-        DocLayoutItem(
-            [FEATURE_LIST, EXPLORE, "featurebyte.FeatureList.preview"],
-            "featurebyte.FeatureList.preview",
+            [FEATURE_LIST, EXPLORE, "FeatureList.preview"],
+            "FeatureList.preview",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, INFO, "featurebyte.FeatureList.created_at"],
-            "featurebyte.FeatureList.created_at",
+            [FEATURE_LIST, INFO, "FeatureList.created_at"],
+            "FeatureList.created_at",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, INFO, "featurebyte.FeatureList.feature_ids"],
-            "featurebyte.FeatureList.feature_ids",
+            [FEATURE_LIST, INFO, "FeatureList.feature_ids"],
+            "FeatureList.feature_ids",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, INFO, "featurebyte.FeatureList.feature_names"],
-            "featurebyte.FeatureList.feature_names",
+            [FEATURE_LIST, INFO, "FeatureList.feature_names"],
+            "FeatureList.feature_names",
+        ),
+        DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.info"], "FeatureList.info"),
+        DocLayoutItem(
+            [FEATURE_LIST, INFO, "FeatureList.list_features"],
+            "FeatureList.list_features",
+        ),
+        DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.name"], "FeatureList.name"),
+        DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.saved"], "FeatureList.saved"),
+        DocLayoutItem(
+            [FEATURE_LIST, INFO, "FeatureList.updated_at"],
+            "FeatureList.updated_at",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, INFO, "featurebyte.FeatureList.info"], "featurebyte.FeatureList.info"
+            [FEATURE_LIST, INFO, "FeatureList.catalog_id"],
+            "FeatureList.catalog_id",
+        ),
+        DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.id"], "FeatureList.id"),
+        DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.sql"], "FeatureList.sql"),
+        DocLayoutItem(
+            [FEATURE_LIST, SERVE, "FeatureList.deploy"],
+            "FeatureList.deploy",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, INFO, "featurebyte.FeatureList.list_features"],
-            "featurebyte.FeatureList.list_features",
+            [FEATURE_LIST, SERVE, "FeatureList.get_historical_features"],
+            "FeatureList.get_historical_features",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, INFO, "featurebyte.FeatureList.name"], "featurebyte.FeatureList.name"
+            [FEATURE_LIST, SERVE, "FeatureList.get_online_serving_code"],
+            "FeatureList.get_online_serving_code",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, INFO, "featurebyte.FeatureList.saved"], "featurebyte.FeatureList.saved"
+            [FEATURE_LIST, VERSION, "FeatureList.as_default_version"],
+            "FeatureList.as_default_version",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, INFO, "featurebyte.FeatureList.updated_at"],
-            "featurebyte.FeatureList.updated_at",
+            [FEATURE_LIST, VERSION, "FeatureList.create_new_version"],
+            "FeatureList.create_new_version",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, INFO, "featurebyte.FeatureList.catalog_id"],
-            "featurebyte.FeatureList.catalog_id",
+            [FEATURE_LIST, VERSION, "FeatureList.get_feature_jobs_status"],
+            "FeatureList.get_feature_jobs_status",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, LINEAGE, "featurebyte.FeatureList.id"], "featurebyte.FeatureList.id"
+            [FEATURE_LIST, VERSION, "FeatureList.list_versions"],
+            "FeatureList.list_versions",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, LINEAGE, "featurebyte.FeatureList.sql"], "featurebyte.FeatureList.sql"
+            [FEATURE_LIST, VERSION, "FeatureList.update_default_version_mode"],
+            "FeatureList.update_default_version_mode",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, SERVE, "featurebyte.FeatureList.deploy"],
-            "featurebyte.FeatureList.deploy",
+            [FEATURE_LIST, VERSION, "FeatureList.update_status"],
+            "FeatureList.update_status",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, SERVE, "featurebyte.FeatureList.get_historical_features"],
-            "featurebyte.FeatureList.get_historical_features",
-        ),
-        DocLayoutItem(
-            [FEATURE_LIST, SERVE, "featurebyte.FeatureList.get_online_serving_code"],
-            "featurebyte.FeatureList.get_online_serving_code",
-        ),
-        DocLayoutItem(
-            [FEATURE_LIST, VERSION, "featurebyte.FeatureList.as_default_version"],
-            "featurebyte.FeatureList.as_default_version",
-        ),
-        DocLayoutItem(
-            [FEATURE_LIST, VERSION, "featurebyte.FeatureList.create_new_version"],
-            "featurebyte.FeatureList.create_new_version",
-        ),
-        DocLayoutItem(
-            [FEATURE_LIST, VERSION, "featurebyte.FeatureList.get_feature_jobs_status"],
-            "featurebyte.FeatureList.get_feature_jobs_status",
-        ),
-        DocLayoutItem(
-            [FEATURE_LIST, VERSION, "featurebyte.FeatureList.list_versions"],
-            "featurebyte.FeatureList.list_versions",
-        ),
-        DocLayoutItem(
-            [FEATURE_LIST, VERSION, "featurebyte.FeatureList.update_default_version_mode"],
-            "featurebyte.FeatureList.update_default_version_mode",
-        ),
-        DocLayoutItem(
-            [FEATURE_LIST, VERSION, "featurebyte.FeatureList.update_status"],
-            "featurebyte.FeatureList.update_status",
-        ),
-        DocLayoutItem(
-            [FEATURE_LIST, VERSION, "featurebyte.FeatureList.version"],
-            "featurebyte.FeatureList.version",
+            [FEATURE_LIST, VERSION, "FeatureList.version"],
+            "FeatureList.version",
         ),
     ]
 
@@ -693,59 +613,51 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
         The layout for the FeatureStore class.
     """
     return [
-        DocLayoutItem([FEATURE_STORE], "featurebyte.FeatureStore"),
+        DocLayoutItem([FEATURE_STORE], "FeatureStore"),
         DocLayoutItem(
-            [FEATURE_STORE, GET, "featurebyte.Catalog.get_feature_store"],
-            "featurebyte.Catalog.get_feature_store",
+            [FEATURE_STORE, GET, "Catalog.get_feature_store"],
+            "Catalog.get_feature_store",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, GET, "featurebyte.FeatureStore.get_by_id"],
-            "featurebyte.FeatureStore.get_by_id",
+            [FEATURE_STORE, GET, "FeatureStore.get_by_id"],
+            "FeatureStore.get_by_id",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, LIST, "featurebyte.Catalog.list_feature_stores"],
-            "featurebyte.Catalog.list_feature_stores",
+            [FEATURE_STORE, LIST, "Catalog.list_feature_stores"],
+            "Catalog.list_feature_stores",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, CREATE, "featurebyte.FeatureStore.create"],
-            "featurebyte.FeatureStore.create",
+            [FEATURE_STORE, CREATE, "FeatureStore.create"],
+            "FeatureStore.create",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, CREATE, "featurebyte.FeatureStore.get_or_create"],
-            "featurebyte.FeatureStore.get_or_create",
+            [FEATURE_STORE, CREATE, "FeatureStore.get_or_create"],
+            "FeatureStore.get_or_create",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, INFO, "featurebyte.FeatureStore.created_at"],
-            "featurebyte.FeatureStore.created_at",
+            [FEATURE_STORE, INFO, "FeatureStore.created_at"],
+            "FeatureStore.created_at",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, INFO, "featurebyte.FeatureStore.credentials"],
-            "featurebyte.FeatureStore.credentials",
+            [FEATURE_STORE, INFO, "FeatureStore.credentials"],
+            "FeatureStore.credentials",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, INFO, "featurebyte.FeatureStore.details"],
-            "featurebyte.FeatureStore.details",
+            [FEATURE_STORE, INFO, "FeatureStore.details"],
+            "FeatureStore.details",
         ),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.info"], "FeatureStore.info"),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.name"], "FeatureStore.name"),
         DocLayoutItem(
-            [FEATURE_STORE, INFO, "featurebyte.FeatureStore.info"], "featurebyte.FeatureStore.info"
+            [FEATURE_STORE, INFO, "FeatureStore.saved"],
+            "FeatureStore.saved",
         ),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.type"], "FeatureStore.type"),
         DocLayoutItem(
-            [FEATURE_STORE, INFO, "featurebyte.FeatureStore.name"], "featurebyte.FeatureStore.name"
+            [FEATURE_STORE, INFO, "FeatureStore.updated_at"],
+            "FeatureStore.updated_at",
         ),
-        DocLayoutItem(
-            [FEATURE_STORE, INFO, "featurebyte.FeatureStore.saved"],
-            "featurebyte.FeatureStore.saved",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, INFO, "featurebyte.FeatureStore.type"], "featurebyte.FeatureStore.type"
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, INFO, "featurebyte.FeatureStore.updated_at"],
-            "featurebyte.FeatureStore.updated_at",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, LINEAGE, "featurebyte.FeatureStore.id"], "featurebyte.FeatureStore.id"
-        ),
+        DocLayoutItem([FEATURE_STORE, LINEAGE, "FeatureStore.id"], "FeatureStore.id"),
     ]
 
 
@@ -759,26 +671,24 @@ def _get_data_source_layout() -> List[DocLayoutItem]:
         The layout for the DataSource class.
     """
     return [
-        DocLayoutItem([DATA_SOURCE], "featurebyte.DataSource"),
+        DocLayoutItem([DATA_SOURCE], "DataSource"),
         DocLayoutItem(
-            [DATA_SOURCE, EXPLORE, "featurebyte.DataSource.get_table"],
-            "featurebyte.DataSource.get_table",
+            [DATA_SOURCE, EXPLORE, "DataSource.get_table"],
+            "DataSource.get_table",
         ),
         DocLayoutItem(
-            [DATA_SOURCE, EXPLORE, "featurebyte.DataSource.list_databases"],
-            "featurebyte.DataSource.list_databases",
+            [DATA_SOURCE, EXPLORE, "DataSource.list_databases"],
+            "DataSource.list_databases",
         ),
         DocLayoutItem(
-            [DATA_SOURCE, EXPLORE, "featurebyte.DataSource.list_schemas"],
-            "featurebyte.DataSource.list_schemas",
+            [DATA_SOURCE, EXPLORE, "DataSource.list_schemas"],
+            "DataSource.list_schemas",
         ),
         DocLayoutItem(
-            [DATA_SOURCE, EXPLORE, "featurebyte.DataSource.list_tables"],
-            "featurebyte.DataSource.list_tables",
+            [DATA_SOURCE, EXPLORE, "DataSource.list_tables"],
+            "DataSource.list_tables",
         ),
-        DocLayoutItem(
-            [DATA_SOURCE, INFO, "featurebyte.DataSource.type"], "featurebyte.DataSource.type"
-        ),
+        DocLayoutItem([DATA_SOURCE, INFO, "DataSource.type"], "DataSource.type"),
     ]
 
 
@@ -792,42 +702,34 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
         The layout for the Relationship class.
     """
     return [
-        DocLayoutItem([RELATIONSHIP], "featurebyte.Relationship"),
+        DocLayoutItem([RELATIONSHIP], "Relationship"),
         DocLayoutItem(
-            [RELATIONSHIP, GET, "featurebyte.Catalog.get_relationship"],
-            "featurebyte.Catalog.get_relationship",
+            [RELATIONSHIP, GET, "Catalog.get_relationship"],
+            "Catalog.get_relationship",
         ),
         DocLayoutItem(
-            [RELATIONSHIP, GET, "featurebyte.Relationship.get_by_id"],
-            "featurebyte.Relationship.get_by_id",
+            [RELATIONSHIP, GET, "Relationship.get_by_id"],
+            "Relationship.get_by_id",
         ),
         DocLayoutItem(
-            [RELATIONSHIP, LIST, "featurebyte.Catalog.list_relationships"],
-            "featurebyte.Catalog.list_relationships",
+            [RELATIONSHIP, LIST, "Catalog.list_relationships"],
+            "Catalog.list_relationships",
         ),
         DocLayoutItem(
-            [RELATIONSHIP, INFO, "featurebyte.Relationship.created_at"],
-            "featurebyte.Relationship.created_at",
+            [RELATIONSHIP, INFO, "Relationship.created_at"],
+            "Relationship.created_at",
         ),
+        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.info"], "Relationship.info"),
+        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.name"], "Relationship.name"),
+        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.saved"], "Relationship.saved"),
         DocLayoutItem(
-            [RELATIONSHIP, INFO, "featurebyte.Relationship.info"], "featurebyte.Relationship.info"
+            [RELATIONSHIP, INFO, "Relationship.updated_at"],
+            "Relationship.updated_at",
         ),
+        DocLayoutItem([RELATIONSHIP, LINEAGE, "Relationship.id"], "Relationship.id"),
         DocLayoutItem(
-            [RELATIONSHIP, INFO, "featurebyte.Relationship.name"], "featurebyte.Relationship.name"
-        ),
-        DocLayoutItem(
-            [RELATIONSHIP, INFO, "featurebyte.Relationship.saved"], "featurebyte.Relationship.saved"
-        ),
-        DocLayoutItem(
-            [RELATIONSHIP, INFO, "featurebyte.Relationship.updated_at"],
-            "featurebyte.Relationship.updated_at",
-        ),
-        DocLayoutItem(
-            [RELATIONSHIP, LINEAGE, "featurebyte.Relationship.id"], "featurebyte.Relationship.id"
-        ),
-        DocLayoutItem(
-            [RELATIONSHIP, UPDATE, "featurebyte.Relationship.enable"],
-            "featurebyte.Relationship.enable",
+            [RELATIONSHIP, UPDATE, "Relationship.enable"],
+            "Relationship.enable",
         ),
     ]
 
@@ -842,124 +744,110 @@ def _get_view_layout() -> List[DocLayoutItem]:
         The layout for the View class.
     """
     return [
-        DocLayoutItem([VIEW], "featurebyte.View"),
+        DocLayoutItem([VIEW], "View"),
         DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.SCDTable.get_change_view"],
-            "featurebyte.SCDTable.get_change_view",
+            [VIEW, CREATE, "SCDTable.get_change_view"],
+            "SCDTable.get_change_view",
         ),
         DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.DimensionTable.get_view"],
-            "featurebyte.DimensionTable.get_view",
+            [VIEW, CREATE, "DimensionTable.get_view"],
+            "DimensionTable.get_view",
         ),
         DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.EventTable.get_view"],
-            "featurebyte.EventTable.get_view",
+            [VIEW, CREATE, "EventTable.get_view"],
+            "EventTable.get_view",
         ),
         DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.SCDTable.get_view"],
-            "featurebyte.SCDTable.get_view",
+            [VIEW, CREATE, "SCDTable.get_view"],
+            "SCDTable.get_view",
         ),
         DocLayoutItem(
-            [VIEW, CREATE, "featurebyte.ItemTable.get_view"],
-            "featurebyte.ItemTable.get_view",
+            [VIEW, CREATE, "ItemTable.get_view"],
+            "ItemTable.get_view",
+        ),
+        DocLayoutItem([VIEW, JOIN, "EventView.add_feature"], "EventView.add_feature"),
+        DocLayoutItem(
+            [VIEW, JOIN, "ItemView.join_event_table_attributes"],
+            "ItemView.join_event_table_attributes",
+        ),
+        DocLayoutItem([VIEW, JOIN, "View.join"], "View.join"),
+        DocLayoutItem([VIEW, EXPLORE, "View.describe"], "View.describe"),
+        DocLayoutItem([VIEW, EXPLORE, "View.preview"], "View.preview"),
+        DocLayoutItem([VIEW, EXPLORE, "View.sample"], "View.sample"),
+        DocLayoutItem(
+            [VIEW, INFO, "ChangeView.default_feature_job_setting"],
+            "ChangeView.default_feature_job_setting",
         ),
         DocLayoutItem(
-            [VIEW, JOIN, "featurebyte.EventView.add_feature"], "featurebyte.EventView.add_feature"
+            [VIEW, INFO, "ChangeView.get_default_feature_job_setting"],
+            "ChangeView.get_default_feature_job_setting",
         ),
         DocLayoutItem(
-            [VIEW, JOIN, "featurebyte.ItemView.join_event_table_attributes"],
-            "featurebyte.ItemView.join_event_table_attributes",
-        ),
-        DocLayoutItem([VIEW, JOIN, "featurebyte.View.join"], "featurebyte.View.join"),
-        DocLayoutItem([VIEW, EXPLORE, "featurebyte.View.describe"], "featurebyte.View.describe"),
-        DocLayoutItem([VIEW, EXPLORE, "featurebyte.View.preview"], "featurebyte.View.preview"),
-        DocLayoutItem([VIEW, EXPLORE, "featurebyte.View.sample"], "featurebyte.View.sample"),
-        DocLayoutItem(
-            [VIEW, INFO, "featurebyte.ChangeView.default_feature_job_setting"],
-            "featurebyte.ChangeView.default_feature_job_setting",
+            [VIEW, INFO, "DimensionView.dimension_id_column"],
+            "DimensionView.dimension_id_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.ChangeView.get_default_feature_job_setting"],
-            "featurebyte.ChangeView.get_default_feature_job_setting",
+            [VIEW, INFO, "EventView.default_feature_job_setting"],
+            "EventView.default_feature_job_setting",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.DimensionView.dimension_id_column"],
-            "featurebyte.DimensionView.dimension_id_column",
+            [VIEW, INFO, "EventView.event_id_column"],
+            "EventView.event_id_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.EventView.default_feature_job_setting"],
-            "featurebyte.EventView.default_feature_job_setting",
+            [VIEW, INFO, "ItemView.default_feature_job_setting"],
+            "ItemView.default_feature_job_setting",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.EventView.event_id_column"],
-            "featurebyte.EventView.event_id_column",
+            [VIEW, INFO, "ItemView.event_table_id"],
+            "ItemView.event_table_id",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.ItemView.default_feature_job_setting"],
-            "featurebyte.ItemView.default_feature_job_setting",
+            [VIEW, INFO, "ItemView.event_id_column"],
+            "ItemView.event_id_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.ItemView.event_table_id"],
-            "featurebyte.ItemView.event_table_id",
+            [VIEW, INFO, "ItemView.item_id_column"],
+            "ItemView.item_id_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.ItemView.event_id_column"],
-            "featurebyte.ItemView.event_id_column",
+            [VIEW, INFO, "SCDView.current_flag_column"],
+            "SCDView.current_flag_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.ItemView.item_id_column"],
-            "featurebyte.ItemView.item_id_column",
+            [VIEW, INFO, "SCDView.effective_timestamp_column"],
+            "SCDView.effective_timestamp_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.SCDView.current_flag_column"],
-            "featurebyte.SCDView.current_flag_column",
+            [VIEW, INFO, "SCDView.end_timestamp_column"],
+            "SCDView.end_timestamp_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.SCDView.effective_timestamp_column"],
-            "featurebyte.SCDView.effective_timestamp_column",
+            [VIEW, INFO, "SCDView.natural_key_column"],
+            "SCDView.natural_key_column",
         ),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.SCDView.end_timestamp_column"],
-            "featurebyte.SCDView.end_timestamp_column",
+            [VIEW, INFO, "SCDView.surrogate_key_column"],
+            "SCDView.surrogate_key_column",
         ),
+        DocLayoutItem([VIEW, INFO, "View.columns"], "View.columns"),
+        DocLayoutItem([VIEW, INFO, "View.columns_info"], "View.columns_info"),
+        DocLayoutItem([VIEW, INFO, "View.dtypes"], "View.dtypes"),
+        DocLayoutItem([VIEW, INFO, "View.entity_columns"], "View.entity_columns"),
         DocLayoutItem(
-            [VIEW, INFO, "featurebyte.SCDView.natural_key_column"],
-            "featurebyte.SCDView.natural_key_column",
+            [VIEW, INFO, "View.get_excluded_columns_as_other_view"],
+            "View.get_excluded_columns_as_other_view",
         ),
-        DocLayoutItem(
-            [VIEW, INFO, "featurebyte.SCDView.surrogate_key_column"],
-            "featurebyte.SCDView.surrogate_key_column",
-        ),
-        DocLayoutItem([VIEW, INFO, "featurebyte.View.columns"], "featurebyte.View.columns"),
-        DocLayoutItem(
-            [VIEW, INFO, "featurebyte.View.columns_info"], "featurebyte.View.columns_info"
-        ),
-        DocLayoutItem([VIEW, INFO, "featurebyte.View.dtypes"], "featurebyte.View.dtypes"),
-        DocLayoutItem(
-            [VIEW, INFO, "featurebyte.View.entity_columns"], "featurebyte.View.entity_columns"
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "featurebyte.View.get_excluded_columns_as_other_view"],
-            "featurebyte.View.get_excluded_columns_as_other_view",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "featurebyte.View.get_join_column"], "featurebyte.View.get_join_column"
-        ),
-        DocLayoutItem(
-            [VIEW, LINEAGE, "featurebyte.View.feature_store"], "featurebyte.View.feature_store"
-        ),
-        DocLayoutItem([VIEW, LINEAGE, "featurebyte.View.graph"], "featurebyte.View.graph"),
-        DocLayoutItem(
-            [VIEW, LINEAGE, "featurebyte.View.preview_sql"], "featurebyte.View.preview_sql"
-        ),
-        DocLayoutItem(
-            [VIEW, LINEAGE, "featurebyte.View.tabular_source"], "featurebyte.View.tabular_source"
-        ),
-        DocLayoutItem([VIEW, TYPE, "featurebyte.ChangeView"], "featurebyte.ChangeView"),
-        DocLayoutItem([VIEW, TYPE, "featurebyte.DimensionView"], "featurebyte.DimensionView"),
-        DocLayoutItem([VIEW, TYPE, "featurebyte.EventView"], "featurebyte.EventView"),
-        DocLayoutItem([VIEW, TYPE, "featurebyte.ItemView"], "featurebyte.ItemView"),
-        DocLayoutItem([VIEW, TYPE, "featurebyte.SCDView"], "featurebyte.SCDView"),
+        DocLayoutItem([VIEW, INFO, "View.get_join_column"], "View.get_join_column"),
+        DocLayoutItem([VIEW, LINEAGE, "View.feature_store"], "View.feature_store"),
+        DocLayoutItem([VIEW, LINEAGE, "View.graph"], "View.graph"),
+        DocLayoutItem([VIEW, LINEAGE, "View.preview_sql"], "View.preview_sql"),
+        DocLayoutItem([VIEW, LINEAGE, "View.tabular_source"], "View.tabular_source"),
+        DocLayoutItem([VIEW, TYPE, "ChangeView"], "ChangeView"),
+        DocLayoutItem([VIEW, TYPE, "DimensionView"], "DimensionView"),
+        DocLayoutItem([VIEW, TYPE, "EventView"], "EventView"),
+        DocLayoutItem([VIEW, TYPE, "ItemView"], "ItemView"),
+        DocLayoutItem([VIEW, TYPE, "SCDView"], "SCDView"),
     ]
 
 
@@ -979,8 +867,8 @@ def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayout
     assert series_type in {"ViewColumn", "Feature"}
     return [
         DocLayoutItem(
-            [series_type, TRANSFORM, f"featurebyte.{series_type}.dt.{field}"],
-            f"featurebyte.{series_type}.dt.{field}",
+            [series_type, TRANSFORM, f"{series_type}.dt.{field}"],
+            f"{series_type}.dt.{field}",
         )
         for field in [
             "year",
@@ -1008,153 +896,141 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         The layout for the ViewColumn class.
     """
     return [
-        DocLayoutItem([VIEW_COLUMN], "featurebyte.ViewColumn"),
+        DocLayoutItem([VIEW_COLUMN], "ViewColumn"),
         DocLayoutItem(
-            [VIEW_COLUMN, EXPLORE, "featurebyte.ViewColumn.describe"],
-            "featurebyte.ViewColumn.describe",
+            [VIEW_COLUMN, EXPLORE, "ViewColumn.describe"],
+            "ViewColumn.describe",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, EXPLORE, "featurebyte.ViewColumn.preview"],
-            "featurebyte.ViewColumn.preview",
+            [VIEW_COLUMN, EXPLORE, "ViewColumn.preview"],
+            "ViewColumn.preview",
+        ),
+        DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.sample"], "ViewColumn.sample"),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.astype"], "ViewColumn.astype"),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.dtype"], "ViewColumn.dtype"),
+        DocLayoutItem(
+            [VIEW_COLUMN, INFO, "ViewColumn.is_datetime"],
+            "ViewColumn.is_datetime",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, EXPLORE, "featurebyte.ViewColumn.sample"], "featurebyte.ViewColumn.sample"
+            [VIEW_COLUMN, INFO, "ViewColumn.is_numeric"],
+            "ViewColumn.is_numeric",
+        ),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.name"], "ViewColumn.name"),
+        DocLayoutItem(
+            [VIEW_COLUMN, INFO, "ViewColumn.timestamp_column"],
+            "ViewColumn.timestamp_column",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, INFO, "featurebyte.ViewColumn.astype"], "featurebyte.ViewColumn.astype"
+            [VIEW_COLUMN, LAGS, "ChangeViewColumn.lag"],
+            "ChangeViewColumn.lag",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, INFO, "featurebyte.ViewColumn.dtype"], "featurebyte.ViewColumn.dtype"
+            [VIEW_COLUMN, LAGS, "EventViewColumn.lag"],
+            "EventViewColumn.lag",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, INFO, "featurebyte.ViewColumn.is_datetime"],
-            "featurebyte.ViewColumn.is_datetime",
+            [VIEW_COLUMN, LINEAGE, "ViewColumn.feature_store"],
+            "ViewColumn.feature_store",
+        ),
+        DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.graph"], "ViewColumn.graph"),
+        DocLayoutItem(
+            [VIEW_COLUMN, LINEAGE, "ViewColumn.preview_sql"],
+            "ViewColumn.preview_sql",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, INFO, "featurebyte.ViewColumn.is_numeric"],
-            "featurebyte.ViewColumn.is_numeric",
+            [VIEW_COLUMN, LINEAGE, "ViewColumn.tabular_source"],
+            "ViewColumn.tabular_source",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, INFO, "featurebyte.ViewColumn.name"], "featurebyte.ViewColumn.name"
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.abs"],
+            "ViewColumn.abs",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, INFO, "featurebyte.ViewColumn.timestamp_column"],
-            "featurebyte.ViewColumn.timestamp_column",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.ceil"],
+            "ViewColumn.ceil",
         ),
-        DocLayoutItem(
-            [VIEW_COLUMN, LAGS, "featurebyte.ChangeViewColumn.lag"],
-            "featurebyte.ChangeViewColumn.lag",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, LAGS, "featurebyte.EventViewColumn.lag"],
-            "featurebyte.EventViewColumn.lag",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, LINEAGE, "featurebyte.ViewColumn.feature_store"],
-            "featurebyte.ViewColumn.feature_store",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, LINEAGE, "featurebyte.ViewColumn.graph"], "featurebyte.ViewColumn.graph"
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, LINEAGE, "featurebyte.ViewColumn.preview_sql"],
-            "featurebyte.ViewColumn.preview_sql",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, LINEAGE, "featurebyte.ViewColumn.tabular_source"],
-            "featurebyte.ViewColumn.tabular_source",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.abs"],
-            "featurebyte.ViewColumn.abs",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.ceil"],
-            "featurebyte.ViewColumn.ceil",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.dt"], "featurebyte.ViewColumn.dt"
-        ),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt"], "ViewColumn.dt"),
         *_get_datetime_accessor_properties_layout(VIEW_COLUMN),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.exp"],
-            "featurebyte.ViewColumn.exp",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.exp"],
+            "ViewColumn.exp",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.fillna"],
-            "featurebyte.ViewColumn.fillna",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.fillna"],
+            "ViewColumn.fillna",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.floor"],
-            "featurebyte.ViewColumn.floor",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.floor"],
+            "ViewColumn.floor",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.isin"],
-            "featurebyte.ViewColumn.isin",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.isin"],
+            "ViewColumn.isin",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.isnull"],
-            "featurebyte.ViewColumn.isnull",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.isnull"],
+            "ViewColumn.isnull",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.log"],
-            "featurebyte.ViewColumn.log",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.log"],
+            "ViewColumn.log",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.notnull"],
-            "featurebyte.ViewColumn.notnull",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.notnull"],
+            "ViewColumn.notnull",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.pow"],
-            "featurebyte.ViewColumn.pow",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.pow"],
+            "ViewColumn.pow",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.sqrt"],
-            "featurebyte.ViewColumn.sqrt",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.sqrt"],
+            "ViewColumn.sqrt",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str"],
-            "featurebyte.ViewColumn.str",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str"],
+            "ViewColumn.str",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str.contains"],
-            "featurebyte.ViewColumn.str.contains",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.contains"],
+            "ViewColumn.str.contains",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str.len"],
-            "featurebyte.ViewColumn.str.len",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.len"],
+            "ViewColumn.str.len",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str.lower"],
-            "featurebyte.ViewColumn.str.lower",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.lower"],
+            "ViewColumn.str.lower",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str.lstrip"],
-            "featurebyte.ViewColumn.str.lstrip",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.lstrip"],
+            "ViewColumn.str.lstrip",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str.pad"],
-            "featurebyte.ViewColumn.str.pad",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.pad"],
+            "ViewColumn.str.pad",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str.replace"],
-            "featurebyte.ViewColumn.str.replace",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.replace"],
+            "ViewColumn.str.replace",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str.rstrip"],
-            "featurebyte.ViewColumn.str.rstrip",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.rstrip"],
+            "ViewColumn.str.rstrip",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str.slice"],
-            "featurebyte.ViewColumn.str.slice",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.slice"],
+            "ViewColumn.str.slice",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str.strip"],
-            "featurebyte.ViewColumn.str.strip",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.strip"],
+            "ViewColumn.str.strip",
         ),
         DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "featurebyte.ViewColumn.str.upper"],
-            "featurebyte.ViewColumn.str.upper",
+            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.upper"],
+            "ViewColumn.str.upper",
         ),
     ]
 
@@ -1169,43 +1045,41 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         The layout for the Catalog module.
     """
     return [
-        DocLayoutItem([CATALOG], "featurebyte.Catalog"),
+        DocLayoutItem([CATALOG], "Catalog"),
         DocLayoutItem(
-            [CATALOG, ACTIVATE, "featurebyte.Catalog.activate"],
-            "featurebyte.Catalog.activate",
+            [CATALOG, ACTIVATE, "Catalog.activate"],
+            "Catalog.activate",
         ),
-        DocLayoutItem([CATALOG, GET, "featurebyte.Catalog.get"], "featurebyte.Catalog.get"),
+        DocLayoutItem([CATALOG, GET, "Catalog.get"], "Catalog.get"),
         DocLayoutItem(
-            [CATALOG, GET, "featurebyte.Catalog.get_active"],
-            "featurebyte.Catalog.get_active",
-        ),
-        DocLayoutItem(
-            [CATALOG, GET, "featurebyte.Catalog.get_by_id"],
-            "featurebyte.Catalog.get_by_id",
-        ),
-        DocLayoutItem([CATALOG, LIST, "featurebyte.Catalog.list"], "featurebyte.Catalog.list"),
-        DocLayoutItem(
-            [CATALOG, CREATE, "featurebyte.Catalog.create"], "featurebyte.Catalog.create"
+            [CATALOG, GET, "Catalog.get_active"],
+            "Catalog.get_active",
         ),
         DocLayoutItem(
-            [CATALOG, CREATE, "featurebyte.Catalog.get_or_create"],
-            "featurebyte.Catalog.get_or_create",
+            [CATALOG, GET, "Catalog.get_by_id"],
+            "Catalog.get_by_id",
+        ),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list"], "Catalog.list"),
+        DocLayoutItem([CATALOG, CREATE, "Catalog.create"], "Catalog.create"),
+        DocLayoutItem(
+            [CATALOG, CREATE, "Catalog.get_or_create"],
+            "Catalog.get_or_create",
         ),
         DocLayoutItem(
-            [CATALOG, INFO, "featurebyte.Catalog.created_at"],
-            "featurebyte.Catalog.created_at",
+            [CATALOG, INFO, "Catalog.created_at"],
+            "Catalog.created_at",
         ),
-        DocLayoutItem([CATALOG, INFO, "featurebyte.Catalog.info"], "featurebyte.Catalog.info"),
-        DocLayoutItem([CATALOG, INFO, "featurebyte.Catalog.name"], "featurebyte.Catalog.name"),
-        DocLayoutItem([CATALOG, INFO, "featurebyte.Catalog.saved"], "featurebyte.Catalog.saved"),
+        DocLayoutItem([CATALOG, INFO, "Catalog.info"], "Catalog.info"),
+        DocLayoutItem([CATALOG, INFO, "Catalog.name"], "Catalog.name"),
+        DocLayoutItem([CATALOG, INFO, "Catalog.saved"], "Catalog.saved"),
         DocLayoutItem(
-            [CATALOG, INFO, "featurebyte.Catalog.updated_at"],
-            "featurebyte.Catalog.updated_at",
+            [CATALOG, INFO, "Catalog.updated_at"],
+            "Catalog.updated_at",
         ),
-        DocLayoutItem([CATALOG, LINEAGE, "featurebyte.Catalog.id"], "featurebyte.Catalog.id"),
+        DocLayoutItem([CATALOG, LINEAGE, "Catalog.id"], "Catalog.id"),
         DocLayoutItem(
-            [CATALOG, UPDATE, "featurebyte.Catalog.update_name"],
-            "featurebyte.Catalog.update_name",
+            [CATALOG, UPDATE, "Catalog.update_name"],
+            "Catalog.update_name",
         ),
     ]
 
