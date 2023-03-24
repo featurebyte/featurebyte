@@ -79,7 +79,9 @@ class ChangeView(View, GroupByMixin):
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.CHANGE_VIEW
 
     # pydantic instance variables
-    default_feature_job_setting: FeatureJobSetting
+    default_feature_job_setting: FeatureJobSetting = Field(
+        description="default job setting for the view"
+    )
     effective_timestamp_column: str = Field(allow_mutation=False)
     natural_key_column: str = Field(allow_mutation=False)
 
@@ -205,7 +207,7 @@ class ChangeView(View, GroupByMixin):
         feature_job_setting: Optional[FeatureJobSetting] = None,
     ) -> FeatureJobSetting:
         """
-        Get default feature job setting. If none is provided, we'll set the default job setting to be once a day,
+        Get default feature job setting. If none is provided, it return the default job setting to be once a day,
         at the time of the view creation.
 
         Parameters
@@ -217,6 +219,12 @@ class ChangeView(View, GroupByMixin):
         -------
         FeatureJobSetting
             the feature job setting we want to use
+
+        Examples
+        --------
+        >>> feature_job_setting = ChangeView.get_default_feature_job_setting()
+        >>> feature_job_setting  # doctest: +SKIP
+        FeatureJobSetting(blind_spot='0', frequency='24h', time_modulo_frequency='6h24m')
         """
         if feature_job_setting is not None:
             return feature_job_setting

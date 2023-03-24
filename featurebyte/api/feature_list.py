@@ -606,7 +606,9 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     # override FeatureListModel attributes
     feature_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
-    version: VersionIdentifier = Field(allow_mutation=False, default=None)
+    version: VersionIdentifier = Field(
+        allow_mutation=False, default=None, description="Feature list version"
+    )
 
     # class variables
     _route = "/feature_list"
@@ -881,6 +883,22 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         -------
         pd.DataFrame
             Table of feature lists
+
+        Examples
+        --------
+
+        List saved FeatureList versions
+
+        >>> FeatureList.list_versions()  # doctest: +SKIP
+                           name feature_list_namespace_id  num_features  online_frac  deployed              created_at
+        0  invoice_feature_list  641d2f94f8d79eb6fee0a335             1          0.0     False 2023-03-24 05:05:24.875
+
+        List FeatureList versions with the same name
+
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.list_versions()  # doctest: +SKIP
+                           name feature_list_namespace_id  num_features  online_frac  deployed              created_at
+        0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
         """
         return super().list(include_id=include_id)
 
@@ -897,6 +915,13 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         -------
         pd.DataFrame
             Table of features with the same name
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.list_versions()  # doctest: +SKIP
+                           name feature_list_namespace_id  num_features  online_frac  deployed              created_at
+        0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
         """
         return self._list(include_id=include_id, params={"name": self.name})
 
@@ -1133,34 +1158,33 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Create new version of feature list with auto mode. Parameter `features` has no effect if `mode` is `auto`.
 
-        >>> feature_list = catalog.get_feature_list("my_feature_list")  # doctest: +SKIP
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.create_new_version(mode="auto")  # doctest: +SKIP
-
 
         Create new version of feature list with manual mode (only the versions of the features that are specified are
         changed). The versions of other features are the same as the origin feature list version.
 
-        >>> feature_list = catalog.get_feature_list("my_feature_list")  # doctest: +SKIP
-        >>> feature_list.create_new_version(
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.create_new_version(  # doctest: +SKIP
         ...   mode="manual",
         ...   features=[
         ...     # list of features to update, other features are the same as the original version
-        ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...
+        ...     FeatureVersionInfo(name="InvoiceCount_60days", version="V230323_1"),
         ...   ]
-        ... )  # doctest: +SKIP
+        ... )
 
 
         Create new version of feature list with semi-auto mode (uses the current default versions of features except
         for the features versions that are specified).
 
-        >>> feature_list = catalog.get_feature_list("my_feature_list")  # doctest: +SKIP
-        >>> feature_list.create_new_version(
-        ...   mode="semi-auto",
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.create_new_version(  # doctest: +SKIP
+        ...   mode="auto",
         ...   features=[
         ...     # list of features to update, other features use the current default versions
-        ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...
+        ...     FeatureVersionInfo(name="InvoiceCount_60days", version="V230323_2"),
         ...   ]
-        ... )  # doctest: +SKIP
+        ... )
 
         """
         client = Configurations().get_client()
@@ -1187,6 +1211,11 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ----------
         status: Literal[tuple(FeatureListStatus)]
             Feature list status
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.update_status(FeatureListStatus.PUBLISHED)
         """
         self.feature_list_namespace.update(
             update_payload={"status": str(status)}, allow_update_local=False
@@ -1203,6 +1232,11 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ----------
         default_version_mode: Literal[tuple(DefaultVersionMode)]
             Feature list default version mode
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
         """
         self.feature_list_namespace.update(
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
@@ -1212,6 +1246,12 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     def as_default_version(self) -> None:
         """
         Set the feature list as the default version
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
+        >>> feature_list.as_default_version()
         """
         self.feature_list_namespace.update(
             update_payload={"default_feature_list_id": self.id}, allow_update_local=False
@@ -1223,7 +1263,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         self, enable: bool, make_production_ready: bool = False, ignore_guardrails: bool = False
     ) -> None:
         """
-        Update feature list deployment status
+        Deploy all the Features in the Feature List to the Feature Store and update its deployment status
 
         Parameters
         ----------
@@ -1233,6 +1273,11 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             Whether to convert the feature to production ready if it is not production ready
         ignore_guardrails: bool
             Whether to ignore guardrails when trying to promote features in the list to production ready status
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.deploy(enable=True, make_production_ready=True)  # doctest: +SKIP
         """
         self.update(
             update_payload={
@@ -1251,7 +1296,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
         """
-        Get python code template for serving online features from a deployed featurelist
+        Retrive either Python or shell script template for serving online features from a deployed featurelist, defaulted to python.
 
         Parameters
         ----------
@@ -1268,6 +1313,46 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             Feature list not deployed
         NotImplementedError
             Serving code not available
+
+        Examples
+        --------
+
+        Retrieve python code template when "language" is set to "python"
+
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.get_online_serving_code(language="python")  # doctest: +SKIP
+            from typing import Any, Dict
+            import pandas as pd
+            import requests
+            def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
+                "
+                Send POST request to online serving endpoint
+                Parameters
+                ----------
+                entity_serving_names: Dict[str, Any]
+                    Entity serving name values to used for serving request
+                Returns
+                -------
+                pd.DataFrame
+                "
+                response = requests.post(
+                    url="http://localhost:8080/feature_list/{feature_list.id}/online_features",
+                    params={{"catalog_id": "63eda344d0313fb925f7883a"}},
+                    headers={{"Content-Type": "application/json", "Authorization": "Bearer token"}},
+                    json={{"entity_serving_names": entity_serving_names}},
+                )
+                assert response.status_code == 200, response.json()
+                return pd.DataFrame.from_dict(response.json()["features"])
+            request_features([{{"cust_id": "sample_cust_id"}}])
+
+        Retrieve shell script template when "language" is set to "sh"
+
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.get_online_serving_code(language="sh")  # doctest: +SKIP
+            \\#!/bin/sh
+            curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
+                '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
+                http://localhost:8080/feature_list/641cf594f74f839cf9297884/online_features?catalog_id=63eda344d0313fb925f7883a
         """
         if not self.deployed:
             raise FeatureListNotOnlineEnabledError("Feature list is not deployed.")

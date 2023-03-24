@@ -88,7 +88,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     )
 
     name: Optional[StrictStr] = Field(default=None)
-    dtype: DBVarType = Field(allow_mutation=False)
+    dtype: DBVarType = Field(allow_mutation=False, description="variable type of the series")
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}[{self.dtype}](name={self.name}, node_name={self.node_name})"

@@ -107,6 +107,13 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         ----------
         entity_name: Optional[str]
             Associate column name to the entity, remove association if entity name is None
+
+        Examples
+        --------
+        Set column "GroceryInvoiceGuid" of the target event table as entity "groceryinvoice"
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["GroceryInvoiceGuid"].as_entity("groceryinvoice")
         """
         if entity_name is None:
             entity_id = None
@@ -469,12 +476,19 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         self, record_creation_timestamp_column: str
     ) -> None:
         """
-        Update record creation timestamp column
+        Update record creation timestamp column used to perform feature job setting analysis
 
         Parameters
         ----------
         record_creation_timestamp_column: str
             Record creation timestamp column used to perform feature job setting analysis
+
+        Examples
+        --------
+        Update record creation timestamp column
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table.update_record_creation_timestamp_column("record_available_at")
         """
         self.update(
             update_payload={"record_creation_timestamp_column": record_creation_timestamp_column},

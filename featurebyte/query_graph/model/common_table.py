@@ -5,7 +5,7 @@ from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, TypeVar,
 
 from abc import abstractmethod
 
-from pydantic import validator
+from pydantic import Field, validator
 
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.enum import DBVarType, TableDataType
@@ -47,7 +47,10 @@ class BaseTableData(FeatureByteBaseModel):
         TableDataType.ITEM_TABLE,
         TableDataType.DIMENSION_TABLE,
         TableDataType.SCD_TABLE,
-    ]
+    ] = Field(
+        description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table"
+    )
+
     columns_info: List[ColumnInfo]
     tabular_source: TabularSource
 
