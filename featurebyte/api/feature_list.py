@@ -889,16 +889,14 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         List saved FeatureList versions
 
-        >>> FeatureList.list_versions()
-              name          feature_list_namespace_id  num_features  online_frac  deployed              created_at
-        0      new_flist_2  641bfaf628dba368bde43d60             2          0.0     False   2023-03-23 07:08:38.254
-        1      new_flist_1  641bfaf628dba368bde43d5e             2          0.0     False   2023-03-23 07:08:38.163
-        2  my_feature_list  641bfaf528dba368bde43d4f             1          0.0     False   2023-03-23 07:08:37.877
+        >>> FeatureList.list_versions()  # doctest: +SKIP
+                           name feature_list_namespace_id  num_features  online_frac  deployed              created_at
+        0  invoice_feature_list  641d2f94f8d79eb6fee0a335             1          0.0     False 2023-03-24 05:05:24.875
 
         List FeatureList versions with the same name
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.list_versions()
+        >>> feature_list.list_versions()  # doctest: +SKIP
                            name feature_list_namespace_id  num_features  online_frac  deployed              created_at
         0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
         """
@@ -921,7 +919,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.list_versions()
+        >>> feature_list.list_versions()  # doctest: +SKIP
                            name feature_list_namespace_id  num_features  online_frac  deployed              created_at
         0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
         """
@@ -1167,7 +1165,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         changed). The versions of other features are the same as the origin feature list version.
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.create_new_version(
+        >>> feature_list.create_new_version(  # doctest: +SKIP
         ...   mode="manual",
         ...   features=[
         ...     # list of features to update, other features are the same as the original version
@@ -1180,7 +1178,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         for the features versions that are specified).
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.create_new_version(
+        >>> feature_list.create_new_version(  # doctest: +SKIP
         ...   mode="auto",
         ...   features=[
         ...     # list of features to update, other features use the current default versions

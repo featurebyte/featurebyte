@@ -346,7 +346,8 @@ class Feature(
 
         List Feature versions with the same name
 
-        >>> saved_feature.list_versions()  # doctest: +SKIP
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.list_versions()  # doctest: +SKIP
                 name  version  dtype readiness  online_enabled             table    entities              created_at
             0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838
         """
@@ -378,7 +379,10 @@ class Feature(
         pd.DataFrame
             Table of features with the same name
 
-        >>> saved_feature.list_versions()  # doctest: +SKIP
+        Examples
+        --------
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.list_versions()  # doctest: +SKIP
                 name  version  dtype readiness  online_enabled             table    entities              created_at
             0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838
         """
@@ -850,7 +854,9 @@ class Feature(
 
         Examples
         --------
-        >>> new_feature.update_readiness(readiness="PRODUCTION_READY")  # doctest: +SKIP
+
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.update_readiness(readiness="PRODUCTION_READY")
         """
         self.update(
             update_payload={"readiness": str(readiness), "ignore_guardrails": ignore_guardrails},
@@ -872,7 +878,8 @@ class Feature(
         Examples
         --------
 
-        >>> saved_feature.update_default_version_mode("MANUAL")  # doctest: +SKIP
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.update_default_version_mode("MANUAL")
         """
         self.feature_namespace.update(
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
@@ -886,7 +893,8 @@ class Feature(
         Examples
         --------
 
-        >>> saved_feature.as_default_version()  # doctest: +SKIP
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.as_default_version()
         """
         self.feature_namespace.update(
             update_payload={"default_feature_id": self.id},
