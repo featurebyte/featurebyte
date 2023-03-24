@@ -56,12 +56,20 @@ class FeatureNewVersionCreate(FeatureByteBaseModel):
     )
 
 
+class FeatureModelResponse(FeatureModel):
+    """
+    Extended Feature model
+    """
+
+    primary_entity_ids: List[PydanticObjectId]
+
+
 class FeaturePaginatedList(PaginationMixin):
     """
     Paginated list of features
     """
 
-    data: List[FeatureModel]
+    data: List[FeatureModelResponse]
 
 
 class FeatureUpdate(FeatureByteBaseModel):

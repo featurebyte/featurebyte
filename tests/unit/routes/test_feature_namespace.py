@@ -100,7 +100,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         """Test creation (success) in non default catalog"""
 
     def post_payloads(self, api_client, api_object_filename_pairs, catalog_id):
-        # post payloads from the fixture requests
+        """Post payloads from the fixture requests"""
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             params = {"catalog_id": catalog_id} if catalog_id else None
@@ -243,9 +243,9 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         await self.setup_get_info(test_api_client)
         doc_id = create_response_dict["_id"]

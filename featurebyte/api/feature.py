@@ -52,9 +52,15 @@ from featurebyte.query_graph.node.generic import (
     ItemGroupbyNode,
     ProjectNode,
 )
-from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
+from featurebyte.schema.feature import (
+    FeatureCreate,
+    FeatureModelResponse,
+    FeaturePreview,
+    FeatureSQL,
+    FeatureUpdate,
+)
 from featurebyte.schema.feature_namespace import (
-    ExtendedFeatureNamespaceModel,
+    FeatureNamespaceModelResponse,
     FeatureNamespaceUpdate,
 )
 
@@ -68,8 +74,8 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     # class variables
     _route = "/feature_namespace"
     _update_schema_class = FeatureNamespaceUpdate
-    _list_schema = ExtendedFeatureNamespaceModel
-    _get_schema = ExtendedFeatureNamespaceModel
+    _list_schema = FeatureNamespaceModelResponse
+    _get_schema = FeatureNamespaceModelResponse
     _list_fields = [
         "name",
         "dtype",
@@ -209,8 +215,8 @@ class Feature(
     # class variables
     _route = "/feature"
     _update_schema_class = FeatureUpdate
-    _list_schema = FeatureModel
-    _get_schema = FeatureModel
+    _list_schema = FeatureModelResponse
+    _get_schema = FeatureModelResponse
     _list_fields = [
         "name",
         "version",

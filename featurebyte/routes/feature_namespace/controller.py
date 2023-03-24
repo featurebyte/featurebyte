@@ -15,8 +15,8 @@ from featurebyte.routes.common.base import (
     PaginatedDocument,
 )
 from featurebyte.schema.feature_namespace import (
-    ExtendedFeatureNamespaceModel,
     FeatureNamespaceList,
+    FeatureNamespaceModelResponse,
     FeatureNamespaceServiceUpdate,
     FeatureNamespaceUpdate,
 )
@@ -32,7 +32,7 @@ from featurebyte.service.mixin import Document
 
 class FeatureNamespaceController(
     BaseDocumentController[
-        ExtendedFeatureNamespaceModel, FeatureNamespaceService, FeatureNamespaceList
+        FeatureNamespaceModelResponse, FeatureNamespaceService, FeatureNamespaceList
     ],
     DerivePrimaryEntityAndTableMixin,
 ):
@@ -70,7 +70,7 @@ class FeatureNamespaceController(
         default_feature = await self.feature_service.get_document(
             document_id=document.default_feature_id
         )
-        output = ExtendedFeatureNamespaceModel(
+        output = FeatureNamespaceModelResponse(
             **document.dict(by_alias=True),
             primary_table_ids=self.derive_primary_table_ids(feature=default_feature),
             primary_entity_ids=await self.derive_primary_entity_ids(
@@ -96,16 +96,10 @@ class FeatureNamespaceController(
         )
 
         # get all the default features & entities
-        default_feature_ids, entity_ids = set(), set()
-        for feature_namespace in document_data["data"]:
-            default_feature_ids.add(feature_namespace["default_feature_id"])
-            entity_ids.update(feature_namespace["entity_ids"])
-
-        entity_id_to_entity = {}
-        async for entity_dict in self.entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": list(entity_ids)}}
-        ):
-            entity_id_to_entity[entity_dict["_id"]] = entity_dict
+        default_feature_ids = set(
+            document["default_feature_id"] for document in document_data["data"]
+        )
+        entity_id_to_entity = await self.get_entity_id_to_entity(doc_list=document_data["data"])
 
         feature_id_to_primary_table_ids = {}
         async for feature_dict in self.feature_service.list_documents_iterator(
@@ -125,11 +119,11 @@ class FeatureNamespaceController(
             default_feature_id = feature_namespace["default_feature_id"]
             primary_table_ids = feature_id_to_primary_table_ids.get(default_feature_id, [])
             output.append(
-                {
+                FeatureNamespaceModelResponse(
                     **feature_namespace,
-                    "primary_entity_ids": primary_entity_ids,
-                    "primary_table_ids": primary_table_ids,
-                }
+                    primary_entity_ids=primary_entity_ids,
+                    primary_table_ids=primary_table_ids,
+                )
             )
 
         document_data["data"] = output
@@ -139,7 +133,7 @@ class FeatureNamespaceController(
         self,
         feature_namespace_id: ObjectId,
         data: FeatureNamespaceUpdate,
-    ) -> ExtendedFeatureNamespaceModel:
+    ) -> FeatureNamespaceModelResponse:
         """
         Update FeatureNamespace stored at persistent (GitDB or MongoDB)
 
@@ -152,7 +146,7 @@ class FeatureNamespaceController(
 
         Returns
         -------
-        ExtendedFeatureNamespaceModel
+        FeatureNamespaceModelResponse
             FeatureNamespace object with updated attribute(s)
 
         Raises

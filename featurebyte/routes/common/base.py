@@ -263,12 +263,52 @@ class DerivePrimaryEntityAndTableMixin:
 
     entity_service: EntityService
 
+    async def get_entity_id_to_entity(
+        self, doc_list: list[dict[str, Any]]
+    ) -> dict[ObjectId, dict[str, Any]]:
+        """
+        Construct entity ID to entity dictionary mapping
+
+        Parameters
+        ----------
+        doc_list: list[dict[str, Any]]
+            List of document dictionary (document should contain entity_ids field)
+
+        Returns
+        -------
+        dict[ObjectId, dict[str, Any]]
+            Dictionary mapping entity ID to entity dictionary
+        """
+        entity_ids = set()
+        for doc in doc_list:
+            entity_ids.update(doc["entity_ids"])
+
+        entity_id_to_entity = {}
+        async for entity_dict in self.entity_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(entity_ids)}}
+        ):
+            entity_id_to_entity[entity_dict["_id"]] = entity_dict
+        return entity_id_to_entity
+
     async def derive_primary_entity_ids(
         self,
         entity_ids: Sequence[ObjectId],
         entity_id_to_entity: Optional[dict[ObjectId, dict[str, Any]]] = None,
     ) -> list[ObjectId]:
-        """Derive primary entity IDs from a list of entity IDs"""
+        """
+        Derive primary entity IDs from a list of entity IDs
+
+        Parameters
+        ----------
+        entity_ids: Sequence[ObjectId]
+            List of entity IDs
+        entity_id_to_entity: Optional[dict[ObjectId, dict[str, Any]]]
+            Dictionary mapping entity ID to entity dictionary
+
+        Returns
+        -------
+        list[ObjectId]
+        """
         if entity_id_to_entity is None:
             entity_id_to_entity = {
                 entity_dict["_id"]: entity_dict
@@ -282,6 +322,17 @@ class DerivePrimaryEntityAndTableMixin:
 
     @staticmethod
     def derive_primary_table_ids(feature: FeatureModel) -> list[ObjectId]:
-        """Derive primary table IDs from a feature"""
+        """
+        Derive primary table IDs from a feature
+
+        Parameters
+        ----------
+        feature: FeatureModel
+            Feature model
+
+        Returns
+        -------
+        list[ObjectId]
+        """
         primary_input_nodes = feature.graph.get_primary_input_nodes(node_name=feature.node_name)
         return [node.parameters.id for node in primary_input_nodes if node.parameters.id]
