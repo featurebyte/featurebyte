@@ -510,6 +510,9 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         response = test_api_client.get(f"{self.base_route}", params={"catalog_id": catalog_id})
         assert response.status_code == HTTPStatus.OK
         results = response.json()
+        import pdb
+
+        pdb.set_trace()
         assert results["total"] == 1
         assert results["data"][0]["_id"] == custom_catalog_document_id
 

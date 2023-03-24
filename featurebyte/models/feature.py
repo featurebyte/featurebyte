@@ -144,7 +144,8 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
         allow_mutation=False, default=None, description="Feature Version"
     )
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
 
@@ -153,14 +154,6 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
         construct_sort_validator()
     )
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
-
-    @root_validator(pre=True)
-    @classmethod
-    def _validate_tabular_data_ids(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # DEV-727: refactor event_data_ids to tabular_data_ids
-        if "event_data_ids" in values:
-            values["tabular_data_ids"] = values.pop("event_data_ids", [])
-        return values
 
     @property
     def node(self) -> Node:
@@ -175,22 +168,20 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
 
         return self.graph.get_node_by_name(self.node_name)
 
-    @root_validator(pre=True)
+    @root_validator
     @classmethod
-    def _convert_graph_format(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # DEV-556: converted older record (graph) into a newer format
-        if isinstance(values.get("graph"), dict):
-            if isinstance(values.get("graph", {}).get("nodes"), dict):
-                # in the old format, nodes is a dictionary but not a list
-                graph: dict[str, Any] = {"nodes": [], "edges": []}
-                for node in values["graph"]["nodes"].values():
-                    graph["nodes"].append(node)
-                for parent, children in values["graph"]["edges"].items():
-                    for child in children:
-                        graph["edges"].append({"source": parent, "target": child})
-                values["graph"] = graph
-            if isinstance(values.get("node"), dict):
-                values["node_name"] = values["node"]["name"]
+    def _add_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # TODO: rename tabular_data_ids to table_ids and tabular_data_ids should have the same treatment
+        if values.get("graph") and values.get("node_name"):
+            graph = values["graph"]
+            if isinstance(graph, dict):
+                graph = QueryGraphModel(**dict(graph))
+
+            node_name = values["node_name"]
+            primary_input_nodes = graph.get_primary_input_nodes(node_name=node_name)
+            values["primary_table_ids"] = [
+                node.parameters.id for node in primary_input_nodes if node.parameters.id
+            ]
         return values
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
@@ -270,6 +261,8 @@ class FeatureModel(FrozenFeatureModel):
         Entity IDs used by the feature
     tabular_data_ids: List[PydanticObjectId]
         Tabular data IDs used for the feature version
+    primary_table_ids: Optional[List[PydanticObjectId]]
+        Primary table IDs of the feature (auto-derive from graph)
     feature_namespace_id: PydanticObjectId
         Feature namespace id of the object
     feature_list_ids: List[PydanticObjectId]
@@ -287,14 +280,6 @@ class FeatureModel(FrozenFeatureModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
-
-    @validator("online_enabled", pre=True)
-    @classmethod
-    def _validate_online_enabled(cls, value: Optional[bool]) -> bool:
-        # DEV-556: converted older record `None` value to `False`
-        if value is None:
-            return False
-        return value
 
 
 class FeatureSignature(FeatureByteBaseModel):

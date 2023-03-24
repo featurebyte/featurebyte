@@ -261,6 +261,8 @@ app_container_config.add_controller(
     FeatureNamespaceController,
     [
         "feature_namespace_service",
+        "entity_service",
+        "feature_service",
         "default_version_mode_service",
         "feature_readiness_service",
         "info_service",
