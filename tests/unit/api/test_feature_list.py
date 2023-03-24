@@ -1034,7 +1034,9 @@ def test_list_features(saved_feature_list, float_feature):
                 "readiness": [float_feature.readiness],
                 "online_enabled": [float_feature.online_enabled],
                 "tables": [["sf_event_table"]],
+                "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
+                "primary_entities": [["customer"]],
                 "created_at": [float_feature.created_at],
             }
         ),
