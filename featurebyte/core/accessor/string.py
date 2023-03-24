@@ -78,11 +78,11 @@ class StringAccessor:
         >>> view["BrowserUserAgentLength"] = view["BrowserUserAgent"].str.len()
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent  BrowserUserAgentLength
-        0  Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKi...                     109
-        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...                     115
+        0  Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.3...                     102
+        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:6...                      78
         2  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...                     115
-        3  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...                     115
-        4  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...                     114
+        3  Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4...                     117
+        4  Mozilla/5.0 (Windows NT 6.1; Win64; x64) Apple...                     113
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -110,11 +110,11 @@ class StringAccessor:
         >>> view["BrowserUserAgentLower"] = view["BrowserUserAgent"].str.lower()
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent                              BrowserUserAgentLower
-        0  Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKi...  mozilla/5.0 (windows nt 6.2; wow64) applewebki...
-        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  mozilla/5.0 (windows nt 10.0; win64; x64) appl...
+        0  Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.3...  mozilla/5.0 (windows nt 6.1) applewebkit/537.3...
+        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:6...  mozilla/5.0 (windows nt 10.0; win64; x64; rv:6...
         2  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  mozilla/5.0 (windows nt 10.0; win64; x64) appl...
-        3  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  mozilla/5.0 (windows nt 10.0; win64; x64) appl...
-        4  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  mozilla/5.0 (windows nt 10.0; win64; x64) appl...
+        3  Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4...  mozilla/5.0 (macintosh; intel mac os x 10_14_4...
+        4  Mozilla/5.0 (Windows NT 6.1; Win64; x64) Apple...  mozilla/5.0 (windows nt 6.1; win64; x64) apple...
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -142,11 +142,11 @@ class StringAccessor:
         >>> view["BrowserUserAgentUpper"] = view["BrowserUserAgent"].str.upper()
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent                              BrowserUserAgentUpper
-        0  Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKi...  MOZILLA/5.0 (WINDOWS NT 6.2; WOW64) APPLEWEBKI...
-        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  MOZILLA/5.0 (WINDOWS NT 10.0; WIN64; X64) APPL...
+        0  Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.3...  MOZILLA/5.0 (WINDOWS NT 6.1) APPLEWEBKIT/537.3...
+        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:6...  MOZILLA/5.0 (WINDOWS NT 10.0; WIN64; X64; RV:6...
         2  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  MOZILLA/5.0 (WINDOWS NT 10.0; WIN64; X64) APPL...
-        3  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  MOZILLA/5.0 (WINDOWS NT 10.0; WIN64; X64) APPL...
-        4  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  MOZILLA/5.0 (WINDOWS NT 10.0; WIN64; X64) APPL...
+        3  Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4...  MOZILLA/5.0 (MACINTOSH; INTEL MAC OS X 10_14_4...
+        4  Mozilla/5.0 (Windows NT 6.1; Win64; x64) Apple...  MOZILLA/5.0 (WINDOWS NT 6.1; WIN64; X64) APPLE...
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -180,8 +180,8 @@ class StringAccessor:
         >>> view["TitleStrip"] = view["Title"].str.strip("M")
         >>> view.preview(5).filter(regex="Title")
           Title TitleStrip
-        0   Mr.         r.
-        1   Mr.         r.
+        0   Ms.         s.
+        1   Ms.         s.
         2   Mr.         r.
         3  Mrs.        rs.
         4   Mr.         r.
@@ -218,8 +218,8 @@ class StringAccessor:
         >>> view["TitleStrip"] = view["Title"].str.lstrip("M")
         >>> view.preview(5).filter(regex="Title")
           Title TitleStrip
-        0   Mr.         r.
-        1   Mr.         r.
+        0   Ms.         s.
+        1   Ms.         s.
         2   Mr.         r.
         3  Mrs.        rs.
         4   Mr.         r.
@@ -256,8 +256,8 @@ class StringAccessor:
         >>> view["TitleStrip"] = view["Title"].str.rstrip(".")
         >>> view.preview(5).filter(regex="Title")
           Title TitleStrip
-        0   Mr.         Mr
-        1   Mr.         Mr
+        0   Ms.         Ms
+        1   Ms.         Ms
         2   Mr.         Mr
         3  Mrs.        Mrs
         4   Mr.         Mr
@@ -296,11 +296,11 @@ class StringAccessor:
         >>> view["BrowserUserAgentNew"] = view["BrowserUserAgent"].str.replace("Windows", "Win")
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent                                BrowserUserAgentNew
-        0  Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKi...  Mozilla/5.0 (Win NT 6.2; WOW64) AppleWebKit/53...
-        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  Mozilla/5.0 (Win NT 10.0; Win64; x64) AppleWeb...
+        0  Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.3...  Mozilla/5.0 (Win NT 6.1) AppleWebKit/537.36 (K...
+        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:6...  Mozilla/5.0 (Win NT 10.0; Win64; x64; rv:66.0)...
         2  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  Mozilla/5.0 (Win NT 10.0; Win64; x64) AppleWeb...
-        3  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  Mozilla/5.0 (Win NT 10.0; Win64; x64) AppleWeb...
-        4  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...  Mozilla/5.0 (Win NT 10.0; Win64; x64) AppleWeb...
+        3  Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4...  Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4...
+        4  Mozilla/5.0 (Windows NT 6.1; Win64; x64) Apple...  Mozilla/5.0 (Win NT 6.1; Win64; x64) AppleWebK...
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -338,11 +338,11 @@ class StringAccessor:
         >>> view["PostalCodePadded"] = view["PostalCode"].str.pad(10, fillchar="0")
         >>> view.preview(5).filter(regex="PostalCode")
           PostalCode PostalCodePadded
-        0      44230       0000044230
-        1      78700       0000078700
-        2      78180       0000078180
-        3      13002       0000013002
-        4      91100       0000091100
+        0      52000       0000052000
+        1      68200       0000068200
+        2      12100       0000012100
+        3      97232       0000097232
+        4      63000       0000063000
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -378,11 +378,11 @@ class StringAccessor:
         >>> view["BrowserUserAgent_x64"] = view["BrowserUserAgent"].str.contains("x64")
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent  BrowserUserAgent_x64
-        0  Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKi...                 False
-        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...                  True
+        0  Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.3...                 False
+        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:6...                  True
         2  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...                  True
-        3  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...                  True
-        4  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...                  True
+        3  Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4...                 False
+        4  Mozilla/5.0 (Windows NT 6.1; Win64; x64) Apple...                  True
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -427,11 +427,11 @@ class StringAccessor:
         >>> view["BrowserUserAgentSlice"] = view["BrowserUserAgent"].str.slice(0, 10)
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent BrowserUserAgentSlice
-        0  Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKi...            Mozilla/5.
-        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...            Mozilla/5.
+        0  Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.3...            Mozilla/5.
+        1  Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:6...            Mozilla/5.
         2  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...            Mozilla/5.
-        3  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...            Mozilla/5.
-        4  Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl...            Mozilla/5.
+        3  Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4...            Mozilla/5.
+        4  Mozilla/5.0 (Windows NT 6.1; Win64; x64) Apple...            Mozilla/5.
         """
         if step is not None and step != 1:
             raise ValueError("Can only use step size equals to 1.")
