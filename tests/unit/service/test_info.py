@@ -283,13 +283,6 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         document_id=production_ready_feature.id, verbose=False
     )
     expected_metadata = {
-        "primary_tables": [
-            {
-                "name": "sf_event_table",
-                "table_type": "event_table",
-                "id": feature_namespace.tabular_data_ids[0],
-            }
-        ],
         "input_columns": {
             "Input0": {"data": "sf_event_table", "column_name": "col_float", "semantic": None}
         },
@@ -326,6 +319,9 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
+        primary_table=[
+            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -374,13 +370,6 @@ def expected_feature_iet_info_fixture(feature_iet):
         "function": "sum",
     }
     expected_metadata = {
-        "primary_tables": [
-            {
-                "name": "sf_event_table",
-                "table_type": "event_table",
-                "id": feature_iet.tabular_data_ids[0],
-            }
-        ],
         "input_columns": {
             "Input0": {
                 "data": "sf_event_table",
@@ -442,6 +431,9 @@ def expected_feature_iet_info_fixture(feature_iet):
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
+        primary_table=[
+            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",

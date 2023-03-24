@@ -402,9 +402,7 @@ class InfoService(BaseService):
             current_flag_column=scd_table.current_flag_column,
         )
 
-    async def _extract_feature_metadata(
-        self, op_struct: GroupOperationStructure, main_input_nodes: list[InputNode]
-    ) -> dict[str, Any]:
+    async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
         # retrieve related tables & semantics
         table_list = await self._get_list_object(
             self.table_service, op_struct.tabular_data_ids, TableList
@@ -467,14 +465,7 @@ class InfoService(BaseService):
                 "inputs": [reference_map[col] for col in op_struct.post_aggregation.columns],
                 "transforms": op_struct.post_aggregation.transforms,
             }
-
-        table_id_to_model = {table.id: table for table in table_list.data}
-        primary_tables = [table_id_to_model[node.parameters.id] for node in main_input_nodes]
         return {
-            "primary_tables": [
-                {"name": table.name, "table_type": table.type, "id": table.id}
-                for table in primary_tables
-            ],
             "input_columns": source_columns,
             "derived_columns": derived_columns,
             "aggregations": aggregation_columns,
@@ -538,12 +529,17 @@ class InfoService(BaseService):
         FeatureInfo
         """
         feature = await self.feature_service.get_document(document_id=document_id)
-        data_id_to_name = {
-            doc["_id"]: doc["name"]
-            async for doc in self.table_service.list_documents_iterator(
-                query_filter={"_id": {"$in": feature.tabular_data_ids}}
-            )
-        }
+        catalog = await self.catalog_service.get_document(feature.catalog_id)
+        main_input_nodes = feature.graph.get_main_input_nodes(node_name=feature.node_name)
+        data_id_to_doc = {}
+        async for doc in self.table_service.list_documents_iterator(
+            query_filter={"_id": {"$in": feature.tabular_data_ids}}
+        ):
+            doc["catalog_name"] = catalog.name
+            data_id_to_doc[doc["_id"]] = doc
+
+        data_id_to_name = {key: value["name"] for key, value in data_id_to_doc.items()}
+        primary_tables = [data_id_to_doc[node.parameters.id] for node in main_input_nodes]
         namespace_info = await self.get_feature_namespace_info(
             document_id=feature.feature_namespace_id,
             verbose=verbose,
@@ -565,14 +561,12 @@ class InfoService(BaseService):
             )
 
         op_struct = feature.extract_operation_structure()
-        main_input_nodes = feature.graph.get_main_input_nodes(node_name=feature.node_name)
-        metadata = await self._extract_feature_metadata(
-            op_struct=op_struct, main_input_nodes=main_input_nodes
-        )
+        metadata = await self._extract_feature_metadata(op_struct=op_struct)
         return FeatureInfo(
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
+            primary_table=primary_tables,
             table_feature_job_setting={
                 "this": self._extract_table_feature_job_settings(
                     feature=feature, table_id_to_name=data_id_to_name
