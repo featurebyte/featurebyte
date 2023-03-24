@@ -596,7 +596,7 @@ def test_list(saved_feature_list):
                 "deployed": [saved_feature_list.deployed],
                 "readiness_frac": 0.0,
                 "online_frac": 0.0,
-                "table": [["sf_event_table"]],
+                "tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "created_at": [saved_feature_list_namespace.created_at],
             }
@@ -1033,7 +1033,7 @@ def test_list_features(saved_feature_list, float_feature):
                 "dtype": [float_feature.dtype],
                 "readiness": [float_feature.readiness],
                 "online_enabled": [float_feature.online_enabled],
-                "table": [["sf_event_table"]],
+                "tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "created_at": [float_feature.created_at],
             }

@@ -3,11 +3,14 @@ BaseController for API routes
 """
 from __future__ import annotations
 
-from typing import Any, Generic, List, Literal, Optional, Type, TypeVar, cast
+from typing import Any, Generic, List, Literal, Optional, Sequence, Type, TypeVar, cast
 
 from bson.objectid import ObjectId
 
+from featurebyte.models.entity import EntityModel
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
+from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
@@ -253,3 +256,32 @@ class RelationshipMixin(Generic[Document, ParentT]):
             child_id=child_id,
         )
         return cast(Document, document)
+
+
+class DerivePrimaryEntityAndTableMixin:
+    """Mixin class to derive primary entity & table from a feature"""
+
+    entity_service: EntityService
+
+    async def derive_primary_entity_ids(
+        self,
+        entity_ids: Sequence[ObjectId],
+        entity_id_to_entity: Optional[dict[ObjectId, dict[str, Any]]] = None,
+    ) -> list[ObjectId]:
+        """Derive primary entity IDs from a list of entity IDs"""
+        if entity_id_to_entity is None:
+            entity_id_to_entity = {
+                entity_dict["_id"]: entity_dict
+                async for entity_dict in self.entity_service.list_documents_iterator(
+                    query_filter={"_id": {"$in": entity_ids}},
+                )
+            }
+
+        entities = [EntityModel(**entity_id_to_entity[entity_id]) for entity_id in entity_ids]
+        return [entity.id for entity in derive_primary_entity(entities=entities)]
+
+    @staticmethod
+    def derive_primary_table_ids(feature: FeatureModel) -> list[ObjectId]:
+        """Derive primary table IDs from a feature"""
+        primary_input_nodes = feature.graph.get_primary_input_nodes(node_name=feature.node_name)
+        return [node.parameters.id for node in primary_input_nodes if node.parameters.id]

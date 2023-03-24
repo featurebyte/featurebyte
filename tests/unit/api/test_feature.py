@@ -287,8 +287,10 @@ def saved_feature_fixture(
                 "dtype": [float_feature_namespace.dtype],
                 "readiness": [float_feature_namespace.readiness],
                 "online_enabled": [float_feature.online_enabled],
-                "table": [["sf_event_table"]],
+                "tables": [["sf_event_table"]],
+                "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
+                "primary_entities": [["customer"]],
                 "created_at": [float_feature_namespace.created_at],
             }
         ),
@@ -831,7 +833,7 @@ def test_list_versions(saved_feature):
                 "dtype": [saved_feature.dtype] * 3,
                 "readiness": [saved_feature.readiness] * 3,
                 "online_enabled": [saved_feature.online_enabled] * 3,
-                "table": [["sf_event_table"]] * 3,
+                "tables": [["sf_event_table"]] * 3,
                 "entities": [["customer"]] * 3,
                 "created_at": [
                     feature_group["new_feat2"].created_at,
@@ -850,7 +852,7 @@ def test_list_versions(saved_feature):
                 "dtype": [saved_feature.dtype],
                 "readiness": [saved_feature.readiness],
                 "online_enabled": [saved_feature.online_enabled],
-                "table": [["sf_event_table"]],
+                "tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "created_at": [saved_feature.created_at],
             }

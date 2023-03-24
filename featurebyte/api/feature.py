@@ -35,7 +35,6 @@ from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
-    FeatureNamespaceModel,
     FeatureReadiness,
     FrozenFeatureModel,
     FrozenFeatureNamespaceModel,
@@ -54,7 +53,10 @@ from featurebyte.query_graph.node.generic import (
     ProjectNode,
 )
 from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
-from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
+from featurebyte.schema.feature_namespace import (
+    ExtendedFeatureNamespaceModel,
+    FeatureNamespaceUpdate,
+)
 
 
 class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
@@ -66,20 +68,24 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     # class variables
     _route = "/feature_namespace"
     _update_schema_class = FeatureNamespaceUpdate
-    _list_schema = FeatureNamespaceModel
-    _get_schema = FeatureNamespaceModel
+    _list_schema = ExtendedFeatureNamespaceModel
+    _get_schema = ExtendedFeatureNamespaceModel
     _list_fields = [
         "name",
         "dtype",
         "readiness",
         "online_enabled",
-        "table",
+        "tables",
+        "primary_tables",
         "entities",
+        "primary_entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", TableApiObject, "table"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "tables"),
+        ForeignKeyMapping("primary_entity_ids", Entity, "primary_entities"),
+        ForeignKeyMapping("primary_table_ids", TableApiObject, "primary_tables"),
     ]
 
     @property
@@ -177,7 +183,7 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
             ]
         if table:
             feature_list = feature_list[
-                feature_list.table.apply(lambda table_list: table in table_list)
+                feature_list.tables.apply(lambda table_list: table in table_list)
             ]
         return feature_list
 
@@ -211,13 +217,13 @@ class Feature(
         "dtype",
         "readiness",
         "online_enabled",
-        "table",
+        "tables",
         "entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", TableApiObject, "table"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "tables"),
     ]
 
     def _get_init_params_from_object(self) -> dict[str, Any]:

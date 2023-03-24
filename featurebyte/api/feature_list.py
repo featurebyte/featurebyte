@@ -454,13 +454,13 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         "deployed",
         "readiness_frac",
         "online_frac",
-        "table",
+        "tables",
         "entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", TableApiObject, "table"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "tables"),
     ]
 
     @property
@@ -581,7 +581,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             ]
         if table:
             feature_lists = feature_lists[
-                feature_lists.table.apply(lambda table_list: table in table_list)
+                feature_lists.tables.apply(lambda table_list: table in table_list)
             ]
         return feature_lists
 
