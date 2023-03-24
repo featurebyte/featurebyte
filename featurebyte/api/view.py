@@ -624,8 +624,22 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         rsuffix: str = "",
     ) -> None:
         """
-        Joins the current view with another view. Note that this other view should only be a SCDView,
-        or a DimensionView.
+        Joins the current view with another view. The calling View can be of any type with the exception that columns
+        from a SCDView can’t be added to a DimensionView or a SCDView.
+
+        When the other View is a SCDView, the record that is joined is the record active at the event_timestamp of
+        the EventView or ItemView.
+
+        Supported Joins
+        ```
+        |  Joined v / Main > |   Event   |   SCD     |   Item    |   Dimension   |   SCD / Change |
+        |--------------------|-----------|-----------|-----------|---------------|----------------|
+        |  Event             |   Y       |   Y       |   Y       |   N           |   Y            |
+        |  SCD               |   Y       |   Later   |   Y       |   N           |   Y            |
+        |  Item              |   Y       |   Y       |   Y       |   N           |   Y            |
+        |  Dimension         |   Y       |   Y       |   Y       |   N           |   Y            |
+        |  SCD / Change      |   N       |   N       |   N       |   N           |   N            |
+        ```
 
         Parameters
         ----------
@@ -643,6 +657,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         rsuffix: str
             Argument is used if the two views have overlapping column names and disambiguates such column names after
             join. The default rsuffix is an empty string - ''.
+
+        Examples
+        --------
+        Joining an EventView with a DimensionView.
+
+        >>> event_view = catalog.get_view("GROCERYINVOICE")
+        >>> dimension_view = catalog.get_view("GROCERYPRODUCT")
+        >>> event_view.join(dimension_view, on="PRODUCTID", how="inner", rsuffix="_dimension")
         """
         self._validate_join(other_view, rsuffix, on=on)
 
