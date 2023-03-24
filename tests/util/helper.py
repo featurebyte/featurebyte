@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype
 
+from featurebyte import get_version
 from featurebyte.api.source_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.enum import AggFunc
@@ -191,7 +192,10 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
         else:
             with open(fixture_path, mode="r", encoding="utf-8") as file_handle:
                 expected = file_handle.read().format(
-                    feature_store_id=feature_store_id, table_id=table_id, **kwargs
+                    sdk_version=get_version(),
+                    feature_store_id=feature_store_id,
+                    table_id=table_id,
+                    **kwargs,
                 )
                 assert expected.strip() == sdk_code.strip(), sdk_code
 
