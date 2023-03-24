@@ -23,7 +23,6 @@ from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
-from featurebyte.schema.task import TaskId
 
 # data source to credential mapping
 Credentials = Dict[str, Optional[Credential]]
@@ -101,7 +100,7 @@ class LocalStorageSettings(BaseModel):
     Settings for local file storage
     """
 
-    local_path: Path = Field(default_factory=lambda: get_home_path().joinpath("data"))
+    local_path: Path = Field(default_factory=lambda: get_home_path().joinpath("data/files"))
 
     @validator("local_path")
     @classmethod
@@ -236,7 +235,7 @@ class WebsocketClient:
         """
         if access_token:
             url = f"{url}?token={access_token}"
-        self._ws = websocket.create_connection(url)
+        self._ws = websocket.create_connection(url, enable_multithread=True)
 
     def close(self) -> None:
         """
@@ -470,13 +469,13 @@ class Configurations:
         return client
 
     @contextmanager
-    def get_websocket_client(self, task_id: TaskId) -> Iterator[WebsocketClient]:
+    def get_websocket_client(self, task_id: str) -> Iterator[WebsocketClient]:
         """
         Get websocket client for the configured profile.
 
         Parameters
         ----------
-        task_id: TaskId
+        task_id: str
             Task ID
 
         Yields

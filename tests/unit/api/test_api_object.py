@@ -1,6 +1,7 @@
 """
 Tests functions/methods in api_object.py
 """
+import time
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
@@ -75,9 +76,9 @@ def test_list(mock_configuration):
     )
 
 
-@pytest.fixture(name="mock_client")
-def mock_client_fixture():
-    """Mock client fixture"""
+@pytest.fixture(name="mock_clients")
+def mock_clients_fixture():
+    """Mock clients fixture"""
 
     class FakeResponse:
         """FakeResponse class"""
@@ -171,14 +172,15 @@ def mock_client_fixture():
         mock_client.post.side_effect = post_side_effect
         mock_client.get.side_effect = get_side_effect
         mock_websocket_client = mock_config.return_value.get_websocket_client.return_value
-        mock_websocket_client.__enter__.return_value.receive_json.return_value = None
-        yield mock_client
+        mock_ws_client = mock_websocket_client.__enter__.return_value
+        mock_ws_client.receive_json.return_value = None
+        yield mock_client, mock_ws_client
 
 
 @pytest.mark.parametrize(
     "route", ["/success_task_pending", "/success_task_started", "/success_task_success"]
 )
-def test_post_async_task__success(mock_client, route):
+def test_post_async_task__success(mock_clients, route):
     """Test post async task (success)"""
     output = ApiObject.post_async_task(route=route, payload={})
     assert output == {"result": "some_value"}
@@ -187,7 +189,7 @@ def test_post_async_task__success(mock_client, route):
 @pytest.mark.parametrize(
     "route", ["/post_failure", "/post_success_task_started", "/post_success_task_failure"]
 )
-def test_post_async_task__record_creation_exception(mock_client, route):
+def test_post_async_task__record_creation_exception(mock_clients, route):
     """Test post async task (success)"""
     with pytest.raises(RecordCreationException):
         ApiObject.post_async_task(route=route, payload={})
@@ -196,8 +198,16 @@ def test_post_async_task__record_creation_exception(mock_client, route):
 @pytest.mark.parametrize(
     "route", ["/post_success_get_task_failure", "/post_success_get_result_failure"]
 )
-def test_post_async_task__record_retrieval_exception(mock_client, route):
+def test_post_async_task__record_retrieval_exception(mock_clients, route):
     """Test post async task (success)"""
+
+    def blocking_receive_json():
+        """Blocking receive json to test post async task not blocking"""
+        while True:
+            time.sleep(1)
+
+    _, mock_ws_client = mock_clients
+    mock_ws_client.receive_json.side_effect = blocking_receive_json
     with pytest.raises(RecordRetrievalException):
         ApiObject.post_async_task(route=route, payload={})
 

@@ -5,7 +5,9 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar, Union
 
+import ctypes
 import operator
+import threading
 import time
 from dataclasses import dataclass
 from functools import partial
@@ -23,7 +25,7 @@ from typeguard import typechecked
 
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.utils import construct_repr_string
-from featurebyte.config import Configurations, WebsocketClient
+from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -39,6 +41,75 @@ ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
+
+
+class ProgressThread(threading.Thread):
+    """
+    Thread to get progress updates from websocket
+    """
+
+    def __init__(self, task_id: str, progress_bar: Any) -> None:
+        self.task_id = task_id
+        self.progress_bar = progress_bar
+        threading.Thread.__init__(self)
+
+    def run(self) -> None:
+        """
+        Check progress updates from websocket
+        """
+        # receive message from websocket
+        with Configurations().get_websocket_client(task_id=self.task_id) as websocket_client:
+            try:
+                while True:
+                    logger.debug("Waiting for websocket message")
+                    message = websocket_client.receive_json()
+                    # socket closed
+                    if not message:
+                        break
+                    # update progress bar
+                    description = message.get("message")
+                    if description:
+                        self.progress_bar.text(description)
+                    percent = message.get("percent")
+                    if percent:
+                        # end of stream
+                        if percent == -1:
+                            break
+                        self.progress_bar(percent / 100)  # pylint: disable=not-callable
+            finally:
+                logger.debug("Progress tracking ended.")
+
+    def get_id(self) -> Optional[int]:
+        """
+        Returns id of the respective thread
+
+        Returns
+        -------
+        Optional[int]
+            thread id
+        """
+        # returns id of the respective thread
+        if hasattr(self, "_thread_id"):
+            return int(getattr(self, "_thread_id"))
+        active_threads = getattr(threading, "_active", {})
+        for thread_id, thread in active_threads.items():
+            if thread is self:
+                return int(thread_id)
+        return None
+
+    def raise_exception(self) -> None:
+        """
+        Raises SystemExit exception in the context of the given thread, which should
+        cause the thread to exit silently (unless caught).
+        """
+        thread_id = self.get_id()
+        if thread_id:
+            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                ctypes.c_long(thread_id), ctypes.py_object(SystemExit)
+            )
+            if res > 1:
+                ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+                logger.warning("Exception raise failure")
 
 
 class PrettyDict(Dict[str, Any]):
@@ -758,81 +829,65 @@ class ApiObject(FeatureByteBaseDocumentModel):
         """
         client = Configurations().get_client()
         create_response = client.post(url=route, json=payload)
-        if create_response.status_code == HTTPStatus.CREATED:
-            create_response_dict = create_response.json()
-            status = create_response_dict["status"]
-            task_id = create_response_dict["id"]
+        if create_response.status_code != HTTPStatus.CREATED:
+            raise RecordCreationException(response=create_response)
 
-            def _update_progress_bar(progress_bar: Any, websocket_client: WebsocketClient) -> None:
-                """
-                Update progress bar based on websocket message
+        create_response_dict = create_response.json()
+        status = create_response_dict["status"]
+        task_id = create_response_dict["id"]
 
-                Parameters
-                ----------
-                progress_bar: Any
-                    Alive progress bar
-                websocket_client: WebsocketClient
-                    Websocket client
-                """
-                # receive message from websocket
-                while True:
-                    message = websocket_client.receive_json()
-                    if not message:
-                        break
-                    # update progress bar
-                    description = message.get("message")
-                    if description:
-                        progress_bar.text(description)
-                    percent = message.get("percent")
-                    if percent:
-                        # end of stream
-                        if percent == -1:
-                            break
-                        progress_bar(percent / 100)  # pylint: disable=not-callable
+        # poll the task route (if the task is still running)
+        task_get_response = None
 
-            # poll the task route (if the task is still running)
-            task_get_response = None
-            with alive_bar(
-                manual=True,
-                title="Working...",
-                **get_alive_bar_additional_params(),
-            ) as progress_bar:
-                with Configurations().get_websocket_client(task_id=task_id) as websocket_client:
-                    while status in [TaskStatus.STARTED, TaskStatus.PENDING]:
-                        # update progress bar
-                        _update_progress_bar(progress_bar, websocket_client)
+        with alive_bar(
+            manual=True,
+            title="Working...",
+            **get_alive_bar_additional_params(),
+        ) as progress_bar:
 
-                        # retrieve task status
-                        task_get_response = client.get(url=f"/task/{task_id}")
-                        if task_get_response.status_code == HTTPStatus.OK:
-                            status = task_get_response.json()["status"]
-                            time.sleep(delay)
-                        else:
-                            raise RecordRetrievalException(task_get_response)
-                progress_bar.title = "Done!"
-                progress_bar(1)  # pylint: disable=not-callable
+            try:
+                # create progress update thread
+                thread = ProgressThread(task_id=task_id, progress_bar=progress_bar)
+                thread.daemon = True
+                thread.start()
 
-            # check the task status
-            if status != TaskStatus.SUCCESS:
-                raise RecordCreationException(response=task_get_response or create_response)
+                while status in [
+                    TaskStatus.STARTED,
+                    TaskStatus.PENDING,
+                ]:  # retrieve task status
+                    task_get_response = client.get(url=f"/task/{task_id}")
+                    if task_get_response.status_code == HTTPStatus.OK:
+                        status = task_get_response.json()["status"]
+                        time.sleep(delay)
+                    else:
+                        raise RecordRetrievalException(task_get_response)
 
-            # retrieve task result
-            output_url = create_response_dict.get("output_path")
-            if output_url is None:
-                if task_get_response:
-                    output_url = task_get_response.json().get("output_path")
-            if output_url is None:
-                raise RecordRetrievalException(response=task_get_response or create_response)
+                if status == TaskStatus.SUCCESS:
+                    progress_bar.title = "Done!"
+                    progress_bar(1)  # pylint: disable=not-callable
+            finally:
+                thread.raise_exception()
+                thread.join(timeout=0)
 
-            if not retrieve_result:
-                return {"output_url": output_url}
+        # check the task status
+        if status != TaskStatus.SUCCESS:
+            raise RecordCreationException(response=task_get_response or create_response)
 
-            logger.debug("Retrieving task result", extra={"output_url": output_url})
-            result_response = client.get(url=output_url)
-            if result_response.status_code == HTTPStatus.OK:
-                return dict(result_response.json())
-            raise RecordRetrievalException(response=result_response)
-        raise RecordCreationException(response=create_response)
+        # retrieve task result
+        output_url = create_response_dict.get("output_path")
+        if output_url is None and task_get_response:
+            output_url = task_get_response.json().get("output_path")
+        if output_url is None:
+            raise RecordRetrievalException(response=task_get_response or create_response)
+
+        if not retrieve_result:
+            return {"output_url": output_url}
+
+        logger.debug("Retrieving task result", extra={"output_url": output_url})
+        result_response = client.get(url=output_url)
+        if result_response.status_code == HTTPStatus.OK:
+            return dict(result_response.json())
+        raise RecordRetrievalException(response=result_response)
 
 
 class SavableApiObject(ApiObject):
