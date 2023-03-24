@@ -557,11 +557,11 @@ class OperationStructure(FeatureByteBaseModel):
 
         return list(input_column_map.values()), list(derived_column_map)
 
-    def iterate_source_or_aggregation_columns(
+    def iterate_source_columns_or_aggregations(
         self,
     ) -> Iterator[Union[SourceDataColumn, AggregationColumn]]:
         """
-        Iterate source or aggregation columns. For view category, it returns SourceDataColumn. For feature category,
+        Iterate source columns or aggregations. For view category, it returns SourceDataColumn. For feature category,
         it returns AggregationColumn.
 
         Yields
