@@ -222,9 +222,9 @@ class ChangeView(View, GroupByMixin):
 
         Examples
         --------
-        >>> feature_job_setting = ChangeView.get_default_feature_job_setting()   # doctest: +SKIP
+        >>> feature_job_setting = ChangeView.get_default_feature_job_setting()
         >>> feature_job_setting  # doctest: +SKIP
-        FeatureJobSetting(blind_spot='0', frequency='24h', time_modulo_frequency='15h39m')
+        FeatureJobSetting(blind_spot='0', frequency='24h', time_modulo_frequency='6h24m')
         """
         if feature_job_setting is not None:
             return feature_job_setting

@@ -856,7 +856,7 @@ class Feature(
         --------
 
         >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature.update_readiness(readiness="PRODUCTION_READY")
+        >>> feature.update_readiness(readiness="DEPRECATED")
         """
         self.update(
             update_payload={"readiness": str(readiness), "ignore_guardrails": ignore_guardrails},
@@ -894,6 +894,7 @@ class Feature(
         --------
 
         >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.update_default_version_mode(DefaultVersionMode.MANUAL)
         >>> feature.as_default_version()
         """
         self.feature_namespace.update(

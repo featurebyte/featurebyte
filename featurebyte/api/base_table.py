@@ -110,9 +110,10 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
 
         Examples
         --------
-        Set column "col_name" of the target event table as entity "entity_name"
+        Set column "GroceryInvoiceGuid" of the target event table as entity "groceryinvoice"
 
-        >>> saved_event_table["col_name"].as_entity("entity_name")  # doctest: +SKIP
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["GroceryInvoiceGuid"].as_entity("groceryinvoice")
         """
         if entity_name is None:
             entity_id = None
@@ -486,7 +487,8 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         --------
         Update record creation timestamp column
 
-        >>> saved_event_table.update_record_creation_timestamp_column("created_at")  # doctest: +SKIP
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table.update_record_creation_timestamp_column("record_available_at")
         """
         self.update(
             update_payload={"record_creation_timestamp_column": record_creation_timestamp_column},

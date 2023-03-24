@@ -259,9 +259,8 @@ class EventTable(TableApiObject):
 
         Update default feature job setting to the new feature job setting
 
-        >>> catalog = fb.Catalog.get_active()
-        >>> saved_event_table = catalog.get_table("GROCERYINVOICE")
-        >>> saved_event_table.update_default_feature_job_setting(new_feature_job_setting)
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table.update_default_feature_job_setting(new_feature_job_setting)
 
         """
         self.update(
@@ -312,9 +311,8 @@ class EventTable(TableApiObject):
         any parameters with default values.
 
         >>> from datetime import datetime
-        >>> catalog = fb.Catalog.get_active()
-        >>> saved_event_table = catalog.get_table("GROCERYINVOICE")
-        >>> saved_event_table.create_new_feature_job_setting_analysis(  # doctest: +SKIP
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table.create_new_feature_job_setting_analysis(  # doctest: +SKIP
         ...   analysis_date=datetime.utcnow(),
         ...   analysis_length=3600,
         ...   min_featurejob_period=100,
@@ -357,9 +355,8 @@ class EventTable(TableApiObject):
 
         Initialize default feature job setting for the event table
 
-        >>> catalog = fb.Catalog.get_active()
-        >>> saved_event_table = catalog.get_table("GROCERYINVOICE")
-        >>> saved_event_table.initialize_default_feature_job_setting()  # doctest: +SKIP
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table.initialize_default_feature_job_setting()  # doctest: +SKIP
 
         """
         if self.default_feature_job_setting:
@@ -383,9 +380,8 @@ class EventTable(TableApiObject):
 
         List feature job setting analysis
 
-        >>> catalog = fb.Catalog.get_active()
-        >>> saved_event_table = catalog.get_table("GROCERYINVOICE")
-        >>> analysis_list = saved_event_table.list_feature_job_setting_analysis()
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> analysis_list = event_table.list_feature_job_setting_analysis()
 
         """
         return FeatureJobSettingAnalysis.list(event_table_id=self.id)
