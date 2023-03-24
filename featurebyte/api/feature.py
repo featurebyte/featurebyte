@@ -224,12 +224,16 @@ class Feature(
         "readiness",
         "online_enabled",
         "tables",
+        "primary_tables",
         "entities",
+        "primary_entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
         ForeignKeyMapping("tabular_data_ids", TableApiObject, "tables"),
+        ForeignKeyMapping("primary_entity_ids", Entity, "primary_entities"),
+        ForeignKeyMapping("primary_table_ids", TableApiObject, "primary_tables"),
     ]
 
     def _get_init_params_from_object(self) -> dict[str, Any]:

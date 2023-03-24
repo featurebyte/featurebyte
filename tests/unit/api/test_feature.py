@@ -834,7 +834,9 @@ def test_list_versions(saved_feature):
                 "readiness": [saved_feature.readiness] * 3,
                 "online_enabled": [saved_feature.online_enabled] * 3,
                 "tables": [["sf_event_table"]] * 3,
+                "primary_tables": [["sf_event_table"]] * 3,
                 "entities": [["customer"]] * 3,
+                "primary_entities": [["customer"]] * 3,
                 "created_at": [
                     feature_group["new_feat2"].created_at,
                     feature_group["new_feat1"].created_at,
@@ -853,7 +855,9 @@ def test_list_versions(saved_feature):
                 "readiness": [saved_feature.readiness],
                 "online_enabled": [saved_feature.online_enabled],
                 "tables": [["sf_event_table"]],
+                "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
+                "primary_entities": [["customer"]],
                 "created_at": [saved_feature.created_at],
             }
         ),
