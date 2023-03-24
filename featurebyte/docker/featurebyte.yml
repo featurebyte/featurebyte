@@ -71,6 +71,8 @@ services:
       - ./migration.py:/scripts/migration.py
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
+      - ~/.featurebyte/data/files:/app/.featurebyte/data/files
+      - file-store:/tmp
     logging:
       driver: local
 
@@ -99,6 +101,8 @@ services:
       - ./entrypoint-worker.sh:/scripts/entrypoint-worker.sh
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
+      - ~/.featurebyte/data/files:/app/.featurebyte/data/files
+      - file-store:/tmp
     logging:
       driver: local
 
@@ -154,3 +158,4 @@ networks:
 
 volumes:
   spark-warehouse:
+  file-store:
