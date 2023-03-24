@@ -77,14 +77,23 @@ class ItemView(View, GroupByMixin):
         event_suffix: Optional[str] = None,
     ) -> None:
         """
-        Join additional attributes from the related EventTable
+        Join additional attributes from the related EventTable. This operation add the columns to the ItemView.
+        This operation is done in-place and does not return a new ItemView.
 
         Parameters
         ----------
         columns : list[str]
-            List of column names to include from the EventTable
+            List of column names to include from the EventTable.
         event_suffix : Optional[str]
-            A suffix to append on to the columns from the EventTable
+            A suffix to append on to the columns from the EventTable.
+
+        Examples
+        --------
+        Join columns into an ItemView.
+
+        >>> item_view = catalog.get_view("INVOICEITEMS")
+        >>> item_view.join_event_table_attributes(columns=["Timestamp"], event_suffix="_event")
+
         """
         assert self.event_view.event_id_column, "event_id_column is not set"
         (node, joined_columns_info, join_parameters,) = ItemTableData.join_event_view_columns(

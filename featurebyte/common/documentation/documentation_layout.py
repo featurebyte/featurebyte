@@ -53,9 +53,9 @@ VIEW = "View"
 VIEW_COLUMN = "ViewColumn"
 
 
-def _get_data_layout() -> List[DocLayoutItem]:
+def _get_table_layout() -> List[DocLayoutItem]:
     """
-    Return the layout for the data module.
+    Return the layout for the table module.
 
     Returns
     -------
@@ -204,8 +204,8 @@ def _get_data_layout() -> List[DocLayoutItem]:
             [TABLE, LINEAGE, "featurebyte.Table.tabular_source"], "featurebyte.Table.tabular_source"
         ),
         DocLayoutItem(
-            [TABLE, LINEAGE, "featurebyte.ItemTable.event_data_id"],
-            "featurebyte.ItemTable.event_data_id",
+            [TABLE, LINEAGE, "featurebyte.ItemTable.event_table_id"],
+            "featurebyte.ItemTable.event_table_id",
         ),
         DocLayoutItem([TABLE, TYPE, "featurebyte.DimensionTable"], "featurebyte.DimensionTable"),
         DocLayoutItem([TABLE, TYPE, "featurebyte.EventTable"], "featurebyte.EventTable"),
@@ -867,8 +867,8 @@ def _get_view_layout() -> List[DocLayoutItem]:
             [VIEW, JOIN, "featurebyte.EventView.add_feature"], "featurebyte.EventView.add_feature"
         ),
         DocLayoutItem(
-            [VIEW, JOIN, "featurebyte.ItemView.join_event_data_attributes"],
-            "featurebyte.ItemView.join_event_data_attributes",
+            [VIEW, JOIN, "featurebyte.ItemView.join_event_table_attributes"],
+            "featurebyte.ItemView.join_event_table_attributes",
         ),
         DocLayoutItem([VIEW, JOIN, "featurebyte.View.join"], "featurebyte.View.join"),
         DocLayoutItem([VIEW, EXPLORE, "featurebyte.View.describe"], "featurebyte.View.describe"),
@@ -1221,7 +1221,7 @@ def get_overall_layout() -> List[DocLayoutItem]:
     """
     # TODO: fix code edit links that are coming from parent classes
     return [
-        *_get_data_layout(),
+        *_get_table_layout(),
         *_get_table_column_layout(),
         *_get_entity_layout(),
         *_get_feature_layout(),
