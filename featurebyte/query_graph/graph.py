@@ -44,9 +44,9 @@ class QueryGraph(QueryGraphModel):
     Graph data structure
     """
 
-    def get_main_input_nodes(self, node_name: str) -> List[InputNode]:
+    def get_primary_input_nodes(self, node_name: str) -> List[InputNode]:
         """
-        Get the main input node of the query graph
+        Get the primary input node of the query graph
 
         Parameters
         ----------

@@ -621,8 +621,8 @@ class InfoService(BaseService):
         # derive primary tables
         table_id_to_doc = {table["_id"]: table for table in tables["data"]}
         feature = await self.feature_service.get_document(document_id=namespace.default_feature_id)
-        main_input_nodes = feature.graph.get_main_input_nodes(node_name=feature.node_name)
-        primary_tables = [table_id_to_doc[node.parameters.id] for node in main_input_nodes]
+        primary_input_nodes = feature.graph.get_primary_input_nodes(node_name=feature.node_name)
+        primary_tables = [table_id_to_doc[node.parameters.id] for node in primary_input_nodes]
 
         return FeatureNamespaceInfo(
             name=namespace.name,

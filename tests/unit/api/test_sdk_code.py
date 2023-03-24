@@ -171,15 +171,17 @@ def test_sdk_code_generation__complex_feature(
     )
 
     # check main input nodes
-    main_input_nodes = output.graph.get_main_input_nodes(node_name=output.node_name)
-    assert [node.parameters.id for node in main_input_nodes] == [saved_event_table.id]
+    primary_input_nodes = output.graph.get_primary_input_nodes(node_name=output.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [saved_event_table.id]
 
-    main_input_nodes = feat_item_sum.graph.get_main_input_nodes(node_name=feat_item_sum.node_name)
-    assert [node.parameters.id for node in main_input_nodes] == [saved_item_table.id]
+    primary_input_nodes = feat_item_sum.graph.get_primary_input_nodes(
+        node_name=feat_item_sum.node_name
+    )
+    assert [node.parameters.id for node in primary_input_nodes] == [saved_item_table.id]
 
     temp = feat_item_sum + output
-    main_input_nodes = temp.graph.get_main_input_nodes(node_name=temp.node_name)
-    assert [node.parameters.id for node in main_input_nodes] == [
+    primary_input_nodes = temp.graph.get_primary_input_nodes(node_name=temp.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [
         saved_item_table.id,
         saved_event_table.id,
     ]
@@ -274,15 +276,15 @@ def test_sdk_code_generation__multi_table_feature(
     assert expected_error in str(exc.value)
 
     # check main input nodes
-    main_input_nodes = output.graph.get_main_input_nodes(node_name=output.node_name)
-    assert [node.parameters.id for node in main_input_nodes] == [saved_event_table.id]
+    primary_input_nodes = output.graph.get_primary_input_nodes(node_name=output.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [saved_event_table.id]
 
-    main_input_nodes = max_percent.graph.get_main_input_nodes(node_name=max_percent.node_name)
-    assert [node.parameters.id for node in main_input_nodes] == [saved_item_table.id]
+    primary_input_nodes = max_percent.graph.get_primary_input_nodes(node_name=max_percent.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [saved_item_table.id]
 
     temp = output + max_percent
-    main_input_nodes = temp.graph.get_main_input_nodes(node_name=temp.node_name)
-    assert [node.parameters.id for node in main_input_nodes] == [
+    primary_input_nodes = temp.graph.get_primary_input_nodes(node_name=temp.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [
         saved_event_table.id,
         saved_item_table.id,
     ]
@@ -333,5 +335,5 @@ def test_sdk_code_generation__item_view_cosine_similarity_feature(
     output.update_readiness(readiness="PRODUCTION_READY")
 
     # check the main input nodes
-    main_input_nodes = output.graph.get_main_input_nodes(node_name=output.node_name)
-    assert [node.parameters.id for node in main_input_nodes] == [saved_item_table.id]
+    primary_input_nodes = output.graph.get_primary_input_nodes(node_name=output.node_name)
+    assert [node.parameters.id for node in primary_input_nodes] == [saved_item_table.id]
