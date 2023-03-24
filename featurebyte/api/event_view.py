@@ -343,8 +343,8 @@ class EventView(View, GroupByMixin):
         Add feature to an EventView.
 
         >>> event_view = catalog.get_view("GROCERYINVOICE")
-        >>> feature = catalog.get_feature("CustomerProductGroupCounts_7d")
-        >>> event_view.add_feature("customer_product_group_counts_7d", feature)
+        >>> feature = catalog.get_feature("InvoiceAmountAvg")
+        >>> event_view.add_feature("invoice_amount_average", feature)
 
         """
         validate_type_is_feature(feature, "feature")
