@@ -632,13 +632,13 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Supported Joins
         ```
-        |  Joined v / Main > |   Event   |   SCD     |   Item    |   Dimension   |   SCD / Change |
-        |--------------------|-----------|-----------|-----------|---------------|----------------|
-        |  Event             |   Y       |   Y       |   Y       |   N           |   Y            |
-        |  SCD               |   Y       |   Later   |   Y       |   N           |   Y            |
-        |  Item              |   Y       |   Y       |   Y       |   N           |   Y            |
-        |  Dimension         |   Y       |   Y       |   Y       |   N           |   Y            |
-        |  SCD / Change      |   N       |   N       |   N       |   N           |   N            |
+        |  Joined ↓ / Main -> |   Event   |   SCD     |   Item    |   Dimension   |   Change       |
+        |---------------------|-----------|-----------|-----------|---------------|----------------|
+        |  Event              |   Y       |   Y       |   Y       |   N           |   Y            |
+        |  SCD                |   Y       |   Later   |   Y       |   N           |   Y            |
+        |  Item               |   Y       |   Y       |   Y       |   N           |   Y            |
+        |  Dimension          |   Y       |   Y       |   Y       |   Y           |   Y            |
+        |  Change             |   N       |   N       |   N       |   N           |   N            |
         ```
 
         Parameters

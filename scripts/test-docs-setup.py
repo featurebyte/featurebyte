@@ -145,7 +145,7 @@ def setup() -> None:
     feature_group["CustomerProductGroupCounts_7d"].save(conflict_resolution="retrieve")
     feature_group["CustomerProductGroupCounts_90d"].save(conflict_resolution="retrieve")
 
-    # Feature: InvoiceAmountAvg - non time based
+    # Feature: InvoiceCount - non time based
     invoice_count = grocery_item_view.groupby("GroceryInvoiceGuid").aggregate(
         method="count",
         feature_name="InvoiceCount",
