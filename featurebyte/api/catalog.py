@@ -3,7 +3,7 @@ Catalog module
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from functools import wraps
 
@@ -289,8 +289,8 @@ class Catalog(CatalogModel, SavableApiObject):
     def list_features(
         self,
         include_id: Optional[bool] = False,
-        entity: Optional[str] = None,
-        table: Optional[str] = None,
+        primary_entity: Optional[Union[str, List[str]]] = None,
+        primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
         List features that have been saved.
@@ -298,11 +298,13 @@ class Catalog(CatalogModel, SavableApiObject):
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list.
-        entity: Optional[str]
-            Name of entity used to filter results.
-        table: Optional[str]
-            Name of table used to filter results.
+            Whether to include id in the list
+        primary_entity: Optional[Union[str, List[str]]]
+            Name of entity used to filter results. If multiple entities are provided, the filtered results will
+            contain features that are associated with all the entities.
+        primary_table: Optional[Union[str, List[str]]]
+            Name of table used to filter results. If multiple tables are provided, the filtered results will
+            contain features that are associated with all the tables.
 
         Returns
         -------
@@ -315,7 +317,9 @@ class Catalog(CatalogModel, SavableApiObject):
 
         >>> features = catalog.list_features()
         """
-        return Feature.list(include_id=include_id, entity=entity, table=table)
+        return Feature.list(
+            include_id=include_id, primary_entity=primary_entity, primary_table=primary_table
+        )
 
     @update_and_reset_catalog
     def list_feature_lists(

@@ -3,7 +3,7 @@ Utility functions for API Objects
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Union
 
 import functools
 from datetime import datetime
@@ -307,6 +307,28 @@ def construct_repr_string(obj: object, additional_info: Optional[str] = None) ->
     if additional_info:
         repr_str += "\n" + additional_info
     return repr_str
+
+
+def convert_to_list_of_strings(value: Optional[Union[str, List[str]]]) -> List[str]:
+    """
+    Convert value to list of strings
+
+    Parameters
+    ----------
+    value: Optional[Union[str, List[str]]]
+        Value to convert
+
+    Returns
+    -------
+    List[str]
+        List of strings
+    """
+    output = []
+    if isinstance(value, str):
+        output = [value]
+    if isinstance(value, list):
+        output = value
+    return output
 
 
 class CodeStr(str):

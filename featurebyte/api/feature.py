@@ -23,7 +23,12 @@ from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
-from featurebyte.common.utils import CodeStr, dataframe_from_json, enforce_observation_set_row_order
+from featurebyte.common.utils import (
+    CodeStr,
+    convert_to_list_of_strings,
+    dataframe_from_json,
+    enforce_observation_set_row_order,
+)
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
@@ -162,8 +167,8 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     def list(
         cls,
         include_id: Optional[bool] = False,
-        entity: Optional[str] = None,
-        table: Optional[str] = None,
+        primary_entity: Optional[Union[str, List[str]]] = None,
+        primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
         List saved features
@@ -172,10 +177,12 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
         ----------
         include_id: Optional[bool]
             Whether to include id in the list
-        entity: Optional[str]
-            Name of entity used to filter results
-        table: Optional[str]
-            Name of table used to filter results
+        primary_entity: Optional[Union[str, List[str]]]
+            Name of entity used to filter results. If multiple entities are provided, the filtered results will
+            contain features that are associated with all the entities.
+        primary_table: Optional[Union[str, List[str]]]
+            Name of table used to filter results. If multiple tables are provided, the filtered results will
+            contain features that are associated with all the tables.
 
         Returns
         -------
@@ -183,13 +190,20 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
             Table of features
         """
         feature_list = super().list(include_id=include_id)
-        if entity:
+        target_entities = convert_to_list_of_strings(primary_entity)
+        target_tables = convert_to_list_of_strings(primary_table)
+
+        if target_entities:
             feature_list = feature_list[
-                feature_list.entities.apply(lambda entities: entity in entities)
+                feature_list.primary_entities.apply(
+                    lambda entities: all(entity in entities for entity in target_entities)
+                )
             ]
-        if table:
+        if target_tables:
             feature_list = feature_list[
-                feature_list.tables.apply(lambda table_list: table in table_list)
+                feature_list.primary_tables.apply(
+                    lambda tables: all(table in tables for table in target_tables)
+                )
             ]
         return feature_list
 
@@ -292,8 +306,8 @@ class Feature(
     def list(
         cls,
         include_id: Optional[bool] = False,
-        entity: Optional[str] = None,
-        table: Optional[str] = None,
+        primary_entity: Optional[Union[str, List[str]]] = None,
+        primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
         List saved features
@@ -302,17 +316,21 @@ class Feature(
         ----------
         include_id: Optional[bool]
             Whether to include id in the list
-        entity: Optional[str]
-            Name of entity used to filter results
-        table: Optional[str]
-            Name of table used to filter results
+        primary_entity: Optional[Union[str, List[str]]]
+            Name of entity used to filter results. If multiple entities are provided, the filtered results will
+            contain features that are associated with all the entities.
+        primary_table: Optional[Union[str, List[str]]]
+            Name of table used to filter results. If multiple tables are provided, the filtered results will
+            contain features that are associated with all the tables.
 
         Returns
         -------
         pd.DataFrame
             Table of features
         """
-        return FeatureNamespace.list(include_id=include_id, entity=entity, table=table)
+        return FeatureNamespace.list(
+            include_id=include_id, primary_entity=primary_entity, primary_table=primary_table
+        )
 
     @classmethod
     def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
@@ -328,8 +346,8 @@ class Feature(
         cls,
         include_id: Optional[bool] = False,
         feature_list_id: Optional[ObjectId] = None,
-        entity: Optional[str] = None,
-        table: Optional[str] = None,
+        primary_entity: Optional[Union[str, List[str]]] = None,
+        primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
         List saved features versions
@@ -340,10 +358,12 @@ class Feature(
             Whether to include id in the list
         feature_list_id: Optional[ObjectId] = None,
             Include only features in specified feature list
-        entity: Optional[str]
-            Name of entity used to filter results
-        table: Optional[str]
-            Name of table used to filter results
+        primary_entity: Optional[str]
+            Name of entity used to filter results. If multiple entities are provided, the filtered results will
+            contain features that are associated with all the entities.
+        primary_table: Optional[str]
+            Name of table used to filter results. If multiple tables are provided, the filtered results will
+            contain features that are associated with all the tables.
 
         Returns
         -------
@@ -370,14 +390,21 @@ class Feature(
         params = {}
         if feature_list_id:
             params = {"feature_list_id": str(feature_list_id)}
+
         feature_list = cls._list(include_id=include_id, params=params)
-        if entity:
+        target_entities = convert_to_list_of_strings(primary_entity)
+        target_tables = convert_to_list_of_strings(primary_table)
+        if target_entities:
             feature_list = feature_list[
-                feature_list.entities.apply(lambda entities: entity in entities)
+                feature_list.primary_entities.apply(
+                    lambda entities: all(entity in entities for entity in target_entities)
+                )
             ]
-        if table:
+        if target_tables:
             feature_list = feature_list[
-                feature_list.data.apply(lambda table_list: table in table_list)
+                feature_list.primary_tables.apply(
+                    lambda tables: all(table in tables for table in target_tables)
+                )
             ]
         return feature_list
 
