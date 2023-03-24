@@ -63,6 +63,7 @@ class CountDictSeriesOperator(SeriesBinaryOperator):
 
 
 class CountDictAccessor:
+    # pylint: disable=line-too-long
     """
     CountDictAccessor used to manipulate dict-like type Feature object
     """
@@ -98,37 +99,124 @@ class CountDictAccessor:
 
     def entropy(self) -> Feature:
         """
-        Compute the entropy of the count dictionary
+        Compute the entropy of the dictionary over the keys. The values are normalized to sum to 1
+        and used as the probability of each key in the entropy calculation.
 
         Returns
         -------
         Feature
+            A new Feature object.
+
+        Examples
+        --------
+
+        Create a new feature by calculating the entropy of the dictionary feature:
+
+        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> new_feature = counts.cd.entropy()
+        >>> new_feature.name = "CustomerProductGroupCountsEntropy_7d"
+
+
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([counts, new_feature])
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature:
+
+        >>> df["CustomerProductGroupCounts_7d"].iloc[0]
+        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+
+
+        New feature:
+
+        >>> df["CustomerProductGroupCountsEntropy_7d"].iloc[0]
+        1.475076311054695
         """
         return self._make_operation("entropy", DBVarType.FLOAT)
 
     def most_frequent(self) -> Feature:
         """
-        Compute the most frequent key in the dictionary
+        Retrieve the most frequent key in the dictionary feature.
+
+        When there are ties, the lexicographically smallest key is returned.
 
         Returns
         -------
         Feature
+            A new Feature object.
+
+        Examples
+        --------
+
+        Create a new feature by retrieving the most frequent key of the dictionary feature:
+
+        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> new_feature = counts.cd.most_frequent()
+        >>> new_feature.name = "CustomerProductGroupCountsMostFrequent_7d"
+
+
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([counts, new_feature])
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature:
+
+        >>> df["CustomerProductGroupCounts_7d"].iloc[0]
+        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+
+
+        New feature:
+
+        >>> df["CustomerProductGroupCountsMostFrequent_7d"].iloc[0]
+        'Colas, Thés glacés et Sodas'
         """
         return self._make_operation("most_frequent", DBVarType.VARCHAR)
 
     @typechecked()
     def unique_count(self, include_missing: bool = True) -> Feature:
         """
-        Compute number of distinct keys in the dictionary
+        Compute number of distinct keys in the dictionary feature.
 
         Parameters
         ----------
         include_missing : bool
-            Whether to include missing value when counting the number of distinct keys
+            Whether to include missing value when counting the number of distinct keys.
 
         Returns
         -------
         Feature
+            A new Feature object.
+
+        Examples
+        --------
+
+        Create a new feature by counting the number of keys in the dictionary feature:
+
+        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> new_feature = counts.cd.unique_count()
+        >>> new_feature.name = "CustomerProductGroupCountsUniqueCount_7d"
+
+
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([counts, new_feature])
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature:
+
+        >>> df["CustomerProductGroupCounts_7d"].iloc[0]
+        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+
+
+        New feature:
+
+        >>> df["CustomerProductGroupCountsUniqueCount_7d"].iloc[0]
+        5
         """
         return self._make_operation(
             "unique_count",
@@ -138,16 +226,50 @@ class CountDictAccessor:
 
     def cosine_similarity(self, other: Feature) -> Feature:
         """
-        Compute the cosine similarity with another dictionary Feature
+        Compute the cosine similarity with another dictionary Feature.
 
         Parameters
         ----------
         other : Feature
-            Another dictionary feature
+            Another dictionary feature.
 
         Returns
         -------
         Feature
+            A new Feature object.
+
+        Examples
+        --------
+        Create a similarity feature between two dictionary features:
+
+        >>> feature_1 = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> feature_2 = fb.Feature.get("CustomerProductGroupCounts_90d")
+        >>> similarity = feature_1.cd.cosine_similarity(feature_2)
+        >>> similarity.name = "CustomerProductGroupCounts_7d_90d_similarity"
+
+
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([feature_1, feature_2, similarity])
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature 1:
+
+        >>> df["CustomerProductGroupCounts_7d"].iloc[0]
+         '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+
+
+        Dictionary feature 2:
+
+        >>> df["CustomerProductGroupCounts_90d"].iloc[0]
+        '{"Biscuits apéritifs":1,"Biscuits":1,"Bonbons":1,"Chips et Tortillas":2,"Colas, Thés glacés et Sodas":12,"Confitures":1,"Crèmes et Chantilly":2,"Céréales":1,"Emballages et sacs":1,"Fromages":3,"Glaces et Sorbets":1,"Glaçons":1,"Laits":4,"Noix":1,"Pains":4,"Petit-déjeuner":2,"Viande Surgelée":1,"Œufs":1}'
+
+
+        Similarity feature:
+
+        >>> df["CustomerProductGroupCounts_7d_90d_similarity"].iloc[0]
+        0.8653846153846161
         """
         series_operator = CountDictSeriesOperator(self._feature_obj, other)
         return series_operator.operate(
@@ -157,11 +279,13 @@ class CountDictAccessor:
 
     def get_value(self, key: Union[Scalar, Feature]) -> Feature:
         """
-        Get the value in a dictionary feature, based on the key provided.
+        Retrieve the value in a dictionary feature based on the key provided.
 
         This key could be either
-        - the value in the lookup feature, or
-        - a scalar value passed in.
+
+        - a lookup feature, or
+
+        - a scalar value.
 
         Parameters
         ----------
@@ -171,17 +295,33 @@ class CountDictAccessor:
         Returns
         -------
         Feature
-            new feature
+            A new Feature object
 
         Examples
         --------
-        Getting value from a dictionary feature using a scalar value
+        Create a new feature by getting the value for a particular key:
 
-        >>> dictionary_feature.cd.get_value("key")  # doctest: +SKIP
+        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> new_feature = counts.cd.get_value("Chips et Tortillas")
+        >>> new_feature.name = "Chips et Tortillas Value"
 
-        Getting value from a dictionary feature using a lookup feature
 
-        >>> dictionary_feature.cd.get_value(lookup_feature)  # doctest: +SKIP
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([counts, new_feature])
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature:
+
+        >>> df["CustomerProductGroupCounts_7d"].iloc[0]
+        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+
+
+        New feature:
+
+        >>> df["Chips et Tortillas Value"].iloc[0]
+        1
         """
         additional_node_params = {}
         if isinstance(key, type(self._feature_obj)):
@@ -202,29 +342,51 @@ class CountDictAccessor:
 
     def get_rank(self, key: Union[Scalar, Feature], descending: bool = False) -> Feature:
         """
-        Gets the relative frequency of a particular key
+        Compute the rank of a particular key in the dictionary feature. If multiple keys have the
+        same value, these keys will have the same rank which is equal to the smallest rank among
+        these keys.
+
+        - a lookup feature, or
+
+        - a scalar value.
 
         Parameters
         ----------
         key: Union[Scalar, Feature]
-            key to lookup the value for
+            Key to lookup the value for.
         descending: bool
-            defaults to ranking in ascending order. Set to true to rank in descending order.
+            Defaults to ranking in ascending order. Set to true to rank in descending order.
 
         Returns
         -------
         Feature
-            feature
+            A new Feature object.
 
         Examples
         --------
-        Getting rank from a dictionary feature using a scalar value
+        Create a new feature by computing the rank for a particular key:
 
-        >>> dictionary_feature.cd.get_rank("key")  # doctest: +SKIP
+        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> new_feature = counts.cd.get_rank("Chips et Tortillas")
+        >>> new_feature.name = "Chips et Tortillas Rank"
 
-        Getting rank from a dictionary feature using a lookup feature
 
-        >>> dictionary_feature.cd.get_rank(lookup_feature)  # doctest: +SKIP
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([counts, new_feature])
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature:
+
+        >>> df["CustomerProductGroupCounts_7d"].iloc[0]
+        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+
+
+        New feature:
+
+        >>> df["Chips et Tortillas Rank"].iloc[0]
+        1.0
         """
         additional_node_params: Dict[str, Any] = {
             "descending": descending,
@@ -244,27 +406,50 @@ class CountDictAccessor:
 
     def get_relative_frequency(self, key: Union[Scalar, Feature]) -> Feature:
         """
-        Gets the relative frequency of a particular key
+        Compute the relative frequency of a particular key in the dictionary feature.
+
+        This key could be either
+
+        - a lookup feature, or
+
+        - a scalar value.
 
         Parameters
         ----------
         key: Union[Scalar, Feature]
-            key to lookup the value for
+            Key to lookup the value for.
 
         Returns
         -------
         Feature
-            feature
+            A new Feature object.
 
         Examples
         --------
-        Getting relative frequency from a dictionary feature using a scalar value
 
-        >>> dictionary_feature.cd.get_relative_frequency("key")  # doctest: +SKIP
+        Create a new feature by computing the relative frequency for a particular key:
 
-        Getting relative frequency from a dictionary feature using a lookup feature
+        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> new_feature = counts.cd.get_relative_frequency("Chips et Tortillas")
+        >>> new_feature.name = "Chips et Tortillas Relative Frequency"
 
-        >>> dictionary_feature.cd.get_relative_frequency(lookup_feature)  # doctest: +SKIP
+
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([counts, new_feature])
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature:
+
+        >>> df["CustomerProductGroupCounts_7d"].iloc[0]
+        '{"Chips et Tortillas":1,"Colas, Thés glacés et Sodas":3,"Crèmes et Chantilly":1,"Pains":1,"Œufs":1}'
+
+
+        New feature:
+
+        >>> df["Chips et Tortillas Relative Frequency"].iloc[0]
+        0.14285714285714302
         """
         additional_node_params = {}
         if isinstance(key, type(self._feature_obj)):
