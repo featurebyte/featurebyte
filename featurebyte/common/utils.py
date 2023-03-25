@@ -14,7 +14,9 @@ from io import BytesIO
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pygments
 from dateutil import parser
+from pygments.formatters.html import HtmlFormatter
 
 from featurebyte.enum import DBVarType, InternalName
 
@@ -314,9 +316,12 @@ class CodeStr(str):
     Code string content that can be displayed in markdown format
     """
 
-    def _repr_markdown_(self) -> str:
+    def _repr_html_(self) -> str:
+        lexer = pygments.lexers.get_lexer_by_name("python")
+        highlighted_code = pygments.highlight(
+            str(self).strip(), lexer=lexer, formatter=HtmlFormatter()
+        )
         return (
             '<div style="margin:30px; padding: 20px; border:1px solid #aaa">\n\n'
-            f"```python\n{str(self).strip()}\n```"
-            "\n\n</div>"
+            f"{highlighted_code}\n\n</div>"
         )
