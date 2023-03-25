@@ -8,7 +8,6 @@ from typing import Any, Generic, List, Literal, Optional, Sequence, Type, TypeVa
 from bson.objectid import ObjectId
 
 from featurebyte.models.entity import EntityModel
-from featurebyte.models.feature import FeatureModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.schema.common.base import PaginationMixin
