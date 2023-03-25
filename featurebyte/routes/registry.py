@@ -217,6 +217,7 @@ app_container_config.add_controller(
     FeatureController,
     [
         "feature_service",
+        "entity_service",
         "feature_list_service",
         "feature_readiness_service",
         "preview_service",
@@ -261,6 +262,8 @@ app_container_config.add_controller(
     FeatureNamespaceController,
     [
         "feature_namespace_service",
+        "entity_service",
+        "feature_service",
         "default_version_mode_service",
         "feature_readiness_service",
         "info_service",

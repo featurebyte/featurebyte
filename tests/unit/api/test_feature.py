@@ -287,8 +287,10 @@ def saved_feature_fixture(
                 "dtype": [float_feature_namespace.dtype],
                 "readiness": [float_feature_namespace.readiness],
                 "online_enabled": [float_feature.online_enabled],
-                "table": [["sf_event_table"]],
+                "tables": [["sf_event_table"]],
+                "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
+                "primary_entities": [["customer"]],
                 "created_at": [float_feature_namespace.created_at],
             }
         ),
@@ -457,6 +459,7 @@ def test_get_feature(saved_feature):
         "updated_at",
         "tabular_source.feature_store_id",
         "tabular_data_ids",
+        "primary_table_ids",
         "user_id",
         "tabular_source.table_details.database_name",
         "feature_namespace_id",
@@ -769,25 +772,31 @@ def test_get_sql(float_feature):
 def test_list_filter(saved_feature):
     """Test filters in list"""
     # test filter by table and entity
-    feature_list = Feature.list(table="sf_event_table")
+    feature_list = Feature.list(primary_table="sf_event_table")
     assert feature_list.shape[0] == 1
 
-    feature_list = Feature.list(table="other_data", include_id=True)
+    feature_list = Feature.list(primary_table="other_data", include_id=True)
     assert feature_list.shape[0] == 0
 
-    feature_list = Feature.list(entity="customer")
+    feature_list = Feature.list(primary_entity="customer")
     assert feature_list.shape[0] == 1
 
-    feature_list = Feature.list(entity="other_entity")
+    feature_list = Feature.list(primary_entity="other_entity")
     assert feature_list.shape[0] == 0
 
-    feature_list = Feature.list(table="sf_event_table", entity="customer")
+    feature_list = Feature.list(primary_table="sf_event_table", primary_entity="customer")
     assert feature_list.shape[0] == 1
 
-    feature_list = Feature.list(table="sf_event_table", entity="other_entity")
+    feature_list = Feature.list(primary_table=["sf_event_table"], primary_entity=["customer"])
+    assert feature_list.shape[0] == 1
+
+    feature_list = Feature.list(primary_table="sf_event_table", primary_entity="other_entity")
     assert feature_list.shape[0] == 0
 
-    feature_list = Feature.list(table="other_data", entity="customer")
+    feature_list = Feature.list(primary_table=["sf_event_table"], primary_entity=["other_entity"])
+    assert feature_list.shape[0] == 0
+
+    feature_list = Feature.list(primary_table="other_data", primary_entity="customer")
     assert feature_list.shape[0] == 0
 
 
@@ -830,8 +839,10 @@ def test_list_versions(saved_feature):
                 "dtype": [saved_feature.dtype] * 3,
                 "readiness": [saved_feature.readiness] * 3,
                 "online_enabled": [saved_feature.online_enabled] * 3,
-                "table": [["sf_event_table"]] * 3,
+                "tables": [["sf_event_table"]] * 3,
+                "primary_tables": [["sf_event_table"]] * 3,
                 "entities": [["customer"]] * 3,
+                "primary_entities": [["customer"]] * 3,
                 "created_at": [
                     feature_group["new_feat2"].created_at,
                     feature_group["new_feat1"].created_at,
@@ -849,8 +860,10 @@ def test_list_versions(saved_feature):
                 "dtype": [saved_feature.dtype],
                 "readiness": [saved_feature.readiness],
                 "online_enabled": [saved_feature.online_enabled],
-                "table": [["sf_event_table"]],
+                "tables": [["sf_event_table"]],
+                "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
+                "primary_entities": [["customer"]],
                 "created_at": [saved_feature.created_at],
             }
         ),

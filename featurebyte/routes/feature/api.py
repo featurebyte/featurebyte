@@ -10,7 +10,6 @@ from http import HTTPStatus
 from fastapi import APIRouter, Query, Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature import FeatureModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -25,6 +24,7 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.feature import (
     FeatureCreate,
+    FeatureModelResponse,
     FeatureNewVersionCreate,
     FeaturePaginatedList,
     FeaturePreview,
@@ -36,37 +36,37 @@ from featurebyte.schema.info import FeatureInfo
 router = APIRouter(prefix="/feature")
 
 
-@router.post("", response_model=FeatureModel, status_code=HTTPStatus.CREATED)
+@router.post("", response_model=FeatureModelResponse, status_code=HTTPStatus.CREATED)
 async def create_feature(
     request: Request, data: Union[FeatureCreate, FeatureNewVersionCreate]
-) -> FeatureModel:
+) -> FeatureModelResponse:
     """
     Create Feature
     """
     controller = request.state.app_container.feature_controller
-    feature: FeatureModel = await controller.create_feature(data=data)
+    feature: FeatureModelResponse = await controller.create_feature(data=data)
     return feature
 
 
-@router.get("/{feature_id}", response_model=FeatureModel)
-async def get_feature(request: Request, feature_id: PydanticObjectId) -> FeatureModel:
+@router.get("/{feature_id}", response_model=FeatureModelResponse)
+async def get_feature(request: Request, feature_id: PydanticObjectId) -> FeatureModelResponse:
     """
     Get Feature
     """
     controller = request.state.app_container.feature_controller
-    feature: FeatureModel = await controller.get(document_id=feature_id)
+    feature: FeatureModelResponse = await controller.get(document_id=feature_id)
     return feature
 
 
-@router.patch("/{feature_id}", response_model=FeatureModel)
+@router.patch("/{feature_id}", response_model=FeatureModelResponse)
 async def update_feature(
     request: Request, feature_id: PydanticObjectId, data: FeatureUpdate
-) -> FeatureModel:
+) -> FeatureModelResponse:
     """
     Update Feature
     """
     controller = request.state.app_container.feature_controller
-    feature: FeatureModel = await controller.update_feature(
+    feature: FeatureModelResponse = await controller.update_feature(
         feature_id=feature_id,
         data=data,
     )

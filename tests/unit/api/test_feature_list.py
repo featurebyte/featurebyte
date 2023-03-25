@@ -596,7 +596,7 @@ def test_list(saved_feature_list):
                 "deployed": [saved_feature_list.deployed],
                 "readiness_frac": 0.0,
                 "online_frac": 0.0,
-                "table": [["sf_event_table"]],
+                "tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "created_at": [saved_feature_list_namespace.created_at],
             }
@@ -1033,12 +1033,26 @@ def test_list_features(saved_feature_list, float_feature):
                 "dtype": [float_feature.dtype],
                 "readiness": [float_feature.readiness],
                 "online_enabled": [float_feature.online_enabled],
-                "table": [["sf_event_table"]],
+                "tables": [["sf_event_table"]],
+                "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
+                "primary_entities": [["customer"]],
                 "created_at": [float_feature.created_at],
             }
         ),
     )
+
+    feature_version_list = saved_feature_list.list_features(primary_table=["some_random_table"])
+    assert feature_version_list.shape[0] == 0
+
+    feature_version_list = saved_feature_list.list_features(primary_table="some_random_table")
+    assert feature_version_list.shape[0] == 0
+
+    feature_version_list = saved_feature_list.list_features(primary_entity=["some_random_entity"])
+    assert feature_version_list.shape[0] == 0
+
+    feature_version_list = saved_feature_list.list_features(primary_entity="some_random_entity")
+    assert feature_version_list.shape[0] == 0
 
 
 @freeze_time("2023-01-20 06:30:00")

@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Union
+from typing import Any, Dict, Literal, Union, cast
 
 from http import HTTPStatus
 
@@ -14,9 +14,14 @@ from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityN
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
-from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.common.base import (
+    BaseDocumentController,
+    DerivePrimaryEntityMixin,
+    PaginatedDocument,
+)
 from featurebyte.schema.feature import (
     FeatureCreate,
+    FeatureModelResponse,
     FeatureNewVersionCreate,
     FeaturePaginatedList,
     FeaturePreview,
@@ -24,16 +29,21 @@ from featurebyte.schema.feature import (
     FeatureUpdate,
 )
 from featurebyte.schema.info import FeatureInfo
+from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
+from featurebyte.service.mixin import Document
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
 
-class FeatureController(BaseDocumentController[FeatureModel, FeatureService, FeaturePaginatedList]):
+class FeatureController(
+    BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList],
+    DerivePrimaryEntityMixin,
+):
     """
     Feature controller
     """
@@ -43,6 +53,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
     def __init__(
         self,
         service: FeatureService,
+        entity_service: EntityService,
         feature_list_service: FeatureListService,
         feature_readiness_service: FeatureReadinessService,
         preview_service: PreviewService,
@@ -51,6 +62,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
         feature_store_warehouse_service: FeatureStoreWarehouseService,
     ):
         super().__init__(service)
+        self.entity_service = entity_service
         self.feature_list_service = feature_list_service
         self.feature_readiness_service = feature_readiness_service
         self.preview_service = preview_service
@@ -60,7 +72,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
 
     async def create_feature(
         self, data: Union[FeatureCreate, FeatureNewVersionCreate]
-    ) -> FeatureModel:
+    ) -> FeatureModelResponse:
         """
         Create Feature at persistent (GitDB or MongoDB)
 
@@ -71,7 +83,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
 
         Returns
         -------
-        FeatureModel
+        FeatureModelResponse
             Newly created feature object
         """
         if isinstance(data, FeatureCreate):
@@ -84,7 +96,54 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             feature_namespace_id=document.feature_namespace_id,
             return_document=False,
         )
-        return document
+        return await self.get(document_id=document.id)
+
+    async def get(
+        self,
+        document_id: ObjectId,
+        exception_detail: str | None = None,
+    ) -> Document:
+        document = await self.service.get_document(
+            document_id=document_id,
+            exception_detail=exception_detail,
+        )
+        output = FeatureModelResponse(
+            **document.dict(by_alias=True),
+            primary_entity_ids=await self.derive_primary_entity_ids(entity_ids=document.entity_ids),
+        )
+        return cast(Document, output)
+
+    async def list(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        sort_by: str | None = "created_at",
+        sort_dir: Literal["asc", "desc"] = "desc",
+        **kwargs: Any,
+    ) -> PaginatedDocument:
+        document_data = await self.service.list_documents(
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            **kwargs,
+        )
+        entity_id_to_entity = await self.get_entity_id_to_entity(doc_list=document_data["data"])
+
+        output = []
+        for feature in document_data["data"]:
+            primary_entity_ids = await self.derive_primary_entity_ids(
+                entity_ids=feature["entity_ids"], entity_id_to_entity=entity_id_to_entity
+            )
+            output.append(
+                FeatureModelResponse(
+                    **feature,
+                    primary_entity_ids=primary_entity_ids,
+                )
+            )
+
+        document_data["data"] = output
+        return cast(PaginatedDocument, self.paginated_document_class(**document_data))
 
     async def update_feature(
         self,

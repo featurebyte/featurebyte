@@ -1,6 +1,7 @@
 """
 Test for FeatureNamespace route
 """
+import os
 import time
 from http import HTTPStatus
 from unittest.mock import Mock
@@ -10,8 +11,8 @@ import pytest_asyncio
 from bson import ObjectId
 from requests import Response
 
+from featurebyte.common.model_util import get_version
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from tests.unit.routes.base import BaseCatalogApiTestSuite
@@ -43,12 +44,26 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
 
+    async def insert_feature_into_persistent(self, persistent, user_id, test_dir, catalog_id):
+        """Insert feature into persistent"""
+        feat_fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
+        feat_payload = self.load_payload(feat_fixture_path)
+        feat_payload["_id"] = ObjectId(feat_payload["_id"])
+        feat_payload["readiness"] = "DRAFT"
+        feat_payload["catalog_id"] = catalog_id
+        feat_payload["version"] = get_version()
+        await persistent.insert_one(
+            collection_name="feature",
+            document=feat_payload,
+            user_id=user_id,
+        )
+
     @pytest_asyncio.fixture
     async def create_success_response(
-        self, test_api_client_persistent, user_id
+        self, test_api_client_persistent, user_id, test_dir
     ):  # pylint: disable=arguments-differ
         """Post route success response object"""
-        _, persistent = test_api_client_persistent
+        test_api_client, persistent = test_api_client_persistent
         user = Mock()
         user.id = user_id
         feature_namespace_service = FeatureNamespaceService(
@@ -57,6 +72,8 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         document = await feature_namespace_service.create_document(
             data=FeatureNamespaceCreate(**self.payload)
         )
+        self.post_payloads(test_api_client, [("entity", "entity")], DEFAULT_CATALOG_ID)
+        await self.insert_feature_into_persistent(persistent, user_id, test_dir, DEFAULT_CATALOG_ID)
         response = Response()
         response._content = bytes(document.json(by_alias=True), "utf-8")
         response.status_code = HTTPStatus.CREATED
@@ -82,12 +99,23 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
     ):
         """Test creation (success) in non default catalog"""
 
+    def post_payloads(self, api_client, api_object_filename_pairs, catalog_id):
+        """Post payloads from the fixture requests"""
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            params = {"catalog_id": catalog_id} if catalog_id else None
+
+            response = api_client.post(f"/{api_object}", params=params, json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
     @pytest_asyncio.fixture
     async def create_multiple_success_responses(
         self, test_api_client_persistent, user_id
     ):  # pylint: disable=arguments-differ
         """Post multiple success responses"""
         test_api_client, persistent = test_api_client_persistent
+        self.post_payloads(test_api_client, [("entity", "entity")], DEFAULT_CATALOG_ID)
+
         user = Mock()
         user.id = user_id
         feature_namespace_service = FeatureNamespaceService(
@@ -104,26 +132,12 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             time.sleep(0.05)
         return output
 
-    async def setup_get_info(self, api_client, persistent, user_id):
+    async def setup_get_info(self, api_client):
         """Setup for get_info route testing"""
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
-            ("entity", "entity"),
-            ("event_table", "event_table"),
+            (api_object, api_object) for api_object in ["feature_store", "event_table"]
         ]
-        for api_object, filename in api_object_filename_pairs:
-            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(f"/{api_object}", json=payload)
-            assert response.status_code == HTTPStatus.CREATED
-
-        payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
-        doc = FeatureCreate(**payload).dict(by_alias=True)
-        doc["catalog_id"] = DEFAULT_CATALOG_ID
-        await persistent.insert_one(
-            collection_name="feature",
-            document=doc,
-            user_id=user_id,
-        )
+        self.post_payloads(api_client, api_object_filename_pairs, None)
 
     def _create_feature_namespace_with_manual_version_mode(self, test_api_client):
         """Create feature namespace with manual version mode"""
@@ -133,11 +147,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
         ]
-        for api_object, filename in api_object_filename_pairs:
-            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = test_api_client.post(f"/{api_object}", json=payload)
-            assert response.status_code == HTTPStatus.CREATED
-
+        self.post_payloads(test_api_client, api_object_filename_pairs, None)
         payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
         doc_id = payload["feature_namespace_id"]
         response = test_api_client.patch(
@@ -233,11 +243,11 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
-        await self.setup_get_info(test_api_client, persistent, user_id)
+        await self.setup_get_info(test_api_client)
         doc_id = create_response_dict["_id"]
         response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
@@ -273,10 +283,14 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
 
     @pytest_asyncio.fixture
     async def create_success_response_non_default_catalog(
-        self, test_api_client_persistent, user_id, catalog_id
+        self, test_api_client_persistent, user_id, catalog_id, test_dir
     ):  # pylint: disable=arguments-differ
         """Create object with non default catalog"""
-        _, persistent = test_api_client_persistent
+        test_api_client, persistent = test_api_client_persistent
+        api_object_filename_pairs = [("entity", "entity")]
+        self.post_payloads(test_api_client, api_object_filename_pairs, catalog_id)
+        await self.insert_feature_into_persistent(persistent, user_id, test_dir, catalog_id)
+
         user = Mock()
         user.id = user_id
         feature_namespace_service = FeatureNamespaceService(

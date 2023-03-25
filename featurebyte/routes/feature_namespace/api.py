@@ -8,7 +8,6 @@ from typing import Optional, cast
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature import FeatureNamespaceModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -20,21 +19,25 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.feature_namespace import FeatureNamespaceList, FeatureNamespaceUpdate
+from featurebyte.schema.feature_namespace import (
+    FeatureNamespaceList,
+    FeatureNamespaceModelResponse,
+    FeatureNamespaceUpdate,
+)
 from featurebyte.schema.info import FeatureNamespaceInfo
 
 router = APIRouter(prefix="/feature_namespace")
 
 
-@router.get("/{feature_namespace_id}", response_model=FeatureNamespaceModel)
+@router.get("/{feature_namespace_id}", response_model=FeatureNamespaceModelResponse)
 async def get_feature_namespace(
     request: Request, feature_namespace_id: PydanticObjectId
-) -> FeatureNamespaceModel:
+) -> FeatureNamespaceModelResponse:
     """
     Retrieve Feature Namespace
     """
     controller = request.state.app_container.feature_namespace_controller
-    feature_namespace: FeatureNamespaceModel = await controller.get(
+    feature_namespace: FeatureNamespaceModelResponse = await controller.get(
         document_id=feature_namespace_id,
         exception_detail=(
             f'FeatureNamespace (id: "{feature_namespace_id}") not found. Please save the Feature object first.'
@@ -43,15 +46,15 @@ async def get_feature_namespace(
     return feature_namespace
 
 
-@router.patch("/{feature_namespace_id}", response_model=FeatureNamespaceModel)
+@router.patch("/{feature_namespace_id}", response_model=FeatureNamespaceModelResponse)
 async def update_feature(
     request: Request, feature_namespace_id: PydanticObjectId, data: FeatureNamespaceUpdate
-) -> FeatureNamespaceModel:
+) -> FeatureNamespaceModelResponse:
     """
     Update FeatureNamespace
     """
     controller = request.state.app_container.feature_namespace_controller
-    feature: FeatureNamespaceModel = await controller.update_feature_namespace(
+    feature: FeatureNamespaceModelResponse = await controller.update_feature_namespace(
         feature_namespace_id=feature_namespace_id,
         data=data,
     )

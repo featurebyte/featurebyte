@@ -454,13 +454,13 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         "deployed",
         "readiness_frac",
         "online_frac",
-        "table",
+        "tables",
         "entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", TableApiObject, "table"),
+        ForeignKeyMapping("tabular_data_ids", TableApiObject, "tables"),
     ]
 
     @property
@@ -581,7 +581,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             ]
         if table:
             feature_lists = feature_lists[
-                feature_lists.table.apply(lambda table_list: table in table_list)
+                feature_lists.tables.apply(lambda table_list: table in table_list)
             ]
         return feature_lists
 
@@ -952,24 +952,30 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         return FeatureListNamespace.list(include_id=include_id, entity=entity, table=table)
 
     def list_features(
-        self, entity: Optional[str] = None, table: Optional[str] = None
+        self,
+        primary_entity: Optional[Union[str, List[str]]] = None,
+        primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
         List features in the feature list
 
         Parameters
         ----------
-        entity: Optional[str]
-            Name of entity used to filter results
-        table: Optional[str]
-            Name of table used to filter results
+        primary_entity: Optional[str]
+            Name of entity used to filter results. If multiple entities are provided, the filtered results will
+            contain features that are associated with all the entities.
+        primary_table: Optional[str]
+            Name of table used to filter results. If multiple tables are provided, the filtered results will
+            contain features that are associated with all the tables.
 
         Returns
         -------
         pd.DataFrame
             Table of features
         """
-        return Feature.list_versions(feature_list_id=self.id, entity=entity, table=table)
+        return Feature.list_versions(
+            feature_list_id=self.id, primary_entity=primary_entity, primary_table=primary_table
+        )
 
     @typechecked
     def get_historical_features_sql(

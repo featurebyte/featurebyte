@@ -30,12 +30,21 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     tabular_data_ids: List[PydanticObjectId]
 
 
+class FeatureNamespaceModelResponse(FeatureNamespaceModel):
+    """
+    Extended FeatureNamespace model
+    """
+
+    primary_entity_ids: List[PydanticObjectId]
+    primary_table_ids: List[PydanticObjectId]
+
+
 class FeatureNamespaceList(PaginationMixin):
     """
     Paginated list of FeatureNamespace
     """
 
-    data: List[FeatureNamespaceModel]
+    data: List[FeatureNamespaceModelResponse]
 
 
 class FeatureNamespaceUpdate(BaseDocumentServiceUpdateSchema, FeatureByteBaseModel):
