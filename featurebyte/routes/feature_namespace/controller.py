@@ -11,7 +11,7 @@ from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel
 from featurebyte.routes.common.base import (
     BaseDocumentController,
-    DerivePrimaryEntityAndTableMixin,
+    DerivePrimaryEntityMixin,
     PaginatedDocument,
 )
 from featurebyte.schema.feature_namespace import (
@@ -34,7 +34,7 @@ class FeatureNamespaceController(
     BaseDocumentController[
         FeatureNamespaceModelResponse, FeatureNamespaceService, FeatureNamespaceList
     ],
-    DerivePrimaryEntityAndTableMixin,
+    DerivePrimaryEntityMixin,
 ):
     """
     FeatureName controller

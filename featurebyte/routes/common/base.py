@@ -257,8 +257,8 @@ class RelationshipMixin(Generic[Document, ParentT]):
         return cast(Document, document)
 
 
-class DerivePrimaryEntityAndTableMixin:
-    """Mixin class to derive primary entity & table from a feature"""
+class DerivePrimaryEntityMixin:
+    """Mixin class to derive primary entity from a list of entities"""
 
     entity_service: EntityService
 

@@ -16,7 +16,7 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.routes.common.base import (
     BaseDocumentController,
-    DerivePrimaryEntityAndTableMixin,
+    DerivePrimaryEntityMixin,
     PaginatedDocument,
 )
 from featurebyte.schema.feature import (
@@ -42,7 +42,7 @@ from featurebyte.service.version import VersionService
 
 class FeatureController(
     BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList],
-    DerivePrimaryEntityAndTableMixin,
+    DerivePrimaryEntityMixin,
 ):
     """
     Feature controller
