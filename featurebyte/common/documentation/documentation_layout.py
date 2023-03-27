@@ -327,6 +327,14 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, INFO, "Feature.name"], "Feature.name"),
         DocLayoutItem([FEATURE, INFO, "Feature.saved"], "Feature.saved"),
         DocLayoutItem([FEATURE, INFO, "Feature.updated_at"], "Feature.updated_at"),
+        DocLayoutItem(
+            [FEATURE, INFO, "Feature.is_datetime"],
+            "Feature.is_datetime",
+        ),
+        DocLayoutItem(
+            [FEATURE, INFO, "Feature.is_numeric"],
+            "Feature.is_numeric",
+        ),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.entity_ids"], "Feature.entity_ids"),
         DocLayoutItem(
             [FEATURE, LINEAGE, "Feature.feature_list_ids"],
@@ -391,14 +399,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.fillna"], "Feature.fillna"),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.floor"], "Feature.floor"),
         *_get_datetime_accessor_properties_layout(FEATURE),
-        DocLayoutItem(
-            [FEATURE, TRANSFORM, "Feature.is_datetime"],
-            "Feature.is_datetime",
-        ),
-        DocLayoutItem(
-            [FEATURE, TRANSFORM, "Feature.is_numeric"],
-            "Feature.is_numeric",
-        ),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.isin"], "Feature.isin"),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.isnull"], "Feature.isnull"),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.log"], "Feature.log"),

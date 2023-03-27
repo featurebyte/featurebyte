@@ -544,6 +544,15 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Returns
         -------
         bool
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+
+        >>> print(view["Timestamp"].is_datetime)
+        True
+        >>> print(view["Amount"].is_datetime)
+        False
         """
         return self.dtype in (DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ, DBVarType.DATE)
 
@@ -555,6 +564,15 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Returns
         -------
         bool
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+
+        >>> print(view["Amount"].is_numeric)
+        True
+        >>> print(view["Timestamp"].is_numeric)
+        False
         """
         return self.dtype in (DBVarType.INT, DBVarType.FLOAT)
 
@@ -1072,11 +1090,25 @@ class Series(FrozenSeries):
     @typechecked
     def fillna(self, other: Scalar) -> None:
         """
-        Replace missing values with the provided value in-place
+        Replace missing value in each element with the provided value in-place
 
         Parameters
         ----------
         other: Scalar
             Value to replace missing values
+
+        Examples
+        --------
+
+        Fill missing values in a column with 0:
+
+        >>> view = catalog.get_table("GROCERYINVOICE").get_view()
+        >>> view["Amount"].fillna(0)
+
+
+        Fill missing values in a feature with 0:
+
+        >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
+        >>> feature.fillna(0)
         """
         self[self.isnull()] = other
