@@ -93,7 +93,7 @@ class EventTable(TableApiObject):
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> EventView:
         """
-        Get an EventView from the source table.
+        Get an EventView from an event table.
 
         You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
         constructed from the source table without any changes to the cleaning operations, or dropping column names.
