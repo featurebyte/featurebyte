@@ -957,8 +957,9 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Parameters
         ----------
         other: Union[FrozenSeries, ScalarSequence]
-            The sequence of values to check for membership. This can be a predefined list of values,
-            or a dictionary Feature if `self` is a Feature.
+            The sequence of values to check for membership. `other` can be a predefined list of
+            values, or a dictionary feature if `self` is a Feature. If `other` is a dictionary
+            feature, the keys of the dictionary feature will be used to check for membership.
 
         Returns
         -------
@@ -968,23 +969,31 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Raises
         ------
         ValueError
-            raised when the other input is not a dictionary series
+            raised when `other` is a Feature object but is not a dictionary feature.
 
         Examples
         --------
-        Check to see if the feature values are of values [1, 2, 3]
 
-        >>> lookup_feature.isin([1, 2, 3]) # doctest: +SKIP
+        Check to see if the values in a series are in a list of values, and use the result to filter
+        the original view:
 
+        >>> view = catalog.get_table("GROCERYPRODUCT").get_view()
+        >>> condition = view["ProductGroup"].isin(["Sauces", "Fromages", "Fruits"])
+        >>> view[condition].sample(5, seed=0)
+                             GroceryProductGuid ProductGroup
+        0  45cd58ba-efec-463a-9107-0633168a215e     Fromages
+        1  97e6afc9-1033-4fb3-b2a2-3d62261e1d17     Fromages
+        2  fb26ed22-524e-4c9e-9ea2-03c266e7f9b9     Fromages
+        3  a817d904-bc58-4048-978d-c13857969a69       Fruits
+        4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
 
-        Check to see if a lookup feature values are the keys of a dictionary feature
+        Create a new feature that checks whether a lookup feature is contained in the keys of a
+        dictionary feature:
 
-        >>> lookup_feature.isin(dictionary_feature) # doctest: +SKIP
-
-
-        Check to see if the values in a series are of values [True, False]
-
-        >>> series.isin([True, False]) # doctest: +SKIP
+        >>> lookup_feature = catalog.get_feature("ProductGroupLookup")
+        >>> dictionary_feature = catalog.get_feature("CustomerProductGroupCounts_7d")
+        >>> new_feature = lookup_feature.isin(dictionary_feature)
+        >>> new_feature.name = "CustomerHasProductGroup_7d"
         """
         self.validate_isin_operation(other)
 

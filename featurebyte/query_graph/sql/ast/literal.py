@@ -26,6 +26,10 @@ def make_literal_value(value: Any, cast_as_timestamp: bool = False) -> expressio
     """
     if is_scalar_nan(value):
         return expressions.Null()
+    if isinstance(value, list):
+        return expressions.Array(
+            expressions=[make_literal_value(v, cast_as_timestamp=cast_as_timestamp) for v in value]
+        )
     if cast_as_timestamp:
         return cast(expressions.Expression, parse_one(f"CAST('{str(value)}' AS TIMESTAMP)"))
     if isinstance(value, str):

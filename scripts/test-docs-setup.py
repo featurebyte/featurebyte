@@ -102,6 +102,9 @@ def setup() -> None:
     grocery_items_table.GroceryInvoiceGuid.as_entity("groceryinvoice")
     grocery_items_table.GroceryProductGuid.as_entity("groceryproduct")
 
+    # tag the entities for the grocery product table
+    grocery_product_table.GroceryProductGuid.as_entity("groceryproduct")
+
     grocery_invoice_table.update_default_feature_job_setting(
         fb.FeatureJobSetting(
             blind_spot="145",
@@ -144,6 +147,12 @@ def setup() -> None:
     )
     feature_group["CustomerProductGroupCounts_7d"].save(conflict_resolution="retrieve")
     feature_group["CustomerProductGroupCounts_90d"].save(conflict_resolution="retrieve")
+
+    # Feature: ProductGroup (lookup feature)
+    product_group_feature = grocery_product_view["ProductGroup"].as_feature(
+        feature_name="ProductGroupLookup"
+    )
+    product_group_feature.save(conflict_resolution="retrieve")
 
     # Feature: InvoiceCount - non time based
     invoice_count = grocery_item_view.groupby("GroceryInvoiceGuid").aggregate(
