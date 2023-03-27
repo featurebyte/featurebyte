@@ -63,6 +63,23 @@ def test_dimension_lookup_features(dimension_view):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+def test_is_in__target_is_scalar_sequence(event_table):
+    """
+    Test view column's isin() method with scalar sequence as target
+    """
+    event_view = event_table.get_view()
+
+    # Use isin() to construct a boolean column used for filtering
+    fixed_sequence = ["àdd", "rëmove"]
+    condition = event_view["PRODUCT_ACTION"].isin(fixed_sequence)
+    filtered_view = event_view[condition]
+
+    # Check output is expected
+    df = filtered_view.preview(100)
+    assert df["PRODUCT_ACTION"].isin(fixed_sequence).all()
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_is_in_dictionary__target_is_dictionary_feature(
     item_type_dimension_lookup_feature, event_table
 ):

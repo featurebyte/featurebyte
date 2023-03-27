@@ -972,9 +972,13 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Examples
         --------
-        Check to see if the feature values are of values [1, 2, 3]
 
-        >>> lookup_feature.isin([1, 2, 3]) # doctest: +SKIP
+        Check to see if the values in a series are in a list of values, and use the result to filter
+        the original view:
+
+        >>> view = catalog.get_table("GROCERYPRODUCT").get_view()
+        >>> condition = view["ProductGroup"].isin(["Sauces", "Fromages", "Fruits"])
+        >>> view[condition].preview(5)
 
 
         Check to see if a lookup feature values are the keys of a dictionary feature
