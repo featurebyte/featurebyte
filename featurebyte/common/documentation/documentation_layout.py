@@ -613,16 +613,16 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([FEATURE_STORE], "FeatureStore"),
         DocLayoutItem(
-            [FEATURE_STORE, GET, "Catalog.get_feature_store"],
-            "Catalog.get_feature_store",
+            [FEATURE_STORE, GET, "FeatureStore.get"],
+            "FeatureStore.get",
         ),
         DocLayoutItem(
             [FEATURE_STORE, GET, "FeatureStore.get_by_id"],
             "FeatureStore.get_by_id",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, LIST, "Catalog.list_feature_stores"],
-            "Catalog.list_feature_stores",
+            [FEATURE_STORE, LIST, "FeatureStore.list"],
+            "FeatureStore.list",
         ),
         DocLayoutItem(
             [FEATURE_STORE, CREATE, "FeatureStore.create"],
