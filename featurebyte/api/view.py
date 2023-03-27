@@ -32,7 +32,6 @@ from featurebyte.common.join_utils import (
     filter_columns,
     filter_columns_info,
     is_column_name_in_columns,
-    join_tabular_data_ids,
 )
 from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import Scalar, ScalarSequence
@@ -73,34 +72,12 @@ class ViewColumn(Series, SampleMixin):
     __fbautodoc__ = FBAutoDoc(section=["ViewColumn"], proxy_class="featurebyte.ViewColumn")
 
     _parent: Optional[View] = PrivateAttr(default=None)
-    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     @property
     def timestamp_column(self) -> Optional[str]:
         if not self._parent:
             return None
         return self._parent.timestamp_column
-
-    def binary_op_series_params(
-        self, other: Scalar | FrozenSeries | ScalarSequence
-    ) -> dict[str, Any]:
-        """
-        Parameters that will be passed to series-like constructor in _binary_op method
-
-        Parameters
-        ----------
-        other: Scalar | FrozenSeries | ScalarSequence
-            Other object
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        _ = other
-        return {"tabular_data_ids": self.tabular_data_ids}
-
-    def unary_op_series_params(self) -> dict[str, Any]:
-        return {"tabular_data_ids": self.tabular_data_ids}
 
     @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
@@ -226,8 +203,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     # class variables
     _view_graph_node_type: ClassVar[GraphNodeType]
 
-    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
 
@@ -312,28 +287,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         """
         return set()
 
-    @property
-    def _getitem_frame_params(self) -> dict[str, Any]:
-        """
-        Parameters that will be passed to frame-like class constructor in __getitem__ method
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return {"tabular_data_ids": self.tabular_data_ids}
-
-    @property
-    def _getitem_series_params(self) -> dict[str, Any]:
-        """
-        Parameters that will be passed to series-like class constructor in __getitem__ method
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return {"tabular_data_ids": self.tabular_data_ids}
-
     @typechecked
     def __getitem__(
         self, item: Union[str, List[str], FrozenSeries]
@@ -417,7 +370,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         self,
         new_node_name: str,
         joined_columns_info: List[ColumnInfo],
-        joined_tabular_data_ids: List[PydanticObjectId],
         **kwargs: Any,
     ) -> None:
         """
@@ -429,19 +381,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             new node name
         joined_columns_info: List[ColumnInfo]
             joined columns info
-        joined_tabular_data_ids: List[PydanticObjectId]
-            joined tabular data IDs
         kwargs: Any
             Additional keyword arguments used to override the underlying metadata
         """
         self.node_name = new_node_name
         self.columns_info = joined_columns_info
-        self.__dict__.update(
-            {
-                "tabular_data_ids": joined_tabular_data_ids,
-                **kwargs,
-            }
-        )
+        self.__dict__.update(kwargs)
 
     def _get_key_if_entity(self, other_view: View) -> Optional[tuple[str, str]]:
         """
@@ -708,13 +653,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             self.columns_info, append_rsuffix_to_column_info(filtered_column_infos, rsuffix)
         )
 
-        # Construct new tabular_data_ids
-        joined_tabular_data_ids = join_tabular_data_ids(
-            self.tabular_data_ids, other_view.tabular_data_ids
-        )
-
         # Update metadata
-        self._update_metadata(node.name, joined_columns_info, joined_tabular_data_ids)
+        self._update_metadata(node.name, joined_columns_info)
 
     @staticmethod
     def _validate_offset(offset: Optional[str]) -> None:
@@ -759,7 +699,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             tabular_source=self.tabular_source,
             node_name=feature_node.name,
             dtype=feature_dtype,
-            tabular_data_ids=self.tabular_data_ids,
             entity_ids=entity_ids,
         )
         return feature

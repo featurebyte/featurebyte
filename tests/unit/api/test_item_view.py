@@ -210,7 +210,6 @@ def test_get_view__auto_join_columns(
     }
 
     # Check Frame attributes
-    assert set(view.tabular_data_ids) == {snowflake_item_table_id, snowflake_event_table_id}
     assert view.columns == [
         "event_id_col",
         "item_id_col",
@@ -364,8 +363,6 @@ def test_join_event_table_attributes__more_columns(
     }
 
     # Check Frame attributes
-    assert len(view.tabular_data_ids) == 2
-    assert set(view.tabular_data_ids) == {snowflake_item_table_id, snowflake_event_table_id}
     assert view.columns == [
         "event_id_col",
         "item_id_col",

@@ -684,7 +684,6 @@ def grouped_event_view_fixture(snowflake_event_view_with_entity):
     """
     grouped = snowflake_event_view_with_entity.groupby("cust_id")
     assert isinstance(grouped, GroupBy)
-    assert snowflake_event_view_with_entity.tabular_data_ids == grouped.view_obj.tabular_data_ids
     yield grouped
 
 
@@ -726,7 +725,6 @@ def feature_group_fixture(
     )
     assert isinstance(feature_group, FeatureGroup)
     for feature in feature_group.feature_objects.values():
-        assert grouped_event_view.view_obj.tabular_data_ids == feature.tabular_data_ids
         assert id(feature.graph.nodes) == id(global_graph.nodes)
         assert feature.tabular_data_ids == [snowflake_event_table_with_entity.id]
         assert feature.entity_ids == [cust_id_entity.id]

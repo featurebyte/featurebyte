@@ -153,7 +153,6 @@ class DimensionTable(TableApiObject):
             tabular_source=self.tabular_source,
             columns_info=columns_info,
             node_name=inserted_graph_node.name,
-            tabular_data_ids=[self.id],
             dimension_id_column=self.dimension_id_column,
         )
 

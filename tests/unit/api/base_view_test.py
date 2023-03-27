@@ -392,7 +392,6 @@ class BaseViewTestSuite:
         mask = overrides["mask"] if "mask" in overrides else view_under_test[self.bool_col]
 
         output = column[mask]
-        assert output.tabular_data_ids == column.tabular_data_ids
         assert output.name == column.name
         assert output.dtype == column.dtype
         output_dict = output.dict()
@@ -438,14 +437,6 @@ class BaseViewTestSuite:
                 }
             },
         )
-
-    def test_unary_op_params(self, view_under_test):
-        """
-        Test unary operation inherits tabular_data_ids
-        """
-        column = view_under_test[self.col]
-        output = column.isnull()
-        assert output.tabular_data_ids == column.tabular_data_ids
 
     def test_from_data__invalid_input(self):
         """

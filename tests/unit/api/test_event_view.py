@@ -129,11 +129,6 @@ def test_getitem__list_of_str_contains_protected_column(
 
     # both event table subsets actually point to the same node
     assert event_view_subset1.node == event_view_subset2.node
-    assert (
-        snowflake_event_view.tabular_data_ids
-        == event_view_subset1.tabular_data_ids
-        == event_view_subset2.tabular_data_ids
-    )
 
 
 @pytest.mark.parametrize(
@@ -166,7 +161,6 @@ def test_event_view_column_lag(
         "entity_columns": ["cust_id"],
         "offset": expected_offset_param,
     }
-    assert lagged_column.tabular_data_ids == snowflake_event_view[column].tabular_data_ids
 
     # check SDK code generation
     check_sdk_code_generation(
@@ -327,7 +321,6 @@ def get_empty_event_view_fixture(snowflake_feature_store):
                     table_name="random",
                 ),
             ),
-            tabular_data_ids=[],
             feature_store=snowflake_feature_store,
         )
 
@@ -351,7 +344,6 @@ def get_empty_feature_fixture(snowflake_feature_store):
                     table_name="random",
                 ),
             ),
-            tabular_data_ids=[],
             feature_store=snowflake_feature_store,
         )
 
@@ -460,7 +452,6 @@ def get_feature_with_entity_ids(snowflake_feature_store):
                     table_name="random",
                 ),
             ),
-            tabular_data_ids=[],
             feature_store=snowflake_feature_store,
         )
 

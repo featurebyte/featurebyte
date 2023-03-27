@@ -128,26 +128,6 @@ def combine_column_info_of_views(
     return joined_columns_info
 
 
-def join_tabular_data_ids(
-    data_ids_a: List[PydanticObjectId], data_ids_b: List[PydanticObjectId]
-) -> List[PydanticObjectId]:
-    """
-    Joins two list of table IDs.
-
-    Parameters
-    ----------
-    data_ids_a: List[PydanticObjectId]
-        table IDs A
-    data_ids_b: List[PydanticObjectId]
-        table IDs B
-
-    Returns
-    -------
-    List[PydanticObjectId]
-    """
-    return sorted(set(data_ids_a + data_ids_b))
-
-
 def is_column_name_in_columns(column_name: str, columns_info: List[ColumnInfo]) -> bool:
     """
     Checks to see if a column name is in the list of ColumnInfo's provided.
