@@ -126,17 +126,17 @@ def _get_table_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem(
             [TABLE, EXPLORE, "Table.describe"],
-            "",
+            "Table.describe",
             "api.base_table.TableApiObject.describe.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
             [TABLE, EXPLORE, "Table.preview"],
-            "",
+            "Table.preview",
             "api.base_table.TableApiObject.preview.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
             [TABLE, EXPLORE, "Table.sample"],
-            "",
+            "Table.sample",
             "api.base_table.TableApiObject.sample.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
@@ -145,14 +145,14 @@ def _get_table_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem(
             [TABLE, INFO, "Table.columns"],
-            "",
+            "Table.columns",
             "api.base_table.TableApiObject.columns.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem([TABLE, INFO, "Table.columns_info"], "Table.columns_info"),
         DocLayoutItem([TABLE, INFO, "Table.created_at"], "Table.created_at"),
         DocLayoutItem(
             [TABLE, INFO, "Table.dtypes"],
-            "",
+            "Table.dtypes",
             "api.base_table.TableApiObject.dtypes.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem([TABLE, INFO, "Table.info"], "Table.info"),
@@ -178,18 +178,18 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, LINEAGE, "Table.entity_ids"], "Table.entity_ids"),
         DocLayoutItem(
             [TABLE, LINEAGE, "Table.feature_store"],
-            "",
+            "Table.feature_store",
             "api.base_table.TableApiObject.feature_store.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem([TABLE, LINEAGE, "Table.id"], "Table.id"),
         DocLayoutItem(
             [TABLE, LINEAGE, "Table.preview_clean_data_sql"],
-            "",
+            "Table.preview_clean_data_sql",
             "api.base_table.TableApiObject.preview_clean_data_sql.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem(
             [TABLE, LINEAGE, "Table.preview_sql"],
-            "",
+            "Table.preview_sql",
             "api.base_table.TableApiObject.preview_sql.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem([TABLE, LINEAGE, "Table.tabular_source"], "Table.tabular_source"),
@@ -203,7 +203,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, TYPE, "SCDTable"], "SCDTable"),
         DocLayoutItem(
             [TABLE, UPDATE, "Table.update_record_creation_timestamp_column"],
-            "",
+            "Table.update_record_creation_timestamp_column",
             "api.base_table.TableApiObject.update_record_creation_timestamp_column.md",
         ),  # TODO: this is technically not correct?
     ]
@@ -298,20 +298,22 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem([FEATURE, CREATE, "Feature.save"], "Feature.save"),
         DocLayoutItem([FEATURE, CREATE, "View.as_features"], "View.as_features"),
-        DocLayoutItem([FEATURE, CREATE, "view.GroupBy"], "", "api.groupby.GroupBy.md"),  # TODO:
+        DocLayoutItem(
+            [FEATURE, CREATE, "view.GroupBy"], "view.GroupBy", "api.groupby.GroupBy.md"
+        ),  # TODO:
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy.aggregate"],
-            "",
+            "view.GroupBy.aggregate",
             "api.groupby.GroupBy.aggregate.md",
         ),  # TODO:
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy.aggregate_asat"],
-            "",
+            "view.GroupBy.aggregate_asat",
             "api.groupby.GroupBy.aggregate_asat.md",
         ),  # TODO:
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy.aggregate_over"],
-            "",
+            "view.GroupBy.aggregate_over",
             "api.groupby.GroupBy.aggregate_over.md",
         ),  # TODO:
         DocLayoutItem(
@@ -478,7 +480,7 @@ def _get_feature_group_layout() -> List[DocLayoutItem]:
         # DocLayout([FEATURE_GROUP], "", "api.feature_list.FeatureGroup.md"),
         DocLayoutItem(
             [FEATURE_GROUP, CREATE, "FeatureGroup"],
-            "",
+            "FeatureGroup",
             "api.feature_list.FeatureGroup.md",
         ),
         DocLayoutItem(
