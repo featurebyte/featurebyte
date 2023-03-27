@@ -547,7 +547,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Examples
         --------
-        >>> view =  fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+
         >>> print(view["Timestamp"].is_datetime)
         True
         >>> print(view["Amount"].is_datetime)
@@ -566,7 +567,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Examples
         --------
-        >>> view =  fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+
         >>> print(view["Amount"].is_numeric)
         True
         >>> print(view["Timestamp"].is_numeric)
