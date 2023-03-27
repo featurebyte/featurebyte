@@ -24,7 +24,7 @@
 
 .md-header {
   padding: 10px 0px 0px 0px;
-  background-image: url("/assets/learn-background@2x.jpg");
+  background-image: url("learn-background@2x.jpg");
   background-position: center center;
   background-size: cover;
 }
