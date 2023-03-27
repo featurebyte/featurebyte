@@ -5,7 +5,6 @@ from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 import json
 import os
-import pwd
 from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
@@ -94,10 +93,7 @@ class LoggingSettings(BaseModel):
     serialize: bool = False
     telemetry: bool = True
     telemetry_url: str = "https://log.int.featurebyte.com"
-    try:
-        telemetry_id: str = pwd.getpwuid(os.getuid())[0]
-    except OSError:
-        telemetry_id: str = "unknown"
+    telemetry_id: str = os.getenv("FEATUREBYTE_TELEMETRY_ID", "unknown")
     try:
         telemetry_ip: str = requests.get("https://ifconfig.me", timeout=5).text
     except Exception:  # pylint: disable=broad-except

@@ -65,6 +65,7 @@ services:
       - "LOG_LEVEL=info"
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
+      - "FEATUREBYTE_TELEMETRY_ID=${FEATUREBYTE_TELEMETRY_ID}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8088/status"]
       interval: 30s
