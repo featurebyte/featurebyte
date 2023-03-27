@@ -24,6 +24,79 @@ DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
 MISSING_DEBUG_MARKDOWN = "missing.md"
 
 
+@dataclass
+class DocGroupValue:
+    """
+    Example
+    --------
+    DocGroupValue(
+        doc_group=['View', 'ItemView', 'validate_simple_aggregate_parameters'],
+        obj_type='method',
+        proxy_path='featurebyte.ItemView',
+    )
+    """
+
+    doc_group: List[str]
+    obj_type: str
+    proxy_path: str
+
+
+@dataclass
+class DocGroupKey:
+    """
+    Examples of DocGroupKey that will be generated from code
+    --------
+    DocGroupKey(
+        module_path='featurebyte.api.scd_view',
+        class_name='SCDViewColumn'
+    )
+
+    DocGroupKey(
+        module_path='featurebyte.core.accessor.count_dict',
+        class_name='CountDictAccessor',
+        attribute_name='cosine_similarity'
+    )
+    """
+
+    module_path: str
+    class_name: str
+    attribute_name: Optional[str] = None
+
+    def get_path_to_join(self):
+        path_to_join = [self.module_path, self.class_name]
+        if self.attribute_name:
+            path_to_join.append(self.attribute_name)
+        return path_to_join
+
+    def __hash__(self) -> int:
+        return hash(".".join(self.get_path_to_join()))
+
+    def get_markdown_doc_path(self):
+        return str(Path(".".join(self.get_path_to_join()))) + ".md"
+
+    def get_obj_path(self, doc_group_value: DocGroupValue):
+        base_path = ".".join([self.module_path, self.class_name])
+        if self.attribute_name:
+            return "::".join([base_path, self.attribute_name])
+        if doc_group_value.proxy_path:
+            return "#".join([base_path, doc_group_value.proxy_path])
+        return base_path
+
+
+@dataclass
+class AccessorMetadata:
+
+    """
+    This will be a list of API paths to classes that use the accessor.
+    """
+
+    classes_using_accessor: List[str]
+    """
+    This will be the property name that the classes above use to access the accessor. Eg. str, cd.
+    """
+    property_name: str
+
+
 def initialize_missing_debug_doc(gen_files_open):
     """
     This function initializes the debug doc file if it doesn't exist.
@@ -85,65 +158,6 @@ def get_classes_for_module(module_str):
         if not inspect.isclass(class_obj):
             continue
         yield class_obj
-
-
-@dataclass
-class DocGroupValue:
-    """
-    Example
-    --------
-    DocGroupValue(
-        doc_group=['View', 'ItemView', 'validate_simple_aggregate_parameters'],
-        obj_type='method',
-        proxy_path='featurebyte.ItemView',
-    )
-    """
-
-    doc_group: List[str]
-    obj_type: str
-    proxy_path: str
-
-
-@dataclass
-class DocGroupKey:
-    """
-    Examples of DocGroupKey that will be generated from code
-    --------
-    DocGroupKey(
-        module_path='featurebyte.api.scd_view',
-        class_name='SCDViewColumn'
-    )
-
-    DocGroupKey(
-        module_path='featurebyte.core.accessor.count_dict',
-        class_name='CountDictAccessor',
-        attribute_name='cosine_similarity'
-    )
-    """
-
-    module_path: str
-    class_name: str
-    attribute_name: Optional[str] = None
-
-    def get_path_to_join(self):
-        path_to_join = [self.module_path, self.class_name]
-        if self.attribute_name:
-            path_to_join.append(self.attribute_name)
-        return path_to_join
-
-    def __hash__(self) -> int:
-        return hash(".".join(self.get_path_to_join()))
-
-    def get_markdown_doc_path(self):
-        return str(Path(".".join(self.get_path_to_join()))) + ".md"
-
-    def get_obj_path(self, doc_group_value: DocGroupValue):
-        base_path = ".".join([self.module_path, self.class_name])
-        if self.attribute_name:
-            return "::".join([base_path, self.attribute_name])
-        if doc_group_value.proxy_path:
-            return "#".join([base_path, doc_group_value.proxy_path])
-        return base_path
 
 
 def add_class_to_doc_group(doc_groups, autodoc_config, menu_section, class_obj):
@@ -375,20 +389,6 @@ def get_api_path_to_use(doc_path, base_path, accessor_property_name):
     removed_md_path = doc_path.replace(".md", "")
     function_name = removed_md_path.rsplit(".", 1)[-1]
     return ".".join([base_path, accessor_property_name, function_name])
-
-
-@dataclass
-class AccessorMetadata:
-
-    """
-    This will be a list of API paths to classes that use the accessor.
-    """
-
-    classes_using_accessor: List[str]
-    """
-    This will be the property name that the classes above use to access the accessor. Eg. str, cd.
-    """
-    property_name: str
 
 
 def get_accessor_to_classes_using():
