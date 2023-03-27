@@ -4,7 +4,9 @@ from featurebyte import EventTable
 
 event_table = EventTable.get_by_id(ObjectId("{table_id}"))
 event_view = event_table.get_view(
-    view_mode="manual", drop_column_names=["created_at"], column_cleaning_operations=[]
+    view_mode="manual",
+    drop_column_names=["created_at"],
+    column_cleaning_operations=[],
 )
 col = event_view["col_float"]
 col_1 = event_view["col_int"]

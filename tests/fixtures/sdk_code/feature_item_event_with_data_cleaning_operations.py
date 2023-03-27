@@ -18,13 +18,17 @@ item_view = item_table.get_view(
     event_drop_column_names=["created_at"],
     event_column_cleaning_operations=[
         ColumnCleaningOperation(
-            column_name="col_int", cleaning_operations=[MissingValueImputation(imputed_value=-99)]
+            column_name="col_int",
+            cleaning_operations=[MissingValueImputation(imputed_value=-99)],
         )
     ],
     event_join_column_names=["event_timestamp", "cust_id"],
 )
 feat = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
-    value_column="cust_id_event_table", method="sum", feature_name="order_size", skip_fill_na=True
+    value_column="cust_id_event_table",
+    method="sum",
+    feature_name="order_size",
+    skip_fill_na=True,
 )
 feat_1 = feat + 123
 feat_1.name = "feat"

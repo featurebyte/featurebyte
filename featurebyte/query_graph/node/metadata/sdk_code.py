@@ -444,5 +444,5 @@ class CodeGenerator(BaseModel):
             statements=statements,
         )
         if to_format:
-            return format_str(code, mode=FileMode(line_length=100))
+            return format_str(code, mode=FileMode(line_length=80))
         return code

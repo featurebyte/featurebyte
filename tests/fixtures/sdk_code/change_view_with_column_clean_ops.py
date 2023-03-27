@@ -13,7 +13,8 @@ change_view = scd_table.get_change_view(
     drop_column_names=[],
     column_cleaning_operations=[
         ColumnCleaningOperation(
-            column_name="col_int", cleaning_operations=[MissingValueImputation(imputed_value=0)]
+            column_name="col_int",
+            cleaning_operations=[MissingValueImputation(imputed_value=0)],
         )
     ],
 )

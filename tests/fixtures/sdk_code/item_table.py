@@ -22,7 +22,9 @@ item_table = ItemTable(
     tabular_source=TabularSource(
         feature_store_id=ObjectId("{feature_store_id}"),
         table_details=TableDetails(
-            database_name="sf_database", schema_name="sf_schema", table_name="items_table"
+            database_name="sf_database",
+            schema_name="sf_schema",
+            table_name="items_table",
         ),
     ),
     columns_info=[
