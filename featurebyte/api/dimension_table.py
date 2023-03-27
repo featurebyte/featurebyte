@@ -78,7 +78,7 @@ class DimensionTable(TableApiObject):
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> DimensionView:
         """
-        Get a DimensionView from a dimension table.
+        Get a DimensionView from a catalog dimension table.
 
         You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
         constructed from the source table without any changes to the cleaning operations, or dropping column names.

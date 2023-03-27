@@ -94,7 +94,7 @@ class ItemTable(TableApiObject):
         event_join_column_names: Optional[List[str]] = None,
     ) -> ItemView:
         """
-        Get an ItemView from an item table.
+        Get an ItemView from a catalog item table.
 
         You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
         constructed from the source table without any changes to the cleaning operations, or dropping column names.
