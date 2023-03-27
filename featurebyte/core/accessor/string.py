@@ -64,6 +64,8 @@ class StringAccessor:
         """
         Compute length of each string element.
 
+        This operation can be used by both features and views.
+
         Returns
         -------
         FrozenSeries
@@ -95,6 +97,8 @@ class StringAccessor:
     def lower(self) -> FrozenSeries:
         """
         Convert each string element to lower case.
+
+        This operation can be used by both features and views.
 
         Returns
         -------
@@ -128,6 +132,8 @@ class StringAccessor:
         """
         Convert each string element to upper case.
 
+        This operation can be used by both features and views.
+
         Returns
         -------
         FrozenSeries
@@ -160,6 +166,8 @@ class StringAccessor:
     def strip(self, to_strip: Optional[str] = None) -> FrozenSeries:
         """
         Remove leading and trailing characters (whitespaces by default) from each string element.
+
+        This operation can be used by both features and views.
 
         Parameters
         ----------
@@ -199,6 +207,8 @@ class StringAccessor:
         """
         Remove leading characters (whitespaces by default) from each string element.
 
+        This operation can be used by both features and views.
+
         Parameters
         ----------
         to_strip: Optional[str]
@@ -237,6 +247,8 @@ class StringAccessor:
         """
         Remove leading characters (whitespaces by default) from each string element.
 
+        This operation can be used by both features and views.
+
         Parameters
         ----------
         to_strip: Optional[str]
@@ -274,6 +286,8 @@ class StringAccessor:
     def replace(self, pat: str, repl: str) -> FrozenSeries:
         """
         Replace the substring within each string element.
+
+        This operation can be used by both features and views.
 
         Parameters
         ----------
@@ -314,6 +328,8 @@ class StringAccessor:
     def pad(self, width: int, side: Side = "left", fillchar: str = " ") -> FrozenSeries:
         """
         Pad each string element up to the specified width.
+
+        This operation can be used by both features and views.
 
         Parameters
         ----------
@@ -357,6 +373,8 @@ class StringAccessor:
         """
         Check whether each string element contains the provided substring pattern.
 
+        This operation can be used by both features and views.
+
         Parameters
         ----------
         pat: str
@@ -398,6 +416,8 @@ class StringAccessor:
     ) -> FrozenSeries:
         """
         Slice substring from each string element.
+
+        This operation can be used by both features and views.
 
         Parameters
         ----------

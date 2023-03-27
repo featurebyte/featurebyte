@@ -113,6 +113,8 @@ class DatetimeAccessor:
         """
         Return the year component of each element.
 
+        This operation can be used by both features and views.
+
         Returns
         -------
         FrozenSeries
@@ -138,6 +140,8 @@ class DatetimeAccessor:
     def quarter(self) -> FrozenSeries:
         """
         Return the quarter component of each element.
+
+        This operation can be used by both features and views.
 
         Returns
         -------
@@ -165,6 +169,8 @@ class DatetimeAccessor:
         """
         Return the day component of each element.
 
+        This operation can be used by both features and views.
+
         Returns
         -------
         FrozenSeries
@@ -190,6 +196,8 @@ class DatetimeAccessor:
     def week(self) -> FrozenSeries:
         """
         Return the week component of each element.
+
+        This operation can be used by both features and views.
 
         Returns
         -------
@@ -219,6 +227,8 @@ class DatetimeAccessor:
 
         This is also available for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
+
+        This operation can be used by both features and views.
 
         Returns
         -------
@@ -262,6 +272,8 @@ class DatetimeAccessor:
 
         The day of week is mapped to an integer value ranging from 0 (Monday) to 6 (Sunday).
 
+        This operation can be used by both features and views.
+
         Returns
         -------
         FrozenSeries
@@ -288,6 +300,8 @@ class DatetimeAccessor:
 
         This is also available for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
+
+        This operation can be used by both features and views.
 
         Returns
         -------
@@ -318,6 +332,8 @@ class DatetimeAccessor:
         This is also available for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
 
+        This operation can be used by both features and views.
+
         Returns
         -------
         FrozenSeries
@@ -346,6 +362,8 @@ class DatetimeAccessor:
 
         This is also available for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
+
+        This operation can be used by both features and views.
 
         Returns
         -------
@@ -377,6 +395,8 @@ class DatetimeAccessor:
         This is available only for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
 
+        This operation can be used by both features and views.
+
         Returns
         -------
         FrozenSeries
@@ -391,6 +411,8 @@ class DatetimeAccessor:
 
         This is available only for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
+
+        This operation can be used by both features and views.
 
         Returns
         -------
