@@ -63,7 +63,7 @@ def test_dimension_lookup_features(dimension_view):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_is_in__target_is_scalar_sequence(event_table):
+def test_is_in_view_column__target_is_array(event_table):
     """
     Test view column's isin() method with scalar sequence as target
     """

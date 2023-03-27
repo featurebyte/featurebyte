@@ -979,17 +979,21 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         >>> view = catalog.get_table("GROCERYPRODUCT").get_view()
         >>> condition = view["ProductGroup"].isin(["Sauces", "Fromages", "Fruits"])
-        >>> view[condition].preview(5)
+        >>> view[condition].sample(5, seed=0)
+                             GroceryProductGuid ProductGroup
+        0  45cd58ba-efec-463a-9107-0633168a215e     Fromages
+        1  97e6afc9-1033-4fb3-b2a2-3d62261e1d17     Fromages
+        2  fb26ed22-524e-4c9e-9ea2-03c266e7f9b9     Fromages
+        3  a817d904-bc58-4048-978d-c13857969a69       Fruits
+        4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
 
+        Create a new feature that checks whether a lookup feature is contained in the keys of a
+        dictionary feature:
 
-        Check to see if a lookup feature values are the keys of a dictionary feature
-
-        >>> lookup_feature.isin(dictionary_feature) # doctest: +SKIP
-
-
-        Check to see if the values in a series are of values [True, False]
-
-        >>> series.isin([True, False]) # doctest: +SKIP
+        >>> lookup_feature = catalog.get_feature("ProductGroupLookup")
+        >>> dictionary_feature = catalog.get_feature("CustomerProductGroupCounts_7d")
+        >>> new_feature = lookup_feature.isin(dictionary_feature)
+        >>> new_feature.name = "CustomerHasProductGroup_7d"
         """
         self.validate_isin_operation(other)
 
