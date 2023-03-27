@@ -5,7 +5,6 @@ from typing import List, Optional, Set
 
 import copy
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
@@ -126,26 +125,6 @@ def combine_column_info_of_views(
         if filter_set is None or column_info.name in filter_set:
             joined_columns_info.append(column_info)
     return joined_columns_info
-
-
-def join_tabular_data_ids(
-    data_ids_a: List[PydanticObjectId], data_ids_b: List[PydanticObjectId]
-) -> List[PydanticObjectId]:
-    """
-    Joins two list of table IDs.
-
-    Parameters
-    ----------
-    data_ids_a: List[PydanticObjectId]
-        table IDs A
-    data_ids_b: List[PydanticObjectId]
-        table IDs B
-
-    Returns
-    -------
-    List[PydanticObjectId]
-    """
-    return sorted(set(data_ids_a + data_ids_b))
 
 
 def is_column_name_in_columns(column_name: str, columns_info: List[ColumnInfo]) -> bool:

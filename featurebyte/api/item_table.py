@@ -10,7 +10,6 @@ from pydantic import Field, StrictStr, root_validator
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.event_table import EventTable
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.join_utils import join_tabular_data_ids
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
@@ -218,7 +217,6 @@ class ItemTable(TableApiObject):
             tabular_source=self.tabular_source,
             columns_info=columns_info,
             node_name=inserted_graph_node.name,
-            tabular_data_ids=join_tabular_data_ids([self.id], event_view.tabular_data_ids),
             event_id_column=self.event_id_column,
             item_id_column=self.item_id_column,
             event_table_id=self.event_table_id,

@@ -134,6 +134,10 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         raw_graph = document.graph
         graph, node_name = await self.prepare_graph_to_store(feature=document)
 
+        # create a new feature document (so that the derived attributes like tabular_data_ids is
+        # generated properly)
+        document = FeatureModel(**{**document.json_dict(), "graph": graph, "node_name": node_name})
+
         async with self.persistent.start_transaction() as session:
             # check any conflict with existing documents
             await self._check_document_unique_constraints(document=document)
@@ -142,7 +146,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             table_service = TableService(
                 user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
             )
-            for tabular_data_id in data.tabular_data_ids:
+            for tabular_data_id in document.tabular_data_ids:
                 _ = await table_service.get_document(document_id=tabular_data_id)
 
             insert_id = await session.insert_one(

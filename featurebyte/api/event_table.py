@@ -166,7 +166,6 @@ class EventTable(TableApiObject):
             tabular_source=self.tabular_source,
             columns_info=columns_info,
             node_name=inserted_graph_node.name,
-            tabular_data_ids=[self.id],
             default_feature_job_setting=self.default_feature_job_setting,
             event_id_column=self.event_id_column,
         )

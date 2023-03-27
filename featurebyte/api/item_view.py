@@ -10,7 +10,6 @@ from pydantic import Field
 from featurebyte.api.event_view import EventView
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.join_utils import join_tabular_data_ids
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType
@@ -119,12 +118,7 @@ class ItemView(View, GroupByMixin):
                 metadata_kwargs["timestamp_column_name"] = right_out_col
 
         # Update metadata only after validation is done & join node is inserted
-        joined_tabular_data_ids = join_tabular_data_ids(
-            self.tabular_data_ids, self.event_view.tabular_data_ids
-        )
-        self._update_metadata(
-            node.name, joined_columns_info, joined_tabular_data_ids, **metadata_kwargs
-        )
+        self._update_metadata(node.name, joined_columns_info, **metadata_kwargs)
 
     @property
     def timestamp_column(self) -> str:

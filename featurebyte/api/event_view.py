@@ -12,7 +12,6 @@ from pydantic import Field
 from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.join_utils import join_tabular_data_ids
 from featurebyte.common.typing import validate_type_is_feature
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
@@ -378,10 +377,5 @@ class EventView(View, GroupByMixin):
             )
         )
 
-        # Construct new tabular_data_ids
-        joined_tabular_data_ids = join_tabular_data_ids(
-            self.tabular_data_ids, feature.tabular_data_ids
-        )
-
         # Update metadata
-        self._update_metadata(node.name, updated_columns_info, joined_tabular_data_ids)
+        self._update_metadata(node.name, updated_columns_info)
