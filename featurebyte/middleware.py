@@ -228,17 +228,11 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
     Middleware used by FastAPI to send telemetry logs
     """
 
-    def __init__(self, app: FastAPI, endpoint: str):
+    def __init__(self, app: FastAPI, endpoint: str, id: str, ip: str):
         super().__init__(app)
         self.endpoint = endpoint
-
-    # Refer https://www.geeksforgeeks.org/extracting-mac-address-using-python/
-    # joins elements of getnode() after each 2 digits.
-    @staticmethod
-    def __get_server_uuid() -> str:
-        return ":".join(
-            [f"{(uuid.getnode() >> ele) & 0xff:02x}" for ele in range(0, 8 * 6, 8)][::-1]
-        )
+        self.id = id
+        self.ip = ip
 
     async def _send_telemetry(self, payload: Dict[str, Any]) -> None:
         try:
@@ -279,7 +273,8 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
         payload = {
             "method": request.method,
             "path": request.url.path,
-            "user": self.__get_server_uuid(),
+            "user": self.id,
+            "ip": self.ip,
             "trace": trace,
         }
         if response.background is None:
