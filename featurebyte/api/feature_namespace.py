@@ -5,9 +5,12 @@ from typing import List, Optional, Union
 
 import pandas as pd
 
-from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
-from featurebyte.api.base_table import TableApiObject
-from featurebyte.api.entity import Entity
+from featurebyte.api.api_object import ApiObject
+from featurebyte.api.feature_util import (
+    FEATURE_COMMON_LIST_FIELDS,
+    FEATURE_LIST_FOREIGN_KEYS,
+    filter_feature_list,
+)
 from featurebyte.common.utils import convert_to_list_of_strings
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import (
@@ -34,21 +37,9 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     _get_schema = FeatureNamespaceModelResponse
     _list_fields = [
         "name",
-        "dtype",
-        "readiness",
-        "online_enabled",
-        "tables",
-        "primary_tables",
-        "entities",
-        "primary_entities",
-        "created_at",
+        *FEATURE_COMMON_LIST_FIELDS,
     ]
-    _list_foreign_keys = [
-        ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", TableApiObject, "tables"),
-        ForeignKeyMapping("primary_entity_ids", Entity, "primary_entities"),
-        ForeignKeyMapping("primary_table_ids", TableApiObject, "primary_tables"),
-    ]
+    _list_foreign_keys = FEATURE_LIST_FOREIGN_KEYS
 
     @property
     def feature_ids(self) -> List[PydanticObjectId]:
@@ -141,19 +132,4 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
             Table of features
         """
         feature_list = super().list(include_id=include_id)
-        target_entities = convert_to_list_of_strings(primary_entity)
-        target_tables = convert_to_list_of_strings(primary_table)
-
-        if target_entities:
-            feature_list = feature_list[
-                feature_list.primary_entities.apply(
-                    lambda entities: all(entity in entities for entity in target_entities)
-                )
-            ]
-        if target_tables:
-            feature_list = feature_list[
-                feature_list.primary_tables.apply(
-                    lambda tables: all(table in tables for table in target_tables)
-                )
-            ]
-        return feature_list
+        return filter_feature_list(feature_list, primary_entity, primary_table)
