@@ -22,7 +22,9 @@ event_table = EventTable(
     tabular_source=TabularSource(
         feature_store_id=ObjectId("{feature_store_id}"),
         table_details=TableDetails(
-            database_name="sf_database", schema_name="sf_schema", table_name="sf_table"
+            database_name="sf_database",
+            schema_name="sf_schema",
+            table_name="sf_table",
         ),
     ),
     columns_info=[

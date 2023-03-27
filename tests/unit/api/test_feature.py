@@ -1109,9 +1109,7 @@ def test_feature_definition(feature_with_clean_column_names):
     feature, _ = feature_with_clean_column_names
 
     # before save, the redundant cleaning operation should be included
-    redundant_clean_op = (
-        'column_name="col_int", cleaning_operations=[MissingValueImputation(imputed_value=-1)]'
-    )
+    redundant_clean_op = 'column_name="col_int",'
     assert redundant_clean_op in feature.definition
 
     # after save, the redundant cleaning operation should be removed
@@ -1134,10 +1132,12 @@ def test_feature_definition(feature_with_clean_column_names):
         drop_column_names=["created_at"],
         column_cleaning_operations=[
             ColumnCleaningOperation(
-                column_name="col_float", cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+                column_name="col_float",
+                cleaning_operations=[MissingValueImputation(imputed_value=-1)],
             ),
             ColumnCleaningOperation(
-                column_name="cust_id", cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+                column_name="cust_id",
+                cleaning_operations=[MissingValueImputation(imputed_value=-1)],
             ),
         ],
     )

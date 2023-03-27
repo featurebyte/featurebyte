@@ -171,7 +171,11 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
         feature_store_id = api_object.feature_store.id
         if update_fixtures:
             # escape certain characters so that jinja can handle it properly
+            sdk_version = get_version()
             formatted_sdk_code = sdk_code.replace("{", "{{").replace("}", "}}")
+            formatted_sdk_code = formatted_sdk_code.replace(
+                f"SDK version: {sdk_version}", "SDK version: {sdk_version}"
+            )
 
             # convert the object id to a placeholder
             formatted_sdk_code = formatted_sdk_code.replace(

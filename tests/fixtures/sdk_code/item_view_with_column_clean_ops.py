@@ -24,13 +24,15 @@ item_view = item_table.get_view(
     event_drop_column_names=[],
     event_column_cleaning_operations=[
         ColumnCleaningOperation(
-            column_name="col_int", cleaning_operations=[MissingValueImputation(imputed_value=0)]
+            column_name="col_int",
+            cleaning_operations=[MissingValueImputation(imputed_value=0)],
         ),
         ColumnCleaningOperation(
             column_name="col_char",
             cleaning_operations=[
                 UnexpectedValueImputation(
-                    imputed_value="unknown", expected_values=["a", "b", "c", "unknown"]
+                    imputed_value="unknown",
+                    expected_values=["a", "b", "c", "unknown"],
                 )
             ],
         ),

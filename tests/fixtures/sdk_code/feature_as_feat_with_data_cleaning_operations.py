@@ -11,7 +11,8 @@ item_view = item_table.get_view(
     drop_column_names=[],
     column_cleaning_operations=[
         ColumnCleaningOperation(
-            column_name="item_amount", cleaning_operations=[MissingValueImputation(imputed_value=0)]
+            column_name="item_amount",
+            cleaning_operations=[MissingValueImputation(imputed_value=0)],
         )
     ],
     event_drop_column_names=["created_at"],
@@ -19,7 +20,9 @@ item_view = item_table.get_view(
     event_join_column_names=["event_timestamp", "cust_id"],
 )
 grouped = item_view.as_features(
-    column_names=["item_amount"], feature_names=["ItemAmountFeature"], offset=None
+    column_names=["item_amount"],
+    feature_names=["ItemAmountFeature"],
+    offset=None,
 )
 feat = grouped["ItemAmountFeature"]
 output = feat
