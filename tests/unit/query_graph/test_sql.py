@@ -575,6 +575,7 @@ def test_datediff_resolves_correctly(dataframe):
         (None, "NULL"),
         (True, "TRUE"),
         (False, "FALSE"),
+        (["a", "b"], "ARRAY('a', 'b')"),
     ],
 )
 def test_make_literal_value(value, expected_sql):
