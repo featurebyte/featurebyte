@@ -142,6 +142,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [TABLE, INFO, "Table.column_cleaning_operations"],
             "Table.column_cleaning_operations",
+            "api.base_table.TableApiObject.column_cleaning_operations.md",
         ),
         DocLayoutItem(
             [TABLE, INFO, "Table.columns"],

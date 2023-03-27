@@ -140,12 +140,10 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
 
         Examples
         --------
+        Add missing value imputation & negative value imputation operations to a table column.
 
-        Add missing value imputation & negative value imputation operations to a table column
-
-        >>> import featurebyte as fb
-        >>> event_table = fb.EventTable.get("Credit Card Transactions")  # doctest: +SKIP
-        >>> event_table["AMOUNT"].update_critical_data_info(  # doctest: +SKIP
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(
         ...    cleaning_operations=[
         ...        fb.MissingValueImputation(imputed_value=0),
         ...        fb.ValueBeyondEndpointImputation(
@@ -154,19 +152,16 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         ...    ]
         ... )
 
-        Check the column info to confirm that critical table info is updated
+        Show column cleaning operations of the event table.
 
-        >>> event_table["AMOUNT"].info.dict()  # doctest: +SKIP
-        {'critical_data_info': {'cleaning_operations': [{'imputed_value': 0,
-                                                 'type': 'missing'},
-                                                {'end_point': 0,
-                                                 'imputed_value': 0,
-                                                 'type': 'less_than'}]},
-         'dtype': 'FLOAT',
-         'entity_id': None,
-         'name': 'Discount',
-         'semantic_id': None}
+        >>> event_table.column_cleaning_operations
+        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing), ValueBeyondEndpointImputation(imputed_value=0, type=less_than, end_point=0)])]
 
+        Remove cleaning operations and show the column cleaning operations of the event table.
+
+        >>> event_table["Amount"].update_critical_data_info(cleaning_operations=[])
+        >>> event_table.column_cleaning_operations
+        []
         """
         critical_data_info = CriticalDataInfo(cleaning_operations=cleaning_operations)
         column_info = ColumnInfo(**{**self.info.dict(), "critical_data_info": critical_data_info})
@@ -281,6 +276,37 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
             return self.cached_model.columns_info  # pylint: disable=no-member
         except RecordRetrievalException:
             return self.internal_columns_info
+
+    @property
+    def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+        """
+        List of column cleaning operations associated with this table. Column cleaning operation is a list of
+        cleaning operations to be applied to a column of this table.
+
+        Returns
+        -------
+        List[ColumnCleaningOperation]
+            List of column cleaning operations
+
+        Examples
+        --------
+        Show the list of column cleaning operations of an event table
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table.column_cleaning_operations
+        []
+
+        See Also
+        --------
+        - [TableColumn.update_critical_data_info](/reference/featurebyte.api.base_table.TableColumn.update_critical_data_info)
+        """
+        return [
+            ColumnCleaningOperation(
+                column_name=col.name, cleaning_operations=col.critical_data_info.cleaning_operations
+            )
+            for col in self.columns_info
+            if col.critical_data_info is not None and col.critical_data_info.cleaning_operations
+        ]
 
     @property
     def status(self) -> TableStatus:
