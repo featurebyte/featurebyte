@@ -217,7 +217,16 @@ class Feature(
     FeatureJobMixin,
 ):  # pylint: disable=too-many-public-methods
     """
-    Feature class
+    A feature is input data that is used to train Machine Learning models and compute predictions.
+
+    These features can sometimes be derived from attributes already present in the source tables. For instance, a
+    customer churn model can use features obtained directly from a customer profile table, such as age, gender,
+    income, and location.
+
+    However, in most cases, features are created by applying a series of row transformations, joins, filters, and
+    aggregates. For instance, a customer churn model may utilize aggregate features that reflect the customer's
+    account details over a given period, such as the entropy of product types purchased over the past 12 weeks,
+    the count of canceled orders over the past 56 weeks, and the amount of money spent over the past 7 days.
     """
 
     # documentation metadata
