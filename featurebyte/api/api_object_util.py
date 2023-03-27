@@ -8,7 +8,7 @@ import threading
 
 from rich.pretty import pretty_repr
 
-from featurebyte import Configurations
+from featurebyte.config import Configurations
 from featurebyte.logger import logger
 
 
