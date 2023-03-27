@@ -19,7 +19,24 @@ from featurebyte.models.proxy_table import ProxyTableModel
 
 class Table(ProxyTableModel, TableListMixin):
     """
-    Table class
+    A Table serves as a logical representation of a source table within the Catalog. The Table does not store data
+    itself, but instead provides a way to access the source table and centralize essential metadata for feature
+    engineering.
+
+    The metadata on the table’s type determines the types of feature engineering operations that are possible and
+    enforce guardrails accordingly. Additional metadata can be optionally incorporated to further aid feature
+    engineering. This can include identifying columns that identify or reference entities, providing information
+    about the semantics of the table columns, specifying default cleaning operations, or furnishing descriptions of
+    both the table and its columns.
+
+    At present, FeatureByte recognizes four table types:
+
+    - Event Table
+    - Item Table
+    - Slowly Changing Dimension Table
+    - Dimension Table.
+
+    Two additional table types, Regular Time Series and Sensor data, will be supported in the near future.
     """
 
     # documentation metadata

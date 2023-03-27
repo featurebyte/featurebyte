@@ -588,14 +588,18 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
 
 class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, FeatureJobMixin):
     """
-    FeatureList represents the persisted version of a collection of a features.
+    A Feature List is a set of features that is typically crafted to address a specific Use Case, and is typically how
+    a user interacts with their collection of features.
 
-    The FeatureList is typically how a user interacts with their collection of features.
+    The primary entity of the Feature List, which determines its main focus, is determined by analyzing the relationship
+    between the primary entities of the individual features listed. Usually, the primary entity of the Feature List
+    aligns with that of the Use Case. Nevertheless, if there is a mismatch, the serving entities of the Feature List
+    are utilized to evaluate its compatibility with the Use Case.
 
-    items : list[Union[Feature, BaseFeatureGroup]]
-        List of feature like objects to be used to create the FeatureList
-    name : str
-        Name of the FeatureList
+    In order to obtain EDA, training or test data for a Use Case, the Feature List is first used to gather historical
+    feature values, which are then employed to analyze features and train and test models. Once a model has been
+    trained and validated, the Feature List is deployed, and the feature values can be accessed through online serving
+    to generate predictions.
     """
 
     # documentation metadata

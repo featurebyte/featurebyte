@@ -215,7 +215,29 @@ class GroupByMixin:
 
 class View(ProtectedColumnsQueryObject, Frame, ABC):
     """
-    View class that is the base class of any View (e.g. EventView)
+    Views are cleaned versions of Catalog tables and offer a flexible and efficient way to work with Catalog tables.
+    They allow operations like creating new columns, filtering records, conditionally editing columns, extracting lags,
+    capturing attribute changes, and joining views, similar to Pandas. Unlike Pandas DataFrames, which require loading
+    all data into memory, views are materialized only when needed during previews or feature materialization.
+
+    When a view is created, it inherits the metadata of the Catalog Table it originated from. There are currently five
+    types of views supported:
+
+    - Event Views
+    - Item Views
+    - Dimension Views
+    - Slowly Changing Dimension (SCD) Views
+    - Change Views
+
+    The syntax used to manipulate data in a FeatureByte view is similar to a Pandas DataFrame.
+
+    By default, data accessed through views is cleaned according to the default cleaning operations specified in the
+    Catalog Tables. However, it is still possible to perform data manipulation based on the raw data present in the
+    source table using the raw view attribute or to overwrite the cleaning operations when the view is created.
+
+    View operations are only materialized for purposes such as samples, exploratory data analysis, or feature
+    materialization. FeatureByte follows a lazy execution strategy where view operations are translated into a
+    graphical representation of intended operations.
     """
 
     __fbautodoc__ = FBAutoDoc(

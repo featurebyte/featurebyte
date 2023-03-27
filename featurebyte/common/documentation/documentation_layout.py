@@ -476,8 +476,7 @@ def _get_feature_group_layout() -> List[DocLayoutItem]:
         The layout for the FeatureGroup class.
     """
     return [
-        # FEATURE_GROUP
-        # DocLayout([FEATURE_GROUP], "", "api.feature_list.FeatureGroup.md"),
+        DocLayoutItem([FEATURE_GROUP], "FeatureGroup", "api.feature_list.FeatureGroup.md"),
         DocLayoutItem(
             [FEATURE_GROUP, CREATE, "FeatureGroup"],
             "FeatureGroup",
