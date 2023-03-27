@@ -97,19 +97,6 @@ class AccessorMetadata:
     property_name: str
 
 
-def get_section_from_class_obj(class_obj):
-    """
-    This returns the top level doc group. Specifically, the menu item (eg. View, Data etc.)
-    """
-    # check for customized categorization specified in the class
-    autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-    if autodoc_config.section is not None:
-        return autodoc_config.section
-    elif GENERATE_FULL_DOCS:
-        return class_obj.__module__.split(".") + [class_obj.__name__]
-    return None
-
-
 def get_class_members_and_fields_for_class_obj(class_obj):
     class_members = sorted([attr for attr in dir(class_obj) if not attr.startswith("_")])
     fields = getattr(class_obj, "__fields__", None)
@@ -233,36 +220,6 @@ def add_class_attributes_to_doc_groups(
             attribute_type,
             member_proxy_path,
         )
-    return doc_groups
-
-
-def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
-    """
-    This returns a dictionary of doc groups.
-    """
-    doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
-    for module_str in get_featurebyte_python_files():
-        try:
-            for class_obj in get_classes_for_module(module_str):
-                autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-                menu_section = get_section_from_class_obj(class_obj)
-                # Skip if the class is not tagged with the `__fbautodoc__` attribute.
-                if not menu_section:
-                    continue
-
-                doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(
-                    doc_groups, autodoc_config, menu_section, class_obj
-                )
-                doc_groups = add_class_attributes_to_doc_groups(
-                    doc_groups,
-                    class_obj,
-                    autodoc_config,
-                    proxy_path,
-                    menu_section,
-                    class_doc_group,
-                )
-        except ModuleNotFoundError:
-            continue
     return doc_groups
 
 
@@ -430,9 +387,53 @@ class DocsBuilder:
     DocsBuilder is a class to build the API docs.
     """
 
-    def __init__(self, gen_files_open, set_edit_path):
+    def __init__(self, gen_files_open, set_edit_path, should_generate_full_docs=False):
         self.gen_files_open = gen_files_open
         self.set_edit_path = set_edit_path
+        self.should_generate_full_docs = os.environ.get(
+            "FB_GENERATE_FULL_DOCS", should_generate_full_docs
+        )
+
+    def get_doc_groups(self) -> Dict[DocGroupKey, DocGroupValue]:
+        """
+        This returns a dictionary of doc groups.
+        """
+        doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
+        for module_str in get_featurebyte_python_files():
+            try:
+                for class_obj in get_classes_for_module(module_str):
+                    autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
+                    menu_section = self.get_section_from_class_obj(class_obj)
+                    # Skip if the class is not tagged with the `__fbautodoc__` attribute.
+                    if not menu_section:
+                        continue
+
+                    doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(
+                        doc_groups, autodoc_config, menu_section, class_obj
+                    )
+                    doc_groups = add_class_attributes_to_doc_groups(
+                        doc_groups,
+                        class_obj,
+                        autodoc_config,
+                        proxy_path,
+                        menu_section,
+                        class_doc_group,
+                    )
+            except ModuleNotFoundError:
+                continue
+        return doc_groups
+
+    def get_section_from_class_obj(self, class_obj):
+        """
+        This returns the top level doc group. Specifically, the menu item (eg. View, Data etc.)
+        """
+        # check for customized categorization specified in the class
+        autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
+        if autodoc_config.section is not None:
+            return autodoc_config.section
+        elif self.should_generate_full_docs:
+            return class_obj.__module__.split(".") + [class_obj.__name__]
+        return None
 
     def initialize_missing_debug_doc(self):
         """
@@ -565,7 +566,7 @@ class DocsBuilder:
 
         # Build docs
         nav_to_use = BetaWave3Nav()
-        doc_groups_to_use = get_doc_groups()
+        doc_groups_to_use = self.get_doc_groups()
         proxied_path_to_markdown_path = self.generate_documentation_for_docs(doc_groups_to_use)
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
