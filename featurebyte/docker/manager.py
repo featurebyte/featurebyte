@@ -8,6 +8,7 @@ import pwd
 import sys
 import tempfile
 import time
+import uuid
 from contextlib import contextmanager
 from enum import Enum
 
@@ -255,7 +256,9 @@ def start_app(
 
             # Set telemetry id to be passed to container
             try:
-                os.environ["FEATUREBYTE_TELEMETRY_ID"] = pwd.getpwuid(os.getuid())[0]
+                os.environ["FEATUREBYTE_TELEMETRY_ID"] = ":".join(
+                    [f"{(uuid.getnode() >> ele) & 0xff:02x}" for ele in range(0, 8 * 6, 8)][::-1]
+                )
             except Exception:  # pylint: disable=broad-except
                 pass
 
@@ -293,7 +296,8 @@ def start_app(
         __delete_docker_backup()
 
 
-def start_playground(local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True, force_import: bool = False) -> None:
+def start_playground(local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True,
+                     force_import: bool = False) -> None:
     """
     Start featurebyte playground environment
 
