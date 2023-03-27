@@ -1,0 +1,42 @@
+.md-typeset h1 {
+  color: var(--md-default-fg-color);
+  font-weight: 600;
+  font-size: 2.4em;
+  margin-bottom: 1em;
+}
+
+.md-typeset h2 {
+  font-weight: 600;
+}
+
+.md-typeset h3 {
+  font-weight: 600;
+  font-size: 1.05em;
+}
+
+.md-typeset .headerlink {
+  display: inline;
+}
+
+.md-header__topic .md-ellipsis {
+  display: none;
+}
+
+.md-header {
+  padding: 10px 0px 0px 0px;
+  background-image: url("/assets/learn-background@2x.jpg");
+  background-position: center center;
+  background-size: cover;
+}
+
+.md-header .md-tabs {
+  background-color: transparent;
+}
+
+.md-header__button.md-logo :-webkit-any(img,svg){
+  height: 1.5rem;
+}
+
+.md-search__form {
+  border-radius: 1rem;
+}

@@ -1,7 +1,7 @@
 site_name: FeatureByte
-repo_name: featurebyte/featurebyte
-repo_url: https://github.com/featurebyte/featurebyte
-edit_uri: blob/main/
+#repo_name: featurebyte/featurebyte
+#repo_url: https://github.com/featurebyte/featurebyte
+edit_uri: ""
 watch:
   - featurebyte
 
@@ -10,6 +10,8 @@ nav:
 
 theme:
   language: en
+  font:
+    text: Inter
   name: material
   palette:
     # Palette toggle for automatic mode
@@ -35,13 +37,14 @@ theme:
         name: Switch to system preference
   homepage: https://featurebyte.com
   favicon: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
-  logo: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
+  logo: assets/logo.png
   features:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.indexes
     - navigation.instant
     - instant
+  custom_dir: docs/overrides
 
 plugins:
   - search
@@ -71,6 +74,7 @@ markdown_extensions:
 
 extra_css:
   - css/code_select.css
+  - css/extra.css
 
 extra:
   consent:
