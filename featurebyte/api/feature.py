@@ -69,6 +69,8 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceUpdate,
 )
 
+# pylint: disable=too-many-lines
+
 
 class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     """
