@@ -18,7 +18,7 @@ from typing import (
 
 from abc import ABC, abstractmethod
 
-from pydantic import Field, PrivateAttr
+from pydantic import PrivateAttr
 from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
@@ -34,7 +34,6 @@ from featurebyte.common.join_utils import (
     is_column_name_in_columns,
 )
 from featurebyte.common.model_util import validate_offset_string
-from featurebyte.common.typing import Scalar, ScalarSequence
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin

@@ -5,7 +5,6 @@ from typing import List, Optional, Set
 
 import copy
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
