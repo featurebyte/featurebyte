@@ -1100,9 +1100,15 @@ class Series(FrozenSeries):
         Examples
         --------
 
-        Fill missing values with 0:
+        Fill missing values in a column with 0:
 
         >>> view = catalog.get_table("GROCERYINVOICE").get_view()
         >>> view["Amount"].fillna(0)
+
+
+        Fill missing values in a feature with 0:
+
+        >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
+        >>> feature.fillna(0)
         """
         self[self.isnull()] = other
