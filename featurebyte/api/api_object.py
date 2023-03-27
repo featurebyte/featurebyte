@@ -321,6 +321,10 @@ class ApiObject(FeatureByteBaseDocumentModel):
         Get a Feature object that is already saved.
 
         >>> feature = fb.Feature.get("InvoiceCount_60days")
+
+        Get a Feature Store that is already saved.
+
+        >>> feature_store = fb.FeatureStore.get("playground")
         """
         return cls._get(name)
 
@@ -460,17 +464,25 @@ class ApiObject(FeatureByteBaseDocumentModel):
     @classmethod
     def list(cls, include_id: Optional[bool] = False) -> DataFrame:
         """
-        List the object name store at the persistent
+        List objects name stored in the persistent data store.
 
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include id in the list.
 
         Returns
         -------
         DataFrame
-            Table of objects
+            Table of objects.
+
+        Examples
+        --------
+        Note that the examples below are not exhaustive.
+
+        List all feature stores.
+
+        >>> feature_stores = fb.FeatureStore.list()
         """
         return cls._list(include_id=include_id)
 
