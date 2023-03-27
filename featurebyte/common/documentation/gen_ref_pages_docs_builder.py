@@ -19,7 +19,6 @@ from featurebyte.common.documentation.custom_nav import BetaWave3Nav
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 from featurebyte.logger import logger
 
-GENERATE_FULL_DOCS = os.environ.get("FB_GENERATE_FULL_DOCS", False)
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
 MISSING_DEBUG_MARKDOWN = "missing.md"
 
