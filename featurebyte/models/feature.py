@@ -18,6 +18,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
     VersionIdentifier,
 )
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -150,9 +151,7 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
 
     # pydantic validators
-    _sort_ids_validator = validator("entity_ids", "tabular_data_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
+    _sort_ids_validator = validator("entity_ids", allow_reuse=True)(construct_sort_validator())
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
     @property
@@ -178,10 +177,16 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 graph = QueryGraphModel(**dict(graph))
 
             node_name = values["node_name"]
+            node = graph.get_node_by_name(node_name)
             primary_input_nodes = graph.get_primary_input_nodes(node_name=node_name)
-            values["primary_table_ids"] = [
+            values["primary_table_ids"] = sorted(
                 node.parameters.id for node in primary_input_nodes if node.parameters.id
-            ]
+            )
+            values["tabular_data_ids"] = sorted(
+                node.parameters.id
+                for node in graph.iterate_nodes(target_node=node, node_type=NodeType.INPUT)
+                if node.parameters.id
+            )
         return values
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:

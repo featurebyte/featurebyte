@@ -83,26 +83,6 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             ],
         ),
         (
-            {**payload, "tabular_data_ids": []},
-            [
-                {
-                    "loc": ["body", "tabular_data_ids"],
-                    "msg": "ensure this value has at least 1 items",
-                    "type": "value_error.list.min_items",
-                    "ctx": {"limit_value": 1},
-                },
-                {
-                    "loc": ["body", "source_feature_id"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
-                },
-            ],
-        ),
-        (
-            {**payload, "_id": object_id, "name": "random_name", "tabular_data_ids": [object_id]},
-            f'Table (id: "{object_id}") not found. Please save the Table object first.',
-        ),
-        (
             {**payload, "_id": object_id, "name": "random_name"},
             (
                 'Feature (name: "random_name") object(s) within the same namespace must have '

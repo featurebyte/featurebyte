@@ -354,10 +354,6 @@
     },
     "name": "item_event_sum_cust_id_feature",
     "node_name": "project_1",
-    "tabular_data_ids": [
-        "6337f9651050ee7d5980660d",
-        "6337f9651050ee7d5980662d"
-    ],
     "tabular_source": {
         "feature_store_id": "6414004ac6834e5117ec155c",
         "table_details": {

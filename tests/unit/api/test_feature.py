@@ -351,18 +351,6 @@ def test_info(saved_feature):
     }, verbose_info_dict
 
 
-def test_feature_save__exception_due_to_event_table_not_saved(float_feature, snowflake_event_table):
-    """
-    Test feature save failure due to event table not saved
-    """
-    random_id = ObjectId()
-    with pytest.raises(RecordCreationException) as exc:
-        float_feature.__dict__["tabular_data_ids"] = [random_id]  # assign a random table ids
-        float_feature.save()
-    expected_msg = f'Table (id: "{random_id}") not found. Please save the Table object first.'
-    assert expected_msg in str(exc.value)
-
-
 def test_feature_save__exception_due_to_feature_saved_before(float_feature, saved_feature):
     """
     Test feature save failure due to event table not saved
