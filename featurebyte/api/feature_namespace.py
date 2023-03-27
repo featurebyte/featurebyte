@@ -11,7 +11,6 @@ from featurebyte.api.feature_util import (
     FEATURE_LIST_FOREIGN_KEYS,
     filter_feature_list,
 )
-from featurebyte.common.utils import convert_to_list_of_strings
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import (
     DefaultVersionMode,
