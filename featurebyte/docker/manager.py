@@ -272,12 +272,13 @@ def start_app(
                     )
                     if spinner_status:
                         spinner_status.update(statuses)
-                    time.sleep(5)
+                    time.sleep(1)
 
             if verbose:
                 with console.status("Waiting for services to be healthy...") as spinner_status:
                     _wait_for_healthy(spinner_status)
-                console.print(Panel(Align.left(messages[app_name]["start"]), title=app_name.value, width=120))
+                if app_name in messages:
+                    console.print(Panel(Align.left(messages[app_name]["start"]), title=app_name.value, width=120))
             else:
                 _wait_for_healthy()
 
@@ -286,7 +287,7 @@ def start_app(
         __delete_docker_backup()
 
 
-def start_playground(local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True) -> None:
+def start_playground(local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True, force_import: bool = False) -> None:
     """
     Start featurebyte playground environment
 
@@ -298,25 +299,21 @@ def start_playground(local: bool = False, datasets: Optional[List[str]] = None, 
         List of datasets to import, by default None (import all datasets)
     docs_enabled : bool
         Enable documentation service, by default True
+    force_import : bool
+        Import datasets even if they are already imported, by default False
     """
     logger.info("Starting featurebyte service")
     start_app(ApplicationName.FEATUREBYTE, local=local, verbose=False)
     logger.info("Starting local spark service")
     start_app(ApplicationName.SPARK, local=local, verbose=False)
-    if docs_enabled:
+    if docs_enabled and not local:
         logger.info("Starting documentation service")
         start_app(ApplicationName.DOCS, local=local, verbose=False)
-
-    # import datasets
-    datasets = datasets or ["grocery", "healthcare", "creditcard"]
-    for dataset in datasets:
-        logger.info(f"Importing dataset: {dataset}")
-        import_dataset(dataset)
 
     # create local spark feature store
     logger.info("Creating local spark feature store")
     Configurations().use_profile("local")
-    FeatureStore.get_or_create(
+    feature_store = FeatureStore.get_or_create(
         name="playground",
         source_type=SourceType.SPARK,
         details=SparkDetails(
@@ -330,6 +327,16 @@ def start_playground(local: bool = False, datasets: Optional[List[str]] = None, 
             featurebyte_schema="playground",
         ),
     )
+
+    # import datasets
+    existing_datasets = feature_store.get_data_source().list_schemas(database_name="spark_catalog")
+    datasets = datasets or ["grocery", "healthcare", "creditcard"]
+    for dataset in datasets:
+        if not force_import and dataset in existing_datasets:
+            logger.info(f"Dataset {dataset} already exists, skipping import")
+            continue
+        logger.info(f"Importing dataset: {dataset}")
+        import_dataset(dataset)
 
 
 def stop_app(
@@ -348,7 +355,7 @@ def stop_app(
     """
     with get_docker_client(app_name) as docker:
         docker.compose.down()
-    if verbose:
+    if verbose and app_name in messages:
         console.print(Panel(Align.left(messages[app_name]["stop"]), title=app_name.value, width=120))
 
 

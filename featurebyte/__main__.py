@@ -38,9 +38,10 @@ def start(
 @app.command(name="playground")
 def playground(
     local: bool = typer.Option(default=False, help="Do not pull new images from registry"),
+    force_import: bool = typer.Option(default=False, help="Import datasets even if they exist"),
 ) -> None:
     """Start playground environment"""
-    start_playground(local)
+    start_playground(local, force_import=force_import)
 
 
 @app.callback(invoke_without_command=True)
@@ -52,13 +53,10 @@ def default(ctx: typer.Context) -> None:
 
 
 @app.command(name="stop")
-def stop(
-    app_name: ApplicationName = typer.Argument(
-        default="featurebyte", help="Name of application to stop"
-    )
-) -> None:
-    """Stop application"""
-    stop_app(app_name)
+def stop() -> None:
+    """Stop all applications"""
+    for app_name in ApplicationName:
+        stop_app(app_name)
 
 
 @app.command(name="logs")
