@@ -13,10 +13,11 @@ from bson import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, ForeignKeyMapping, SavableApiObject
+from featurebyte.api.api_object import ForeignKeyMapping, SavableApiObject
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
+from featurebyte.api.feature_namespace import FeatureNamespace
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.api.table import Table
@@ -42,7 +43,6 @@ from featurebyte.models.feature import (
     FeatureModel,
     FeatureReadiness,
     FrozenFeatureModel,
-    FrozenFeatureNamespaceModel,
 )
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
@@ -64,150 +64,6 @@ from featurebyte.schema.feature import (
     FeatureSQL,
     FeatureUpdate,
 )
-from featurebyte.schema.feature_namespace import (
-    FeatureNamespaceModelResponse,
-    FeatureNamespaceUpdate,
-)
-
-# pylint: disable=too-many-lines
-
-
-class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
-    """
-    FeatureNamespace represents a Feature set, in which all the features in the set have the same name. The different
-    elements typically refer to different versions of a Feature.
-    """
-
-    # class variables
-    _route = "/feature_namespace"
-    _update_schema_class = FeatureNamespaceUpdate
-    _list_schema = FeatureNamespaceModelResponse
-    _get_schema = FeatureNamespaceModelResponse
-    _list_fields = [
-        "name",
-        "dtype",
-        "readiness",
-        "online_enabled",
-        "tables",
-        "primary_tables",
-        "entities",
-        "primary_entities",
-        "created_at",
-    ]
-    _list_foreign_keys = [
-        ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", TableApiObject, "tables"),
-        ForeignKeyMapping("primary_entity_ids", Entity, "primary_entities"),
-        ForeignKeyMapping("primary_table_ids", TableApiObject, "primary_tables"),
-    ]
-
-    @property
-    def feature_ids(self) -> List[PydanticObjectId]:
-        """
-        List of feature IDs from the same feature namespace
-
-        Returns
-        -------
-        List[PydanticObjectId]
-        """
-        return self.cached_model.feature_ids
-
-    @property
-    def online_enabled_feature_ids(self) -> List[PydanticObjectId]:
-        """
-        List of online-enabled feature IDs from the same feature namespace
-
-        Returns
-        -------
-        List[PydanticObjectId]
-        """
-        return self.cached_model.online_enabled_feature_ids
-
-    @property
-    def readiness(self) -> FeatureReadiness:
-        """
-        Feature readiness of the default feature of this feature namespace
-
-        Returns
-        -------
-        FeatureReadiness
-        """
-        return self.cached_model.readiness
-
-    @property
-    def default_feature_id(self) -> PydanticObjectId:
-        """
-        Default feature ID of this feature namespace
-
-        Returns
-        -------
-        PydanticObjectId
-        """
-        return self.cached_model.default_feature_id
-
-    @property
-    def default_version_mode(self) -> DefaultVersionMode:
-        """
-        Default feature namespace version mode of this feature namespace
-
-        Returns
-        -------
-        DefaultVersionMode
-        """
-        return self.cached_model.default_version_mode
-
-    @classmethod
-    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
-        features = super()._post_process_list(item_list)
-        # add online_enabled
-        features["online_enabled"] = features[
-            ["default_feature_id", "online_enabled_feature_ids"]
-        ].apply(lambda row: row[0] in row[1], axis=1)
-        return features
-
-    @classmethod
-    def list(
-        cls,
-        include_id: Optional[bool] = False,
-        primary_entity: Optional[Union[str, List[str]]] = None,
-        primary_table: Optional[Union[str, List[str]]] = None,
-    ) -> pd.DataFrame:
-        """
-        List saved features
-
-        Parameters
-        ----------
-        include_id: Optional[bool]
-            Whether to include id in the list
-        primary_entity: Optional[Union[str, List[str]]]
-            Name of entity used to filter results. If multiple entities are provided, the filtered results will
-            contain features that are associated with all the entities.
-        primary_table: Optional[Union[str, List[str]]]
-            Name of table used to filter results. If multiple tables are provided, the filtered results will
-            contain features that are associated with all the tables.
-
-        Returns
-        -------
-        pd.DataFrame
-            Table of features
-        """
-        feature_list = super().list(include_id=include_id)
-        target_entities = convert_to_list_of_strings(primary_entity)
-        target_tables = convert_to_list_of_strings(primary_table)
-
-        if target_entities:
-            feature_list = feature_list[
-                feature_list.primary_entities.apply(
-                    lambda entities: all(entity in entities for entity in target_entities)
-                )
-            ]
-        if target_tables:
-            feature_list = feature_list[
-                feature_list.primary_tables.apply(
-                    lambda tables: all(table in tables for table in target_tables)
-                )
-            ]
-        return feature_list
 
 
 class Feature(
