@@ -5,9 +5,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar, Union
 
-import ctypes
 import operator
-import threading
 import time
 from dataclasses import dataclass
 from functools import partial
@@ -20,9 +18,9 @@ from cachetools import TTLCache, cachedmethod
 from cachetools.keys import hashkey
 from pandas import DataFrame
 from pydantic import Field
-from rich.pretty import pretty_repr
 from typeguard import typechecked
 
+from featurebyte.api.api_object_util import PrettyDict, ProgressThread
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.utils import construct_repr_string
 from featurebyte.config import Configurations
@@ -41,84 +39,6 @@ ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
-
-
-class ProgressThread(threading.Thread):
-    """
-    Thread to get progress updates from websocket
-    """
-
-    def __init__(self, task_id: str, progress_bar: Any) -> None:
-        self.task_id = task_id
-        self.progress_bar = progress_bar
-        threading.Thread.__init__(self)
-
-    def run(self) -> None:
-        """
-        Check progress updates from websocket
-        """
-        # receive message from websocket
-        with Configurations().get_websocket_client(task_id=self.task_id) as websocket_client:
-            try:
-                while True:
-                    logger.debug("Waiting for websocket message")
-                    message = websocket_client.receive_json()
-                    # socket closed
-                    if not message:
-                        break
-                    # update progress bar
-                    description = message.get("message")
-                    if description:
-                        self.progress_bar.text(description)
-                    percent = message.get("percent")
-                    if percent:
-                        # end of stream
-                        if percent == -1:
-                            break
-                        self.progress_bar(percent / 100)  # pylint: disable=not-callable
-            finally:
-                logger.debug("Progress tracking ended.")
-
-    def get_id(self) -> Optional[int]:
-        """
-        Returns id of the respective thread
-
-        Returns
-        -------
-        Optional[int]
-            thread id
-        """
-        # returns id of the respective thread
-        if hasattr(self, "_thread_id"):
-            return int(getattr(self, "_thread_id"))
-        active_threads = getattr(threading, "_active", {})
-        for thread_id, thread in active_threads.items():
-            if thread is self:
-                return int(thread_id)
-        return None
-
-    def raise_exception(self) -> None:
-        """
-        Raises SystemExit exception in the context of the given thread, which should
-        cause the thread to exit silently (unless caught).
-        """
-        thread_id = self.get_id()
-        if thread_id:
-            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
-                ctypes.c_long(thread_id), ctypes.py_object(SystemExit)
-            )
-            if res > 1:
-                ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
-                logger.warning("Exception raise failure")
-
-
-class PrettyDict(Dict[str, Any]):
-    """
-    Dict with prettified representation
-    """
-
-    def __repr__(self) -> str:
-        return pretty_repr(dict(self), expand_all=True, indent_size=2)
 
 
 def get_api_object_cache_key(
