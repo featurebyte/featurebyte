@@ -242,6 +242,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         >>> feature = fb.Feature.get("InvoiceCount_60days")
 
+
         Get a Feature Store that is already saved.
 
         >>> feature_store = fb.FeatureStore.get("playground")
