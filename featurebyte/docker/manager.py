@@ -69,6 +69,21 @@ messages = {
             """
         ),
     },
+    ApplicationName.DOCS: {
+        "start": (
+            """
+            [bold green]Docs application started successfully![/]
+
+            Documentation server now running at: [cyan underline]http://localhost:8089[/].
+            You can now view the documentation at the above URL.
+            """
+        ),
+        "stop": (
+            """
+            [bold green]Docs application stopped.[/]
+            """
+        ),
+    },
 }
 
 console = Console()
