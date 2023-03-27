@@ -178,7 +178,12 @@ def get_app() -> FastAPI:
     config = Configurations()
     # Add telemetry middleware if enabled
     if config.logging.telemetry:
-        _app.add_middleware(TelemetryMiddleware, endpoint=config.logging.telemetry_url)
+        _app.add_middleware(
+            TelemetryMiddleware,
+            endpoint=config.logging.telemetry_url,
+            user_id=config.logging.telemetry_id,
+            user_ip=config.logging.telemetry_ip,
+        )
 
     # Add exception middleware
     _app.add_middleware(ExceptionMiddleware)

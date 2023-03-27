@@ -4,9 +4,11 @@ Featurebyte tools for managing docker containers
 from typing import Generator, List, Optional
 
 import os
+import pwd
 import sys
 import tempfile
 import time
+import uuid
 from contextlib import contextmanager
 from enum import Enum
 
@@ -90,8 +92,6 @@ def get_docker_client(app_name: ApplicationName) -> Generator[DockerClient, None
     with tempfile.TemporaryDirectory() as temp_dir:
         compose_env_file = os.path.join(temp_dir, ".env")
         if sys.platform != "win32":
-            import pwd  # pylint: disable=import-outside-toplevel
-
             uid = os.getuid()
             user = pwd.getpwuid(uid)
             with open(compose_env_file, "w", encoding="utf8") as file_obj:
@@ -253,6 +253,15 @@ def start_app(
             if not local:
                 docker.compose.pull()
             __restore_docker_conf()  # Restore as early as possible
+
+            # Set telemetry id to be passed to container
+            try:
+                os.environ["FEATUREBYTE_TELEMETRY_ID"] = ":".join(
+                    [f"{(uuid.getnode() >> ele) & 0xff:02x}" for ele in range(0, 8 * 6, 8)][::-1]
+                )
+            except Exception:  # pylint: disable=broad-except
+                pass
+
             docker.compose.up(services=get_service_names(app_name), detach=True)
 
             # Wait for all services to be healthy
@@ -287,7 +296,8 @@ def start_app(
         __delete_docker_backup()
 
 
-def start_playground(local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True, force_import: bool = False) -> None:
+def start_playground(local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True,
+                     force_import: bool = False) -> None:
     """
     Start featurebyte playground environment
 
