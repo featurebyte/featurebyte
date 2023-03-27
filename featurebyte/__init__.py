@@ -1,5 +1,5 @@
 """Python Library for FeatureOps"""
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
@@ -52,6 +52,23 @@ from featurebyte.schema.feature_list import FeatureVersionInfo
 version: str = get_version()
 
 
+def use_profile(profile: str) -> Dict[str, str]:
+    """
+    Use service profile specified in configuration file
+
+    Parameters
+    ----------
+    profile: str
+        Profile name
+
+    Returns
+    -------
+    Dict[str, str]
+        Remote and local SDK versions
+    """
+    return Configurations().use_profile(profile)
+
+
 def start(local: bool = False) -> None:
     """
     Start featurebyte application
@@ -85,7 +102,10 @@ def stop() -> None:
 
 
 def playground(
-    local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True
+    local: bool = False,
+    datasets: Optional[List[str]] = None,
+    docs_enabled: bool = True,
+    force_import: bool = False,
 ) -> None:
     """
     Start playground environment
@@ -98,8 +118,12 @@ def playground(
         List of datasets to import, by default None (import all datasets)
     docs_enabled: bool
         Enable featurebyte-docs, by default True
+    force_import: bool
+        Import datasets even if they are already imported, by default False
     """
-    _start_playground(local=local, datasets=datasets, docs_enabled=docs_enabled)
+    _start_playground(
+        local=local, datasets=datasets, docs_enabled=docs_enabled, force_import=force_import
+    )
 
 
 __all__ = [
