@@ -16,7 +16,9 @@ item_view = item_table.get_view(
         ColumnCleaningOperation(
             column_name="item_amount",
             cleaning_operations=[
-                ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0),
+                ValueBeyondEndpointImputation(
+                    type="less_than", end_point=0, imputed_value=0
+                ),
                 StringValueImputation(imputed_value=0),
             ],
         )
