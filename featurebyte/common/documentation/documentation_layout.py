@@ -358,7 +358,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.abs"], "Feature.abs"),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.astype"], "Feature.astype"),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd"], "Feature.cd"),
         DocLayoutItem(
             [FEATURE, TRANSFORM, "Feature.cd.cosine_similarity"],
             "Feature.cd.cosine_similarity",
@@ -388,7 +387,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
             "Feature.cd.unique_count",
         ),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.ceil"], "Feature.ceil"),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.dt"], "Feature.dt"),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.exp"], "Feature.exp"),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.fillna"], "Feature.fillna"),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.floor"], "Feature.floor"),
@@ -407,7 +405,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.notnull"], "Feature.notnull"),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.pow"], "Feature.pow"),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.sqrt"], "Feature.sqrt"),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str"], "Feature.str"),
         DocLayoutItem(
             [FEATURE, TRANSFORM, "Feature.str.contains"],
             "Feature.str.contains",
@@ -616,16 +613,16 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([FEATURE_STORE], "FeatureStore"),
         DocLayoutItem(
-            [FEATURE_STORE, GET, "Catalog.get_feature_store"],
-            "Catalog.get_feature_store",
+            [FEATURE_STORE, GET, "FeatureStore.get"],
+            "FeatureStore.get",
         ),
         DocLayoutItem(
             [FEATURE_STORE, GET, "FeatureStore.get_by_id"],
             "FeatureStore.get_by_id",
         ),
         DocLayoutItem(
-            [FEATURE_STORE, LIST, "Catalog.list_feature_stores"],
-            "Catalog.list_feature_stores",
+            [FEATURE_STORE, LIST, "FeatureStore.list"],
+            "FeatureStore.list",
         ),
         DocLayoutItem(
             [FEATURE_STORE, CREATE, "FeatureStore.create"],
@@ -951,7 +948,6 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
             [VIEW_COLUMN, TRANSFORM, "ViewColumn.ceil"],
             "ViewColumn.ceil",
         ),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt"], "ViewColumn.dt"),
         *_get_datetime_accessor_properties_layout(VIEW_COLUMN),
         DocLayoutItem(
             [VIEW_COLUMN, TRANSFORM, "ViewColumn.exp"],
@@ -988,10 +984,6 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [VIEW_COLUMN, TRANSFORM, "ViewColumn.sqrt"],
             "ViewColumn.sqrt",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str"],
-            "ViewColumn.str",
         ),
         DocLayoutItem(
             [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.contains"],
