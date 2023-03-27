@@ -14,6 +14,7 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.enum import DBVarType
@@ -409,6 +410,8 @@ class SourceTable(AbstractTableData):
     """
     SourceTable class to preview table.
     """
+
+    __fbautodoc__ = FBAutoDoc(section=["Table"])
 
     _table_data_class: ClassVar[Type[AllTableDataT]] = SouceTableData
 
