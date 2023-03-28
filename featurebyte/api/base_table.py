@@ -274,6 +274,12 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     ] = Field(
         description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table."
     )
+    saved: bool = Field(
+        default=False,
+        allow_mutation=False,
+        exclude=True,
+        description="Flag to indicate whether the table is saved in the FeatureByte catalog.",
+    )
 
     # pydantic instance variable (internal use)
     internal_record_creation_timestamp_column: Optional[str] = Field(
@@ -305,7 +311,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         Returns
         -------
         List[ColumnInfo]
-            List of column information
+            List of column information.
 
         See Also
         --------
@@ -325,7 +331,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         Returns
         -------
         ObjectId
-            Catalog ID of the table
+            Catalog ID of the table.
 
         See Also
         --------
@@ -336,7 +342,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def primary_key_columns(self) -> List[str]:
         """
-        List of primary key columns of the table
+        List of primary key columns of the table.
 
         Returns
         -------

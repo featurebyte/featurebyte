@@ -173,7 +173,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def column_var_type_map(self) -> dict[str, DBVarType]:
         """
-        Column name to DB var type mapping
+        Column name to DB var type mapping.
 
         Returns
         -------
@@ -184,7 +184,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def dtypes(self) -> pd.Series:
         """
-        Retrieve column table type info
+        Retrieve column table type info.
 
         Returns
         -------
@@ -207,12 +207,12 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @typechecked
     def preview_sql(self, limit: int = 10) -> str:
         """
-        Generate SQL query to preview the transformation output
+        Generate SQL query to preview the transformation output.
 
         Parameters
         ----------
         limit: int
-            maximum number of return rows
+            Maximum number of return rows.
 
         Returns
         -------
@@ -223,12 +223,12 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @typechecked
     def preview_clean_data_sql(self, limit: int = 10) -> str:
         """
-        Generate SQL query to preview the table after applying list of cleaning operations
+        Generate SQL query to preview the table after applying list of cleaning operations.
 
         Parameters
         ----------
         limit: int
-            maximum number of return rows
+            Maximum number of return rows.
 
         Returns
         -------

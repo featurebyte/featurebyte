@@ -176,7 +176,11 @@ def _get_table_layout() -> List[DocLayoutItem]:
             "Table.record_creation_timestamp_column",
             "api.base_table.TableApiObject.record_creation_timestamp_column.md",
         ),
-        DocLayoutItem([TABLE, INFO, "Table.saved"], "Table.saved"),
+        DocLayoutItem(
+            [TABLE, INFO, "Table.saved"],
+            "Table.saved",
+            "api.base_table.TableApiObject.saved.md",
+        ),
         DocLayoutItem(
             [TABLE, INFO, "Table.status"],
             "Table.status",
