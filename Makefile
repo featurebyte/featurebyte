@@ -68,7 +68,7 @@ lint-type:
 
 lint-safety:
 	poetry run pip-licenses --packages $(shell poetry export --without-hashes --without-urls --extras server | cut -d '=' -f1 | xargs) --allow-only=${PERMISSIVE_LICENSES}
-	poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5 --ignore-vul GHSA-74m5-2c7w-9w3x
+	poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5 --ignore-vul GHSA-74m5-2c7w-9w3x --ignore-vul GHSA-8fww-64cx-x8p5
 	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing

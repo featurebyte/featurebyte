@@ -261,6 +261,8 @@ def start_app(
         Print verbose output
     """
     try:
+        # Load config to ensure it exists before starting containers
+        config = Configurations() # pylint: disable=unused-variable
         __setup_network()
         __backup_docker_conf()
         __use_docker_svc_account()
