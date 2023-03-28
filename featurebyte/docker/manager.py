@@ -69,6 +69,21 @@ messages = {
             """
         ),
     },
+    ApplicationName.DOCS: {
+        "start": (
+            """
+            [bold green]Docs application started successfully![/]
+
+            Documentation server now running at: [cyan underline]http://localhost:8089[/].
+            You can now view the documentation at the above URL.
+            """
+        ),
+        "stop": (
+            """
+            [bold green]Docs application stopped.[/]
+            """
+        ),
+    },
 }
 
 console = Console()
@@ -246,6 +261,8 @@ def start_app(
         Print verbose output
     """
     try:
+        # Load config to ensure it exists before starting containers
+        config = Configurations() # pylint: disable=unused-variable
         __setup_network()
         __backup_docker_conf()
         __use_docker_svc_account()

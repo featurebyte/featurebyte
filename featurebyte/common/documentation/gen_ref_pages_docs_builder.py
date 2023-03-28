@@ -19,72 +19,8 @@ from featurebyte.common.documentation.custom_nav import BetaWave3Nav
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 from featurebyte.logger import logger
 
-GENERATE_FULL_DOCS = os.environ.get("FB_GENERATE_FULL_DOCS", False)
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
 MISSING_DEBUG_MARKDOWN = "missing.md"
-
-
-def initialize_missing_debug_doc(gen_files_open):
-    """
-    This function initializes the debug doc file if it doesn't exist.
-    """
-    write_to_file(
-        f"reference/{MISSING_DEBUG_MARKDOWN}",
-        MISSING_DEBUG_MARKDOWN,
-        "The docstring is missing.",
-        gen_files_open,
-    )
-
-
-def get_section_from_class_obj(class_obj):
-    """
-    This returns the top level doc group. Specifically, the menu item (eg. View, Data etc.)
-    """
-    # check for customized categorization specified in the class
-    autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-    if autodoc_config.section is not None:
-        return autodoc_config.section
-    elif GENERATE_FULL_DOCS:
-        return class_obj.__module__.split(".") + [class_obj.__name__]
-    return None
-
-
-def get_class_members_and_fields_for_class_obj(class_obj):
-    class_members = sorted([attr for attr in dir(class_obj) if not attr.startswith("_")])
-    fields = getattr(class_obj, "__fields__", None)
-    if fields:
-        for name in fields.keys():
-            class_members.append(name)
-    return class_members, fields
-
-
-def get_featurebyte_python_files():
-    # this is a set of string of dir in featurebyte that are not part of stuff we want to document.
-    non_sdk_folders = {"docker"}
-    module_root_path = Path(featurebyte.__file__).parent
-    # parse every python file in featurebyte folder
-    for path in sorted(module_root_path.rglob("*.py")):
-        # Skip files in non_sdk_folders
-        if path.relative_to(module_root_path.parent).parts[1] in non_sdk_folders:
-            continue
-        # Skip __init__.py files
-        module_path = path.with_suffix("").relative_to(module_root_path.parent)
-        parts = tuple(module_path.parts)
-        if parts[-1] == "__init__":
-            continue
-        yield ".".join(parts)
-
-
-def get_classes_for_module(module_str):
-    # parse objects in python script
-    module = importlib.import_module(module_str)
-    module_members = sorted([attr for attr in dir(module) if not attr.startswith("_")])
-    for class_name in module_members:
-        # include only classes
-        class_obj = getattr(module, class_name)
-        if not inspect.isclass(class_obj):
-            continue
-        yield class_obj
 
 
 @dataclass
@@ -144,6 +80,58 @@ class DocGroupKey:
         if doc_group_value.proxy_path:
             return "#".join([base_path, doc_group_value.proxy_path])
         return base_path
+
+
+@dataclass
+class AccessorMetadata:
+
+    """
+    This will be a list of API paths to classes that use the accessor.
+    """
+
+    classes_using_accessor: List[str]
+    """
+    This will be the property name that the classes above use to access the accessor. Eg. str, cd.
+    """
+    property_name: str
+
+
+def get_class_members_and_fields_for_class_obj(class_obj):
+    class_members = sorted([attr for attr in dir(class_obj) if not attr.startswith("_")])
+    fields = getattr(class_obj, "__fields__", None)
+    if fields:
+        for name in fields.keys():
+            class_members.append(name)
+    return class_members, fields
+
+
+def get_featurebyte_python_files():
+    # this is a set of string of dir in featurebyte that are not part of stuff we want to document.
+    non_sdk_folders = {"docker"}
+    module_root_path = Path(featurebyte.__file__).parent
+    # parse every python file in featurebyte folder
+    for path in sorted(module_root_path.rglob("*.py")):
+        # Skip files in non_sdk_folders
+        if path.relative_to(module_root_path.parent).parts[1] in non_sdk_folders:
+            continue
+        # Skip __init__.py files
+        module_path = path.with_suffix("").relative_to(module_root_path.parent)
+        parts = tuple(module_path.parts)
+        if parts[-1] == "__init__":
+            continue
+        yield ".".join(parts)
+
+
+def get_classes_for_module(module_str):
+    # parse objects in python script
+    module = importlib.import_module(module_str)
+    module_members = sorted([attr for attr in dir(module) if not attr.startswith("_")])
+    for class_name in module_members:
+        # include only classes
+        class_obj = getattr(module, class_name)
+        if not inspect.isclass(class_obj):
+            continue
+        yield class_obj
 
 
 def add_class_to_doc_group(doc_groups, autodoc_config, menu_section, class_obj):
@@ -234,36 +222,6 @@ def add_class_attributes_to_doc_groups(
     return doc_groups
 
 
-def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
-    """
-    This returns a dictionary of doc groups.
-    """
-    doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
-    for module_str in get_featurebyte_python_files():
-        try:
-            for class_obj in get_classes_for_module(module_str):
-                autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-                menu_section = get_section_from_class_obj(class_obj)
-                # Skip if the class is not tagged with the `__fbautodoc__` attribute.
-                if not menu_section:
-                    continue
-
-                doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(
-                    doc_groups, autodoc_config, menu_section, class_obj
-                )
-                doc_groups = add_class_attributes_to_doc_groups(
-                    doc_groups,
-                    class_obj,
-                    autodoc_config,
-                    proxy_path,
-                    menu_section,
-                    class_doc_group,
-                )
-        except ModuleNotFoundError:
-            continue
-    return doc_groups
-
-
 def should_skip_path(components) -> bool:
     """
     Check whether to skip path
@@ -288,20 +246,35 @@ def should_skip_path(components) -> bool:
     return False
 
 
-def write_nav_to_file(filepath, local_path, nav, gen_files_open):
-    with gen_files_open(filepath, "w") as fd:
-        fd.writelines(nav.build_literate_nav())
-    if DEBUG_MODE:
-        with open(f"debug/{local_path}_local.txt", "w") as local_file:
-            local_file.writelines(nav.build_literate_nav())
+def get_accessor_to_classes_using():
+    """
+    Return a dict mapping an accessor to its metadata.
 
-
-def write_to_file(filepath, local_path, output, gen_files_open):
-    with gen_files_open(filepath, "w") as fd:
-        fd.writelines(output)
-    if DEBUG_MODE:
-        with open(f"debug/{local_path}_local.txt", "w") as local_file:
-            local_file.writelines(output)
+    Note that the key should be a unique string that globally identifies the accessor across all API paths. If there
+    are multiple accessors with the same name, then you should include some of the module path in the key.
+    """
+    return {
+        "StringAccessor": AccessorMetadata(
+            classes_using_accessor=[
+                "featurebyte.Feature",
+                "featurebyte.ViewColumn",
+            ],
+            property_name="str",
+        ),
+        "CountDictAccessor": AccessorMetadata(
+            classes_using_accessor=[
+                "featurebyte.Feature",
+            ],
+            property_name="cd",
+        ),
+        "DatetimeAccessor": AccessorMetadata(
+            classes_using_accessor=[
+                "featurebyte.Feature",
+                "featurebyte.ViewColumn",
+            ],
+            property_name="dt",
+        ),
+    }
 
 
 def build_markdown_format_str(obj_path, obj_type, api_to_use):
@@ -377,66 +350,6 @@ def get_api_path_to_use(doc_path, base_path, accessor_property_name):
     return ".".join([base_path, accessor_property_name, function_name])
 
 
-@dataclass
-class AccessorMetadata:
-
-    """
-    This will be a list of API paths to classes that use the accessor.
-    """
-
-    classes_using_accessor: List[str]
-    """
-    This will be the property name that the classes above use to access the accessor. Eg. str, cd.
-    """
-    property_name: str
-
-
-def get_accessor_to_classes_using():
-    """
-    Return a dict mapping an accessor to its metadata.
-
-    Note that the key should be a unique string that globally identifies the accessor across all API paths. If there
-    are multiple accessors with the same name, then you should include some of the module path in the key.
-    """
-    return {
-        "StringAccessor": AccessorMetadata(
-            classes_using_accessor=[
-                "featurebyte.Feature",
-                "featurebyte.ViewColumn",
-            ],
-            property_name="str",
-        ),
-        "CountDictAccessor": AccessorMetadata(
-            classes_using_accessor=[
-                "featurebyte.Feature",
-            ],
-            property_name="cd",
-        ),
-        "DatetimeAccessor": AccessorMetadata(
-            classes_using_accessor=[
-                "featurebyte.Feature",
-                "featurebyte.ViewColumn",
-            ],
-            property_name="dt",
-        ),
-    }
-
-
-def _build_and_write_to_file(
-    obj_path, doc_group_value, api_to_use, doc_path, path_components, set_edit_path, gen_files_open
-):
-    # build string to write to file
-    format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
-
-    # write documentation page to file
-    full_doc_path = Path("reference", doc_path)
-    write_to_file(full_doc_path, doc_path, format_str, gen_files_open)
-
-    # Set edit path for the documentation. This will be the link that links back to where the code is defined.
-    source_path = "/".join(path_components) + ".py"
-    set_edit_path(full_doc_path, source_path)
-
-
 def _get_accessor_metadata(doc_path):
     """
     Get accessor metadata for a given doc path, or None if it is not an accessor.
@@ -446,75 +359,6 @@ def _get_accessor_metadata(doc_path):
         if key in doc_path:
             return accessor_to_classes[key]
     return None
-
-
-def generate_documentation_for_docs(doc_groups, set_edit_path, gen_files_open):
-    # A list of all the markdown files generated. Used for debugging.
-    # This reverse lookup map has a key of the user-accessible API path, and the value of the markdown file for
-    # the documentation.
-    reverse_lookup_map = {}
-    paths_to_document = get_paths_to_document()
-    # create documentation page for each object
-    for doc_group_key, doc_group_value in doc_groups.items():
-        path_components = doc_group_key.module_path.split(".")
-        if should_skip_path(path_components):
-            continue
-
-        # determine file path for documentation page
-        doc_path = doc_group_key.get_markdown_doc_path()
-
-        # generate markdown for documentation page
-        obj_path = doc_group_key.get_obj_path(doc_group_value)
-        lookup_path = infer_api_path_from_obj_path(obj_path)
-        accessor_metadata = _get_accessor_metadata(doc_path)
-        if (
-            lookup_path not in paths_to_document
-            and doc_path.lower() not in paths_to_document
-            and not accessor_metadata
-        ):
-            # Skip if this is not a path we want to document.
-            continue
-
-        api_to_use = paths_to_document.get(lookup_path, None)
-        if not api_to_use:
-            api_to_use = paths_to_document.get(doc_path.lower(), None)
-
-        # add obj_path to reverse lookup map
-        reverse_lookup_map[lookup_path] = doc_path
-
-        if accessor_metadata:
-            # If this is an accessor, then we need to generate documentation for all the classes that use it.
-            for class_to_use in accessor_metadata.classes_using_accessor:
-                api_path = get_api_path_to_use(
-                    doc_path, class_to_use, accessor_metadata.property_name
-                )
-                doc_path = api_path + ".md"
-                reverse_lookup_map[api_path.lower()] = doc_path
-                _build_and_write_to_file(
-                    obj_path,
-                    doc_group_value,
-                    api_path,
-                    doc_path,
-                    path_components,
-                    set_edit_path,
-                    gen_files_open,
-                )
-        else:
-            _build_and_write_to_file(
-                obj_path,
-                doc_group_value,
-                api_to_use,
-                doc_path,
-                path_components,
-                set_edit_path,
-                gen_files_open,
-            )
-
-    if DEBUG_MODE:
-        with open("debug/proxied_path_to_markdown_path.json", "w") as f:
-            f.write(json.dumps(reverse_lookup_map, indent=4))
-
-    return reverse_lookup_map
 
 
 def populate_nav(nav, proxied_path_to_markdown_path):
@@ -537,39 +381,201 @@ def populate_nav(nav, proxied_path_to_markdown_path):
     return nav
 
 
-def write_summary_page(nav, gen_files_open):
+class DocsBuilder:
     """
-    Write the SUMMARY.md file for the API Reference section.
+    DocsBuilder is a class to build the API docs.
+    """
 
-    The summary page is what mkdocs uses to generate the navigation for the API Reference section.
-    """
-    logger.info("Writing API Reference SUMMARY")
-    write_nav_to_file("reference/SUMMARY.md", "summary", nav, gen_files_open)
+    def __init__(self, gen_files_open, set_edit_path, should_generate_full_docs=False):
+        self.gen_files_open = gen_files_open
+        self.set_edit_path = set_edit_path
+        self.should_generate_full_docs = os.environ.get(
+            "FB_GENERATE_FULL_DOCS", should_generate_full_docs
+        )
+
+    def get_doc_groups(self) -> Dict[DocGroupKey, DocGroupValue]:
+        """
+        This returns a dictionary of doc groups.
+        """
+        doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
+        for module_str in get_featurebyte_python_files():
+            try:
+                for class_obj in get_classes_for_module(module_str):
+                    autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
+                    menu_section = self.get_section_from_class_obj(class_obj)
+                    # Skip if the class is not tagged with the `__fbautodoc__` attribute.
+                    if not menu_section:
+                        continue
+
+                    doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(
+                        doc_groups, autodoc_config, menu_section, class_obj
+                    )
+                    doc_groups = add_class_attributes_to_doc_groups(
+                        doc_groups,
+                        class_obj,
+                        autodoc_config,
+                        proxy_path,
+                        menu_section,
+                        class_doc_group,
+                    )
+            except ModuleNotFoundError:
+                continue
+        return doc_groups
+
+    def get_section_from_class_obj(self, class_obj):
+        """
+        This returns the top level doc group. Specifically, the menu item (eg. View, Data etc.)
+        """
+        # check for customized categorization specified in the class
+        autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
+        if autodoc_config.section is not None:
+            return autodoc_config.section
+        elif self.should_generate_full_docs:
+            return class_obj.__module__.split(".") + [class_obj.__name__]
+        return None
+
+    def initialize_missing_debug_doc(self):
+        """
+        This function initializes the debug doc file if it doesn't exist.
+        """
+        self.write_to_file(
+            f"reference/{MISSING_DEBUG_MARKDOWN}",
+            MISSING_DEBUG_MARKDOWN,
+            "The docstring is missing.",
+        )
+
+    def write_nav_to_file(self, filepath, local_path, nav):
+        with self.gen_files_open(filepath, "w") as fd:
+            fd.writelines(nav.build_literate_nav())
+        if DEBUG_MODE:
+            with open(f"debug/{local_path}_local.txt", "w") as local_file:
+                local_file.writelines(nav.build_literate_nav())
+
+    def write_to_file(self, filepath, local_path, output):
+        with self.gen_files_open(filepath, "w") as fd:
+            fd.writelines(output)
+        if DEBUG_MODE:
+            with open(f"debug/{local_path}_local.txt", "w") as local_file:
+                local_file.writelines(output)
+
+    def _build_and_write_to_file(
+        self, obj_path, doc_group_value, api_to_use, doc_path, path_components
+    ):
+        # build string to write to file
+        format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
+
+        # write documentation page to file
+        full_doc_path = Path("reference", doc_path)
+        self.write_to_file(full_doc_path, doc_path, format_str)
+
+        # Set edit path for the documentation. This will be the link that links back to where the code is defined.
+        source_path = "/".join(path_components) + ".py"
+        self.set_edit_path(full_doc_path, source_path)
+
+    def generate_documentation_for_docs(self, doc_groups):
+        # A list of all the markdown files generated. Used for debugging.
+        # This reverse lookup map has a key of the user-accessible API path, and the value of the markdown file for
+        # the documentation.
+        reverse_lookup_map = {}
+        paths_to_document = get_paths_to_document()
+        # create documentation page for each object
+        for doc_group_key, doc_group_value in doc_groups.items():
+            path_components = doc_group_key.module_path.split(".")
+            if should_skip_path(path_components):
+                continue
+
+            # determine file path for documentation page
+            doc_path = doc_group_key.get_markdown_doc_path()
+
+            # generate markdown for documentation page
+            obj_path = doc_group_key.get_obj_path(doc_group_value)
+            lookup_path = infer_api_path_from_obj_path(obj_path)
+            accessor_metadata = _get_accessor_metadata(doc_path)
+            if (
+                lookup_path not in paths_to_document
+                and doc_path.lower() not in paths_to_document
+                and not accessor_metadata
+            ):
+                # Skip if this is not a path we want to document.
+                continue
+
+            api_to_use = paths_to_document.get(lookup_path, None)
+            if not api_to_use:
+                api_to_use = paths_to_document.get(doc_path.lower(), None)
+
+            # add obj_path to reverse lookup map
+            reverse_lookup_map[lookup_path] = doc_path
+
+            if accessor_metadata:
+                # If this is an accessor, then we need to generate documentation for all the classes that use it.
+                for class_to_use in accessor_metadata.classes_using_accessor:
+                    api_path = get_api_path_to_use(
+                        doc_path, class_to_use, accessor_metadata.property_name
+                    )
+                    doc_path = api_path + ".md"
+                    reverse_lookup_map[api_path.lower()] = doc_path
+                    self._build_and_write_to_file(
+                        obj_path,
+                        doc_group_value,
+                        api_path,
+                        doc_path,
+                        path_components,
+                    )
+            else:
+                self._build_and_write_to_file(
+                    obj_path,
+                    doc_group_value,
+                    api_to_use,
+                    doc_path,
+                    path_components,
+                )
+
+        if DEBUG_MODE:
+            with open("debug/proxied_path_to_markdown_path.json", "w") as f:
+                f.write(json.dumps(reverse_lookup_map, indent=4))
+
+        return reverse_lookup_map
+
+    def write_summary_page(self, nav):
+        """
+        Write the SUMMARY.md file for the API Reference section.
+
+        The summary page is what mkdocs uses to generate the navigation for the API Reference section.
+        """
+        logger.info("Writing API Reference SUMMARY")
+        self.write_nav_to_file("reference/SUMMARY.md", "summary", nav)
+
+    def build_docs(self):
+        """
+        In order to generate the documentation, we perform the following steps:
+
+        get_doc_groups()
+        - Iterate through all the python files and parse out relevant classes, properties and methods
+
+        generate_documentation_for_docs()
+        - Generate markdown for each of these objects
+
+        populate_nav()
+        - Generate a nav object that contains the mapping of menu header to markdown file
+
+        write_summary_page()
+        - Generate a summary file which contains the navigation for the API Reference section
+        """
+        self.initialize_missing_debug_doc()
+
+        # Build docs
+        nav_to_use = BetaWave3Nav()
+        doc_groups_to_use = self.get_doc_groups()
+        proxied_path_to_markdown_path = self.generate_documentation_for_docs(doc_groups_to_use)
+        updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
+        self.write_summary_page(updated_nav)
 
 
 def build_docs(set_edit_path_fn, gen_files_open_fn):
     """
-    In order to generate the documentation, we perform the following steps:
+    This is the current public facing interface that is used in generating the docs.
 
-    get_doc_groups()
-    - Iterate through all the python files and parse out relevant classes, properties and methods
-
-    generate_documentation_for_docs()
-    - Generate markdown for each of these objects
-
-    populate_nav()
-    - Generate a nav object that contains the mapping of menu header to markdown file
-
-    write_summary_page()
-    - Generate a summary file which contains the navigation for the API Reference section
+    We can deprecate this once we update the callers to call the DocsBuilder class directly.
     """
-    initialize_missing_debug_doc(gen_files_open_fn)
-
-    # Build docs
-    nav_to_use = BetaWave3Nav()
-    doc_groups_to_use = get_doc_groups()
-    proxied_path_to_markdown_path = generate_documentation_for_docs(
-        doc_groups_to_use, set_edit_path_fn, gen_files_open_fn
-    )
-    updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
-    write_summary_page(updated_nav, gen_files_open_fn)
+    docs_builder = DocsBuilder(gen_files_open=gen_files_open_fn, set_edit_path=set_edit_path_fn)
+    docs_builder.build_docs()
