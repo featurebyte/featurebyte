@@ -30,8 +30,6 @@ class SQLNodeContext:
     """
     Context containing information required when constructing instances of SQLNode
 
-    Parameters
-    ----------
     graph : QueryGraphModel
         Query graph
     query_node : Node
@@ -42,6 +40,8 @@ class SQLNodeContext:
         Type of the data warehouse that the SQL will run on
     input_sql_nodes : list[SQLNode]
         List of input SQL nodes
+    to_filter_scd_by_current_flag : Optional[bool]
+        Whether to filter SCD table with current flag
     """
 
     graph: QueryGraphModel
@@ -49,9 +49,12 @@ class SQLNodeContext:
     sql_type: SQLType
     source_type: SourceType
     input_sql_nodes: list[SQLNode]
+    to_filter_scd_by_current_flag: Optional[bool]
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.dict()
+        if self.to_filter_scd_by_current_flag is None:
+            self.to_filter_scd_by_current_flag = False
 
     @property
     def adapter(self) -> BaseAdapter:

@@ -106,12 +106,17 @@ class SQLOperationGraph:
     """
 
     def __init__(
-        self, query_graph: QueryGraphModel, sql_type: SQLType, source_type: SourceType
+        self,
+        query_graph: QueryGraphModel,
+        sql_type: SQLType,
+        source_type: SourceType,
+        to_filter_scd_by_current_flag: bool = False,
     ) -> None:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
         self.query_graph = query_graph
         self.sql_type = sql_type
         self.source_type = source_type
+        self.to_filter_scd_by_current_flag = to_filter_scd_by_current_flag
 
     def build(self, target_node: Node) -> Any:
         """Build the graph from a given query Node, working backwards
@@ -173,6 +178,7 @@ class SQLOperationGraph:
             sql_type=self.sql_type,
             source_type=self.source_type,
             input_sql_nodes=input_sql_nodes,
+            to_filter_scd_by_current_flag=self.to_filter_scd_by_current_flag,
         )
 
         # Construct an appropriate SQLNode based on the candidates defined in NodeRegistry

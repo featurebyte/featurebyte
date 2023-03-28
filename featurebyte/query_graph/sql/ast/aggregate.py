@@ -13,7 +13,12 @@ from sqlglot.expressions import Expression, Select
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
-from featurebyte.query_graph.sql.specs import AggregateAsAtSpec, ItemAggregationSpec, LookupSpec
+from featurebyte.query_graph.sql.specs import (
+    AggregateAsAtSpec,
+    AggregationSource,
+    ItemAggregationSpec,
+    LookupSpec,
+)
 
 
 @dataclass  # type: ignore[misc]
@@ -84,6 +89,16 @@ class Aggregate(TableNode):
         dict[str, Expression]
         """
 
+    def to_aggregation_source(self) -> AggregationSource:
+        return self.get_aggregation_source_from_source_node(self.source_node)
+
+    @staticmethod
+    def get_aggregation_source_from_source_node(source_node: TableNode) -> AggregationSource:
+        return AggregationSource(
+            expr=cast(Select, source_node.sql),
+            query_node_name=source_node.context.query_node.name,
+        )
+
 
 @dataclass
 class Lookup(Aggregate):
@@ -100,7 +115,8 @@ class Lookup(Aggregate):
         # Create LookupSpec which determines the internal aggregated result names
         columns_map = {}
         specs = LookupSpec.from_query_graph_node(
-            context.query_node, source_expr=cast(Select, source_node.sql)
+            context.query_node,
+            aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
         )
         for spec in specs:
             columns_map[spec.feature_name] = quoted_identifier(spec.agg_result_name)
@@ -121,7 +137,8 @@ class AsAt(Aggregate):
     ) -> dict[str, Expression]:
         columns_map = {}
         spec = AggregateAsAtSpec.from_query_graph_node(
-            context.query_node, source_expr=cast(Select, source_node.sql)
+            context.query_node,
+            aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
         )[0]
         feature_name = cast(str, spec.parameters.name)
         columns_map[feature_name] = quoted_identifier(spec.agg_result_name)
@@ -142,7 +159,8 @@ class Item(Aggregate):
     ) -> dict[str, Expression]:
         columns_map = {}
         spec = ItemAggregationSpec.from_query_graph_node(
-            context.query_node, source_expr=cast(Select, source_node.sql)
+            context.query_node,
+            aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
         )[0]
         feature_name = cast(str, spec.parameters.name)
         columns_map[feature_name] = quoted_identifier(spec.agg_result_name)

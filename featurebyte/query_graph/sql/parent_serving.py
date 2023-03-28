@@ -112,8 +112,13 @@ def _get_lookup_spec_from_join_step(
         node=join_step.table.construct_input_node(feature_store_details=feature_store_details),
         input_nodes=[],
     )
+    # TODO: need to consider scd_parameters and is_online_serving (not yet passed in)
+    to_filter_scd_by_current_flag = False
     sql_operation_graph = SQLOperationGraph(
-        query_graph=graph, sql_type=SQLType.AGGREGATION, source_type=feature_store_details.type
+        query_graph=graph,
+        sql_type=SQLType.AGGREGATION,
+        source_type=feature_store_details.type,
+        to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
     )
     sql_input_node = sql_operation_graph.build(input_node)
     source_expr = sql_input_node.sql
@@ -124,9 +129,11 @@ def _get_lookup_spec_from_join_step(
         entity_column=join_step.child_key,
         serving_names=[join_step.child_serving_name],
         source_expr=source_expr,
+        query_node_name=input_node.name,
         scd_parameters=scd_parameters,
         event_parameters=event_parameters,
         serving_names_mapping=None,
         entity_ids=[],  # entity_ids doesn't matter in this case, passing empty list for convenience
         is_parent_lookup=True,
+        to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
     )

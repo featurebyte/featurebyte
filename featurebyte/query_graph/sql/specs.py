@@ -200,6 +200,13 @@ class TileBasedAggregationSpec(AggregationSpec):
         return aggregation_specs
 
 
+@dataclass
+class AggregationSource:
+
+    expr: Select
+    query_node_name: str
+
+
 @dataclass  # type: ignore[misc]
 class NonTileBasedAggregationSpec(AggregationSpec):
     """
@@ -207,10 +214,16 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     pre-aggregation
     """
 
+    to_filter_scd_by_current_flag: Optional[bool]
+
     @classmethod
-    def get_source_sql_expr(
-        cls, graph: QueryGraphModel, node: Node, source_type: SourceType
-    ) -> Select:
+    def get_aggregation_source(
+        cls,
+        graph: QueryGraphModel,
+        node: Node,
+        source_type: SourceType,
+        to_filter_scd_by_current_flag: bool,
+    ) -> AggregationSource:
         """
         Get the expression of the input view to be aggregated
 
@@ -229,14 +242,25 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Expression representing the source table
         """
         # pylint: disable=import-outside-toplevel
+        from featurebyte.query_graph.sql.ast.aggregate import Aggregate
         from featurebyte.query_graph.sql.builder import SQLOperationGraph
         from featurebyte.query_graph.sql.common import SQLType
 
         sql_node = SQLOperationGraph(
-            graph, sql_type=SQLType.AGGREGATION, source_type=source_type
+            graph,
+            sql_type=SQLType.AGGREGATION,
+            source_type=source_type,
+            to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
         ).build(node)
 
-        return cast(Select, sql_node.sql)
+        sql_node = cast(Aggregate, sql_node)
+        return sql_node.to_aggregation_source()  # type: ignore
+
+    @classmethod
+    def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
+        _ = graph
+        _ = node
+        return False
 
     @property
     def source_hash(self) -> str:
@@ -269,8 +293,9 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     def construct_specs(
         cls: Type[NonTileBasedAggregationSpecT],
         node: Node,
-        source_expr: Select,
+        aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
+        to_filter_scd_by_current_flag: Optional[bool],
     ) -> list[NonTileBasedAggregationSpecT]:
         """
         Construct the list of specifications
@@ -289,10 +314,12 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     def from_query_graph_node(
         cls: Type[NonTileBasedAggregationSpecT],
         node: Node,
-        source_expr: Optional[Select] = None,
+        aggregation_source: Optional[AggregationSource] = None,
         graph: Optional[QueryGraphModel] = None,
         source_type: Optional[SourceType] = None,
         serving_names_mapping: Optional[dict[str, str]] = None,
+        is_online_serving: Optional[bool] = None,
+        to_filter_scd_by_current_flag: Optional[bool] = None,
     ) -> list[NonTileBasedAggregationSpecT]:
         """Construct NonTileBasedAggregationSpec objects given a query graph node
 
@@ -308,20 +335,33 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Source type information. Mandatory if source_expr is not provided
         serving_names_mapping: Optional[dict[str, str]]
             Serving names mapping
+        is_online_serving: bool
+            Whether the query is for online serving
 
         Returns
         -------
         NonTileBasedAggregationSpecT
         """
-        if source_expr is None:
+        if aggregation_source is None:
             assert graph is not None
             assert source_type is not None
-            source_expr = cls.get_source_sql_expr(graph=graph, node=node, source_type=source_type)
+            assert to_filter_scd_by_current_flag is None
+            if is_online_serving and cls.should_filter_scd_by_current_flag(graph=graph, node=node):
+                to_filter_scd_by_current_flag = True
+            else:
+                to_filter_scd_by_current_flag = False
+            aggregation_source = cls.get_aggregation_source(
+                graph=graph,
+                node=node,
+                source_type=source_type,
+                to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
+            )
 
         return cls.construct_specs(
             node=node,
-            source_expr=source_expr,
+            aggregation_source=aggregation_source,
             serving_names_mapping=serving_names_mapping,
+            to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
         )
 
 
@@ -363,8 +403,9 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
     def construct_specs(
         cls,
         node: Node,
-        source_expr: Select,
+        aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
+        to_filter_scd_by_current_flag: Optional[bool],
     ) -> list[ItemAggregationSpec]:
         assert isinstance(node, ItemGroupbyNode)
         return [
@@ -372,8 +413,9 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
+                to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
                 parameters=node.parameters,
-                source_expr=source_expr,
+                source_expr=aggregation_source.expr,
             )
         ]
 
@@ -420,17 +462,19 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
     def construct_specs(
         cls,
         node: Node,
-        source_expr: Select,
-        serving_names_mapping: Optional[dict[str, str]] = None,
+        aggregation_source: AggregationSource,
+        serving_names_mapping: Optional[dict[str, str]],
+        to_filter_scd_by_current_flag: Optional[bool],
     ) -> list[AggregateAsAtSpec]:
         assert isinstance(node, AggregateAsAtNode)
         return [
             AggregateAsAtSpec(
                 parameters=node.parameters,
-                source_expr=source_expr,
+                source_expr=aggregation_source.expr,
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
+                to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
             )
         ]
 
@@ -448,13 +492,15 @@ class LookupSpec(NonTileBasedAggregationSpec):
     source_expr: Select
     scd_parameters: Optional[SCDLookupParameters]
     event_parameters: Optional[EventLookupParameters]
+    query_node_name: str
     is_parent_lookup: bool = False
 
     @property
     def agg_result_name(self) -> str:
         if self.is_parent_lookup:
             return self.feature_name
-        name = f"{self.input_column_name}_{self.source_hash}"
+        # name = f"{self.input_column_name}_{self.source_hash}"
+        name = f"{self.input_column_name}_{self.query_node_name}"
         return name
 
     @property
@@ -473,11 +519,28 @@ class LookupSpec(NonTileBasedAggregationSpec):
         return params
 
     @classmethod
+    def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
+        assert isinstance(node, LookupNode)
+        scd_parameters = node.parameters.scd_parameters
+        if scd_parameters is not None:
+            return cls.get_scd_filter_flag_from_scd_parameters(scd_parameters)
+        return False
+
+    @staticmethod
+    def get_scd_filter_flag_from_scd_parameters(scd_parameters: SCDLookupParameters) -> bool:
+        # Online serving might not have to use SCD join if current flag is applicable
+        current_flag_usable_for_online_serving = (
+            scd_parameters.current_flag_column is not None and scd_parameters.offset is None
+        )
+        return current_flag_usable_for_online_serving
+
+    @classmethod
     def construct_specs(
         cls,
         node: Node,
-        source_expr: Select,
+        aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
+        to_filter_scd_by_current_flag: Optional[bool],
     ) -> list[LookupSpec]:
         assert isinstance(node, LookupNode)
         params = node.parameters
@@ -490,9 +553,11 @@ class LookupSpec(NonTileBasedAggregationSpec):
                 entity_ids=[params.entity_id],
                 serving_names=[params.serving_name],
                 serving_names_mapping=serving_names_mapping,
-                source_expr=source_expr,
+                to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
+                source_expr=aggregation_source.expr,
                 scd_parameters=params.scd_parameters,
                 event_parameters=params.event_parameters,
+                query_node_name=aggregation_source.query_node_name,
             )
             specs.append(spec)
         return specs

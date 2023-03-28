@@ -75,8 +75,8 @@ class SCDView(View, GroupByMixin):
 
     def _get_additional_inherited_columns(self) -> set[str]:
         columns = {self.effective_timestamp_column}
-        if self.current_flag_column is not None:
-            columns.add(self.current_flag_column)
+        # if self.current_flag_column is not None:
+        #     columns.add(self.current_flag_column)
         return columns
 
     @property

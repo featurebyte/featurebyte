@@ -10,10 +10,10 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV8
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.online_store import OnlineFeatureSpec
-from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.working_schema import drop_all_objects
 from featurebyte.utils.credential import get_credential
+from tests.util.helper import make_online_request
 
 
 @pytest.fixture(scope="session")
@@ -56,18 +56,6 @@ def deployed_feature_list_fixture(event_table):
         features.deploy(make_production_ready=True, enable=True)
 
         yield features
-
-
-def make_online_request(client, feature_list, entity_serving_names):
-    """
-    Helper function to make an online request via REST API
-    """
-    data = FeatureListGetOnlineFeatures(entity_serving_names=entity_serving_names)
-    res = client.post(
-        f"/feature_list/{str(feature_list.id)}/online_features",
-        json=data.json_dict(),
-    )
-    return res
 
 
 @pytest.fixture(name="migration_service")
