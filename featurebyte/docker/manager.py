@@ -4,7 +4,6 @@ Featurebyte tools for managing docker containers
 from typing import Generator, List, Optional
 
 import os
-import pwd
 import sys
 import tempfile
 import time
@@ -107,6 +106,7 @@ def get_docker_client(app_name: ApplicationName) -> Generator[DockerClient, None
     with tempfile.TemporaryDirectory() as temp_dir:
         compose_env_file = os.path.join(temp_dir, ".env")
         if sys.platform != "win32":
+            import pwd  # pylint: disable=import-outside-toplevel
             uid = os.getuid()
             user = pwd.getpwuid(uid)
             with open(compose_env_file, "w", encoding="utf8") as file_obj:
