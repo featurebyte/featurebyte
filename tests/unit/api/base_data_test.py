@@ -7,6 +7,7 @@ import pytest
 
 from featurebyte.api.base_table import TableColumn
 from featurebyte.enum import StrEnum
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     MissingValueImputation,
@@ -107,13 +108,14 @@ class BaseTableTestSuite:
         assert data_sql == textwrap.dedent(self.expected_data_sql).strip()
         assert clean_data_sql == textwrap.dedent(self.expected_clean_data_sql).strip()
 
-        # check column_cleaning_operations property
+        # check table properties
         assert imputed_data_under_test.column_cleaning_operations == [
             ColumnCleaningOperation(
                 column_name=self.col,
                 cleaning_operations=[MissingValueImputation(imputed_value=0)],
             )
         ]
+        assert imputed_data_under_test.catalog_id == DEFAULT_CATALOG_ID
 
     def test_data_column_preview_sql(self, data_under_test):
         """

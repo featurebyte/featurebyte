@@ -149,7 +149,11 @@ def _get_table_layout() -> List[DocLayoutItem]:
             "Table.columns",
             "api.base_table.TableApiObject.columns.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
-        DocLayoutItem([TABLE, INFO, "Table.columns_info"], "Table.columns_info"),
+        DocLayoutItem(
+            [TABLE, INFO, "Table.columns_info"],
+            "Table.columns_info",
+            "api.base_table.TableApiObject.columns_info.md",
+        ),
         DocLayoutItem([TABLE, INFO, "Table.created_at"], "Table.created_at"),
         DocLayoutItem(
             [TABLE, INFO, "Table.dtypes"],
@@ -157,21 +161,43 @@ def _get_table_layout() -> List[DocLayoutItem]:
             "api.base_table.TableApiObject.dtypes.md",
         ),  # TODO: this is technically not correct since this operations are on the impl classes
         DocLayoutItem([TABLE, INFO, "Table.info"], "Table.info"),
-        DocLayoutItem([TABLE, INFO, "Table.name"], "Table.name"),
+        DocLayoutItem(
+            [TABLE, INFO, "Table.name"],
+            "Table.name",
+            "api.base_table.TableApiObject.name.md",
+        ),
         DocLayoutItem(
             [TABLE, INFO, "Table.primary_key_columns"],
             "Table.primary_key_columns",
+            "api.base_table.TableApiObject.primary_key_columns.md",
         ),
         DocLayoutItem(
             [TABLE, INFO, "Table.record_creation_timestamp_column"],
             "Table.record_creation_timestamp_column",
+            "api.base_table.TableApiObject.record_creation_timestamp_column.md",
         ),
         DocLayoutItem([TABLE, INFO, "Table.saved"], "Table.saved"),
-        DocLayoutItem([TABLE, INFO, "Table.status"], "Table.status"),
-        DocLayoutItem([TABLE, INFO, "Table.table_data"], "Table.table_data"),
-        DocLayoutItem([TABLE, INFO, "Table.type"], "Table.type"),
+        DocLayoutItem(
+            [TABLE, INFO, "Table.status"],
+            "Table.status",
+            "api.base_table.TableApiObject.status.md",
+        ),
+        DocLayoutItem(
+            [TABLE, INFO, "Table.table_data"],
+            "Table.table_data",
+            "api.base_table.TableApiObject.table_data.md",
+        ),
+        DocLayoutItem(
+            [TABLE, INFO, "Table.type"],
+            "Table.type",
+            "api.base_table.TableApiObject.type.md",
+        ),
         DocLayoutItem([TABLE, INFO, "Table.updated_at"], "Table.updated_at"),
-        DocLayoutItem([TABLE, INFO, "Table.catalog_id"], "Table.catalog_id"),
+        DocLayoutItem(
+            [TABLE, INFO, "Table.catalog_id"],
+            "Table.catalog_id",
+            "api.base_table.TableApiObject.catalog_id.md",
+        ),
         DocLayoutItem(
             [TABLE, INFO, "ItemTable.default_feature_job_setting"],
             "ItemTable.default_feature_job_setting",

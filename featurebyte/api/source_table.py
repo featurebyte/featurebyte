@@ -137,7 +137,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def table_data(self) -> BaseTableData:
         """
-        Table table object for the given table model
+        Table data object for the given table model
 
         Returns
         -------
@@ -195,11 +195,12 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def columns(self) -> list[str]:
         """
-        Columns of the object
+        List of column names of this table.
 
         Returns
         -------
         list[str]
+            List of column name strings.
         """
         return list(self.column_var_type_map)
 
