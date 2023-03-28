@@ -641,3 +641,36 @@ async def test_get_tile_monitor_summary(
     result_df["TILE_START_DATE"] = result_df["TILE_START_DATE"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
     assert_frame_equal(expected_df, result_df)
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_online_enable___re_deploy_from_latest_tile_start(
+    session,
+    feature_manager_with_sf_scheduling,
+    online_enabled_feature_spec,
+):
+    """
+    Test re-deploy tile generation from the latest tile start date
+    """
+    assert session.source_type == "snowflake"
+
+    online_feature_spec, _ = online_enabled_feature_spec
+    tile_spec = online_feature_spec.feature.tile_specs[0]
+
+    last_tile_start_ts_df = await session.execute_query(
+        f"SELECT LAST_TILE_START_DATE_OFFLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_spec.tile_id}'"
+    )
+    assert last_tile_start_ts_df is not None and len(last_tile_start_ts_df) == 1
+    last_tile_start_ts = last_tile_start_ts_df.iloc[0]["LAST_TILE_START_DATE_OFFLINE"]
+
+    # disable/un-deploy
+    await feature_manager_with_sf_scheduling.online_disable(online_feature_spec)
+
+    # re-deploy and verify that the tile start ts is the same as the last tile start ts
+    with patch(
+        "featurebyte.tile.snowflake_tile.TileManagerSnowflake.generate_tiles"
+    ) as mock_tile_manager:
+        await feature_manager_with_sf_scheduling.online_enable(online_feature_spec)
+        kwargs = mock_tile_manager.mock_calls[0][2]
+        assert kwargs["start_ts_str"] == last_tile_start_ts.strftime("%Y-%m-%dT%H:%M:%S.%fZ")

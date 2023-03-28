@@ -3,6 +3,9 @@ Databricks Tile Generate Job Script
 """
 from typing import Optional
 
+import dateutil.parser
+
+from featurebyte.common import date_util
 from featurebyte.logger import logger
 from featurebyte.sql.spark.common import (
     construct_create_delta_table_query,
@@ -112,23 +115,16 @@ class TileGenerate(TileCommon):
             )
 
         if self.last_tile_start_str:
-            logger.debug("last_tile_start_str: ", self.last_tile_start_str)
+            logger.debug(f"last_tile_start_str: {self.last_tile_start_str}")
 
-            index_df = await self._spark.execute_query(
-                f"""
-                    select F_TIMESTAMP_TO_INDEX(
-                        '{self.last_tile_start_str}',
-                        {self.tile_modulo_frequency_second},
-                        {self.blind_spot_second},
-                        {self.frequency_minute}
-                    ) as value
-                """
+            ind_value = date_util.timestamp_utc_to_tile_index(
+                dateutil.parser.isoparse(self.last_tile_start_str),
+                self.tile_modulo_frequency_second,
+                self.blind_spot_second,
+                self.frequency_minute,
             )
 
-            if index_df is None or len(index_df) == 0:
-                return
-
-            ind_value = index_df["value"].iloc[0]
+            logger.debug(f"ind_value: {ind_value}")
 
             update_tile_last_ind_sql = f"""
                 UPDATE TILE_REGISTRY
