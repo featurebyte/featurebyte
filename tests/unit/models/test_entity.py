@@ -28,8 +28,8 @@ def test_entity_model():
         "updated_at",
         "ancestor_ids",
         "parents",
-        "tabular_data_ids",
-        "primary_tabular_data_ids",
+        "table_ids",
+        "primary_table_ids",
         "catalog_id",
     }
     assert isinstance(entity_dict["_id"], ObjectId)

@@ -216,10 +216,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     graphical representation of intended operations.
     """
 
-    __fbautodoc__ = FBAutoDoc(
-        section=["View"],
-        proxy_class="featurebyte.View",
-    )
+    __fbautodoc__ = FBAutoDoc(section=["View"], proxy_class="featurebyte.View")
 
     # class variables
     _view_graph_node_type: ClassVar[GraphNodeType]

@@ -27,7 +27,7 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     default_feature_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
     entity_ids: List[PydanticObjectId]
-    tabular_data_ids: List[PydanticObjectId]
+    table_ids: List[PydanticObjectId]
 
 
 class FeatureNamespaceModelResponse(FeatureNamespaceModel):

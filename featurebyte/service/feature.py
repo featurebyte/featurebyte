@@ -48,7 +48,7 @@ async def validate_feature_version_and_namespace_consistency(
     DocumentInconsistencyError
         If the inconsistency between version & namespace found
     """
-    attrs = ["name", "dtype", "entity_ids", "tabular_data_ids"]
+    attrs = ["name", "dtype", "entity_ids", "table_ids"]
     for attr in attrs:
         version_attr = getattr(feature, attr)
         namespace_attr = getattr(feature_namespace, attr)
@@ -134,7 +134,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         raw_graph = document.graph
         graph, node_name = await self.prepare_graph_to_store(feature=document)
 
-        # create a new feature document (so that the derived attributes like tabular_data_ids is
+        # create a new feature document (so that the derived attributes like table_ids is
         # generated properly)
         document = FeatureModel(**{**document.json_dict(), "graph": graph, "node_name": node_name})
 
@@ -146,8 +146,8 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             table_service = TableService(
                 user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
             )
-            for tabular_data_id in document.tabular_data_ids:
-                _ = await table_service.get_document(document_id=tabular_data_id)
+            for table_id in document.table_ids:
+                _ = await table_service.get_document(document_id=table_id)
 
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
@@ -191,7 +191,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
                         default_feature_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
                         entity_ids=sorted(document.entity_ids),
-                        tabular_data_ids=sorted(document.tabular_data_ids),
+                        table_ids=sorted(document.table_ids),
                     ),
                 )
         return await self.get_document(document_id=insert_id)

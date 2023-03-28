@@ -614,49 +614,6 @@ def snowflake_table_details_dict_fixture():
     }
 
 
-@pytest.fixture(name="snowflake_event_view")
-def snowflake_event_view_fixture(
-    snowflake_event_table, snowflake_feature_store_details_dict, snowflake_table_details_dict
-):
-    """
-    EventTable object fixture
-    """
-    event_view = snowflake_event_table.get_view()
-    assert isinstance(event_view, EventView)
-    expected_input_node = construct_node(
-        name="input_2",
-        type=NodeType.INPUT,
-        parameters={
-            "type": "event_table",
-            "id": snowflake_event_table.id,
-            "columns": [
-                "col_int",
-                "col_float",
-                "col_char",
-                "col_text",
-                "col_binary",
-                "col_boolean",
-                "event_timestamp",
-                "created_at",
-                "cust_id",
-            ],
-            "timestamp": "event_timestamp",
-            "feature_store_details": snowflake_feature_store_details_dict,
-            "table_details": snowflake_table_details_dict,
-        },
-        output_type=NodeOutputType.FRAME,
-    ).dict(exclude={"name": True})
-    for input_node in event_view.graph.iterate_nodes(
-        target_node=event_view.node, node_type=NodeType.INPUT
-    ):
-        assert input_node.dict(exclude={"name": True}) == expected_input_node
-    assert event_view.protected_columns == {"event_timestamp"}
-    assert event_view.inherited_columns == {"event_timestamp"}
-    assert event_view.timestamp_column == "event_timestamp"
-    assert event_view.tabular_data_ids == [snowflake_event_table.id]
-    yield event_view
-
-
 @pytest.fixture(name="snowflake_event_view_with_entity")
 def snowflake_event_view_entity_fixture(snowflake_event_table_with_entity):
     """
@@ -726,7 +683,7 @@ def feature_group_fixture(
     assert isinstance(feature_group, FeatureGroup)
     for feature in feature_group.feature_objects.values():
         assert id(feature.graph.nodes) == id(global_graph.nodes)
-        assert feature.tabular_data_ids == [snowflake_event_table_with_entity.id]
+        assert feature.table_ids == [snowflake_event_table_with_entity.id]
         assert feature.entity_ids == [cust_id_entity.id]
     yield feature_group
 
@@ -793,7 +750,7 @@ def float_feature_fixture(feature_group):
     assert isinstance(feature, Feature)
     assert feature.protected_columns == {"cust_id"}
     assert feature.inherited_columns == {"cust_id"}
-    assert feature_group["sum_1d"].tabular_data_ids == feature.tabular_data_ids
+    assert feature_group["sum_1d"].table_ids == feature.table_ids
     global_graph = GlobalQueryGraph()
     assert id(feature.graph.nodes) == id(global_graph.nodes)
     yield feature
@@ -808,7 +765,7 @@ def bool_feature_fixture(float_feature):
     assert isinstance(bool_feature, Feature)
     assert bool_feature.protected_columns == float_feature.protected_columns
     assert bool_feature.inherited_columns == float_feature.inherited_columns
-    assert bool_feature.tabular_data_ids == float_feature.tabular_data_ids
+    assert bool_feature.table_ids == float_feature.table_ids
     yield bool_feature
 
 
@@ -1123,7 +1080,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         readiness=FeatureReadiness.DRAFT,
         default_feature_id=feature_sum_30m.id,
         entity_ids=feature_sum_30m.entity_ids,
-        tabular_data_ids=feature_sum_30m.tabular_data_ids,
+        table_ids=feature_sum_30m.table_ids,
     )
     feature_list_namespace = FeatureListNamespaceModel(
         _id=ObjectId(),
@@ -1134,7 +1091,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         default_feature_list_id=feature_list_multiple.id,
         default_version_mode=DefaultVersionMode.AUTO,
         entity_ids=feature_sum_30m.entity_ids,
-        tabular_data_ids=feature_sum_30m.tabular_data_ids,
+        table_ids=feature_sum_30m.table_ids,
         feature_namespace_ids=[
             feature_sum_30m.feature_namespace_id,
             feature_sum_2h.feature_namespace_id,
@@ -1160,7 +1117,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         relationship_type=RelationshipType.CHILD_PARENT,
         primary_entity_id=cust_id_entity.id,
         related_entity_id=transaction_entity.id,
-        primary_data_source_id="6337f9651050ee7d5980660d",
+        primary_table_id="6337f9651050ee7d5980660d",
         is_enabled=True,
         updated_by="63f6a145e549df8ccf123444",
     )

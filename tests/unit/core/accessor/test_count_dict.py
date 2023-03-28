@@ -41,7 +41,7 @@ def test_transformation(
     assert new_feature.dtype == expected_var_type
     assert new_feature.node.type == NodeType.COUNT_DICT_TRANSFORM
     assert new_feature.node.parameters.dict(exclude_none=True) == expected_parameters
-    assert new_feature.tabular_data_ids == count_per_category_feature.tabular_data_ids
+    assert new_feature.table_ids == count_per_category_feature.table_ids
     assert new_feature.entity_ids == count_per_category_feature.entity_ids
 
     # check SDK code generation

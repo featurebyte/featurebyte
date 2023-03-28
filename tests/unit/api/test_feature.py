@@ -446,7 +446,7 @@ def test_get_feature(saved_feature):
         "tabular_source.table_details.table_name",
         "updated_at",
         "tabular_source.feature_store_id",
-        "tabular_data_ids",
+        "table_ids",
         "primary_table_ids",
         "user_id",
         "tabular_source.table_details.database_name",
@@ -479,10 +479,10 @@ def test_get_feature(saved_feature):
 
 def test_unary_op_inherits_event_table_id(float_feature):
     """
-    Test unary operation inherits tabular_data_ids
+    Test unary operation inherits table_ids
     """
     new_feature = float_feature.isnull()
-    assert new_feature.tabular_data_ids == float_feature.tabular_data_ids
+    assert new_feature.table_ids == float_feature.table_ids
 
 
 def test_feature__default_version_info_retrieval(saved_feature, mock_api_object_cache):
@@ -594,7 +594,7 @@ def test_create_new_version__with_data_cleaning_operations(
         to_use_saved_data=True,
         fixture_path="tests/fixtures/sdk_code/feature_time_based_with_data_cleaning_operations.py.jinja2",
         update_fixtures=update_fixtures,
-        table_id=saved_feature.tabular_data_ids[0],
+        table_id=saved_feature.table_ids[0],
     )
 
     # create another new feature version without table cleaning operations

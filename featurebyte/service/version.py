@@ -97,7 +97,7 @@ class VersionService(BaseService):
             table_id_to_doc: dict[ObjectId, dict[str, Any]] = {
                 doc["_id"]: doc
                 async for doc in self.table_service.list_documents_iterator(
-                    query_filter={"_id": {"$in": feature.tabular_data_ids}}
+                    query_filter={"_id": {"$in": feature.table_ids}}
                 )
             }
             for (

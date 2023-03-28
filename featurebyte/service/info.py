@@ -275,8 +275,8 @@ class InfoService(BaseService):
         relationship_info = await self.relationship_info_service.get_document(
             document_id=document_id
         )
-        data_info = await self.table_service.get_document(
-            document_id=relationship_info.primary_data_source_id
+        table_info = await self.table_service.get_document(
+            document_id=relationship_info.primary_table_id
         )
         updated_user_name = self.user_service.get_user_name_for_id(relationship_info.updated_by)
         primary_entity = await self.entity_service.get_document(
@@ -291,8 +291,8 @@ class InfoService(BaseService):
             created_at=relationship_info.created_at,
             updated_at=relationship_info.updated_at,
             relationship_type=relationship_info.relationship_type,
-            data_source_name=data_info.name,
-            data_type=data_info.type,
+            table_name=table_info.name,
+            data_type=table_info.type,
             primary_entity_name=primary_entity.name,
             related_entity_name=related_entity.name,
             updated_by=updated_user_name,
@@ -529,7 +529,7 @@ class InfoService(BaseService):
         catalog = await self.catalog_service.get_document(feature.catalog_id)
         data_id_to_doc = {}
         async for doc in self.table_service.list_documents_iterator(
-            query_filter={"_id": {"$in": feature.tabular_data_ids}}
+            query_filter={"_id": {"$in": feature.table_ids}}
         ):
             doc["catalog_name"] = catalog.name
             data_id_to_doc[doc["_id"]] = doc
@@ -606,7 +606,7 @@ class InfoService(BaseService):
         primary_entity = self._get_primary_entity_from_entities(entities=entities)
 
         tables = await self.table_service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
+            page=1, page_size=0, query_filter={"_id": {"$in": namespace.table_ids}}
         )
 
         # get catalog info
@@ -743,7 +743,7 @@ class InfoService(BaseService):
         primary_entity = self._get_primary_entity_from_entities(entities)
 
         tables = await self.table_service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
+            page=1, page_size=0, query_filter={"_id": {"$in": namespace.table_ids}}
         )
 
         # get catalog info
