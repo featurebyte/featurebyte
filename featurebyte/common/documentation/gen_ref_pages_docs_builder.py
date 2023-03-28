@@ -117,7 +117,7 @@ def get_class_members_and_fields_for_class_obj(class_obj):
     return class_members, fields
 
 
-def get_featurebyte_python_files() -> Generator[str]:
+def get_featurebyte_python_files() -> Generator[str, Any, Any]:
     """
     Returns the python files that we want to document.
 
@@ -125,7 +125,7 @@ def get_featurebyte_python_files() -> Generator[str]:
 
     Returns
     --------
-    Generator[str]
+    Generator[str, Any, Any]
         Generator of python files that we want to document.
     """
     # this is a set of string of dir in featurebyte that are not part of stuff we want to document.
@@ -144,7 +144,7 @@ def get_featurebyte_python_files() -> Generator[str]:
         yield ".".join(parts)
 
 
-def get_classes_for_module(module_str: str) -> Generator[Any]:
+def get_classes_for_module(module_str: str) -> Generator[Any, Any, Any]:
     """
     Returns the classes for a specific module.
 
@@ -155,7 +155,7 @@ def get_classes_for_module(module_str: str) -> Generator[Any]:
 
     Returns
     --------
-    Generator[Any]
+    Generator[Any, Any, Any]
         Generator of classes for a specific module.
     """
     # parse objects in python script
