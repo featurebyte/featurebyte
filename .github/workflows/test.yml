@@ -295,6 +295,13 @@ jobs:
       - name: Start local server
         run: |
           export FEATUREBYTE_NP_PASSWORD="${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}"
+          echo "profile:" > ~/.featurebyte/config.yaml
+          echo "  - name: local" >> ~/.featurebyte/config.yaml
+          echo "    api_url: http://127.0.0.1:8088" >> ~/.featurebyte/config.yaml
+          echo "" >> ~/.featurebyte/config.yaml
+          echo "logging:" >> ~/.featurebyte/config.yaml
+          echo "  telemetry: false" >> ~/.featurebyte/config.yaml
+          echo "" >> ~/.featurebyte/config.yaml
           make docker-build
       - name: Test documentation
         run: |
