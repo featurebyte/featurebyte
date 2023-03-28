@@ -148,7 +148,9 @@ class FeatureManager(BaseModel):
 
         start_ts = datetime(1970, 1, 1, tzinfo=timezone.utc)
         last_tile_start_ts_df = await self._session.execute_query(
-            f"SELECT LAST_TILE_START_DATE_OFFLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_spec.tile_id}'"
+            f"SELECT LAST_TILE_START_DATE_OFFLINE FROM TILE_REGISTRY "
+            f"WHERE TILE_ID = '{tile_spec.tile_id}' "
+            f"AND LAST_TILE_START_DATE_OFFLINE IS NOT NULL"
         )
         if last_tile_start_ts_df is not None and len(last_tile_start_ts_df) > 0:
             # generate tiles from last_tile_start_date to now

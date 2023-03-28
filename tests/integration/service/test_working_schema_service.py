@@ -26,11 +26,15 @@ def user():
     return user
 
 
-@pytest.fixture(name="deployed_feature_list", scope="module")
-def deployed_feature_list_fixture(event_table):
+@pytest_asyncio.fixture(name="deployed_feature_list", scope="module")
+async def deployed_feature_list_fixture(event_table, session):
     """
     Fixture for a deployed feature list
     """
+
+    # remove side effect from other test
+    await session.execute_query("UPDATE TILE_REGISTRY SET LAST_TILE_START_DATE_OFFLINE = NULL")
+
     event_view = event_table.get_view()
     event_view["ÀMOUNT"].fillna(0)
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
