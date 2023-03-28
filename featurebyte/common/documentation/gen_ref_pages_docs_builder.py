@@ -3,15 +3,16 @@ Code to run in mkdocs#gen_ref_pages.py
 
 This is placed in here so that it can be imported as part of the featurebyte package.
 """
-from typing import Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
-# pylint: skip-file
 import importlib
 import inspect
 import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
+
+from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
 import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
@@ -26,6 +27,8 @@ MISSING_DEBUG_MARKDOWN = "missing.md"
 @dataclass
 class DocGroupValue:
     """
+    DocGroupValue is used to contain some metadata about a specific DocGroupKey.
+
     Example
     --------
     DocGroupValue(
@@ -43,6 +46,8 @@ class DocGroupValue:
 @dataclass
 class DocGroupKey:
     """
+    DocGroupKey is used to group together documentation for a specific class or function.
+
     Examples of DocGroupKey that will be generated from code
     --------
     DocGroupKey(
@@ -61,19 +66,28 @@ class DocGroupKey:
     class_name: str
     attribute_name: Optional[str] = None
 
-    def get_path_to_join(self):
+    def _get_path_to_join(self) -> List[str]:
         path_to_join = [self.module_path, self.class_name]
         if self.attribute_name:
             path_to_join.append(self.attribute_name)
         return path_to_join
 
     def __hash__(self) -> int:
-        return hash(".".join(self.get_path_to_join()))
+        return hash(".".join(self._get_path_to_join()))
 
-    def get_markdown_doc_path(self):
-        return str(Path(".".join(self.get_path_to_join()))) + ".md"
+    def get_markdown_doc_path(self) -> str:
+        """
+        Returns the markdown doc path that will be generated for this class or function.
+        """
+        return str(Path(".".join(self._get_path_to_join()))) + ".md"
 
-    def get_obj_path(self, doc_group_value: DocGroupValue):
+    def get_obj_path(self, doc_group_value: DocGroupValue) -> str:
+        """
+        Returns the object path used to identify this class or function.
+
+        Attributes will be delimited by the unique `::` identifier.
+        Proxy paths will be delimited by the unique `#` identifier.
+        """
         base_path = ".".join([self.module_path, self.class_name])
         if self.attribute_name:
             return "::".join([base_path, self.attribute_name])
@@ -84,15 +98,13 @@ class DocGroupKey:
 
 @dataclass
 class AccessorMetadata:
-
     """
-    This will be a list of API paths to classes that use the accessor.
+    AccessorMetadata is used to contain some metadata about a specific accessor.
     """
 
+    # This will be a list of API paths to classes that use the accessor.
     classes_using_accessor: List[str]
-    """
-    This will be the property name that the classes above use to access the accessor. Eg. str, cd.
-    """
+    # This will be the property name that the classes above use to access the accessor. Eg. str, cd.
     property_name: str
 
 
@@ -105,7 +117,17 @@ def get_class_members_and_fields_for_class_obj(class_obj):
     return class_members, fields
 
 
-def get_featurebyte_python_files():
+def get_featurebyte_python_files() -> Generator[str]:
+    """
+    Returns the python files that we want to document.
+
+    We skip certain folders like docker and __init__.py files.
+
+    Returns
+    --------
+    Generator[str]
+        Generator of python files that we want to document.
+    """
     # this is a set of string of dir in featurebyte that are not part of stuff we want to document.
     non_sdk_folders = {"docker"}
     module_root_path = Path(featurebyte.__file__).parent
@@ -122,7 +144,20 @@ def get_featurebyte_python_files():
         yield ".".join(parts)
 
 
-def get_classes_for_module(module_str):
+def get_classes_for_module(module_str: str) -> Generator[Any]:
+    """
+    Returns the classes for a specific module.
+
+    Parameters
+    ----------
+    module_str: str
+        String of the module to parse.
+
+    Returns
+    --------
+    Generator[Any]
+        Generator of classes for a specific module.
+    """
     # parse objects in python script
     module = importlib.import_module(module_str)
     module_members = sorted([attr for attr in dir(module) if not attr.startswith("_")])
@@ -134,7 +169,31 @@ def get_classes_for_module(module_str):
         yield class_obj
 
 
-def add_class_to_doc_group(doc_groups, autodoc_config, menu_section, class_obj):
+def add_class_to_doc_group(
+    doc_groups: Dict[DocGroupKey, DocGroupValue],
+    autodoc_config: FBAutoDoc,
+    menu_section: Optional[List[str]],
+    class_obj: Any,
+) -> Tuple[Dict[DocGroupKey, DocGroupValue], Optional[str], Optional[List[str]]]:
+    """
+    Adds a class to the doc_groups dictionary.
+
+    Parameters
+    ----------
+    doc_groups: Dict[DocGroupKey, DocGroupValue]
+        Dictionary of doc groups.
+    autodoc_config: FBAutoDoc
+        Autodoc config.
+    menu_section: Optional[List[str]]
+        Menu section.
+    class_obj: Any
+        Class object.
+
+    Returns
+    -------
+    Tuple[Dict[DocGroupKey, DocGroupValue], Optional[str], Optional[List[str]]]
+        Tuple of updated doc_groups, menu_section, and menu_subsection.
+    """
     # proxy class is used for two purposes:
     #
     # 1. document a shorter path to access a class
@@ -177,13 +236,36 @@ def add_class_to_doc_group(doc_groups, autodoc_config, menu_section, class_obj):
 
 
 def add_class_attributes_to_doc_groups(
-    doc_groups,
-    class_obj,
-    autodoc_config,
-    proxy_path,
-    menu_section,
-    class_doc_group,
-):
+    doc_groups: Dict[DocGroupKey, DocGroupValue],
+    class_obj: Any,
+    autodoc_config: FBAutoDoc,
+    proxy_path: Optional[str],
+    menu_section: Optional[List[str]],
+    class_doc_group: Optional[List[str]],
+) -> Dict[DocGroupKey, DocGroupValue]:
+    """
+    Add class attributes to doc groups.
+
+    Parameters
+    ----------
+    doc_groups: Dict[DocGroupKey, DocGroupValue]
+        Dictionary of doc groups.
+    class_obj: Any
+        Class object to parse.
+    autodoc_config: FBAutoDoc
+        Autodoc configuration.
+    proxy_path: Optional[str]
+        Proxy path to use.
+    menu_section: Optional[List[str]]
+        Menu section to use.
+    class_doc_group: Optional[List[str]]
+        Class doc group to use.
+
+    Returns
+    -------
+    Dict[DocGroupKey, DocGroupValue]
+        Dictionary of doc groups.
+    """
     # document class members and pydantic fields
     class_members, fields = get_class_members_and_fields_for_class_obj(class_obj)
 
@@ -222,9 +304,19 @@ def add_class_attributes_to_doc_groups(
     return doc_groups
 
 
-def should_skip_path(components) -> bool:
+def should_skip_path(components: List[str]) -> bool:
     """
-    Check whether to skip path
+    Check whether to skip path.
+
+    Parameters
+    ----------
+    components: List[str]
+        List of components in the path.
+
+    Returns
+    -------
+    bool
+        Whether to skip path.
     """
     # include only objects from the featurebyte module
     if components[0] != "featurebyte":
@@ -246,12 +338,17 @@ def should_skip_path(components) -> bool:
     return False
 
 
-def get_accessor_to_classes_using():
+def get_accessor_to_classes_using() -> Dict[str, Any]:
     """
     Return a dict mapping an accessor to its metadata.
 
     Note that the key should be a unique string that globally identifies the accessor across all API paths. If there
     are multiple accessors with the same name, then you should include some of the module path in the key.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dict mapping an accessor to its metadata.
     """
     return {
         "StringAccessor": AccessorMetadata(
@@ -277,7 +374,28 @@ def get_accessor_to_classes_using():
     }
 
 
-def build_markdown_format_str(obj_path, obj_type, api_to_use):
+def build_markdown_format_str(obj_path: str, obj_type: str, api_to_use: str) -> str:
+    """
+    Build the markdown format string for the given object path.
+
+    This formatted string will be consumed by the MKDocs extension, and will be converted into html.
+    Note that this format string only contains the object path, and not the actual docstring. The extension will be
+    responsible for extracting information from the object path, and then generating the actual documentation page.
+
+    Parameters
+    ----------
+    obj_path: str
+        The object path.
+    obj_type: str
+        The object type.
+    api_to_use: str
+        The API to use.
+
+    Returns
+    -------
+    str
+        The markdown format string.
+    """
     format_str = f"::: {obj_path}\n    :docstring:\n"
 
     if obj_type == "class":
@@ -288,7 +406,20 @@ def build_markdown_format_str(obj_path, obj_type, api_to_use):
     return format_str
 
 
-def infer_api_path_from_obj_path(obj_path):
+def infer_api_path_from_obj_path(obj_path: str) -> str:
+    """
+    Infer the API path from the given object path.
+
+    Parameters
+    ----------
+    obj_path: str
+        The object path.
+
+    Returns
+    -------
+    str
+        The API path.
+    """
     # add obj_path to reverse lookup map
     # featurebyte.api.event_view.EventView::add_feature#featurebyte.EventView
     # or featurebyte.api.change_view.ChangeViewColumn::lag
@@ -313,11 +444,16 @@ def infer_api_path_from_obj_path(obj_path):
     return obj_path.lower()
 
 
-def get_paths_to_document():
+def get_paths_to_document() -> Dict[str, str]:
     """
     Get all the object paths that we want to document.
 
     These should represent the fully qualified paths of the objects that we want to document.
+
+    Returns
+    -------
+    Dict[str, str]
+        A dict mapping the object path to the API path to use.
     """
     paths = {}
     for item in get_overall_layout():
@@ -329,30 +465,42 @@ def get_paths_to_document():
     return paths
 
 
-def get_api_path_to_use(doc_path, base_path, accessor_property_name):
+def get_api_path_to_use(doc_path: str, base_path: str, accessor_property_name: str) -> str:
     """
+    Get the API path to use for the given doc path.
+
+    Parameters
+    ---------
+    doc_path: str
+        Example: featurebyte.core.accessor.string.StringAccessor.lower.md
+    base_path: str
+        Example: featurebyte.ViewColumn
+    accessor_property_name: str
+        Example: str, cd
+
     Returns
     -------
     str
         API path to use
-
-    Parameters
-    ---------
-    doc_path
-        Example: featurebyte.core.accessor.string.StringAccessor.lower.md
-    base_path
-        Example: featurebyte.ViewColumn
-    accessor_property_name
-        Example: str, cd
     """
     removed_md_path = doc_path.replace(".md", "")
     function_name = removed_md_path.rsplit(".", 1)[-1]
     return ".".join([base_path, accessor_property_name, function_name])
 
 
-def _get_accessor_metadata(doc_path):
+def _get_accessor_metadata(doc_path: str) -> Optional[AccessorMetadata]:
     """
     Get accessor metadata for a given doc path, or None if it is not an accessor.
+
+    Parameters
+    ----------
+    doc_path: str
+        The doc path.
+
+    Returns
+    -------
+    Optional[AccessorMetadata]
+        The accessor metadata, or None if it is not an accessor.
     """
     accessor_to_classes = get_accessor_to_classes_using()
     for key in accessor_to_classes:
@@ -361,11 +509,27 @@ def _get_accessor_metadata(doc_path):
     return None
 
 
-def populate_nav(nav, proxied_path_to_markdown_path):
+def populate_nav(nav: Nav, proxied_path_to_markdown_path: Dict[str, str]) -> Nav:
+    """
+    Populate the nav with the markdown paths.
+
+    Parameters
+    ----------
+    nav: Nav
+        The nav to populate.
+    proxied_path_to_markdown_path: Dict[str, str]
+        A dict mapping the proxied path to the markdown path.
+
+    Returns
+    -------
+    Nav
+        The populated nav.
+    """
     rendered = set()
     for item in get_overall_layout():
+        header = tuple(item.menu_header)
         if item.get_doc_path_override():
-            nav[item.menu_header] = item.get_doc_path_override()
+            nav[header] = item.get_doc_path_override()
             rendered.add(item.get_doc_path_override())
             continue
 
@@ -376,7 +540,7 @@ def populate_nav(nav, proxied_path_to_markdown_path):
             markdown_path = proxied_path_to_markdown_path[item_path]
         elif DEBUG_MODE:
             print("key not found", item_path)
-        nav[item.menu_header] = markdown_path
+        nav[header] = markdown_path
         rendered.add(markdown_path)
     return nav
 
@@ -396,6 +560,11 @@ class DocsBuilder:
     def get_doc_groups(self) -> Dict[DocGroupKey, DocGroupValue]:
         """
         This returns a dictionary of doc groups.
+
+        Returns
+        -------
+        Dict[DocGroupKey, DocGroupValue]
+            A dictionary of doc groups.
         """
         doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
         for module_str in get_featurebyte_python_files():
@@ -422,9 +591,19 @@ class DocsBuilder:
                 continue
         return doc_groups
 
-    def get_section_from_class_obj(self, class_obj):
+    def get_section_from_class_obj(self, class_obj: Any) -> Optional[List[str]]:
         """
         This returns the top level doc group. Specifically, the menu item (eg. View, Data etc.)
+
+        Parameters
+        ----------
+        class_obj: Any
+            The class object to get the doc group for.
+
+        Returns
+        -------
+        Optional[List[str]]
+            The doc group for the class.
         """
         # check for customized categorization specified in the class
         autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
@@ -434,7 +613,7 @@ class DocsBuilder:
             return class_obj.__module__.split(".") + [class_obj.__name__]
         return None
 
-    def initialize_missing_debug_doc(self):
+    def initialize_missing_debug_doc(self) -> None:
         """
         This function initializes the debug doc file if it doesn't exist.
         """
@@ -444,14 +623,38 @@ class DocsBuilder:
             "The docstring is missing.",
         )
 
-    def write_nav_to_file(self, filepath, local_path, nav):
+    def write_nav_to_file(self, filepath: Union[Path, str], local_path: str, nav: Nav) -> None:
+        """
+        This function writes the nav to a file.
+
+        Parameters
+        ----------
+        filepath: Union[Path, str]
+            The path to the file.
+        local_path: str
+            The local path.
+        nav: Nav
+            The nav to write.
+        """
         with self.gen_files_open(filepath, "w") as fd:
             fd.writelines(nav.build_literate_nav())
         if DEBUG_MODE:
             with open(f"debug/{local_path}_local.txt", "w") as local_file:
                 local_file.writelines(nav.build_literate_nav())
 
-    def write_to_file(self, filepath, local_path, output):
+    def write_to_file(self, filepath: Union[Path, str], local_path: str, output: str) -> None:
+        """
+        This function writes the output to a file.
+
+        Parameters
+        ----------
+        filepath: Union[Path, str]
+            The path to the file.
+        local_path: str
+            The local path.
+        output: str
+            The output to write.
+        """
         with self.gen_files_open(filepath, "w") as fd:
             fd.writelines(output)
         if DEBUG_MODE:
@@ -459,8 +662,31 @@ class DocsBuilder:
                 local_file.writelines(output)
 
     def _build_and_write_to_file(
-        self, obj_path, doc_group_value, api_to_use, doc_path, path_components
-    ):
+        self,
+        obj_path: str,
+        doc_group_value: DocGroupValue,
+        api_to_use: str,
+        doc_path: str,
+        path_components: List[str],
+    ) -> None:
+        """
+        This function builds the markdown string and writes it to a file.
+
+        We also set the edit path which is the link that links back to where the code is defined in github.
+
+        Parameters
+        ----------
+        obj_path: str
+            The path to the object.
+        doc_group_value: DocGroupValue
+            The doc group value.
+        api_to_use: str
+            The API to use.
+        doc_path: str
+            The path to the documentation.
+        path_components: List[str]
+            The path components.
+        """
         # build string to write to file
         format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
 
@@ -472,7 +698,23 @@ class DocsBuilder:
         source_path = "/".join(path_components) + ".py"
         self.set_edit_path(full_doc_path, source_path)
 
-    def generate_documentation_for_docs(self, doc_groups):
+    def generate_documentation_for_docs(
+        self, doc_groups: Dict[DocGroupKey, DocGroupValue]
+    ) -> Dict[str, str]:
+        """
+        This function generates the documentation for the docs.
+
+        Parameters
+        ----------
+        doc_groups: Dict[DocGroupKey, DocGroupValue]
+            A dictionary of doc groups.
+
+        Returns
+        -------
+        Dict[str, str]
+            A dictionary of the reverse lookup map.
+        """
+
         # A list of all the markdown files generated. Used for debugging.
         # This reverse lookup map has a key of the user-accessible API path, and the value of the markdown file for
         # the documentation.
@@ -536,7 +778,7 @@ class DocsBuilder:
 
         return reverse_lookup_map
 
-    def write_summary_page(self, nav):
+    def write_summary_page(self, nav) -> None:
         """
         Write the SUMMARY.md file for the API Reference section.
 
@@ -545,7 +787,7 @@ class DocsBuilder:
         logger.info("Writing API Reference SUMMARY")
         self.write_nav_to_file("reference/SUMMARY.md", "summary", nav)
 
-    def build_docs(self):
+    def build_docs(self) -> None:
         """
         In order to generate the documentation, we perform the following steps:
 
@@ -571,7 +813,7 @@ class DocsBuilder:
         self.write_summary_page(updated_nav)
 
 
-def build_docs(set_edit_path_fn, gen_files_open_fn):
+def build_docs(set_edit_path_fn: Any, gen_files_open_fn: Any) -> None:
     """
     This is the current public facing interface that is used in generating the docs.
 
