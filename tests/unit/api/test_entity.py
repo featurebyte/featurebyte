@@ -249,8 +249,8 @@ def test_get_entity():
     assert "Failed to list /entity." in str(exc.value)
 
 
-@pytest.fixture(name="insert_tabular_data_helper")
-def get_insert_tabular_data_helper_fixture(mongo_persistent):
+@pytest.fixture(name="insert_table_helper")
+def get_insert_table_helper_fixture(mongo_persistent):
     persistent, _ = mongo_persistent
 
     async def insert(col_name, dataset_name):
@@ -284,13 +284,13 @@ def assert_entity_has_number_of_parents(entity, number_of_parents):
 
 
 @pytest.mark.asyncio
-async def test_add_and_remove_parent(mongo_persistent, insert_tabular_data_helper):
+async def test_add_and_remove_parent(mongo_persistent, insert_table_helper):
     """
     Test add and remove parent
     """
     col_name = "col"
     dataset_name = "dataset_name"
-    await insert_tabular_data_helper(col_name, dataset_name)
+    await insert_table_helper(col_name, dataset_name)
 
     entity_a = Entity(name="entity_a", serving_names=["entity_a"])
     entity_b = Entity(name="entity_b", serving_names=["entity_b"])

@@ -401,9 +401,7 @@ class InfoService(BaseService):
 
     async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
         # retrieve related tables & semantics
-        table_list = await self._get_list_object(
-            self.table_service, op_struct.tabular_data_ids, TableList
-        )
+        table_list = await self._get_list_object(self.table_service, op_struct.table_ids, TableList)
         semantic_list = await self._get_list_object(
             self.semantic_service, table_list.semantic_ids, SemanticList
         )
@@ -422,7 +420,7 @@ class InfoService(BaseService):
         source_columns = {}
         reference_map: dict[Any, str] = {}
         for idx, src_col in enumerate(op_struct.source_columns):
-            column_metadata = column_map[(src_col.tabular_data_id, src_col.name)]
+            column_metadata = column_map[(src_col.table_id, src_col.name)]
             reference_map[src_col] = f"Input{idx}"
             source_columns[reference_map[src_col]] = {
                 "data": column_metadata["table_name"],

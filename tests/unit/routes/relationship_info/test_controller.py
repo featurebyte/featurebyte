@@ -74,7 +74,7 @@ def entities_fixture(relationship_info_create):
 
 
 @pytest.mark.asyncio
-async def test_validate_relationship_info_create__tabular_data_id_error_thrown(
+async def test_validate_relationship_info_create__table_id_error_thrown(
     relationship_info_controller, relationship_info_create, entities
 ):
     """

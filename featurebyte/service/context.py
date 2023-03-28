@@ -78,7 +78,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
 
         # check that table document can be retrieved from the persistent
         table_id_to_doc = {}
-        table_ids = list(set(col.tabular_data_id for col in operation_structure.source_columns))
+        table_ids = list(set(col.table_id for col in operation_structure.source_columns))
         for table_id in table_ids:
             if table_id is None:
                 raise DocumentUpdateError("Data record has not been stored at the persistent.")
@@ -88,8 +88,8 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         # TODO: add entity id to operation structure column (DEV-957)
         found_entity_ids = set()
         for source_col in operation_structure.source_columns:
-            assert source_col.tabular_data_id is not None
-            table = table_id_to_doc[source_col.tabular_data_id]
+            assert source_col.table_id is not None
+            table = table_id_to_doc[source_col.table_id]
             column_info = next(
                 (col_info for col_info in table.columns_info if col_info.name == source_col.name),
                 None,
