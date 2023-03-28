@@ -7,7 +7,11 @@ import pytest
 
 from featurebyte.api.base_table import TableColumn
 from featurebyte.enum import StrEnum
-from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
+from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.query_graph.node.cleaning_operation import (
+    ColumnCleaningOperation,
+    MissingValueImputation,
+)
 
 
 class DataType(StrEnum):
@@ -66,6 +70,9 @@ class BaseTableTestSuite:
         """
         Retrieves fixture for table under test
         """
+        # check column_cleaning_operations is empty
+        assert data_under_test.column_cleaning_operations == []
+
         data_under_test[self.col].update_critical_data_info(
             cleaning_operations=[MissingValueImputation(imputed_value=0)]
         )
@@ -100,6 +107,15 @@ class BaseTableTestSuite:
         clean_data_sql = imputed_data_under_test.preview_clean_data_sql()
         assert data_sql == textwrap.dedent(self.expected_data_sql).strip()
         assert clean_data_sql == textwrap.dedent(self.expected_clean_data_sql).strip()
+
+        # check table properties
+        assert imputed_data_under_test.column_cleaning_operations == [
+            ColumnCleaningOperation(
+                column_name=self.col,
+                cleaning_operations=[MissingValueImputation(imputed_value=0)],
+            )
+        ]
+        assert imputed_data_under_test.catalog_id == DEFAULT_CATALOG_ID
 
     def test_data_column_preview_sql(self, data_under_test):
         """

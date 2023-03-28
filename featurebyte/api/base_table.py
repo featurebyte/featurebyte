@@ -3,7 +3,7 @@ DataColumn class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Tuple, Type, TypeVar, cast
+from typing import Any, ClassVar, List, Literal, Optional, Tuple, Type, TypeVar, cast
 
 from http import HTTPStatus
 
@@ -18,7 +18,7 @@ from featurebyte.api.source_table import AbstractTableData, SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
-from featurebyte.enum import ViewMode
+from featurebyte.enum import TableDataType, ViewMode
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableStatus
@@ -136,16 +136,14 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         Parameters
         ----------
         cleaning_operations: List[CleaningOperation]
-            List of cleaning operations to be applied on the column
+            List of cleaning operations to be applied on the column.
 
         Examples
         --------
+        Add missing value imputation & negative value imputation operations to a table column.
 
-        Add missing value imputation & negative value imputation operations to a table column
-
-        >>> import featurebyte as fb
-        >>> event_table = fb.EventTable.get("Credit Card Transactions")  # doctest: +SKIP
-        >>> event_table["AMOUNT"].update_critical_data_info(  # doctest: +SKIP
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(
         ...    cleaning_operations=[
         ...        fb.MissingValueImputation(imputed_value=0),
         ...        fb.ValueBeyondEndpointImputation(
@@ -154,19 +152,22 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         ...    ]
         ... )
 
-        Check the column info to confirm that critical table info is updated
+        Show column cleaning operations of the event table.
 
-        >>> event_table["AMOUNT"].info.dict()  # doctest: +SKIP
-        {'critical_data_info': {'cleaning_operations': [{'imputed_value': 0,
-                                                 'type': 'missing'},
-                                                {'end_point': 0,
-                                                 'imputed_value': 0,
-                                                 'type': 'less_than'}]},
-         'dtype': 'FLOAT',
-         'entity_id': None,
-         'name': 'Discount',
-         'semantic_id': None}
+        >>> event_table.column_cleaning_operations
+        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0,
+        type=missing), ValueBeyondEndpointImputation(imputed_value=0, type=less_than, end_point=0)])]
 
+        Remove cleaning operations and show the column cleaning operations of the event table.
+
+        >>> event_table["Amount"].update_critical_data_info(cleaning_operations=[])
+        >>> event_table.column_cleaning_operations
+        []
+
+        See Also
+        --------
+        - [Table.columns_info](/reference/featurebyte.api.base_table.TableApiObject.columns_info)
+        - [Table.column_cleaning_operations](/reference/featurebyte.api.base_table.TableApiObject.column_cleaning_operations)
         """
         critical_data_info = CriticalDataInfo(cleaning_operations=cleaning_operations)
         column_info = ColumnInfo(**{**self.info.dict(), "critical_data_info": critical_data_info})
@@ -263,6 +264,23 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
 
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
+    # pydantic instance variable
+    type: Literal[
+        TableDataType.SOURCE_TABLE,
+        TableDataType.EVENT_TABLE,
+        TableDataType.ITEM_TABLE,
+        TableDataType.DIMENSION_TABLE,
+        TableDataType.SCD_TABLE,
+    ] = Field(
+        description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table."
+    )
+    saved: bool = Field(
+        default=False,
+        allow_mutation=False,
+        exclude=True,
+        description="Flag to indicate whether the table is saved in the FeatureByte catalog.",
+    )
+
     # pydantic instance variable (internal use)
     internal_record_creation_timestamp_column: Optional[str] = Field(
         alias="record_creation_timestamp_column"
@@ -270,6 +288,14 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
 
     @property
     def table_data(self) -> BaseTableData:
+        """
+        Table data object of this table. This object contains information used to construct the SQL query.
+
+        Returns
+        -------
+        BaseTableData
+            Table data object used for SQL query construction.
+        """
         try:
             return self._table_data_class(**self.cached_model.json_dict())
         except RecordRetrievalException:
@@ -277,19 +303,63 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
 
     @property
     def columns_info(self) -> List[ColumnInfo]:
+        """
+        List of column information of the table. Each column contains column name, column type, entity ID
+        associated with the column, semantic ID associated with the column, and the critical data information
+        associated with the column.
+
+        Returns
+        -------
+        List[ColumnInfo]
+            List of column information.
+
+        See Also
+        --------
+        - [Table.column_cleaning_operations](/reference/featurebyte.api.base_table.TableApiObject.column_cleaning_operations)
+        - [TableColumn.update_critical_data_info](/reference/featurebyte.api.base_table.TableColumn.update_critical_data_info)
+        """
         try:
             return self.cached_model.columns_info  # pylint: disable=no-member
         except RecordRetrievalException:
             return self.internal_columns_info
 
     @property
+    def catalog_id(self) -> ObjectId:
+        """
+        Catalog ID of the table. A FeatureByte Catalog serves as a centralized repository for storing metadata.
+
+        Returns
+        -------
+        ObjectId
+            Catalog ID of the table.
+
+        See Also
+        --------
+        - [Catalog](/reference/featurebyte.api.catalog.Catalog)
+        """
+        return self.cached_model.catalog_id  # pylint: disable=no-member
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        """
+        List of primary key columns of the table.
+
+        Returns
+        -------
+        List[str]
+            List of primary key columns
+        """
+        return self.cached_model.primary_key_columns  # pylint: disable=no-member
+
+    @property
     def status(self) -> TableStatus:
         """
-        Data status
+        Table status. Either "DRAFT", "PUBLISHED", or "DEPRECATED".
 
         Returns
         -------
         TableStatus
+            Table status
         """
         try:
             return self.cached_model.status  # pylint: disable=no-member
@@ -299,16 +369,49 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def record_creation_timestamp_column(self) -> Optional[str]:
         """
-        Record creation timestamp column name
+        Record creation timestamp column name of this table.
 
         Returns
         -------
         Optional[str]
+            Record creation timestamp column name
         """
         try:
             return self.cached_model.record_creation_timestamp_column  # pylint: disable=no-member
         except RecordRetrievalException:
             return self.internal_record_creation_timestamp_column
+
+    @property
+    def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+        """
+        List of column cleaning operations associated with this table. Column cleaning operation is a list of
+        cleaning operations to be applied to a column of this table.
+
+        Returns
+        -------
+        List[ColumnCleaningOperation]
+            List of column cleaning operations
+
+        Examples
+        --------
+        Show the list of column cleaning operations of an event table
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table.column_cleaning_operations
+        []
+
+        See Also
+        --------
+        - [Table.columns_info](/reference/featurebyte.api.base_table.TableApiObject.columns_info)
+        - [TableColumn.update_critical_data_info](/reference/featurebyte.api.base_table.TableColumn.update_critical_data_info)
+        """
+        return [
+            ColumnCleaningOperation(
+                column_name=col.name, cleaning_operations=col.critical_data_info.cleaning_operations
+            )
+            for col in self.columns_info
+            if col.critical_data_info is not None and col.critical_data_info.cleaning_operations
+        ]
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None

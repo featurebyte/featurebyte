@@ -17,7 +17,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.proxy_table import ProxyTableModel
 
 
-class Table(ProxyTableModel, TableListMixin):
+class Table(TableListMixin):
     """
     A Table serves as a logical representation of a source table within the Catalog. The Table does not store data
     itself, but instead provides a way to access the source table and centralize essential metadata for feature
@@ -71,7 +71,7 @@ class Table(ProxyTableModel, TableListMixin):
             Retrieved source table
         """
         data = cls._get(name)
-        data_class = cls._data_type_to_cls_mapping[data.type]
+        data_class = cls._data_type_to_cls_mapping[data.cached_model.type]
         return data_class.get(name)
 
     @classmethod
@@ -90,5 +90,5 @@ class Table(ProxyTableModel, TableListMixin):
             Retrieved table source
         """
         data = cls._get_by_id(id)
-        data_class = cls._data_type_to_cls_mapping[data.type]
+        data_class = cls._data_type_to_cls_mapping[data.cached_model.type]
         return data_class.get_by_id(id)
