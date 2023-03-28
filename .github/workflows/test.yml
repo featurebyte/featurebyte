@@ -295,6 +295,7 @@ jobs:
       - name: Start local server
         run: |
           export FEATUREBYTE_NP_PASSWORD="${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}"
+          mkdir -p ~/.featurebyte/
           echo "profile:" > ~/.featurebyte/config.yaml
           echo "  - name: local" >> ~/.featurebyte/config.yaml
           echo "    api_url: http://127.0.0.1:8088" >> ~/.featurebyte/config.yaml
