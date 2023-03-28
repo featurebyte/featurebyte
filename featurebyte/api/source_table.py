@@ -137,11 +137,12 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def table_data(self) -> BaseTableData:
         """
-        Table data object for the given table model
+        Table data object of this table. This object contains information used to construct the SQL query.
 
         Returns
         -------
         BaseTableData
+            Table data object used for SQL query construction.
         """
         return self._table_data_class(**self.json_dict())
 

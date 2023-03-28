@@ -202,8 +202,8 @@ class TableUpdateService(BaseService):
                 update_action = (
                     self.include_object_id if update_flag > 0 else self.exclude_object_id
                 )
-                update_values["tabular_data_ids"] = update_action(
-                    document_ids=entity.tabular_data_ids, document_id=document.id
+                update_values["table_ids"] = update_action(
+                    document_ids=entity.table_ids, document_id=document.id
                 )
 
             if primary_update_flag != 0:
@@ -211,8 +211,8 @@ class TableUpdateService(BaseService):
                 update_action = (
                     self.include_object_id if primary_update_flag > 0 else self.exclude_object_id
                 )
-                update_values["primary_tabular_data_ids"] = update_action(
-                    document_ids=entity.primary_tabular_data_ids, document_id=document.id
+                update_values["primary_table_ids"] = update_action(
+                    document_ids=entity.primary_table_ids, document_id=document.id
                 )
 
             await self.entity_service.update_document(
@@ -273,7 +273,7 @@ class TableUpdateService(BaseService):
     async def _add_new_child_parent_relationships(
         self,
         primary_entity_id: ObjectId,
-        data_source_id: ObjectId,
+        table_id: ObjectId,
         parent_entity_ids_to_add: List[ObjectId],
     ) -> None:
         # Add relationship info links for new parent entity relationships
@@ -284,7 +284,7 @@ class TableUpdateService(BaseService):
                     relationship_type=RelationshipType.CHILD_PARENT,
                     primary_entity_id=PydanticObjectId(primary_entity_id),
                     related_entity_id=PydanticObjectId(new_parent_entity_id),
-                    primary_data_source_id=PydanticObjectId(data_source_id),
+                    primary_table_id=PydanticObjectId(table_id),
                     is_enabled=True,
                     updated_by=self.user.id,
                 )

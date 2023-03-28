@@ -111,14 +111,14 @@ class QueryGraph(QueryGraphModel):
             )
             assert timestamp_col is not None, "Timestamp column not found"
             if isinstance(timestamp_col, SourceDataColumn):
-                table_id = timestamp_col.tabular_data_id
+                table_id = timestamp_col.table_id
             else:
                 # for the item view, the timestamp column is from the event table, not the item table
                 # therefore the column is a DerivedDataColumn
                 assert isinstance(timestamp_col, DerivedDataColumn)
                 table_id = None
                 for column in timestamp_col.columns:
-                    table_id = column.tabular_data_id
+                    table_id = column.table_id
 
             assert table_id is not None, "Table ID not found"
             yield group_by_node, table_id

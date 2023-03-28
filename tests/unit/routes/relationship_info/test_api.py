@@ -47,7 +47,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
                     "type": "value_error.missing",
                 },
                 {
-                    "loc": ["body", "primary_data_source_id"],
+                    "loc": ["body", "primary_table_id"],
                     "msg": "field required",
                     "type": "value_error.missing",
                 },
@@ -72,7 +72,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
             payload["_id"] = str(ObjectId())
             payload["primary_entity_id"] = entity_ids[i * 2]
             payload["related_entity_id"] = entity_ids[i * 2 + 1]
-            payload["primary_data_source_id"] = "6337f9651050ee7d5980660d"
+            payload["primary_table_id"] = "6337f9651050ee7d5980660d"
             payload["updated_by"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
@@ -114,7 +114,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         assert response_dict["relationship_type"] == "child_parent"
         assert response_dict["primary_entity_name"] == "customer"
         assert response_dict["related_entity_name"] == "transaction"
-        assert response_dict["data_source_name"] == "sf_event_table"
+        assert response_dict["table_name"] == "sf_event_table"
 
     def test_update_200(self, test_api_client_persistent, create_success_response):
         """

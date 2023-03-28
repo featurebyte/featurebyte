@@ -86,7 +86,7 @@ async def mock_feature_fixture(feature_model_dict, session, feature_store):
             "version": "v1",
             "readiness": FeatureReadiness.DRAFT,
             "online_enabled": False,
-            "tabular_data_ids": [
+            "table_ids": [
                 ObjectId("626bccb9697a12204fb22ea3"),
                 ObjectId("726bccb9697a12204fb22ea3"),
             ],

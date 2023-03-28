@@ -37,7 +37,7 @@ def persistable_relationship_info_fixture(relationship_info_service, snowflake_e
                 relationship_type=RelationshipType.CHILD_PARENT,
                 primary_entity_id=cust_entity.id,
                 related_entity_id=user_entity.id,
-                primary_data_source_id=snowflake_event_table.id,
+                primary_table_id=snowflake_event_table.id,
                 is_enabled=False,
                 updated_by=PydanticObjectId(ObjectId()),
             )
@@ -86,8 +86,8 @@ def assert_relationship_info(relationship_info_df):
     assert relationship_info_df["relationship_type"][0] == "child_parent"
     assert relationship_info_df["primary_entity"][0] == "customer"
     assert relationship_info_df["related_entity"][0] == "user"
-    assert relationship_info_df["primary_data_source"][0] == "sf_event_table"
-    assert relationship_info_df["primary_data_type"][0] == "event_table"
+    assert relationship_info_df["primary_table"][0] == "sf_event_table"
+    assert relationship_info_df["primary_table_type"][0] == "event_table"
     assert not relationship_info_df["is_enabled"][0]
 
 

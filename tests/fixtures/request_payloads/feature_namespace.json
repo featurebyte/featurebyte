@@ -16,7 +16,7 @@
     ],
     "name": "sum_30m",
     "readiness": "DRAFT",
-    "tabular_data_ids": [
+    "table_ids": [
         "6337f9651050ee7d5980660d"
     ]
 }

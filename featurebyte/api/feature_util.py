@@ -23,7 +23,7 @@ FEATURE_COMMON_LIST_FIELDS = [
 
 FEATURE_LIST_FOREIGN_KEYS = [
     ForeignKeyMapping("entity_ids", Entity, "entities"),
-    ForeignKeyMapping("tabular_data_ids", TableApiObject, "tables"),
+    ForeignKeyMapping("table_ids", TableApiObject, "tables"),
     ForeignKeyMapping("primary_entity_ids", Entity, "primary_entities"),
     ForeignKeyMapping("primary_table_ids", TableApiObject, "primary_tables"),
 ]

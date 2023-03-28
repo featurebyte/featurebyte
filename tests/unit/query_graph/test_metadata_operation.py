@@ -18,8 +18,8 @@ def source_col1_fixture():
     """Source column fixture"""
     return SourceDataColumn(
         name="source_col1",
-        tabular_data_id=None,
-        tabular_data_type="event_table",
+        table_id=None,
+        table_type="event_table",
         node_names={"input_1"},
         node_name="input_1",
         dtype=DBVarType.FLOAT,
@@ -31,8 +31,8 @@ def source_col2_fixture():
     """Source column fixture"""
     return SourceDataColumn(
         name="source_col2",
-        tabular_data_id=None,
-        tabular_data_type="event_table",
+        table_id=None,
+        table_type="event_table",
         node_names={"input_1"},
         node_name="input_1",
         dtype=DBVarType.INT,
@@ -133,8 +133,8 @@ def test_insert_column():
     """Test insert column"""
     col1 = SourceDataColumn(
         name="col1",
-        tabular_data_id=None,
-        tabular_data_type="event_table",
+        table_id=None,
+        table_type="event_table",
         node_names={"input_1", "project_1"},
         node_name="input_1",
         dtype=DBVarType.FLOAT,
@@ -148,8 +148,8 @@ def test_insert_column():
             "name": "col1",
             "node_names": {"input_1", "project_1", "filter_1"},
             "node_name": "filter_1",
-            "tabular_data_id": None,
-            "tabular_data_type": "event_table",
+            "table_id": None,
+            "table_type": "event_table",
             "type": "source",
             "filter": True,
             "dtype": "FLOAT",
@@ -173,8 +173,8 @@ def test_data_column_clone_with_replacement(source_col1):
     )
     assert output == SourceDataColumn(
         name=source_col1.name,
-        tabular_data_id=source_col1.tabular_data_id,
-        tabular_data_type=source_col1.tabular_data_type,
+        table_id=source_col1.table_id,
+        table_type=source_col1.table_type,
         node_names={"input_1"},
         node_name="input_1",
         dtype=DBVarType.FLOAT,
@@ -188,8 +188,8 @@ def test_data_column_clone_with_replacement(source_col1):
     )
     assert output == SourceDataColumn(
         name=source_col1.name,
-        tabular_data_id=source_col1.tabular_data_id,
-        tabular_data_type=source_col1.tabular_data_type,
+        table_id=source_col1.table_id,
+        table_type=source_col1.table_type,
         node_names={"graph_1"},
         node_name="graph_1",
         dtype=DBVarType.FLOAT,
@@ -216,8 +216,8 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
     )
     assert output == {
         "name": "source_col1",
-        "tabular_data_id": None,
-        "tabular_data_type": "event_table",
+        "table_id": None,
+        "table_type": "event_table",
         "type": "source",
         "dtype": "FLOAT",
         "filter": False,
@@ -241,8 +241,8 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
                 "name": "source_col1",
                 "node_names": {"input_2"},
                 "node_name": "input_2",
-                "tabular_data_id": None,
-                "tabular_data_type": "event_table",
+                "table_id": None,
+                "table_type": "event_table",
                 "type": "source",
                 "dtype": "FLOAT",
             },
@@ -251,8 +251,8 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
                 "name": "source_col2",
                 "node_names": {"input_2"},
                 "node_name": "input_2",
-                "tabular_data_id": None,
-                "tabular_data_type": "event_table",
+                "table_id": None,
+                "table_type": "event_table",
                 "type": "source",
                 "dtype": "INT",
             },
@@ -280,8 +280,8 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
                 "name": "source_col1",
                 "node_names": {"graph_1"},  # note that input_1 is replaced with graph_1
                 "node_name": "graph_1",
-                "tabular_data_id": None,
-                "tabular_data_type": "event_table",
+                "table_id": None,
+                "table_type": "event_table",
                 "type": "source",
                 "dtype": "FLOAT",
             },
@@ -290,8 +290,8 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
                 "name": "source_col2",
                 "node_names": {"graph_1"},  # note that input_1 is replaced with graph_1
                 "node_name": "graph_1",
-                "tabular_data_id": None,
-                "tabular_data_type": "event_table",
+                "table_id": None,
+                "table_type": "event_table",
                 "type": "source",
                 "dtype": "INT",
             },

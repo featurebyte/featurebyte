@@ -87,8 +87,8 @@ class RelationshipInfoController(
             }
             raise ValueError(f"entity IDs not found: {missing_entity_ids}")
 
-        # Validate whether primary_data_source_id is ID by trying to retrieve it. If it's not, it will raise an error
-        await self.data_service.get_document(data.primary_data_source_id)
+        # Validate whether primary_table_id is ID by trying to retrieve it. If it's not, it will raise an error
+        await self.data_service.get_document(data.primary_table_id)
 
     async def list_relationship_info(
         self,

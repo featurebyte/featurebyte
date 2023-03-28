@@ -479,7 +479,7 @@ class Feature(
         try:
             # retrieve all the table used to construct this feature
             data_id_to_doc = {
-                data_id: Table.get_by_id(data_id).dict() for data_id in self.tabular_data_ids
+                data_id: Table.get_by_id(data_id).dict() for data_id in self.table_ids
             }
         except RecordRetrievalException:
             # table used to construct this feature has not been saved

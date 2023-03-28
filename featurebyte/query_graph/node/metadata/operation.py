@@ -301,8 +301,8 @@ class BaseDerivedColumn(BaseColumn):
 class SourceDataColumn(BaseDataColumn):
     """Source column"""
 
-    tabular_data_id: Optional[PydanticObjectId]
-    tabular_data_type: TableDataType
+    table_id: Optional[PydanticObjectId]
+    table_type: TableDataType
     type: Literal[ViewDataColumnType.SOURCE] = Field(ViewDataColumnType.SOURCE, const=True)
     filter: bool = Field(default=False)
 
@@ -407,16 +407,16 @@ class GroupOperationStructure(FeatureByteBaseModel):
     is_time_based: bool = Field(default=False)
 
     @property
-    def tabular_data_ids(self) -> List[PydanticObjectId]:
+    def table_ids(self) -> List[PydanticObjectId]:
         """
-        List of tabular data IDs used in the operation
+        List of table IDs used in the operation
 
         Returns
         -------
         List[PydanticObjectId]
         """
-        data_ids = [col.tabular_data_id for col in self.source_columns if col.tabular_data_id]
-        return list(set(data_ids))
+        table_ids = [col.table_id for col in self.source_columns if col.table_id]
+        return list(set(table_ids))
 
 
 class OperationStructure(FeatureByteBaseModel):

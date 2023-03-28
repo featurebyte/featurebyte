@@ -382,8 +382,8 @@ class InputNode(BaseNode):
             columns=[
                 SourceDataColumn(
                     name=column.name,
-                    tabular_data_id=self.parameters.id,
-                    tabular_data_type=self.parameters.type,
+                    table_id=self.parameters.id,
+                    table_type=self.parameters.type,
                     node_names={self.name},
                     node_name=self.name,
                     dtype=column.dtype,

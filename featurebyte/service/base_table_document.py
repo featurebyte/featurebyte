@@ -25,9 +25,9 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
     """
 
     @property
-    def tabular_data_type(self) -> str:
+    def table_type(self) -> str:
         """
-        Tabular data type
+        Table type
 
         Returns
         -------
@@ -36,9 +36,9 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         return str(self.document_class.__fields__["type"].default.value)
 
     @property
-    def tabular_data_type_to_class_name_map(self) -> dict[str, str]:
+    def table_type_to_class_name_map(self) -> dict[str, str]:
         """
-        Tabular data type to class name mapping
+        Table type to class name mapping
 
         Returns
         -------
@@ -60,7 +60,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         -------
         camel case collection name
         """
-        return "".join(elem.title() for elem in self.tabular_data_type.split("_"))
+        return "".join(elem.title() for elem in self.table_type.split("_"))
 
     def _construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
@@ -68,7 +68,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         query_filter = super()._construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
-        query_filter["type"] = self.tabular_data_type
+        query_filter["type"] = self.table_type
         return query_filter
 
     def _construct_list_query_filter(
@@ -80,7 +80,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         output = super()._construct_list_query_filter(
             query_filter=query_filter, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
-        output["type"] = self.tabular_data_type
+        output["type"] = self.table_type
         return output
 
     def _get_conflict_message(
@@ -89,11 +89,11 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         conflict_signature: dict[str, Any],
         resolution_signature: Optional[UniqueConstraintResolutionSignature],
     ) -> str:
-        tabular_data_type = conflict_doc["type"]
+        table_type = conflict_doc["type"]
         formatted_conflict_signature = ", ".join(
             f'{key}: "{value}"' for key, value in conflict_signature.items()
         )
-        class_name = self.class_name if tabular_data_type == self.tabular_data_type else "Table"
+        class_name = self.class_name if table_type == self.table_type else "Table"
         message = f"{class_name} ({formatted_conflict_signature}) already exists."
         if resolution_signature:
             if (
@@ -102,7 +102,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
             ):
                 resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
                     resolution_signature=resolution_signature,
-                    class_name=self.tabular_data_type_to_class_name_map[tabular_data_type],
+                    class_name=self.table_type_to_class_name_map[table_type],
                     document=conflict_doc,
                 )
                 message += f" Get the existing object by `{resolution_statement}`."

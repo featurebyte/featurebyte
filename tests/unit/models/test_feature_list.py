@@ -43,7 +43,7 @@ def feature_list_namespace_model_dict_fixture():
     ]
     feature_list_ids = [ObjectId("631af7f5b02b7992313dd585"), ObjectId("631af7f5b02b7992313dd584")]
     entity_ids = [ObjectId("631af7f5b02b7992313dd581"), ObjectId("631af7f5b02b7992313dd580")]
-    tabular_data_ids = [ObjectId("631af7f5b02b7992313dd583"), ObjectId("631af7f5b02b7992313dd582")]
+    table_ids = [ObjectId("631af7f5b02b7992313dd583"), ObjectId("631af7f5b02b7992313dd582")]
     return {
         "name": "my_feature_list",
         "feature_namespace_ids": feature_namespace_ids,
@@ -58,7 +58,7 @@ def feature_list_namespace_model_dict_fixture():
         "updated_at": None,
         "user_id": None,
         "entity_ids": entity_ids,
-        "tabular_data_ids": tabular_data_ids,
+        "table_ids": table_ids,
         "catalog_id": DEFAULT_CATALOG_ID,
     }
 

@@ -67,7 +67,7 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
     relationship_type: RelationshipType
     primary_entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
-    primary_data_source_id: PydanticObjectId
+    primary_table_id: PydanticObjectId
     is_enabled: bool
     updated_by: Optional[PydanticObjectId]
 

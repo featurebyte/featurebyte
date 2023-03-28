@@ -460,7 +460,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", TableApiObject, "tables"),
+        ForeignKeyMapping("table_ids", TableApiObject, "tables"),
     ]
 
     @property
