@@ -34,7 +34,7 @@ class FeatureListStatus(OrderedStrEnum):
     DEPRECATED = "DEPRECATED"
     DRAFT = "DRAFT"
     PUBLIC_DRAFT = "PUBLIC_DRAFT"
-    PUBLISHED = "PUBLISHED"
+    TEMPLATE = "TEMPLATE"
 
 
 class FeatureTypeFeatureCount(FeatureByteBaseModel):

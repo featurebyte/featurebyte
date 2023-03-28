@@ -452,7 +452,7 @@ def test_deserialization(production_ready_feature, draft_feature, quarantine_fea
     feature_group = FeatureGroup([production_ready_feature, draft_feature])
     feature_list = FeatureList([feature_group, quarantine_feature], name="my_feature_list")
     feature_list_dict = feature_list.dict(by_alias=True)
-    expected_status = FeatureListStatus.PUBLISHED
+    expected_status = FeatureListStatus.TEMPLATE
     expected_version = {"name": "V220701", "suffix": None}
     feature_list_dict["status"] = expected_status
     feature_list_dict["version"] = expected_version
@@ -800,7 +800,7 @@ def test_feature_list_update_status_and_default_version_mode__unsaved_feature_li
     """Test feature list status update - unsaved feature list"""
     assert feature_list.saved is False
     with pytest.raises(RecordRetrievalException) as exc:
-        feature_list.update_status(FeatureListStatus.PUBLISHED)
+        feature_list.update_status(FeatureListStatus.TEMPLATE)
     namespace_id = feature_list.feature_list_namespace_id
     expected = f'FeatureListNamespace (id: "{namespace_id}") not found. Please save the FeatureList object first.'
     assert expected in str(exc.value)
