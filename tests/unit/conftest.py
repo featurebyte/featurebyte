@@ -21,7 +21,6 @@ from snowflake.connector.constants import QueryStatus
 from featurebyte import FeatureJobSetting, MissingValueImputation, SnowflakeDetails
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import DefaultVersionMode, Feature
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
@@ -38,9 +37,7 @@ from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureLi
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.node import construct_node
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate

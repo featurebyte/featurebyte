@@ -3,11 +3,11 @@ This module contains Entity related models
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import List
 
 from datetime import datetime
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import (
