@@ -261,6 +261,8 @@ def start_app(
         Print verbose output
     """
     try:
+        # load config to ensure it exists before starting containers
+        config = Configurations()
         __setup_network()
         __backup_docker_conf()
         __use_docker_svc_account()
