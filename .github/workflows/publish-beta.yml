@@ -76,11 +76,6 @@ jobs:
           registry: ${{ env.BETA_DOCKER_LOCATION }}-docker.pkg.dev
           username: _json_key_base64
           password: ${{ secrets.BETA_ARTIFACT_REGISTRY_RW_B64 }}
-      - name: Check documentation image has been published
-        run: |
-          # Check if the documentation image with the corresponding version has been published
-          # If this fails go to documentation repo and publish the a version according to the tag required
-          docker manifest inspect "${{ env.DOCS_IMAGE_REPO }}:${{ github.event.inputs.version }}"
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
