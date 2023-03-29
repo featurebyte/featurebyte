@@ -128,17 +128,17 @@ def _get_table_layout() -> List[DocLayoutItem]:
             [TABLE, EXPLORE, "Table.describe"],
             "Table.describe",
             "api.base_table.TableApiObject.describe.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
+        ),
         DocLayoutItem(
             [TABLE, EXPLORE, "Table.preview"],
             "Table.preview",
             "api.base_table.TableApiObject.preview.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
+        ),
         DocLayoutItem(
             [TABLE, EXPLORE, "Table.sample"],
             "Table.sample",
             "api.base_table.TableApiObject.sample.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
+        ),
         DocLayoutItem(
             [TABLE, INFO, "Table.column_cleaning_operations"],
             "Table.column_cleaning_operations",
@@ -148,7 +148,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
             [TABLE, INFO, "Table.columns"],
             "Table.columns",
             "api.base_table.TableApiObject.columns.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
+        ),
         DocLayoutItem(
             [TABLE, INFO, "Table.columns_info"],
             "Table.columns_info",
@@ -159,7 +159,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
             [TABLE, INFO, "Table.dtypes"],
             "Table.dtypes",
             "api.base_table.TableApiObject.dtypes.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
+        ),
         DocLayoutItem([TABLE, INFO, "Table.info"], "Table.info"),
         DocLayoutItem(
             [TABLE, INFO, "Table.name"],
@@ -206,24 +206,32 @@ def _get_table_layout() -> List[DocLayoutItem]:
             [TABLE, INFO, "ItemTable.default_feature_job_setting"],
             "ItemTable.default_feature_job_setting",
         ),
-        DocLayoutItem([TABLE, LINEAGE, "Table.entity_ids"], "Table.entity_ids"),
+        DocLayoutItem(
+            [TABLE, LINEAGE, "Table.entity_ids"],
+            "Table.entity_ids",
+            "api.base_table.TableApiObject.entity_ids.md",
+        ),
         DocLayoutItem(
             [TABLE, LINEAGE, "Table.feature_store"],
             "Table.feature_store",
             "api.base_table.TableApiObject.feature_store.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
+        ),
         DocLayoutItem([TABLE, LINEAGE, "Table.id"], "Table.id"),
         DocLayoutItem(
             [TABLE, LINEAGE, "Table.preview_clean_data_sql"],
             "Table.preview_clean_data_sql",
             "api.base_table.TableApiObject.preview_clean_data_sql.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
+        ),
         DocLayoutItem(
             [TABLE, LINEAGE, "Table.preview_sql"],
             "Table.preview_sql",
             "api.base_table.TableApiObject.preview_sql.md",
-        ),  # TODO: this is technically not correct since this operations are on the impl classes
-        DocLayoutItem([TABLE, LINEAGE, "Table.tabular_source"], "Table.tabular_source"),
+        ),
+        DocLayoutItem(
+            [TABLE, LINEAGE, "Table.tabular_source"],
+            "Table.tabular_source",
+            "api.base_table.TableApiObject.tabular_source.md",
+        ),
         DocLayoutItem(
             [TABLE, LINEAGE, "ItemTable.event_table_id"],
             "ItemTable.event_table_id",
@@ -236,7 +244,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
             [TABLE, UPDATE, "Table.update_record_creation_timestamp_column"],
             "Table.update_record_creation_timestamp_column",
             "api.base_table.TableApiObject.update_record_creation_timestamp_column.md",
-        ),  # TODO: this is technically not correct?
+        ),
     ]
 
 
@@ -1117,7 +1125,6 @@ def get_overall_layout() -> List[DocLayoutItem]:
     List[DocLayoutItem]
         The overall layout for the documentation.
     """
-    # TODO: fix code edit links that are coming from parent classes
     return [
         *_get_table_layout(),
         *_get_table_column_layout(),
