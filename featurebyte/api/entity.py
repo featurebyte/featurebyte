@@ -175,6 +175,10 @@ class Entity(SavableApiObject):
         {'created_at': ..., 'name': 'grocerycustomer'},
         {'created_at': ..., 'name': 'customer'},
         {'created_at': ..., 'name': 'grocerycustomer'}]
+
+        See Also
+        --------
+        - [Entity.name_history](/reference/featurebyte.api.entity.Entity.name_history/)
         """
         self.update(update_payload={"name": name}, allow_update_local=True)
 
@@ -195,6 +199,10 @@ class Entity(SavableApiObject):
         >>> entity = catalog.get_entity(name="groceryproduct")
         >>> entity.name_history  # doctest: +ELLIPSIS
         [{'created_at': ..., 'name': 'groceryproduct'}]
+
+        See Also
+        --------
+        - [Entity.update_name](/reference/featurebyte.api.entity.Entity.update_name/)
         """
         return self._get_audit_history(field_name="name")
 

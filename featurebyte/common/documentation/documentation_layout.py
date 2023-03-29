@@ -301,6 +301,7 @@ def _get_entity_layout() -> List[DocLayoutItem]:
         DocLayoutItem([ENTITY, INFO, "Entity.created_at"], "Entity.created_at"),
         DocLayoutItem([ENTITY, INFO, "Entity.info"], "Entity.info"),
         DocLayoutItem([ENTITY, INFO, "Entity.name"], "Entity.name"),
+        DocLayoutItem([ENTITY, INFO, "Entity.name_history"], "Entity.name_history"),
         DocLayoutItem([ENTITY, INFO, "Entity.parents"], "Entity.parents"),
         DocLayoutItem([ENTITY, INFO, "Entity.saved"], "Entity.saved"),
         DocLayoutItem([ENTITY, INFO, "Entity.serving_names"], "Entity.serving_names"),
