@@ -38,4 +38,7 @@ def test_lookup_node_post_aggregation(global_graph, lookup_feature_node):
         global_graph, sql_type=SQLType.POST_AGGREGATION, source_type=SourceType.SNOWFLAKE
     )
     expr = sql_graph.build(lookup_feature_node).sql
-    assert expr.sql() == '("cust_value_1_9b8bee3acf7d5bc7" + "cust_value_2_9b8bee3acf7d5bc7")'
+    assert (
+        expr.sql()
+        == '("_fb_internal_lookup_cust_value_1_input_1" + "_fb_internal_lookup_cust_value_2_input_1")'
+    )

@@ -217,9 +217,9 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
     REQ."agg_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a" AS "agg_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a",
-    REQ."membership_status_fbfdb013880b3a67" AS "membership_status_fbfdb013880b3a67",
-    "T0"."cust_value_1_9b8bee3acf7d5bc7" AS "cust_value_1_9b8bee3acf7d5bc7",
-    "T0"."cust_value_2_9b8bee3acf7d5bc7" AS "cust_value_2_9b8bee3acf7d5bc7",
+    REQ."_fb_internal_lookup_membership_status_input_2" AS "_fb_internal_lookup_membership_status_input_2",
+    "T0"."_fb_internal_lookup_cust_value_1_input_3" AS "_fb_internal_lookup_cust_value_1_input_3",
+    "T0"."_fb_internal_lookup_cust_value_2_input_3" AS "_fb_internal_lookup_cust_value_2_input_3",
     "T1"."agg_w7200_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65" AS "agg_w7200_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65",
     "T2"."agg_w172800_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65" AS "agg_w172800_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65",
     "T3"."agg_w7776000_latest_b956ae318e1a8832a8c6193e7a8fff7b0824d2d1" AS "agg_w7776000_latest_b956ae318e1a8832a8c6193e7a8fff7b0824d2d1",
@@ -230,7 +230,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       L."CUSTOMER_ID" AS "CUSTOMER_ID",
       L."agg_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a" AS "agg_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a",
-      R."membership_status" AS "membership_status_fbfdb013880b3a67"
+      R."membership_status" AS "_fb_internal_lookup_membership_status_input_2"
     FROM (
       SELECT
         "__FB_KEY_COL_0",
@@ -351,8 +351,8 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   LEFT JOIN (
     SELECT
       "cust_id" AS "CUSTOMER_ID",
-      "cust_value_1" AS "cust_value_1_9b8bee3acf7d5bc7",
-      "cust_value_2" AS "cust_value_2_9b8bee3acf7d5bc7"
+      "cust_value_1" AS "_fb_internal_lookup_cust_value_1_input_3",
+      "cust_value_2" AS "_fb_internal_lookup_cust_value_2_input_3"
     FROM (
       SELECT
         "cust_id" AS "cust_id",
@@ -480,9 +480,9 @@ SELECT
   "agg_w172800_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65" AS "a_48h_average",
   "count_None_5e7639945a1797b3" AS "order_size",
   (
-    "cust_value_1_9b8bee3acf7d5bc7" + "cust_value_2_9b8bee3acf7d5bc7"
+    "_fb_internal_lookup_cust_value_1_input_3" + "_fb_internal_lookup_cust_value_2_input_3"
   ) AS "MY FEATURE",
-  "membership_status_fbfdb013880b3a67" AS "Current Membership Status",
+  "_fb_internal_lookup_membership_status_input_2" AS "Current Membership Status",
   "agg_w7776000_latest_b956ae318e1a8832a8c6193e7a8fff7b0824d2d1" AS "a_latest_value_past_90d",
   "agg_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a" AS "a_latest_value",
   "count_None_73d3277c62d87bcc" AS "asat_feature"

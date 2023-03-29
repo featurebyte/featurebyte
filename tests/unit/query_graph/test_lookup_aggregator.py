@@ -47,6 +47,7 @@ def scd_lookup_specs_with_current_flag(global_graph, scd_lookup_node):
         scd_lookup_node,
         graph=global_graph,
         source_type=SourceType.SNOWFLAKE,
+        is_online_serving=True,
     )
 
 
@@ -111,7 +112,7 @@ def test_lookup_aggregator__offline_dimension_only(
     assert len(direct_lookup_specs) == 1
     specs = [asdict(spec) for spec in direct_lookup_specs[0]]
     for spec in specs:
-        spec.pop("source_expr")
+        spec.pop("aggregation_source")
     assert specs == [
         {
             "serving_names": ["CUSTOMER_ID"],
@@ -157,7 +158,7 @@ def test_lookup_aggregator__offline_scd_only(
     assert len(scd_lookup_specs) == 1
     specs = [asdict(spec) for spec in scd_lookup_specs[0]]
     for spec in specs:
-        spec.pop("source_expr")
+        spec.pop("aggregation_source")
     assert specs == [
         {
             "serving_names": ["CUSTOMER_ID"],
@@ -195,7 +196,7 @@ def test_lookup_aggregator__online_with_current_flag(
     assert len(direct_lookup_specs) == 1
     specs = [asdict(spec) for spec in direct_lookup_specs[0]]
     for spec in specs:
-        spec.pop("source_expr")
+        spec.pop("aggregation_source")
     assert specs == [
         {
             "serving_names": ["CUSTOMER_ID"],
@@ -218,13 +219,13 @@ def test_lookup_aggregator__online_with_current_flag(
 
     direct_lookups = aggregator.get_direct_lookups()
     assert len(direct_lookups) == 1
-    assert direct_lookups[0].column_names == ["membership_status_fbfdb013880b3a67"]
+    assert direct_lookups[0].column_names == ["_fb_internal_lookup_membership_status_input_1"]
     assert direct_lookups[0].join_keys == ["CUSTOMER_ID"]
     expected_sql = textwrap.dedent(
         """
         SELECT
           "cust_id" AS "CUSTOMER_ID",
-          "membership_status" AS "membership_status_fbfdb013880b3a67"
+          "membership_status" AS "_fb_internal_lookup_membership_status_input_1"
         FROM (
           SELECT
             "effective_ts" AS "effective_ts",
@@ -261,7 +262,7 @@ def test_lookup_aggregator__online_without_current_flag(
     assert len(scd_lookup_specs) == 1
     specs = [asdict(spec) for spec in scd_lookup_specs[0]]
     for spec in specs:
-        spec.pop("source_expr")
+        spec.pop("aggregation_source")
     assert specs == [
         {
             "serving_names": ["CUSTOMER_ID"],
@@ -302,7 +303,7 @@ def test_lookup_aggregator__online_with_offset(
     assert len(scd_lookup_specs) == 1
     specs = [asdict(spec) for spec in scd_lookup_specs[0]]
     for spec in specs:
-        spec.pop("source_expr")
+        spec.pop("aggregation_source")
     assert specs == [
         {
             "serving_names": ["CUSTOMER_ID"],
@@ -335,7 +336,7 @@ def test_lookup_aggregator__event_table(offline_lookup_aggregator, event_lookup_
     assert len(direct_lookup_specs) == 1
     specs = [asdict(spec) for spec in direct_lookup_specs[0]]
     for spec in specs:
-        spec.pop("source_expr")
+        spec.pop("aggregation_source")
     assert specs == [
         {
             "entity_ids": [entity_id],
