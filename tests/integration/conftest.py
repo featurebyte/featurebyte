@@ -548,10 +548,12 @@ def scd_dataframe_fixture(transaction_data):
         .sort_values(["User ID", "Effective Timestamp"])
         .reset_index(drop=True)
     )
+    index = data.index
     current_flag = data.groupby("User ID", as_index=False).agg({"Effective Timestamp": "max"})
     current_flag["Current Flag"] = True
     data = pd.merge(data, current_flag, on=["User ID", "Effective Timestamp"], how="left")
     data["Current Flag"] = data["Current Flag"].fillna(False)
+    data.index = index
     yield data
 
 
