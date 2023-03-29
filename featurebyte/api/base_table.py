@@ -20,7 +20,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
 from featurebyte.enum import TableDataType, ViewMode
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel, TableStatus
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -285,6 +285,17 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     internal_record_creation_timestamp_column: Optional[str] = Field(
         alias="record_creation_timestamp_column"
     )
+
+    @property
+    def entity_ids(self) -> List[PydanticObjectId]:
+        """
+        List of entity IDs in the table model list.
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        return self.cached_model.entity_ids  # pylint: disable=no-member
 
     @property
     def table_data(self) -> BaseTableData:
