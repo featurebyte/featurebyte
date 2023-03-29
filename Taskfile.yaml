@@ -1,0 +1,282 @@
+version: '3'
+
+tasks:
+  init:
+    desc: "Initialize the project for development"
+    preconditions:
+      - sh: poetry --version
+        msg: "Poetry is not installed. Please install it from https://python-poetry.org/docs/#installation"
+      - sh: docker --version
+        msg: "Docker is not installed. Please install it from https://docs.docker.com/get-docker/"
+      - sh: yq --version
+        msg: "yq is not installed. Please install it from https://github.com/mikefarah/yq"
+      - sh: jq --version
+        msg: "jq is not installed. Please install it from https://stedolan.github.io/jq/download/"
+    cmds:
+      - poetry run pre-commit install
+
+  deps:
+    aliases:
+      - deps-install
+    desc: "Install the project dependencies"
+    sources:
+      - pyproject.toml
+      - poetry.lock
+    deps:
+      - deps-jar
+    cmds:
+      - poetry install -n --sync --extras=server
+
+  deps-update:
+    desc: "Update the project dependencies"
+    cmds:
+      - poetry update
+
+  deps-jar:
+    desc: "Compile the hive jar files"
+    sources:
+      - hive-udf/
+    cmds:
+      - cd hive-udf && ./gradlew test && ./gradlew shadowJar
+      - rm -f featurebyte/sql/spark/*.jar
+      - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
+
+  build:
+    desc: "Build the project"
+    sources:
+      - featurebyte/
+      - pyproject.toml
+      - poetry.lock
+      - LICENSE
+      - README.md
+    deps:
+      - deps
+    cmds:
+      - poetry build
+  format:
+    desc: "Format the code"
+    sources:
+      - featurebyte/
+      - tests/
+      - poetry.lock
+      - pyproject.toml
+    deps:
+      - deps
+    cmds:
+      - poetry run pyupgrade --py38-plus **/*.py
+      - poetry run isort .
+      - poetry run black .
+      - poetry run toml-sort --all --in-place pyproject.toml poetry.lock
+
+  lint:
+    desc: "Run the linter"
+    deps:
+      - deps
+      - format
+    cmds:
+      - task: lint-style
+      - task: lint-type
+      - task: lint-safety
+      - task: lint-bandit
+
+  lint-style:
+    desc: "Run the linter[style]"
+    vars:
+      PYLINT_DISABLE_FOR_SRCS: 'too-few-public-methods'
+      PYLINT_DISABLE_FOR_TESTS: 'redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code'
+      DARG_SOURCES:
+        sh: |
+          echo "$(find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" ! -path "featurebyte/__main__.py" ! -path "featurebyte/datasets/*" ! -path "featurebyte/conftest.py" ! -path "featurebyte/common/documentation/*" | xargs)" "$(find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs)"
+    sources:
+      - poetry.lock
+      - pyproject.toml
+      - featurebyte/
+      - tests/
+    cmds:
+      - poetry run toml-sort --check poetry.lock pyproject.toml    # Check if user been using pre-commit hook
+      - poetry run isort --diff --check-only --settings-path pyproject.toml .
+      - poetry run black --diff --check .
+      - poetry run pylint --disable={{ .PYLINT_DISABLE_FOR_SRCS }} --rcfile pyproject.toml featurebyte
+      - poetry run pylint --disable={{ .PYLINT_DISABLE_FOR_TESTS }} --rcfile pyproject.toml tests
+      - poetry run darglint --verbosity 2 {{ .DARG_SOURCES }}
+
+  lint-type:
+    desc: "Run the linter[type]"
+    sources:
+      - poetry.lock
+      - pyproject.toml
+      - featurebyte/
+      - tests/
+    cmds:
+      - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py|featurebyte/common/documentation/*)' .
+
+  lint-safety:
+    desc: "Run the linter[safety]"
+    vars:
+      PERMISSIVE_LICENSES: >
+        Apache License 2.0;
+        Apache License, Version 2.0;
+        Apache Software License;
+        BSD;
+        BSD License;
+        Historical Permission Notice and Disclaimer (HPND);
+        GNU General Public License v2 (GPLv2);
+        ISC License (ISCL);
+        ISC;
+        MIT License;
+        MIT;
+        MPL-2.0;
+        Mozilla Public License 2.0 (MPL 2.0);
+        Public Domain;
+        Python Software Foundation License;
+        The Unlicense (Unlicense)
+      PACKAGES:
+        sh: poetry export --without-hashes --without-urls --extras server | cut -d '=' -f1 | xargs
+    sources:
+      - poetry.lock
+      - pyproject.toml
+      - featurebyte/
+    cmds:
+      - poetry run pip-licenses --packages '{{ .PACKAGES }}' --allow-only='{{ .PERMISSIVE_LICENSES }}'
+      - poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5 --ignore-vul GHSA-74m5-2c7w-9w3x
+
+  lint-bandit:
+    desc: "Run the linter[bandit]"
+    sources:
+      - poetry.lock
+      - pyproject.toml
+      - featurebyte/
+    cmds:
+      - poetry run bandit -c pyproject.toml -ll --recursive featurebyte
+
+  test:
+    desc: Runs full test-suite
+    deps:
+      - test-setup
+    cmds:
+      - defer: test-teardown
+      - task: test-unit
+      - task: test-integration
+      - task: test-docs
+
+  test-unit:
+    desc: Runs unit tests
+    deps:
+      - deps
+    cmds:
+      - poetry run pytest --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
+
+  test-integration:
+    desc: Runs integration tests
+    deps:
+      - deps
+      - test-setup
+    cmds:
+      - task: test-integration-snowflake
+      - task: test-integration-spark
+
+  test-integration-snowflake:
+    desc: Runs integration tests against Snowflake
+    deps:
+      - deps
+      - test-setup
+    cmds:
+      - defer: test-teardown
+      - poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
+
+  test-integration-spark:
+    desc: Runs integration tests against Spark
+    deps:
+      - deps
+      - test-setup
+    cmds:
+      - defer: test-teardown
+      - poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
+
+  test-docs:
+    desc: Runs documentation tests
+    deps:
+      - deps
+    cmds:
+      - exit 1  # TODO: Implement
+
+  test-merge:
+    desc: Runs tests on merge
+    deps:
+      - test-setup
+    cmds:
+      - "echo 'coverage: platform' > pytest-coverage.txt"
+      - poetry run coverage combine
+      - poetry run coverage report >> pytest-coverage.txt
+      - poetry run junitparser merge pytest.xml.* pytest.xml
+
+  test-setup:
+    desc: "Setup the test environment"
+    env:
+      LOCAL_UID:
+        sh: id -u
+      LOCAL_GID:
+        sh: id -g
+    status:
+      - docker compose ls | grep 'featurebyte-test'
+    cmds:
+      - mkdir -p ~/.spark/data
+      - cd docker && docker compose -p featurebyte-test -f docker-compose.test.yml up -d
+      - task: test-setup-status
+
+  test-setup-status:
+    desc: "Wait for the test environment to be ready"
+    preconditions:
+      - sh: docker compose ls | grep 'featurebyte-test'
+        msg: "Test environment is not running."
+    cmds:
+      - cmd: |
+          for i in {1..60}; do
+            docker container inspect -f "{{ .State.Health.Status }}" spark-thrift-test | grep 'healthy' -q
+            if [ $? -eq 0 ]; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+
+  test-teardown:
+    desc: "Teardown the test environment"
+    preconditions:
+      - sh: docker compose ls | grep 'featurebyte-test'
+        msg: "Test environment is not running."
+    cmds:
+      - cd docker && docker compose -p featurebyte-test -f docker-compose.test.yml down
+      - rm -rf ~/.spark/data
+
+  docs:
+    desc: "Build the documentation"
+    deps:
+      - deps
+    env:
+      PYTHONPATH:
+        sh: echo "$(pwd)/docs/extensions"
+      FB_GENERATE_FULL_DOCS: 1
+    cmds:
+      - poetry run mkdocs serve --config-file mkdocs.yaml --no-livereload
+
+  docs-reload:
+    desc: "Build the documentation and reload the browser"
+    deps:
+      - deps
+    env:
+      PYTHONPATH:
+        sh: echo "$(pwd)/docs/extensions"
+      FB_GENERATE_FULL_DOCS: 1
+    cmds:
+      - poetry run mkdocs serve --config-file mkdocs.yaml
+
+  docker:
+    desc: "Build the docker image"
+    preconditions:
+      - sh: printenv FEATUREBYTE_NP_PASSWORD
+        msg: "FEATUREBYTE_NP_PASSWORD is not set."
+    deps:
+      - build
+    cmds:
+      - docker buildx build . -f docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="${FEATUREBYTE_NP_PASSWORD}" -t featurebyte-server:latest
