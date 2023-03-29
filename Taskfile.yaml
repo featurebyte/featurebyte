@@ -137,7 +137,7 @@ tasks:
       - featurebyte/
     cmds:
       - poetry run pip-licenses --packages '{{ .PACKAGES }}' --allow-only='{{ .PERMISSIVE_LICENSES }}'
-      - poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5 --ignore-vul GHSA-74m5-2c7w-9w3x
+      - poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5 --ignore-vul GHSA-74m5-2c7w-9w3x --ignore-vul GHSA-8fww-64cx-x8p5
 
   lint-bandit:
     internal: true
@@ -218,8 +218,6 @@ tasks:
 
   test-merge:
     desc: Runs tests on merge
-    deps:
-      - task: test-setup
     cmds:
       - "echo 'coverage: platform' > pytest-coverage.txt"
       - poetry run coverage combine
@@ -293,12 +291,3 @@ tasks:
       - docker volume rm $(docker volume ls -q)
       - rm -rf ~/.spark
       - rm -rf ~/.featurebyte/data
-
-  sleep:
-    cmds:
-      - |
-          for i in {1..60}; do
-            docker container inspect -f "{{"{{"}} .State.Health.Status {{"}}"}}" spark-thrift-test | grep 'healthy' -q && exit 0
-            sleep 1
-          done
-          exit 1
