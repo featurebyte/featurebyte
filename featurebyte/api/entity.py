@@ -91,6 +91,13 @@ class Entity(SavableApiObject):
         >>> entity = catalog.get_entity("grocerycustomer")
         >>> entity.serving_names
         ['GROCERYCUSTOMERGUID']
+
+        See Also
+        --------
+        - [Feature.preview](/reference/featurebyte.api.feature.Feature.preview/)
+        - [FeatureList.preview](/reference/featurebyte.api.feature_list.FeatureList.preview/)
+        - [FeatureList.get_historical_features](/reference/featurebyte.api.feature_list.FeatureList.get_historical_features/)
+        - [FeatureList.get_online_serving_code](/reference/featurebyte.api.feature_list.FeatureList.get_online_serving_code/)
         """
         try:
             return self.cached_model.serving_names
