@@ -274,8 +274,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         str
             Aggregation result name
         """
-        parts = ["_fb_internal"]
-        parts.extend(args)
+        parts = ["_fb_internal", self.aggregation_type]
+        parts.extend([f"{arg}" for arg in args])
         parts.append(self.aggregation_source.query_node_name)
         return "_".join(parts)
 
@@ -408,7 +408,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         str
             Column name of the aggregated result
         """
-        return f"{self.parameters.agg_func}_{self.parameters.parent}_{self.source_hash}"
+        return self.construct_agg_result_name(self.parameters.agg_func, self.parameters.parent)
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -460,7 +460,7 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         str
             Column name of the aggregated result
         """
-        return f"{self.parameters.agg_func}_{self.parameters.parent}_{self.source_hash}"
+        return self.construct_agg_result_name(self.parameters.agg_func, self.parameters.parent)
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -517,7 +517,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
     def agg_result_name(self) -> str:
         if self.is_parent_lookup:
             return self.feature_name
-        return self.construct_agg_result_name("lookup", self.input_column_name)
+        return self.construct_agg_result_name(self.input_column_name)
 
     @property
     def aggregation_type(self) -> AggregationType:

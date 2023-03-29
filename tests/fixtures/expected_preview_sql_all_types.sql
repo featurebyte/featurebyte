@@ -223,8 +223,8 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     "T1"."agg_w7200_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65" AS "agg_w7200_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65",
     "T2"."agg_w172800_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65" AS "agg_w172800_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65",
     "T3"."agg_w7776000_latest_b956ae318e1a8832a8c6193e7a8fff7b0824d2d1" AS "agg_w7776000_latest_b956ae318e1a8832a8c6193e7a8fff7b0824d2d1",
-    "T4"."count_None_5e7639945a1797b3" AS "count_None_5e7639945a1797b3",
-    "T5"."count_None_73d3277c62d87bcc" AS "count_None_73d3277c62d87bcc"
+    "T4"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1",
+    "T5"."_fb_internal_as_at_count_None_input_2" AS "_fb_internal_as_at_count_None_input_2"
   FROM (
     SELECT
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
@@ -426,7 +426,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   LEFT JOIN (
     SELECT
       REQ."order_id" AS "order_id",
-      COUNT(*) AS "count_None_5e7639945a1797b3"
+      COUNT(*) AS "_fb_internal_item_count_None_input_1"
     FROM "REQUEST_TABLE_order_id" AS REQ
     INNER JOIN (
       SELECT
@@ -445,7 +445,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."MEMBERSHIP_STATUS",
-      COUNT(*) AS "count_None_73d3277c62d87bcc"
+      COUNT(*) AS "_fb_internal_as_at_count_None_input_2"
     FROM "REQUEST_TABLE_POINT_IN_TIME_MEMBERSHIP_STATUS" AS REQ
     INNER JOIN (
       SELECT
@@ -478,12 +478,12 @@ SELECT
   AGG."CUSTOMER_ID",
   "agg_w7200_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65" AS "a_2h_average",
   "agg_w172800_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65" AS "a_48h_average",
-  "count_None_5e7639945a1797b3" AS "order_size",
+  "_fb_internal_item_count_None_input_1" AS "order_size",
   (
     "_fb_internal_lookup_cust_value_1_input_3" + "_fb_internal_lookup_cust_value_2_input_3"
   ) AS "MY FEATURE",
   "_fb_internal_lookup_membership_status_input_2" AS "Current Membership Status",
   "agg_w7776000_latest_b956ae318e1a8832a8c6193e7a8fff7b0824d2d1" AS "a_latest_value_past_90d",
   "agg_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a" AS "a_latest_value",
-  "count_None_73d3277c62d87bcc" AS "asat_feature"
+  "_fb_internal_as_at_count_None_input_2" AS "asat_feature"
 FROM _FB_AGGREGATED AS AGG

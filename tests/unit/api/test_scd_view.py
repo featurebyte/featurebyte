@@ -25,7 +25,6 @@ class TestSCDView(BaseViewTestSuite):
     SELECT
       "col_int" AS "col_int",
       "col_float" AS "col_float",
-      "is_active" AS "is_active",
       "col_text" AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
@@ -211,7 +210,7 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
     timestamp column
     """
     subset_view = snowflake_scd_view[["col_float"]]
-    assert subset_view.columns == ["col_float", "is_active", "col_text", "effective_timestamp"]
+    assert subset_view.columns == ["col_float", "col_text", "effective_timestamp"]
 
 
 def test_scd_view_as_feature__special_column(snowflake_scd_table, cust_id_entity):

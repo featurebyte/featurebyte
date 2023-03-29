@@ -10,16 +10,19 @@ from sqlglot.expressions import select
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
-from featurebyte.query_graph.sql.specs import ItemAggregationSpec
+from featurebyte.query_graph.sql.specs import AggregationSource, ItemAggregationSpec
 
 
 @pytest.fixture
-def item_table_sql():
-    return select("*").from_("ITEM_TABLE")
+def item_aggregation_source():
+    return AggregationSource(
+        expr=select("*").from_("ITEM_TABLE"),
+        query_node_name="input_1",
+    )
 
 
 @pytest.fixture
-def aggregation_spec_order_size(item_table_sql):
+def aggregation_spec_order_size(item_aggregation_source):
     params = ItemGroupbyParameters(
         keys=["order_id"],
         serving_names=["serving_order_id"],
@@ -30,13 +33,13 @@ def aggregation_spec_order_size(item_table_sql):
         serving_names=["serving_order_id"],
         serving_names_mapping={"serving_order_id": "new_serving_order_id"},
         parameters=params,
-        source_expr=item_table_sql,
+        aggregation_source=item_aggregation_source,
         entity_ids=[ObjectId()],
     )
 
 
 @pytest.fixture
-def aggregation_spec_max_item_price(item_table_sql):
+def aggregation_spec_max_item_price(item_aggregation_source):
     params = ItemGroupbyParameters(
         keys=["order_id"],
         serving_names=["serving_order_id"],
@@ -48,13 +51,13 @@ def aggregation_spec_max_item_price(item_table_sql):
         serving_names=["serving_order_id"],
         serving_names_mapping={"serving_order_id": "new_serving_order_id"},
         parameters=params,
-        source_expr=item_table_sql,
+        aggregation_source=item_aggregation_source,
         entity_ids=[ObjectId()],
     )
 
 
 @pytest.fixture
-def aggregation_spec_with_category(item_table_sql):
+def aggregation_spec_with_category(item_aggregation_source):
     params = ItemGroupbyParameters(
         keys=["order_id"],
         serving_names=["serving_order_id"],
@@ -67,7 +70,7 @@ def aggregation_spec_with_category(item_table_sql):
         serving_names=["serving_order_id"],
         serving_names_mapping={"serving_order_id": "new_serving_order_id"},
         parameters=params,
-        source_expr=item_table_sql,
+        aggregation_source=item_aggregation_source,
         entity_ids=[ObjectId()],
     )
 
@@ -105,15 +108,15 @@ def test_item_aggregation(aggregation_specs):
         """
         SELECT
           a,
-          "T0"."count_None_96c6eef6e2c57bc9" AS "count_None_96c6eef6e2c57bc9",
-          "T0"."max_price_96c6eef6e2c57bc9" AS "max_price_96c6eef6e2c57bc9",
-          "T1"."max_price_fc08c26b73105fff" AS "max_price_fc08c26b73105fff"
+          "T0"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1",
+          "T0"."_fb_internal_item_max_price_input_1" AS "_fb_internal_item_max_price_input_1",
+          "T1"."_fb_internal_item_max_price_input_1" AS "_fb_internal_item_max_price_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."new_serving_order_id" AS "new_serving_order_id",
-            COUNT(*) AS "count_None_96c6eef6e2c57bc9",
-            MAX(ITEM."price") AS "max_price_96c6eef6e2c57bc9"
+            COUNT(*) AS "_fb_internal_item_count_None_input_1",
+            MAX(ITEM."price") AS "_fb_internal_item_max_price_input_1"
           FROM "REQUEST_TABLE_new_serving_order_id" AS REQ
           INNER JOIN (
             SELECT
@@ -134,13 +137,13 @@ def test_item_aggregation(aggregation_specs):
                 THEN '__MISSING__'
                 ELSE CAST(INNER_."item_type" AS TEXT)
               END,
-              TO_VARIANT(INNER_."max_price_fc08c26b73105fff_inner")
-            ) AS "max_price_fc08c26b73105fff"
+              TO_VARIANT(INNER_."_fb_internal_item_max_price_input_1_inner")
+            ) AS "_fb_internal_item_max_price_input_1"
           FROM (
             SELECT
               REQ."new_serving_order_id" AS "new_serving_order_id",
               ITEM."item_type" AS "item_type",
-              MAX(ITEM."price") AS "max_price_fc08c26b73105fff_inner"
+              MAX(ITEM."price") AS "_fb_internal_item_max_price_input_1_inner"
             FROM "REQUEST_TABLE_new_serving_order_id" AS REQ
             INNER JOIN (
               SELECT

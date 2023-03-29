@@ -237,7 +237,7 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
           "order_id" AS "order_id",
           "order_method" AS "order_method",
           (
-            "count_None_0e627034a1351a74" + 123
+            "_fb_internal_item_count_None_input_1" + 123
           ) AS "ord_size"
         FROM (
           SELECT
@@ -245,7 +245,7 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
             REQ."cust_id",
             REQ."order_id",
             REQ."order_method",
-            "T0"."count_None_0e627034a1351a74" AS "count_None_0e627034a1351a74"
+            "T0"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1"
           FROM (
             SELECT
               "ts" AS "ts",
@@ -257,7 +257,7 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
           LEFT JOIN (
             SELECT
               ITEM."order_id" AS "order_id",
-              COUNT(*) AS "count_None_0e627034a1351a74"
+              COUNT(*) AS "_fb_internal_item_count_None_input_1"
             FROM (
               SELECT
                 "order_id" AS "order_id",
@@ -346,7 +346,7 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
                 "order_id" AS "order_id",
                 "order_method" AS "order_method",
                 (
-                  "count_None_0e627034a1351a74" + 123
+                  "_fb_internal_item_count_None_input_1" + 123
                 ) AS "ord_size"
               FROM (
                 SELECT
@@ -354,7 +354,7 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
                   REQ."cust_id",
                   REQ."order_id",
                   REQ."order_method",
-                  "T0"."count_None_0e627034a1351a74" AS "count_None_0e627034a1351a74"
+                  "T0"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1"
                 FROM (
                   SELECT
                     "ts" AS "ts",
@@ -366,7 +366,7 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
                 LEFT JOIN (
                   SELECT
                     ITEM."order_id" AS "order_id",
-                    COUNT(*) AS "count_None_0e627034a1351a74"
+                    COUNT(*) AS "_fb_internal_item_count_None_input_1"
                   FROM (
                     SELECT
                       "order_id" AS "order_id",

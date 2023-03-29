@@ -39,7 +39,7 @@ def event_lookup_specs(global_graph, event_lookup_node):
 
 
 @pytest.fixture
-def scd_lookup_specs_with_current_flag(global_graph, scd_lookup_node):
+def scd_lookup_specs_with_current_flag(global_graph, scd_lookup_node, is_online_serving):
     """
     Fixture for a list of LookupSpec derived from SCD lookup
     """
@@ -47,12 +47,14 @@ def scd_lookup_specs_with_current_flag(global_graph, scd_lookup_node):
         scd_lookup_node,
         graph=global_graph,
         source_type=SourceType.SNOWFLAKE,
-        is_online_serving=True,
+        is_online_serving=is_online_serving,
     )
 
 
 @pytest.fixture
-def scd_lookup_specs_without_current_flag(global_graph, scd_lookup_without_current_flag_node):
+def scd_lookup_specs_without_current_flag(
+    global_graph, scd_lookup_without_current_flag_node, is_online_serving
+):
     """
     Fixture for a list of LookupSpec derived from SCD lookup without current flag column
     """
@@ -60,11 +62,12 @@ def scd_lookup_specs_without_current_flag(global_graph, scd_lookup_without_curre
         scd_lookup_without_current_flag_node,
         graph=global_graph,
         source_type=SourceType.SNOWFLAKE,
+        is_online_serving=is_online_serving,
     )
 
 
 @pytest.fixture
-def scd_lookup_specs_with_offset(global_graph, scd_offset_lookup_node):
+def scd_lookup_specs_with_offset(global_graph, scd_offset_lookup_node, is_online_serving):
     """
     Fixture for a list of LookupSpec derived from SCD lookup with offset
     """
@@ -72,6 +75,7 @@ def scd_lookup_specs_with_offset(global_graph, scd_offset_lookup_node):
         scd_offset_lookup_node,
         graph=global_graph,
         source_type=SourceType.SNOWFLAKE,
+        is_online_serving=is_online_serving,
     )
 
 
@@ -142,6 +146,7 @@ def test_lookup_aggregator__offline_dimension_only(
     assert len(scd_lookup_specs) == 0
 
 
+@pytest.mark.parametrize("is_online_serving", [False])
 def test_lookup_aggregator__offline_scd_only(
     offline_lookup_aggregator, scd_lookup_specs_with_current_flag, entity_id
 ):
@@ -180,6 +185,7 @@ def test_lookup_aggregator__offline_scd_only(
     ]
 
 
+@pytest.mark.parametrize("is_online_serving", [True])
 def test_lookup_aggregator__online_with_current_flag(
     online_lookup_aggregator,
     scd_lookup_specs_with_current_flag,
@@ -243,6 +249,7 @@ def test_lookup_aggregator__online_with_current_flag(
     assert len(scd_lookup_specs) == 0
 
 
+@pytest.mark.parametrize("is_online_serving", [True])
 def test_lookup_aggregator__online_without_current_flag(
     online_lookup_aggregator,
     scd_lookup_specs_without_current_flag,
@@ -284,6 +291,7 @@ def test_lookup_aggregator__online_without_current_flag(
     ]
 
 
+@pytest.mark.parametrize("is_online_serving", [True])
 def test_lookup_aggregator__online_with_offset(
     online_lookup_aggregator,
     scd_lookup_specs_with_offset,
