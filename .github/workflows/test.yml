@@ -162,6 +162,14 @@ jobs:
           path: featurebyte/sql/spark/
       - name: Run tests
         run: |
+          mkdir -p ~/.featurebyte/
+          echo "
+          profile:
+            - name: local
+              api_url: http://127.0.0.1:8088
+          logging:
+             telemetry: false
+          " > ~/.featurebyte/config.yaml
           make test-setup
           make test-integration-snowflake
           make test-teardown
@@ -218,6 +226,15 @@ jobs:
       - name: Run tests
         continue-on-error: true
         run: |
+          mkdir -p ~/.featurebyte/
+          echo "
+          profile:
+            - name: local
+              api_url: http://127.0.0.1:8088
+          logging:
+             telemetry: false
+          " > ~/.featurebyte/config.yaml
+
           make test-setup
           set +e
           make test-integration-spark
@@ -295,6 +312,14 @@ jobs:
       - name: Start local server
         run: |
           export FEATUREBYTE_NP_PASSWORD="${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}"
+          mkdir -p ~/.featurebyte/
+          echo "
+          profile:
+            - name: local
+              api_url: http://127.0.0.1:8088
+          logging:
+             telemetry: false
+          " > ~/.featurebyte/config.yaml
           make docker-build
       - name: Test documentation
         run: |
