@@ -84,7 +84,7 @@ def test_configurations_telemetry():
     config = Configurations("tests/fixtures/config/config_telemetry.yaml")
 
     # No configuration testing
-    assert empty_config.logging.telemetry
+    assert not empty_config.logging.telemetry
     assert empty_config.logging.telemetry_url == "https://log.int.featurebyte.com"
 
     assert not config.logging.telemetry

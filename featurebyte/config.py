@@ -91,7 +91,7 @@ class LoggingSettings(BaseModel):
 
     level: LogLevel = LogLevel.DEBUG
     serialize: bool = False
-    telemetry: bool = True
+    telemetry: bool = False
     telemetry_url: str = "https://log.int.featurebyte.com"
     telemetry_id: str = os.getenv("FEATUREBYTE_TELEMETRY_ID", "unknown")
     try:
