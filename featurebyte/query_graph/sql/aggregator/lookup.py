@@ -108,19 +108,6 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
         for specs in self.grouped_specs.values():
 
             scd_parameters = specs[0].scd_parameters
-            # if scd_parameters:
-            #     if self.is_online_serving:
-            #         # Online serving might not have to use SCD join if current flag is applicable
-            #         current_flag_usable_for_online_serving = (
-            #             scd_parameters.current_flag_column is not None
-            #             and scd_parameters.offset is None
-            #         )
-            #         requires_scd_join = not current_flag_usable_for_online_serving
-            #     else:
-            #         # Historical features must use SCD join
-            #         requires_scd_join = True
-            # else:
-            #     requires_scd_join = False
             if scd_parameters:
                 if specs[0].aggregation_source.is_scd_filtered_by_current_flag:
                     # Online serving can be simplified to an exact join
@@ -133,8 +120,6 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
             else:
                 requires_scd_join = False
 
-            # TODO: logic seems weird - if not scd, then requires_scd_join is irrelevant - then why
-            #  check it? Need to refactor.
             if is_scd and requires_scd_join:
                 yield specs
             if not is_scd and not requires_scd_join:
@@ -158,17 +143,6 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
             entity_column = specs[0].entity_column
             serving_name = specs[0].serving_names[0]
             source_expr = specs[0].source_expr
-
-            # scd_parameters = specs[0].scd_parameters
-            # if scd_parameters is not None:
-            #     # This must be the online serving case for SCD and current flag is applicable
-            #     current_flag_column = scd_parameters.current_flag_column
-            #     assert current_flag_column is not None
-            #     source_expr = source_expr.where(
-            #         expressions.EQ(
-            #             this=quoted_identifier(current_flag_column), expression=expressions.true()
-            #         )
-            #     )
 
             agg_expr = select(
                 alias_(quoted_identifier(entity_column), alias=serving_name, quoted=True),

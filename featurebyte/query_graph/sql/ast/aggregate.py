@@ -90,10 +90,29 @@ class Aggregate(TableNode):
         """
 
     def to_aggregation_source(self) -> AggregationSource:
+        """
+        Convert to an AggregationSource object
+
+        Returns
+        -------
+        AggregationSource
+        """
         return self.get_aggregation_source_from_source_node(self.source_node)
 
     @staticmethod
     def get_aggregation_source_from_source_node(source_node: TableNode) -> AggregationSource:
+        """
+        Convert a TableNode to an AggregationSource object
+
+        Parameters
+        ----------
+        source_node: TableNode
+            The TableNode that should be converted to AggregationSource
+
+        Returns
+        -------
+        AggregationSource
+        """
         return AggregationSource(
             expr=cast(Select, source_node.sql),
             query_node_name=source_node.context.query_node.name,

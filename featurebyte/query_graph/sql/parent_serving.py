@@ -112,7 +112,6 @@ def _get_lookup_spec_from_join_step(
         node=join_step.table.construct_input_node(feature_store_details=feature_store_details),
         input_nodes=[],
     )
-    # TODO: need to consider scd_parameters and is_online_serving (not yet passed in)
     to_filter_scd_by_current_flag = False
     sql_input_node = SQLOperationGraph(
         query_graph=graph,

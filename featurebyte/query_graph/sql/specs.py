@@ -203,7 +203,8 @@ class TileBasedAggregationSpec(AggregationSpec):
 @dataclass
 class AggregationSource:
     """
-    Represents the source of an aggregation
+    Represents the source of an aggregation. The aggregation is to be done via lookup,
+    aggregate_asat, etc.
     """
 
     expr: Select
@@ -239,11 +240,13 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Query graph node
         source_type: SourceType
             Source type information
+        to_filter_scd_by_current_flag: bool
+            Whether to filter SCD by current flag
 
         Returns
         -------
-        Select
-            Expression representing the source table
+        AggregationSource
+            An AggregationSource object representing the source table
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.query_graph.sql.ast.aggregate import Aggregate
@@ -281,6 +284,20 @@ class NonTileBasedAggregationSpec(AggregationSpec):
 
     @classmethod
     def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
+        """
+        Whether the SCD table should be filtered by current flag during online serving
+
+        Parameters
+        ----------
+        graph: QueryGraphModel
+            Query graph
+        node: Node
+            Query graph node
+
+        Returns
+        -------
+        bool
+        """
         _ = graph
         _ = node
         return False
@@ -289,6 +306,10 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     def source_expr(self) -> Select:
         """
         Get the expression of the input view to be aggregated
+
+        Returns
+        -------
+        Select
         """
         return self.aggregation_source.expr
 
@@ -373,10 +394,10 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         if aggregation_source is None:
             assert graph is not None
             assert source_type is not None
-            if is_online_serving and cls.should_filter_scd_by_current_flag(graph=graph, node=node):
-                to_filter_scd_by_current_flag = True
-            else:
-                to_filter_scd_by_current_flag = False
+            to_filter_scd_by_current_flag = (
+                is_online_serving is True
+                and cls.should_filter_scd_by_current_flag(graph=graph, node=node)
+            )
             aggregation_source = cls.get_aggregation_source(
                 graph=graph,
                 node=node,
@@ -544,6 +565,18 @@ class LookupSpec(NonTileBasedAggregationSpec):
 
     @staticmethod
     def get_scd_filter_flag_from_scd_parameters(scd_parameters: SCDLookupParameters) -> bool:
+        """
+        Returns whether the current flag should be used to filter SCD join
+
+        Parameters
+        ----------
+        scd_parameters: SCDLookupParameters
+            SCD related parameters in the lookup node
+
+        Returns
+        -------
+        bool
+        """
         # Online serving might not have to use SCD join if current flag is applicable
         current_flag_usable_for_online_serving = (
             scd_parameters.current_flag_column is not None and scd_parameters.offset is None
