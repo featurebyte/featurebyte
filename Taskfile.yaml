@@ -154,7 +154,7 @@ tasks:
     deps:
       - task: test-setup
     cmds:
-      - defer: test-teardown
+      - defer: { task: test-teardown }
       - task: test-unit
       - task: test-integration
       - task: test-docs
@@ -181,7 +181,7 @@ tasks:
       - task: install
       - task: test-setup
     cmds:
-      - defer: test-teardown
+      - defer: { task: test-teardown }
       - poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
 
   test-integration-spark:
@@ -190,7 +190,7 @@ tasks:
       - task: install
       - task: test-setup
     cmds:
-      - defer: test-teardown
+      - defer: { task: test-teardown }
       - poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
 
   test-docs:
@@ -201,12 +201,15 @@ tasks:
       - task: install
     cmds:
       - task: test-docs-setup
-      - defer: test-docs-teardown
+      - defer: { task: test-docs-teardown }
       - poetry run pytest --timeout=240 featurebyte
 
   test-docs-setup:
     desc: "Setup the test environment for docs [This sends some telemetry]"
+    deps:
+      - task: docker-build
     cmds:
+      - mkdir -p ~/.featurebyte/data/spark/staging/playground
       - poetry run python scripts/test-docs-setup.py
 
   test-docs-teardown:
@@ -218,7 +221,7 @@ tasks:
   test-merge:
     desc: Runs tests on merge
     deps:
-      - test-setup
+      - task: test-setup
     cmds:
       - "echo 'coverage: platform' > pytest-coverage.txt"
       - poetry run coverage combine
@@ -232,11 +235,9 @@ tasks:
         sh: id -u
       LOCAL_GID:
         sh: id -g
-    status:
-      - docker compose ls | grep 'featurebyte-test'
     cmds:
       - mkdir -p ~/.spark/data
-      - cd docker && docker compose -p featurebyte-test -f docker-compose.test.yml up -d
+      - cd docker && docker compose -p featurebyte-test -f docker-compose.yml up -d
       - task: test-setup-status
 
   test-setup-status:
@@ -246,15 +247,12 @@ tasks:
       - sh: docker compose ls | grep 'featurebyte-test'
         msg: "Test environment is not running."
     cmds:
-      - cmd: |
-          for i in {1..60}; do
-            docker container inspect -f "{{ .State.Health.Status }}" spark-thrift-test | grep 'healthy' -q
-            if [ $? -eq 0 ]; then
-              exit 0
-            fi
-            sleep 1
-          done
-          exit 1
+      -  |
+        for i in {1..60}; do
+          docker container inspect -f "{{"{{"}} .State.Health.Status {{"}}"}}" spark-thrift-test | grep 'healthy' -q && exit 0
+          sleep 1
+        done
+        exit 1
 
   test-teardown:
     desc: "Teardown the test environment"
@@ -262,13 +260,13 @@ tasks:
       - sh: docker compose ls | grep 'featurebyte-test'
         msg: "Test environment is not running."
     cmds:
-      - cd docker && docker compose -p featurebyte-test -f docker-compose.test.yml down
+      - cd docker && docker compose -p featurebyte-test -f docker-compose.yml down
       - task: docker-clean
 
   docs:
     desc: "Build the documentation and reload the browser"
     deps:
-      - deps
+      - task: install
     env:
       PYTHONPATH:
         sh: echo "$(pwd)/docs/extensions"
@@ -297,3 +295,12 @@ tasks:
       - docker volume rm $(docker volume ls -q)
       - rm -rf ~/.spark
       - rm -rf ~/.featurebyte/data
+
+  sleep:
+    cmds:
+      - |
+          for i in {1..60}; do
+            docker container inspect -f "{{"{{"}} .State.Health.Status {{"}}"}}" spark-thrift-test | grep 'healthy' -q && exit 0
+            sleep 1
+          done
+          exit 1
