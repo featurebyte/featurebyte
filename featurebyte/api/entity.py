@@ -149,7 +149,7 @@ class Entity(SavableApiObject):
     @typechecked
     def update_name(self, name: str) -> None:
         """
-        Update entity name.
+        Update entity name. Entity name is used to associate a table column with the entity.
 
         Parameters
         ----------
@@ -178,14 +178,16 @@ class Entity(SavableApiObject):
 
         See Also
         --------
+        - [Entity.name](/reference/featurebyte.api.entity.Entity.name/)
         - [Entity.name_history](/reference/featurebyte.api.entity.Entity.name_history/)
+        - [TableColumn.as_entity](/reference/featurebyte.api.base_table.TableColumn.as_entity/)
         """
         self.update(update_payload={"name": name}, allow_update_local=True)
 
     @property
     def name_history(self) -> list[dict[str, Any]]:
         """
-        Get the history of the entity name.
+        Get the history of the entity name. Entity name is used to associate a table column with the entity.
 
         Returns
         -------
@@ -202,7 +204,9 @@ class Entity(SavableApiObject):
 
         See Also
         --------
+        - [Entity.name](/reference/featurebyte.api.entity.Entity.name/)
         - [Entity.update_name](/reference/featurebyte.api.entity.Entity.update_name/)
+        - [TableColumn.as_entity](/reference/featurebyte.api.base_table.TableColumn.as_entity/)
         """
         return self._get_audit_history(field_name="name")
 
