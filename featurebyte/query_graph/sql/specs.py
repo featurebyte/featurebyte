@@ -248,7 +248,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         AggregationSource
             An AggregationSource object representing the source table
         """
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel,cyclic-import
         from featurebyte.query_graph.sql.ast.aggregate import Aggregate
         from featurebyte.query_graph.sql.builder import SQLOperationGraph
         from featurebyte.query_graph.sql.common import SQLType
