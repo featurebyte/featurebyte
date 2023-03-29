@@ -284,6 +284,9 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: '0' # Used for checking diff
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -331,7 +334,7 @@ jobs:
           name: python-${{ matrix.python-version }}-.coverage.2
       - name: Merge test results
         run: |
-          make test-merge
+          task test-merge
       - name: Test Coverage Report
         id: coverageComment
         uses: MishaKav/pytest-coverage-comment@main
