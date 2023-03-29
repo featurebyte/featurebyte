@@ -152,9 +152,8 @@ tasks:
   test:
     desc: Runs full test-suite
     deps:
-      - task: test-setup
+      - task: install
     cmds:
-      - defer: { task: test-teardown }
       - task: test-unit
       - task: test-integration
       - task: test-docs
@@ -170,7 +169,6 @@ tasks:
     desc: Runs integration tests
     deps:
       - task: install
-      - task: test-setup
     cmds:
       - task: test-integration-snowflake
       - task: test-integration-spark
@@ -179,8 +177,8 @@ tasks:
     desc: Runs integration tests against Snowflake
     deps:
       - task: install
-      - task: test-setup
     cmds:
+      - task: test-setup
       - defer: { task: test-teardown }
       - poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
 
@@ -188,8 +186,8 @@ tasks:
     desc: Runs integration tests against Spark
     deps:
       - task: install
-      - task: test-setup
     cmds:
+      - task: test-setup
       - defer: { task: test-teardown }
       - poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
 
