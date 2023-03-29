@@ -902,6 +902,7 @@ class DocsBuilder:
                         doc_path, class_to_use, accessor_metadata.property_name
                     )
                     doc_path = api_path + ".md"
+                    print("api_path", api_path.lower())
                     reverse_lookup_map[api_path.lower()] = doc_path
                     docstring = self.get_docstring_for_path(obj_path)
                     DOC_ITEMS[api_path.lower()] = DocItem(
@@ -995,6 +996,17 @@ class DocsBuilder:
                 lower_case_api_path = layout_item.api_path.lower()
                 if lower_case_api_path in DOC_ITEMS:
                     doc_item = DOC_ITEMS[lower_case_api_path]
+                    all_doc_items_to_generate.append(
+                        DocItem(
+                            menu_item=">".join(layout_item.menu_header),
+                            class_method_or_attribute=doc_item.class_method_or_attribute,
+                            link=doc_item.link,
+                            docstring_description=doc_item.docstring_description,
+                        )
+                    )
+                elif layout_item.get_api_path_override().lower() in DOC_ITEMS:
+                    print("found something")
+                    doc_item = DOC_ITEMS[layout_item.get_api_path_override().lower()]
                     all_doc_items_to_generate.append(
                         DocItem(
                             menu_item=">".join(layout_item.menu_header),
