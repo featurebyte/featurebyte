@@ -286,7 +286,9 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
     # SCD lookup feature
     offset = "90d"
     scd_view = scd_table.get_view()
-    scd_lookup_feature = scd_view["User Status"].as_feature("Current User Status", offset=offset)
+    scd_lookup_feature = scd_view["User Status"].as_feature(
+        "Current User Status Offset 90d", offset=offset
+    )
 
     # Preview
     point_in_time = "2001-11-15 10:00:00"
@@ -303,7 +305,7 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
         <= (pd.to_datetime(point_in_time) - pd.Timedelta(offset))
     ) & (scd_dataframe["User ID"] == user_id)
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
-    assert preview_output["Current User Status"] == expected_row["User Status"]
+    assert preview_output["Current User Status Offset 90d"] == expected_row["User Status"]
 
     # Check online serving
     feature_list = FeatureList(
@@ -316,7 +318,7 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
         params.pop("POINT_IN_TIME")
         online_result = make_online_request(config.get_client(), feature_list, [params])
         assert online_result.json()["features"] == [
-            {"üser id": 1, "Current User Status": "STÀTUS_CODE_39"}
+            {"üser id": 1, "Current User Status Offset 90d": "STÀTUS_CODE_39"}
         ]
     finally:
         feature_list.deploy(enable=False)
