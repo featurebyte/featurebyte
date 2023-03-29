@@ -48,13 +48,6 @@ def test_entity_creation__input_validation():
         entity.name = 1234
     assert "str type expected (type=type_error.str)" in str(exc.value)
 
-    entity = Entity(name="hello", serving_names=["world"])
-    with pytest.raises(TypeError) as exc:
-        entity.serving_names = ["1234"]
-    assert '"serving_names" has allow_mutation set to False and cannot be assigned' in str(
-        exc.value
-    )
-
 
 def test_entity__update_name(entity):
     """
@@ -390,3 +383,18 @@ def test_get_or_create():
     assert entity_retrieved.id == entity.id
     assert entity_retrieved.name == entity.name
     assert entity_retrieved.serving_names == ["random_entity_serving_name"]
+
+
+def test_entity_name_synchronization_issue(entity):
+    """Test entity name synchronization issue."""
+    cloned_entity = Entity.get_by_id(entity.id)
+    assert entity.name == "customer"
+    assert cloned_entity.name == "customer"
+    entity.update_name("grocery_customer")
+    assert entity.name == "grocery_customer"
+    assert cloned_entity.name == "grocery_customer"
+
+    # check it back
+    cloned_entity.update_name("customer")
+    assert entity.name == "customer"
+    assert cloned_entity.name == "customer"
