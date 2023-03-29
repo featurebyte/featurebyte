@@ -10,7 +10,8 @@ CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(
     VALUE_COLUMN_TYPES VARCHAR,
     TILE_ID VARCHAR,
     TILE_TYPE VARCHAR,
-    LAST_TILE_START_STR VARCHAR
+    LAST_TILE_START_STR VARCHAR,
+    AGGREGATION_ID VARCHAR
 )
 returns string
 language javascript
@@ -34,7 +35,21 @@ $$
 
 
     var tile_sql = SQL.replaceAll("'", "''")
-    snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${tile_id}', '${tile_id}', '${tile_exist}')`})
+    snowflake.execute({sqlText: `
+        CALL SP_TILE_REGISTRY(
+            '${tile_sql}',
+            ${TIME_MODULO_FREQUENCY_SECOND},
+            ${BLIND_SPOT_SECOND},
+            ${FREQUENCY_MINUTE},
+            '${ENTITY_COLUMN_NAMES}',
+            '${VALUE_COLUMN_NAMES}',
+            '${VALUE_COLUMN_TYPES}',
+            '${tile_id}',
+            '${tile_id}',
+            '${tile_exist}',
+            '${AGGREGATION_ID}'
+        )
+    `})
 
     if (ENTITY_COLUMN_NAMES) {
         entity_column_names_select_str = `${ENTITY_COLUMN_NAMES},`
@@ -116,6 +131,7 @@ $$
             SET LAST_TILE_INDEX_${TILE_TYPE} = F_TIMESTAMP_TO_INDEX('${LAST_TILE_START_STR}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}),
                 ${TILE_LAST_START_DATE_COLUMN}_${TILE_TYPE} = '${LAST_TILE_START_STR}'
             WHERE TILE_ID = '${tile_id}'
+            AND AGGREGATION_ID = '${AGGREGATION_ID}'
         `
         snowflake.execute({sqlText: update_tile_last_ind_sql})
     }

@@ -56,6 +56,7 @@ class TileGenerate(TileCommon):
             value_column_types=self.value_column_types,
             tile_id=self.tile_id,
             tile_type=self.tile_type,
+            aggregation_id=self.aggregation_id,
         ).execute()
 
         tile_sql = self._construct_tile_sql_with_index()
@@ -132,6 +133,7 @@ class TileGenerate(TileCommon):
                         LAST_TILE_INDEX_{self.tile_type} = {ind_value},
                         {self.tile_last_start_date_column}_{self.tile_type} = to_timestamp('{self.last_tile_start_str}')
                 WHERE TILE_ID = '{self.tile_id}'
+                AND AGGREGATION_ID = '{self.aggregation_id}'
             """
             await retry_sql(self._spark, update_tile_last_ind_sql)
 

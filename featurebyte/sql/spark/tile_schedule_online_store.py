@@ -23,7 +23,7 @@ class TileScheduleOnlineStore(BaseModel):
     Tile Schedule Online Store script corresponding to SP_TILE_SCHEDULE_ONLINE_STORE stored procedure
     """
 
-    agg_id: str
+    aggregation_id: str
     job_schedule_ts_str: str
 
     _spark: BaseSession = PrivateAttr()
@@ -56,7 +56,7 @@ class TileScheduleOnlineStore(BaseModel):
               RESULT_TYPE
             FROM ONLINE_STORE_MAPPING
             WHERE
-              AGGREGATION_ID ILIKE '{self.agg_id}' AND IS_DELETED = FALSE
+              AGGREGATION_ID ILIKE '{self.aggregation_id}' AND IS_DELETED = FALSE
         """
 
         online_store_df = await self._spark.execute_query(select_sql)

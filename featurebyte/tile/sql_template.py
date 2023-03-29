@@ -5,7 +5,7 @@ from jinja2 import Template
 
 tm_select_tile_registry = Template(
     """
-    SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{{tile_id}}'
+    SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{{tile_id}}' AND AGGREGATION_ID = '{{aggregation_id}}'
 """
 )
 
@@ -19,6 +19,7 @@ tm_insert_tile_registry = Template(
     """
     INSERT INTO TILE_REGISTRY (
         TILE_ID,
+        AGGREGATION_ID,
         TILE_SQL,
         ENTITY_COLUMN_NAMES,
         VALUE_COLUMN_NAMES,
@@ -28,6 +29,7 @@ tm_insert_tile_registry = Template(
         BLIND_SPOT_SECOND
     ) VALUES (
         '{{tile_id}}',
+        '{{aggregation_id}}',
         '{{tile_sql}}',
         '{{entity_column_names}}',
         '{{value_column_names}}',
@@ -53,7 +55,8 @@ tm_generate_tile = Template(
         '{{value_column_types}}',
         '{{tile_id}}',
         '{{tile_type.value}}',
-        {{last_tile_start_ts_str}}
+        {{last_tile_start_ts_str}},
+        '{{aggregation_id}}'
     )
 """
 )

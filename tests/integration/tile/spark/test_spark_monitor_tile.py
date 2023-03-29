@@ -20,7 +20,9 @@ async def test_monitor_tile__missing_tile(session):
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    ts_str = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{ts_str}"
+    agg_id = f"AGG_ID_{ts_str}"
 
     entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
@@ -40,6 +42,7 @@ async def test_monitor_tile__missing_tile(session):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
     await tile_generate_ins.execute()
 
@@ -57,6 +60,7 @@ async def test_monitor_tile__missing_tile(session):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
     await tile_monitor_ins.execute()
 
@@ -82,7 +86,9 @@ async def test_monitor_tile__updated_tile(session):
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = f"SOURCE_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    ts_str = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{ts_str}"
+    agg_id = f"AGG_ID_{ts_str}"
 
     await session.execute_query(
         f"create table {table_name} using delta as select * from TEMP_TABLE"
@@ -105,6 +111,7 @@ async def test_monitor_tile__updated_tile(session):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
     await tile_generate_ins.execute()
 
@@ -124,6 +131,7 @@ async def test_monitor_tile__updated_tile(session):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
     await tile_monitor_ins.execute()
 
@@ -150,7 +158,9 @@ async def test_monitor_tile__updated_tile_new_column(session):
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = f"SOURCE_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    ts_str = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{ts_str}"
+    agg_id = f"AGG_ID_{ts_str}"
 
     await session.execute_query(
         f"create table {table_name} using delta as select * from TEMP_TABLE"
@@ -172,6 +182,7 @@ async def test_monitor_tile__updated_tile_new_column(session):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
     await tile_generate_ins.execute()
 
@@ -196,6 +207,7 @@ async def test_monitor_tile__updated_tile_new_column(session):
         value_column_types=value_col_types_2,
         tile_type="ONLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
     await tile_monitor_ins.execute()
 
@@ -221,7 +233,9 @@ async def test_monitor_tile__partial_columns(session):
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    ts_str = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{ts_str}"
+    agg_id = f"AGG_ID_{ts_str}"
 
     entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
@@ -241,6 +255,7 @@ async def test_monitor_tile__partial_columns(session):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
     await tile_generate_ins.execute()
 
@@ -258,6 +273,7 @@ async def test_monitor_tile__partial_columns(session):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
     await tile_monitor_ins.execute()
 
@@ -278,6 +294,7 @@ async def test_monitor_tile__partial_columns(session):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
     await tile_monitor_ins.execute()
 

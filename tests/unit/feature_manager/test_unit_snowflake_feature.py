@@ -65,6 +65,7 @@ async def test_online_enable(
     # 2. merge into ONLINE_STORE_MAPPING
     # 3. SHOW TASKS LIKE
     # 4. call SP_TILES_SCHEDULE_ONLINE_STORE
+    # 5. check TILE_REGISTRY FOR LAST_TILE_START_DATE
     assert mock_execute_query.call_count == 5
 
     upsert_sql = tm_upsert_tile_feature_mapping.render(

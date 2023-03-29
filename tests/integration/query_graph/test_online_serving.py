@@ -81,9 +81,6 @@ async def test_online_serving_sql(features, session, config):
     Test executing feature compute sql and feature retrieval SQL for online store
     """
 
-    # remove side effect from other test
-    await session.execute_query("UPDATE TILE_REGISTRY SET LAST_TILE_START_DATE_OFFLINE = NULL")
-
     point_in_time = "2001-01-02 12:00:00"
     frequency = pd.Timedelta("1h").total_seconds()
     time_modulo_frequency = pd.Timedelta("30m").total_seconds()

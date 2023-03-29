@@ -29,7 +29,6 @@ class TileGenerateSchedule(TileCommon):
     tile_end_date_placeholder: str
     tile_type: str
     monitor_periods: int
-    agg_id: str
     job_schedule_ts: str = Field(default=datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
 
     # pylint: disable=too-many-locals,too-many-statements
@@ -90,7 +89,7 @@ class TileGenerateSchedule(TileCommon):
             VALUES
         (
             '{tile_id}',
-            '{self.agg_id}',
+            '{self.aggregation_id}',
             '{tile_type}',
             '{session_id}',
             '<STATUS>',
@@ -131,6 +130,7 @@ class TileGenerateSchedule(TileCommon):
             value_column_types=self.value_column_types,
             tile_type=self.tile_type,
             tile_start_date_column=InternalName.TILE_START_DATE,
+            aggregation_id=self.aggregation_id,
         )
 
         tile_generate_ins = TileGenerate(
@@ -147,11 +147,12 @@ class TileGenerateSchedule(TileCommon):
             tile_start_date_column=InternalName.TILE_START_DATE,
             last_tile_start_str=last_tile_start_str,
             tile_last_start_date_column=self.tile_last_start_date_column,
+            aggregation_id=self.aggregation_id,
         )
 
         tile_online_store_ins = TileScheduleOnlineStore(
             spark_session=self._spark,
-            agg_id=self.agg_id,
+            aggregation_id=self.aggregation_id,
             job_schedule_ts_str=last_tile_end_ts.strftime(date_format),
         )
 

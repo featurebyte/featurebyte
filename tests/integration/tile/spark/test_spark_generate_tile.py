@@ -20,7 +20,10 @@ async def test_generate_tile(session):
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+
+    ts_str = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{ts_str}"
+    agg_id = f"AGG_ID_{ts_str}"
 
     entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
@@ -43,6 +46,7 @@ async def test_generate_tile(session):
         value_column_types=value_col_types,
         tile_type="OFFLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
 
     await tile_generate_ins.execute()
@@ -62,7 +66,9 @@ async def test_generate_tile_no_data(session):
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    ts_str = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{ts_str}"
+    agg_id = f"AGG_ID_{ts_str}"
 
     entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
@@ -85,6 +91,7 @@ async def test_generate_tile_no_data(session):
         value_column_types=value_col_types,
         tile_type="OFFLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
 
     await tile_generate_ins.execute()
@@ -104,7 +111,9 @@ async def test_generate_tile_new_value_column(session):
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    ts_str = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{ts_str}"
+    agg_id = f"AGG_ID_{ts_str}"
 
     entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
@@ -126,6 +135,7 @@ async def test_generate_tile_new_value_column(session):
         value_column_types=value_col_types,
         tile_type="OFFLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
 
     await tile_generate_ins.execute()
@@ -155,6 +165,7 @@ async def test_generate_tile_new_value_column(session):
         value_column_types=value_col_types_2,
         tile_type="OFFLINE",
         tile_start_date_column=InternalName.TILE_START_DATE,
+        aggregation_id=agg_id,
     )
 
     await tile_generate_ins.execute()

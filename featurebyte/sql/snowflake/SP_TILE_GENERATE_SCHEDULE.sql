@@ -99,7 +99,21 @@ $$
     debug = debug + " - monitor_tile_end_ts_str: " + monitor_tile_end_ts_str
 
     var monitor_input_sql = SQL.replaceAll(`${TILE_START_DATE_PLACEHOLDER}`, "''"+monitor_tile_start_ts_str+"''").replaceAll(`${TILE_END_DATE_PLACEHOLDER}`, "''"+monitor_tile_end_ts_str+"''")
-    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', '${TILE_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${tile_id}', '${tile_type}')`
+    var monitor_stored_proc = `
+        call SP_TILE_MONITOR(
+            '${monitor_input_sql}',
+            '${TILE_START_DATE_COLUMN}',
+            ${TIME_MODULO_FREQUENCY_SECONDS},
+            ${BLIND_SPOT_SECONDS},
+            ${FREQUENCY_MINUTE},
+            '${ENTITY_COLUMN_NAMES}',
+            '${VALUE_COLUMN_NAMES}',
+            '${VALUE_COLUMN_TYPES}',
+            '${tile_id}',
+            '${tile_type}',
+            '${aggregation_id}'
+        )
+    `
     try {
         result = snowflake.execute({sqlText: monitor_stored_proc})
         result.next()
@@ -119,7 +133,23 @@ $$
     last_tile_start_ts.setMinutes(last_tile_start_ts.getMinutes() - FREQUENCY_MINUTE)
     last_tile_start_ts_str = last_tile_start_ts.toISOString()
 
-    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', '${TILE_START_DATE_COLUMN}', '${TILE_LAST_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${tile_id}', '${tile_type}', '${last_tile_start_ts_str}')`
+    var generate_stored_proc = `
+        call SP_TILE_GENERATE(
+            '${generate_input_sql}',
+            '${TILE_START_DATE_COLUMN}',
+            '${TILE_LAST_START_DATE_COLUMN}',
+            ${TIME_MODULO_FREQUENCY_SECONDS},
+            ${BLIND_SPOT_SECONDS},
+            ${FREQUENCY_MINUTE},
+            '${ENTITY_COLUMN_NAMES}',
+            '${VALUE_COLUMN_NAMES}',
+            '${VALUE_COLUMN_TYPES}',
+            '${tile_id}',
+            '${tile_type}',
+            '${last_tile_start_ts_str}',
+            '${aggregation_id}'
+        )
+    `
     try {
         result = snowflake.execute({sqlText: generate_stored_proc})
         result.next()
