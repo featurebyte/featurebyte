@@ -258,7 +258,7 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
         '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
     )
 
-    # Check online serving
+    # Check online serving.
     feature_list.save()
     try:
         feature_list.deploy(enable=True, make_production_ready=True)
