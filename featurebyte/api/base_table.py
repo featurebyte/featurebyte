@@ -295,7 +295,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         -------
         List[PydanticObjectId]
         """
-        return self.cached_model.entity_ids
+        return self.cached_model.entity_ids  # pylint: disable=no-member
 
     @property
     def table_data(self) -> BaseTableData:
