@@ -119,6 +119,10 @@ class Entity(SavableApiObject):
         entity (the child) to another entity (the parent). Each child entity key value can have only one parent
         entity key value, but a parent entity key value can have multiple child entity key values.
 
+        The parent-child relationship is automatically established when the primary key (or natural key in the
+        context of a SCD table) identifies one entity. This entity is the child entity. Other entities that are
+        referenced in the table are identified as the parent entities.
+
         Returns
         -------
         List[ParentEntity]
@@ -130,6 +134,10 @@ class Entity(SavableApiObject):
         >>> entity = catalog.get_entity("grocerycustomer")
         >>> entity.parents  # doctest: +ELLIPSIS
         [ParentEntity(id=ObjectId(...), table_type='scd_table', table_id=ObjectId(...))]
+
+        See Also
+        --------
+        - [TableColumn.as_entity](/reference/featurebyte.api.base_table.TableColumn.as_entity/)
         """
         return self.cached_model.parents
 
