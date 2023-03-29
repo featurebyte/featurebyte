@@ -129,8 +129,9 @@ def setup() -> None:
         method="avg",
         feature_names=["InvoiceAmountAvg_60days"],
         windows=["60d"],
-    )
-    invoice_amount_avg_60days["InvoiceAmountAvg_60days"].save(conflict_resolution="retrieve")
+    )["InvoiceAmountAvg_60days"]
+    invoice_amount_avg_60days.save(conflict_resolution="retrieve")
+    invoice_amount_avg_60days.update_readiness("PRODUCTION_READY")
 
     # Feature: CustomerProductGroupCounts
     grocery_items_table = fb.Table.get("INVOICEITEMS")

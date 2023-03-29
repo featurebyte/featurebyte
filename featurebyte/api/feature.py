@@ -632,63 +632,133 @@ class Feature(
         table_cleaning_operations: Optional[List[TableCleaningOperation]] = None,
     ) -> Feature:
         """
-        Create new feature version from the current one.
+        Create new feature version from the current one. The new version is created by replacing the current
+        feature's feature settings (if provided) and the table cleaning operations (if provided).
 
         Parameters
         ----------
         table_feature_job_settings: Optional[List[TableFeatureJobSetting]]
-            List of table feature job settings to be applied to the feature
+            List of table feature job settings to be applied to the feature. Each table feature job setting
+            contains the table name and the feature job setting to be applied to the feature. Table name is
+            used to identify the `GroupBy.aggregate_over` operation in the feature graph by matching the provided
+            table name with the table name of the timestamp column used in the groupby operation (in the
+            feature graph).
         table_cleaning_operations: Optional[List[DataCleaningOperation]]
-            List of table cleaning operations to be applied to the feature
+            List of table cleaning operations to be applied to the feature. Each table cleaning operation
+            contains the table name and the cleaning operations to be applied to the feature. Table name is
+            used to identify the table in the feature graph by matching the provided table name with the
+            table name used by the View (in the feature graph).
 
         Returns
         -------
         Feature
+            New feature version created based on provided feature settings and table cleaning operations.
 
         Raises
         ------
         RecordCreationException
-            When failed to save a new version, e.g. when the feature is exactly the same as the current one
+            When failed to save a new version, e.g. when the created feature is exactly the same as the current one.
+            This could happen when the provided feature settings and table cleaning operations are irrelevant to the
+            current feature.
 
         Examples
         --------
+        Check feature job setting of this feature first:
 
-        Create a new version of a feature with different feature job setting
+        >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
+        >>> feature.info()["table_feature_job_setting"]
+        {'this': [{'table_name': 'GROCERYINVOICE',
+           'feature_job_setting': {'blind_spot': '0s',
+            'frequency': '3600s',
+            'time_modulo_frequency': '90s'}}],
+         'default': [{'table_name': 'GROCERYINVOICE',
+           'feature_job_setting': {'blind_spot': '0s',
+            'frequency': '3600s',
+            'time_modulo_frequency': '90s'}}]}
 
-        >>> import featurebyte as fb
-        >>> feature = catalog.get_feature("my_magic_feature")  # doctest: +SKIP
-        >>> feature.create_new_version(
+        Create a new feature with a different feature job setting:
+
+        >>> new_feature = feature.create_new_version(
         ...   table_feature_job_settings=[
         ...     fb.TableFeatureJobSetting(
-        ...       table_name="some_event_table_name",
+        ...       table_name="GROCERYINVOICE",
         ...       feature_job_setting=fb.FeatureJobSetting(
-        ...         blind_spot="10m",
-        ...         frequency="30m",
-        ...         time_modulo_frequency="5m",
+        ...         blind_spot="60s",
+        ...         frequency="3600s",
+        ...         time_modulo_frequency="90s",
         ...       )
         ...     )
         ...   ]
-        ... )  # doctest: +SKIP
+        ... )
+        >>> new_feature.info()["table_feature_job_setting"]
+        {'this': [{'table_name': 'GROCERYINVOICE',
+           'feature_job_setting': {'blind_spot': '60s',
+            'frequency': '3600s',
+            'time_modulo_frequency': '90s'}}],
+         'default': [{'table_name': 'GROCERYINVOICE',
+           'feature_job_setting': {'blind_spot': '0s',
+            'frequency': '3600s',
+            'time_modulo_frequency': '90s'}}]}
 
+        Check table cleaning operation of this feature first:
 
-        Create a new version of a feature with table cleaning operations
+        >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
+        >>> feature.info()["table_cleaning_operation"]
+        {'this': [], 'default': []}
 
-        >>> import featurebyte as fb
-        >>> feature = catalog.get_feature("my_magic_feature")  # doctest: +SKIP
-        >>> feature.create_new_version(
+        Create a new version of a feature with different table cleaning operations:
+
+        >>> new_feature = feature.create_new_version(
         ...   table_cleaning_operations=[
         ...     fb.TableCleaningOperation(
-        ...       table_name="some_event_table_name",
+        ...       table_name="GROCERYINVOICE",
         ...       column_cleaning_operations=[
         ...         fb.ColumnCleaningOperation(
-        ...           column_name="some_column_name",
+        ...           column_name="Amount",
         ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
         ...         )
         ...       ],
         ...     )
         ...   ]
-        ... )  # doctest: +SKIP
+        ... )
+        >>> new_feature.info()["table_cleaning_operation"]
+        {'this': [{'table_name': 'GROCERYINVOICE',
+           'column_cleaning_operations': [{'column_name': 'Amount',
+             'cleaning_operations': [{'imputed_value': 0, 'type': 'missing'}]}]}],
+         'default': []}
 
+        Check the tables used by this feature first:
+
+        >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
+        >>> feature.info()["tables"]
+        [{'name': 'GROCERYINVOICE', 'status': 'DRAFT', 'catalog_name': 'grocery'}]
+
+        Create a new version of a feature with irrelevant table cleaning operations:
+
+        >>> feature.create_new_version(
+        ...   table_cleaning_operations=[
+        ...     fb.TableCleaningOperation(
+        ...       table_name="GROCERYPRODUCT",
+        ...       column_cleaning_operations=[
+        ...         fb.ColumnCleaningOperation(
+        ...           column_name="GroceryProductGuid",
+        ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=None)],
+        ...         )
+        ...       ],
+        ...     )
+        ...   ]
+        ... )
+        Traceback (most recent call last):
+        ...
+        featurebyte.exception.RecordCreationException:
+        Table cleaning operation(s) does not result a new feature version.
+        This is because the new feature version is the same as the source feature.
+
+        See Also
+        --------
+        - [GroupBy.aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/):
+        - [Table.column_cleaning_operations](/reference/featurebyte.api.base_table.TableApiObject.column_cleaning_operations)
+        - [Feature.info](reference/featurebyte.api.feature.Feature.info/)
         """
         client = Configurations().get_client()
         response = client.post(
@@ -749,12 +819,12 @@ class Feature(
         self, default_version_mode: Literal[tuple(DefaultVersionMode)]  # type: ignore[misc]
     ) -> None:
         """
-        Update feature default version mode
+        Update feature default version mode.
 
         Parameters
         ----------
         default_version_mode: Literal[tuple(DefaultVersionMode)]
-            Feature default version mode
+            Feature default version mode.
 
         Examples
         --------
@@ -769,7 +839,7 @@ class Feature(
 
     def as_default_version(self) -> None:
         """
-        Set the feature as default version
+        Set the feature as default version.
 
         Examples
         --------
@@ -787,17 +857,17 @@ class Feature(
     @property
     def sql(self) -> str:
         """
-        Get Feature SQL
+        Get Feature SQL.
 
         Returns
         -------
         str
-            Feature SQL
+            Retrieved Feature SQL string.
 
         Raises
         ------
         RecordRetrievalException
-            Failed to get feature SQL
+            Failed to get feature SQL.
         """
         feature = self._get_pruned_feature_model()
 
@@ -820,7 +890,7 @@ class Feature(
         self, other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
     ) -> None:
         """
-        Validates whether a feature is a lookup feature
+        Validates whether a feature is a lookup feature.
 
         Parameters
         ----------

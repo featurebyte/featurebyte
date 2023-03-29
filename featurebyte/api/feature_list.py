@@ -1145,23 +1145,24 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         features: Optional[List[FeatureVersionInfo]] = None,
     ) -> FeatureList:
         """
-        Create new feature list version
+        Create new feature list version.
 
         Parameters
         ----------
         mode: Literal[tuple(FeatureListNewVersionMode)]
-            Feature list default version mode
+            Feature list default version mode.
         features: Optional[List[FeatureVersionInfo]]
-            Specified feature version in feature list
+            Specified feature version in feature list.
 
         Returns
         -------
         FeatureList
+            Newly created feature list.
 
         Raises
         ------
         RecordCreationException
-            When failed to save a new version
+            When failed to save a new version.
 
         Examples
         --------
