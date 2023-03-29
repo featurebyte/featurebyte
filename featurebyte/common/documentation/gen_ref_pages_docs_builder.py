@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from docstring_parser import parse
+from mkautodoc.extension import import_from_string
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
 import featurebyte
@@ -769,18 +770,76 @@ class DocsBuilder:
         self.set_edit_path(full_doc_path, source_path)
 
     @staticmethod
-    def get_docstring_for_path(path: str) -> str:
-        # get docstring
-        print("path", path)
+    def import_resource(resource_descriptor: str) -> Any:
+        """
+        Import module
+
+        resource_descriptor: str
+            Resource descriptor path
+
+        Returns
+        -------
+        Any
+        """
+        resource = import_from_string(resource_descriptor)
+        module = inspect.getmodule(resource)
         try:
-            module = importlib.import_module(path)
-            docs = trim_docstring(getattr(module, "__doc__", ""))
-            print("docs", docs)
-            # docstring = Docstring(parse(docs))
-            # print("docstring", docstring.short_description)
-            return docs
-        except ModuleNotFoundError:
-            return "path is not a module"
+            # reload module to capture updates in source code
+            module = importlib.reload(module)
+        except:
+            return resource
+        return getattr(module, resource.__name__)
+
+    @staticmethod
+    def get_docstring_for_path(path: str) -> str:
+        EMPTY_VALUE = inspect._empty
+        # import resource
+        parts = path.split("#")
+        if len(parts) > 1:
+            path = parts[0]
+        parts = path.split("::")
+        if len(parts) > 1:
+            # class member
+            resource_name = parts.pop(-1)
+            resource_realname = resource_name
+            class_descriptor = ".".join(parts)
+            resource_class = DocsBuilder.import_resource(class_descriptor)
+            resource_path = class_descriptor
+            class_fields = getattr(resource_class, "__fields__", None)
+            # print("resource class + resource name", ".".join([str(resource_class), str(resource_name)]))
+            resource = getattr(resource_class, resource_name, EMPTY_VALUE)
+            if resource == EMPTY_VALUE:
+                # pydantic field
+                resource = class_fields[resource_name]
+                resource_type = "property"
+            else:
+                resource_type = "method" if callable(resource) else "property"
+                # for class property get the signature from the getter function
+                if isinstance(resource, property):
+                    resource = resource.fget
+
+                # get actual classname and name of the resource
+                try:
+                    resource_classname, resource_realname = resource.__qualname__.split(
+                        ".", maxsplit=1
+                    )
+                    resource_path = f"{resource.__module__}.{resource_classname}"
+                except AttributeError:
+                    pass
+            base_classes = None
+            method_type = "async" if inspect.iscoroutinefunction(resource) else None
+        else:
+            # class
+            resource_class = DocsBuilder.import_resource(path)
+            resource = resource_class
+
+        # process docstring
+        docs = trim_docstring(getattr(resource, "__doc__", ""))
+        docstring = Docstring(parse(docs))
+        short_description = docstring.short_description
+        if getattr(resource, "field_info", None):
+            short_description = resource.field_info.description
+        return " ".join([short_description or "", docstring.long_description or ""])
 
     def generate_documentation_for_docs(
         self, doc_groups: Dict[DocGroupKey, DocGroupValue]
@@ -844,7 +903,7 @@ class DocsBuilder:
                     )
                     doc_path = api_path + ".md"
                     reverse_lookup_map[api_path.lower()] = doc_path
-                    docstring = self.get_docstring_for_path(api_path)
+                    docstring = self.get_docstring_for_path(obj_path)
                     DOC_ITEMS[api_path.lower()] = DocItem(
                         menu_item="placeholder",
                         class_method_or_attribute=api_path,
@@ -862,9 +921,8 @@ class DocsBuilder:
                 truncated_lookup_path = lookup_path
                 if truncated_lookup_path:
                     truncated_lookup_path = lookup_path.replace("featurebyte.", "")
-                print("truncated_look", truncated_lookup_path)
                 doc_path_without_ext = doc_path.replace(".md", "")
-                docstring = self.get_docstring_for_path(doc_path_without_ext)
+                docstring = self.get_docstring_for_path(obj_path)
                 DOC_ITEMS[truncated_lookup_path] = DocItem(
                     menu_item="placeholder",
                     class_method_or_attribute=api_path,
