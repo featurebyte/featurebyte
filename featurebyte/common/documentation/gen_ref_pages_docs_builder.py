@@ -5,23 +5,43 @@ This is placed in here so that it can be imported as part of the featurebyte pac
 """
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
+import csv
 import importlib
 import inspect
 import json
 import os
+import resource
 from dataclasses import dataclass
 from pathlib import Path
 
+from docstring_parser import parse
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
 import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.documentation.autodoc_processor import Docstring
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 from featurebyte.logger import logger
 
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
 MISSING_DEBUG_MARKDOWN = "missing.md"
+
+
+@dataclass
+class DocItem:
+
+    # eg. FeatureStore, FeatureStore>List
+    menu_item: str
+    # eg. FeatureStore, FeatureStore.list
+    class_method_or_attribute: str
+    # ilnk to docs, eg: http://127.0.0.1:8000/reference/featurebyte.api.feature_store.FeatureStore/
+    link: str
+    # the current docstring
+    docstring_description: str
+
+
+DOC_ITEMS: Dict[str, DocItem] = {}
 
 
 @dataclass
@@ -423,7 +443,8 @@ def build_markdown_format_str(obj_path: str, obj_type: str, api_to_use: str) -> 
 
 def infer_api_path_from_obj_path(obj_path: str) -> str:
     """
-    Infer the API path from the given object path.
+    Infer the API path from the given object path. This API path inferred should match the one provided in
+    documentation_layout.
 
     Parameters
     ----------
@@ -443,20 +464,20 @@ def infer_api_path_from_obj_path(obj_path: str) -> str:
         # converts to featurebyte.eventview.add_feature
         split_by_hash = split_obj_path[1].split("#")
         if len(split_by_hash) == 2:
-            joined = ".".join([split_by_hash[1], split_by_hash[0]]).lower()
-            return joined.lower()
+            joined = ".".join([split_by_hash[1], split_by_hash[0]])
+            return joined
         else:
             # converts to featurebyte.changeviewcolumn.lag
-            class_name = split_obj_path[0].split(".")[-1].lower()
-            return f"featurebyte.{class_name}.{split_obj_path[1]}".lower()
+            class_name = split_obj_path[0].split(".")[-1]
+            return f"featurebyte.{class_name}.{split_obj_path[1]}"
     elif len(split_obj_path) == 1:
         # featurebyte.api.item_view.ItemView#featurebyte
         split_by_hash = split_obj_path[0].split("#")
         if len(split_by_hash) == 2:
             class_str = split_by_hash[0].split(".")[-1]
-            joined = ".".join([split_by_hash[1], class_str]).lower()
-            return joined.lower()
-    return obj_path.lower()
+            joined = ".".join([split_by_hash[1], class_str])
+            return joined
+    return obj_path
 
 
 def get_paths_to_document() -> Dict[str, str]:
@@ -558,6 +579,41 @@ def populate_nav(nav: Nav, proxied_path_to_markdown_path: Dict[str, str]) -> Nav
         nav[header] = markdown_path
         rendered.add(markdown_path)
     return nav
+
+
+def trim_docstring(docstring: Optional[str]) -> str:
+    """
+    Trim leading indent from a docstring.
+
+    See: https://www.python.org/dev/peps/pep-0257/#handling-docstring-indentation
+    """
+    if not docstring:
+        return ""
+
+    # Convert tabs to spaces (following the normal Python rules)
+    # and split into a list of lines:
+    lines = docstring.expandtabs().splitlines()
+    # Determine minimum indentation (first line doesn't count):
+    indent = 1000
+    for line in lines[1:]:
+        stripped = line.lstrip()
+        if stripped:
+            indent = min(indent, len(line) - len(stripped))
+
+    # Remove indentation (first line is special):
+    trimmed = [lines[0].strip()]
+    if indent < 1000:
+        for line in lines[1:]:
+            trimmed.append(line[indent:].rstrip())
+
+    # Strip off trailing and leading blank lines:
+    while trimmed and not trimmed[-1]:
+        trimmed.pop()
+    while trimmed and not trimmed[0]:
+        trimmed.pop(0)
+
+    # Return a single string:
+    return "\n".join(trimmed)
 
 
 class DocsBuilder:
@@ -702,7 +758,6 @@ class DocsBuilder:
         path_components: List[str]
             The path components.
         """
-        # build string to write to file
         format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
 
         # write documentation page to file
@@ -712,6 +767,20 @@ class DocsBuilder:
         # Set edit path for the documentation. This will be the link that links back to where the code is defined.
         source_path = "/".join(path_components) + ".py"
         self.set_edit_path(full_doc_path, source_path)
+
+    @staticmethod
+    def get_docstring_for_path(path: str) -> str:
+        # get docstring
+        print("path", path)
+        try:
+            module = importlib.import_module(path)
+            docs = trim_docstring(getattr(module, "__doc__", ""))
+            print("docs", docs)
+            # docstring = Docstring(parse(docs))
+            # print("docstring", docstring.short_description)
+            return docs
+        except ModuleNotFoundError:
+            return "path is not a module"
 
     def generate_documentation_for_docs(
         self, doc_groups: Dict[DocGroupKey, DocGroupValue]
@@ -746,7 +815,7 @@ class DocsBuilder:
 
             # generate markdown for documentation page
             obj_path = doc_group_key.get_obj_path(doc_group_value)
-            lookup_path = infer_api_path_from_obj_path(obj_path)
+            lookup_path = infer_api_path_from_obj_path(obj_path).lower()
             accessor_metadata = _get_accessor_metadata(doc_path)
             if (
                 lookup_path not in paths_to_document
@@ -763,6 +832,10 @@ class DocsBuilder:
             # add obj_path to reverse lookup map
             reverse_lookup_map[lookup_path] = doc_path
 
+            # get docstring
+            unlowered_api_path = infer_api_path_from_obj_path(obj_path)
+            api_path = unlowered_api_path.lower()
+
             if accessor_metadata:
                 # If this is an accessor, then we need to generate documentation for all the classes that use it.
                 for class_to_use in accessor_metadata.classes_using_accessor:
@@ -771,6 +844,13 @@ class DocsBuilder:
                     )
                     doc_path = api_path + ".md"
                     reverse_lookup_map[api_path.lower()] = doc_path
+                    docstring = self.get_docstring_for_path(api_path)
+                    DOC_ITEMS[api_path.lower()] = DocItem(
+                        menu_item="placeholder",
+                        class_method_or_attribute=api_path,
+                        link=f"http://127.0.0.1:8000/{api_path}",
+                        docstring_description=docstring,
+                    )
                     self._build_and_write_to_file(
                         obj_path,
                         doc_group_value,
@@ -779,6 +859,18 @@ class DocsBuilder:
                         path_components,
                     )
             else:
+                truncated_lookup_path = lookup_path
+                if truncated_lookup_path:
+                    truncated_lookup_path = lookup_path.replace("featurebyte.", "")
+                print("truncated_look", truncated_lookup_path)
+                doc_path_without_ext = doc_path.replace(".md", "")
+                docstring = self.get_docstring_for_path(doc_path_without_ext)
+                DOC_ITEMS[truncated_lookup_path] = DocItem(
+                    menu_item="placeholder",
+                    class_method_or_attribute=api_path,
+                    link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
+                    docstring_description=docstring,
+                )
                 self._build_and_write_to_file(
                     obj_path,
                     doc_group_value,
@@ -837,6 +929,45 @@ class DocsBuilder:
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
         return updated_nav
+
+        # write all doc items
+        with open("debug/test.csv", "w") as f:
+            all_doc_items_to_generate = []
+            for layout_item in get_overall_layout():
+                lower_case_api_path = layout_item.api_path.lower()
+                if lower_case_api_path in DOC_ITEMS:
+                    doc_item = DOC_ITEMS[lower_case_api_path]
+                    all_doc_items_to_generate.append(
+                        DocItem(
+                            menu_item=">".join(layout_item.menu_header),
+                            class_method_or_attribute=doc_item.class_method_or_attribute,
+                            link=doc_item.link,
+                            docstring_description=doc_item.docstring_description,
+                        )
+                    )
+                else:
+                    all_doc_items_to_generate.append(
+                        DocItem(
+                            menu_item=">".join(layout_item.menu_header),
+                            class_method_or_attribute="missing",
+                            link="missing",
+                            docstring_description="missing",
+                        )
+                    )
+            writer = csv.writer(f)
+            writer.writerow(
+                ["menu_item", "class_method_or_attribute", "link", "docstring_description"]
+            )
+            for doc_item in all_doc_items_to_generate:
+                writer.writerow(
+                    [
+                        doc_item.menu_item,
+                        doc_item.class_method_or_attribute,
+                        doc_item.link,
+                        doc_item.docstring_description,
+                    ]
+                )
+            print("done writing rows to csv")
 
 
 def build_docs(set_edit_path_fn: Any, gen_files_open_fn: Any) -> None:
