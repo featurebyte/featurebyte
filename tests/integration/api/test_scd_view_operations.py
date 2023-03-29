@@ -258,6 +258,7 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
         '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
     )
 
+    # Check online serving
     feature_list.save()
     try:
         feature_list.deploy(enable=True, make_production_ready=True)
@@ -278,7 +279,7 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_scd_lookup_feature_with_offset(scd_table, scd_dataframe):
+def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
     """
     Test creating lookup feature from a SCDView with offset
     """
@@ -303,6 +304,22 @@ def test_scd_lookup_feature_with_offset(scd_table, scd_dataframe):
     ) & (scd_dataframe["User ID"] == user_id)
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
     assert preview_output["Current User Status"] == expected_row["User Status"]
+
+    # Check online serving
+    feature_list = FeatureList(
+        [scd_lookup_feature], "feature_list__test_scd_lookup_feature_with_offset"
+    )
+    feature_list.save()
+    try:
+        feature_list.deploy(enable=True, make_production_ready=True)
+        params = preview_params.copy()
+        params.pop("POINT_IN_TIME")
+        online_result = make_online_request(config.get_client(), feature_list, [params])
+        assert online_result.json()["features"] == [
+            {"üser id": 1, "Current User Status": "STÀTUS_CODE_39"}
+        ]
+    finally:
+        feature_list.deploy(enable=False)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
