@@ -33,7 +33,7 @@ git clone git@github.com:featurebyte/featurebyte.git && cd featurebyte
 Install module:
 
 ```bash
-make install
+task install
 ```
 
 ## 📝 Documentation
