@@ -271,6 +271,7 @@ jobs:
           path: featurebyte/sql/spark/
       - name: Test documentation
         run: |
+          export FEATUREBYTE_NP_PASSWORD=${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME}
           task test-docs
   validate:
     needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark"]
