@@ -46,6 +46,8 @@ class InputNode(TableNode):
 
         select_expr = select_expr.from_(dbtable)
 
+        # Optionally, filter SCD table to only include current records. This is done only for
+        # certain aggregations during online serving.
         if (
             self.context.parameters["type"] == TableDataType.SCD_TABLE
             and self.context.to_filter_scd_by_current_flag
