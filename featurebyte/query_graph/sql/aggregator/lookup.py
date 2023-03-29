@@ -122,7 +122,7 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
             # else:
             #     requires_scd_join = False
             if scd_parameters:
-                if specs[0].to_filter_scd_by_current_flag:
+                if specs[0].aggregation_source.is_scd_filtered_by_current_flag:
                     # Online serving can be simplified to an exact join
                     requires_scd_join = False
                 else:

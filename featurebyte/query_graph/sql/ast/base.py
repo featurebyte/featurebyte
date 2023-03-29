@@ -40,7 +40,7 @@ class SQLNodeContext:
         Type of the data warehouse that the SQL will run on
     input_sql_nodes : list[SQLNode]
         List of input SQL nodes
-    to_filter_scd_by_current_flag : Optional[bool]
+    is_scd_filtered_by_current_flag : Optional[bool]
         Whether to filter SCD table with current flag
     """
 
