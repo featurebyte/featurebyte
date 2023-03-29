@@ -267,12 +267,9 @@ def start_app(
         __backup_docker_conf()
         __use_docker_svc_account()
 
-        try:
-            os.environ["FEATUREBYTE_TELEMETRY_ID"] = ":".join(
-                [f"{(uuid.getnode() >> ele) & 0xff:02x}" for ele in range(0, 8 * 6, 8)][::-1]
-            )
-        except Exception:  # pylint: disable=broad-except
-            pass
+        os.environ["FEATUREBYTE_TELEMETRY_ID"] = ":".join(
+            [f"{(uuid.getnode() >> ele) & 0xff:02x}" for ele in range(0, 8 * 6, 8)][::-1]
+        )
         with get_docker_client(app_name) as docker:
             if not local:
                 docker.compose.pull()
