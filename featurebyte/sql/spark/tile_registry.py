@@ -29,15 +29,20 @@ class TileRegistry(TileCommon):
         logger.debug(f"input_value_columns_types: {input_value_columns_types}")
 
         registry_df = await self._spark.execute_query(
-            f"select count(*) as TILE_COUNT from tile_registry where tile_id = '{self.tile_id}'"
+            f"SELECT COUNT(*) as TILE_COUNT from tile_registry "
+            f"WHERE TILE_ID = '{self.tile_id}' "
+            f"AND AGGREGATION_ID = '{self.aggregation_id}' "
         )
 
         if registry_df is not None and registry_df["TILE_COUNT"].iloc[0] == 0:
-            logger.info(f"No registry record for tile_id {self.tile_id}, creating new record")
+            logger.info(
+                f"No registry record for tile_id {self.tile_id} and aggregation_id {self.aggregation_id}, creating new record"
+            )
             escape_sql = self.sql.replace("'", "''")
             insert_sql = f"""
                 insert into tile_registry(
                     TILE_ID,
+                    AGGREGATION_ID,
                     TILE_SQL,
                     ENTITY_COLUMN_NAMES,
                     VALUE_COLUMN_NAMES,
@@ -54,6 +59,7 @@ class TileRegistry(TileCommon):
                 )
                 VALUES (
                     '{self.tile_id}',
+                    '{self.aggregation_id}',
                     '{escape_sql}',
                     '{self.entity_column_names_str}',
                     '{self.value_column_names_str}',

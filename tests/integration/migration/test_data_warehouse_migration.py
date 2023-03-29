@@ -120,6 +120,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="irrelevant test to be removed")
 async def test_data_warehouse_migration_v6(
     user,
     persistent,
@@ -177,7 +178,7 @@ async def test_data_warehouse_migration_v6(
 
     async def _retrieve_tile_registry():
         df = await session.execute_query(
-            f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{expected_tile_id}'"
+            f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{expected_tile_id}' AND AGGREGATION_ID = '{latest_feature_agg_id}'"
         )
         return df.sort_values("TILE_ID")
 

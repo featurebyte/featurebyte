@@ -8,7 +8,8 @@ CREATE OR REPLACE PROCEDURE SP_TILE_MONITOR(
     VALUE_COLUMN_NAMES VARCHAR,
     VALUE_COLUMN_TYPES VARCHAR,
     TILE_ID VARCHAR,
-    TILE_TYPE VARCHAR
+    TILE_TYPE VARCHAR,
+    AGGREGATION_ID VARCHAR
 )
 returns string
 language javascript
@@ -35,7 +36,21 @@ $$
     }
 
     var tile_sql = MONITOR_SQL.replaceAll("'", "''")
-    var result = snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${TILE_ID}', '${TILE_ID}', 'Y')`})
+    var result = snowflake.execute({sqlText: `
+        CALL SP_TILE_REGISTRY(
+            '${tile_sql}',
+            ${TIME_MODULO_FREQUENCY_SECOND},
+            ${BLIND_SPOT_SECOND},
+            ${FREQUENCY_MINUTE},
+            '${ENTITY_COLUMN_NAMES}',
+            '${VALUE_COLUMN_NAMES}',
+            '${VALUE_COLUMN_TYPES}',
+            '${TILE_ID}',
+            '${TILE_ID}',
+            'Y',
+            '${AGGREGATION_ID}'
+        )
+    `})
     result.next()
     existing_value_columns = result.getColumnValue(1)
     debug = debug + " - existing_value_columns: " + existing_value_columns
@@ -106,7 +121,21 @@ $$
 
     } else {
 
-        snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${TILE_ID}', '${monitor_table_name}', 'Y')`})
+        snowflake.execute({sqlText: `
+            CALL SP_TILE_REGISTRY(
+                '${tile_sql}',
+                ${TIME_MODULO_FREQUENCY_SECOND},
+                ${BLIND_SPOT_SECOND},
+                ${FREQUENCY_MINUTE},
+                '${ENTITY_COLUMN_NAMES}',
+                '${VALUE_COLUMN_NAMES}',
+                '${VALUE_COLUMN_TYPES}',
+                '${TILE_ID}',
+                '${monitor_table_name}',
+                'Y',
+                '${AGGREGATION_ID}'
+            )
+        `})
 
         // monitor table already exists, insert new records
         var insert_sql = `

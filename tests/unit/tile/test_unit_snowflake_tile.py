@@ -128,7 +128,8 @@ async def test_generate_tiles(mock_execute_query, mock_snowflake_tile, tile_mana
             'FLOAT',
             'TILE_ID1',
             'ONLINE',
-            '2022-06-21 15:55:00'
+            '2022-06-21 15:55:00',
+            'agg_id1'
         )
         """
     ).strip()

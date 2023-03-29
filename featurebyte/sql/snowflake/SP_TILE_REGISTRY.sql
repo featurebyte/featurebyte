@@ -8,7 +8,8 @@ CREATE OR REPLACE PROCEDURE SP_TILE_REGISTRY(
     VALUE_COLUMN_TYPES VARCHAR,
     TILE_ID VARCHAR,
     TABLE_NAME VARCHAR,
-    TABLE_EXIST VARCHAR
+    TABLE_EXIST VARCHAR,
+    AGGREGATION_ID VARCHAR
 )
 returns string
 language javascript
@@ -23,15 +24,42 @@ $$
 
     //check whether the tile registry record already exists
 
-    var result = snowflake.execute({sqlText: `SELECT VALUE_COLUMN_NAMES, VALUE_COLUMN_TYPES FROM TILE_REGISTRY WHERE TILE_ID = '${TILE_ID}'`})
+    var result = snowflake.execute({sqlText: `
+        SELECT VALUE_COLUMN_NAMES, VALUE_COLUMN_TYPES
+        FROM TILE_REGISTRY
+        WHERE TILE_ID = '${TILE_ID}'
+        AND AGGREGATION_ID = '${AGGREGATION_ID}'
+    `})
     if (result.getRowCount() === 0) {
         // no registry record exists, insert a new registry record
         var tile_sql = SQL.replaceAll("'", "''")
         var insert_sql = `
-            INSERT INTO TILE_REGISTRY (TILE_ID, TILE_SQL, ENTITY_COLUMN_NAMES, VALUE_COLUMN_NAMES, VALUE_COLUMN_TYPES,
-            FREQUENCY_MINUTE, TIME_MODULO_FREQUENCY_SECOND, BLIND_SPOT_SECOND, IS_ENABLED)
-            VALUES ('${TILE_ID}', '${tile_sql}', '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}',
-            ${FREQUENCY_MINUTE}, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, False)
+            INSERT INTO TILE_REGISTRY
+            (
+              TILE_ID,
+              AGGREGATION_ID,
+              TILE_SQL,
+              ENTITY_COLUMN_NAMES,
+              VALUE_COLUMN_NAMES,
+              VALUE_COLUMN_TYPES,
+              FREQUENCY_MINUTE,
+              TIME_MODULO_FREQUENCY_SECOND,
+              BLIND_SPOT_SECOND,
+              IS_ENABLED
+            )
+            VALUES
+            (
+              '${TILE_ID}',
+              '${AGGREGATION_ID}',
+              '${tile_sql}',
+              '${ENTITY_COLUMN_NAMES}',
+              '${VALUE_COLUMN_NAMES}',
+              '${VALUE_COLUMN_TYPES}',
+              ${FREQUENCY_MINUTE},
+              ${TIME_MODULO_FREQUENCY_SECOND},
+              ${BLIND_SPOT_SECOND},
+              False
+            )
         `
         snowflake.execute({sqlText: insert_sql})
         debug = debug + " - inserted new tile registry record with " + insert_sql

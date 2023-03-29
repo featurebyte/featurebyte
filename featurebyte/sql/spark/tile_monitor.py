@@ -49,6 +49,7 @@ class TileMonitor(TileCommon):
                 value_column_types=self.value_column_types,
                 tile_id=self.tile_id,
                 tile_type=self.tile_type,
+                aggregation_id=self.aggregation_id,
             ).execute()
 
             new_tile_sql = f"""
@@ -124,6 +125,7 @@ class TileMonitor(TileCommon):
                     value_column_types=self.value_column_types,
                     tile_id=self.tile_id,
                     tile_type=self.tile_type,
+                    aggregation_id=self.aggregation_id,
                 )
                 logger.info("\n\nCalling tile_registry.execute\n")
                 await tile_registry_ins.execute()

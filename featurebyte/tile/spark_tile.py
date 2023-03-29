@@ -53,7 +53,7 @@ class TileManagerSpark(BaseTileManager):
         """
         executor = TileScheduleOnlineStore(
             spark_session=self._session,
-            agg_id=tile_spec.aggregation_id,
+            aggregation_id=tile_spec.aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
         )
         await executor.execute()
@@ -128,9 +128,6 @@ class TileManagerSpark(BaseTileManager):
         else:
             tile_sql = tile_spec.tile_sql
 
-        if last_tile_start_ts_str:
-            last_tile_start_ts_str = f"'{last_tile_start_ts_str}'"
-
         tile_generate_ins = TileGenerate(
             spark_session=self._session,
             tile_id=tile_spec.tile_id,
@@ -144,7 +141,8 @@ class TileManagerSpark(BaseTileManager):
             tile_type=tile_type,
             tile_start_date_column=InternalName.TILE_START_DATE,
             tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
-            last_tile_start_ts_str=last_tile_start_ts_str,
+            last_tile_start_str=last_tile_start_ts_str,
+            aggregation_id=tile_spec.aggregation_id,
         )
         await tile_generate_ins.execute()
 

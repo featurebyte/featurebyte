@@ -112,11 +112,15 @@ class TileManagerSnowflake(BaseTileManager):
             whether the tile registry record is inserted successfully or not
         """
         result = await self._session.execute_query(
-            tm_select_tile_registry.render(tile_id=tile_spec.tile_id)
+            tm_select_tile_registry.render(
+                tile_id=tile_spec.tile_id,
+                aggregation_id=tile_spec.aggregation_id,
+            )
         )
         if result is None or len(result) == 0:
             sql = tm_insert_tile_registry.render(
                 tile_id=tile_spec.tile_id,
+                aggregation_id=tile_spec.aggregation_id,
                 tile_sql=tile_spec.tile_sql,
                 entity_column_names=",".join(escape_column_names(tile_spec.entity_column_names)),
                 value_column_names=",".join(tile_spec.value_column_names),
@@ -237,6 +241,7 @@ class TileManagerSnowflake(BaseTileManager):
             tile_id=tile_spec.tile_id,
             tile_type=tile_type,
             last_tile_start_ts_str=last_tile_start_ts_str,
+            aggregation_id=tile_spec.aggregation_id,
         )
         await self._session.execute_query(sql)
 
