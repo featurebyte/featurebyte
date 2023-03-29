@@ -632,22 +632,24 @@ class Feature(
         table_cleaning_operations: Optional[List[TableCleaningOperation]] = None,
     ) -> Feature:
         """
-        Create new feature version from the current one. The new version is created by replacing the current
-        feature's feature settings (if provided) and the table cleaning operations (if provided).
+        Create a new feature version from the current one. The new version is created by replacing the current
+        feature's feature job settings (if provided) and the table cleaning operations (if provided).
 
         Parameters
         ----------
         table_feature_job_settings: Optional[List[TableFeatureJobSetting]]
             List of table feature job settings to be applied to the feature. Each table feature job setting
             contains the table name and the feature job setting to be applied to the feature. Table name is
-            used to identify the `GroupBy.aggregate_over` operation in the feature graph by matching the provided
-            table name with the table name of the timestamp column used in the groupby operation (in the
-            feature graph).
-        table_cleaning_operations: Optional[List[DataCleaningOperation]]
+            used to identify the `GroupBy.aggregate_over` operation in the feature by matching the provided
+            table name with the table name of the timestamp column used in the groupby operation. The
+            existing feature job settings for a feature can be retrieved using `Feature.info` (check
+            code examples below).
+        table_cleaning_operations: Optional[List[TableCleaningOperation]]
             List of table cleaning operations to be applied to the feature. Each table cleaning operation
             contains the table name and the cleaning operations to be applied to the feature. Table name is
             used to identify the table in the feature graph by matching the provided table name with the
-            table name used by the View (in the feature graph).
+            table name used by the View (in the feature graph). The existing table cleaning operations for a
+            feature can be retrieved using `Feature.info` (check code examples below).
 
         Returns
         -------
@@ -733,7 +735,8 @@ class Feature(
         >>> feature.info()["tables"]
         [{'name': 'GROCERYINVOICE', 'status': 'DRAFT', 'catalog_name': 'grocery'}]
 
-        Create a new version of a feature with irrelevant table cleaning operations:
+        Create a new version of a feature with irrelevant table cleaning operations (for example, the specified
+        table name or column name is not used by the feature):
 
         >>> feature.create_new_version(
         ...   table_cleaning_operations=[
@@ -756,9 +759,9 @@ class Feature(
 
         See Also
         --------
-        - [GroupBy.aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/):
+        - [GroupBy.aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/)
         - [Table.column_cleaning_operations](/reference/featurebyte.api.base_table.TableApiObject.column_cleaning_operations)
-        - [Feature.info](reference/featurebyte.api.feature.Feature.info/)
+        - [Feature.info](/reference/featurebyte.api.feature.Feature.info/)
         """
         client = Configurations().get_client()
         response = client.post(
