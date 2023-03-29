@@ -53,7 +53,7 @@ class Entity(SavableApiObject):
         data = EntityCreate(serving_name=self.serving_name, **self.json_dict())
         return data.json_dict()
 
-    def __getattribute__(self, item) -> Any:
+    def __getattribute__(self, item: str) -> Any:
         """
         Custom __getattribute__ method to handle the case when name of the entity is updated.
 

@@ -505,7 +505,7 @@ class Feature(
         entities = []
         for entity_id in self.entity_ids:
             entities.append(Entity.get_by_id(entity_id))
-        primary_entity = derive_primary_entity(entities)
+        primary_entity = derive_primary_entity(entities)  # type: ignore
         return primary_entity
 
     def binary_op_series_params(

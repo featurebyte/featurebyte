@@ -160,7 +160,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         entity_ids = set()
         for feature in self._features:
             entity_ids.update(feature.entity_ids)
-        primary_entity = derive_primary_entity(
+        primary_entity = derive_primary_entity(  # type: ignore
             [Entity.get_by_id(entity_id) for entity_id in entity_ids]
         )
         return primary_entity
