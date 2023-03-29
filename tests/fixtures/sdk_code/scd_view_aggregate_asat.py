@@ -4,7 +4,9 @@ from featurebyte import SCDTable
 
 scd_table = SCDTable.get_by_id(ObjectId("{table_id}"))
 scd_view = scd_table.get_view(
-    view_mode="manual", drop_column_names=[], column_cleaning_operations=[]
+    view_mode="manual",
+    drop_column_names=["is_active"],
+    column_cleaning_operations=[],
 )
 feat = scd_view.groupby(by_keys=["col_int"], category=None).aggregate_asat(
     value_column="col_float",

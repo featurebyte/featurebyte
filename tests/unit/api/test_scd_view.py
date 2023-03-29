@@ -38,6 +38,7 @@ class TestSCDView(BaseViewTestSuite):
     FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
     """
+    additional_expected_drop_column_names = ["is_active"]
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
         assert row_subset.natural_key_column == view_under_test.natural_key_column
@@ -268,7 +269,7 @@ def test_sdk_code_generation(saved_scd_table, update_fixtures):
     )
 
 
-def test_aggregate_asat_sdk_code_generation(saved_scd_table, transaction_entity):
+def test_aggregate_asat_sdk_code_generation(saved_scd_table, transaction_entity, update_fixtures):
     """Test SDK code generation for aggregate asat"""
     saved_scd_table.col_int.as_entity(transaction_entity.name)
     snowflake_scd_view = saved_scd_table.get_view()
@@ -280,4 +281,5 @@ def test_aggregate_asat_sdk_code_generation(saved_scd_table, transaction_entity)
         to_use_saved_data=True,
         fixture_path="tests/fixtures/sdk_code/scd_view_aggregate_asat.py",
         table_id=saved_scd_table.id,
+        update_fixtures=update_fixtures,
     )
