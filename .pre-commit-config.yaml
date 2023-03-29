@@ -12,6 +12,6 @@ repos:
     hooks:
       - id: format
         name: Formatting Code
-        entry: bash -c "make format; git add . -u"
+        entry: bash -c "task format; git add . -u"
         types: [ ]
         language: system
