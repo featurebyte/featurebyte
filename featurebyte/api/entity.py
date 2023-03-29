@@ -176,9 +176,9 @@ class Entity(SavableApiObject):
         Update entity name:
 
         >>> entity = catalog.get_entity(name="grocerycustomer")
-        >>> entity.update_name(name="customer")
+        >>> entity.update_name(name="grocery_customer")
         >>> entity.name
-        'customer'
+        'grocery_customer'
         >>> entity.update_name(name="grocerycustomer")
         >>> entity.name
         'grocerycustomer'
@@ -186,10 +186,9 @@ class Entity(SavableApiObject):
         Show the history of the entity name:
 
         >>> entity.name_history  # doctest: +ELLIPSIS
-        [...,
-        {'created_at': ..., 'name': 'grocerycustomer'},
-        {'created_at': ..., 'name': 'customer'},
-        {'created_at': ..., 'name': 'grocerycustomer'}]
+        [{'created_at': ..., 'name': 'grocerycustomer'},
+        {'created_at': ..., 'name': 'grocery_customer'},
+        {'created_at': ..., 'name': 'grocerycustomer'}...]
 
         See Also
         --------
