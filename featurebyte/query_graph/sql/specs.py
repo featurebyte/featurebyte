@@ -260,6 +260,25 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         sql_node = cast(Aggregate, sql_node)
         return sql_node.to_aggregation_source()  # type: ignore
 
+    def construct_agg_result_name(self, *args: Any) -> str:
+        """
+        Helper function to construct the aggregation result name
+
+        Parameters
+        ----------
+        *args: Any
+            Tags to be included in the aggregation result name
+
+        Returns
+        -------
+        str
+            Aggregation result name
+        """
+        parts = ["_fb_internal"]
+        parts.extend(args)
+        parts.append(self.aggregation_source.query_node_name)
+        return "_".join(parts)
+
     @classmethod
     def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
         _ = graph
@@ -498,8 +517,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
     def agg_result_name(self) -> str:
         if self.is_parent_lookup:
             return self.feature_name
-        name = f"{self.input_column_name}_{self.aggregation_source.query_node_name}"
-        return name
+        return self.construct_agg_result_name("lookup", self.input_column_name)
 
     @property
     def aggregation_type(self) -> AggregationType:
