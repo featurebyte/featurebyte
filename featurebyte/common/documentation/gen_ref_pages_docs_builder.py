@@ -787,7 +787,7 @@ class DocsBuilder:
         logger.info("Writing API Reference SUMMARY")
         self.write_nav_to_file("reference/SUMMARY.md", "summary", nav)
 
-    def build_docs(self) -> None:
+    def build_docs(self) -> Nav:
         """
         In order to generate the documentation, we perform the following steps:
 
@@ -811,6 +811,7 @@ class DocsBuilder:
         proxied_path_to_markdown_path = self.generate_documentation_for_docs(doc_groups_to_use)
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
+        return updated_nav
 
 
 def build_docs(set_edit_path_fn: Any, gen_files_open_fn: Any) -> None:
