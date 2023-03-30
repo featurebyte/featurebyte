@@ -179,8 +179,8 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - defer: { task: test-teardown }
       - poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
+      - task: test-teardown
 
   test-integration-spark:
     desc: Runs integration tests against Spark
@@ -188,8 +188,8 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - defer: { task: test-teardown }
       - poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
+      - task: test-teardown
 
   test-docs:
     desc: Runs documentation tests
@@ -199,8 +199,8 @@ tasks:
       - task: install
     cmds:
       - task: test-docs-setup
-      - defer: { task: test-docs-teardown }
       - poetry run pytest --timeout=240 featurebyte
+      - task: test-docs-teardown
 
   test-docs-setup:
     desc: "Setup the test environment for docs [This sends some telemetry]"
@@ -214,7 +214,6 @@ tasks:
     desc: "Teardown the test environment for docs"
     cmds:
       - poetry run featurebyte stop
-      - task: test-docs-clean
 
   test-merge:
     desc: Runs tests on merge
@@ -257,7 +256,6 @@ tasks:
         msg: "Test environment is not running."
     cmds:
       - cd docker && docker compose -p featurebyte-test -f docker-compose.yml down
-      - task: docker-clean
 
   docs:
     desc: "Build the documentation and reload the browser"
@@ -270,9 +268,7 @@ tasks:
     cmds:
       - poetry run mkdocs serve --config-file mkdocs.yaml
 
-  docker:
-    aliases:
-      - docker-build
+  docker-build:
     desc: "Build the docker image"
     preconditions:
       - sh: printenv FEATUREBYTE_NP_PASSWORD
@@ -282,9 +278,22 @@ tasks:
     cmds:
       - docker buildx build . -f docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="${FEATUREBYTE_NP_PASSWORD}" -t featurebyte-server:latest
 
+  docker-dev:
+    desc: "Starts featurebyte-server in development mode"
+    deps:
+      - task: build
+    cmds:
+      - task: docker-build
+      - poetry run featurebyte start --local
+      - poetry run featurebyte start spark --local
+
+  docker-dev-stop:
+    desc: "Stops featurebyte-server in development mode"
+    cmds:
+      - poetry run featurebyte stop
+      - poetry run featurebyte stop spark
+
   docker-clean:
-    aliases:
-      - test-docs-clean
     desc: "Clean the docker images and data directories"
     ignore_error: true
     cmds:
