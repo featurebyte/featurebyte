@@ -931,17 +931,17 @@ def test_get_sql(feature_list):
         """
         SELECT
           (
-            "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
+            "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
           ) AS "production_ready_feature",
           (
             (
-              "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
+              "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
             ) + 123
           ) AS "draft_feature",
           (
             (
               (
-                "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
+                "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
               ) + 123
             ) + 123
           ) AS "quarantine_feature",
@@ -949,12 +949,13 @@ def test_get_sql(feature_list):
             (
               (
                 (
-                  "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
+                  "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
                 ) + 123
               ) + 123
             ) + 123
           ) AS "deprecated_feature"
         FROM _FB_AGGREGATED AS AGG
+
         """
     ).strip()
     assert feature_list.sql.endswith(expected)

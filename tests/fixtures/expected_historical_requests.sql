@@ -53,15 +53,15 @@ WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
     REQ."A",
     REQ."B",
     REQ."C",
-    "T0"."agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f",
-    "T1"."agg_w7200_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "agg_w7200_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f",
-    "T2"."agg_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "agg_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
+    "T0"."_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f",
+    "T1"."_fb_internal_window_w7200_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "_fb_internal_window_w7200_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f",
+    "T2"."_fb_internal_window_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "_fb_internal_window_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."cust_id",
-      SUM(value_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f) AS "agg_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
+      SUM(value_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f) AS "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
     FROM "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS REQ
     INNER JOIN TILE_F1800_M300_B600_B839AFCB06ADBAEDCA89907891465110B151C88E AS TILE
       ON (
@@ -80,7 +80,7 @@ WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."cust_id",
-      SUM(value_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f) AS "agg_w7200_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
+      SUM(value_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f) AS "_fb_internal_window_w7200_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
     FROM "REQUEST_TABLE_W7200_F1800_BS600_M300_cust_id" AS REQ
     INNER JOIN TILE_F1800_M300_B600_B839AFCB06ADBAEDCA89907891465110B151C88E AS TILE
       ON (
@@ -99,7 +99,7 @@ WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."cust_id",
-      SUM(value_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f) AS "agg_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
+      SUM(value_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f) AS "_fb_internal_window_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
     FROM "REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id" AS REQ
     INNER JOIN TILE_F1800_M300_B600_B839AFCB06ADBAEDCA89907891465110B151C88E AS TILE
       ON (
@@ -121,5 +121,5 @@ SELECT
   AGG."A",
   AGG."B",
   AGG."C",
-  "agg_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "sum_1d"
+  "_fb_internal_window_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "sum_1d"
 FROM _FB_AGGREGATED AS AGG

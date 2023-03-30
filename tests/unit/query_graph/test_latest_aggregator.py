@@ -52,8 +52,6 @@ def test_latest_aggregator(agg_specs_no_window):
         current_columns=["a", "b", "c"],
         current_query_index=0,
     )
-    aggregation_id = "6ba5affa84771d1b3e01284bc5301186a8828c7a"
-    tile_id = "AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E"
 
     expected = textwrap.dedent(
         f"""
@@ -61,13 +59,13 @@ def test_latest_aggregator(agg_specs_no_window):
           REQ."a" AS "a",
           REQ."b" AS "b",
           REQ."c" AS "c",
-          REQ."agg_latest_{aggregation_id}" AS "agg_latest_{aggregation_id}"
+          REQ."_fb_internal_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a" AS "_fb_internal_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a"
         FROM (
           SELECT
             L."a" AS "a",
             L."b" AS "b",
             L."c" AS "c",
-            R.value_latest_{aggregation_id} AS "agg_latest_{aggregation_id}"
+            R.value_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a AS "_fb_internal_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a"
           FROM (
             SELECT
               "__FB_KEY_COL_0",
@@ -114,13 +112,13 @@ def test_latest_aggregator(agg_specs_no_window):
                   NULL AS "a",
                   NULL AS "b",
                   NULL AS "c"
-                FROM TILE_F3600_M1800_B900_{tile_id}
+                FROM TILE_F3600_M1800_B900_AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E
               )
             )
             WHERE
               "__FB_EFFECTIVE_TS_COL" IS NULL
           ) AS L
-          LEFT JOIN TILE_F3600_M1800_B900_{tile_id} AS R
+          LEFT JOIN TILE_F3600_M1800_B900_AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E AS R
             ON L."__FB_LAST_TS" = R."INDEX"
             AND L."__FB_KEY_COL_0" = R."cust_id"
             AND L."__FB_KEY_COL_1" = R."biz_id"
@@ -129,7 +127,7 @@ def test_latest_aggregator(agg_specs_no_window):
     ).strip()
     assert result.updated_table_expr.sql(pretty=True) == expected
 
-    assert result.column_names == [f"agg_latest_{aggregation_id}"]
+    assert result.column_names == [f"_fb_internal_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a"]
     assert result.updated_index == 0
 
 
