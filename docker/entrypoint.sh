@@ -30,20 +30,24 @@ setup_permissions() {
     else
       useradd -g "${HOST_GID}" -u "${HOST_UID}" -o -M -d /app -r "${NON_PRIVUSER}"
     fi
+    echo "Owning /app"
     chown -R "${HOST_UID}:${HOST_GID}" /app
+    echo "Owning /data/staging"
     chown -R "${HOST_UID}:${HOST_GID}" /data/staging
   fi
 }
 
 _main() {
   setup_permissions
-
+  echo "downgrading user"
   if [ "$(id -u)" = '0' ]; then
     # Running as root, downgrading to normal user
     exec gosu "${NON_PRIVUSER}:${NON_PRIVGROUP}" "$BASH_SOURCE" "$@"
   else
     # Running as normal user
+    echo "Running migration script"
     python /scripts/migration.py
+    echo "starting server"
     uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --workers=$WORKERS --timeout-keep-alive=300 --log-level=$LOG_LEVEL
   fi
 }
