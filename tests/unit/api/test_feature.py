@@ -752,7 +752,7 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
 def test_get_sql(float_feature):
     """Test get sql for feature"""
     assert float_feature.sql.endswith(
-        'SELECT\n  "agg_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "sum_1d"\n'
+        'SELECT\n  "_fb_internal_window_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "sum_1d"\n'
         "FROM _FB_AGGREGATED AS AGG"
     )
 

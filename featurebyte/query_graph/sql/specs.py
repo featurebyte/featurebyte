@@ -141,8 +141,10 @@ class TileBasedAggregationSpec(AggregationSpec):
             Column names of the aggregated result
         """
         if self.window is None:
-            return f"agg_{self.aggregation_id}"
-        return f"agg_w{self.window}_{self.aggregation_id}"
+            # In this case, this is latest aggregation without time window. The aggregation_id would
+            # have a "latest_" prefix already.
+            return self.construct_agg_result_name(self.aggregation_id.replace("latest_", ""))
+        return self.construct_agg_result_name(f"w{self.window}", self.aggregation_id)
 
     @property
     def aggregation_type(self) -> AggregationType:

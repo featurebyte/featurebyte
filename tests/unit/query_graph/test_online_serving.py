@@ -182,11 +182,11 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
         "serving_names": ["CUSTOMER_ID"],
     }
     assert queries[0].dict(exclude={"sql"}) == {
-        "result_name": f"agg_w7200_avg_{aggregation_id}",
+        "result_name": f"_fb_internal_window_w7200_avg_{aggregation_id}",
         **expected_query_params,
     }
     assert queries[1].dict(exclude={"sql"}) == {
-        "result_name": f"agg_w172800_avg_{aggregation_id}",
+        "result_name": f"_fb_internal_window_w172800_avg_{aggregation_id}",
         **expected_query_params,
     }
     assert_equal_with_expected_fixture(
@@ -232,11 +232,11 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
         "serving_names": ["BUSINESS_ID"],
     }
     assert queries[0].dict(exclude={"sql"}) == {
-        "result_name": "agg_w7200_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65",
+        "result_name": "_fb_internal_window_w7200_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65",
         **expected_query_params_tile_1,
     }
     assert queries[1].dict(exclude={"sql"}) == {
-        "result_name": "agg_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c",
+        "result_name": "_fb_internal_window_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c",
         **expected_query_params_tile_2,
     }
     assert_equal_with_expected_fixture(

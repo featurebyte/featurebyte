@@ -34,13 +34,13 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."BUSINESS_ID",
-    "T0"."agg_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c" AS "agg_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c"
+    "T0"."_fb_internal_window_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c" AS "_fb_internal_window_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."BUSINESS_ID",
-      SUM(value_sum_6e33dd8addc3595450df495cd997ffd55efad68c) AS "agg_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c"
+      SUM(value_sum_6e33dd8addc3595450df495cd997ffd55efad68c) AS "_fb_internal_window_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c"
     FROM "REQUEST_TABLE_W604800_F3600_BS900_M1800_BUSINESS_ID" AS REQ
     INNER JOIN TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624 AS TILE
       ON (
@@ -59,5 +59,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."BUSINESS_ID",
-  "agg_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c"
+  "_fb_internal_window_w604800_sum_6e33dd8addc3595450df495cd997ffd55efad68c"
 FROM _FB_AGGREGATED AS AGG
