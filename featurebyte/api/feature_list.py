@@ -349,17 +349,17 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     @property
     def sql(self) -> str:
         """
-        Get FeatureGroup SQL
+        Get FeatureGroup SQL.
 
         Returns
         -------
         str
-            FeatureGroup SQL
+            FeatureGroup SQL string.
 
         Raises
         ------
         RecordRetrievalException
-            Failed to get feature list SQL
+            Failed to get feature list SQL.
         """
         payload = FeatureListSQL(
             feature_clusters=self._get_feature_clusters(),
@@ -933,12 +933,12 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     @classmethod
     def _list_versions(cls, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
-        List saved feature list versions
+        List saved feature list versions.
 
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include FeatureList object id in the output table.
 
         Returns
         -------
@@ -947,19 +947,22 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Examples
         --------
-
-        List saved FeatureList versions
+        List saved FeatureList versions (calling from FeatureList class):
 
         >>> FeatureList.list_versions()  # doctest: +SKIP
                            name feature_list_namespace_id  num_features  online_frac  deployed              created_at
         0  invoice_feature_list  641d2f94f8d79eb6fee0a335             1          0.0     False 2023-03-24 05:05:24.875
 
-        List FeatureList versions with the same name
+        List FeatureList versions with the same name (calling from FeatureList object):
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.list_versions()  # doctest: +SKIP
                            name feature_list_namespace_id  num_features  online_frac  deployed              created_at
         0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
+
+        See Also
+        --------
+        - [FeatureList.list_features](/reference/featurebyte.api.feature_list.FeatureList.list_features/)
         """
         return super().list(include_id=include_id)
 
