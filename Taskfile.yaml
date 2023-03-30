@@ -203,7 +203,7 @@ tasks:
       - task: test-docs-teardown
 
   test-docs-setup:
-    desc: "Setup the test environment for docs [This sends some telemetry]"
+    desc: "Setup the test environment for docs"
     deps:
       - task: docker-build
     cmds:
