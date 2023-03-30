@@ -822,6 +822,11 @@ class DocsBuilder:
 
         write_summary_page()
         - Generate a summary file which contains the navigation for the API Reference section
+
+        Returns
+        -------
+        Nav
+            The navigation.
         """
         self.initialize_missing_debug_doc()
 
