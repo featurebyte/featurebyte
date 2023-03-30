@@ -70,19 +70,6 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
 
 @pytest.mark.asyncio
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def test_tile_job_exists(mock_execute_query, mock_snowflake_tile, tile_manager):
-    """
-    Test tile_job_exists method in TileSnowflake
-    """
-    mock_execute_query.return_value = [{"TASK_NAME": "SHELL_TASK_agg_id1_ONLINE"}]
-    assert await tile_manager.tile_job_exists(mock_snowflake_tile) is True
-
-    mock_execute_query.return_value = []
-    assert await tile_manager.tile_job_exists(mock_snowflake_tile) is False
-
-
-@pytest.mark.asyncio
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 async def test_populate_feature_store(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test populate_feature_store method in TileSnowflake
@@ -150,40 +137,13 @@ async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, ti
         frequency_minutes=mock_snowflake_tile.frequency_minute,
         time_modulo_frequency_seconds=mock_snowflake_tile.time_modulo_frequency_second,
     )
-    cron = f"{next_job_time.minute} {next_job_time.hour} {next_job_time.day} * *"
 
-    sql = await tile_manager.schedule_online_tiles(mock_snowflake_tile, schedule_time=schedule_time)
-    assert sql is not None
-
-    expected_sql = textwrap.dedent(
-        f"""
-        CREATE OR REPLACE TASK SHELL_TASK_agg_id1_ONLINE
-          WAREHOUSE = sf_warehouse
-          SCHEDULE = 'USING CRON {cron} UTC'
-        AS
-            call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
-                'SHELL_TASK_agg_id1_ONLINE',
-                'sf_warehouse',
-                'TILE_ID1',
-                'agg_id1',
-                183,
-                3,
-                5,
-                1440,
-                'select c1 from dummy where tile_start_ts >= __FB_START_DATE and tile_start_ts < __FB_END_DATE',
-                '__FB_TILE_START_DATE_COLUMN',
-                'LAST_TILE_START_DATE',
-                '__FB_START_DATE',
-                '__FB_END_DATE',
-                '"col1"',
-                'col2',
-                'FLOAT',
-                'ONLINE',
-                10
-            )
-        """
-    ).strip()
-    assert textwrap.dedent(sql).strip() == expected_sql
+    with mock.patch(
+        "featurebyte.tile.base.BaseTileManager._schedule_tiles_custom"
+    ) as mock_schedule_tiles_custom:
+        await tile_manager.schedule_online_tiles(mock_snowflake_tile, schedule_time=schedule_time)
+        kwargs = mock_schedule_tiles_custom.call_args.kwargs
+        assert kwargs["next_job_time"] == next_job_time
 
 
 @pytest.mark.asyncio
@@ -201,38 +161,14 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
         time_modulo_frequency_seconds=mock_snowflake_tile.time_modulo_frequency_second,
     )
 
-    sql = await tile_manager.schedule_offline_tiles(
-        tile_spec=mock_snowflake_tile, schedule_time=schedule_time
-    )
-    expected_sql = textwrap.dedent(
-        f"""
-        CREATE OR REPLACE TASK SHELL_TASK_agg_id1_OFFLINE
-          WAREHOUSE = sf_warehouse
-          SCHEDULE = 'USING CRON 3 0 {next_job_time.day} * * UTC'
-        AS
-            call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
-                'SHELL_TASK_agg_id1_OFFLINE',
-                'sf_warehouse',
-                'TILE_ID1',
-                'agg_id1',
-                183,
-                3,
-                5,
-                1440,
-                'select c1 from dummy where tile_start_ts >= __FB_START_DATE and tile_start_ts < __FB_END_DATE',
-                '__FB_TILE_START_DATE_COLUMN',
-                'LAST_TILE_START_DATE',
-                '__FB_START_DATE',
-                '__FB_END_DATE',
-                '"col1"',
-                'col2',
-                'FLOAT',
-                'OFFLINE',
-                10
-            )
-        """
-    ).strip()
-    assert textwrap.dedent(sql).strip() == expected_sql
+    with mock.patch(
+        "featurebyte.tile.base.BaseTileManager._schedule_tiles_custom"
+    ) as mock_schedule_tiles_custom:
+        await tile_manager.schedule_offline_tiles(
+            tile_spec=mock_snowflake_tile, schedule_time=schedule_time
+        )
+        kwargs = mock_schedule_tiles_custom.call_args.kwargs
+        assert kwargs["next_job_time"] == next_job_time
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")

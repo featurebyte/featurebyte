@@ -54,7 +54,12 @@ async def test_online_enable(
     )
 
     mock_execute_query.return_value = []
-    await feature_manager.online_enable(feature_spec)
+
+    with mock.patch(
+        "featurebyte.tile.snowflake_tile.TileManagerSnowflake.tile_job_exists"
+    ) as mock_tile_job_exists:
+        mock_tile_job_exists.return_value = False
+        await feature_manager.online_enable(feature_spec)
 
     mock_schedule_online_tiles.assert_called_once()
     mock_schedule_offline_tiles.assert_called_once()
@@ -63,10 +68,9 @@ async def test_online_enable(
     # Expected execute_query calls:
     # 1. merge into TILE_FEATURE_MAPPING
     # 2. merge into ONLINE_STORE_MAPPING
-    # 3. SHOW TASKS LIKE
-    # 4. call SP_TILES_SCHEDULE_ONLINE_STORE
-    # 5. check TILE_REGISTRY for LAST_TILE_START_DATE
-    assert mock_execute_query.call_count == 5
+    # 3. call SP_TILES_SCHEDULE_ONLINE_STORE
+    # 4. check TILE_REGISTRY for LAST_TILE_START_DATE
+    assert mock_execute_query.call_count == 4
 
     upsert_sql = tm_upsert_tile_feature_mapping.render(
         tile_id=feature_spec.tile_ids[0],
@@ -127,7 +131,14 @@ async def test_online_enable_duplicate_tile_task(
         None,
         None,
     ]
-    await feature_manager.online_enable(feature_spec)
+    with mock.patch(
+        "featurebyte.tile.snowflake_tile.TileManagerSnowflake.tile_job_exists"
+    ) as mock_tile_job_exists:
+        with mock.patch(
+            "featurebyte.feature_manager.manager.FeatureManager._generate_historical_tiles"
+        ) as _:
+            mock_tile_job_exists.return_value = True
+            await feature_manager.online_enable(feature_spec)
 
     mock_schedule_online_tiles.assert_not_called()
     mock_schedule_offline_tiles.assert_not_called()
