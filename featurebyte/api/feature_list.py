@@ -135,11 +135,30 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     @property
     def feature_names(self) -> list[str]:
         """
-        List of feature names
+        List of feature names in the FeatureGroup object.
 
         Returns
         -------
         list[str]
+            List of feature names
+
+        Examples
+        --------
+        >>> table = catalog.get_table("GROCERYINVOICE")
+        >>> view = table.get_view()
+        >>> feature_group = view.groupby("GroceryCustomerGuid").aggregate_over(
+        ...     value_column=None,
+        ...     method="count",
+        ...     feature_names=["count_60days", "count_90days"],
+        ...     windows=["60d", "90d"],
+        ... )
+        >>> feature_group.feature_names
+        ['count_60days', 'count_90days']
+
+        See Also
+        --------
+        - [FeatureGroup](/reference/featurebyte.api.feature_list.FeatureGroup/)
+        - [FeatureList.feature_names](/reference/featurebyte.api.feature_list.FeatureList.feature_names/)
         """
         return list(self.feature_objects)
 
@@ -330,17 +349,17 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     @property
     def sql(self) -> str:
         """
-        Get FeatureGroup SQL
+        Get FeatureGroup SQL.
 
         Returns
         -------
         str
-            FeatureGroup SQL
+            FeatureGroup SQL string.
 
         Raises
         ------
         RecordRetrievalException
-            Failed to get feature list SQL
+            Failed to get feature list SQL.
         """
         payload = FeatureListSQL(
             feature_clusters=self._get_feature_clusters(),
@@ -366,6 +385,12 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     actually the individual features within this feature group that get persisted. Similarly, the object that
     gets constructed on the read path does not become a FeatureGroup. The persisted version that users interact with
     is called a FeatureList.
+
+    Note that the following operations result in a new FeatureGroup object as the output could contain more than
+    one Feature object:
+
+    - [GroupBy.aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/)
+    - [View.as_features](/reference/featurebyte.api.view.View.as_features/)
     """
 
     # documentation metadata
@@ -585,6 +610,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         return feature_lists
 
 
+# pylint: disable=too-many-public-methods
 class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, FeatureJobMixin):
     """
     A Feature List is a set of features that is typically crafted to address a specific Use Case, and is typically how
@@ -608,9 +634,19 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     )
 
     # override FeatureListModel attributes
-    feature_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
+    feature_ids: List[PydanticObjectId] = Field(
+        default_factory=list,
+        allow_mutation=False,
+        description="List of feature IDs in the FeatureList object.",
+    )
     version: VersionIdentifier = Field(
         allow_mutation=False, default=None, description="Feature list version"
+    )
+    saved: bool = Field(
+        default=False,
+        allow_mutation=False,
+        exclude=True,
+        description="Flag to indicate whether the FeatureList object is saved in the FeatureByte catalog.",
     )
 
     # class variables
@@ -638,6 +674,28 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                 feature_tile_specs.append((str(feature.name), tile_specs))
         return feature_tile_specs
 
+    @property
+    def feature_names(self) -> list[str]:
+        """
+        List of feature names in the FeatureList object.
+
+        Returns
+        -------
+        list[str]
+            List of feature names
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.feature_names
+        ['InvoiceCount_60days']
+
+        See Also
+        --------
+        - [FeatureGroup.feature_names](/reference/featurebyte.api.feature_list.FeatureGroup.feature_names/)
+        """
+        return super().feature_names
+
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
         return {"items": []}
@@ -648,7 +706,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Retrieve the FeatureList from the persistent data store given the object's name, and version.
 
         This assumes that the object has been saved to the persistent data store. If the object has not been saved,
-        an exception will be raised and you should create and save the object first.
+        an exception will be raised. To fix this, you should save the object first.
 
         Parameters
         ----------
@@ -748,7 +806,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             values["feature_objects"] = feature_objects
         return values
 
-    @root_validator()
+    @root_validator
     @classmethod
     def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         # set the following values if it is empty (used mainly by the SDK constructed feature list)
@@ -875,12 +933,12 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     @classmethod
     def _list_versions(cls, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
-        List saved feature list versions
+        List saved feature list versions.
 
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include FeatureList object id in the output table.
 
         Returns
         -------
@@ -889,19 +947,22 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Examples
         --------
-
-        List saved FeatureList versions
+        List saved FeatureList versions (calling from FeatureList class):
 
         >>> FeatureList.list_versions()  # doctest: +SKIP
                            name feature_list_namespace_id  num_features  online_frac  deployed              created_at
         0  invoice_feature_list  641d2f94f8d79eb6fee0a335             1          0.0     False 2023-03-24 05:05:24.875
 
-        List FeatureList versions with the same name
+        List FeatureList versions with the same name (calling from FeatureList object):
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.list_versions()  # doctest: +SKIP
                            name feature_list_namespace_id  num_features  online_frac  deployed              created_at
         0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
+
+        See Also
+        --------
+        - [FeatureList.list_features](/reference/featurebyte.api.feature_list.FeatureList.list_features/)
         """
         return super().list(include_id=include_id)
 
@@ -960,7 +1021,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
-        List features in the feature list
+        List features in the feature list.
 
         Parameters
         ----------
@@ -974,7 +1035,19 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Returns
         -------
         pd.DataFrame
-            Table of features
+            Table of features in this feature list.
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> display_columns = ["name", "version", "dtype", "primary_tables", "primary_entities"]
+        >>> feature_list.list_features().sort_values("created_at")[display_columns]  # doctest: +SKIP
+                          name  version  dtype    primary_tables   primary_entities
+        0  InvoiceCount_60days  V230330  FLOAT  [GROCERYINVOICE]  [grocerycustomer]
+
+        See Also
+        --------
+        - [FeatureList.list_versions](/reference/featurebyte.api.feature_list.FeatureList.list_versions/)
         """
         return Feature.list_versions(
             feature_list_id=self.id, primary_entity=primary_entity, primary_table=primary_table
@@ -987,7 +1060,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> str:
         """
-        Retrieve partial SQL statements used to retrieved historical features (for debugging / understanding purposes)
+        Retrieve partial SQL statements used to retrieved historical features (for debugging / understanding purposes).
 
         Parameters
         ----------
@@ -1002,11 +1075,12 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Returns
         -------
         str
+            Partial SQL statements used to retrieved historical features.
 
         Raises
         ------
         RecordRetrievalException
-            Get historical features request failed
+            Get historical features request failed.
         """
         payload = FeatureListGetHistoricalFeatures(
             feature_list_id=self.id,
@@ -1067,7 +1141,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Raises
         ------
         RecordRetrievalException
-            Get historical features request failed
+            Get historical features request failed.
 
         Examples
         --------
@@ -1272,6 +1346,11 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
+
+        See Also
+        --------
+        - [FeatureList.create_new_version](/reference/featurebyte.api.feature_list.FeatureList.create_new_version/)
+        - [FeatureList.as_default_version](/reference/featurebyte.api.feature_list.FeatureList.as_default_version/)
         """
         self.feature_list_namespace.update(
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
@@ -1280,13 +1359,18 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     def as_default_version(self) -> None:
         """
-        Set the feature list as the default version
+        Set the feature list as the default version.
 
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
         >>> feature_list.as_default_version()
+
+        See Also
+        --------
+        - [FeatureList.create_new_version](/reference/featurebyte.api.feature_list.FeatureList.create_new_version/)
+        - [FeatureList.update_default_version_mode](/reference/featurebyte.api.feature_list.FeatureList.update_default_version_mode/)
         """
         self.feature_list_namespace.update(
             update_payload={"default_feature_list_id": self.id}, allow_update_local=False
@@ -1303,16 +1387,20 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Parameters
         ----------
         enable: bool
-            Whether to deploy this feature list
+            Whether to deploy this feature list.
         make_production_ready: bool
-            Whether to convert the feature to production ready if it is not production ready
+            Whether to convert the feature to production ready if it is not production ready.
         ignore_guardrails: bool
-            Whether to ignore guardrails when trying to promote features in the list to production ready status
+            Whether to ignore guardrails when trying to promote features in the list to production ready status.
 
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.deploy(enable=True, make_production_ready=True)  # doctest: +SKIP
+
+        See Also
+        --------
+        - [FeatureList.get_online_serving_code](/reference/featurebyte.api.feature_list.FeatureList.get_online_serving_code/)
         """
         self.update(
             update_payload={
@@ -1331,7 +1419,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
         """
-        Retrive either Python or shell script template for serving online features from a deployed featurelist, defaulted to python.
+        Retrive either Python or shell script template for serving online features from a deployed featurelist,
+        defaulted to python.
 
         Parameters
         ----------
@@ -1351,7 +1440,6 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Examples
         --------
-
         Retrieve python code template when "language" is set to "python"
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
@@ -1388,6 +1476,10 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
                 '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
                 http://localhost:8080/feature_list/641cf594f74f839cf9297884/online_features?catalog_id=63eda344d0313fb925f7883a
+
+        See Also
+        --------
+        - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/)
         """
         if not self.deployed:
             raise FeatureListNotOnlineEnabledError("Feature list is not deployed.")

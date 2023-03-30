@@ -165,7 +165,7 @@ class TableColumnInfo(FeatureByteBaseModel):
 
 class TableInfo(TableBriefInfo, BaseInfo):
     """
-    Data info schema
+    Table info schema
     """
 
     record_creation_timestamp_column: Optional[str]

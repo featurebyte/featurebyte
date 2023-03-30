@@ -125,7 +125,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
 class TableFeatureJobSetting(FeatureByteBaseModel):
     """
-    Data feature job setting schema
+    Table feature job setting schema
     """
 
     table_name: str

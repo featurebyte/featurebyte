@@ -254,7 +254,7 @@ async def test_context_update__validation_error_unsaved_table(
             document_id=context.id,
             data=ContextUpdate(graph=generic_view_graph, node_name="input_1"),
         )
-    expected_error = "Data record has not been stored at the persistent."
+    expected_error = "Table record has not been stored at the persistent."
     assert expected_error in str(exc.value)
 
 

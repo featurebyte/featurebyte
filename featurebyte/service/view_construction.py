@@ -216,7 +216,7 @@ class ViewConstructionService(BaseService):
         target_node: Node
             Target node of the feature model graph
         table_cleaning_operations: Optional[List[TableCleaningOperation]]
-            Data cleaning operations
+            Table cleaning operations
         use_source_settings: bool
             Whether to use source table's table cleaning operations
 
