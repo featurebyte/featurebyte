@@ -13,7 +13,7 @@ from pydantic import Field, StrictStr, root_validator, validator
 from typeguard import typechecked
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
-from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
+from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
