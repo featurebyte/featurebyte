@@ -135,11 +135,30 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     @property
     def feature_names(self) -> list[str]:
         """
-        List of feature names
+        List of feature names in the FeatureGroup object.
 
         Returns
         -------
         list[str]
+            List of feature names
+
+        Examples
+        --------
+        >>> table = catalog.get_table("GROCERYINVOICE")
+        >>> view = table.get_view()
+        >>> feature_group = view.groupby("GroceryCustomerGuid").aggregate_over(
+        ...     value_column=None,
+        ...     method="count",
+        ...     feature_names=["count_60days", "count_90days"],
+        ...     windows=["60d", "90d"],
+        ... )
+        >>> feature_group.feature_names
+        ['count_60days', 'count_90days']
+
+        See Also
+        --------
+        - [FeatureGroup](/reference/featurebyte.api.feature_list.FeatureGroup/)
+        - [FeatureList.feature_names](/reference/featurebyte.api.feature_list.FeatureList.feature_names/)
         """
         return list(self.feature_objects)
 
@@ -366,6 +385,12 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     actually the individual features within this feature group that get persisted. Similarly, the object that
     gets constructed on the read path does not become a FeatureGroup. The persisted version that users interact with
     is called a FeatureList.
+
+    Note that the following operations result in a new FeatureGroup object as the output could contain more than
+    one Feature object:
+
+    - [GroupBy.aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/)
+    - [View.as_features](/reference/featurebyte.api.view.View.as_features/)
     """
 
     # documentation metadata
@@ -608,9 +633,19 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     )
 
     # override FeatureListModel attributes
-    feature_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
+    feature_ids: List[PydanticObjectId] = Field(
+        default_factory=list,
+        allow_mutation=False,
+        description="List of feature IDs in the FeatureList object.",
+    )
     version: VersionIdentifier = Field(
         allow_mutation=False, default=None, description="Feature list version"
+    )
+    saved: bool = Field(
+        default=False,
+        allow_mutation=False,
+        exclude=True,
+        description="Flag to indicate whether the FeatureList object is saved in the FeatureByte catalog.",
     )
 
     # class variables
@@ -638,6 +673,28 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                 feature_tile_specs.append((str(feature.name), tile_specs))
         return feature_tile_specs
 
+    @property
+    def feature_names(self) -> list[str]:
+        """
+        List of feature names in the FeatureList object.
+
+        Returns
+        -------
+        list[str]
+            List of feature names
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.feature_names
+        ['InvoiceCount_60days']
+
+        See Also
+        --------
+        - [FeatureGroup.feature_names](/reference/featurebyte.api.feature_list.FeatureGroup.feature_names/)
+        """
+        return super().feature_names
+
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
         return {"items": []}
@@ -648,7 +705,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Retrieve the FeatureList from the persistent data store given the object's name, and version.
 
         This assumes that the object has been saved to the persistent data store. If the object has not been saved,
-        an exception will be raised and you should create and save the object first.
+        an exception will be raised. To fix this, you should save the object first.
 
         Parameters
         ----------
@@ -748,7 +805,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             values["feature_objects"] = feature_objects
         return values
 
-    @root_validator()
+    @root_validator
     @classmethod
     def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         # set the following values if it is empty (used mainly by the SDK constructed feature list)
@@ -960,7 +1017,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
-        List features in the feature list
+        List features in the feature list.
 
         Parameters
         ----------
@@ -974,7 +1031,19 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Returns
         -------
         pd.DataFrame
-            Table of features
+            Table of features.
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> display_columns = ["name", "version", "dtype", "primary_tables", "primary_entities"]
+        >>> feature_list.list_features().sort_values("created_at")[display_columns]  # doctest: +SKIP
+                          name  version  dtype    primary_tables   primary_entities
+        0  InvoiceCount_60days  V230330  FLOAT  [GROCERYINVOICE]  [grocerycustomer]
+
+        See Also
+        --------
+        - [FeatureList.list_versions](/reference/featurebyte.api.feature_list.FeatureList.list_versions/)
         """
         return Feature.list_versions(
             feature_list_id=self.id, primary_entity=primary_entity, primary_table=primary_table
@@ -987,7 +1056,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> str:
         """
-        Retrieve partial SQL statements used to retrieved historical features (for debugging / understanding purposes)
+        Retrieve partial SQL statements used to retrieved historical features (for debugging / understanding purposes).
 
         Parameters
         ----------
@@ -1002,11 +1071,12 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Returns
         -------
         str
+            Partial SQL statements used to retrieved historical features.
 
         Raises
         ------
         RecordRetrievalException
-            Get historical features request failed
+            Get historical features request failed.
         """
         payload = FeatureListGetHistoricalFeatures(
             feature_list_id=self.id,
@@ -1067,7 +1137,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Raises
         ------
         RecordRetrievalException
-            Get historical features request failed
+            Get historical features request failed.
 
         Examples
         --------

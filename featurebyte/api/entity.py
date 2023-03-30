@@ -47,7 +47,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
         default=False,
         allow_mutation=False,
         exclude=True,
-        description="Flag to indicate whether the entity is saved in the FeatureByte catalog.",
+        description="Flag to indicate whether the Entity object is saved in the FeatureByte catalog.",
     )
 
     def _get_create_payload(self) -> dict[str, Any]:

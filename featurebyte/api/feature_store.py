@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from pydantic import Field
+
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.data_source import DataSource
 from featurebyte.common.doc_util import FBAutoDoc
@@ -36,6 +38,14 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     _list_schema = FeatureStoreModel
     _get_schema = FeatureStoreModel
     _list_fields = ["name", "type", "created_at"]
+
+    # pydantic instance variable (public)
+    saved: bool = Field(
+        default=False,
+        allow_mutation=False,
+        exclude=True,
+        description="Flag to indicate whether the FeatureStore object is saved in the FeatureByte catalog.",
+    )
 
     # optional credential parameters
     credentials: Optional[Credential] = None

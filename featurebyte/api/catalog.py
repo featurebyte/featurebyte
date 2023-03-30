@@ -9,6 +9,7 @@ from functools import wraps
 
 import pandas as pd
 from bson import ObjectId
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
@@ -97,6 +98,14 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
     _list_schema = CatalogModel
     _get_schema = CatalogModel
     _list_fields = ["name", "created_at", "active"]
+
+    # pydantic instance variable (public)
+    saved: bool = Field(
+        default=False,
+        allow_mutation=False,
+        exclude=True,
+        description="Flag to indicate whether the Catalog object is saved in the FeatureByte catalog.",
+    )
 
     def _get_create_payload(self) -> Dict[str, Any]:
         data = CatalogCreate(**self.json_dict())

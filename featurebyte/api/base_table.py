@@ -278,7 +278,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         default=False,
         allow_mutation=False,
         exclude=True,
-        description="Flag to indicate whether the table is saved in the FeatureByte catalog.",
+        description="Flag to indicate whether the Table object is saved in the FeatureByte catalog.",
     )
 
     # pydantic instance variable (internal use)
