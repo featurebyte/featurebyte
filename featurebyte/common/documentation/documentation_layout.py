@@ -14,20 +14,18 @@ class DocLayoutItem:
 
     # Represents the menu header. For example, if the menu header is ["Data", "Explore"], the left side bar in the
     # menu will have a top level item of "Data" and a sub item of "Explore".
-    menu_header: List[str]
-    # This should represent the API path that users are able to access the SDK through, without the featurebyte.prefix.
-    # For example, if the API path provided is `Table`, the user will be able to access the SDK through
+    #
+    # Note that the last item in the menu header should represent the API path that users are able to access the
+    # SDK through, without the `featurebyte.` prefix.
+    # For example, if the last value provided is `Table`, the user will be expected to be able to access the SDK through
     # `featurebyte.Table` (even if that is not necessarily the path to the class in the codebase).
-    # If no value is provided here, we will use the last item in the menu header as the API path.
-    api_path: Optional[str] = None
+    menu_header: List[str]
     # This should represent a path to a markdown file that will be used to override the documentation. This is to
     # provide an exit hatch in case we are not able to easily infer the documentation from the API path.
     doc_path_override: Optional[str] = None
 
     def get_api_path_override(self) -> str:
-        if self.api_path is None:
-            return "featurebyte." + self.menu_header[-1]
-        return "featurebyte." + self.api_path
+        return "featurebyte." + self.menu_header[-1]
 
     def get_doc_path_override(self) -> Optional[str]:
         if self.doc_path_override is None:
