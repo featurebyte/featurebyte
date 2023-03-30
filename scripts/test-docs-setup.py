@@ -122,6 +122,7 @@ def setup() -> None:
         "InvoiceCount_60days"
     ].astype(float)
     invoice_count_60days["InvoiceCount_60days"].save(conflict_resolution="retrieve")
+    invoice_count_60days.update_readiness("PRODUCTION_READY")
 
     # Feature: InvoiceAmountAvg_60days
     invoice_amount_avg_60days = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(

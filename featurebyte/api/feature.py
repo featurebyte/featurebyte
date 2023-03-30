@@ -762,6 +762,7 @@ class Feature(
         - [GroupBy.aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/)
         - [Table.column_cleaning_operations](/reference/featurebyte.api.base_table.TableApiObject.column_cleaning_operations)
         - [Feature.info](/reference/featurebyte.api.feature.Feature.info/)
+        - [FeatureList.create_new_version](/reference/featurebyte.api.feature_list.FeatureList.create_new_version/)
         """
         client = Configurations().get_client()
         response = client.post(
