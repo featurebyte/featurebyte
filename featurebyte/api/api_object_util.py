@@ -9,6 +9,7 @@ import threading
 from rich.pretty import pretty_repr
 
 from featurebyte.config import Configurations
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 
 
@@ -88,3 +89,36 @@ class PrettyDict(Dict[str, Any]):
 
     def __repr__(self) -> str:
         return pretty_repr(dict(self), expand_all=True, indent_size=2)
+
+
+class NameAttributeUpdatableMixin:
+    """
+    This mixin is used to handle the case when name of the api object is updatable.
+    """
+
+    def __getattribute__(self, item: str) -> Any:
+        """
+        Custom __getattribute__ method to handle the case when name of the model is updated.
+
+        Parameters
+        ----------
+        item: str
+            Attribute name.
+
+        Returns
+        -------
+        Any
+            Attribute value.
+        """
+        if item == "name":
+            # Special handling for name attribute is required because name is a common attribute for all
+            # FeaturebyteBaseDocumentModel objects. To override the parent name attribute, we need to use
+            # __getattribute__ method as property has no effect to override the parent pydantic model attribute.
+            try:
+                # Retrieve the name from the cached model first. Cached model is used to store the latest
+                # model retrieved from the server. If the model has not been saved to the server, name attribute
+                # of this model will be used.
+                return self.cached_model.name
+            except RecordRetrievalException:
+                pass
+        return super().__getattribute__(item)

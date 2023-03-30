@@ -12,6 +12,7 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
+from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException, RecordUpdateException
@@ -19,7 +20,7 @@ from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
 
-class Entity(SavableApiObject):
+class Entity(NameAttributeUpdatableMixin, SavableApiObject):
     """
     Entity class to represent an entity in FeatureByte.
 
@@ -52,27 +53,6 @@ class Entity(SavableApiObject):
     def _get_create_payload(self) -> dict[str, Any]:
         data = EntityCreate(serving_name=self.serving_name, **self.json_dict())
         return data.json_dict()
-
-    def __getattribute__(self, item: str) -> Any:
-        """
-        Custom __getattribute__ method to handle the case when name of the entity is updated.
-
-        Parameters
-        ----------
-        item: str
-            Attribute name.
-
-        Returns
-        -------
-        Any
-            Attribute value.
-        """
-        if item == "name":
-            try:
-                return self.cached_model.name
-            except RecordRetrievalException:
-                pass
-        return super().__getattribute__(item)
 
     @property
     def serving_names(self) -> List[str]:
