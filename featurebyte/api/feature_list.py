@@ -1346,6 +1346,11 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
+
+        See Also
+        --------
+        - [FeatureList.create_new_version](/reference/featurebyte.api.feature_list.FeatureList.create_new_version/)
+        - [FeatureList.as_default_version](/reference/featurebyte.api.feature_list.FeatureList.as_default_version/)
         """
         self.feature_list_namespace.update(
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
@@ -1354,13 +1359,18 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     def as_default_version(self) -> None:
         """
-        Set the feature list as the default version
+        Set the feature list as the default version.
 
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
         >>> feature_list.as_default_version()
+
+        See Also
+        --------
+        - [FeatureList.create_new_version](/reference/featurebyte.api.feature_list.FeatureList.create_new_version/)
+        - [FeatureList.update_default_version_mode](/reference/featurebyte.api.feature_list.FeatureList.update_default_version_mode/)
         """
         self.feature_list_namespace.update(
             update_payload={"default_feature_list_id": self.id}, allow_update_local=False
@@ -1377,16 +1387,20 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Parameters
         ----------
         enable: bool
-            Whether to deploy this feature list
+            Whether to deploy this feature list.
         make_production_ready: bool
-            Whether to convert the feature to production ready if it is not production ready
+            Whether to convert the feature to production ready if it is not production ready.
         ignore_guardrails: bool
-            Whether to ignore guardrails when trying to promote features in the list to production ready status
+            Whether to ignore guardrails when trying to promote features in the list to production ready status.
 
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.deploy(enable=True, make_production_ready=True)  # doctest: +SKIP
+
+        See Also
+        --------
+        - [FeatureList.get_online_serving_code](/reference/featurebyte.api.feature_list.FeatureList.get_online_serving_code/)
         """
         self.update(
             update_payload={
@@ -1405,7 +1419,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
         """
-        Retrive either Python or shell script template for serving online features from a deployed featurelist, defaulted to python.
+        Retrive either Python or shell script template for serving online features from a deployed featurelist,
+        defaulted to python.
 
         Parameters
         ----------
@@ -1425,7 +1440,6 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Examples
         --------
-
         Retrieve python code template when "language" is set to "python"
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
@@ -1462,6 +1476,10 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
                 '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
                 http://localhost:8080/feature_list/641cf594f74f839cf9297884/online_features?catalog_id=63eda344d0313fb925f7883a
+
+        See Also
+        --------
+        - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/)
         """
         if not self.deployed:
             raise FeatureListNotOnlineEnabledError("Feature list is not deployed.")
