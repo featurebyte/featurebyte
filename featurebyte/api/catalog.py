@@ -12,6 +12,7 @@ from bson import ObjectId
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
+from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
@@ -70,7 +71,7 @@ def update_and_reset_catalog(func: Any) -> Any:
 
 
 @typechecked
-class Catalog(CatalogModel, SavableApiObject):
+class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
     """
     A FeatureByte Catalog serves as a centralized repository for storing metadata about FeatureByte objects such as
     tables, entities, features, and feature lists associated with a specific domain. It functions as an effective tool
