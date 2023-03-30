@@ -1,7 +1,7 @@
 """
 Common test fixtures used across files in integration directory
 """
-from typing import AsyncIterator, Dict, List
+from typing import Dict, List
 
 import asyncio
 import json
@@ -29,7 +29,7 @@ import pytest_asyncio
 import yaml
 from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
-from mongomock_motor import AsyncMongoMockClient
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from featurebyte import Configurations, DatabricksDetails, FeatureJobSetting, SnowflakeDetails
 from featurebyte.api.entity import Entity
@@ -211,27 +211,23 @@ def event_loop():
 
 
 @pytest.fixture(name="persistent", scope="session")
-def mock_persistent_fixture():
+def persistent_fixture():
     """
-    Mock mongodb persistent
+    Mock mongodb persistent used by most of the integration tests
     """
-    persistent = MongoDB(
-        uri="mongodb://server.example.com:27017", database="test", client=AsyncMongoMockClient()
-    )
-
-    # skip session in unit tests
-    @asynccontextmanager
-    async def start_transaction() -> AsyncIterator[MongoDB]:
-        yield persistent
-
-    with mock.patch.object(persistent, "start_transaction", start_transaction):
-        yield persistent
+    database_name = f"test_{ObjectId()}"
+    client = AsyncIOMotorClient(MONGO_CONNECTION)
+    client.get_io_loop = asyncio.get_running_loop
+    persistent = MongoDB(uri=MONGO_CONNECTION, database=database_name, client=client)
+    yield persistent
+    client = AsyncIOMotorClient(MONGO_CONNECTION)
+    client.drop_database(database_name)
 
 
 @pytest.fixture(name="mongo_persistent")
 def mongo_persistent_fixture():
     """
-    Mongo persistent fixture
+    Mongo persistent fixture used by some tests that need to access the database directly
     """
     database_name = f"test_{ObjectId()}"
     client = pymongo.MongoClient(MONGO_CONNECTION)
