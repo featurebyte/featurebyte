@@ -35,6 +35,8 @@ NonTileBasedAggregationSpecT = TypeVar(
     "NonTileBasedAggregationSpecT", bound="NonTileBasedAggregationSpec"
 )
 
+FB_INTERNAL_COLUMN_PREFIX = "_fb_internal"
+
 
 class AggregationType(StrEnum):
     """
@@ -88,6 +90,24 @@ class AggregationSpec(ABC):
         -------
         AggregationType
         """
+
+    def construct_agg_result_name(self, *args: Any) -> str:
+        """
+        Helper function to construct the aggregation result name
+
+        Parameters
+        ----------
+        *args: Any
+            Tags to be included in the aggregation result name
+
+        Returns
+        -------
+        str
+            Aggregation result name
+        """
+        parts = [FB_INTERNAL_COLUMN_PREFIX, self.aggregation_type]
+        parts.extend([f"{arg}" for arg in args])
+        return "_".join(parts)
 
 
 @dataclass
@@ -264,23 +284,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         return sql_node.to_aggregation_source()  # type: ignore
 
     def construct_agg_result_name(self, *args: Any) -> str:
-        """
-        Helper function to construct the aggregation result name
-
-        Parameters
-        ----------
-        *args: Any
-            Tags to be included in the aggregation result name
-
-        Returns
-        -------
-        str
-            Aggregation result name
-        """
-        parts = ["_fb_internal", self.aggregation_type]
-        parts.extend([f"{arg}" for arg in args])
-        parts.append(self.aggregation_source.query_node_name)
-        return "_".join(parts)
+        return super().construct_agg_result_name(*args, self.aggregation_source.query_node_name)
 
     @classmethod
     def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
