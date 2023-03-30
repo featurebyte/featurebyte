@@ -81,34 +81,10 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, CREATE, "SourceTable.create_event_table"]),
         DocLayoutItem([TABLE, CREATE, "SourceTable.create_item_table"]),
         DocLayoutItem([TABLE, CREATE, "SourceTable.create_scd_table"]),
-        DocLayoutItem(
-            [
-                TABLE,
-                ADD_METADATA,
-                "EventTable.create_new_feature_job_setting_analysis",
-            ],
-        ),
-        DocLayoutItem(
-            [
-                TABLE,
-                ADD_METADATA,
-                "EventTable.initialize_default_feature_job_setting",
-            ],
-        ),
-        DocLayoutItem(
-            [
-                TABLE,
-                ADD_METADATA,
-                "EventTable.list_feature_job_setting_analysis",
-            ],
-        ),
-        DocLayoutItem(
-            [
-                TABLE,
-                ADD_METADATA,
-                "EventTable.update_default_feature_job_setting",
-            ],
-        ),
+        DocLayoutItem([TABLE, ADD_METADATA, "EventTable.create_new_feature_job_setting_analysis"]),
+        DocLayoutItem([TABLE, ADD_METADATA, "EventTable.initialize_default_feature_job_setting"]),
+        DocLayoutItem([TABLE, ADD_METADATA, "EventTable.list_feature_job_setting_analysis"]),
+        DocLayoutItem([TABLE, ADD_METADATA, "EventTable.update_default_feature_job_setting"]),
         DocLayoutItem(
             [TABLE, EXPLORE, "Table.describe"],
             doc_path_override="api.base_table.TableApiObject.describe.md",
@@ -194,9 +170,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
             [TABLE, LINEAGE, "Table.tabular_source"],
             doc_path_override="api.base_table.TableApiObject.tabular_source.md",
         ),
-        DocLayoutItem(
-            [TABLE, LINEAGE, "ItemTable.event_table_id"],
-        ),
+        DocLayoutItem([TABLE, LINEAGE, "ItemTable.event_table_id"]),
         DocLayoutItem([TABLE, TYPE, "DimensionTable"]),
         DocLayoutItem([TABLE, TYPE, "EventTable"]),
         DocLayoutItem([TABLE, TYPE, "ItemTable"]),
@@ -220,9 +194,7 @@ def _get_table_column_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([TABLE_COLUMN]),
         DocLayoutItem([TABLE_COLUMN, ADD_METADATA, "TableColumn.as_entity"]),
-        DocLayoutItem(
-            [TABLE_COLUMN, ADD_METADATA, "TableColumn.update_critical_data_info"],
-        ),
+        DocLayoutItem([TABLE_COLUMN, ADD_METADATA, "TableColumn.update_critical_data_info"]),
         DocLayoutItem([TABLE_COLUMN, EXPLORE, "TableColumn.describe"]),
         DocLayoutItem([TABLE_COLUMN, EXPLORE, "TableColumn.preview"]),
         DocLayoutItem([TABLE_COLUMN, EXPLORE, "TableColumn.sample"]),
@@ -645,7 +617,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([CATALOG]),
-        DocLayoutItem([CATALOG, "Activate", "Catalog.activate"]),
+        DocLayoutItem([CATALOG, ACTIVATE, "Catalog.activate"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_active"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_by_id"]),
