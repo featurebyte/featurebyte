@@ -78,6 +78,11 @@ class DocGroupKey:
     def get_markdown_doc_path(self) -> str:
         """
         Returns the markdown doc path that will be generated for this class or function.
+
+        Returns
+        -------
+        str
+            The markdown doc path. The path here is also what will be used as the URL in the documentation.
         """
         return str(Path(".".join(self._get_path_to_join()))) + ".md"
 
@@ -87,6 +92,16 @@ class DocGroupKey:
 
         Attributes will be delimited by the unique `::` identifier.
         Proxy paths will be delimited by the unique `#` identifier.
+
+        Parameters
+        ----------
+        doc_group_value : DocGroupValue
+            The DocGroupValue that is associated with this DocGroupKey.
+
+        Returns
+        -------
+        str
+            The object path used to identify this class or function.
         """
         base_path = ".".join([self.module_path, self.class_name])
         if self.attribute_name:
@@ -123,8 +138,8 @@ def get_featurebyte_python_files() -> Generator[str, Any, Any]:
 
     We skip certain folders like docker and __init__.py files.
 
-    Returns
-    --------
+    Yields
+    ------
     Generator[str, Any, Any]
         Generator of python files that we want to document.
     """
@@ -153,8 +168,8 @@ def get_classes_for_module(module_str: str) -> Generator[Any, Any, Any]:
     module_str: str
         String of the module to parse.
 
-    Returns
-    --------
+    Yields
+    ------
     Generator[Any, Any, Any]
         Generator of classes for a specific module.
     """
@@ -550,7 +565,7 @@ class DocsBuilder:
     DocsBuilder is a class to build the API docs.
     """
 
-    def __init__(self, gen_files_open, set_edit_path, should_generate_full_docs=False):
+    def __init__(self, gen_files_open: Any, set_edit_path: Any, should_generate_full_docs=False):
         self.gen_files_open = gen_files_open
         self.set_edit_path = set_edit_path
         self.should_generate_full_docs = os.environ.get(
@@ -778,11 +793,16 @@ class DocsBuilder:
 
         return reverse_lookup_map
 
-    def write_summary_page(self, nav) -> None:
+    def write_summary_page(self, nav: Nav) -> None:
         """
         Write the SUMMARY.md file for the API Reference section.
 
         The summary page is what mkdocs uses to generate the navigation for the API Reference section.
+
+        Parameters
+        ----------
+        nav: Nav
+            The navigation.
         """
         logger.info("Writing API Reference SUMMARY")
         self.write_nav_to_file("reference/SUMMARY.md", "summary", nav)
@@ -802,6 +822,11 @@ class DocsBuilder:
 
         write_summary_page()
         - Generate a summary file which contains the navigation for the API Reference section
+
+        Returns
+        -------
+        Nav
+            The navigation.
         """
         self.initialize_missing_debug_doc()
 
@@ -819,6 +844,13 @@ def build_docs(set_edit_path_fn: Any, gen_files_open_fn: Any) -> None:
     This is the current public facing interface that is used in generating the docs.
 
     We can deprecate this once we update the callers to call the DocsBuilder class directly.
+
+    Parameters
+    ----------
+    set_edit_path_fn: Any
+        The function to set the edit path.
+    gen_files_open_fn: Any
+        The function to open a file.
     """
     docs_builder = DocsBuilder(gen_files_open=gen_files_open_fn, set_edit_path=set_edit_path_fn)
     docs_builder.build_docs()
