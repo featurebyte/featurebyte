@@ -32,7 +32,6 @@ from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import AggFunc, SourceType, StorageType
 from featurebyte.models.credential import Credential, UsernamePasswordCredential
 from featurebyte.models.feature import DefaultVersionMode
-from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
@@ -167,7 +166,6 @@ __all__ = [
     "StringValueImputation",
     # feature & feature list version specific classes
     "DefaultVersionMode",
-    "FeatureListNewVersionMode",
     "FeatureVersionInfo",
     # others
     "ColumnCleaningOperation",

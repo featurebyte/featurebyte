@@ -15,7 +15,6 @@ from featurebyte.exception import (
     NoChangesInFeatureVersionError,
     NoFeatureJobSettingInSourceError,
 )
-from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -263,28 +262,11 @@ async def test_create_new_feature_list_version__document_error__no_change_detect
     with pytest.raises(DocumentError) as exc:
         await version_service.create_new_feature_list_version(
             data=FeatureListNewVersionCreate(
-                source_feature_list_id=feature_list_multi.id,
-                mode=FeatureListNewVersionMode.AUTO,
+                source_feature_list_id=feature_list_multi.id, features=[]
             ),
         )
 
     expected_msg = "No change detected on the new feature list version."
-    assert expected_msg in str(exc.value)
-
-
-@pytest.mark.asyncio
-async def test_create_new_feature_list_version__document_error__feature_info_is_missing(
-    version_service, feature_list_multi
-):
-    """Test create new feature version (error due to feature info is missing)"""
-    with pytest.raises(DocumentError) as exc:
-        await version_service.create_new_feature_list_version(
-            data=FeatureListNewVersionCreate(
-                source_feature_list_id=feature_list_multi.id,
-                mode=FeatureListNewVersionMode.MANUAL,
-            ),
-        )
-    expected_msg = "Feature info is missing."
     assert expected_msg in str(exc.value)
 
 
@@ -297,7 +279,6 @@ async def test_create_new_feature_list_version__document_error__unexpected_featu
         await version_service.create_new_feature_list_version(
             data=FeatureListNewVersionCreate(
                 source_feature_list_id=feature_list.id,
-                mode=FeatureListNewVersionMode.MANUAL,
                 features=[
                     FeatureVersionInfo(name=feature_sum_2h.name, version=feature_sum_2h.version)
                 ],
@@ -308,7 +289,7 @@ async def test_create_new_feature_list_version__document_error__unexpected_featu
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_list_version__auto_mode(
+async def test_create_new_feature_list_version__without_specifying_features_mode(
     version_service,
     event_table,
     feature,
@@ -336,10 +317,7 @@ async def test_create_new_feature_list_version__auto_mode(
     assert feat_namespace.default_feature_id == new_feat_version.id
 
     new_flist_version = await version_service.create_new_feature_list_version(
-        data=FeatureListNewVersionCreate(
-            source_feature_list_id=feature_list_multi.id,
-            mode=FeatureListNewVersionMode.AUTO,
-        ),
+        data=FeatureListNewVersionCreate(source_feature_list_id=feature_list_multi.id, features=[]),
     )
     assert sorted(new_flist_version.feature_ids) == sorted([new_feat_version.id, feature_sum_2h.id])
 
@@ -347,70 +325,16 @@ async def test_create_new_feature_list_version__auto_mode(
     with pytest.raises(DocumentError) as exc:
         await version_service.create_new_feature_list_version(
             data=FeatureListNewVersionCreate(
-                source_feature_list_id=new_flist_version.id,
-                mode=FeatureListNewVersionMode.AUTO,
+                source_feature_list_id=new_flist_version.id, features=[]
             ),
         )
+
     expected_msg = "No change detected on the new feature list version."
     assert expected_msg in str(exc.value)
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_list_version__manual_mode(
-    version_service,
-    event_table,
-    feature,
-    feature_sum_2h,
-    feature_list_multi,
-    feature_readiness_service,
-):
-    """Test create new feature version (manual mode)"""
-    new_feat_version = await version_service.create_new_feature_version(
-        data=FeatureNewVersionCreate(
-            source_feature_id=feature_sum_2h.id,
-            table_feature_job_settings=[
-                TableFeatureJobSetting(
-                    table_name=event_table.name,
-                    feature_job_setting=FeatureJobSetting(
-                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
-                    ),
-                )
-            ],
-        ),
-    )
-    feat_namespace = await feature_readiness_service.update_feature_namespace(
-        feature_namespace_id=new_feat_version.feature_namespace_id, return_document=True
-    )
-    assert feat_namespace.default_feature_id == new_feat_version.id
-
-    new_flist_version = await version_service.create_new_feature_list_version(
-        data=FeatureListNewVersionCreate(
-            source_feature_list_id=feature_list_multi.id,
-            mode=FeatureListNewVersionMode.MANUAL,
-            features=[
-                FeatureVersionInfo(name=new_feat_version.name, version=new_feat_version.version)
-            ],
-        ),
-    )
-    assert sorted(new_flist_version.feature_ids) == sorted([new_feat_version.id, feature.id])
-
-    # check document error (due to no change is detected)
-    with pytest.raises(DocumentError) as exc:
-        await version_service.create_new_feature_list_version(
-            data=FeatureListNewVersionCreate(
-                source_feature_list_id=new_flist_version.id,
-                mode=FeatureListNewVersionMode.MANUAL,
-                features=[
-                    FeatureVersionInfo(name=new_feat_version.name, version=new_feat_version.version)
-                ],
-            ),
-        )
-    expected_msg = "No change detected on the new feature list version."
-    assert expected_msg in str(exc.value)
-
-
-@pytest.mark.asyncio
-async def test_create_new_feature_list_version__semi_auto_mode(
+async def test_create_new_feature_list_version__specifying_features(
     version_service,
     event_table,
     feature,
@@ -440,7 +364,6 @@ async def test_create_new_feature_list_version__semi_auto_mode(
     new_flist_version = await version_service.create_new_feature_list_version(
         data=FeatureListNewVersionCreate(
             source_feature_list_id=feature_list_multi.id,
-            mode=FeatureListNewVersionMode.SEMI_AUTO,
             features=[FeatureVersionInfo(name=feature.name, version=feature.version)],
         ),
     )
@@ -451,12 +374,12 @@ async def test_create_new_feature_list_version__semi_auto_mode(
         await version_service.create_new_feature_list_version(
             data=FeatureListNewVersionCreate(
                 source_feature_list_id=feature_list_multi.id,
-                mode=FeatureListNewVersionMode.SEMI_AUTO,
                 features=[
                     FeatureVersionInfo(name=feature_sum_2h.name, version=feature_sum_2h.version)
                 ],
             ),
         )
+
     expected_msg = "No change detected on the new feature list version."
     assert expected_msg in str(exc.value)
 
@@ -799,7 +722,6 @@ async def test_feature_and_feature_list_version__catalog_id_used_in_query(
     new_feat_list_version = await version_service.create_new_feature_list_version(
         data=FeatureListNewVersionCreate(
             source_feature_list_id=feature_list.id,
-            mode="manual",
             features=[FeatureVersionInfo(name=feature.name, version=new_feat_version.version)],
         )
     )
@@ -854,7 +776,6 @@ async def test_feature_and_feature_list_version__catalog_id_used_in_query(
     new_feat_list_version = await version_service.create_new_feature_list_version(
         data=FeatureListNewVersionCreate(
             source_feature_list_id=feature_list.id,
-            mode="manual",
             features=[FeatureVersionInfo(name=feature.name, version=new_feat_version.version)],
         )
     )

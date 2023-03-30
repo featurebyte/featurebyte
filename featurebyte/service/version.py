@@ -13,7 +13,7 @@ from featurebyte.exception import (
     NoFeatureJobSettingInSourceError,
 )
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVersionMode
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -296,44 +296,31 @@ class VersionService(BaseService):
             feat_namespace["name"]: feat_namespace["default_feature_id"]
             for feat_namespace in feature_namespaces
         }
-        if data.mode == FeatureListNewVersionMode.AUTO:
-            # for auto mode, use default feature id for all the features within the feature list
-            features = []
-            for feature_id in feat_name_to_default_id_map.values():
-                features.append(await self.feature_service.get_document(document_id=feature_id))
-        else:
-            if not data.features:
-                raise DocumentError("Feature info is missing.")
-
-            feature_id_to_name_map = {
-                feat_id: feature_namespace["name"]
-                for feature_namespace in feature_namespaces
-                for feat_id in feature_namespace["feature_ids"]
-            }
-            specified_feature_map = {
-                feat_info.name: feat_info.version for feat_info in data.features
-            }
-            features = []
-            for feat_id in feature_list.feature_ids:
-                feat_name = feature_id_to_name_map[feat_id]
-                if feat_name in specified_feature_map:
-                    version = specified_feature_map.pop(feat_name)
-                    feature = await self.feature_service.get_document_by_name_and_version(
-                        name=feat_name, version=version
-                    )
-                    features.append(feature)
-                else:
-                    # for semi-auto mode, use default feature id for non-specified features
-                    # for manual mode, use the original feature id of the feature list for non-specified features
-                    if data.mode == FeatureListNewVersionMode.SEMI_AUTO:
-                        feat_id = feat_name_to_default_id_map[feat_name]
-                    features.append(await self.feature_service.get_document(document_id=feat_id))
-
-            if specified_feature_map:
-                names = [f'"{name}"' for name in specified_feature_map.keys()]
-                raise DocumentError(
-                    f"Features ({', '.join(names)}) are not in the original FeatureList"
+        feature_id_to_name_map = {
+            feat_id: feature_namespace["name"]
+            for feature_namespace in feature_namespaces
+            for feat_id in feature_namespace["feature_ids"]
+        }
+        specified_feature_map = {feat_info.name: feat_info.version for feat_info in data.features}
+        features = []
+        for feat_id in feature_list.feature_ids:
+            feat_name = feature_id_to_name_map[feat_id]
+            if feat_name in specified_feature_map:
+                version = specified_feature_map.pop(feat_name)
+                feature = await self.feature_service.get_document_by_name_and_version(
+                    name=feat_name, version=version
                 )
+                features.append(feature)
+            else:
+                # use default feature id for non-specified features
+                feat_id = feat_name_to_default_id_map[feat_name]
+                features.append(await self.feature_service.get_document(document_id=feat_id))
+
+        if specified_feature_map:
+            names = [f'"{name}"' for name in specified_feature_map.keys()]
+            raise DocumentError(
+                f"Features ({', '.join(names)}) are not in the original FeatureList"
+            )
 
         feature_ids = [feat.id for feat in features]
         if set(feature_list.feature_ids) == set(feature_ids):

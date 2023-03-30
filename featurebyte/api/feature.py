@@ -762,6 +762,7 @@ class Feature(
         - [GroupBy.aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/)
         - [Table.column_cleaning_operations](/reference/featurebyte.api.base_table.TableApiObject.column_cleaning_operations)
         - [Feature.info](/reference/featurebyte.api.feature.Feature.info/)
+        - [FeatureList.create_new_version](/reference/featurebyte.api.feature_list.FeatureList.create_new_version/)
         """
         client = Configurations().get_client()
         response = client.post(
@@ -810,7 +811,7 @@ class Feature(
         --------
 
         >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature.update_readiness(readiness="DEPRECATED")
+        >>> feature.update_readiness(readiness="PRODUCTION_READY")  # doctest: +SKIP
         """
         self.update(
             update_payload={"readiness": str(readiness), "ignore_guardrails": ignore_guardrails},

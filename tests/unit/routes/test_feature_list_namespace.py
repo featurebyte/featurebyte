@@ -209,7 +209,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
 
         # create a new feature list version
         post_feature_list_response = test_api_client.post(
-            "/feature_list", json={"source_feature_list_id": feature_list_id, "mode": "auto"}
+            "/feature_list", json={"source_feature_list_id": feature_list_id, "features": []}
         )
         new_feature_list_id = post_feature_list_response.json()["_id"]
 

@@ -74,7 +74,6 @@ from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
     FeatureListNamespaceModel,
-    FeatureListNewVersionMode,
     FeatureListStatus,
     FeatureReadinessDistribution,
     FrozenFeatureListModel,
@@ -1140,62 +1139,88 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     @typechecked
     def create_new_version(
-        self,
-        mode: Literal[tuple(FeatureListNewVersionMode)],  # type: ignore[misc]
-        features: Optional[List[FeatureVersionInfo]] = None,
+        self, features: Optional[List[FeatureVersionInfo]] = None
     ) -> FeatureList:
         """
-        Create new feature list version.
+        Create new feature list version. Upon creation of a new feature list version, the latest default versions
+        of features are employed, unless particular feature versions are specified.
 
         Parameters
         ----------
-        mode: Literal[tuple(FeatureListNewVersionMode)]
-            Feature list default version mode.
         features: Optional[List[FeatureVersionInfo]]
-            Specified feature version in feature list.
+            Specified feature version in feature list. Each feature version is specified by feature name and version.
 
         Returns
         -------
         FeatureList
-            Newly created feature list.
+            Newly created feature list with the specified features or the latest default versions of features.
 
         Raises
         ------
         RecordCreationException
-            When failed to save a new version.
+            When failed to save a new version, e.g. when the created feature list is exactly the same as the current
+            one. Another reason could be that the specified feature in `features` parameter does not exist.
 
         Examples
         --------
-
-        Create new version of feature list with auto mode. Parameter `features` has no effect if `mode` is `auto`.
-
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.create_new_version(mode="auto")  # doctest: +SKIP
-
-        Create new version of feature list with manual mode (only the versions of the features that are specified are
-        changed). The versions of other features are the same as the origin feature list version.
+        Retrieve feature list & check its features.
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.create_new_version(  # doctest: +SKIP
-        ...   mode="manual",
-        ...   features=[
-        ...     # list of features to update, other features are the same as the original version
-        ...     FeatureVersionInfo(name="InvoiceCount_60days", version="V230323_1"),
+        >>> feature_list.list_features()[["name", "version"]]  # doctest: +SKIP
+                          name  version
+        0  InvoiceCount_60days  V230330
+
+        Create a new feature by specifying the table name and feature job settings. Then set the newly created
+        feature as default.
+
+        >>> current_feature = feature_list["InvoiceCount_60days"]
+        >>> new_feature = current_feature.create_new_version(
+        ...   table_feature_job_settings=[
+        ...     fb.TableFeatureJobSetting(
+        ...       table_name="GROCERYINVOICE",
+        ...       feature_job_setting=fb.FeatureJobSetting(
+        ...         blind_spot="60s",
+        ...         frequency="3600s",
+        ...         time_modulo_frequency="90s",
+        ...       )
+        ...     )
         ...   ]
         ... )
+        >>> new_feature.update_default_version_mode("MANUAL")
+        >>> new_feature.as_default_version()
+        >>> new_feature.is_default is True and current_feature.is_default is False
+        True
 
+        Create new version of feature list without specifying feature (uses the current default versions of feature).
 
-        Create new version of feature list with semi-auto mode (uses the current default versions of features except
-        for the features versions that are specified).
+        >>> new_feature_list = feature_list.create_new_version()
+        >>> new_feature_list.list_features()[["name", "version"]]  # doctest: +SKIP
+                          name    version
+        0  InvoiceCount_60days  V230330_1
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.create_new_version(  # doctest: +SKIP
-        ...   mode="auto",
-        ...   features=[
-        ...     # list of features to update, other features use the current default versions
-        ...     FeatureVersionInfo(name="InvoiceCount_60days", version="V230323_2"),
-        ...   ]
+        Create new version of feature list by specifying feature:
+
+        >>> new_feature_list = feature_list.create_new_version(
+        ...   features=[fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)]
         ... )
+
+        Reset the default version mode of the feature to make original feature as default. Create a new version
+        of feature list using original feature list should throw an error due to no change in feature list is detected.
+
+        >>> current_feature.update_default_version_mode("AUTO")
+        >>> current_feature.is_default
+        True
+        >>> feature_list.create_new_version()  # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ...
+        RecordCreationException: No change detected on the new feature list version.
+
+        See Also
+        --------
+        - [Feature.create_new_version](/reference/featurebyte.api.feature.Feature.create_new_version/):
+        - [Feature.as_default_version](/reference/featurebyte.api.feature.Feature.as_default_version/):
+        - [Feature.update_default_version_mode](/reference/featurebyte.api.feature.Feature.update_default_version_mode/):
+        - [FeatureList.list_features](/reference/featurebyte.api.feature_list.FeatureList.list_features/):
 
         """
         client = Configurations().get_client()
@@ -1203,8 +1228,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             url=self._route,
             json={
                 "source_feature_list_id": str(self.id),
-                "mode": mode,
-                "features": [feature.dict() for feature in features] if features else None,
+                "features": [feature.dict() for feature in features] if features else [],
             },
         )
         if response.status_code != HTTPStatus.CREATED:
