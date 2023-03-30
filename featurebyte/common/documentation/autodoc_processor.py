@@ -314,8 +314,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             parts = type_str.split("]")
             outer_right = parts.pop()
             type_str = "]".join(parts)
-            formatted_type_string = _format(type_str) if _format(type_str) else ""
-            return outer_left + "[" + formatted_type_string + "]" + outer_right
+            return f"{outer_left}[{_format(type_str)}]{outer_right}"
 
         # check if type as subtypes
         module = getattr(param_type, "__module__", None)
@@ -330,9 +329,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             inner_str = ", ".join(filtered_formatted_params)
             param_type_str = str(param_type)
             return _clean(param_type_str.split("[", maxsplit=1)[0]) + "[" + inner_str + "]"
-
-        param_type_str = _get_param_type_str(param_type)
-        return _format(param_type_str)
+        return _format(_get_param_type_str(param_type))
 
     @staticmethod
     def insert_param_type(elem: etree.Element, param_type_str: Optional[str]) -> None:
@@ -377,7 +374,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             resource = getattr(resource_class, resource_name, EMPTY_VALUE)
             if resource == EMPTY_VALUE:
                 # pydantic field
-                resource = class_fields[resource_name]
+                resource = class_fields[resource_name]  # type: ignore[index]
                 resource_type = "property"
             else:
                 resource_type = "method" if callable(resource) else "property"
@@ -387,7 +384,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
                 # get actual classname and name of the resource
                 try:
-                    resource_classname, resource_realname = resource.__qualname__.split(
+                    resource_classname, resource_realname = resource.__qualname__.split(  # type: ignore[union-attr]
                         ".", maxsplit=1
                     )
                     resource_path = f"{resource.__module__}.{resource_classname}"
