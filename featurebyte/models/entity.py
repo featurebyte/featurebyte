@@ -3,11 +3,11 @@ This module contains Entity related models
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import List
 
 from datetime import datetime
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import (
@@ -74,25 +74,15 @@ class EntityModel(EntityRelationship):
         Datetime when the Entity object was first saved or published
     updated_at: datetime
         Datetime when the Entity object was last updated
-    tabular_data_ids: List[PydanticObjectId]
+    table_ids: List[PydanticObjectId]
         ID of table with columns associated to the entity
-    primary_tabular_data_ids: List[PydanticObjectId]
+    primary_table_ids: List[PydanticObjectId]
         ID of table with primary key columns associated to the entity
     """
 
     serving_names: List[StrictStr] = Field(allow_mutation=False)
-    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    primary_tabular_data_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
-
-    @root_validator(pre=True)
-    @classmethod
-    def _validate_tabular_data_ids(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # DEV-752: track table ids in entity model
-        values["tabular_data_ids"] = values.get("tabular_data_ids", [])
-        values["primary_tabular_data_ids"] = values.get("primary_tabular_data_ids", [])
-        return values
+    table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
 
     class Settings:
         """

@@ -71,7 +71,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
                     "type": "value_error.missing",
                 },
                 {
-                    "loc": ["body", "mode"],
+                    "loc": ["body", "features"],
                     "msg": "field required",
                     "type": "value_error.missing",
                 },
@@ -223,8 +223,8 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # then create a new feature list version
         response = test_api_client.post(
-            f"{self.base_route}",
-            json={"source_feature_list_id": create_response_dict["_id"], "mode": "auto"},
+            self.base_route,
+            json={"source_feature_list_id": create_response_dict["_id"], "features": []},
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED
@@ -310,19 +310,40 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         """Test create new version (unprocessable entity)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
+
+        # test create a new version with no change
         response = test_api_client.post(
             self.base_route,
-            json={"source_feature_list_id": create_response_dict["_id"], "mode": "manual"},
-        )
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == "Feature info is missing."
-
-        response = test_api_client.post(
-            f"{self.base_route}",
-            json={"source_feature_list_id": create_response_dict["_id"], "mode": "auto"},
+            json={"source_feature_list_id": create_response_dict["_id"], "features": []},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == "No change detected on the new feature list version."
+
+        # test create a new version with duplicated feature name
+        response = test_api_client.post(
+            self.base_route,
+            json={
+                "source_feature_list_id": create_response_dict["_id"],
+                "features": [
+                    {"name": "dup_feat_name", "version": "V230330"},
+                    {"name": "dup_feat_name", "version": "V230330"},
+                ],
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == [
+            {"loc": ["body", "name"], "msg": "field required", "type": "value_error.missing"},
+            {
+                "loc": ["body", "feature_ids"],
+                "msg": "field required",
+                "type": "value_error.missing",
+            },
+            {
+                "loc": ["body", "features"],
+                "msg": 'Name "dup_feat_name" is duplicated (field: name).',
+                "type": "value_error",
+            },
+        ]
 
     def test_list_200__filter_by_name_and_version(
         self, test_api_client_persistent, create_multiple_success_responses
@@ -354,7 +375,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         # then create a new feature list version
         new_version_response = test_api_client.post(
             self.base_route,
-            json={"source_feature_list_id": create_response_dict["_id"], "mode": "auto"},
+            json={"source_feature_list_id": create_response_dict["_id"], "features": []},
         )
 
         # check retrieving old feature list version

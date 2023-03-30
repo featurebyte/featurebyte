@@ -51,7 +51,7 @@ async def test_schedule_generate_tile_online(session, tile_task_prep_spark):
         tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
         tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
         monitor_periods=10,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts,
     )
     await tile_schedule_ins.execute()
@@ -126,7 +126,7 @@ async def test_schedule_monitor_tile_online(session):
         tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
         tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
         monitor_periods=10,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts,
     )
     await tile_schedule_ins.execute()
@@ -159,7 +159,7 @@ async def test_schedule_monitor_tile_online(session):
         tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
         tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
         monitor_periods=10,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts_2,
     )
     await tile_schedule_ins.execute()
@@ -214,7 +214,7 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
         tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
         tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
         monitor_periods=tile_monitor,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts,
     )
     await tile_schedule_ins.execute()

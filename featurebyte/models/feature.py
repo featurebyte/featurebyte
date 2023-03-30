@@ -51,20 +51,12 @@ class FrozenFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
         allow_mutation=False, description="database variable type for the feature"
     )
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    table_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     # pydantic validators
-    _sort_ids_validator = validator("entity_ids", "tabular_data_ids", allow_reuse=True)(
+    _sort_ids_validator = validator("entity_ids", "table_ids", allow_reuse=True)(
         construct_sort_validator()
     )
-
-    @root_validator(pre=True)
-    @classmethod
-    def _validate_tabular_data_ids(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # DEV-727: refactor event_data_ids to tabular_data_ids
-        if "event_data_ids" in values:
-            values["tabular_data_ids"] = values.pop("event_data_ids", [])
-        return values
 
     class Settings:
         """
@@ -110,8 +102,8 @@ class FeatureNamespaceModel(FrozenFeatureNamespaceModel):
         Default feature version mode
     entity_ids: List[PydanticObjectId]
         Entity IDs used by the feature
-    tabular_data_ids: List[PydanticObjectId]
-        Tabular data IDs used for the feature
+    table_ids: List[PydanticObjectId]
+        Table IDs used by the feature
     """
 
     feature_ids: List[PydanticObjectId] = Field(allow_mutation=False)
@@ -145,7 +137,7 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
         allow_mutation=False, default=None, description="Feature Version"
     )
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
@@ -170,7 +162,6 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
     @root_validator
     @classmethod
     def _add_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # TODO: rename tabular_data_ids to table_ids and tabular_data_ids should have the same treatment
         if values.get("graph") and values.get("node_name"):
             graph = values["graph"]
             if isinstance(graph, dict):
@@ -182,7 +173,7 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
             values["primary_table_ids"] = sorted(
                 node.parameters.id for node in primary_input_nodes if node.parameters.id
             )
-            values["tabular_data_ids"] = sorted(
+            values["table_ids"] = sorted(
                 node.parameters.id
                 for node in graph.iterate_nodes(target_node=node, node_type=NodeType.INPUT)
                 if node.parameters.id
@@ -264,8 +255,8 @@ class FeatureModel(FrozenFeatureModel):
         Whether to make this feature version online enabled
     entity_ids: List[PydanticObjectId]
         Entity IDs used by the feature
-    tabular_data_ids: List[PydanticObjectId]
-        Tabular data IDs used for the feature version
+    table_ids: List[PydanticObjectId]
+        Table IDs used by the feature
     primary_table_ids: Optional[List[PydanticObjectId]]
         Primary table IDs of the feature (auto-derive from graph)
     feature_namespace_id: PydanticObjectId

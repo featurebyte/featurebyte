@@ -187,15 +187,13 @@ class ViewConstructionService(BaseService):
         for col in operation_structure.columns:
             if col.type == ViewDataColumnType.SOURCE:
                 assert isinstance(col, SourceDataColumn)
-                assert col.tabular_data_id is not None, "Source table ID is missing."
-                table_id_to_source_column_names[col.tabular_data_id].add(col.name)
+                assert col.table_id is not None, "Source table ID is missing."
+                table_id_to_source_column_names[col.table_id].add(col.name)
             else:
                 assert isinstance(col, DerivedDataColumn)
                 for derived_source_col in col.columns:
-                    assert (
-                        derived_source_col.tabular_data_id is not None
-                    ), "Source table ID is missing."
-                    table_id_to_source_column_names[derived_source_col.tabular_data_id].add(
+                    assert derived_source_col.table_id is not None, "Source table ID is missing."
+                    table_id_to_source_column_names[derived_source_col.table_id].add(
                         derived_source_col.name
                     )
         return table_id_to_source_column_names

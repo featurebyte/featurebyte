@@ -23,7 +23,7 @@ class RelationshipInfoCreate(FeatureByteBaseModel):
     relationship_type: RelationshipType
     primary_entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
-    primary_data_source_id: PydanticObjectId
+    primary_table_id: PydanticObjectId
     is_enabled: bool
     updated_by: Optional[PydanticObjectId]
 
@@ -53,7 +53,7 @@ class RelationshipInfoInfo(FeatureByteBaseModel):
     relationship_type: RelationshipType
     primary_entity_name: str
     related_entity_name: str
-    data_source_name: str
+    table_name: str
     data_type: str
     created_at: datetime
     updated_at: Optional[datetime]

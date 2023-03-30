@@ -19,7 +19,11 @@ async def test_generate_tile(session):
     value_col_names = "VALUE"
     value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+
+    ts_str = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{ts_str}"
+    agg_id = f"AGG_ID_{ts_str}"
+
     tile_sql = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
         f"WHERE {InternalName.TILE_START_DATE} >= '2022-06-05T23:48:00Z' "
@@ -39,7 +43,8 @@ async def test_generate_tile(session):
         f"  '{value_col_types}',"
         f"  '{tile_id}',"
         f"  'OFFLINE',"
-        f"  '2022-06-05T23:53:00Z')"
+        f"  '2022-06-05T23:53:00Z',"
+        f"  '{agg_id}')"
     )
     await session.execute_query(sql)
 
@@ -66,7 +71,11 @@ async def test_generate_tile_no_data(session):
     value_col_names = "VALUE"
     value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+
+    ts_str = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{ts_str}"
+    agg_id = f"AGG_ID_{ts_str}"
+
     tile_sql = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} "
         f"FROM {table_name} WHERE {InternalName.TILE_START_DATE} > '2022-06-05T23:58:00Z'"
@@ -74,7 +83,7 @@ async def test_generate_tile_no_data(session):
 
     sql = (
         f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
-        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE', null)"
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE', null, '{agg_id}')"
     )
     result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
@@ -98,7 +107,7 @@ async def test_generate_tile_non_exist_table(session):
 
     sql = (
         f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
-        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{table_name}_TILE', 'ONLINE', null)"
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{table_name}_TILE', 'ONLINE', null, '{table_name}_AGG_ID')"
     )
 
     with pytest.raises(ProgrammingError) as exc_info:
@@ -118,7 +127,11 @@ async def test_generate_tile_new_value_column(session):
     value_col_names = "VALUE"
     value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+
+    ts_str = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{ts_str}"
+    agg_id = f"AGG_ID_{ts_str}"
+
     tile_sql = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
         f"WHERE {InternalName.TILE_START_DATE} >= '2022-06-05T23:48:00Z' "
@@ -138,7 +151,8 @@ async def test_generate_tile_new_value_column(session):
         f"  '{value_col_types}',"
         f"  '{tile_id}',"
         f"  'OFFLINE',"
-        f"  '2022-06-05T23:53:00Z')"
+        f"  '2022-06-05T23:53:00Z',"
+        f"  '{agg_id}')"
     )
     await session.execute_query(sql)
 
@@ -176,7 +190,8 @@ async def test_generate_tile_new_value_column(session):
         f"  '{value_col_types_2}',"
         f"  '{tile_id}',"
         f"  'OFFLINE',"
-        f"  '2022-06-05T23:53:00Z')"
+        f"  '2022-06-05T23:53:00Z',"
+        f"  '{agg_id}')"
     )
     await session.execute_query(sql)
 

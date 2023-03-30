@@ -32,13 +32,13 @@ def relationship_info_create_fixture():
     """
     primary_entity_id = PydanticObjectId(ObjectId())
     related_entity_id = PydanticObjectId(ObjectId())
-    primary_data_source_id = PydanticObjectId(ObjectId())
+    primary_table_id = PydanticObjectId(ObjectId())
     return RelationshipInfoCreate(
         name="random",
         relationship_type=RelationshipType.CHILD_PARENT,
         primary_entity_id=primary_entity_id,
         related_entity_id=related_entity_id,
-        primary_data_source_id=primary_data_source_id,
+        primary_table_id=primary_table_id,
         is_enabled=False,
         updated_by=PydanticObjectId(ObjectId()),
     )
@@ -74,7 +74,7 @@ def entities_fixture(relationship_info_create):
 
 
 @pytest.mark.asyncio
-async def test_validate_relationship_info_create__tabular_data_id_error_thrown(
+async def test_validate_relationship_info_create__table_id_error_thrown(
     relationship_info_controller, relationship_info_create, entities
 ):
     """
@@ -128,8 +128,6 @@ async def test_validate_relationship_info_create__no_error_thrown(
 
     # Try to create relationship info again - expect no error
     create_dict = relationship_info_create.dict()
-    create_dict[
-        "primary_data_source_id"
-    ] = event_table.id  # update table source ID to a valid table ID
+    create_dict["primary_table_id"] = event_table.id  # update table source ID to a valid table ID
     relationship_info_create = RelationshipInfoCreate(**create_dict)
     await relationship_info_controller._validate_relationship_info_create(relationship_info_create)

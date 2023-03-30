@@ -21,7 +21,7 @@ async def test_schedule_update_feature_store__update_feature_value(session, tile
 
     tile_online_store_ins = TileScheduleOnlineStore(
         spark_session=session,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
     await tile_online_store_ins.execute()
@@ -45,7 +45,7 @@ async def test_schedule_update_feature_store__update_feature_value(session, tile
     # spark_session.sql(sql)
     tile_online_store_ins = TileScheduleOnlineStore(
         spark_session=session,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
     await tile_online_store_ins.execute()
@@ -73,7 +73,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
 
     tile_online_store_ins = TileScheduleOnlineStore(
         spark_session=session,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
     await tile_online_store_ins.execute()
@@ -116,7 +116,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
 
     tile_online_store_ins = TileScheduleOnlineStore(
         spark_session=session,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
     await tile_online_store_ins.execute()
@@ -153,7 +153,7 @@ async def test_schedule_update_feature_store__insert_varchar_feature_column(
 
     tile_online_store_ins = TileScheduleOnlineStore(
         spark_session=session,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
     await tile_online_store_ins.execute()
@@ -177,7 +177,7 @@ async def test_schedule_online_feature_store__change_entity_universe(session, ti
 
     tile_online_store_ins = TileScheduleOnlineStore(
         spark_session=session,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
     await tile_online_store_ins.execute()
@@ -202,7 +202,7 @@ async def test_schedule_online_feature_store__change_entity_universe(session, ti
     # spark_session.sql(sql)
     tile_online_store_ins = TileScheduleOnlineStore(
         spark_session=session,
-        agg_id=agg_id,
+        aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
     await tile_online_store_ins.execute()

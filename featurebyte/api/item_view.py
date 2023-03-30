@@ -272,13 +272,13 @@ class ItemView(View, GroupByMixin):
             )
             if isinstance(column_structure, DerivedDataColumn):
                 if not all(
-                    input_column.tabular_data_type == TableDataType.EVENT_TABLE
+                    input_column.table_type == TableDataType.EVENT_TABLE
                     for input_column in column_structure.columns
                 ):
                     return False
                 continue
             # column_structure is a SourceDataColumn
-            if column_structure.tabular_data_type != TableDataType.EVENT_TABLE:
+            if column_structure.table_type != TableDataType.EVENT_TABLE:
                 return False
         return True
 

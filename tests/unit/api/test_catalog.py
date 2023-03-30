@@ -547,3 +547,16 @@ def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors():
     with pytest.raises(TestCatalogError):
         catalog_a.throw_error_function()
     assert get_active_catalog_id() == catalog_b.id
+
+
+def test_catalog_name_synchronization_issue():
+    """Test catalog name synchronization issue."""
+    catalog = Catalog.create("random_catalog")
+    cloned_catalog = Catalog.get("random_catalog")
+    assert catalog.name == cloned_catalog.name == "random_catalog"
+
+    catalog.update_name("updated_name")
+    assert cloned_catalog.name == "updated_name"
+
+    cloned_catalog.update_name("random_catalog")
+    assert catalog.name == "random_catalog"

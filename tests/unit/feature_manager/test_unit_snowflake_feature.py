@@ -65,7 +65,8 @@ async def test_online_enable(
     # 2. merge into ONLINE_STORE_MAPPING
     # 3. SHOW TASKS LIKE
     # 4. call SP_TILES_SCHEDULE_ONLINE_STORE
-    assert mock_execute_query.call_count == 4
+    # 5. check TILE_REGISTRY for LAST_TILE_START_DATE
+    assert mock_execute_query.call_count == 5
 
     upsert_sql = tm_upsert_tile_feature_mapping.render(
         tile_id=feature_spec.tile_ids[0],
@@ -122,6 +123,7 @@ async def test_online_enable_duplicate_tile_task(
         None,
         None,
         pd.DataFrame.from_dict({"name": ["task_1"]}),
+        None,
         None,
         None,
     ]

@@ -48,13 +48,6 @@ def test_entity_creation__input_validation():
         entity.name = 1234
     assert "str type expected (type=type_error.str)" in str(exc.value)
 
-    entity = Entity(name="hello", serving_names=["world"])
-    with pytest.raises(TypeError) as exc:
-        entity.serving_names = ["1234"]
-    assert '"serving_names" has allow_mutation set to False and cannot be assigned' in str(
-        exc.value
-    )
-
 
 def test_entity__update_name(entity):
     """
@@ -157,9 +150,9 @@ def test_entity_update_name(entity):
             ("INSERT", 'insert: "customer"', "created_at", np.nan, entity.created_at.isoformat()),
             ("INSERT", 'insert: "customer"', "name", np.nan, "customer"),
             ("INSERT", 'insert: "customer"', "parents", np.nan, []),
-            ("INSERT", 'insert: "customer"', "primary_tabular_data_ids", np.nan, []),
+            ("INSERT", 'insert: "customer"', "primary_table_ids", np.nan, []),
             ("INSERT", 'insert: "customer"', "serving_names", np.nan, ["cust_id"]),
-            ("INSERT", 'insert: "customer"', "tabular_data_ids", np.nan, []),
+            ("INSERT", 'insert: "customer"', "table_ids", np.nan, []),
             ("INSERT", 'insert: "customer"', "updated_at", np.nan, None),
             ("INSERT", 'insert: "customer"', "user_id", np.nan, None),
         ],
@@ -249,8 +242,8 @@ def test_get_entity():
     assert "Failed to list /entity." in str(exc.value)
 
 
-@pytest.fixture(name="insert_tabular_data_helper")
-def get_insert_tabular_data_helper_fixture(mongo_persistent):
+@pytest.fixture(name="insert_table_helper")
+def get_insert_table_helper_fixture(mongo_persistent):
     persistent, _ = mongo_persistent
 
     async def insert(col_name, dataset_name):
@@ -284,13 +277,13 @@ def assert_entity_has_number_of_parents(entity, number_of_parents):
 
 
 @pytest.mark.asyncio
-async def test_add_and_remove_parent(mongo_persistent, insert_tabular_data_helper):
+async def test_add_and_remove_parent(mongo_persistent, insert_table_helper):
     """
     Test add and remove parent
     """
     col_name = "col"
     dataset_name = "dataset_name"
-    await insert_tabular_data_helper(col_name, dataset_name)
+    await insert_table_helper(col_name, dataset_name)
 
     entity_a = Entity(name="entity_a", serving_names=["entity_a"])
     entity_b = Entity(name="entity_b", serving_names=["entity_b"])
@@ -390,3 +383,18 @@ def test_get_or_create():
     assert entity_retrieved.id == entity.id
     assert entity_retrieved.name == entity.name
     assert entity_retrieved.serving_names == ["random_entity_serving_name"]
+
+
+def test_entity_name_synchronization_issue(entity):
+    """Test entity name synchronization issue."""
+    cloned_entity = Entity.get_by_id(entity.id)
+    assert entity.name == "customer"
+    assert cloned_entity.name == "customer"
+    entity.update_name("grocery_customer")
+    assert entity.name == "grocery_customer"
+    assert cloned_entity.name == "grocery_customer"
+
+    # check it back
+    cloned_entity.update_name("customer")
+    assert entity.name == "customer"
+    assert cloned_entity.name == "customer"

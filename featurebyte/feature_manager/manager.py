@@ -147,6 +147,18 @@ class FeatureManager(BaseModel):
         end_ts_str = end_ts.strftime(date_format)
 
         start_ts = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        last_tile_start_ts_df = await self._session.execute_query(
+            f"SELECT LAST_TILE_START_DATE_OFFLINE FROM TILE_REGISTRY "
+            f"WHERE TILE_ID = '{tile_spec.tile_id}' "
+            f"AND AGGREGATION_ID = '{tile_spec.aggregation_id}' "
+            f"AND LAST_TILE_START_DATE_OFFLINE IS NOT NULL "
+        )
+        if last_tile_start_ts_df is not None and len(last_tile_start_ts_df) > 0:
+            # generate tiles from last_tile_start_date to now
+            logger.debug(f"last_tile_start_ts_df: {last_tile_start_ts_df}")
+            start_ts = last_tile_start_ts_df.iloc[0]["LAST_TILE_START_DATE_OFFLINE"]
+        logger.info(f"start_ts: {start_ts}")
+
         start_ind = date_util.timestamp_utc_to_tile_index(
             start_ts,
             tile_spec.time_modulo_frequency_second,
@@ -166,6 +178,7 @@ class FeatureManager(BaseModel):
             tile_type=TileType.OFFLINE,
             end_ts_str=end_ts_str,
             start_ts_str=start_ts_str,
+            last_tile_start_ts_str=end_ts_str,
         )
 
     async def _update_tile_feature_mapping_table(self, feature_spec: OnlineFeatureSpec) -> None:

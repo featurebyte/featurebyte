@@ -18,7 +18,7 @@ def feature_name_space_dict_fixture():
     """Fixture for a FixtureNameSpace dict"""
     feature_ids = [ObjectId("631b00277280fc9aa9522794"), ObjectId("631b00277280fc9aa9522793")]
     entity_ids = [ObjectId("631b00277280fc9aa9522790"), ObjectId("631b00277280fc9aa9522789")]
-    tabular_data_ids = [ObjectId("631b00277280fc9aa9522792"), ObjectId("631b00277280fc9aa9522791")]
+    table_ids = [ObjectId("631b00277280fc9aa9522792"), ObjectId("631b00277280fc9aa9522791")]
     return {
         "name": "some_feature_name",
         "dtype": "FLOAT",
@@ -30,7 +30,7 @@ def feature_name_space_dict_fixture():
         "default_feature_id": feature_ids[0],
         "default_version_mode": "MANUAL",
         "entity_ids": entity_ids,
-        "tabular_data_ids": tabular_data_ids,
+        "table_ids": table_ids,
         "user_id": None,
         "catalog_id": DEFAULT_CATALOG_ID,
     }
@@ -58,7 +58,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "deployed_feature_list_ids": [],
         "dtype": "FLOAT",
         "entity_ids": [ObjectId(api_object_to_id["entity"])],
-        "tabular_data_ids": [ObjectId(api_object_to_id["event_table"])],
+        "table_ids": [ObjectId(api_object_to_id["event_table"])],
         "feature_list_ids": [],
         "feature_namespace_id": feature_dict["feature_namespace_id"],
         "graph": {
@@ -118,8 +118,8 @@ def test_extract_operation_structure(feature_model_dict):
     feature = FeatureModel(**feature_model_dict)
     op_struct = feature.extract_operation_structure()
     common_source_col_params = {
-        "tabular_data_id": feature.tabular_data_ids[0],
-        "tabular_data_type": "event_table",
+        "table_id": feature.table_ids[0],
+        "table_type": "event_table",
         "node_names": {"input_1", "graph_1"},
         "node_name": "graph_1",
     }

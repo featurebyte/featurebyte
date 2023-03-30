@@ -17,6 +17,7 @@ class TileCommon(BaseModel, ABC):
     """
 
     tile_id: str
+    aggregation_id: str
     tile_modulo_frequency_second: int
     blind_spot_second: int
     frequency_minute: int

@@ -81,10 +81,7 @@ async def test_update_columns_info(
     other_table_id = ObjectId("6332fdb21e8f0aabbb414512")
     await entity_service.update_document(
         document_id=new_entity.id,
-        data=EntityServiceUpdate(
-            tabular_data_ids=[other_table_id],
-            primary_tabular_data_ids=[other_table_id],
-        ),
+        data=EntityServiceUpdate(table_ids=[other_table_id], primary_table_ids=[other_table_id]),
     )
     new_semantic = await semantic_service.get_or_create_document(name="a_semantic")
     columns_info = event_table.dict()["columns_info"]
@@ -105,8 +102,8 @@ async def test_update_columns_info(
 
     # check dataset is tracked in entity
     new_entity = await entity_service.get_document(document_id=new_entity.id)
-    assert new_entity.tabular_data_ids == [other_table_id, event_table.id]
-    assert new_entity.primary_tabular_data_ids == [other_table_id, event_table.id]
+    assert new_entity.table_ids == [other_table_id, event_table.id]
+    assert new_entity.primary_table_ids == [other_table_id, event_table.id]
 
     # move entity to non-primary key
     columns_info[0]["entity_id"] = None
@@ -117,8 +114,8 @@ async def test_update_columns_info(
         data=EventTableServiceUpdate(columns_info=columns_info),
     )
     new_entity = await entity_service.get_document(document_id=new_entity.id)
-    assert new_entity.tabular_data_ids == [other_table_id, event_table.id]
-    assert new_entity.primary_tabular_data_ids == [other_table_id]
+    assert new_entity.table_ids == [other_table_id, event_table.id]
+    assert new_entity.primary_table_ids == [other_table_id]
 
     # remove entity
     columns_info[1]["entity_id"] = None
@@ -128,8 +125,8 @@ async def test_update_columns_info(
         data=EventTableServiceUpdate(columns_info=columns_info),
     )
     new_entity = await entity_service.get_document(document_id=new_entity.id)
-    assert new_entity.tabular_data_ids == [other_table_id]
-    assert new_entity.primary_tabular_data_ids == [other_table_id]
+    assert new_entity.table_ids == [other_table_id]
+    assert new_entity.primary_table_ids == [other_table_id]
 
     # test unknown entity ID
     unknown_id = ObjectId()
@@ -220,8 +217,8 @@ async def test_update_entity_table_references(
     columns_info[primary_index]["entity_id"] = ObjectId()
     data = update_class(columns_info=columns_info)
     with patch.object(table_update_service.entity_service, "get_document") as mock_get_document:
-        mock_get_document.return_value.tabular_data_ids = []
-        mock_get_document.return_value.primary_tabular_data_ids = []
+        mock_get_document.return_value.table_ids = []
+        mock_get_document.return_value.primary_table_ids = []
         with patch.object(
             table_update_service.entity_service, "update_document"
         ) as mock_update_document:
@@ -230,8 +227,8 @@ async def test_update_entity_table_references(
                     document=table_model, data=data
                 )
                 update_payload = mock_update_document.call_args[1]["data"]
-                assert update_payload.tabular_data_ids == [table_model.id]
-                assert update_payload.primary_tabular_data_ids == [table_model.id]
+                assert update_payload.table_ids == [table_model.id]
+                assert update_payload.primary_table_ids == [table_model.id]
 
 
 @pytest_asyncio.fixture(name="entity_foo")
@@ -311,7 +308,7 @@ def event_table_entity_initializer_fixture(
                     relationship_type=RelationshipType.CHILD_PARENT,
                     primary_entity_id=PydanticObjectId(entity_id),
                     related_entity_id=PydanticObjectId(parent_id),
-                    primary_data_source_id=PydanticObjectId(event_table.id),
+                    primary_table_id=PydanticObjectId(event_table.id),
                     is_enabled=True,
                     updated_by=user.id,
                 )

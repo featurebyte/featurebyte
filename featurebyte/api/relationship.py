@@ -49,8 +49,8 @@ class Relationship(ApiObject):
         "relationship_type",
         "primary_entity",
         "related_entity",
-        "primary_data_source",
-        "primary_data_type",
+        "primary_table",
+        "primary_table_type",
         "is_enabled",
         "created_at",
         "updated_at",
@@ -58,8 +58,8 @@ class Relationship(ApiObject):
     _list_foreign_keys = [
         ForeignKeyMapping("primary_entity_id", Entity, "primary_entity"),
         ForeignKeyMapping("related_entity_id", Entity, "related_entity"),
-        ForeignKeyMapping("primary_data_source_id", TableApiObject, "primary_data_source"),
-        ForeignKeyMapping("primary_data_source_id", TableApiObject, "primary_data_type", "type"),
+        ForeignKeyMapping("primary_table_id", TableApiObject, "primary_table"),
+        ForeignKeyMapping("primary_table_id", TableApiObject, "primary_table_type", "type"),
     ]
 
     # pydantic instance variable (internal use)

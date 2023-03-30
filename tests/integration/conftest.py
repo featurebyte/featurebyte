@@ -213,7 +213,7 @@ def event_loop():
 @pytest.fixture(name="persistent", scope="session")
 def persistent_fixture():
     """
-    Mock mongodb persistent used by most of the integration tests
+    Mongo persistent fixture used by most of the integration tests
     """
     database_name = f"test_{ObjectId()}"
     client = AsyncIOMotorClient(MONGO_CONNECTION)
@@ -227,7 +227,8 @@ def persistent_fixture():
 @pytest.fixture(name="mongo_persistent")
 def mongo_persistent_fixture():
     """
-    Mongo persistent fixture used by some tests that need to access the database directly
+    Mongo persistent fixture that uses a non-async client. Used by some integration tests that
+    interact with the persistent directly.
     """
     database_name = f"test_{ObjectId()}"
     client = pymongo.MongoClient(MONGO_CONNECTION)
