@@ -20,15 +20,15 @@ setup_permissions() {
 
   if [ "$(id -u)" = '0' ]; then
     echo "Modifying user id/group id for runner/runnergroup (uid:gid ${HOST_UID}:${HOST_GID})"
-    if [ "$(HOST_GID)" = '1000' ]; then
+    if [ "$HOST_GID" = '1000' ]; then
       echo "Using default group id 1000, skipping group modification"
     else
-      groupmod -g "${HOST_GID}" "${NON_PRIVGROUP}"
+      groupmod -g "${HOST_GID}" "${NON_PRIVGROUP}" -o
     fi
-    if [ "$(HOST_UID)" = '1000' ]; thenen
+    if [ "$HOST_UID" = '1000' ]; then
       echo "Using default user id 1000, skipping user modification."
     else
-      usermod -u "${HOST_UID}" -o -m "${NON_PRIVUSER}"
+      usermod -u "${HOST_UID}" -o "${NON_PRIVUSER}"
     fi
     chown -R "${HOST_UID}:${HOST_GID}" /data/staging
   fi
