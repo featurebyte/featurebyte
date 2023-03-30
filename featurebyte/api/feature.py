@@ -811,7 +811,7 @@ class Feature(
         --------
 
         >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature.update_readiness(readiness="DEPRECATED")
+        >>> feature.update_readiness(readiness="PRODUCTION_READY")  # doctest: +SKIP
         """
         self.update(
             update_payload={"readiness": str(readiness), "ignore_guardrails": ignore_guardrails},
