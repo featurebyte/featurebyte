@@ -8,7 +8,6 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import RecordUpdateException
-from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
@@ -68,8 +67,8 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     assert amt_sum_30m_v1.version.to_str() == f"{get_version()}_1"
     assert amt_sum_30m.feature_namespace.default_feature_id == amt_sum_30m_v1.id
 
-    # create a new feature list version (auto)
-    feature_list_v1 = feature_list.create_new_version(FeatureListNewVersionMode.AUTO)
+    # create a new feature list version without specifying features
+    feature_list_v1 = feature_list.create_new_version()
     assert set(feature_list_v1.feature_ids) == {
         amt_sum_30m_v1.id,
         feature_group["amt_sum_2h"].id,
@@ -78,9 +77,8 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     assert feature_list_v1.version.to_str() == f"{get_version()}_1"
     assert feature_list.feature_list_namespace.default_feature_list_id == feature_list_v1.id
 
-    # create a new feature list version (manual)
+    # create a new feature list version by specifying features
     feature_list_v2 = feature_list.create_new_version(
-        "manual",
         features=[
             FeatureVersionInfo(name=amt_sum_30m_v1.name, version=amt_sum_30m_v1.version.to_str())
         ],
@@ -91,29 +89,11 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     assert feature_list.is_default is False
     assert feature_list_v2.is_default is True
 
-    # create a new feature list version (semi-auto)
-    amt_sum_2h = feature_group["amt_sum_2h"]
-    feature_list_v3 = feature_list.create_new_version(
-        "semi_auto",
-        features=[FeatureVersionInfo(name=amt_sum_2h.name, version=amt_sum_2h.version)],
-    )
-    assert set(feature_list_v3.feature_ids) == set(feature_list_v2.feature_ids)
-    assert feature_list_v3.version.to_str() == f"{get_version()}_3"
-    assert feature_list.feature_list_namespace.default_feature_list_id == feature_list_v3.id
-    assert feature_list.is_default is False
-    assert feature_list_v2.is_default is False
-    assert feature_list_v3.is_default is True
-    assert set(feat.id for feat in feature_list_v3.feature_objects.values()) == set(
-        feature_list_v3.feature_ids
-    )
-    assert len(feature_list.items) == len(feature_list.feature_objects)
-
     # check feature list ids in feature list namespace
     assert set(feature_list.feature_list_namespace.feature_list_ids) == {
         feature_list.id,
         feature_list_v1.id,
         feature_list_v2.id,
-        feature_list_v3.id,
     }
 
 
@@ -136,7 +116,7 @@ def test_feature_list__as_default_version(feature_group):
     )
 
     # create new feature list version
-    new_feature_list_version = feature_list.create_new_version(FeatureListNewVersionMode.AUTO)
+    new_feature_list_version = feature_list.create_new_version()
     assert new_feature_list_version.is_default is True
 
     # check setting default version fails when default version mode is not MANUAL

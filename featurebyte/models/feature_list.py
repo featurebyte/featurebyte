@@ -37,14 +37,6 @@ class FeatureListStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
-class FeatureListNewVersionMode(StrEnum):
-    """New feature list version mode"""
-
-    AUTO = "auto"
-    SEMI_AUTO = "semi_auto"
-    MANUAL = "manual"
-
-
 class FeatureTypeFeatureCount(FeatureByteBaseModel):
     """
     Feature count corresponding to the feature type within a feature list

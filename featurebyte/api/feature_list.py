@@ -74,7 +74,6 @@ from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
     FeatureListNamespaceModel,
-    FeatureListNewVersionMode,
     FeatureListStatus,
     FeatureReadinessDistribution,
     FrozenFeatureListModel,
@@ -1140,17 +1139,13 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     @typechecked
     def create_new_version(
-        self,
-        mode: Literal[tuple(FeatureListNewVersionMode)],  # type: ignore[misc]
-        features: Optional[List[FeatureVersionInfo]] = None,
+        self, features: Optional[List[FeatureVersionInfo]] = None
     ) -> FeatureList:
         """
         Create new feature list version.
 
         Parameters
         ----------
-        mode: Literal[tuple(FeatureListNewVersionMode)]
-            Feature list default version mode.
         features: Optional[List[FeatureVersionInfo]]
             Specified feature version in feature list.
 
@@ -1167,26 +1162,13 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Examples
         --------
 
-        Create new version of feature list with auto mode. Parameter `features` has no effect if `mode` is `auto`.
+        Create new version of feature list without specifying features (uses the current default versions of features):
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.create_new_version(mode="auto")  # doctest: +SKIP
+        >>> feature_list.create_new_version()  # doctest: +SKIP
 
-        Create new version of feature list with manual mode (only the versions of the features that are specified are
-        changed). The versions of other features are the same as the origin feature list version.
-
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.create_new_version(  # doctest: +SKIP
-        ...   mode="manual",
-        ...   features=[
-        ...     # list of features to update, other features are the same as the original version
-        ...     FeatureVersionInfo(name="InvoiceCount_60days", version="V230323_1"),
-        ...   ]
-        ... )
-
-
-        Create new version of feature list with semi-auto mode (uses the current default versions of features except
-        for the features versions that are specified).
+        Create new version of feature list with specifying features (uses the current default versions of features
+        except for the features versions that are specified).
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.create_new_version(  # doctest: +SKIP
@@ -1196,15 +1178,13 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ...     FeatureVersionInfo(name="InvoiceCount_60days", version="V230323_2"),
         ...   ]
         ... )
-
         """
         client = Configurations().get_client()
         response = client.post(
             url=self._route,
             json={
                 "source_feature_list_id": str(self.id),
-                "mode": mode,
-                "features": [feature.dict() for feature in features] if features else None,
+                "features": [feature.dict() for feature in features] if features else [],
             },
         )
         if response.status_code != HTTPStatus.CREATED:

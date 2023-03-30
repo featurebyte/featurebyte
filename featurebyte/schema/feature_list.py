@@ -13,7 +13,6 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, Vers
 from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
-    FeatureListNewVersionMode,
     FeatureReadinessDistribution,
 )
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -48,8 +47,7 @@ class FeatureListNewVersionCreate(FeatureByteBaseModel):
     """
 
     source_feature_list_id: PydanticObjectId
-    mode: FeatureListNewVersionMode
-    features: Optional[List[FeatureVersionInfo]]
+    features: List[FeatureVersionInfo]
 
 
 class FeatureListPaginatedList(PaginationMixin):
