@@ -132,7 +132,7 @@ class BaseTableDocumentController(
         Returns
         -------
         TableDocumentT
-            Data object with updated attribute(s)
+            Table object with updated attribute(s)
         """
         if data.columns_info:
             await self.table_update_service.update_columns_info(

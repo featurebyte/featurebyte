@@ -81,7 +81,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         table_ids = list(set(col.table_id for col in operation_structure.source_columns))
         for table_id in table_ids:
             if table_id is None:
-                raise DocumentUpdateError("Data record has not been stored at the persistent.")
+                raise DocumentUpdateError("Table record has not been stored at the persistent.")
             table_id_to_doc[table_id] = await table_service.get_document(document_id=table_id)
 
         # check that entities can be found on the view

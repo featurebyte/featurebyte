@@ -75,11 +75,11 @@ class TableUpdateService(BaseService):
         Parameters
         ----------
         service: TableDocumentService
-            Data service object
+            Table service object
         document_id: ObjectId
             Document ID
         data: TableServiceUpdateSchema
-            Data upload payload
+            Table upload payload
 
         Raises
         ------
@@ -149,11 +149,11 @@ class TableUpdateService(BaseService):
         Parameters
         ----------
         service: TableDocumentService
-            Data service object
+            Table service object
         document_id: ObjectId
             Document ID
         data: TableServiceUpdateSchema
-            Data upload payload
+            Table upload payload
         """
         document = await service.get_document(document_id=document_id)
 
@@ -389,7 +389,7 @@ class TableUpdateService(BaseService):
         document: TableModel
             TableModel object
         data: TableServiceUpdateSchema
-            Data upload payload
+            Table upload payload
         """
         if not data.columns_info:
             return
