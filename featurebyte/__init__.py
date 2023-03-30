@@ -97,8 +97,7 @@ def stop() -> None:
     """
     Stop all applications
     """
-    _stop_app(ApplicationName.FEATUREBYTE, verbose=False)
-    _stop_app(ApplicationName.SPARK, verbose=False)
+    _stop_app(verbose=False)
 
 
 def playground(
@@ -122,7 +121,11 @@ def playground(
         Import datasets even if they are already imported, by default False
     """
     _start_playground(
-        local=local, datasets=datasets, docs_enabled=docs_enabled, force_import=force_import
+        local=local,
+        datasets=datasets,
+        docs_enabled=docs_enabled,
+        force_import=force_import,
+        verbose=False,
     )
 
 
