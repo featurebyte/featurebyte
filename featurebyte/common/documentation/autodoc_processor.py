@@ -1,7 +1,6 @@
 """
 Autodoc Processor
 """
-# pylint: skip-file
 from __future__ import annotations
 
 from typing import Any, ForwardRef, List, Literal, Optional, TypeVar, get_type_hints
