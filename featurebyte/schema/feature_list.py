@@ -15,6 +15,7 @@ from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureReadinessDistribution,
 )
+from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -48,6 +49,11 @@ class FeatureListNewVersionCreate(FeatureByteBaseModel):
 
     source_feature_list_id: PydanticObjectId
     features: List[FeatureVersionInfo]
+
+    # pydantic validators
+    _validate_unique_feat_name = validator("features", allow_reuse=True)(
+        construct_unique_name_validator(field="name")
+    )
 
 
 class FeatureListPaginatedList(PaginationMixin):
