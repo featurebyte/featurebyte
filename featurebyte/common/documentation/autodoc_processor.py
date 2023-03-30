@@ -35,7 +35,14 @@ class Docstring(BaseDocstring):
 
     @property
     def see_also(self) -> Optional[DocstringMeta]:
-        """Return a list of information on function see also."""
+        """
+        Return a list of information on function see also.
+
+        Returns
+        -------
+        Optional[DocstringMeta]
+            See also information
+        """
         see_also = [item for item in self.meta if item.args == ["see_also"]]
         if not see_also:
             return None
@@ -47,6 +54,8 @@ def import_resource(resource_descriptor: str) -> Any:
     """
     Import module
 
+    Parameters
+    ----------
     resource_descriptor: str
         Resource descriptor path
 
@@ -189,6 +198,16 @@ class FBAutoDocProcessor(AutoDocProcessor):
     def get_params_from_signature(resource: Any) -> tuple[List[Any], Any]:
         """
         Get parameters from function signature
+
+        Parameters
+        ----------
+        resource: Any
+            Resource to inspect
+
+        Returns
+        -------
+        tuple[List[Any], Any]
+            List of parameters and return type
         """
         if callable(resource):
             try:
@@ -214,6 +233,16 @@ class FBAutoDocProcessor(AutoDocProcessor):
     def format_literal(value: Any) -> Optional[str]:
         """
         Format a literal value for display in documentation
+
+        Parameters
+        ----------
+        value: Any
+            Value to format
+
+        Returns
+        -------
+        Optional[str]
+            Formatted value
         """
         if value == EMPTY_VALUE:
             return None
@@ -224,6 +253,16 @@ class FBAutoDocProcessor(AutoDocProcessor):
     def format_param_type(self, param_type: Any) -> Optional[str]:
         """
         Format parameter type and add reference if available
+
+        Parameters
+        ----------
+        param_type: Any
+            Parameter type
+
+        Returns
+        -------
+        Optional[str]
+            Formatted parameter type
         """
 
         def _get_param_type_str(param_type) -> Optional[str]:
@@ -617,6 +656,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
             """
             Render section
 
+            Parameters
+            ----------
             title: str
                 Section title
             content: str
@@ -634,6 +675,18 @@ class FBAutoDocProcessor(AutoDocProcessor):
         ) -> str:
             """
             Helper method to render a list item with multiple paragraphs.
+
+            Parameters
+            ----------
+            title: str
+                Title of the list item
+            other_paragraphs: List[str]
+                Other paragraphs to be rendered as part of the list item
+
+            Returns
+            -------
+            str
+                Rendered list item
             """
             list_item_str = f"- **{title}**"
             for other_para in other_paragraphs:
@@ -715,6 +768,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
         Parameters
         ----------
+        elem: etree.Element
+            Element to render to
         resource_details: ResourceDetails
             Resource details
         members: Optional[List[str]]
