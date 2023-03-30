@@ -428,51 +428,21 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
         The layout for the FeatureStore class.
     """
     return [
-        DocLayoutItem([FEATURE_STORE], "FeatureStore"),
-        DocLayoutItem(
-            [FEATURE_STORE, GET, "FeatureStore.get"],
-            "FeatureStore.get",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, GET, "FeatureStore.get_by_id"],
-            "FeatureStore.get_by_id",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, LIST, "FeatureStore.list"],
-            "FeatureStore.list",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, CREATE, "FeatureStore.create"],
-            "FeatureStore.create",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, CREATE, "FeatureStore.get_or_create"],
-            "FeatureStore.get_or_create",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, INFO, "FeatureStore.created_at"],
-            "FeatureStore.created_at",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, INFO, "FeatureStore.credentials"],
-            "FeatureStore.credentials",
-        ),
-        DocLayoutItem(
-            [FEATURE_STORE, INFO, "FeatureStore.details"],
-            "FeatureStore.details",
-        ),
-        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.info"], "FeatureStore.info"),
-        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.name"], "FeatureStore.name"),
-        DocLayoutItem(
-            [FEATURE_STORE, INFO, "FeatureStore.saved"],
-            "FeatureStore.saved",
-        ),
-        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.type"], "FeatureStore.type"),
-        DocLayoutItem(
-            [FEATURE_STORE, INFO, "FeatureStore.updated_at"],
-            "FeatureStore.updated_at",
-        ),
-        DocLayoutItem([FEATURE_STORE, LINEAGE, "FeatureStore.id"], "FeatureStore.id"),
+        DocLayoutItem([FEATURE_STORE]),
+        DocLayoutItem([FEATURE_STORE, GET, "FeatureStore.get"]),
+        DocLayoutItem([FEATURE_STORE, GET, "FeatureStore.get_by_id"]),
+        DocLayoutItem([FEATURE_STORE, LIST, "FeatureStore.list"]),
+        DocLayoutItem([FEATURE_STORE, CREATE, "FeatureStore.create"]),
+        DocLayoutItem([FEATURE_STORE, CREATE, "FeatureStore.get_or_create"]),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.created_at"]),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.credentials"]),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.details"]),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.info"]),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.name"]),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.saved"]),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.type"]),
+        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.updated_at"]),
+        DocLayoutItem([FEATURE_STORE, LINEAGE, "FeatureStore.id"]),
     ]
 
 
@@ -486,24 +456,12 @@ def _get_data_source_layout() -> List[DocLayoutItem]:
         The layout for the DataSource class.
     """
     return [
-        DocLayoutItem([DATA_SOURCE], "DataSource"),
-        DocLayoutItem(
-            [DATA_SOURCE, EXPLORE, "DataSource.get_table"],
-            "DataSource.get_table",
-        ),
-        DocLayoutItem(
-            [DATA_SOURCE, EXPLORE, "DataSource.list_databases"],
-            "DataSource.list_databases",
-        ),
-        DocLayoutItem(
-            [DATA_SOURCE, EXPLORE, "DataSource.list_schemas"],
-            "DataSource.list_schemas",
-        ),
-        DocLayoutItem(
-            [DATA_SOURCE, EXPLORE, "DataSource.list_tables"],
-            "DataSource.list_tables",
-        ),
-        DocLayoutItem([DATA_SOURCE, INFO, "DataSource.type"], "DataSource.type"),
+        DocLayoutItem([DATA_SOURCE]),
+        DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.get_table"]),
+        DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.list_databases"]),
+        DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.list_schemas"]),
+        DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.list_tables"]),
+        DocLayoutItem([DATA_SOURCE, INFO, "DataSource.type"]),
     ]
 
 
@@ -517,35 +475,17 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
         The layout for the Relationship class.
     """
     return [
-        DocLayoutItem([RELATIONSHIP], "Relationship"),
-        DocLayoutItem(
-            [RELATIONSHIP, GET, "Catalog.get_relationship"],
-            "Catalog.get_relationship",
-        ),
-        DocLayoutItem(
-            [RELATIONSHIP, GET, "Relationship.get_by_id"],
-            "Relationship.get_by_id",
-        ),
-        DocLayoutItem(
-            [RELATIONSHIP, LIST, "Catalog.list_relationships"],
-            "Catalog.list_relationships",
-        ),
-        DocLayoutItem(
-            [RELATIONSHIP, INFO, "Relationship.created_at"],
-            "Relationship.created_at",
-        ),
-        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.info"], "Relationship.info"),
-        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.name"], "Relationship.name"),
-        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.saved"], "Relationship.saved"),
-        DocLayoutItem(
-            [RELATIONSHIP, INFO, "Relationship.updated_at"],
-            "Relationship.updated_at",
-        ),
-        DocLayoutItem([RELATIONSHIP, LINEAGE, "Relationship.id"], "Relationship.id"),
-        DocLayoutItem(
-            [RELATIONSHIP, UPDATE, "Relationship.enable"],
-            "Relationship.enable",
-        ),
+        DocLayoutItem([RELATIONSHIP]),
+        DocLayoutItem([RELATIONSHIP, GET, "Catalog.get_relationship"]),
+        DocLayoutItem([RELATIONSHIP, GET, "Relationship.get_by_id"]),
+        DocLayoutItem([RELATIONSHIP, LIST, "Catalog.list_relationships"]),
+        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.created_at"]),
+        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.info"]),
+        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.name"]),
+        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.saved"]),
+        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.updated_at"]),
+        DocLayoutItem([RELATIONSHIP, LINEAGE, "Relationship.id"]),
+        DocLayoutItem([RELATIONSHIP, UPDATE, "Relationship.enable"]),
     ]
 
 
@@ -559,110 +499,47 @@ def _get_view_layout() -> List[DocLayoutItem]:
         The layout for the View class.
     """
     return [
-        DocLayoutItem([VIEW], "View"),
-        DocLayoutItem(
-            [VIEW, CREATE, "SCDTable.get_change_view"],
-            "SCDTable.get_change_view",
-        ),
-        DocLayoutItem(
-            [VIEW, CREATE, "DimensionTable.get_view"],
-            "DimensionTable.get_view",
-        ),
-        DocLayoutItem(
-            [VIEW, CREATE, "EventTable.get_view"],
-            "EventTable.get_view",
-        ),
-        DocLayoutItem(
-            [VIEW, CREATE, "SCDTable.get_view"],
-            "SCDTable.get_view",
-        ),
-        DocLayoutItem(
-            [VIEW, CREATE, "ItemTable.get_view"],
-            "ItemTable.get_view",
-        ),
-        DocLayoutItem([VIEW, JOIN, "EventView.add_feature"], "EventView.add_feature"),
-        DocLayoutItem(
-            [VIEW, JOIN, "ItemView.join_event_table_attributes"],
-            "ItemView.join_event_table_attributes",
-        ),
-        DocLayoutItem([VIEW, JOIN, "View.join"], "View.join"),
-        DocLayoutItem([VIEW, EXPLORE, "View.describe"], "View.describe"),
-        DocLayoutItem([VIEW, EXPLORE, "View.preview"], "View.preview"),
-        DocLayoutItem([VIEW, EXPLORE, "View.sample"], "View.sample"),
-        DocLayoutItem(
-            [VIEW, INFO, "ChangeView.default_feature_job_setting"],
-            "ChangeView.default_feature_job_setting",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "ChangeView.get_default_feature_job_setting"],
-            "ChangeView.get_default_feature_job_setting",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "DimensionView.dimension_id_column"],
-            "DimensionView.dimension_id_column",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "EventView.default_feature_job_setting"],
-            "EventView.default_feature_job_setting",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "EventView.event_id_column"],
-            "EventView.event_id_column",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "ItemView.default_feature_job_setting"],
-            "ItemView.default_feature_job_setting",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "ItemView.event_table_id"],
-            "ItemView.event_table_id",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "ItemView.event_id_column"],
-            "ItemView.event_id_column",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "ItemView.item_id_column"],
-            "ItemView.item_id_column",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "SCDView.current_flag_column"],
-            "SCDView.current_flag_column",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "SCDView.effective_timestamp_column"],
-            "SCDView.effective_timestamp_column",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "SCDView.end_timestamp_column"],
-            "SCDView.end_timestamp_column",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "SCDView.natural_key_column"],
-            "SCDView.natural_key_column",
-        ),
-        DocLayoutItem(
-            [VIEW, INFO, "SCDView.surrogate_key_column"],
-            "SCDView.surrogate_key_column",
-        ),
-        DocLayoutItem([VIEW, INFO, "View.columns"], "View.columns"),
-        DocLayoutItem([VIEW, INFO, "View.columns_info"], "View.columns_info"),
-        DocLayoutItem([VIEW, INFO, "View.dtypes"], "View.dtypes"),
-        DocLayoutItem([VIEW, INFO, "View.entity_columns"], "View.entity_columns"),
-        DocLayoutItem(
-            [VIEW, INFO, "View.get_excluded_columns_as_other_view"],
-            "View.get_excluded_columns_as_other_view",
-        ),
-        DocLayoutItem([VIEW, INFO, "View.get_join_column"], "View.get_join_column"),
-        DocLayoutItem([VIEW, LINEAGE, "View.feature_store"], "View.feature_store"),
-        DocLayoutItem([VIEW, LINEAGE, "View.graph"], "View.graph"),
-        DocLayoutItem([VIEW, LINEAGE, "View.preview_sql"], "View.preview_sql"),
-        DocLayoutItem([VIEW, LINEAGE, "View.tabular_source"], "View.tabular_source"),
-        DocLayoutItem([VIEW, TYPE, "ChangeView"], "ChangeView"),
-        DocLayoutItem([VIEW, TYPE, "DimensionView"], "DimensionView"),
-        DocLayoutItem([VIEW, TYPE, "EventView"], "EventView"),
-        DocLayoutItem([VIEW, TYPE, "ItemView"], "ItemView"),
-        DocLayoutItem([VIEW, TYPE, "SCDView"], "SCDView"),
+        DocLayoutItem([VIEW]),
+        DocLayoutItem([VIEW, CREATE, "SCDTable.get_change_view"]),
+        DocLayoutItem([VIEW, CREATE, "DimensionTable.get_view"]),
+        DocLayoutItem([VIEW, CREATE, "EventTable.get_view"]),
+        DocLayoutItem([VIEW, CREATE, "SCDTable.get_view"]),
+        DocLayoutItem([VIEW, CREATE, "ItemTable.get_view"]),
+        DocLayoutItem([VIEW, JOIN, "EventView.add_feature"]),
+        DocLayoutItem([VIEW, JOIN, "ItemView.join_event_table_attributes"]),
+        DocLayoutItem([VIEW, JOIN, "View.join"]),
+        DocLayoutItem([VIEW, EXPLORE, "View.describe"]),
+        DocLayoutItem([VIEW, EXPLORE, "View.preview"]),
+        DocLayoutItem([VIEW, EXPLORE, "View.sample"]),
+        DocLayoutItem([VIEW, INFO, "ChangeView.default_feature_job_setting"]),
+        DocLayoutItem([VIEW, INFO, "ChangeView.get_default_feature_job_setting"]),
+        DocLayoutItem([VIEW, INFO, "DimensionView.dimension_id_column"]),
+        DocLayoutItem([VIEW, INFO, "EventView.default_feature_job_setting"]),
+        DocLayoutItem([VIEW, INFO, "EventView.event_id_column"]),
+        DocLayoutItem([VIEW, INFO, "ItemView.default_feature_job_setting"]),
+        DocLayoutItem([VIEW, INFO, "ItemView.event_table_id"]),
+        DocLayoutItem([VIEW, INFO, "ItemView.event_id_column"]),
+        DocLayoutItem([VIEW, INFO, "ItemView.item_id_column"]),
+        DocLayoutItem([VIEW, INFO, "SCDView.current_flag_column"]),
+        DocLayoutItem([VIEW, INFO, "SCDView.effective_timestamp_column"]),
+        DocLayoutItem([VIEW, INFO, "SCDView.end_timestamp_column"]),
+        DocLayoutItem([VIEW, INFO, "SCDView.natural_key_column"]),
+        DocLayoutItem([VIEW, INFO, "SCDView.surrogate_key_column"]),
+        DocLayoutItem([VIEW, INFO, "View.columns"]),
+        DocLayoutItem([VIEW, INFO, "View.columns_info"]),
+        DocLayoutItem([VIEW, INFO, "View.dtypes"]),
+        DocLayoutItem([VIEW, INFO, "View.entity_columns"]),
+        DocLayoutItem([VIEW, INFO, "View.get_excluded_columns_as_other_view"]),
+        DocLayoutItem([VIEW, INFO, "View.get_join_column"]),
+        DocLayoutItem([VIEW, LINEAGE, "View.feature_store"]),
+        DocLayoutItem([VIEW, LINEAGE, "View.graph"]),
+        DocLayoutItem([VIEW, LINEAGE, "View.preview_sql"]),
+        DocLayoutItem([VIEW, LINEAGE, "View.tabular_source"]),
+        DocLayoutItem([VIEW, TYPE, "ChangeView"]),
+        DocLayoutItem([VIEW, TYPE, "DimensionView"]),
+        DocLayoutItem([VIEW, TYPE, "EventView"]),
+        DocLayoutItem([VIEW, TYPE, "ItemView"]),
+        DocLayoutItem([VIEW, TYPE, "SCDView"]),
     ]
 
 
@@ -708,137 +585,54 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         The layout for the ViewColumn class.
     """
     return [
-        DocLayoutItem([VIEW_COLUMN], "ViewColumn"),
-        DocLayoutItem(
-            [VIEW_COLUMN, EXPLORE, "ViewColumn.describe"],
-            "ViewColumn.describe",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, EXPLORE, "ViewColumn.preview"],
-            "ViewColumn.preview",
-        ),
-        DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.sample"], "ViewColumn.sample"),
-        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.astype"], "ViewColumn.astype"),
-        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.dtype"], "ViewColumn.dtype"),
-        DocLayoutItem(
-            [VIEW_COLUMN, INFO, "ViewColumn.is_datetime"],
-            "ViewColumn.is_datetime",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, INFO, "ViewColumn.is_numeric"],
-            "ViewColumn.is_numeric",
-        ),
-        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.name"], "ViewColumn.name"),
-        DocLayoutItem(
-            [VIEW_COLUMN, INFO, "ViewColumn.timestamp_column"],
-            "ViewColumn.timestamp_column",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, LAGS, "ChangeViewColumn.lag"],
-            "ChangeViewColumn.lag",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, LAGS, "EventViewColumn.lag"],
-            "EventViewColumn.lag",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, LINEAGE, "ViewColumn.feature_store"],
-            "ViewColumn.feature_store",
-        ),
-        DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.graph"], "ViewColumn.graph"),
-        DocLayoutItem(
-            [VIEW_COLUMN, LINEAGE, "ViewColumn.preview_sql"],
-            "ViewColumn.preview_sql",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, LINEAGE, "ViewColumn.tabular_source"],
-            "ViewColumn.tabular_source",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.abs"],
-            "ViewColumn.abs",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.ceil"],
-            "ViewColumn.ceil",
-        ),
-        *_get_datetime_accessor_properties_layout(VIEW_COLUMN),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.exp"],
-            "ViewColumn.exp",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.fillna"],
-            "ViewColumn.fillna",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.floor"],
-            "ViewColumn.floor",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.isin"],
-            "ViewColumn.isin",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.isnull"],
-            "ViewColumn.isnull",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.log"],
-            "ViewColumn.log",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.notnull"],
-            "ViewColumn.notnull",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.pow"],
-            "ViewColumn.pow",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.sqrt"],
-            "ViewColumn.sqrt",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.contains"],
-            "ViewColumn.str.contains",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.len"],
-            "ViewColumn.str.len",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.lower"],
-            "ViewColumn.str.lower",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.lstrip"],
-            "ViewColumn.str.lstrip",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.pad"],
-            "ViewColumn.str.pad",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.replace"],
-            "ViewColumn.str.replace",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.rstrip"],
-            "ViewColumn.str.rstrip",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.slice"],
-            "ViewColumn.str.slice",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.strip"],
-            "ViewColumn.str.strip",
-        ),
-        DocLayoutItem(
-            [VIEW_COLUMN, TRANSFORM, "ViewColumn.str.upper"],
-            "ViewColumn.str.upper",
-        ),
+        DocLayoutItem([VIEW_COLUMN]),
+        DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.describe"]),
+        DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.preview"]),
+        DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.sample"]),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.astype"]),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.dtype"]),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_datetime"]),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_numeric"]),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.name"]),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.timestamp_column"]),
+        DocLayoutItem([VIEW_COLUMN, LAGS, "ChangeViewColumn.lag"]),
+        DocLayoutItem([VIEW_COLUMN, LAGS, "EventViewColumn.lag"]),
+        DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.feature_store"]),
+        DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.graph"]),
+        DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.preview_sql"]),
+        DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.tabular_source"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.abs"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.ceil"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.year"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.quarter"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.month"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.week"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.day"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.day_of_week"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.hour"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.minute"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.second"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.millisecond"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.microsecond"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.exp"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.fillna"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.floor"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.isin"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.isnull"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.log"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.notnull"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.pow"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.sqrt"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.contains"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.len"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.lower"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.lstrip"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.pad"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.replace"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.rstrip"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.slice"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.strip"]),
+        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.upper"]),
     ]
 
 
@@ -852,42 +646,21 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         The layout for the Catalog module.
     """
     return [
-        DocLayoutItem([CATALOG], "Catalog"),
-        DocLayoutItem(
-            [CATALOG, ACTIVATE, "Catalog.activate"],
-            "Catalog.activate",
-        ),
-        DocLayoutItem([CATALOG, GET, "Catalog.get"], "Catalog.get"),
-        DocLayoutItem(
-            [CATALOG, GET, "Catalog.get_active"],
-            "Catalog.get_active",
-        ),
-        DocLayoutItem(
-            [CATALOG, GET, "Catalog.get_by_id"],
-            "Catalog.get_by_id",
-        ),
-        DocLayoutItem([CATALOG, LIST, "Catalog.list"], "Catalog.list"),
-        DocLayoutItem([CATALOG, CREATE, "Catalog.create"], "Catalog.create"),
-        DocLayoutItem(
-            [CATALOG, CREATE, "Catalog.get_or_create"],
-            "Catalog.get_or_create",
-        ),
-        DocLayoutItem(
-            [CATALOG, INFO, "Catalog.created_at"],
-            "Catalog.created_at",
-        ),
-        DocLayoutItem([CATALOG, INFO, "Catalog.info"], "Catalog.info"),
-        DocLayoutItem([CATALOG, INFO, "Catalog.name"], "Catalog.name"),
-        DocLayoutItem([CATALOG, INFO, "Catalog.saved"], "Catalog.saved"),
-        DocLayoutItem(
-            [CATALOG, INFO, "Catalog.updated_at"],
-            "Catalog.updated_at",
-        ),
-        DocLayoutItem([CATALOG, LINEAGE, "Catalog.id"], "Catalog.id"),
-        DocLayoutItem(
-            [CATALOG, UPDATE, "Catalog.update_name"],
-            "Catalog.update_name",
-        ),
+        DocLayoutItem([CATALOG]),
+        DocLayoutItem([CATALOG, "Activate", "Catalog.activate"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_active"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_by_id"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list"]),
+        DocLayoutItem([CATALOG, CREATE, "Catalog.create"]),
+        DocLayoutItem([CATALOG, CREATE, "Catalog.get_or_create"]),
+        DocLayoutItem([CATALOG, INFO, "Catalog.created_at"]),
+        DocLayoutItem([CATALOG, INFO, "Catalog.info"]),
+        DocLayoutItem([CATALOG, INFO, "Catalog.name"]),
+        DocLayoutItem([CATALOG, INFO, "Catalog.saved"]),
+        DocLayoutItem([CATALOG, INFO, "Catalog.updated_at"]),
+        DocLayoutItem([CATALOG, LINEAGE, "Catalog.id"]),
+        DocLayoutItem([CATALOG, UPDATE, "Catalog.update_name"]),
     ]
 
 
