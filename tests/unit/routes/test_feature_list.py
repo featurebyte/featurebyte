@@ -223,7 +223,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # then create a new feature list version
         response = test_api_client.post(
-            f"{self.base_route}",
+            self.base_route,
             json={"source_feature_list_id": create_response_dict["_id"], "features": []},
         )
         response_dict = response.json()
@@ -313,7 +313,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # test create a new version with no change
         response = test_api_client.post(
-            f"{self.base_route}",
+            self.base_route,
             json={"source_feature_list_id": create_response_dict["_id"], "features": []},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -321,7 +321,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # test create a new version with duplicated feature name
         response = test_api_client.post(
-            f"{self.base_route}",
+            self.base_route,
             json={
                 "source_feature_list_id": create_response_dict["_id"],
                 "features": [
