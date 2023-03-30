@@ -25,7 +25,6 @@ class TestSCDView(BaseViewTestSuite):
     SELECT
       "col_int" AS "col_int",
       "col_float" AS "col_float",
-      "is_active" AS "is_active",
       "col_text" AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
@@ -39,6 +38,7 @@ class TestSCDView(BaseViewTestSuite):
     FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
     """
+    additional_expected_drop_column_names = ["is_active"]
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
         assert row_subset.natural_key_column == view_under_test.natural_key_column
@@ -211,7 +211,7 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
     timestamp column
     """
     subset_view = snowflake_scd_view[["col_float"]]
-    assert subset_view.columns == ["col_float", "is_active", "col_text", "effective_timestamp"]
+    assert subset_view.columns == ["col_float", "col_text", "effective_timestamp"]
 
 
 def test_scd_view_as_feature__special_column(snowflake_scd_table, cust_id_entity):
@@ -269,7 +269,7 @@ def test_sdk_code_generation(saved_scd_table, update_fixtures):
     )
 
 
-def test_aggregate_asat_sdk_code_generation(saved_scd_table, transaction_entity):
+def test_aggregate_asat_sdk_code_generation(saved_scd_table, transaction_entity, update_fixtures):
     """Test SDK code generation for aggregate asat"""
     saved_scd_table.col_int.as_entity(transaction_entity.name)
     snowflake_scd_view = saved_scd_table.get_view()
@@ -281,4 +281,5 @@ def test_aggregate_asat_sdk_code_generation(saved_scd_table, transaction_entity)
         to_use_saved_data=True,
         fixture_path="tests/fixtures/sdk_code/scd_view_aggregate_asat.py",
         table_id=saved_scd_table.id,
+        update_fixtures=update_fixtures,
     )

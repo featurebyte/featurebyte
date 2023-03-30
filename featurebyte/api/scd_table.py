@@ -143,6 +143,8 @@ class SCDTable(TableApiObject):
         drop_column_names = drop_column_names or []
         if view_mode == ViewMode.AUTO and self.record_creation_timestamp_column:
             drop_column_names.append(self.record_creation_timestamp_column)
+        if view_mode == ViewMode.AUTO and self.current_flag_column:
+            drop_column_names.append(self.current_flag_column)
 
         data_node = self.frame.node  # pylint: disable=duplicate-code
         assert isinstance(data_node, InputNode)

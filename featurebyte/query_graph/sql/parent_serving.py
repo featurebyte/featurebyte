@@ -16,7 +16,7 @@ from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, get_qualified_column_identifier
-from featurebyte.query_graph.sql.specs import LookupSpec
+from featurebyte.query_graph.sql.specs import AggregationSource, LookupSpec
 
 
 def construct_request_table_with_parent_entities(
@@ -112,18 +112,25 @@ def _get_lookup_spec_from_join_step(
         node=join_step.table.construct_input_node(feature_store_details=feature_store_details),
         input_nodes=[],
     )
-    sql_operation_graph = SQLOperationGraph(
-        query_graph=graph, sql_type=SQLType.AGGREGATION, source_type=feature_store_details.type
+    to_filter_scd_by_current_flag = False
+    sql_input_node = SQLOperationGraph(
+        query_graph=graph,
+        sql_type=SQLType.AGGREGATION,
+        source_type=feature_store_details.type,
+        to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
+    ).build(input_node)
+    aggregation_source = AggregationSource(
+        expr=sql_input_node.sql,
+        query_node_name=input_node.name,
+        is_scd_filtered_by_current_flag=to_filter_scd_by_current_flag,
     )
-    sql_input_node = sql_operation_graph.build(input_node)
-    source_expr = sql_input_node.sql
 
     return LookupSpec(
         input_column_name=join_step.parent_key,
         feature_name=join_step.parent_serving_name,
         entity_column=join_step.child_key,
         serving_names=[join_step.child_serving_name],
-        source_expr=source_expr,
+        aggregation_source=aggregation_source,
         scd_parameters=scd_parameters,
         event_parameters=event_parameters,
         serving_names_mapping=None,

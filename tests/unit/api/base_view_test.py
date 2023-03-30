@@ -44,6 +44,7 @@ class BaseViewTestSuite:
     view_class = None
     bool_col = col
     expected_view_with_raw_accessor_sql = ""
+    additional_expected_drop_column_names = None
 
     @pytest.fixture(name="view_under_test")
     def get_view_under_test_fixture(self, request):
@@ -111,6 +112,8 @@ class BaseViewTestSuite:
         # check view graph metadata
         metadata = view.node.parameters.metadata
         expected_drop_column_names = []
+        if self.additional_expected_drop_column_names is not None:
+            expected_drop_column_names.extend(self.additional_expected_drop_column_names)
         if data_under_test_with_imputation.record_creation_timestamp_column:
             expected_drop_column_names.append(
                 data_under_test_with_imputation.record_creation_timestamp_column

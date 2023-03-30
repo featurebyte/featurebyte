@@ -9,7 +9,7 @@ import pytest
 
 from featurebyte import FeatureList
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
-from tests.util.helper import assert_preview_result_equal
+from tests.util.helper import assert_preview_result_equal, make_online_request
 
 
 def get_expected_scd_join_result(
@@ -58,6 +58,22 @@ def expected_dataframe_scd_join(transaction_data_upper_case, scd_dataframe):
     )
     df = df.reset_index()
     return df
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+def test_scd_view_preview(scd_table):
+    """
+    Test preview of SCDView
+    """
+    view = scd_table.get_view()
+
+    def _check_result_exclude_current_flag_column(df_result):
+        assert scd_table.current_flag_column is not None
+        assert scd_table.current_flag_column not in df_result.columns.tolist()
+
+    _check_result_exclude_current_flag_column(view.preview())
+    _check_result_exclude_current_flag_column(view.sample())
+    _check_result_exclude_current_flag_column(view.describe())
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
@@ -187,7 +203,7 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_scd_lookup_feature(event_table, dimension_table, scd_table, scd_dataframe):
+def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd_dataframe):
     """
     Test creating lookup feature from a SCDView
     """
@@ -210,7 +226,8 @@ def test_scd_lookup_feature(event_table, dimension_table, scd_table, scd_datafra
 
     # Preview a feature list with above features
     feature_list = FeatureList(
-        [window_feature, scd_lookup_feature, dimension_lookup_feature], "feature_list"
+        [window_feature, scd_lookup_feature, dimension_lookup_feature],
+        "feature_list__test_scd_lookup_feature",
     )
     point_in_time = "2001-11-15 10:00:00"
     item_id = "item_42"
@@ -241,16 +258,37 @@ def test_scd_lookup_feature(event_table, dimension_table, scd_table, scd_datafra
         '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
     )
 
+    # Check online serving.
+    feature_list.save()
+    try:
+        feature_list.deploy(enable=True, make_production_ready=True)
+        params = preview_params.copy()
+        params.pop("POINT_IN_TIME")
+        online_result = make_online_request(config.get_client(), feature_list, [params])
+        assert online_result.json()["features"] == [
+            {
+                "üser id": 1,
+                "item_id": "item_42",
+                "Current User Status": "STÀTUS_CODE_39",
+                "Item Name Feature": "name_42",
+                "count_7d": None,
+            }
+        ]
+    finally:
+        feature_list.deploy(enable=False)
+
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_scd_lookup_feature_with_offset(scd_table, scd_dataframe):
+def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
     """
     Test creating lookup feature from a SCDView with offset
     """
     # SCD lookup feature
     offset = "90d"
     scd_view = scd_table.get_view()
-    scd_lookup_feature = scd_view["User Status"].as_feature("Current User Status", offset=offset)
+    scd_lookup_feature = scd_view["User Status"].as_feature(
+        "Current User Status Offset 90d", offset=offset
+    )
 
     # Preview
     point_in_time = "2001-11-15 10:00:00"
@@ -267,7 +305,23 @@ def test_scd_lookup_feature_with_offset(scd_table, scd_dataframe):
         <= (pd.to_datetime(point_in_time) - pd.Timedelta(offset))
     ) & (scd_dataframe["User ID"] == user_id)
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
-    assert preview_output["Current User Status"] == expected_row["User Status"]
+    assert preview_output["Current User Status Offset 90d"] == expected_row["User Status"]
+
+    # Check online serving
+    feature_list = FeatureList(
+        [scd_lookup_feature], "feature_list__test_scd_lookup_feature_with_offset"
+    )
+    feature_list.save()
+    try:
+        feature_list.deploy(enable=True, make_production_ready=True)
+        params = preview_params.copy()
+        params.pop("POINT_IN_TIME")
+        online_result = make_online_request(config.get_client(), feature_list, [params])
+        assert online_result.json()["features"] == [
+            {"üser id": 1, "Current User Status Offset 90d": "STÀTUS_CODE_39"}
+        ]
+    finally:
+        feature_list.deploy(enable=False)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)

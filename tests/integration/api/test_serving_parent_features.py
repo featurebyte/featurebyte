@@ -29,7 +29,7 @@ async def tables_fixture(session, data_source):
             "event_id": [1, 2, 3],
         }
     )
-    df_scd = pd.DataFrame(
+    df_scd_1 = pd.DataFrame(
         {
             "effective_ts": pd.to_datetime(
                 ["2020-01-01 10:00:00", "2022-04-12 10:00:00", "2022-04-20 10:00:00"]
@@ -38,22 +38,24 @@ async def tables_fixture(session, data_source):
             "scd_city": ["tokyo", "paris", "tokyo"],
         }
     )
-    df_dimension_1 = pd.DataFrame(
+    df_scd_2 = pd.DataFrame(
         {
+            "effective_ts": pd.to_datetime(["1970-01-01 00:00:00", "1970-01-01 00:00:00"]),
             "city": ["paris", "tokyo"],
             "state": ["île-de-france", "kanto"],
+            "is_record_active": [True, True],
         }
     )
-    df_dimension_2 = pd.DataFrame(
+    df_dimension_1 = pd.DataFrame(
         {
             "state": ["île-de-france", "kanto"],
             "country": ["france", "japan"],
         }
     )
     await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
-    await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
+    await session.register_table(f"{table_prefix}_SCD_1", df_scd_1, temporary=False)
+    await session.register_table(f"{table_prefix}_SCD_2", df_scd_2, temporary=False)
     await session.register_table(f"{table_prefix}_DIMENSION_1", df_dimension_1, temporary=False)
-    await session.register_table(f"{table_prefix}_DIMENSION_2", df_dimension_2, temporary=False)
 
     event_entity = Entity(name=f"{table_prefix}_event", serving_names=["serving_event_id"])
     event_entity.save()
@@ -79,19 +81,33 @@ async def tables_fixture(session, data_source):
     event_table["event_id"].as_entity(event_entity.name)
     event_table["cust_id"].as_entity(customer_entity.name)
 
-    scd_source_table = data_source.get_table(
-        table_name=f"{table_prefix}_SCD",
+    scd_source_table_1 = data_source.get_table(
+        table_name=f"{table_prefix}_SCD_1",
         database_name=session.database_name,
         schema_name=session.schema_name,
     )
-    scd_table = scd_source_table.create_scd_table(
-        name=f"{table_prefix}_scd_table",
+    scd_table_1 = scd_source_table_1.create_scd_table(
+        name=f"{table_prefix}_scd_table_1",
         natural_key_column="scd_cust_id",
         effective_timestamp_column="effective_ts",
         surrogate_key_column="scd_cust_id",
     )
-    scd_table["scd_cust_id"].as_entity(customer_entity.name)
-    scd_table["scd_city"].as_entity(city_entity.name)
+    scd_table_1["scd_cust_id"].as_entity(customer_entity.name)
+    scd_table_1["scd_city"].as_entity(city_entity.name)
+
+    scd_source_table_2 = data_source.get_table(
+        table_name=f"{table_prefix}_SCD_2",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    scd_table_2 = scd_source_table_2.create_scd_table(
+        name=f"{table_prefix}_scd_table_2",
+        natural_key_column="city",
+        effective_timestamp_column="effective_ts",
+        current_flag_column="is_record_active",
+    )
+    scd_table_2["city"].as_entity(city_entity.name)
+    scd_table_2["state"].as_entity(state_entity.name)
 
     dimension_source_table_1 = data_source.get_table(
         table_name=f"{table_prefix}_DIMENSION_1",
@@ -100,28 +116,16 @@ async def tables_fixture(session, data_source):
     )
     dimension_table_1 = dimension_source_table_1.create_dimension_table(
         name=f"{table_prefix}_dimension_table_1",
-        dimension_id_column="city",
-    )
-    dimension_table_1["city"].as_entity(city_entity.name)
-    dimension_table_1["state"].as_entity(state_entity.name)
-
-    dimension_source_table_2 = data_source.get_table(
-        table_name=f"{table_prefix}_DIMENSION_2",
-        database_name=session.database_name,
-        schema_name=session.schema_name,
-    )
-    dimension_table_2 = dimension_source_table_2.create_dimension_table(
-        name=f"{table_prefix}_dimension_table_2",
         dimension_id_column="state",
     )
-    dimension_table_2["state"].as_entity(state_entity.name)
-    dimension_table_2["country"].as_entity(country_entity.name)
+    dimension_table_1["state"].as_entity(state_entity.name)
+    dimension_table_1["country"].as_entity(country_entity.name)
 
 
 @pytest.fixture(name="country_feature", scope="session")
 def country_feature_fixture(tables):
     _ = tables
-    view = Table.get(f"{table_prefix}_dimension_table_2").get_view()
+    view = Table.get(f"{table_prefix}_dimension_table_1").get_view()
     feature = view["country"].as_feature("Country Name")
     return feature
 
@@ -129,7 +133,7 @@ def country_feature_fixture(tables):
 @pytest.fixture(name="city_feature", scope="session")
 def city_feature_fixture(tables):
     _ = tables
-    view = Table.get(f"{table_prefix}_scd_table").get_view()
+    view = Table.get(f"{table_prefix}_scd_table_1").get_view()
     feature = view["scd_city"].as_feature("Customer City")
     return feature
 
@@ -137,7 +141,7 @@ def city_feature_fixture(tables):
 @pytest.fixture(name="customer_num_city_change_feature", scope="session")
 def customer_num_city_change_feature_fixture(tables):
     _ = tables
-    view = Table.get(f"{table_prefix}_scd_table").get_change_view(track_changes_column="scd_city")
+    view = Table.get(f"{table_prefix}_scd_table_1").get_change_view(track_changes_column="scd_city")
     feature = view.groupby("scd_cust_id").aggregate_over(
         method="count", windows=["4w"], feature_names=["user_city_changes_count_4w"]
     )["user_city_changes_count_4w"]

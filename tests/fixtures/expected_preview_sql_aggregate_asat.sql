@@ -11,13 +11,13 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."count_None_73d3277c62d87bcc" AS "count_None_73d3277c62d87bcc"
+    "T0"."_fb_internal_as_at_count_None_input_1" AS "_fb_internal_as_at_count_None_input_1"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."MEMBERSHIP_STATUS",
-      COUNT(*) AS "count_None_73d3277c62d87bcc"
+      COUNT(*) AS "_fb_internal_as_at_count_None_input_1"
     FROM "REQUEST_TABLE_POINT_IN_TIME_MEMBERSHIP_STATUS" AS REQ
     INNER JOIN (
       SELECT
@@ -48,5 +48,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "count_None_73d3277c62d87bcc" AS "asat_feature"
+  "_fb_internal_as_at_count_None_input_1" AS "asat_feature"
 FROM _FB_AGGREGATED AS AGG

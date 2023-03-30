@@ -160,6 +160,8 @@ def scd_table_input_node_fixture(global_graph, scd_table_input_details):
             {"name": "cust_id", "dtype": DBVarType.INT},
             {"name": "membership_status", "dtype": DBVarType.VARCHAR},
         ],
+        "effective_timestamp_column": "effective_ts",
+        "current_flag_column": "is_record_current",
     }
     node_params.update(scd_table_input_details)
     node_input = global_graph.add_operation(

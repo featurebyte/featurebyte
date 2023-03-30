@@ -9,7 +9,7 @@ from sqlglot.expressions import select
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.generic import AggregateAsAtParameters
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
-from featurebyte.query_graph.sql.specs import AggregateAsAtSpec
+from featurebyte.query_graph.sql.specs import AggregateAsAtSpec, AggregationSource
 
 
 @pytest.fixture
@@ -39,40 +39,45 @@ def scd_table_sql():
 
 
 @pytest.fixture
+def scd_aggregation_source(scd_table_sql):
+    return AggregationSource(expr=scd_table_sql, query_node_name="input_1")
+
+
+@pytest.fixture
 def aggregation_spec_without_end_timestamp(
-    aggregate_as_at_node_parameters, scd_table_sql, entity_id
+    aggregate_as_at_node_parameters, scd_aggregation_source, entity_id
 ):
     return AggregateAsAtSpec(
         serving_names=["serving_cust_id"],
         serving_names_mapping=None,
         parameters=aggregate_as_at_node_parameters,
-        source_expr=scd_table_sql,
+        aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
     )
 
 
 @pytest.fixture
 def aggregation_spec_with_end_timestamp(
-    aggregate_as_at_node_parameters_with_end_timestamp, scd_table_sql, entity_id
+    aggregate_as_at_node_parameters_with_end_timestamp, scd_aggregation_source, entity_id
 ):
     return AggregateAsAtSpec(
         serving_names=["serving_cust_id"],
         serving_names_mapping=None,
         parameters=aggregate_as_at_node_parameters_with_end_timestamp,
-        source_expr=scd_table_sql,
+        aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
     )
 
 
 @pytest.fixture
 def aggregation_spec_with_serving_names_mapping(
-    aggregate_as_at_node_parameters_with_end_timestamp, scd_table_sql, entity_id
+    aggregate_as_at_node_parameters_with_end_timestamp, scd_aggregation_source, entity_id
 ):
     return AggregateAsAtSpec(
         serving_names=["serving_cust_id"],
         serving_names_mapping={"serving_cust_id": "new_serving_cust_id"},
         parameters=aggregate_as_at_node_parameters_with_end_timestamp,
-        source_expr=scd_table_sql,
+        aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
     )
 
@@ -80,7 +85,7 @@ def aggregation_spec_with_serving_names_mapping(
 @pytest.fixture
 def aggregation_specs_same_source_different_agg_funcs(
     aggregate_as_at_node_parameters_with_end_timestamp,
-    scd_table_sql,
+    scd_aggregation_source,
     entity_id,
 ):
     params = aggregate_as_at_node_parameters_with_end_timestamp
@@ -98,7 +103,7 @@ def aggregation_specs_same_source_different_agg_funcs(
                 serving_names=["serving_cust_id"],
                 serving_names_mapping=None,
                 parameters=params,
-                source_expr=scd_table_sql,
+                aggregation_source=scd_aggregation_source,
                 entity_ids=[entity_id],
             )
         )
@@ -109,7 +114,7 @@ def aggregation_specs_same_source_different_agg_funcs(
 @pytest.fixture
 def aggregation_specs_same_source_different_keys(
     aggregate_as_at_node_parameters_with_end_timestamp,
-    scd_table_sql,
+    scd_aggregation_source,
     entity_id,
 ):
     params = aggregate_as_at_node_parameters_with_end_timestamp
@@ -127,7 +132,7 @@ def aggregation_specs_same_source_different_keys(
                 serving_names=params.serving_names,
                 serving_names_mapping=None,
                 parameters=params,
-                source_expr=scd_table_sql,
+                aggregation_source=scd_aggregation_source,
                 entity_ids=[entity_id],
             )
         )
@@ -152,13 +157,13 @@ def test_asat_aggregate_scd_table_without_end_timestamp(aggregation_spec_without
           a,
           b,
           c,
-          "T0"."sum_value_b7f2bf3347b098b3" AS "sum_value_b7f2bf3347b098b3"
+          "T0"."_fb_internal_as_at_sum_value_input_1" AS "_fb_internal_as_at_sum_value_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME",
             REQ."serving_cust_id",
-            SUM(SCD."value") AS "sum_value_b7f2bf3347b098b3"
+            SUM(SCD."value") AS "_fb_internal_as_at_sum_value_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
@@ -219,13 +224,13 @@ def test_asat_aggregate_scd_table_with_end_timestamp(aggregation_spec_with_end_t
           a,
           b,
           c,
-          "T0"."sum_value_42094ad467b827c2" AS "sum_value_42094ad467b827c2"
+          "T0"."_fb_internal_as_at_sum_value_input_1" AS "_fb_internal_as_at_sum_value_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME",
             REQ."serving_cust_id",
-            SUM(SCD."value") AS "sum_value_42094ad467b827c2"
+            SUM(SCD."value") AS "_fb_internal_as_at_sum_value_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
@@ -270,13 +275,13 @@ def test_asat_aggregate_scd_table_with_serving_names_mapping(
           a,
           b,
           c,
-          "T0"."sum_value_42094ad467b827c2" AS "sum_value_42094ad467b827c2"
+          "T0"."_fb_internal_as_at_sum_value_input_1" AS "_fb_internal_as_at_sum_value_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME",
             REQ."new_serving_cust_id",
-            SUM(SCD."value") AS "sum_value_42094ad467b827c2"
+            SUM(SCD."value") AS "_fb_internal_as_at_sum_value_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_new_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
@@ -321,15 +326,15 @@ def test_same_source_different_agg_funcs(aggregation_specs_same_source_different
           a,
           b,
           c,
-          "T0"."min_value_42094ad467b827c2" AS "min_value_42094ad467b827c2",
-          "T0"."max_value_42094ad467b827c2" AS "max_value_42094ad467b827c2"
+          "T0"."_fb_internal_as_at_min_value_input_1" AS "_fb_internal_as_at_min_value_input_1",
+          "T0"."_fb_internal_as_at_max_value_input_1" AS "_fb_internal_as_at_max_value_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME",
             REQ."serving_cust_id",
-            MIN(SCD."value") AS "min_value_42094ad467b827c2",
-            MAX(SCD."value") AS "max_value_42094ad467b827c2"
+            MIN(SCD."value") AS "_fb_internal_as_at_min_value_input_1",
+            MAX(SCD."value") AS "_fb_internal_as_at_max_value_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
@@ -374,14 +379,14 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
           a,
           b,
           c,
-          "T0"."sum_value_b3c206d12abdc08c" AS "sum_value_b3c206d12abdc08c",
-          "T1"."sum_value_e3ce763afac4084c" AS "sum_value_e3ce763afac4084c"
+          "T0"."_fb_internal_as_at_sum_value_input_1" AS "_fb_internal_as_at_sum_value_input_1",
+          "T1"."_fb_internal_as_at_sum_value_input_1" AS "_fb_internal_as_at_sum_value_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME",
             REQ."serving_key_1",
-            SUM(SCD."value") AS "sum_value_b3c206d12abdc08c"
+            SUM(SCD."value") AS "_fb_internal_as_at_sum_value_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_serving_key_1" AS REQ
           INNER JOIN (
             SELECT
@@ -404,7 +409,7 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
           SELECT
             REQ."POINT_IN_TIME",
             REQ."serving_key_2",
-            SUM(SCD."value") AS "sum_value_e3ce763afac4084c"
+            SUM(SCD."value") AS "_fb_internal_as_at_sum_value_input_1"
           FROM "REQUEST_TABLE_POINT_IN_TIME_serving_key_2" AS REQ
           INNER JOIN (
             SELECT

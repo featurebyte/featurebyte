@@ -16,6 +16,7 @@ from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTableP
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.specs import (
+    AggregationSource,
     FeatureSpec,
     ItemAggregationSpec,
     TileBasedAggregationSpec,
@@ -84,7 +85,9 @@ def item_agg_spec_fixture():
         parameters=parameters,
         serving_names=["OID"],
         serving_names_mapping=None,
-        source_expr=select("*").from_("tab"),
+        aggregation_source=AggregationSource(
+            expr=select("*").from_("tab"), query_node_name="input_1"
+        ),
         entity_ids=[ObjectId()],
     )
     return agg_spec
@@ -392,7 +395,10 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
     agg_result_dict = asdict(agg_results[0])
     agg_result_dict.pop("expr")
     assert agg_result_dict == {
-        "column_names": ["cust_value_1_9b8bee3acf7d5bc7", "cust_value_2_9b8bee3acf7d5bc7"],
+        "column_names": [
+            "_fb_internal_lookup_cust_value_1_input_1",
+            "_fb_internal_lookup_cust_value_2_input_1",
+        ],
         "join_keys": ["CUSTOMER_ID"],
         "event_timestamp_column": None,
     }

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import SourceType, TableDataType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import quoted_identifier
@@ -43,7 +43,24 @@ class InputNode(TableNode):
             )
         else:
             dbtable = quoted_identifier(self.dbtable["table_name"])
+
         select_expr = select_expr.from_(dbtable)
+
+        # Optionally, filter SCD table to only include current records. This is done only for
+        # certain aggregations during online serving.
+        if (
+            self.context.parameters["type"] == TableDataType.SCD_TABLE
+            and self.context.to_filter_scd_by_current_flag
+        ):
+            current_flag_column = self.context.parameters["current_flag_column"]
+            if current_flag_column is not None:
+                select_expr = select_expr.where(
+                    expressions.EQ(
+                        this=expressions.Identifier(this=current_flag_column, quoted=True),
+                        expression=expressions.true(),
+                    )
+                )
+
         return select_expr
 
     @classmethod

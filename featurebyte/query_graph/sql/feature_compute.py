@@ -498,6 +498,7 @@ class FeatureExecutionPlanner:
             graph=self.graph,
             source_type=self.source_type,
             serving_names_mapping=self.serving_names_mapping,
+            is_online_serving=self.is_online_serving,
         )
         for agg_spec in agg_specs:
             self.plan.add_aggregation_spec(agg_spec)

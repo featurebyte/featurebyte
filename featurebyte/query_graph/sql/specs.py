@@ -35,6 +35,8 @@ NonTileBasedAggregationSpecT = TypeVar(
     "NonTileBasedAggregationSpecT", bound="NonTileBasedAggregationSpec"
 )
 
+FB_INTERNAL_COLUMN_PREFIX = "_fb_internal"
+
 
 class AggregationType(StrEnum):
     """
@@ -88,6 +90,24 @@ class AggregationSpec(ABC):
         -------
         AggregationType
         """
+
+    def construct_agg_result_name(self, *args: Any) -> str:
+        """
+        Helper function to construct the aggregation result name
+
+        Parameters
+        ----------
+        *args: Any
+            Tags to be included in the aggregation result name
+
+        Returns
+        -------
+        str
+            Aggregation result name
+        """
+        parts = [FB_INTERNAL_COLUMN_PREFIX, self.aggregation_type]
+        parts.extend([f"{arg}" for arg in args])
+        return "_".join(parts)
 
 
 @dataclass
@@ -200,6 +220,18 @@ class TileBasedAggregationSpec(AggregationSpec):
         return aggregation_specs
 
 
+@dataclass
+class AggregationSource:
+    """
+    Represents the source of an aggregation. The aggregation is to be done via lookup,
+    aggregate_asat, etc.
+    """
+
+    expr: Select
+    query_node_name: str
+    is_scd_filtered_by_current_flag: Optional[bool] = None
+
+
 @dataclass  # type: ignore[misc]
 class NonTileBasedAggregationSpec(AggregationSpec):
     """
@@ -207,10 +239,16 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     pre-aggregation
     """
 
+    aggregation_source: AggregationSource
+
     @classmethod
-    def get_source_sql_expr(
-        cls, graph: QueryGraphModel, node: Node, source_type: SourceType
-    ) -> Select:
+    def get_aggregation_source(
+        cls,
+        graph: QueryGraphModel,
+        node: Node,
+        source_type: SourceType,
+        to_filter_scd_by_current_flag: bool,
+    ) -> AggregationSource:
         """
         Get the expression of the input view to be aggregated
 
@@ -222,21 +260,62 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Query graph node
         source_type: SourceType
             Source type information
+        to_filter_scd_by_current_flag: bool
+            Whether to filter SCD by current flag
 
         Returns
         -------
-        Select
-            Expression representing the source table
+        AggregationSource
+            An AggregationSource object representing the source table
         """
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel,cyclic-import
+        from featurebyte.query_graph.sql.ast.aggregate import Aggregate
         from featurebyte.query_graph.sql.builder import SQLOperationGraph
         from featurebyte.query_graph.sql.common import SQLType
 
         sql_node = SQLOperationGraph(
-            graph, sql_type=SQLType.AGGREGATION, source_type=source_type
+            graph,
+            sql_type=SQLType.AGGREGATION,
+            source_type=source_type,
+            to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
         ).build(node)
 
-        return cast(Select, sql_node.sql)
+        sql_node = cast(Aggregate, sql_node)
+        return sql_node.to_aggregation_source()  # type: ignore
+
+    def construct_agg_result_name(self, *args: Any) -> str:
+        return super().construct_agg_result_name(*args, self.aggregation_source.query_node_name)
+
+    @classmethod
+    def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
+        """
+        Whether the SCD table should be filtered by current flag during online serving
+
+        Parameters
+        ----------
+        graph: QueryGraphModel
+            Query graph
+        node: Node
+            Query graph node
+
+        Returns
+        -------
+        bool
+        """
+        _ = graph
+        _ = node
+        return False
+
+    @property
+    def source_expr(self) -> Select:
+        """
+        Get the expression of the input view to be aggregated
+
+        Returns
+        -------
+        Select
+        """
+        return self.aggregation_source.expr
 
     @property
     def source_hash(self) -> str:
@@ -269,7 +348,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     def construct_specs(
         cls: Type[NonTileBasedAggregationSpecT],
         node: Node,
-        source_expr: Select,
+        aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
     ) -> list[NonTileBasedAggregationSpecT]:
         """
@@ -277,10 +356,10 @@ class NonTileBasedAggregationSpec(AggregationSpec):
 
         Parameters
         ----------
-        node : Node
+        node: Node
             Query graph node
-        source_expr: Select
-            Select statement that represents the source for aggregation
+        aggregation_source: AggregationSource
+            Source of the aggregation
         serving_names_mapping: Optional[dict[str, str]]
             Serving names mapping
         """
@@ -289,10 +368,11 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     def from_query_graph_node(
         cls: Type[NonTileBasedAggregationSpecT],
         node: Node,
-        source_expr: Optional[Select] = None,
+        aggregation_source: Optional[AggregationSource] = None,
         graph: Optional[QueryGraphModel] = None,
         source_type: Optional[SourceType] = None,
         serving_names_mapping: Optional[dict[str, str]] = None,
+        is_online_serving: Optional[bool] = None,
     ) -> list[NonTileBasedAggregationSpecT]:
         """Construct NonTileBasedAggregationSpec objects given a query graph node
 
@@ -300,27 +380,38 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         ----------
         node : Node
             Query graph node
-        source_expr: Optional[Select]
-            Select statement that represents the source for aggregation
+        aggregation_source: Optional[AggregationSource]
+            Source of the aggregation
         graph: Optional[QueryGraphModel]
-            Query graph. Mandatory if source_expr is not provided
+            Query graph. Mandatory if aggregation_source is not provided
         source_type: Optional[SourceType]
-            Source type information. Mandatory if source_expr is not provided
+            Source type information. Mandatory if aggregation_source is not provided
         serving_names_mapping: Optional[dict[str, str]]
             Serving names mapping
+        is_online_serving: bool
+            Whether the query is for online serving
 
         Returns
         -------
         NonTileBasedAggregationSpecT
         """
-        if source_expr is None:
+        if aggregation_source is None:
             assert graph is not None
             assert source_type is not None
-            source_expr = cls.get_source_sql_expr(graph=graph, node=node, source_type=source_type)
+            to_filter_scd_by_current_flag = (
+                is_online_serving is True
+                and cls.should_filter_scd_by_current_flag(graph=graph, node=node)
+            )
+            aggregation_source = cls.get_aggregation_source(
+                graph=graph,
+                node=node,
+                source_type=source_type,
+                to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
+            )
 
         return cls.construct_specs(
             node=node,
-            source_expr=source_expr,
+            aggregation_source=aggregation_source,
             serving_names_mapping=serving_names_mapping,
         )
 
@@ -332,7 +423,6 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
     """
 
     parameters: ItemGroupbyParameters
-    source_expr: Select
 
     @property
     def agg_result_name(self) -> str:
@@ -343,7 +433,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         str
             Column name of the aggregated result
         """
-        return f"{self.parameters.agg_func}_{self.parameters.parent}_{self.source_hash}"
+        return self.construct_agg_result_name(self.parameters.agg_func, self.parameters.parent)
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -363,7 +453,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
     def construct_specs(
         cls,
         node: Node,
-        source_expr: Select,
+        aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
     ) -> list[ItemAggregationSpec]:
         assert isinstance(node, ItemGroupbyNode)
@@ -373,7 +463,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
                 parameters=node.parameters,
-                source_expr=source_expr,
+                aggregation_source=aggregation_source,
             )
         ]
 
@@ -385,7 +475,6 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
     """
 
     parameters: AggregateAsAtParameters
-    source_expr: Select
 
     @property
     def agg_result_name(self) -> str:
@@ -396,7 +485,7 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         str
             Column name of the aggregated result
         """
-        return f"{self.parameters.agg_func}_{self.parameters.parent}_{self.source_hash}"
+        return self.construct_agg_result_name(self.parameters.agg_func, self.parameters.parent)
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -420,14 +509,14 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
     def construct_specs(
         cls,
         node: Node,
-        source_expr: Select,
-        serving_names_mapping: Optional[dict[str, str]] = None,
+        aggregation_source: AggregationSource,
+        serving_names_mapping: Optional[dict[str, str]],
     ) -> list[AggregateAsAtSpec]:
         assert isinstance(node, AggregateAsAtNode)
         return [
             AggregateAsAtSpec(
                 parameters=node.parameters,
-                source_expr=source_expr,
+                aggregation_source=aggregation_source,
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
@@ -445,7 +534,6 @@ class LookupSpec(NonTileBasedAggregationSpec):
     feature_name: str
     entity_column: str
     serving_names: list[str]
-    source_expr: Select
     scd_parameters: Optional[SCDLookupParameters]
     event_parameters: Optional[EventLookupParameters]
     is_parent_lookup: bool = False
@@ -454,8 +542,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
     def agg_result_name(self) -> str:
         if self.is_parent_lookup:
             return self.feature_name
-        name = f"{self.input_column_name}_{self.source_hash}"
-        return name
+        return self.construct_agg_result_name(self.input_column_name)
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -473,10 +560,38 @@ class LookupSpec(NonTileBasedAggregationSpec):
         return params
 
     @classmethod
+    def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
+        assert isinstance(node, LookupNode)
+        scd_parameters = node.parameters.scd_parameters
+        if scd_parameters is not None:
+            return cls.get_scd_filter_flag_from_scd_parameters(scd_parameters)
+        return False
+
+    @staticmethod
+    def get_scd_filter_flag_from_scd_parameters(scd_parameters: SCDLookupParameters) -> bool:
+        """
+        Returns whether the current flag should be used to filter SCD join
+
+        Parameters
+        ----------
+        scd_parameters: SCDLookupParameters
+            SCD related parameters in the lookup node
+
+        Returns
+        -------
+        bool
+        """
+        # Online serving might not have to use SCD join if current flag is applicable
+        current_flag_usable_for_online_serving = (
+            scd_parameters.current_flag_column is not None and scd_parameters.offset is None
+        )
+        return current_flag_usable_for_online_serving
+
+    @classmethod
     def construct_specs(
         cls,
         node: Node,
-        source_expr: Select,
+        aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
     ) -> list[LookupSpec]:
         assert isinstance(node, LookupNode)
@@ -490,7 +605,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
                 entity_ids=[params.entity_id],
                 serving_names=[params.serving_name],
                 serving_names_mapping=serving_names_mapping,
-                source_expr=source_expr,
+                aggregation_source=aggregation_source,
                 scd_parameters=params.scd_parameters,
                 event_parameters=params.event_parameters,
             )

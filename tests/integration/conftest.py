@@ -545,6 +545,12 @@ def scd_dataframe_fixture(transaction_data):
         .sort_values(["User ID", "Effective Timestamp"])
         .reset_index(drop=True)
     )
+    index = data.index
+    current_flag = data.groupby("User ID", as_index=False).agg({"Effective Timestamp": "max"})
+    current_flag["Current Flag"] = True
+    data = pd.merge(data, current_flag, on=["User ID", "Effective Timestamp"], how="left")
+    data["Current Flag"] = data["Current Flag"].fillna(False)
+    data.index = index
     yield data
 
 
@@ -1198,6 +1204,7 @@ def scd_table_fixture(
         name=scd_table_name,
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
+        current_flag_column="Current Flag",
         surrogate_key_column="ID",
     )
     scd_table["User ID"].as_entity(user_entity.name)

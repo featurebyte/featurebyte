@@ -6,12 +6,12 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
-    REQ."membership_status_3a8732e29bdc15d2" AS "membership_status_3a8732e29bdc15d2"
+    REQ."_fb_internal_lookup_membership_status_input_1" AS "_fb_internal_lookup_membership_status_input_1"
   FROM (
     SELECT
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       L."CUSTOMER_ID" AS "CUSTOMER_ID",
-      R."membership_status" AS "membership_status_3a8732e29bdc15d2"
+      R."membership_status" AS "_fb_internal_lookup_membership_status_input_1"
     FROM (
       SELECT
         "__FB_KEY_COL_0",
@@ -72,5 +72,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "membership_status_3a8732e29bdc15d2" AS "Current Membership Status"
+  "_fb_internal_lookup_membership_status_input_1" AS "Current Membership Status"
 FROM _FB_AGGREGATED AS AGG

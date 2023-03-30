@@ -16,12 +16,12 @@ WITH ONLINE_REQUEST_TABLE AS (
   SELECT
     REQ."CUSTOMER_ID",
     REQ."POINT_IN_TIME",
-    "T0"."membership_status_fbfdb013880b3a67" AS "membership_status_fbfdb013880b3a67"
+    "T0"."_fb_internal_lookup_membership_status_input_1" AS "_fb_internal_lookup_membership_status_input_1"
   FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "cust_id" AS "CUSTOMER_ID",
-      "membership_status" AS "membership_status_fbfdb013880b3a67"
+      "membership_status" AS "_fb_internal_lookup_membership_status_input_1"
     FROM (
       SELECT
         "effective_ts" AS "effective_ts",
@@ -36,5 +36,5 @@ WITH ONLINE_REQUEST_TABLE AS (
 )
 SELECT
   AGG."CUSTOMER_ID",
-  "membership_status_fbfdb013880b3a67" AS "Current Membership Status"
+  "_fb_internal_lookup_membership_status_input_1" AS "Current Membership Status"
 FROM _FB_AGGREGATED AS AGG

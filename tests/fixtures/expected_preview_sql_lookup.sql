@@ -6,14 +6,14 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."cust_value_1_9b8bee3acf7d5bc7" AS "cust_value_1_9b8bee3acf7d5bc7",
-    "T0"."cust_value_2_9b8bee3acf7d5bc7" AS "cust_value_2_9b8bee3acf7d5bc7"
+    "T0"."_fb_internal_lookup_cust_value_1_input_1" AS "_fb_internal_lookup_cust_value_1_input_1",
+    "T0"."_fb_internal_lookup_cust_value_2_input_1" AS "_fb_internal_lookup_cust_value_2_input_1"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "cust_id" AS "CUSTOMER_ID",
-      "cust_value_1" AS "cust_value_1_9b8bee3acf7d5bc7",
-      "cust_value_2" AS "cust_value_2_9b8bee3acf7d5bc7"
+      "cust_value_1" AS "_fb_internal_lookup_cust_value_1_input_1",
+      "cust_value_2" AS "_fb_internal_lookup_cust_value_2_input_1"
     FROM (
       SELECT
         "cust_id" AS "cust_id",
@@ -28,6 +28,6 @@ SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
   (
-    "cust_value_1_9b8bee3acf7d5bc7" + "cust_value_2_9b8bee3acf7d5bc7"
+    "_fb_internal_lookup_cust_value_1_input_1" + "_fb_internal_lookup_cust_value_2_input_1"
   ) AS "MY FEATURE"
 FROM _FB_AGGREGATED AS AGG
