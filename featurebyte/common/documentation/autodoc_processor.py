@@ -65,6 +65,8 @@ def import_resource(resource_descriptor: str) -> Any:
     """
     resource = import_from_string(resource_descriptor)
     module = inspect.getmodule(resource)
+    if module is None:
+        return resource
     try:
         # reload module to capture updates in source code
         module = importlib.reload(module)
@@ -123,7 +125,7 @@ def get_params(
             if render_kw_only_separator:
                 render_kw_only_separator = False
                 params.append(("*", None, None))
-        params.append((value, type_hints.get(parameter.name, Undefined), default))
+        params.append((value, type_hints.get(parameter.name, Undefined), default))  # type: ignore[arg-type]
     return params
 
 
@@ -190,7 +192,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
     # ::: {full_path_to_class}::{attribute_name}#{proxy_path}
     RE = re.compile(r"(?:^|\n)::: ?([:a-zA-Z0-9_.#]*) *(?:\n|$)")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self._md = Markdown(extensions=self.md.registeredExtensions)
 
@@ -250,6 +252,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
             return f'"{value}"'
         return str(value)
 
+    @staticmethod
+    def _filter_none_from_list(input_list: List[Optional[Any]]) -> List[Any]:
+        return [item for item in input_list if item is not None]
+
     def format_param_type(self, param_type: Any) -> Optional[str]:
         """
         Format parameter type and add reference if available
@@ -265,7 +271,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             Formatted parameter type
         """
 
-        def _get_param_type_str(param_type) -> Optional[str]:
+        def _get_param_type_str(param_type: Any) -> Optional[str]:
             if param_type == Undefined:
                 return None
             if isinstance(param_type, TypeVar):
@@ -286,7 +292,9 @@ class FBAutoDocProcessor(AutoDocProcessor):
         def _clean(type_class_path: str) -> str:
             parts = type_class_path.split(",")
             if len(parts) > 1:
-                return ", ".join([_format(part.strip()) for part in parts])
+                formatted = [_format(part.strip()) for part in parts]
+                filtered_list = FBAutoDocProcessor._filter_none_from_list(formatted)
+                return ", ".join(filtered_list)
             parts = type_class_path.split(".")
             if parts[-1]:
                 object_name = parts[-1]
@@ -306,8 +314,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
             parts = type_str.split("]")
             outer_right = parts.pop()
             type_str = "]".join(parts)
-
-            return outer_left + "[" + _format(type_str) + "]" + outer_right
+            formatted_type_string = _format(type_str) if _format(type_str) else ""
+            return outer_left + "[" + formatted_type_string + "]" + outer_right
 
         # check if type as subtypes
         module = getattr(param_type, "__module__", None)
@@ -317,14 +325,17 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 # __args__ attribute of Optional always includes NoneType as last element
                 # which is redundant for documentation
                 subtypes = subtypes[:-1]
-            inner_str = ", ".join([self.format_param_type(subtype) for subtype in subtypes])
+            formatted_params = [self.format_param_type(subtype) for subtype in subtypes]
+            filtered_formatted_params = FBAutoDocProcessor._filter_none_from_list(formatted_params)
+            inner_str = ", ".join(filtered_formatted_params)
             param_type_str = str(param_type)
             return _clean(param_type_str.split("[", maxsplit=1)[0]) + "[" + inner_str + "]"
 
         param_type_str = _get_param_type_str(param_type)
         return _format(param_type_str)
 
-    def insert_param_type(self, elem: etree.Element, param_type_str: str):
+    @staticmethod
+    def insert_param_type(elem: etree.Element, param_type_str: Optional[str]) -> None:
         if param_type_str:
             colon_elem = etree.SubElement(elem, "span")
             colon_elem.text = ": "
@@ -333,7 +344,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             type_elem.text = param_type_str
             type_elem.set("class", "autodoc-type")
 
-    def get_resource_details(self, resource_descriptor: str):
+    def get_resource_details(self, resource_descriptor: str) -> ResourceDetails:
         """
         Get details about a resource to be documented
 
@@ -462,7 +473,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             return "\n".join(content)
 
         def _get_return_param_details(
-            docstring_returns: DocstringReturns, return_type_from_signature: Any
+            docstring_returns: Optional[DocstringReturns], return_type_from_signature: Any
         ) -> ParameterDetails:
             current_return_type = self.format_param_type(return_type_from_signature)
             if not current_return_type and docstring_returns:
@@ -592,7 +603,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             Markdown DOM blocks to be processed
         """
         # check if markdown block contains autodoc signature
-        block = blocks.pop(0)
+        block = blocks.pop(0)  # type: ignore[attr-defined]
         m = self.RE.search(block)
         if m:
             block = block[m.end() :]  # removes the first line
@@ -671,7 +682,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             content_elem.text = self._md.convert(content)
 
         def _render_list_item_with_multiple_paragraphs(
-            title: str, other_paragraphs: List[str]
+            title: Optional[str], other_paragraphs: List[str]
         ) -> str:
             """
             Helper method to render a list item with multiple paragraphs.
@@ -688,6 +699,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             str
                 Rendered list item
             """
+            title = title or ""
             list_item_str = f"- **{title}**"
             for other_para in other_paragraphs:
                 list_item_str += f"<br>\t{other_para}"
@@ -706,6 +718,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
             content = ""
             for param in resource_details.parameters:
                 items_to_render = []
+                if not param.name:
+                    continue
                 param_name = param.name.replace("*", "\\*")
                 param_type = f": *{param.type}*" if param.type else ""
                 param_default = (
@@ -731,9 +745,11 @@ class FBAutoDocProcessor(AutoDocProcessor):
         # Render returns:
         if resource_details.returns:
             returns = resource_details.returns
-            if returns.type not in NONE_TYPES:
+            return_type = returns.type
+            if return_type not in NONE_TYPES:
                 bullet_point = [returns.description] if returns.description else []
-                content = _render_list_item_with_multiple_paragraphs(returns.type, bullet_point)
+                assert return_type is not None
+                content = _render_list_item_with_multiple_paragraphs(return_type, bullet_point)
                 _render("Returns", content)
 
         # Render raises
@@ -741,7 +757,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
             content = "\n".join(
                 [
                     _render_list_item_with_multiple_paragraphs(
-                        exc_type.type, [exc_type.description]
+                        exc_type.type,
+                        FBAutoDocProcessor._filter_none_from_list([exc_type.description]),
                     )
                     for exc_type in resource_details.raises
                 ]
