@@ -40,4 +40,9 @@ RUN bash -c "source ${USER_HOME}/.venv/bin/activate; pip install --no-index -f $
 COPY ./docker/entrypoint.sh             /scripts/entrypoint.sh
 RUN chmod +x /scripts/entrypoint.sh
 
+# Add runtime user and group and set permissions appropriately
+RUN groupadd -g 1000 runnergroup -o
+RUN useradd -g 1000 -u 1000 -o -M -d /app -r runner
+RUN chown -R 1000:1000 /app
+
 CMD ["/bin/bash", "/scripts/entrypoint.sh"]
