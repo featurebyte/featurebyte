@@ -610,6 +610,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         return feature_lists
 
 
+# pylint: disable=too-many-public-methods
 class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, FeatureJobMixin):
     """
     A Feature List is a set of features that is typically crafted to address a specific Use Case, and is typically how
@@ -1031,7 +1032,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Returns
         -------
         pd.DataFrame
-            Table of features.
+            Table of features in this feature list.
 
         Examples
         --------
