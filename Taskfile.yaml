@@ -76,7 +76,6 @@ tasks:
       - task: lint-bandit
 
   lint-style:
-    internal: true
     desc: "Run the linter[style]"
     vars:
       PYLINT_DISABLE_FOR_SRCS: 'too-few-public-methods'
@@ -98,7 +97,6 @@ tasks:
       - poetry run darglint --verbosity 2 {{ .DARG_SOURCES }}
 
   lint-type:
-    internal: true
     desc: "Run the linter[type]"
     sources:
       - poetry.lock
@@ -109,7 +107,6 @@ tasks:
       - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py|featurebyte/common/documentation/*)' .
 
   lint-safety:
-    internal: true
     desc: "Run the linter[safety]"
     vars:
       PERMISSIVE_LICENSES: >
@@ -140,7 +137,6 @@ tasks:
       - poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5 --ignore-vul GHSA-74m5-2c7w-9w3x --ignore-vul GHSA-8fww-64cx-x8p5
 
   lint-bandit:
-    internal: true
     desc: "Run the linter[bandit]"
     sources:
       - poetry.lock
