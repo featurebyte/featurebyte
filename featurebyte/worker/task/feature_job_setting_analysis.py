@@ -70,7 +70,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         event_dataset = EventDataset(
             database_type=feature_store.type,
             event_table_name=event_table.name,
-            table_details=event_table.tabular_source.table_details.dict(),
+            table_details=event_table.tabular_source.table_details,
             creation_date_column=event_table.record_creation_timestamp_column,
             event_timestamp_column=event_table.event_timestamp_column,
             sql_query_func=db_session.execute_query,
@@ -88,9 +88,9 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             user_id=payload.user_id,
             name=payload.name,
             event_table_id=payload.event_table_id,
-            analysis_options=analysis.analysis_options,
-            analysis_parameters=analysis.analysis_parameters,
-            analysis_result=analysis.analysis_result,
+            analysis_options=analysis.analysis_options.dict(),
+            analysis_parameters=analysis.analysis_parameters.dict(),
+            analysis_result=analysis.analysis_result.dict(),
             analysis_report=analysis.to_html(),
         )
 
@@ -151,7 +151,8 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         analysis_result = analysis_data.pop("analysis_result")
         document.update(**analysis_data)
         document["analysis_result"].update(analysis_result)
-        analysis = FeatureJobSettingsAnalysisResult(**document)
+        logger.debug(document)
+        analysis = FeatureJobSettingsAnalysisResult.from_dict(document)
 
         # run backtest
         self.update_progress(percent=5, message="Running Analysis")

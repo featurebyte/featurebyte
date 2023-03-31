@@ -1,6 +1,7 @@
 """
 Tests for FeatureJobSettingAnalysis routes
 """
+import copy
 from datetime import datetime
 from http import HTTPStatus
 from unittest.mock import Mock, patch
@@ -10,6 +11,8 @@ import pytest
 from bson import ObjectId
 from featurebyte_freeware.feature_job_analysis.analysis import HighUpdateFrequencyError
 from featurebyte_freeware.feature_job_analysis.schema import (
+    AnalysisOptions,
+    AnalysisParameters,
     AnalysisResult,
     BacktestResult,
     BlindSpotSearchResult,
@@ -60,29 +63,29 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         AnalysisResult fixture
         """
         result = self.load_payload("tests/fixtures/feature_job_setting_analysis/result.json")
-        return AnalysisResult(
-            **result["analysis_result"],
-            backtest_result=BacktestResult(
-                results=pd.DataFrame(),
-                plot=None,
-                job_with_issues_count=0,
-                warnings=[],
-            ),
-            blind_spot_search_result=BlindSpotSearchResult(
-                pct_late_data=0.5,
-                optimal_blind_spot=0,
-                results=pd.DataFrame(),
-                plot="",
-                thresholds=[],
-                warnings=[],
-            ),
-            event_landing_time_result=EventLandingTimeResult(
-                results=pd.DataFrame(),
-                plot="",
-                thresholds=[],
-                warnings=[],
-            ),
-        )
+        data = result["analysis_result"]
+        data["blind_spot_search_exc_missing_jobs_result"] = None
+        data["backtest_result"] = BacktestResult(
+            results=pd.DataFrame(),
+            plot=None,
+            job_with_issues_count=0,
+            warnings=[],
+        ).dict()
+        data["blind_spot_search_result"] = BlindSpotSearchResult(
+            pct_late_data=0.5,
+            optimal_blind_spot=0,
+            results=pd.DataFrame(),
+            plot="",
+            thresholds=[],
+            warnings=[],
+        ).dict()
+        data["event_landing_time_result"] = EventLandingTimeResult(
+            results=pd.DataFrame(),
+            plot="",
+            thresholds=[],
+            warnings=[],
+        ).dict()
+        return AnalysisResult.from_dict(data)
 
     @pytest.fixture(autouse=True, name="mock_analysis")
     def mock_analysis(self, analysis_result):
@@ -92,8 +95,12 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         result = self.load_payload("tests/fixtures/feature_job_setting_analysis/result.json")
         result["analysis_plots"] = None
         result["analysis_data"] = None
-        result["analysis_result"] = analysis_result
-        record = Mock(**result, to_html=lambda: result["analysis_report"], dict=lambda: result)
+        result["analysis_result"] = analysis_result.dict()
+        kwargs = copy.deepcopy(result)
+        kwargs["analysis_parameters"] = AnalysisParameters.from_dict(kwargs["analysis_parameters"])
+        kwargs["analysis_options"] = AnalysisOptions.from_dict(kwargs["analysis_options"])
+        kwargs["analysis_result"] = analysis_result
+        record = Mock(**kwargs, to_html=lambda: result["analysis_report"], dict=lambda: result)
         with patch(
             "featurebyte.worker.task.feature_job_setting_analysis.create_feature_job_settings_analysis",
         ) as mock_create_feature_job_settings_analysis:
@@ -121,9 +128,9 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         Apply patch to analysis result class
         """
         with patch(
-            "featurebyte.worker.task.feature_job_setting_analysis.FeatureJobSettingsAnalysisResult",
-        ) as mock_analysis_result_cls:
-            mock_analysis_result = mock_analysis_result_cls.return_value
+            "featurebyte.worker.task.feature_job_setting_analysis.FeatureJobSettingsAnalysisResult.from_dict",
+        ) as mock_analysis_result_from_dict:
+            mock_analysis_result = mock_analysis_result_from_dict.return_value
             mock_analysis_result.backtest.return_value = backtest_result
             yield
 

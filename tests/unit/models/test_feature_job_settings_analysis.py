@@ -1,8 +1,6 @@
 """
 Tests for feature job settings analysis related models
 """
-import numpy as np
-
 from featurebyte.models.feature_job_setting_analysis import MissingJobsInfo
 
 
@@ -14,8 +12,8 @@ def test_optional_values_in_missing_jobs_info():
     missing_jobs_info = {
         "late_job_index": None,
         "late_event_index": None,
-        "jobs_after_missing_jobs_index": np.array([]),
-        "affected_jobs_index": np.array([]),
+        "jobs_after_missing_jobs_index": "[]",
+        "affected_jobs_index": "[]",
         "affected_event_index": None,
         "normal_age_max": 1.0,
     }
