@@ -4,8 +4,8 @@ Tile Registry Job Script for SP_TILE_REGISTRY
 
 
 from featurebyte.logger import logger
-from featurebyte.sql.spark.common import retry_sql
-from featurebyte.sql.spark.tile_common import TileCommon
+from featurebyte.sql.common import retry_sql
+from featurebyte.sql.tile_common import TileCommon
 
 
 class TileRegistry(TileCommon):

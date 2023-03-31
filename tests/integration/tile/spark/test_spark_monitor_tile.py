@@ -6,8 +6,8 @@ from datetime import datetime
 import pytest
 
 from featurebyte.enum import InternalName
-from featurebyte.sql.spark.tile_generate import TileGenerate
-from featurebyte.sql.spark.tile_monitor import TileMonitor
+from featurebyte.sql.tile_generate import TileGenerate
+from featurebyte.sql.tile_monitor import TileMonitor
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)

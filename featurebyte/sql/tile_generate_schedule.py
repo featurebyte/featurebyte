@@ -10,11 +10,11 @@ from pydantic import Field
 
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
-from featurebyte.sql.spark.common import retry_sql
-from featurebyte.sql.spark.tile_common import TileCommon
-from featurebyte.sql.spark.tile_generate import TileGenerate
-from featurebyte.sql.spark.tile_monitor import TileMonitor
-from featurebyte.sql.spark.tile_schedule_online_store import TileScheduleOnlineStore
+from featurebyte.sql.common import retry_sql
+from featurebyte.sql.tile_common import TileCommon
+from featurebyte.sql.tile_generate import TileGenerate
+from featurebyte.sql.tile_monitor import TileMonitor
+from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 
 class TileGenerateSchedule(TileCommon):

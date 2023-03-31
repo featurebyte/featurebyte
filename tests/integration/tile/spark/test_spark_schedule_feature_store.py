@@ -6,7 +6,7 @@ from datetime import datetime
 import numpy as np
 import pytest
 
-from featurebyte.sql.spark.tile_schedule_online_store import TileScheduleOnlineStore
+from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)

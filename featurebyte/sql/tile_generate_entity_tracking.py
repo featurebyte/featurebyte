@@ -9,7 +9,7 @@ from pydantic.main import BaseModel
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
 from featurebyte.session.spark import SparkSession
-from featurebyte.sql.spark.common import construct_create_delta_table_query, retry_sql_with_cache
+from featurebyte.sql.common import construct_create_delta_table_query, retry_sql_with_cache
 
 
 class TileGenerateEntityTracking(BaseModel):

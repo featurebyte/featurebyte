@@ -7,13 +7,13 @@ import dateutil.parser
 
 from featurebyte.common import date_util
 from featurebyte.logger import logger
-from featurebyte.sql.spark.common import (
+from featurebyte.sql.common import (
     construct_create_delta_table_query,
     retry_sql,
     retry_sql_with_cache,
 )
-from featurebyte.sql.spark.tile_common import TileCommon
-from featurebyte.sql.spark.tile_registry import TileRegistry
+from featurebyte.sql.tile_common import TileCommon
+from featurebyte.sql.tile_registry import TileRegistry
 
 
 # pylint: disable=too-many-locals

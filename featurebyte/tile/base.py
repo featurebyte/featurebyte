@@ -16,10 +16,10 @@ from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.spark.tile_generate import TileGenerate
-from featurebyte.sql.spark.tile_generate_entity_tracking import TileGenerateEntityTracking
-from featurebyte.sql.spark.tile_generate_schedule import TileGenerateSchedule
-from featurebyte.sql.spark.tile_schedule_online_store import TileScheduleOnlineStore
+from featurebyte.sql.tile_generate import TileGenerate
+from featurebyte.sql.tile_generate_entity_tracking import TileGenerateEntityTracking
+from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
+from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 from featurebyte.tile.scheduler import TileScheduler
 
 
