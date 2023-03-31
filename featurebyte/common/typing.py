@@ -28,10 +28,13 @@ TimedeltaSupportedUnitType = Literal[
     "microsecond",
 ]
 
-Scalar = Union[int, float, str, bool]
+Scalar = Union[float, int, str, bool]
 OptionalScalar = Optional[Scalar]
 ScalarSequence = Sequence[Scalar]
 Numeric = Union[int, float]
+Timestamp = Union[pd.Timestamp]
+
+AllSupportedValueTypes = Union[Scalar, ScalarSequence, Timestamp]
 
 
 def is_scalar_nan(value: Any) -> bool:

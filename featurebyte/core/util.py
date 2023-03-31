@@ -3,11 +3,12 @@ util.py contains common functions used across different classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
-from featurebyte.common.typing import Scalar, ScalarSequence
+from featurebyte.common.typing import AllSupportedValueTypes, Scalar, ScalarSequence
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node.scalar import get_value_parameter
 
 if TYPE_CHECKING:
     from featurebyte.core.series import FrozenSeries, FrozenSeriesT
@@ -165,7 +166,8 @@ def series_binary_operation(
             dtype=output_var_type,
             **kwargs,
         )
-    node_params["value"] = other
+    other = cast(AllSupportedValueTypes, other)
+    node_params["value"] = get_value_parameter(other)
     node = input_series.graph.add_operation(
         node_type=node_type,
         node_params=node_params,

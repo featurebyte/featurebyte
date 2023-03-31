@@ -15,7 +15,7 @@ def make_literal_value(value: Any, cast_as_timestamp: bool = False) -> expressio
 
     Parameters
     ----------
-    value : Any
+    value : ValueParameterType
         The literal value
     cast_as_timestamp : bool
         Whether to cast the value to timestamp
@@ -36,4 +36,9 @@ def make_literal_value(value: Any, cast_as_timestamp: bool = False) -> expressio
         return expressions.Literal.string(value)
     if isinstance(value, bool):
         return expressions.Boolean(this=value)
+    if isinstance(value, dict):
+        assert value["type"] == "timestamp"
+        return expressions.Anonymous(
+            this="TO_TIMESTAMP", expressions=[expressions.Literal.string(value["iso_format_str"])]
+        )
     return expressions.Literal.number(value)

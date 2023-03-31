@@ -1111,3 +1111,46 @@ def test_numeric__invalid_dtype(bool_series, method):
     with pytest.raises(TypeError) as exc:
         _ = getattr(bool_series, method)()
     assert str(exc.value) == f"{method} is only available to numeric Series; got BOOL"
+
+
+@pytest.fixture(name="scalar_timestamp")
+def scalar_timestamp_fixture():
+    """
+    Fixture for a scalar timestamp value
+    """
+    return pd.Timestamp("2023-01-15 10:00:00")
+
+
+@pytest.mark.parametrize(
+    "series_fixture_name", ["float_series", "int_series", "bool_series", "varchar_series"]
+)
+def test_scalar_timestamp__invalid_with_wrong_type(request, series_fixture_name, scalar_timestamp):
+    """
+    Test scalar timestamp value cannot be compared with series of wrong type
+    """
+    series = request.getfixturevalue(series_fixture_name)
+    with pytest.raises(TypeError) as exc:
+        _ = series > scalar_timestamp
+    assert "Not supported operation" in str(exc.value)
+
+
+def test_scalar_timestamp__valid(timestamp_series, scalar_timestamp):
+    """
+    Test scalar timestamp value in a relational operation
+    """
+    result = timestamp_series > scalar_timestamp
+    assert result.node.parameters.value.dict() == {
+        "iso_format_str": "2023-01-15T10:00:00",
+        "type": "timestamp",
+    }
+    expected = textwrap.dedent(
+        """
+        SELECT
+          (
+            "TIMESTAMP" > TO_TIMESTAMP('2023-01-15T10:00:00')
+          )
+        FROM "db"."public"."transaction"
+        LIMIT 10
+        """
+    ).strip()
+    assert result.preview_sql() == expected

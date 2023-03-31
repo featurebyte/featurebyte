@@ -48,6 +48,7 @@ class OpsMixin:
             int: DBVarType.INT,
             float: DBVarType.FLOAT,
             str: DBVarType.VARCHAR,
+            pd.Timestamp: DBVarType.TIMESTAMP,
         }
 
     @staticmethod

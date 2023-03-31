@@ -13,7 +13,7 @@ from pydantic import Field, StrictStr
 from typeguard import typechecked
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import Scalar, ScalarSequence, is_scalar_nan
+from featurebyte.common.typing import Scalar, ScalarSequence, Timestamp, is_scalar_nan
 from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
@@ -283,7 +283,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         return self._binary_logical_op(other, NodeType.OR)
 
     def _binary_relational_op(
-        self: FrozenSeriesT, other: int | float | str | bool | FrozenSeries, node_type: NodeType
+        self: FrozenSeriesT, other: Scalar | Timestamp | FrozenSeries, node_type: NodeType
     ) -> FrozenSeriesT:
         """
         Apply binary relational operation between self & other objects
@@ -309,6 +309,9 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         supported_var_types_map = {
             DBVarType.INT: (DBVarType.INT, DBVarType.FLOAT),
             DBVarType.FLOAT: (DBVarType.INT, DBVarType.FLOAT),
+            DBVarType.DATE: (DBVarType.TIMESTAMP,),
+            DBVarType.TIMESTAMP: (DBVarType.TIMESTAMP,),
+            DBVarType.TIMESTAMP_TZ: (DBVarType.TIMESTAMP,),
         }
         supported_var_types = supported_var_types_map.get(self.dtype, (self.dtype,))
         if not self._is_a_series_of_var_type(other, supported_var_types) and (
@@ -320,31 +323,27 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
     @typechecked
-    def __eq__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
+    def __eq__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.EQ)
 
     @typechecked
-    def __ne__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
+    def __ne__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.NE)
 
     @typechecked
-    def __lt__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
+    def __lt__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.LT)
 
     @typechecked
-    def __le__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
+    def __le__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.LE)
 
     @typechecked
-    def __gt__(
-        self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]
-    ) -> FrozenSeriesT:
+    def __gt__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.GT)
 
     @typechecked
-    def __ge__(
-        self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]
-    ) -> FrozenSeriesT:
+    def __ge__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.GE)
 
     def _binary_arithmetic_op(
