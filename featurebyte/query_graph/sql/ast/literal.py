@@ -8,6 +8,7 @@ from typing import Any, cast
 from sqlglot import expressions, parse_one
 
 from featurebyte.common.typing import is_scalar_nan
+from featurebyte.query_graph.node.scalar import TimestampValue
 
 
 def make_literal_value(value: Any, cast_as_timestamp: bool = False) -> expressions.Expression:
@@ -38,7 +39,9 @@ def make_literal_value(value: Any, cast_as_timestamp: bool = False) -> expressio
         return expressions.Boolean(this=value)
     if isinstance(value, dict):
         assert value["type"] == "timestamp"
+        timestamp_value = TimestampValue(**value)
         return expressions.Anonymous(
-            this="TO_TIMESTAMP", expressions=[expressions.Literal.string(value["iso_format_str"])]
+            this="TO_TIMESTAMP",
+            expressions=[expressions.Literal.string(timestamp_value.get_isoformat_utc())],
         )
     return expressions.Literal.number(value)

@@ -1121,6 +1121,14 @@ def scalar_timestamp_fixture():
     return pd.Timestamp("2023-01-15 10:00:00")
 
 
+@pytest.fixture(name="scalar_timestamp_tz")
+def scalar_timestamp_tz_fixture():
+    """
+    Fixture for a scalar timestamp value with timezone
+    """
+    return pd.Timestamp("2023-01-15 10:00:00", tz="Asia/Singapore")
+
+
 @pytest.mark.parametrize(
     "series_fixture_name", ["float_series", "int_series", "bool_series", "varchar_series"]
 )
@@ -1148,6 +1156,28 @@ def test_scalar_timestamp__valid(timestamp_series, scalar_timestamp):
         SELECT
           (
             "TIMESTAMP" > TO_TIMESTAMP('2023-01-15T10:00:00')
+          )
+        FROM "db"."public"."transaction"
+        LIMIT 10
+        """
+    ).strip()
+    assert result.preview_sql() == expected
+
+
+def test_scalar_timestamp__with_tz(timestamp_series, scalar_timestamp_tz):
+    """
+    Test scalar timestamp value with timezone in a relational operation
+    """
+    result = timestamp_series > scalar_timestamp_tz
+    assert result.node.parameters.value.dict() == {
+        "iso_format_str": "2023-01-15T10:00:00+08:00",
+        "type": "timestamp",
+    }
+    expected = textwrap.dedent(
+        """
+        SELECT
+          (
+            "TIMESTAMP" > TO_TIMESTAMP('2023-01-15T02:00:00')
           )
         FROM "db"."public"."transaction"
         LIMIT 10

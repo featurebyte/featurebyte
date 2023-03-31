@@ -16,8 +16,13 @@ class TimestampValue(BaseModel):
 
     @classmethod
     def from_pandas_timestamp(cls, timestamp: pd.Timestamp) -> TimestampValue:
-        # TODO: normalize to UTC if timezone
         return TimestampValue(iso_format_str=timestamp.isoformat())
+
+    def get_isoformat_utc(self) -> str:
+        timestamp = pd.Timestamp(self.iso_format_str)
+        if timestamp.tz is not None:
+            timestamp = timestamp.tz_convert("UTC").tz_localize(None)
+        return timestamp.isoformat()
 
 
 ValueParameterType = Union[Scalar, ScalarSequence, TimestampValue]
