@@ -61,7 +61,7 @@ class TileGenerateEntityTracking(BaseModel):
                 escaped_entity_column_names.append(f"`{element}`")
             else:
                 entity_insert_cols.append(f'b."{element}"')
-                entity_filter_cols.append(f'a."{element}" = b."{element}"')
+                entity_filter_cols.append(f'EQUAL_NULL(a."{element}", b."{element}")')
                 escaped_entity_column_names.append(f'"{element}"')
 
         escaped_entity_column_names_str = ",".join(escaped_entity_column_names)
