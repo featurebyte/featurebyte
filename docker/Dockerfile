@@ -31,10 +31,10 @@ RUN apt-get update && \
     apt-get clean
 
 WORKDIR $USER_HOME
-COPY --from=builder /app/.venv $USER_HOME/.venv
+COPY --from=builder /app/.venv /venv
 COPY ./dist $USER_HOME/dist
-ENV PATH="${USER_HOME}/.venv/bin:${PATH}"
-RUN bash -c "source ${USER_HOME}/.venv/bin/activate; pip install --no-index -f ${USER_HOME}/dist featurebyte"  # Install featurebyte into /app/.venv
+ENV PATH="/venv/bin:${PATH}"
+RUN bash -c "source /venv/bin/activate; pip install --no-index -f ${USER_HOME}/dist featurebyte"  # Install featurebyte into /venv
 
 ## Copy script
 COPY ./docker/entrypoint.sh             /scripts/entrypoint.sh
