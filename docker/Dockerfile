@@ -1,26 +1,25 @@
 FROM python:3.8-slim AS builder
 
-ARG FEATUREBYTE_NP_PASSWORD
 ARG FEATUREBYTE_REPOSITORY=us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi
 ARG FEATUREBYTE_NP_USERNAME=_json_key_base64
+ARG FEATUREBYTE_NP_PASSWORD
 ENV FEATUREBYTE_REPOSITORY=${FEATUREBYTE_REPOSITORY?missing_repository}
-ENV POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME=${FEATUREBYTE_NP_USERNAME?missing_username}
-ENV POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD=${FEATUREBYTE_NP_PASSWORD?missing_featurebyte_serviceaccount_base64_key}
+ENV FEATUREBYTE_NP_USERNAME=${FEATUREBYTE_NP_USERNAME?missing_username}
+ENV FEATUREBYTE_NP_PASSWORD=${FEATUREBYTE_NP_PASSWORD?missing_featurebyte_serviceaccount_base64_key}
 
 # install build tools
 RUN apt-get update && \
     apt-get install -y build-essential curl libsasl2-dev && \
     apt-get clean
 
-# install poetry
-RUN pip install poetry==1.3.1
-
 WORKDIR /app
-COPY poetry.lock pyproject.toml /app/
+COPY pyproject.toml /app/
+COPY ./featurebyte /app/featurebyte
+COPY ./README.md /app/README.md
+COPY ./LICENSE /app/LICENSE
 
-# Install into .venv
-RUN poetry config virtualenvs.in-project true && \
-    poetry install --only main --extras "server" --no-interaction --no-ansi
+RUN python -m venv /opt/venv
+RUN . /opt/venv/bin/activate && pip install --extra-index-url "https://${FEATUREBYTE_NP_USERNAME}:${FEATUREBYTE_NP_PASSWORD}@${FEATUREBYTE_REPOSITORY}/simple" .[server]
 
 FROM python:3.8-slim AS runner
 
@@ -31,11 +30,8 @@ RUN apt-get update && \
     apt-get clean
 
 WORKDIR $USER_HOME
-RUN python -m venv /venv
-COPY --from=builder /app/.venv/lib /venv/lib
-COPY ./dist $USER_HOME/dist
-ENV PATH="/venv/bin:${PATH}"
-RUN bash -c "source /venv/bin/activate; pip install --no-index -f ${USER_HOME}/dist featurebyte"  # Install featurebyte into /venv
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
 
 ## Copy script
 COPY ./docker/entrypoint.sh             /scripts/entrypoint.sh
