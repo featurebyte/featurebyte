@@ -37,7 +37,7 @@ services:
     container_name: featurebyte-docs
     image: featurebyte-docs:latest
     ports:
-      - "127.0.0.1:8089:80"
+      - "0.0.0.0:8089:80"
     logging:
       driver: local
 
