@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from datetime import datetime
 
 from bson.objectid import ObjectId
-from featurebyte_freeware.feature_job_analysis.schema import AnalysisOptions, FeatureJobSetting
+from pandas import Timestamp
 from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.models.base import (
@@ -32,6 +32,48 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
     blind_spot_buffer_setting: int = Field(ge=5, le=3600 * 24 * 28, default=5)
     job_time_buffer_setting: Union[int, Literal["auto"]] = Field(default="auto")
     late_data_allowance: float = Field(gt=0, le=0.5, default=0.005 / 100)
+
+
+class AnalysisOptions(FeatureByteBaseModel):
+    """
+    Analysis options
+    """
+
+    analysis_date: Timestamp
+    analysis_start: Timestamp
+    analysis_length: int
+    blind_spot_buffer_setting: int
+    exclude_late_job: bool
+    job_time_buffer_setting: Union[int, Literal["auto"]]
+    late_data_allowance: float
+    min_featurejob_period: int
+
+
+class AnalysisParameters(FeatureByteBaseModel):
+    """
+    Analysis parameters
+    """
+
+    event_table_name: str
+    creation_date_column: str
+    event_timestamp_column: str
+    blind_spot_buffer: int
+    job_time_buffer: int
+    frequency: int
+    granularity: int
+    reading_at: int
+    job_time_modulo_frequency: int
+
+
+class FeatureJobSetting(FeatureByteBaseModel):
+    """
+    Feature Job Setting
+    """
+
+    frequency: int
+    job_time_modulo_frequency: int
+    blind_spot: int
+    feature_cutoff_modulo_frequency: int
 
 
 class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):

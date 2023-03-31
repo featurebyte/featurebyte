@@ -3,29 +3,9 @@ This module contains FeatureJobSettingAnalysis related models
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple
 
-import json
-
-import numpy as np
-import numpy.typing as npt
-import pandas as pd
-from featurebyte_freeware.feature_job_analysis.schema import AnalysisData as BaseAnalysisData
-from featurebyte_freeware.feature_job_analysis.schema import (
-    AnalysisOptions,
-    AnalysisParameters,
-    AnalysisPlots,
-)
-from featurebyte_freeware.feature_job_analysis.schema import BacktestResult as BaseBacktestResult
-from featurebyte_freeware.feature_job_analysis.schema import (
-    BlindSpotSearchResult as BaseBlindSpotSearchResult,
-)
-from featurebyte_freeware.feature_job_analysis.schema import (
-    EventLandingTimeResult as BaseEventLandingTimeResult,
-)
-from featurebyte_freeware.feature_job_analysis.schema import FeatureJobSetting
-from featurebyte_freeware.feature_job_analysis.schema import MissingJobsInfo as BaseMissingJobsInfo
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
@@ -34,6 +14,24 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.schema.feature_job_setting_analysis import (
+    AnalysisOptions,
+    AnalysisParameters,
+    FeatureJobSetting,
+)
+
+
+class BlindSpotSearchResult(BaseModel):
+    """
+    BlindSpotSearchResult with support for json deserialization
+    """
+
+    pct_late_data: float
+    optimal_blind_spot: int
+    results: str
+    plot: str
+    thresholds: List[Tuple[float, int]]
+    warnings: List[str]
 
 
 class AnalysisResult(FeatureByteBaseModel):
@@ -43,6 +41,17 @@ class AnalysisResult(FeatureByteBaseModel):
 
     stats_on_wh_jobs: Dict[str, Any]
     recommended_feature_job_setting: FeatureJobSetting
+
+
+class AnalysisPlots(BaseModel):
+    """
+    Analysis plots
+    """
+
+    wh_job_time_modulo_frequency_hist: Dict[str, Any]
+    wh_intervals_hist: Optional[Dict[str, Any]]
+    wh_intervals_exclude_missing_jobs_hist: Optional[Dict[str, Any]]
+    affected_jobs_record_age: Optional[Dict[str, Any]]
 
 
 class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
@@ -71,70 +80,26 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
         ]
 
 
-class NumpyEncoder(json.JSONEncoder):
-    """Special json encoder for numpy types"""
-
-    def default(self, obj: Any) -> Any:  # pylint: disable=arguments-renamed
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
-
-
-class DataFrameResultsMixin(BaseModel):
+class BacktestResult(BaseModel):
     """
-    Handle conversion of json to DataFrame in results field
+    Backtest result
     """
 
-    results: pd.DataFrame
-
-    class Config:
-        """
-        Config for pydantic model
-        """
-
-        arbitrary_types_allowed: bool = True
-
-    @validator("results", pre=True)
-    @classmethod
-    def convert_to_dataframe(cls, value: Any) -> pd.DataFrame:
-        """
-        Convert json to DataFrame
-
-        Parameters
-        ----------
-        value: Any
-            value to be converted
-
-        Returns
-        -------
-        DataFrame
-            DataFrame object
-        """
-        if isinstance(value, str):
-            return pd.read_json(value)
-        return value
+    results: str
+    job_with_issues_count: int
+    warnings: List[str]
+    plot: Optional[str]
 
 
-class BlindSpotSearchResult(DataFrameResultsMixin, BaseBlindSpotSearchResult):
-    """
-    BlindSpotSearchResult with support for json deserialization
-    """
-
-
-class EventLandingTimeResult(DataFrameResultsMixin, BaseEventLandingTimeResult):
+class EventLandingTimeResult(BaseModel):
     """
     EventLandingTimeResult with support for json deserialization
     """
 
-
-class BacktestResult(DataFrameResultsMixin, BaseBacktestResult):
-    """
-    BacktestResult with support for json deserialization
-    """
+    results: str
+    plot: str
+    thresholds: List[Tuple[int, float, int]]
+    warnings: List[str]
 
 
 class AnalysisResultsData(BaseModel):
@@ -148,88 +113,27 @@ class AnalysisResultsData(BaseModel):
     backtest_result: BacktestResult
 
 
-class MissingJobsInfo(BaseMissingJobsInfo):
+class MissingJobsInfo(BaseModel):
     """
     MissingJobsInfo with support for json deserialization
     """
 
-    late_job_index: Optional[npt.NDArray[Any]]
-    late_event_index: Optional[pd.Series]
-    jobs_after_missing_jobs_index: npt.NDArray[Any]
-    affected_jobs_index: npt.NDArray[Any]
-    affected_event_index: Optional[pd.Series]
-
-    @validator("late_job_index", "jobs_after_missing_jobs_index", "affected_jobs_index", pre=True)
-    @classmethod
-    def convert_to_ndarray(
-        cls, value: Optional[Union[npt.NDArray[Any], str]]
-    ) -> Optional[npt.NDArray[Any]]:
-        """
-        Convert json to ndarray
-
-        Parameters
-        ----------
-        value: Any
-            value to be converted
-
-        Returns
-        -------
-        Optional[npt.NDArray[Any]]
-            NDArray object
-        """
-        if isinstance(value, str):
-            return np.array(json.loads(value))
-        return value
-
-    @validator("late_event_index", "affected_event_index", pre=True)
-    @classmethod
-    def convert_to_series(cls, value: Optional[Union[pd.Series, str]]) -> Optional[pd.Series]:
-        """
-        Convert json to Series
-
-        Parameters
-        ----------
-        value: Any
-            value to be converted
-
-        Returns
-        -------
-        Optional[pd.Series]
-            Series object
-        """
-        if isinstance(value, str):
-            return pd.Series(json.loads(value))
-        return value
+    normal_age_max: float
+    late_job_index: Optional[str]
+    late_event_index: Optional[str]
+    jobs_after_missing_jobs_index: str
+    affected_jobs_index: str
+    affected_event_index: Optional[str]
 
 
-class AnalysisData(BaseAnalysisData):
+class AnalysisData(BaseModel):
     """
     Analysis Data with support for json serialization
     """
 
-    count_data: pd.DataFrame
-    count_per_creation_date: pd.DataFrame
+    count_data: str
+    count_per_creation_date: str
     missing_jobs_info: MissingJobsInfo
-
-    @validator("count_data", "count_per_creation_date", pre=True)
-    @classmethod
-    def convert_to_dataframe(cls, value: Any) -> pd.DataFrame:
-        """
-        Convert json to DataFrame
-
-        Parameters
-        ----------
-        value: Any
-            value to be converted
-
-        Returns
-        -------
-        DataFrame
-            DataFrame object
-        """
-        if isinstance(value, str):
-            return pd.read_json(value)
-        return value
 
 
 class FeatureJobSettingAnalysisData(BaseModel):
@@ -240,16 +144,3 @@ class FeatureJobSettingAnalysisData(BaseModel):
     analysis_plots: Optional[AnalysisPlots]
     analysis_data: Optional[AnalysisData]
     analysis_result: AnalysisResultsData
-
-    class Config:
-        """
-        Config for pydantic model
-        """
-
-        arbitrary_types_allowed: bool = True
-        # With this mapping, `ObjectId` type attribute is converted to string during json serialization.
-        json_encoders = {
-            pd.DataFrame: lambda df: df.to_json(),
-            pd.Series: lambda series: series.to_json(),
-            np.ndarray: lambda data: json.dumps(data, cls=NumpyEncoder),
-        }

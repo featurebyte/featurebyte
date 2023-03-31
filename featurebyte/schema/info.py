@@ -7,7 +7,6 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
-from featurebyte_freeware.feature_job_analysis.schema import AnalysisOptions, AnalysisParameters
 from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.enum import DBVarType, SourceType
@@ -31,6 +30,7 @@ from featurebyte.schema.feature import (
     TableFeatureJobSettingComparison,
     VersionComparison,
 )
+from featurebyte.schema.feature_job_setting_analysis import AnalysisOptions, AnalysisParameters
 from featurebyte.schema.feature_list import ProductionReadyFractionComparison
 
 
