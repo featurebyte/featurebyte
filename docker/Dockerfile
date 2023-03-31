@@ -31,7 +31,8 @@ RUN apt-get update && \
     apt-get clean
 
 WORKDIR $USER_HOME
-COPY --from=builder /app/.venv /venv
+RUN python -m venv /venv
+COPY --from=builder /app/.venv/lib /venv/lib
 COPY ./dist $USER_HOME/dist
 ENV PATH="/venv/bin:${PATH}"
 RUN bash -c "source /venv/bin/activate; pip install --no-index -f ${USER_HOME}/dist featurebyte"  # Install featurebyte into /venv
