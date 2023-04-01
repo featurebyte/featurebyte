@@ -1,6 +1,9 @@
+"""
+Models for the value parameter used by SingleValueNodeParameters
+"""
 from __future__ import annotations
 
-from typing import Literal, Union
+from typing import Literal, Union, cast
 
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -16,13 +19,32 @@ class TimestampValue(BaseModel):
 
     @classmethod
     def from_pandas_timestamp(cls, timestamp: pd.Timestamp) -> TimestampValue:
+        """
+        Create a TimestampValue from a pandas timestamp.
+
+        Parameters
+        ----------
+        timestamp: pd.Timestamp
+            The pandas timestamp
+
+        Returns
+        -------
+        TimestampValue
+        """
         return TimestampValue(iso_format_str=timestamp.isoformat())
 
     def get_isoformat_utc(self) -> str:
+        """
+        Get the isoformat string in UTC but with timezone removed, if any.
+
+        Returns
+        -------
+        str
+        """
         timestamp = pd.Timestamp(self.iso_format_str)
         if timestamp.tz is not None:
             timestamp = timestamp.tz_convert("UTC").tz_localize(None)
-        return timestamp.isoformat()
+        return cast(str, timestamp.isoformat())
 
 
 ValueParameterType = Union[Scalar, ScalarSequence, TimestampValue]
@@ -30,7 +52,7 @@ ValueParameterType = Union[Scalar, ScalarSequence, TimestampValue]
 
 def get_value_parameter(sdk_provided_value: AllSupportedValueTypes) -> ValueParameterType:
     """
-    Returns the value parameter to be used in the query graph
+    Returns the value parameter to be used in the query graph.
 
     Parameters
     ----------
