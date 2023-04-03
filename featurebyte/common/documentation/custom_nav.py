@@ -38,6 +38,7 @@ class BetaWave3Nav(Nav):
         "Add Metadata",
         "Join",
         "Transform",
+        "Lags",
         "Serve",
         "Explore",
         "Info",
