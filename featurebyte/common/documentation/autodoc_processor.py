@@ -3,22 +3,14 @@ Autodoc Processor
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
-<<<<<<< HEAD
-=======
-import importlib
-import inspect
-import os
->>>>>>> 472f8a78 (add replace version mode)
 import re
+from typing import Any, List, Optional
 from xml.etree import ElementTree as etree
 
 from markdown import Markdown
 from mkautodoc.extension import AutoDocProcessor, last_iter
 from pydantic import BaseModel
 
-from featurebyte import version
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.resource_extractor import (
     ResourceDetails,
@@ -27,19 +19,6 @@ from featurebyte.common.documentation.resource_extractor import (
 from featurebyte.common.documentation.util import _filter_none_from_list
 
 NONE_TYPES = [None, "NoneType"]
-REPLACE_VERSION_MODE = os.environ.get("FB_DOCS_REPLACE_VERSION", False)
-
-
-def get_docs_version():
-    """
-    Get docs version. This returns the major.minor version of featurebyte.
-
-    Returns
-    -------
-    str
-        Docs version
-    """
-    return version.rsplit(".", 1)[0]
 
 
 class ParameterDetails(BaseModel):

@@ -1,10 +1,27 @@
 """
 Reused types
 """
+import os
 from typing import Optional
 
 from docstring_parser import DocstringMeta
 from docstring_parser.common import Docstring as BaseDocstring
+
+from featurebyte import version
+
+REPLACE_VERSION_MODE = os.environ.get("FB_DOCS_REPLACE_VERSION", False)
+
+
+def get_docs_version():
+    """
+    Get docs version. This returns the major.minor version of featurebyte.
+
+    Returns
+    -------
+    str
+        Docs version
+    """
+    return version.rsplit(".", 1)[0]
 
 
 class Docstring(BaseDocstring):
@@ -29,4 +46,12 @@ class Docstring(BaseDocstring):
         if not see_also:
             return None
         assert len(see_also) == 1
-        return see_also[0]
+        see_also_item = see_also[0]
+        description = see_also_item.description
+        if description is not None and REPLACE_VERSION_MODE:
+            # Replace the reference link with the versioned link
+            description = description.replace("/reference", f"/{get_docs_version()}/reference")
+        return DocstringMeta(
+            args=see_also_item.args,
+            description=description,
+        )
