@@ -3,51 +3,22 @@ Autodoc Processor
 """
 from __future__ import annotations
 
-from typing import Any, ForwardRef, List, Literal, Optional, TypeVar, get_type_hints
+from typing import Any, List, Literal, Optional
 
 import importlib
 import inspect
 import re
-from enum import Enum
 from xml.etree import ElementTree as etree
 
-from docstring_parser import parse
-from docstring_parser.common import Docstring as BaseDocstring
-from docstring_parser.common import DocstringExample, DocstringMeta, DocstringReturns
 from markdown import Markdown
-from mkautodoc.extension import AutoDocProcessor, import_from_string, last_iter, trim_docstring
+from mkautodoc.extension import AutoDocProcessor, import_from_string, last_iter
 from pydantic import BaseModel
-from pydantic.fields import ModelField, Undefined
 
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.documentation.resource_extractor import get_resource_details
+from featurebyte.common.documentation.util import _filter_none_from_list
 
-EMPTY_VALUE = inspect._empty
 NONE_TYPES = [None, "NoneType"]
-
-
-class Docstring(BaseDocstring):
-    """
-    Docstring with extended support
-    """
-
-    def __init__(self, docstring: BaseDocstring) -> None:
-        self.__dict__ = docstring.__dict__
-
-    @property
-    def see_also(self) -> Optional[DocstringMeta]:
-        """
-        Return a list of information on function see also.
-
-        Returns
-        -------
-        Optional[DocstringMeta]
-            See also information
-        """
-        see_also = [item for item in self.meta if item.args == ["see_also"]]
-        if not see_also:
-            return None
-        assert len(see_also) == 1
-        return see_also[0]
 
 
 def import_resource(resource_descriptor: str) -> Any:
@@ -73,60 +44,6 @@ def import_resource(resource_descriptor: str) -> Any:
     except:
         return resource
     return getattr(module, resource.__name__)
-
-
-def get_params(
-    signature: inspect.Signature, type_hints: dict[str, Any]
-) -> List[tuple[str, Any, Any]]:
-    """
-    Extract parameter details from signature and type hints
-
-    Parameters
-    ----------
-    signature: inspect.Signature
-        Signature object
-    type_hints: dict[str, Any])
-        Dictionary of type hints
-
-    Returns
-    -------
-    List[tuple[str, Any, Any]]
-        List of parameter name, type and default value
-    """
-    params = []
-    render_pos_only_separator = True
-    render_kw_only_separator = True
-
-    for i, parameter in enumerate(signature.parameters.values()):
-
-        # skip self and cls in first position
-        if i == 0 and parameter.name in ["self", "cls"]:
-            continue
-
-        # skip parameters that starts with underscore
-        if parameter.name.startswith("_") or parameter.name.startswith("*"):
-            continue
-
-        value = parameter.name
-        default = EMPTY_VALUE
-        if parameter.default is not parameter.empty:
-            default = parameter.default
-
-        if parameter.kind is parameter.VAR_POSITIONAL:
-            render_kw_only_separator = False
-            value = f"*{value}"
-        elif parameter.kind is parameter.VAR_KEYWORD:
-            value = f"**{value}"
-        elif parameter.kind is parameter.POSITIONAL_ONLY:
-            if render_pos_only_separator:
-                render_pos_only_separator = False
-                params.append(("/", None, None))
-        elif parameter.kind is parameter.KEYWORD_ONLY:
-            if render_kw_only_separator:
-                render_kw_only_separator = False
-                params.append(("*", None, None))
-        params.append((value, type_hints.get(parameter.name, Undefined), default))  # type: ignore[arg-type]
-    return params
 
 
 class ParameterDetails(BaseModel):
@@ -197,141 +114,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
         self._md = Markdown(extensions=self.md.registeredExtensions)
 
     @staticmethod
-    def get_params_from_signature(resource: Any) -> tuple[List[Any], Any]:
-        """
-        Get parameters from function signature
-
-        Parameters
-        ----------
-        resource: Any
-            Resource to inspect
-
-        Returns
-        -------
-        tuple[List[Any], Any]
-            List of parameters and return type
-        """
-        if callable(resource):
-            try:
-                if inspect.isclass(resource) and "__init__" in resource.__dict__:
-                    type_hints = get_type_hints(resource.__init__)
-                else:
-                    type_hints = get_type_hints(resource)
-            except (NameError, TypeError, AttributeError):
-                type_hints = {}
-            try:
-                signature = inspect.signature(resource)
-                parameters = get_params(signature, type_hints)
-            except ValueError:
-                parameters = []
-            return parameters, type_hints.get("return", Undefined)
-
-        elif isinstance(resource, ModelField):
-            return [], resource.annotation
-
-        return [], type(resource)
-
-    @staticmethod
-    def format_literal(value: Any) -> Optional[str]:
-        """
-        Format a literal value for display in documentation
-
-        Parameters
-        ----------
-        value: Any
-            Value to format
-
-        Returns
-        -------
-        Optional[str]
-            Formatted value
-        """
-        if value == EMPTY_VALUE:
-            return None
-        if isinstance(value, (str, Enum)):
-            return f'"{value}"'
-        return str(value)
-
-    @staticmethod
-    def _filter_none_from_list(input_list: List[Optional[Any]]) -> List[Any]:
-        return [item for item in input_list if item is not None]
-
-    def format_param_type(self, param_type: Any) -> Optional[str]:
-        """
-        Format parameter type and add reference if available
-
-        Parameters
-        ----------
-        param_type: Any
-            Parameter type
-
-        Returns
-        -------
-        Optional[str]
-            Formatted parameter type
-        """
-
-        def _get_param_type_str(param_type: Any) -> Optional[str]:
-            if param_type == Undefined:
-                return None
-            if isinstance(param_type, TypeVar):
-                # TypeVar spoofs the module
-                return param_type.__name__
-            if isinstance(param_type, ForwardRef):
-                return param_type.__forward_arg__
-            if getattr(param_type, "__module__", None) == "typing":
-                return str(param_type)
-            if not inspect.isclass(param_type):
-                # non-class object
-                return self.format_literal(param_type)
-
-            # regular class
-            module_str = getattr(param_type, "__module__", None)
-            return f"{module_str}.{param_type.__name__}"
-
-        def _clean(type_class_path: str) -> str:
-            parts = type_class_path.split(",")
-            if len(parts) > 1:
-                formatted = [_format(part.strip()) for part in parts]
-                filtered_list = FBAutoDocProcessor._filter_none_from_list(formatted)
-                return ", ".join(filtered_list)
-            parts = type_class_path.split(".")
-            if parts[-1]:
-                object_name = parts[-1]
-                if "#" in object_name:
-                    object_name = object_name.split("#")[-1]
-                return object_name
-            return type_class_path
-
-        def _format(type_str: Optional[str]) -> Optional[str]:
-            if not type_str:
-                return type_str
-            parts = type_str.split("[")
-            if len(parts) == 1:
-                return _clean(type_str)
-            outer_left = _clean(parts.pop(0))
-            type_str = "[".join(parts)
-            parts = type_str.split("]")
-            outer_right = parts.pop()
-            type_str = "]".join(parts)
-            return f"{outer_left}[{_format(type_str)}]{outer_right}"
-
-        # check if type as subtypes
-        module = getattr(param_type, "__module__", None)
-        subtypes = getattr(param_type, "__args__", None)
-        if module == "typing" and subtypes:
-            if str(param_type).startswith("typing.Optional"):
-                # __args__ attribute of Optional always includes NoneType as last element
-                # which is redundant for documentation
-                subtypes = subtypes[:-1]
-            formatted_params = [self.format_param_type(subtype) for subtype in subtypes]
-            filtered_formatted_params = FBAutoDocProcessor._filter_none_from_list(formatted_params)
-            inner_str = ", ".join(filtered_formatted_params)
-            param_type_str = str(param_type)
-            return _clean(param_type_str.split("[", maxsplit=1)[0]) + "[" + inner_str + "]"
-        return _format(_get_param_type_str(param_type))
-
-    @staticmethod
     def insert_param_type(elem: etree.Element, param_type_str: Optional[str]) -> None:
         if param_type_str:
             colon_elem = etree.SubElement(elem, "span")
@@ -340,172 +122,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
             type_elem = etree.SubElement(elem, "em")
             type_elem.text = param_type_str
             type_elem.set("class", "autodoc-type")
-
-    def get_resource_details(self, resource_descriptor: str) -> ResourceDetails:
-        """
-        Get details about a resource to be documented
-
-        Parameters
-        ----------
-        resource_descriptor: str
-            Fully qualified path to a resource
-
-        Returns
-        -------
-        ResourceDetails
-        """
-        # import resource
-        parts = resource_descriptor.split("#")
-        if len(parts) > 1:
-            proxy_path = parts.pop(-1)
-            resource_descriptor = parts[0]
-        else:
-            proxy_path = None
-
-        parts = resource_descriptor.split("::")
-        if len(parts) > 1:
-            # class member
-            resource_name = parts.pop(-1)
-            resource_realname = resource_name
-            class_descriptor = ".".join(parts)
-            resource_class = import_resource(class_descriptor)
-            resource_path = class_descriptor
-            class_fields = getattr(resource_class, "__fields__", None)
-            resource = getattr(resource_class, resource_name, EMPTY_VALUE)
-            if resource == EMPTY_VALUE:
-                # pydantic field
-                resource = class_fields[resource_name]  # type: ignore[index]
-                resource_type = "property"
-            else:
-                resource_type = "method" if callable(resource) else "property"
-                # for class property get the signature from the getter function
-                if isinstance(resource, property):
-                    resource = resource.fget
-
-                # get actual classname and name of the resource
-                try:
-                    resource_classname, resource_realname = resource.__qualname__.split(  # type: ignore[union-attr]
-                        ".", maxsplit=1
-                    )
-                    resource_path = f"{resource.__module__}.{resource_classname}"
-                except AttributeError:
-                    pass
-            base_classes = None
-            method_type = "async" if inspect.iscoroutinefunction(resource) else None
-        else:
-            # class
-            resource_name = resource_descriptor.split(".")[-1]
-            resource_class = import_resource(resource_descriptor)
-            resource = resource_class
-            resource_realname = resource.__name__
-            resource_path = resource.__module__
-            resource_type = "class"
-            base_classes = [self.format_param_type(base_class) for base_class in resource.__bases__]
-            method_type = None
-
-        # use proxy class if specified
-        autodoc_config = resource_class.__dict__.get("__fbautodoc__", FBAutoDoc())
-        if autodoc_config:
-            proxy_path = autodoc_config.proxy_class
-
-        # process signature
-        parameters, return_type = self.get_params_from_signature(resource)
-
-        # process docstring
-        docs = trim_docstring(getattr(resource, "__doc__", ""))
-        docstring = Docstring(parse(docs))
-
-        # get parameter description from docstring
-        short_description = docstring.short_description
-        if getattr(resource, "field_info", None):
-            short_description = resource.field_info.description
-
-        parameters_desc = (
-            {param.arg_name: param.description for param in docstring.params if param.description}
-            if docstring.params
-            else {}
-        )
-
-        # get raises
-        raises = []
-        for exc_type in docstring.raises:
-            raises.append(
-                ExceptionDetails(
-                    type=exc_type.type_name,
-                    description=exc_type.description,
-                )
-            )
-
-        def _format_example(example: DocstringExample) -> str:
-            """
-            Clean doctest comments from snippets
-
-            Parameters
-            ----------
-            example: DocstringExample
-                Docstring example
-
-            Returns
-            -------
-            str
-            """
-            content = []
-            snippet = None
-            if example.snippet:
-                snippet = re.sub(r" +# doctest: .*", "", example.snippet)
-
-            if example.description:
-                # docstring_parser parses lines without >>> prefix as description.
-                # The following logic extracts lines that follows a snippet but preceding an empty line
-                # as part of the snippet, which will be rendered in a single code block,
-                # consistent with the expected behavior for examples in the numpy docstring format
-                parts = example.description.split("\n\n", maxsplit=1)
-                if snippet and len(parts) > 0:
-                    snippet += f"\n{parts.pop(0)}"
-                content.append("\n\n".join(parts))
-
-            if snippet:
-                content.insert(0, f"\n```pycon\n{snippet}\n```")
-
-            return "\n".join(content)
-
-        def _get_return_param_details(
-            docstring_returns: Optional[DocstringReturns], return_type_from_signature: Any
-        ) -> ParameterDetails:
-            current_return_type = self.format_param_type(return_type_from_signature)
-            if not current_return_type and docstring_returns:
-                current_return_type = docstring_returns.type_name
-            return ParameterDetails(
-                name=docstring_returns.return_name if docstring_returns else None,
-                type=current_return_type,
-                default=None,
-                description=docstring_returns.description if docstring_returns else None,
-            )
-
-        return ResourceDetails(
-            name=resource_name,
-            realname=resource_realname,
-            path=resource_path,
-            proxy_path=proxy_path,
-            type=resource_type,
-            base_classes=base_classes,
-            method_type=method_type,
-            short_description=short_description,
-            long_description=docstring.long_description,
-            parameters=[
-                ParameterDetails(
-                    name=param_name,
-                    type=self.format_param_type(param_type),
-                    default=self.format_literal(param_default),
-                    description=parameters_desc.get(param_name),
-                )
-                for param_name, param_type, param_default in parameters
-            ],
-            returns=_get_return_param_details(docstring.returns, return_type),
-            raises=raises,
-            examples=[_format_example(example) for example in docstring.examples],
-            see_also=docstring.see_also.description if docstring.see_also else None,
-        )
 
     def render_signature(self, elem: etree.Element, resource_details: ResourceDetails) -> None:
         """
@@ -624,7 +240,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             autodoc_div.set("class", "autodoc")
 
             # extract information about the resource
-            resource_details = self.get_resource_details(resource_descriptor)
+            resource_details = get_resource_details(resource_descriptor)
             path = resource_details.proxy_path or resource_details.path
             title_elem.text = ".".join([path, resource_details.name])
 
@@ -755,7 +371,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 [
                     _render_list_item_with_multiple_paragraphs(
                         exc_type.type,
-                        FBAutoDocProcessor._filter_none_from_list([exc_type.description]),
+                        _filter_none_from_list([exc_type.description]),
                     )
                     for exc_type in resource_details.raises
                 ]
@@ -808,7 +424,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
         property_resource_details = []
 
         for attribute_name in members:
-            member_resource_details = self.get_resource_details(
+            member_resource_details = get_resource_details(
                 f"{resource_details.path}.{resource_details.name}::{attribute_name}"
             )
             if member_resource_details.type == "method":
