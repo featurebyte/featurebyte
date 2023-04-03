@@ -7,6 +7,7 @@ from typing import Any, Literal, Optional, Sequence, Type, Union, cast
 
 import pandas as pd
 from pandas.api.types import is_scalar
+from pydantic import StrictFloat, StrictInt, StrictStr
 
 DatetimeSupportedPropertyType = Literal[
     "year",
@@ -28,10 +29,13 @@ TimedeltaSupportedUnitType = Literal[
     "microsecond",
 ]
 
-Scalar = Union[int, float, str, bool]
+Scalar = Union[StrictInt, StrictFloat, StrictStr, bool]
 OptionalScalar = Optional[Scalar]
 ScalarSequence = Sequence[Scalar]
-Numeric = Union[int, float]
+Numeric = Union[StrictInt, StrictFloat]
+Timestamp = Union[pd.Timestamp]
+
+AllSupportedValueTypes = Union[Scalar, ScalarSequence, Timestamp]
 
 
 def is_scalar_nan(value: Any) -> bool:

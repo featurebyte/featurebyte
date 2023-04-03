@@ -732,7 +732,7 @@ class Feature(
         >>> new_feature.info()["table_cleaning_operation"]
         {'this': [{'table_name': 'GROCERYINVOICE',
            'column_cleaning_operations': [{'column_name': 'Amount',
-             'cleaning_operations': [{'imputed_value': 0, 'type': 'missing'}]}]}],
+             'cleaning_operations': [{'imputed_value': 0.0, 'type': 'missing'}]}]}],
          'default': []}
 
         Check the tables used by this feature first:

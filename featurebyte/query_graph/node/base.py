@@ -28,6 +28,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameStr,
     VarNameExpressionStr,
 )
+from featurebyte.query_graph.node.scalar import ValueParameterType
 
 NODE_TYPES = []
 NodeT = TypeVar("NodeT", bound="BaseNode")
@@ -552,7 +553,7 @@ class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
 class SingleValueNodeParameters(BaseNodeParameters):
     """SingleValueNodeParameters"""
 
-    value: Optional[Any]
+    value: Optional[ValueParameterType]
 
 
 class ValueWithRightOpNodeParameters(SingleValueNodeParameters):

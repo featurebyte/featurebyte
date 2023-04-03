@@ -865,6 +865,53 @@ def check_datetime_operations(event_view, column_name, limit=100):
     )
 
 
+def test_datetime_comparison__fixed_timestamp_non_tz(event_view, source_type):
+    """Test datetime comparison with a fixed timestamp (non-tz)"""
+
+    timestamp_column = "ËVENT_TIMESTAMP"
+
+    # Fixed timestamp without timezone - assumed to be in UTC
+    fixed_timestamp_non_tz = pd.Timestamp("2001-01-15 10:00:00")
+    event_view["result"] = event_view[timestamp_column] > fixed_timestamp_non_tz
+
+    df = event_view.preview(limit=100)
+
+    if source_type == "snowflake":
+        # Convert to UTC and remove timezone to allow comparison with the fixed timestamp
+        timestamp_series = df[timestamp_column].apply(
+            lambda x: x.tz_convert("UTC").tz_localize(None)
+        )
+    else:
+        # Spark returns timestamp converted to UTC and without timezone
+        timestamp_series = df[timestamp_column]
+
+    expected = timestamp_series > fixed_timestamp_non_tz
+
+    pd.testing.assert_series_equal(df["result"], expected, check_names=False)
+
+
+def test_datetime_comparison__fixed_timestamp_tz(event_view, source_type):
+    """Test datetime comparison with a fixed timestamp (tz-aware)"""
+
+    timestamp_column = "ËVENT_TIMESTAMP"
+
+    fixed_timestamp_with_tz = pd.Timestamp("2001-01-15 10:00:00+08:00")
+    event_view["result"] = event_view[timestamp_column] > fixed_timestamp_with_tz
+
+    df = event_view.preview(limit=100)
+
+    if source_type == "snowflake":
+        fixed_timestamp = fixed_timestamp_with_tz
+    else:
+        # Spark returns timestamp converted to UTC and without timezone. To allow comparison,
+        # convert the fixed timestamp to UTC and remove timezone.
+        fixed_timestamp = fixed_timestamp_with_tz.tz_convert("UTC").tz_localize(None)
+
+    expected = df[timestamp_column] > fixed_timestamp
+
+    pd.testing.assert_series_equal(df["result"], expected, check_names=False)
+
+
 def check_cast_operations(event_view, source_type, limit=100):
     """Check casting operations"""
     event_view = event_view.copy()

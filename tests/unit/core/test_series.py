@@ -1111,3 +1111,101 @@ def test_numeric__invalid_dtype(bool_series, method):
     with pytest.raises(TypeError) as exc:
         _ = getattr(bool_series, method)()
     assert str(exc.value) == f"{method} is only available to numeric Series; got BOOL"
+
+
+@pytest.fixture(name="scalar_timestamp")
+def scalar_timestamp_fixture():
+    """
+    Fixture for a scalar timestamp value
+    """
+    return pd.Timestamp("2023-01-15 10:00:00")
+
+
+@pytest.fixture(name="scalar_timestamp_tz")
+def scalar_timestamp_tz_fixture():
+    """
+    Fixture for a scalar timestamp value with timezone
+    """
+    return pd.Timestamp("2023-01-15 10:00:00", tz="Asia/Singapore")
+
+
+@pytest.mark.parametrize(
+    "series_fixture_name", ["float_series", "int_series", "bool_series", "varchar_series"]
+)
+def test_scalar_timestamp__invalid_with_wrong_type(request, series_fixture_name, scalar_timestamp):
+    """
+    Test scalar timestamp value cannot be compared with series of wrong type
+    """
+    series = request.getfixturevalue(series_fixture_name)
+    with pytest.raises(TypeError) as exc:
+        _ = series > scalar_timestamp
+    assert "Not supported operation" in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    "op_func, expected_operator_str",
+    [
+        (lambda s, ts_value: s > ts_value, ">"),
+        (lambda s, ts_value: s >= ts_value, ">="),
+        (lambda s, ts_value: s < ts_value, "<"),
+        (lambda s, ts_value: s <= ts_value, "<="),
+        (lambda s, ts_value: s == ts_value, "="),
+        (lambda s, ts_value: s != ts_value, "<>"),
+    ],
+)
+def test_scalar_timestamp__valid(
+    timestamp_series, scalar_timestamp, op_func, expected_operator_str
+):
+    """
+    Test scalar timestamp value in a relational operation
+    """
+    result = op_func(timestamp_series, scalar_timestamp)
+    assert result.node.parameters.value.dict() == {
+        "iso_format_str": "2023-01-15T10:00:00",
+        "type": "timestamp",
+    }
+    expected = textwrap.dedent(
+        f"""
+        SELECT
+          (
+            "TIMESTAMP" {expected_operator_str} TO_TIMESTAMP('2023-01-15T10:00:00')
+          )
+        FROM "db"."public"."transaction"
+        LIMIT 10
+        """
+    ).strip()
+    assert result.preview_sql() == expected
+
+
+def test_scalar_timestamp__with_tz(timestamp_series, scalar_timestamp_tz):
+    """
+    Test scalar timestamp value with timezone in a relational operation
+    """
+    result = timestamp_series > scalar_timestamp_tz
+    assert result.node.parameters.value.dict() == {
+        "iso_format_str": "2023-01-15T10:00:00+08:00",
+        "type": "timestamp",
+    }
+    expected = textwrap.dedent(
+        """
+        SELECT
+          (
+            "TIMESTAMP" > TO_TIMESTAMP('2023-01-15T02:00:00')
+          )
+        FROM "db"."public"."transaction"
+        LIMIT 10
+        """
+    ).strip()
+    assert result.preview_sql() == expected
+
+
+def test_scalar_timestamp__invalid(timestamp_series, scalar_timestamp):
+    """
+    Test scalar timestamp value is not allowed in a non-relational operation
+    """
+    with pytest.raises(TypeError) as exc:
+        _ = timestamp_series - scalar_timestamp
+    assert (
+        'type of argument "other" must be one of (int, float, featurebyte.core.series.FrozenSeries)'
+        in str(exc.value)
+    )

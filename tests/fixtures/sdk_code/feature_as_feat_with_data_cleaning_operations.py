@@ -12,7 +12,7 @@ item_view = item_table.get_view(
     column_cleaning_operations=[
         ColumnCleaningOperation(
             column_name="item_amount",
-            cleaning_operations=[MissingValueImputation(imputed_value=0)],
+            cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
         )
     ],
     event_drop_column_names=["created_at"],
