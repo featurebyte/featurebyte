@@ -3,7 +3,6 @@
 tests
 Makefile
 __pycache__
-README.md
 setup.cfg
 scripts
 pytest.xml

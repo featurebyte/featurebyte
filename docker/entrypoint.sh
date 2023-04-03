@@ -19,18 +19,17 @@ setup_permissions() {
   echo "Running script as HOST_UID:HOST_GID $(id -u):$(id -g)"
 
   if [ "$(id -u)" = '0' ]; then
-    echo "Creating user runner:runnergroup (uid:gid ${HOST_UID}:${HOST_GID})"
-    if [ "$(getent group runnergroup)" ]; then
-      echo "group exists."
+    echo "Modifying user id/group id for runner/runnergroup (uid:gid ${HOST_UID}:${HOST_GID})"
+    if [ "$HOST_GID" = '1000' ]; then
+      echo "Using default group id 1000, skipping group modification"
     else
-      groupadd -g "${HOST_GID}" "${NON_PRIVGROUP}" -o
+      groupmod -g "${HOST_GID}" "${NON_PRIVGROUP}" -o
     fi
-    if [ "$(getent passwd runner)" ]; then
-      echo "user exists."
+    if [ "$HOST_UID" = '1000' ]; then
+      echo "Using default user id 1000, skipping user modification."
     else
-      useradd -g "${HOST_GID}" -u "${HOST_UID}" -o -M -d /app -r "${NON_PRIVUSER}"
+      usermod -u "${HOST_UID}" -o "${NON_PRIVUSER}"
     fi
-    chown -R "${HOST_UID}:${HOST_GID}" /app
     chown -R "${HOST_UID}:${HOST_GID}" /data/staging
   fi
 }
