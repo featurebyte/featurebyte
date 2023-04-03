@@ -56,7 +56,7 @@ async def test_online_enable(
     mock_execute_query.return_value = []
 
     with mock.patch(
-        "featurebyte.tile.snowflake_tile.TileManagerSnowflake.tile_job_exists"
+        "featurebyte.tile.base.BaseTileManager.tile_job_exists"
     ) as mock_tile_job_exists:
         mock_tile_job_exists.return_value = False
         await feature_manager.online_enable(feature_spec)
@@ -101,8 +101,8 @@ async def test_online_enable(
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_online_tiles")
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_offline_tiles")
+@mock.patch("featurebyte.tile.base.BaseTileManager.schedule_online_tiles")
+@mock.patch("featurebyte.tile.base.BaseTileManager.schedule_offline_tiles")
 @pytest.mark.asyncio
 async def test_online_enable_duplicate_tile_task(
     mock_schedule_offline_tiles,
@@ -132,7 +132,7 @@ async def test_online_enable_duplicate_tile_task(
         None,
     ]
     with mock.patch(
-        "featurebyte.tile.snowflake_tile.TileManagerSnowflake.tile_job_exists"
+        "featurebyte.tile.base.BaseTileManager.tile_job_exists"
     ) as mock_tile_job_exists:
         with mock.patch(
             "featurebyte.feature_manager.manager.FeatureManager._generate_historical_tiles"
@@ -177,28 +177,6 @@ async def test_online_disable(
         aggregation_id=feature_spec.aggregation_ids[0],
     )
     assert mock_execute_query.call_args_list[1] == mock.call(delete_sql)
-
-    assert mock_execute_query.call_args_list[2] == mock.call(
-        f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{feature_spec.aggregation_ids[0]}' and IS_DELETED = FALSE"
-    )
-
-
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@pytest.mark.asyncio
-async def test_get_last_tile_index(mock_execute_query, mock_snowflake_feature, feature_manager):
-    """
-    Test get_last_tile_index
-    """
-    mock_execute_query.return_value = pd.DataFrame.from_dict(
-        {
-            "TILE_ID": ["TILE_ID1"],
-            "LAST_TILE_INDEX_ONLINE": [100],
-            "LAST_TILE_INDEX_OFFLINE": [80],
-        }
-    )
-    last_index_df = await feature_manager.retrieve_last_tile_index(mock_snowflake_feature)
-    assert last_index_df.iloc[0]["TILE_ID"] == "TILE_ID1"
-    assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == 100
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")

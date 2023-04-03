@@ -15,7 +15,6 @@ from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 def tile_manager_from_session(
     session: BaseSession,
     task_manager: Optional[TaskManager] = None,
-    use_snowflake_scheduling: Optional[bool] = False,
 ) -> BaseTileManager:
     """
     Derive implementing TileManager instance based on input sessions
@@ -26,8 +25,6 @@ def tile_manager_from_session(
         Input session
     task_manager: Optional[TaskManager]
         Input task manager
-    use_snowflake_scheduling: Optional[bool]
-        use snowflake scheduling
 
     Returns
     -------
@@ -40,10 +37,7 @@ def tile_manager_from_session(
     """
 
     if session.source_type == SourceType.SNOWFLAKE:
-        flag = use_snowflake_scheduling if use_snowflake_scheduling is not None else True
-        return TileManagerSnowflake(
-            session=session, task_manager=task_manager, use_snowflake_scheduling=flag
-        )
+        return TileManagerSnowflake(session=session, task_manager=task_manager)
 
     if session.source_type == SourceType.SPARK:
         return BaseTileManager(session=session, task_manager=task_manager)

@@ -80,59 +80,6 @@ async def test_schedule_offline_tile(tile_spec, session, tile_manager):
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_insert_tile_registry(tile_spec, session, tile_manager):
-    """
-    Test insert_tile_registry method in TileSnowflake
-    """
-    flag = await tile_manager.insert_tile_registry(tile_spec=tile_spec)
-    assert flag is True
-
-    sql = f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_spec.tile_id}'"
-    result = await session.execute_query(sql)
-    assert len(result) == 1
-    assert result["TILE_ID"].iloc[0] == tile_spec.tile_id
-    assert bool(result["IS_ENABLED"].iloc[0]) is True
-    assert result["TIME_MODULO_FREQUENCY_SECOND"].iloc[0] == tile_spec.time_modulo_frequency_second
-
-    flag = await tile_manager.insert_tile_registry(tile_spec=tile_spec)
-    assert flag is False
-
-    sql = f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_spec.tile_id}'"
-    result = await session.execute_query(sql)
-    assert len(result) == 1
-    assert result["TILE_ID"].iloc[0] == tile_spec.tile_id
-    assert bool(result["IS_ENABLED"].iloc[0]) is True
-    assert result["TIME_MODULO_FREQUENCY_SECOND"].iloc[0] == tile_spec.time_modulo_frequency_second
-
-
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@pytest.mark.asyncio
-async def test_disable_tiles(tile_spec, session, tile_manager):
-    """
-    Test disable_tiles method in TileSnowflake
-    """
-    flag = await tile_manager.insert_tile_registry(tile_spec=tile_spec)
-    assert flag is True
-
-    sql = f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_spec.tile_id}'"
-    result = await session.execute_query(sql)
-    assert len(result) == 1
-    assert result["TILE_ID"].iloc[0] == tile_spec.tile_id
-    assert bool(result["IS_ENABLED"].iloc[0]) is True
-    assert result["TIME_MODULO_FREQUENCY_SECOND"].iloc[0] == tile_spec.time_modulo_frequency_second
-
-    # disable tile jobs
-    await tile_manager.disable_tiles(tile_spec=tile_spec)
-
-    sql = f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_spec.tile_id}'"
-    result = await session.execute_query(sql)
-    assert len(result) == 1
-    assert result["TILE_ID"].iloc[0] == tile_spec.tile_id
-    assert bool(result["IS_ENABLED"].iloc[0]) is False
-
-
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@pytest.mark.asyncio
 async def test_update_tile_entity_tracker(tile_spec, session, tile_manager):
     """
     Test update_tile_entity_tracker method in TileSnowflake
