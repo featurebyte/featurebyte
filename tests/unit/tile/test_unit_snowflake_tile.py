@@ -1,15 +1,13 @@
 """
 Unit test for snowflake tile
 """
-import textwrap
 from datetime import datetime
 from unittest import mock
 
 import pytest
 
 from featurebyte.common import date_util
-from featurebyte.feature_manager.sql_template import tm_call_schedule_online_store
-from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.models.tile import TileSpec
 
 
 def test_construct_snowflaketile_time_modulo_error():
@@ -70,25 +68,6 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
 
 @pytest.mark.asyncio
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def test_populate_feature_store(mock_execute_query, mock_snowflake_tile, tile_manager):
-    """
-    Test populate_feature_store method in TileSnowflake
-    """
-    job_schedule_ts_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    await tile_manager.populate_feature_store(mock_snowflake_tile, job_schedule_ts_str)
-    expected_sql = textwrap.dedent(
-        tm_call_schedule_online_store.render(
-            aggregation_id=mock_snowflake_tile.aggregation_id,
-            job_schedule_ts_str=job_schedule_ts_str,
-        )
-    ).strip()
-    assert mock_execute_query.call_count == 1
-    args, _ = mock_execute_query.call_args
-    assert args[0].strip() == expected_sql
-
-
-@pytest.mark.asyncio
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test schedule_online_tiles method in TileSnowflake
@@ -135,8 +114,8 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
         assert kwargs["next_job_time"] == next_job_time
 
 
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.generate_tiles")
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.update_tile_entity_tracker")
+@mock.patch("featurebyte.tile.base.BaseTileManager.generate_tiles")
+@mock.patch("featurebyte.tile.base.BaseTileManager.update_tile_entity_tracker")
 @pytest.mark.asyncio
 async def test_generate_tiles_on_demand(
     mock_generate_tiles,

@@ -1,10 +1,8 @@
 """
 Tile Registry Job Script for SP_TILE_REGISTRY
 """
-
-
 from featurebyte.logger import logger
-from featurebyte.session.spark import SparkSession
+from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
 
@@ -86,10 +84,10 @@ class TileRegistry(TileCommon):
 
             if cols_df is not None:
                 for _, row in cols_df.iterrows():
-                    if isinstance(self._spark, SparkSession):
-                        cols.append(row["col_name"].upper())
-                    else:
+                    if isinstance(self._spark, SnowflakeSession):
                         cols.append(row["column_name"].upper())
+                    else:
+                        cols.append(row["col_name"].upper())
 
             logger.debug(f"cols: {cols}")
 
