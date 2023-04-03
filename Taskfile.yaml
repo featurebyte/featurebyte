@@ -287,7 +287,6 @@ tasks:
     desc: "Stops featurebyte-server in development mode"
     cmds:
       - poetry run featurebyte stop
-      - poetry run featurebyte stop spark
 
   docker-clean:
     desc: "Clean the docker images and data directories"
