@@ -210,7 +210,7 @@ def start_app(
     services = services or get_service_names(app_name)
     try:
         # Load config to ensure it exists before starting containers
-        config = Configurations() # pylint: disable=unused-variable
+        config = Configurations()  # pylint: disable=unused-variable
         __setup_network()
         __backup_docker_conf()
         __use_docker_svc_account()
@@ -222,7 +222,7 @@ def start_app(
             if not local:
                 docker.compose.pull()
             __restore_docker_conf()  # Restore as early as possible
-            docker.compose.up(services=services, detach=True)
+            docker.compose.up(services=services, detach=True, quiet=True)
 
             # Wait for all services to be healthy
             def _wait_for_healthy(spinner_status: Optional[Status] = None) -> None:
@@ -281,50 +281,46 @@ def start_playground(local: bool = False, datasets: Optional[List[str]] = None, 
     verbose : bool
         Print verbose output, by default True
     """
-    num_steps = 4
+    with console.status("Starting featurebyte service") as status:
+        # determine services to start
+        services = get_service_names(ApplicationName.FEATUREBYTE) + get_service_names(ApplicationName.SPARK)
+        if docs_enabled and not local:
+            services += get_service_names(ApplicationName.DOCS)
 
-    # determine services to start
-    services = get_service_names(ApplicationName.FEATUREBYTE) + get_service_names(ApplicationName.SPARK)
-    if docs_enabled and not local:
-        services += get_service_names(ApplicationName.DOCS)
+        status.update("Sending request to docker daemon to start services...")
+        start_app(ApplicationName.FEATUREBYTE, services=services, local=local, verbose=verbose)
 
-    step = 1
-    logger.info(f"({step}/{num_steps}) Starting featurebyte services")
-    start_app(ApplicationName.FEATUREBYTE, services=services, local=local, verbose=verbose)
-    step += 1
+        status.update("Creating local spark feature store...")
+        # create local spark feature store
+        Configurations().use_profile("local")
+        feature_store = FeatureStore.get_or_create(
+            name="playground",
+            source_type=SourceType.SPARK,
+            details=SparkDetails(
+                host="spark-thrift",
+                http_path="cliservice",
+                port=10000,
+                storage_type="file",
+                storage_url="/data/staging/playground",
+                storage_spark_url="file:///opt/spark/data/staging/playground",
+                featurebyte_catalog="spark_catalog",
+                featurebyte_schema="playground",
+            ),
+        )
 
-    # create local spark feature store
-    logger.info(f"({step}/{num_steps}) Creating local spark feature store")
-    Configurations().use_profile("local")
-    feature_store = FeatureStore.get_or_create(
-        name="playground",
-        source_type=SourceType.SPARK,
-        details=SparkDetails(
-            host="spark-thrift",
-            http_path="cliservice",
-            port=10000,
-            storage_type="file",
-            storage_url="/data/staging/playground",
-            storage_spark_url="file:///opt/spark/data/staging/playground",
-            featurebyte_catalog="spark_catalog",
-            featurebyte_schema="playground",
-        ),
-    )
-    step += 1
+        # import datasets
+        status.update("Importing spark dataset...")
+        existing_datasets = feature_store.get_data_source().list_schemas(database_name="spark_catalog")
+        datasets = datasets or ["grocery", "healthcare", "creditcard"]
+        for dataset in datasets:
+            if not force_import and dataset in existing_datasets:
+                status.update(f"Dataset {dataset} already exists, skipping import")
+            status.update(f"Importing dataset: {dataset}")
+            import_dataset(dataset)
+            status.update(f"Successfully imported dataset: {dataset}")
 
-    # import datasets
-    logger.info(f"({step}/{num_steps}) Import datasets")
-    existing_datasets = feature_store.get_data_source().list_schemas(database_name="spark_catalog")
-    datasets = datasets or ["grocery", "healthcare", "creditcard"]
-    for dataset in datasets:
-        if not force_import and dataset in existing_datasets:
-            logger.info(f"Dataset {dataset} already exists, skipping import")
-            continue
-        logger.info(f"Importing dataset: {dataset}")
-        import_dataset(dataset)
-    step += 1
+        status.update("Playground environment started successfully. Ready to go! 🚀")
 
-    logger.info(f"({step}/{num_steps}) Playground environment started successfully. Ready to go! 🚀")
 
 def stop_app(verbose: Optional[bool] = True) -> None:
     """
@@ -339,7 +335,7 @@ def stop_app(verbose: Optional[bool] = True) -> None:
         docker.compose.down()
     if verbose:
         message = (
-        """
+            """
         [bold green]Featurebyte application stopped.[/]
         """
         )
