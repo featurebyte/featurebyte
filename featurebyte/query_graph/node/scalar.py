@@ -9,13 +9,22 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from featurebyte.common.typing import AllSupportedValueTypes, Scalar, ScalarSequence
+from featurebyte.enum import StrEnum
+
+
+class NonNativeValueType(StrEnum):
+    """
+    Scalar value types enum
+    """
+
+    TIMESTAMP = "timestamp"
 
 
 class TimestampValue(BaseModel):
     """TimestampValue class"""
 
     iso_format_str: str
-    type: Literal["timestamp"] = Field("timestamp", const=True)
+    type: Literal[NonNativeValueType.TIMESTAMP] = Field(NonNativeValueType.TIMESTAMP, const=True)
 
     @classmethod
     def from_pandas_timestamp(cls, timestamp: pd.Timestamp) -> TimestampValue:

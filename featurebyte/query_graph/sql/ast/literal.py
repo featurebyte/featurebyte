@@ -8,7 +8,7 @@ from typing import Any, cast
 from sqlglot import expressions, parse_one
 
 from featurebyte.common.typing import is_scalar_nan
-from featurebyte.query_graph.node.scalar import TimestampValue
+from featurebyte.query_graph.node.scalar import NonNativeValueType, TimestampValue
 
 
 def make_literal_value_from_non_native_types(value: dict[str, Any]) -> expressions.Expression:
@@ -23,7 +23,7 @@ def make_literal_value_from_non_native_types(value: dict[str, Any]) -> expressio
     -------
     Expression
     """
-    assert value["type"] == "timestamp"
+    assert value["type"] == NonNativeValueType.TIMESTAMP
     timestamp_value = TimestampValue(**value)
     return expressions.Anonymous(
         this="TO_TIMESTAMP",
