@@ -7,6 +7,7 @@ import dateutil.parser
 
 from featurebyte.common import date_util
 from featurebyte.logger import logger
+from featurebyte.session.spark import SparkSession
 from featurebyte.sql.common import (
     construct_create_delta_table_query,
     retry_sql,
@@ -27,6 +28,7 @@ class TileGenerate(TileCommon):
     last_tile_start_str: Optional[str]
     tile_last_start_date_column: Optional[str]
 
+    # pylint: disable=too-many-statements
     async def execute(self) -> None:
         """
         Execute tile generate operation
@@ -65,8 +67,12 @@ class TileGenerate(TileCommon):
         entity_filter_cols = []
         for element in self.entity_column_names:
             element = element.strip()
-            entity_insert_cols.append(f"b.`{element}`")
-            entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
+            if isinstance(self._spark, SparkSession):
+                entity_insert_cols.append(f"b.`{element}`")
+                entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
+            else:
+                entity_insert_cols.append(f'b."{element}"')
+                entity_filter_cols.append(f'EQUAL_NULL(a."{element}", b."{element}")')
 
         entity_insert_cols_str = ",".join(entity_insert_cols)
         entity_filter_cols_str = " AND ".join(entity_filter_cols)
@@ -88,10 +94,13 @@ class TileGenerate(TileCommon):
 
         # insert new records and update existing records
         if not tile_table_exist_flag:
-            logger.info("creating tile table: ", self.tile_id)
-            create_sql = construct_create_delta_table_query(self.tile_id, tile_sql)
+            logger.debug(f"creating tile table: {self.tile_id}")
+            create_sql = construct_create_delta_table_query(
+                self.tile_id, tile_sql, session=self._spark
+            )
+            logger.debug(f"create_sql: {create_sql}")
             await self._spark.execute_query(create_sql)
-
+            logger.debug(f"done creating table: {self.tile_id}")
         else:
             if self.entity_column_names:
                 on_condition_str = f"a.INDEX = b.INDEX AND {entity_filter_cols_str}"
