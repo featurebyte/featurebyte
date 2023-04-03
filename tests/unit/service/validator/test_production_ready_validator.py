@@ -70,7 +70,7 @@ async def test_validate(
     )
     snowflake_event_table_with_entity["col_int"].update_critical_data_info(
         cleaning_operations=[
-            MissingValueImputation(imputed_value=2.0),
+            MissingValueImputation(imputed_value=2.5),
         ]
     )
 
@@ -116,10 +116,10 @@ async def test_validate(
             },
             'cleaning_operations': {
                 'data_source': [ColumnCleaningOperation(column_name='col_int',
-                    cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing)]
+                    cleaning_operations=[MissingValueImputation(imputed_value=0.0, type=missing)]
                 )],
                 'promoted_feature': [ColumnCleaningOperation(column_name='col_int',
-                    cleaning_operations=[MissingValueImputation(imputed_value=2, type=missing)]
+                    cleaning_operations=[MissingValueImputation(imputed_value=2.5, type=missing)]
                 )]
             }
         }
