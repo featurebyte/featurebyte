@@ -8,7 +8,8 @@ from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.spark.common import construct_create_delta_table_query, retry_sql_with_cache
+from featurebyte.session.spark import SparkSession
+from featurebyte.sql.common import construct_create_delta_table_query, retry_sql_with_cache
 
 
 class TileGenerateEntityTracking(BaseModel):
@@ -54,9 +55,15 @@ class TileGenerateEntityTracking(BaseModel):
         escaped_entity_column_names = []
         for element in self.entity_column_names:
             element = element.strip()
-            entity_insert_cols.append(f"b.`{element}`")
-            entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
-            escaped_entity_column_names.append(f"`{element}`")
+            if isinstance(self._spark, SparkSession):
+                entity_insert_cols.append(f"b.`{element}`")
+                entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
+                escaped_entity_column_names.append(f"`{element}`")
+            else:
+                entity_insert_cols.append(f'b."{element}"')
+                entity_filter_cols.append(f'EQUAL_NULL(a."{element}", b."{element}")')
+                escaped_entity_column_names.append(f'"{element}"')
+
         escaped_entity_column_names_str = ",".join(escaped_entity_column_names)
 
         entity_insert_cols_str = ", ".join(entity_insert_cols)
@@ -66,7 +73,10 @@ class TileGenerateEntityTracking(BaseModel):
 
         # create table or insert new records or update existing records
         if not tracking_table_exist_flag:
-            create_sql = construct_create_delta_table_query(tracking_table_name, self.entity_table)
+            create_sql = construct_create_delta_table_query(
+                tracking_table_name, self.entity_table, session=self._spark
+            )
+            logger.debug(f"create_sql: {create_sql}")
             await self._spark.execute_query(create_sql)
         else:
             merge_sql = f"""

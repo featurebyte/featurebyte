@@ -10,7 +10,7 @@ from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.spark.common import (
+from featurebyte.sql.common import (
     CACHE_TABLE_PLACEHOLDER,
     construct_create_delta_table_query,
     retry_sql,

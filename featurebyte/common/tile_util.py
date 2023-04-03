@@ -10,7 +10,6 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.base import BaseTileManager
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
-from featurebyte.tile.spark_tile import TileManagerSpark
 
 
 def tile_manager_from_session(
@@ -47,6 +46,6 @@ def tile_manager_from_session(
         )
 
     if session.source_type == SourceType.SPARK:
-        return TileManagerSpark(session=session, task_manager=task_manager)
+        return BaseTileManager(session=session, task_manager=task_manager)
 
     raise ValueError(f"Tile Manager for {session.source_type} has not been implemented")

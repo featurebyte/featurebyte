@@ -25,7 +25,6 @@ from featurebyte.tile.sql_template import (
     tm_retrieve_tile_job_audit_logs,
     tm_select_tile_registry,
     tm_shell_schedule_tile,
-    tm_tile_entity_tracking,
     tm_update_tile_registry,
 )
 from featurebyte.utils.snowflake.sql import escape_column_names
@@ -43,7 +42,7 @@ class TileManagerSnowflake(BaseTileManager):
         self,
         session: BaseSession,
         task_manager: Optional[TaskManager] = None,
-        use_snowflake_scheduling: bool = True,
+        use_snowflake_scheduling: bool = False,
         **kw: Any,
     ) -> None:
         """
@@ -62,25 +61,6 @@ class TileManagerSnowflake(BaseTileManager):
         """
         super().__init__(session=session, task_manager=task_manager, **kw)
         self._use_snowflake_scheduling = use_snowflake_scheduling
-
-    async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
-        """
-        Get existing tile jobs for the given tile_spec
-
-        Parameters
-        ----------
-        tile_spec: TileSpec
-            the input TileSpec
-
-        Returns
-        -------
-            whether the tile jobs already exist
-        """
-        exist_tasks = await self._session.execute_query(
-            f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'"
-        )
-
-        return exist_tasks is not None and len(exist_tasks) > 0
 
     async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> None:
         """
@@ -152,37 +132,6 @@ class TileManagerSnowflake(BaseTileManager):
         await self._session.execute_query(
             tm_update_tile_registry.render(tile_id=tile_spec.tile_id, is_enabled=False)
         )
-
-    async def update_tile_entity_tracker(self, tile_spec: TileSpec, temp_entity_table: str) -> str:
-        """
-        Update <tile_id>_entity_tracker table for last_tile_start_date
-
-        Parameters
-        ----------
-        tile_spec: TileSpec
-            the input TileSpec
-        temp_entity_table: str
-            temporary entity table to be merge into <tile_id>_entity_tracker
-
-        Returns
-        -------
-            generated sql
-        """
-        if tile_spec.category_column_name is None:
-            entity_column_names = tile_spec.entity_column_names
-        else:
-            entity_column_names = [
-                c for c in tile_spec.entity_column_names if c != tile_spec.category_column_name
-            ]
-        sql = tm_tile_entity_tracking.render(
-            tile_id=tile_spec.aggregation_id,
-            entity_column_names=",".join(escape_column_names(entity_column_names)),
-            entity_table=temp_entity_table.replace("'", "''"),
-            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
-        )
-        await self._session.execute_query(sql)
-
-        return sql
 
     async def generate_tiles(
         self,

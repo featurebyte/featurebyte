@@ -2,12 +2,11 @@
 This module contains integration tests for scheduled tile generation stored procedure
 """
 from datetime import datetime
-from unittest import mock
 
 import pytest
 
 from featurebyte.enum import InternalName
-from featurebyte.sql.spark.tile_generate_schedule import TileGenerateSchedule
+from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)

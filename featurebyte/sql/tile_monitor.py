@@ -2,9 +2,9 @@
 Tile Monitor Job for SP_TILE_MONITOR
 """
 from featurebyte.logger import logger
-from featurebyte.sql.spark.common import retry_sql, retry_sql_with_cache
-from featurebyte.sql.spark.tile_common import TileCommon
-from featurebyte.sql.spark.tile_registry import TileRegistry
+from featurebyte.sql.common import retry_sql, retry_sql_with_cache
+from featurebyte.sql.tile_common import TileCommon
+from featurebyte.sql.tile_registry import TileRegistry
 
 
 class TileMonitor(TileCommon):
