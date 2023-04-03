@@ -1052,7 +1052,15 @@ class DocsBuilder:
                     )
             writer = csv.writer(f)
             writer.writerow(
-                ["menu_item", "class_method_or_attribute", "link", "docstring_description"]
+                [
+                    "menu_item",
+                    "class_method_or_attribute",
+                    "link",
+                    "docstring_description",
+                    "parameters",
+                    "examples",
+                    "see_also",
+                ]
             )
             for doc_item in all_doc_items_to_generate:
                 writer.writerow(
@@ -1061,6 +1069,9 @@ class DocsBuilder:
                         doc_item.class_method_or_attribute,
                         doc_item.link,
                         doc_item.docstring_description,
+                        "todo: parameters",
+                        "todo: examples",
+                        "todo: see_also",
                     ]
                 )
             print("done writing rows to csv")
