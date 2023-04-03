@@ -3,47 +3,23 @@ Autodoc Processor
 """
 from __future__ import annotations
 
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Optional
 
-import importlib
-import inspect
 import re
 from xml.etree import ElementTree as etree
 
 from markdown import Markdown
-from mkautodoc.extension import AutoDocProcessor, import_from_string, last_iter
+from mkautodoc.extension import AutoDocProcessor, last_iter
 from pydantic import BaseModel
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.documentation.resource_extractor import get_resource_details
+from featurebyte.common.documentation.resource_extractor import (
+    ResourceDetails,
+    get_resource_details,
+)
 from featurebyte.common.documentation.util import _filter_none_from_list
 
 NONE_TYPES = [None, "NoneType"]
-
-
-def import_resource(resource_descriptor: str) -> Any:
-    """
-    Import module
-
-    Parameters
-    ----------
-    resource_descriptor: str
-        Resource descriptor path
-
-    Returns
-    -------
-    Any
-    """
-    resource = import_from_string(resource_descriptor)
-    module = inspect.getmodule(resource)
-    if module is None:
-        return resource
-    try:
-        # reload module to capture updates in source code
-        module = importlib.reload(module)
-    except:
-        return resource
-    return getattr(module, resource.__name__)
 
 
 class ParameterDetails(BaseModel):
@@ -64,40 +40,6 @@ class ExceptionDetails(BaseModel):
 
     type: Optional[str]
     description: Optional[str]
-
-
-class ResourceDetails(BaseModel):
-    """
-    Pydantic model to capture resource details
-    """
-
-    name: str
-    realname: str
-    path: str
-    proxy_path: Optional[str]
-    type: Literal["class", "property", "method"]
-    base_classes: Optional[List[Any]]
-    method_type: Optional[Literal["async"]]
-    short_description: Optional[str]
-    long_description: Optional[str]
-    parameters: Optional[List[ParameterDetails]]
-    returns: ParameterDetails
-    raises: Optional[List[ExceptionDetails]]
-    examples: Optional[List[str]]
-    see_also: Optional[str]
-
-    @property
-    def resource(self) -> Any:
-        """
-        Imported resource
-
-        Returns
-        -------
-        Any
-        """
-        if self.type == "class":
-            return import_resource(f"{self.path}.{self.name}")
-        return getattr(import_resource(self.path), self.name)
 
 
 class FBAutoDocProcessor(AutoDocProcessor):
