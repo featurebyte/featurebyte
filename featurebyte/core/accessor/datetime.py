@@ -167,14 +167,14 @@ class DatetimeAccessor:
     @property
     def month(self) -> FrozenSeries:
         """
-        Return the day component of each element.
+        Return the month component of each element.
 
         This operation can be used by both features and views.
 
         Returns
         -------
         FrozenSeries
-            Column or Feature containing the day component values
+            Column or Feature containing the month component values
 
         Examples
         --------
