@@ -427,6 +427,8 @@ def _get_data_source_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([DATA_SOURCE]),
+        DocLayoutItem([DATA_SOURCE, GET, "Catalog.get_data_source"]),
+        DocLayoutItem([DATA_SOURCE, GET, "FeatureStore.get_data_source"]),
         DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.get_table"]),
         DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.list_databases"]),
         DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.list_schemas"]),
