@@ -50,6 +50,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
       - name: Setup gradle cache
         uses: actions/cache@v3
         with:
@@ -62,7 +65,7 @@ jobs:
           key: gradle-build-cache-${{ runner.os }}
       - name: Building hive-udf
         run: |
-          cd hive-udf && ./gradlew test && ./gradlew shadowJar
+          task build-jar
       - name: Upload hive-udf
         uses: actions/upload-artifact@v3
         with:
@@ -77,6 +80,9 @@ jobs:
         python-version: ["3.8.0"]
     steps:
       - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -98,10 +104,7 @@ jobs:
       - name: Adding C headers
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
-      - name: Install dependencies
-        run: |
           sudo apt-get install wkhtmltopdf
-          poetry install -n --sync --extras=server
       - name: Download hive-udf
         uses: actions/download-artifact@v3
         with:
@@ -109,7 +112,7 @@ jobs:
           path: featurebyte/sql/spark/
       - name: Run tests
         run: |
-          make test-unit
+          task test-unit
           mv .coverage .coverage.0
       - name: Upload test results
         uses: actions/upload-artifact@v3
@@ -130,6 +133,9 @@ jobs:
         python-version: ["3.8.0"]
     steps:
       - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -148,13 +154,10 @@ jobs:
         run: |
           poetry config virtualenvs.in-project true
           poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
-      - name: Adding C headers
+      - name: Adding C headers + Install dependencies
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
-      - name: Install dependencies
-        run: |
           sudo apt-get install wkhtmltopdf
-          poetry install -n --sync --extras=server
       - name: Download hive-udf
         uses: actions/download-artifact@v3
         with:
@@ -162,17 +165,7 @@ jobs:
           path: featurebyte/sql/spark/
       - name: Run tests
         run: |
-          mkdir -p ~/.featurebyte/
-          echo "
-          profile:
-            - name: local
-              api_url: http://127.0.0.1:8088
-          logging:
-             telemetry: false
-          " > ~/.featurebyte/config.yaml
-          make test-setup
-          make test-integration-snowflake
-          make test-teardown
+          task test-integration-snowflake
           mv .coverage .coverage.1
       - name: Upload test results
         uses: actions/upload-artifact@v3
@@ -193,6 +186,9 @@ jobs:
         python-version: ["3.8.0"]
     steps:
       - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -214,10 +210,7 @@ jobs:
       - name: Adding C headers
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
-      - name: Install dependencies
-        run: |
           sudo apt-get install wkhtmltopdf
-          poetry install -n --sync --extras=server
       - name: Download hive-udf
         uses: actions/download-artifact@v3
         with:
@@ -226,18 +219,8 @@ jobs:
       - name: Run tests
         continue-on-error: true
         run: |
-          mkdir -p ~/.featurebyte/
-          echo "
-          profile:
-            - name: local
-              api_url: http://127.0.0.1:8088
-          logging:
-             telemetry: false
-          " > ~/.featurebyte/config.yaml
-
-          make test-setup
           set +e
-          make test-integration-spark
+          task test-integration-spark
           # capture the exit code from the test run before stashing logs
           EXIT_CODE=$?
           echo $EXIT_CODE > status.txt
@@ -246,7 +229,7 @@ jobs:
           if [ $EXIT_CODE -ne 0 ]; then
             exit $EXIT_CODE
           fi
-          make test-teardown
+          task test-teardown
           mv .coverage .coverage.2
       - name: Upload spark-thrift log file
         uses: actions/upload-artifact@v3
@@ -279,6 +262,9 @@ jobs:
         python-version: [ "3.8.0" ]
     steps:
       - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -297,34 +283,19 @@ jobs:
         run: |
           poetry config virtualenvs.in-project true
           poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
-      - name: Adding C headers
+      - name: Adding C headers and wkhtmltopdf
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
-      - name: Install dependencies
-        run: |
           sudo apt-get install wkhtmltopdf
-          poetry install -n --sync --extras=server
       - name: Download hive-udf
         uses: actions/download-artifact@v3
         with:
           name: hive-udf
           path: featurebyte/sql/spark/
-      - name: Start local server
-        run: |
-          export FEATUREBYTE_NP_PASSWORD="${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}"
-          mkdir -p ~/.featurebyte/
-          echo "
-          profile:
-            - name: local
-              api_url: http://127.0.0.1:8088
-          logging:
-             telemetry: false
-          " > ~/.featurebyte/config.yaml
-          make docker-build
       - name: Test documentation
         run: |
-          mkdir -p ~/.featurebyte/data/spark/staging/playground
-          make test-docs
+          export FEATUREBYTE_NP_PASSWORD=${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+          task test-docs
   validate:
     needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark"]
     runs-on: ubuntu-20.04
@@ -336,6 +307,9 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: '0' # Used for checking diff
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -383,7 +357,7 @@ jobs:
           name: python-${{ matrix.python-version }}-.coverage.2
       - name: Merge test results
         run: |
-          make test-merge
+          task test-merge
       - name: Test Coverage Report
         id: coverageComment
         uses: MishaKav/pytest-coverage-comment@main

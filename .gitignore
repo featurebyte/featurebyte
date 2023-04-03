@@ -564,3 +564,6 @@ metastore_db/
 pytest.xml*
 *.sqlite
 debug/
+
+# task cache
+.task/
