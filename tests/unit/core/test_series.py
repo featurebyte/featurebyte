@@ -1142,20 +1142,33 @@ def test_scalar_timestamp__invalid_with_wrong_type(request, series_fixture_name,
     assert "Not supported operation" in str(exc.value)
 
 
-def test_scalar_timestamp__valid(timestamp_series, scalar_timestamp):
+@pytest.mark.parametrize(
+    "op_func, expected_operator_str",
+    [
+        (lambda s, ts_value: s > ts_value, ">"),
+        (lambda s, ts_value: s >= ts_value, ">="),
+        (lambda s, ts_value: s < ts_value, "<"),
+        (lambda s, ts_value: s <= ts_value, "<="),
+        (lambda s, ts_value: s == ts_value, "="),
+        (lambda s, ts_value: s != ts_value, "<>"),
+    ],
+)
+def test_scalar_timestamp__valid(
+    timestamp_series, scalar_timestamp, op_func, expected_operator_str
+):
     """
     Test scalar timestamp value in a relational operation
     """
-    result = timestamp_series > scalar_timestamp
+    result = op_func(timestamp_series, scalar_timestamp)
     assert result.node.parameters.value.dict() == {
         "iso_format_str": "2023-01-15T10:00:00",
         "type": "timestamp",
     }
     expected = textwrap.dedent(
-        """
+        f"""
         SELECT
           (
-            "TIMESTAMP" > TO_TIMESTAMP('2023-01-15T10:00:00')
+            "TIMESTAMP" {expected_operator_str} TO_TIMESTAMP('2023-01-15T10:00:00')
           )
         FROM "db"."public"."transaction"
         LIMIT 10
@@ -1184,3 +1197,15 @@ def test_scalar_timestamp__with_tz(timestamp_series, scalar_timestamp_tz):
         """
     ).strip()
     assert result.preview_sql() == expected
+
+
+def test_scalar_timestamp__invalid(timestamp_series, scalar_timestamp):
+    """
+    Test scalar timestamp value is not allowed in a non-relational operation
+    """
+    with pytest.raises(TypeError) as exc:
+        _ = timestamp_series - scalar_timestamp
+    assert (
+        'type of argument "other" must be one of (int, float, featurebyte.core.series.FrozenSeries)'
+        in str(exc.value)
+    )
