@@ -7,6 +7,7 @@ from typing import Any, List, Optional, Tuple
 
 from datetime import datetime
 
+import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.common import date_util
@@ -21,6 +22,7 @@ from featurebyte.sql.tile_generate_entity_tracking import TileGenerateEntityTrac
 from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 from featurebyte.tile.scheduler import TileScheduler
+from featurebyte.tile.sql_template import tm_retrieve_tile_job_audit_logs
 
 
 class BaseTileManager(BaseModel):
@@ -396,3 +398,36 @@ class BaseTileManager(BaseModel):
             logger.info("Stopping job with custom scheduler")
             for t_type in [TileType.ONLINE, TileType.OFFLINE]:
                 await scheduler.stop_job(job_id=f"{t_type}_{tile_spec.aggregation_id}")
+
+    async def retrieve_tile_job_audit_logs(
+        self,
+        start_date: datetime,
+        end_date: Optional[datetime] = None,
+        tile_id: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        Retrieve audit logs of tile job executions
+
+        Parameters
+        ----------
+        start_date: datetime
+            start date of retrieval
+        end_date: Optional[datetime]
+            end date of retrieval, optional
+        tile_id: Optional[str]
+            targeted tile id of retrieval, optional
+
+        Returns
+        -------
+            dataframe of tile job execution information
+        """
+        date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+        start_date_str = start_date.strftime(date_format)
+        end_date_str = end_date.strftime(date_format) if end_date else ""
+        tile_id = tile_id if tile_id else ""
+
+        sql = tm_retrieve_tile_job_audit_logs.render(
+            start_date_str=start_date_str, end_date_str=end_date_str, tile_id=tile_id
+        )
+        result = await self._session.execute_query(sql)
+        return result

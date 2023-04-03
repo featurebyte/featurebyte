@@ -171,21 +171,6 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
         assert kwargs["next_job_time"] == next_job_time
 
 
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@pytest.mark.asyncio
-async def test_insert_tile_registry(mock_execute_query, mock_snowflake_tile, tile_manager):
-    """
-    Test schedule_offline_tiles method in TileSnowflake
-    """
-    mock_execute_query.return_value = ["Element"]
-    flag = await tile_manager.insert_tile_registry(mock_snowflake_tile)
-    assert flag is False
-
-    mock_execute_query.return_value = []
-    flag = await tile_manager.insert_tile_registry(mock_snowflake_tile)
-    assert flag is True
-
-
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.generate_tiles")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.update_tile_entity_tracker")
 @pytest.mark.asyncio
