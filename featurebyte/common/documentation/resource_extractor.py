@@ -1,6 +1,8 @@
 """
 Extract resource details given a path descriptor.
 """
+from __future__ import annotations
+
 from typing import Any, List, Literal, Optional, get_type_hints
 
 import importlib
@@ -15,8 +17,8 @@ from pydantic.fields import ModelField, Undefined
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.constants import EMPTY_VALUE
+from featurebyte.common.documentation.doc_types import Docstring
 from featurebyte.common.documentation.formatters import format_literal, format_param_type
-from featurebyte.common.documentation.types import Docstring
 
 
 class ParameterDetails(BaseModel):
