@@ -49,7 +49,7 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
-from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+from featurebyte.tile.base import BaseTileManager
 from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import TASK_MAP
 from tests.unit.conftest_config import (
@@ -885,7 +885,7 @@ async def tile_manager(mock_execute_query, session_manager, snowflake_feature_st
     Tile Manager fixture
     """
     _ = mock_execute_query
-    return TileManagerSnowflake(session=await session_manager.get_session(snowflake_feature_store))
+    return BaseTileManager(session=await session_manager.get_session(snowflake_feature_store))
 
 
 @pytest.fixture

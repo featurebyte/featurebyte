@@ -7,7 +7,7 @@ import dateutil.parser
 
 from featurebyte.common import date_util
 from featurebyte.logger import logger
-from featurebyte.session.spark import SparkSession
+from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.sql.common import (
     construct_create_delta_table_query,
     retry_sql,
@@ -67,12 +67,12 @@ class TileGenerate(TileCommon):
         entity_filter_cols = []
         for element in self.entity_column_names:
             element = element.strip()
-            if isinstance(self._spark, SparkSession):
-                entity_insert_cols.append(f"b.`{element}`")
-                entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
-            else:
+            if isinstance(self._spark, SnowflakeSession):
                 entity_insert_cols.append(f'b."{element}"')
                 entity_filter_cols.append(f'EQUAL_NULL(a."{element}", b."{element}")')
+            else:
+                entity_insert_cols.append(f"b.`{element}`")
+                entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
 
         entity_insert_cols_str = ",".join(entity_insert_cols)
         entity_filter_cols_str = " AND ".join(entity_filter_cols)

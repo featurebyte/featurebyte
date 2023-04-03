@@ -9,7 +9,7 @@ from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 
 from featurebyte.session.base import BaseSession
-from featurebyte.session.spark import SparkSession
+from featurebyte.session.snowflake import SnowflakeSession
 
 
 class TileCommon(BaseModel, ABC):
@@ -53,11 +53,10 @@ class TileCommon(BaseModel, ABC):
         -------
             string representation of entity_column_names
         """
+        if isinstance(self._spark, SnowflakeSession):
+            return ",".join([f'"{col}"' for col in self.entity_column_names])
 
-        if isinstance(self._spark, SparkSession):
-            return ",".join([f"`{col}`" for col in self.entity_column_names])
-
-        return ",".join([f'"{col}"' for col in self.entity_column_names])
+        return ",".join([f"`{col}`" for col in self.entity_column_names])
 
     @property
     def value_column_names_str(self) -> str:

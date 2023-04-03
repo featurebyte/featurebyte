@@ -31,9 +31,9 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_online_tiles")
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_offline_tiles")
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.generate_tiles")
+@mock.patch("featurebyte.tile.base.BaseTileManager.schedule_online_tiles")
+@mock.patch("featurebyte.tile.base.BaseTileManager.schedule_offline_tiles")
+@mock.patch("featurebyte.tile.base.BaseTileManager.generate_tiles")
 @pytest.mark.asyncio
 async def test_online_enable(
     mock_generate_tiles,
@@ -137,8 +137,11 @@ async def test_online_enable_duplicate_tile_task(
         with mock.patch(
             "featurebyte.feature_manager.manager.FeatureManager._generate_historical_tiles"
         ) as _:
-            mock_tile_job_exists.return_value = True
-            await feature_manager.online_enable(feature_spec)
+            with mock.patch(
+                "featurebyte.feature_manager.manager.FeatureManager._populate_feature_store"
+            ) as _:
+                mock_tile_job_exists.return_value = True
+                await feature_manager.online_enable(feature_spec)
 
     mock_schedule_online_tiles.assert_not_called()
     mock_schedule_offline_tiles.assert_not_called()

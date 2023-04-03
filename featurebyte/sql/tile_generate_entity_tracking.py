@@ -8,7 +8,7 @@ from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
-from featurebyte.session.spark import SparkSession
+from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.sql.common import construct_create_delta_table_query, retry_sql_with_cache
 
 
@@ -55,14 +55,14 @@ class TileGenerateEntityTracking(BaseModel):
         escaped_entity_column_names = []
         for element in self.entity_column_names:
             element = element.strip()
-            if isinstance(self._spark, SparkSession):
-                entity_insert_cols.append(f"b.`{element}`")
-                entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
-                escaped_entity_column_names.append(f"`{element}`")
-            else:
+            if isinstance(self._spark, SnowflakeSession):
                 entity_insert_cols.append(f'b."{element}"')
                 entity_filter_cols.append(f'EQUAL_NULL(a."{element}", b."{element}")')
                 escaped_entity_column_names.append(f'"{element}"')
+            else:
+                entity_insert_cols.append(f"b.`{element}`")
+                entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
+                escaped_entity_column_names.append(f"`{element}`")
 
         escaped_entity_column_names_str = ",".join(escaped_entity_column_names)
 
