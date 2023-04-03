@@ -4,6 +4,7 @@ Tile Registry Job Script for SP_TILE_REGISTRY
 
 
 from featurebyte.logger import logger
+from featurebyte.session.spark import SparkSession
 from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
 
@@ -81,21 +82,28 @@ class TileRegistry(TileCommon):
             cols_df = await self._spark.execute_query(f"SHOW COLUMNS IN {self.table_name}")
             cols = []
 
+            logger.debug(f"cols_df: {cols_df}")
+
             if cols_df is not None:
                 for _, row in cols_df.iterrows():
-                    cols.append(row["col_name"])
+                    if isinstance(self._spark, SparkSession):
+                        cols.append(row["col_name"].upper())
+                    else:
+                        cols.append(row["column_name"].upper())
 
             logger.debug(f"cols: {cols}")
 
             tile_add_sql = f"ALTER TABLE {self.table_name} ADD COLUMN\n"
             add_statements = []
             for i, input_column in enumerate(input_value_columns):
-                if input_column not in cols:
+                upper_col_name = input_column.upper()
+                if upper_col_name not in cols:
                     element_type = input_value_columns_types[i]
-                    add_statements.append(f"{input_column} {element_type}")
+                    add_statements.append(f"{upper_col_name} {element_type}")
                     if "_MONITOR" in self.table_name:
-                        add_statements.append(f"OLD_{input_column} {element_type}")
+                        add_statements.append(f"OLD_{upper_col_name} {element_type}")
 
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)
+                logger.debug(f"tile_add_sql: {tile_add_sql}")
                 await self._spark.execute_query(tile_add_sql)

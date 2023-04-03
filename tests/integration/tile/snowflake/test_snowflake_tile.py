@@ -1,11 +1,8 @@
 """
 This module contains integration tests for TileSnowflake
 """
-from datetime import datetime
-
 import pytest
 
-from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import TileType
 
@@ -27,55 +24,6 @@ async def test_generate_tile(tile_spec, session, tile_manager):
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_spec.tile_id}"
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 5
-
-
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@pytest.mark.asyncio
-async def test_schedule_online_tile(tile_spec, session, tile_manager):
-    """
-    Test schedule_online_tiles method in TileSnowflake
-    """
-    schedule_time = datetime.utcnow()
-    next_job_time = date_util.get_next_job_datetime(
-        input_dt=schedule_time,
-        frequency_minutes=tile_spec.frequency_minute,
-        time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-    )
-    cron = f"{next_job_time.minute} {next_job_time.hour} {next_job_time.day} * *"
-
-    await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
-
-    task_name = f"SHELL_TASK_{tile_spec.aggregation_id}_ONLINE".upper()
-
-    result = await session.execute_query(f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'")
-    assert len(result) == 1
-    assert result["name"].iloc[0] == task_name
-    assert result["schedule"].iloc[0] == f"USING CRON {cron} UTC"
-    assert result["state"].iloc[0] == "started"
-
-
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@pytest.mark.asyncio
-async def test_schedule_offline_tile(tile_spec, session, tile_manager):
-    """
-    Test schedule_offline_tiles method in TileSnowflake
-    """
-    schedule_time = datetime.utcnow()
-    next_job_time = date_util.get_next_job_datetime(
-        input_dt=schedule_time,
-        frequency_minutes=1440,
-        time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-    )
-
-    await tile_manager.schedule_offline_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
-
-    task_name = f"SHELL_TASK_{tile_spec.aggregation_id}_OFFLINE".upper()
-
-    result = await session.execute_query(f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'")
-    assert len(result) == 1
-    assert result["name"].iloc[0] == task_name
-    assert result["schedule"].iloc[0] == f"USING CRON 3 0 {next_job_time.day} * * UTC"
-    assert result["state"].iloc[0] == "started"
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

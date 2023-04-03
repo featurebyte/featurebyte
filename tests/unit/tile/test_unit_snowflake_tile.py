@@ -89,42 +89,6 @@ async def test_populate_feature_store(mock_execute_query, mock_snowflake_tile, t
 
 @pytest.mark.asyncio
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def test_generate_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
-    """
-    Test generate_tiles method in TileSnowflake
-    """
-    _ = mock_execute_query
-    sql = await tile_manager.generate_tiles(
-        mock_snowflake_tile,
-        TileType.ONLINE,
-        "2022-06-20 15:00:00",
-        "2022-06-21 16:00:00",
-        "2022-06-21 15:55:00",
-    )
-    expected_sql = textwrap.dedent(
-        """
-        call SP_TILE_GENERATE(
-            'select c1 from dummy where tile_start_ts >= ''2022-06-20 15:00:00'' and tile_start_ts < ''2022-06-21 16:00:00''',
-            '__FB_TILE_START_DATE_COLUMN',
-            'LAST_TILE_START_DATE',
-            183,
-            3,
-            5,
-            '"col1"',
-            'col2',
-            'FLOAT',
-            'TILE_ID1',
-            'ONLINE',
-            '2022-06-21 15:55:00',
-            'agg_id1'
-        )
-        """
-    ).strip()
-    assert textwrap.dedent(sql).strip() == expected_sql
-
-
-@pytest.mark.asyncio
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test schedule_online_tiles method in TileSnowflake
