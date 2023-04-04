@@ -3,16 +3,14 @@ Code to run in mkdocs#gen_ref_pages.py
 
 This is placed in here so that it can be imported as part of the featurebyte package.
 """
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
-
 import importlib
 import inspect
 import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
-from mkautodoc.extension import import_from_string
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
 import featurebyte
@@ -751,27 +749,6 @@ class DocsBuilder:
         # Set edit path for the documentation. This will be the link that links back to where the code is defined.
         source_path = "/".join(path_components) + ".py"
         self.set_edit_path(full_doc_path, source_path)
-
-    @staticmethod
-    def import_resource(resource_descriptor: str) -> Any:
-        """
-        Import module
-
-        resource_descriptor: str
-            Resource descriptor path
-
-        Returns
-        -------
-        Any
-        """
-        resource = import_from_string(resource_descriptor)
-        module = inspect.getmodule(resource)
-        try:
-            # reload module to capture updates in source code
-            module = importlib.reload(module)
-        except:
-            return resource
-        return getattr(module, resource.__name__)
 
     def generate_documentation_for_docs(
         self, doc_groups: Dict[DocGroupKey, DocGroupValue]
