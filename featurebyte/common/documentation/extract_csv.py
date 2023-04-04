@@ -37,7 +37,7 @@ class DocItems:
     that keys are all prefixed with `featurebyte.`.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.doc_items: Dict[str, DocItem] = {}
 
     def add(self, key: str, value: DocItem) -> None:
