@@ -30,7 +30,7 @@ async def test_monitor_tile__missing_tile(session):
     monitor_tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 100"
 
     tile_generate_ins = TileGenerate(
-        spark_session=session,
+        session=session,
         featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
@@ -47,7 +47,7 @@ async def test_monitor_tile__missing_tile(session):
     await tile_generate_ins.execute()
 
     tile_monitor_ins = TileMonitor(
-        spark_session=session,
+        session=session,
         featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
@@ -100,7 +100,7 @@ async def test_monitor_tile__updated_tile(session):
     monitor_tile_sql = tile_sql
 
     tile_generate_ins = TileGenerate(
-        spark_session=session,
+        session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -119,7 +119,7 @@ async def test_monitor_tile__updated_tile(session):
     await session.execute_query(sql)
 
     tile_monitor_ins = TileMonitor(
-        spark_session=session,
+        session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -171,7 +171,7 @@ async def test_monitor_tile__updated_tile_new_column(session):
     tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 10"
 
     tile_generate_ins = TileGenerate(
-        spark_session=session,
+        session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -195,7 +195,7 @@ async def test_monitor_tile__updated_tile_new_column(session):
     monitor_tile_sql_2 = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_2_str} FROM {table_name} limit 10"
 
     tile_monitor_ins = TileMonitor(
-        spark_session=session,
+        session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -243,7 +243,7 @@ async def test_monitor_tile__partial_columns(session):
     monitor_tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 95"
 
     tile_generate_ins = TileGenerate(
-        spark_session=session,
+        session=session,
         featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
@@ -260,7 +260,7 @@ async def test_monitor_tile__partial_columns(session):
     await tile_generate_ins.execute()
 
     tile_monitor_ins = TileMonitor(
-        spark_session=session,
+        session=session,
         featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
@@ -281,7 +281,7 @@ async def test_monitor_tile__partial_columns(session):
     await session.execute_query(f"ALTER TABLE {tile_id}_MONITOR ADD COLUMN VALUE1 FLOAT")
 
     tile_monitor_ins = TileMonitor(
-        spark_session=session,
+        session=session,
         featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,

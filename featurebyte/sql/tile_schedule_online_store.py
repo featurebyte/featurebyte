@@ -5,12 +5,9 @@ from typing import Any
 
 from datetime import datetime
 
-from pydantic.fields import PrivateAttr
-from pydantic.main import BaseModel
-
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
-from featurebyte.session.snowflake import SnowflakeSession
+from featurebyte.sql.base import BaselSqlModel
 from featurebyte.sql.common import (
     CACHE_TABLE_PLACEHOLDER,
     construct_create_delta_table_query,
@@ -19,7 +16,7 @@ from featurebyte.sql.common import (
 )
 
 
-class TileScheduleOnlineStore(BaseModel):
+class TileScheduleOnlineStore(BaselSqlModel):
     """
     Tile Schedule Online Store script corresponding to SP_TILE_SCHEDULE_ONLINE_STORE stored procedure
     """
@@ -27,27 +24,24 @@ class TileScheduleOnlineStore(BaseModel):
     aggregation_id: str
     job_schedule_ts_str: str
 
-    _spark: BaseSession = PrivateAttr()
-
-    def __init__(self, spark_session: BaseSession, **kwargs: Any):
+    def __init__(self, session: BaseSession, **kwargs: Any):
         """
         Initialize Tile Schedule Online Store Instance
 
         Parameters
         ----------
-        spark_session: BaseSession
+        session: BaseSession
             input SparkSession
         kwargs: Any
             constructor arguments
         """
-        super().__init__(**kwargs)
-        self._spark = spark_session
+        super().__init__(session=session, **kwargs)
 
     async def execute(self) -> None:
         """
         Execute tile schedule online store operation
         """
-        # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+        # pylint: disable=too-many-locals,too-many-statements
         select_sql = f"""
             SELECT
               RESULT_ID,
@@ -59,8 +53,7 @@ class TileScheduleOnlineStore(BaseModel):
             WHERE
               AGGREGATION_ID ILIKE '{self.aggregation_id}' AND IS_DELETED = FALSE
         """
-
-        online_store_df = await self._spark.execute_query(select_sql)
+        online_store_df = await self._session.execute_query(select_sql)
         if online_store_df is None or len(online_store_df) == 0:
             return
 
@@ -85,15 +78,14 @@ class TileScheduleOnlineStore(BaseModel):
             # check if feature store table exists
             fs_table_exist_flag = True
             try:
-                await self._spark.execute_query(f"select * from {fs_table} limit 1")
+                await self._session.execute_query(f"select * from {fs_table} limit 1")
             except Exception:  # pylint: disable=broad-except
                 fs_table_exist_flag = False
             logger.debug(f"fs_table_exist_flag: {fs_table_exist_flag}")
 
-            if isinstance(self._spark, SnowflakeSession):
-                entities_fname_str = ", ".join([f'"{col}"' for col in entity_columns + [f_name]])
-            else:
-                entities_fname_str = ", ".join([f"`{col}`" for col in entity_columns + [f_name]])
+            entities_fname_str = ", ".join(
+                [self.quote_column(col) for col in entity_columns + [f_name]]
+            )
             logger.debug(f"entities_fname_str: {entities_fname_str}")
 
             current_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -101,18 +93,18 @@ class TileScheduleOnlineStore(BaseModel):
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
                 create_sql = construct_create_delta_table_query(
-                    fs_table, f"select {entities_fname_str} from ({f_sql})", session=self._spark
+                    fs_table, f"select {entities_fname_str} from ({f_sql})", session=self._session
                 )
                 logger.debug(f"create_sql: {create_sql}")
-                await self._spark.execute_query(create_sql)
+                await self._session.execute_query(create_sql)
 
-                await self._spark.execute_query(
+                await self._session.execute_query(
                     f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP"
                 )
 
                 logger.debug(f"creating online store table: {fs_table}")
                 await retry_sql(
-                    session=self._spark,
+                    session=self._session,
                     sql=f"UPDATE {fs_table} SET UPDATED_AT_{f_name} = to_timestamp('{current_ts}')",
                 )
                 logger.debug(f"done creating online store table: {fs_table}")
@@ -121,90 +113,61 @@ class TileScheduleOnlineStore(BaseModel):
                 entity_insert_cols = []
                 entity_filter_cols = []
                 for element in entity_columns:
-                    if isinstance(self._spark, SnowflakeSession):
-                        entity_insert_cols.append(f'b."{element}"')
-                        entity_filter_cols.append(f'a."{element}" = b."{element}"')
-                    else:
-                        entity_insert_cols.append(f"b.`{element}`")
-                        entity_filter_cols.append(f"a.`{element}` = b.`{element}`")
+                    quote_element = self.quote_column(element)
+                    entity_insert_cols.append(f"""b.{quote_element}""")
+                    entity_filter_cols.append(f"""a.{quote_element} = b.{quote_element}""")
 
                 entity_insert_cols_str = ", ".join(entity_insert_cols)
                 entity_filter_cols_str = " AND ".join(entity_filter_cols)
 
                 # check whether feature value column exists, if not add the new column
-                cols_df = await self._spark.execute_query(f"SHOW COLUMNS IN {fs_table}")
+                cols_df = await self._session.execute_query(f"SHOW COLUMNS IN {fs_table}")
                 cols = []
                 if cols_df is not None:
                     for _, row in cols_df.iterrows():
-                        if isinstance(self._spark, SnowflakeSession):
-                            cols.append(row["column_name"].upper())
-                        else:
-                            cols.append(row["col_name"].upper())
+                        cols.append(row[self.schema_column_name].upper())
                 col_exists = f_name.upper() in cols
 
                 logger.debug(f"col_exists: {col_exists}")
+                quote_f_name = self.quote_column(f_name)
+
                 if not col_exists:
                     logger.debug(f"adding column ({f_name}) to table {fs_table}")
-                    if isinstance(self._spark, SnowflakeSession):
-                        await self._spark.execute_query(
-                            f'ALTER TABLE {fs_table} ADD "{f_name}" {f_value_type}, UPDATED_AT_{f_name} TIMESTAMP'
-                        )
-                    else:
-                        await self._spark.execute_query(
-                            f"ALTER TABLE {fs_table} ADD COLUMNS (`{f_name}` {f_value_type}, UPDATED_AT_{f_name} TIMESTAMP)"
-                        )
+                    await self._session.execute_query(
+                        f"""ALTER TABLE {fs_table} ADD COLUMN {quote_f_name} {f_value_type}"""
+                    )
+                    await self._session.execute_query(
+                        f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP"
+                    )
                     logger.debug(f"done adding column ({f_name}) to table {fs_table}")
 
                 # update or insert feature values for entities that are in entity universe
-                if isinstance(self._spark, SnowflakeSession):
-                    if entity_columns:
-                        on_condition_str = entity_filter_cols_str
-                        values_args = f'{entity_insert_cols_str}, b."{f_name}"'
-                    else:
-                        on_condition_str = "true"
-                        values_args = f'b."{f_name}"'
-
-                    # update or insert feature values for entities that are in entity universe
-                    merge_sql = f"""
-                         merge into {fs_table} a using ({CACHE_TABLE_PLACEHOLDER}) b
-                             on {on_condition_str}
-                             when matched then
-                                 update set a."{f_name}" = b."{f_name}", a.UPDATED_AT_{f_name} = to_timestamp('{current_ts}')
-                             when not matched then
-                                 insert ({entities_fname_str}, UPDATED_AT_{f_name})
-                                     values ({values_args}, to_timestamp('{current_ts}'))
-                     """
+                if entity_columns:
+                    on_condition_str = entity_filter_cols_str
+                    values_args = f"""{entity_insert_cols_str}, b.{quote_f_name}"""
                 else:
-                    if entity_columns:
-                        on_condition_str = entity_filter_cols_str
-                        values_args = f"{entity_insert_cols_str}, b.`{f_name}`"
-                    else:
-                        on_condition_str = "true"
-                        values_args = f"b.`{f_name}`"
+                    on_condition_str = "true"
+                    values_args = f"""b.{quote_f_name}"""
 
-                    # update or insert feature values for entities that are in entity universe
-                    merge_sql = f"""
-                         merge into {fs_table} a using ({CACHE_TABLE_PLACEHOLDER}) b
-                             on {on_condition_str}
-                             when matched then
-                                 update set a.`{f_name}` = b.`{f_name}`, a.UPDATED_AT_{f_name} = to_timestamp('{current_ts}')
-                             when not matched then
-                                 insert ({entities_fname_str}, UPDATED_AT_{f_name})
-                                     values ({values_args}, to_timestamp('{current_ts}'))
-                     """
+                # update or insert feature values for entities that are in entity universe
+                merge_sql = f"""
+                     merge into {fs_table} a using ({CACHE_TABLE_PLACEHOLDER}) b
+                         on {on_condition_str}
+                         when matched then
+                             update set a.{quote_f_name} = b.{quote_f_name}, a.UPDATED_AT_{f_name} = to_timestamp('{current_ts}')
+                         when not matched then
+                             insert ({entities_fname_str}, UPDATED_AT_{f_name})
+                                 values ({values_args}, to_timestamp('{current_ts}'))
+                 """
 
                 logger.debug(f"merging online store table: {fs_table}")
                 await retry_sql_with_cache(
-                    session=self._spark, sql=merge_sql, cached_select_sql=f_sql
+                    session=self._session, sql=merge_sql, cached_select_sql=f_sql
                 )
                 logger.debug(f"done merging online store table: {fs_table}")
 
                 # remove feature values for entities that are not in entity universe
-                if isinstance(self._spark, SnowflakeSession):
-                    remove_values_sql = f"""UPDATE {fs_table} SET "{f_name}" = NULL WHERE UPDATED_AT_{f_name} < to_timestamp('{current_ts}')"""
-                else:
-                    remove_values_sql = f"UPDATE {fs_table} SET `{f_name}` = NULL WHERE UPDATED_AT_{f_name} < to_timestamp('{current_ts}')"
-
+                remove_values_sql = f"""UPDATE {fs_table} SET {quote_f_name} = NULL WHERE UPDATED_AT_{f_name} < to_timestamp('{current_ts}')"""
                 logger.debug(f"starting removing records not in scope: {fs_table}")
-                await retry_sql(session=self._spark, sql=remove_values_sql)
+                await retry_sql(session=self._session, sql=remove_values_sql)
                 logger.debug(f"done removing records not in scope: {fs_table}")

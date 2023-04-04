@@ -62,7 +62,7 @@ class TileGenerateSchedule(TileCommon):
         monitor_tile_start_ts_str = tile_start_ts_str
 
         # use the last_tile_start_date from tile registry as tile_start_ts_str if it is earlier than tile_start_ts_str
-        registry_df = await self._spark.execute_query(
+        registry_df = await self._session.execute_query(
             f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}' AND LAST_TILE_START_DATE_ONLINE IS NOT NULL"
         )
         if registry_df is not None and len(registry_df) > 0:
@@ -100,7 +100,7 @@ class TileGenerateSchedule(TileCommon):
 
         insert_sql = audit_insert_sql.replace("<STATUS>", "STARTED").replace("<MESSAGE>", "")
         logger.debug(insert_sql)
-        await retry_sql(self._spark, insert_sql)
+        await retry_sql(self._session, insert_sql)
 
         monitor_end_ts = tile_end_ts - timedelta(minutes=self.frequency_minute)
         monitor_tile_end_ts_str = monitor_end_ts.strftime(date_format)
@@ -118,7 +118,7 @@ class TileGenerateSchedule(TileCommon):
         last_tile_start_str = last_tile_start_ts.strftime(date_format)
 
         tile_monitor_ins = TileMonitor(
-            spark_session=self._spark,
+            session=self._session,
             tile_id=tile_id,
             tile_modulo_frequency_second=self.tile_modulo_frequency_second,
             blind_spot_second=self.blind_spot_second,
@@ -134,7 +134,7 @@ class TileGenerateSchedule(TileCommon):
         )
 
         tile_generate_ins = TileGenerate(
-            spark_session=self._spark,
+            session=self._session,
             tile_id=tile_id,
             tile_modulo_frequency_second=self.tile_modulo_frequency_second,
             blind_spot_second=self.blind_spot_second,
@@ -151,7 +151,7 @@ class TileGenerateSchedule(TileCommon):
         )
 
         tile_online_store_ins = TileScheduleOnlineStore(
-            spark_session=self._spark,
+            session=self._session,
             aggregation_id=self.aggregation_id,
             job_schedule_ts_str=last_tile_end_ts.strftime(date_format),
         )
@@ -197,10 +197,10 @@ class TileGenerateSchedule(TileCommon):
                     "<MESSAGE>", message
                 )
                 logger.error("fail_insert_sql: ", ex_insert_sql)
-                await retry_sql(self._spark, ex_insert_sql)
+                await retry_sql(self._session, ex_insert_sql)
                 raise exception
 
             success_code = spec["status"]["success"]
             insert_sql = audit_insert_sql.replace("<STATUS>", success_code).replace("<MESSAGE>", "")
             logger.info("success_insert_sql: ", insert_sql)
-            await retry_sql(self._spark, insert_sql)
+            await retry_sql(self._session, insert_sql)

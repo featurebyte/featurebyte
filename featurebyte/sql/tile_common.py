@@ -5,14 +5,11 @@ from typing import Any, List
 
 from abc import ABC, abstractmethod
 
-from pydantic.fields import PrivateAttr
-from pydantic.main import BaseModel
-
 from featurebyte.session.base import BaseSession
-from featurebyte.session.snowflake import SnowflakeSession
+from featurebyte.sql.base import BaselSqlModel
 
 
-class TileCommon(BaseModel, ABC):
+class TileCommon(BaselSqlModel, ABC):
     """
     Base class for Tile Operation Classes
     """
@@ -28,21 +25,18 @@ class TileCommon(BaseModel, ABC):
     value_column_names: List[str]
     value_column_types: List[str]
 
-    _spark: BaseSession = PrivateAttr()
-
-    def __init__(self, spark_session: BaseSession, **kwargs: Any):
+    def __init__(self, session: BaseSession, **kwargs: Any):
         """
         Initialize Tile Operation Instance
 
         Parameters
         ----------
-        spark_session: BaseSession
+        session: BaseSession
             input SparkSession
         kwargs: Any
             constructor arguments
         """
-        super().__init__(**kwargs)
-        self._spark = spark_session
+        super().__init__(session=session, **kwargs)
 
     @property
     def entity_column_names_str(self) -> str:
@@ -53,10 +47,7 @@ class TileCommon(BaseModel, ABC):
         -------
             string representation of entity_column_names
         """
-        if isinstance(self._spark, SnowflakeSession):
-            return ",".join([f'"{col}"' for col in self.entity_column_names])
-
-        return ",".join([f"`{col}`" for col in self.entity_column_names])
+        return ",".join([self.quote_column(col) for col in self.entity_column_names])
 
     @property
     def value_column_names_str(self) -> str:

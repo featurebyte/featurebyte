@@ -111,7 +111,7 @@ class TileManager(BaseModel):
             timestamp string of the job schedule
         """
         executor = TileScheduleOnlineStore(
-            spark_session=self._session,
+            session=self._session,
             aggregation_id=tile_spec.aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
         )
@@ -154,7 +154,7 @@ class TileManager(BaseModel):
             tile_sql = tile_spec.tile_sql
 
         tile_generate_ins = TileGenerate(
-            spark_session=self._session,
+            session=self._session,
             tile_id=tile_spec.tile_id,
             tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
             blind_spot_second=tile_spec.blind_spot_second,
@@ -196,7 +196,7 @@ class TileManager(BaseModel):
             ]
 
         tile_entity_tracking_ins = TileGenerateEntityTracking(
-            spark_session=self._session,
+            session=self._session,
             tile_id=tile_spec.aggregation_id,
             entity_column_names=entity_column_names,
             entity_table=temp_entity_table,
@@ -330,7 +330,7 @@ class TileManager(BaseModel):
         if not exist_job:
             logger.info(f"Creating new job {job_id}")
             tile_schedule_ins = TileGenerateSchedule(
-                spark_session=self._session,
+                session=self._session,
                 tile_id=tile_spec.tile_id,
                 tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
                 blind_spot_second=tile_spec.blind_spot_second,

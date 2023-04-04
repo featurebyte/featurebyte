@@ -2,7 +2,6 @@
 Tile Registry Job Script for SP_TILE_REGISTRY
 """
 from featurebyte.logger import logger
-from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
 
@@ -15,7 +14,6 @@ class TileRegistry(TileCommon):
     table_name: str
     table_exist: bool
 
-    # pylint: disable=too-many-locals
     async def execute(self) -> None:
         """
         Execute tile registry operation
@@ -27,7 +25,7 @@ class TileRegistry(TileCommon):
         input_value_columns_types = [value for value in self.value_column_types if value.strip()]
         logger.debug(f"input_value_columns_types: {input_value_columns_types}")
 
-        registry_df = await self._spark.execute_query(
+        registry_df = await self._session.execute_query(
             f"SELECT COUNT(*) as TILE_COUNT from tile_registry "
             f"WHERE TILE_ID = '{self.tile_id}' "
             f"AND AGGREGATION_ID = '{self.aggregation_id}' "
@@ -74,21 +72,15 @@ class TileRegistry(TileCommon):
                     null
                 )
             """
-            await retry_sql(self._spark, insert_sql)
+            await retry_sql(self._session, insert_sql)
 
         if self.table_exist:
-            cols_df = await self._spark.execute_query(f"SHOW COLUMNS IN {self.table_name}")
+            cols_df = await self._session.execute_query(f"SHOW COLUMNS IN {self.table_name}")
             cols = []
-
             logger.debug(f"cols_df: {cols_df}")
-
             if cols_df is not None:
                 for _, row in cols_df.iterrows():
-                    if isinstance(self._spark, SnowflakeSession):
-                        cols.append(row["column_name"].upper())
-                    else:
-                        cols.append(row["col_name"].upper())
-
+                    cols.append(row[self.schema_column_name].upper())
             logger.debug(f"cols: {cols}")
 
             tile_add_sql = f"ALTER TABLE {self.table_name} ADD COLUMN\n"
@@ -103,4 +95,4 @@ class TileRegistry(TileCommon):
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)
                 logger.debug(f"tile_add_sql: {tile_add_sql}")
-                await self._spark.execute_query(tile_add_sql)
+                await self._session.execute_query(tile_add_sql)

@@ -34,7 +34,7 @@ async def test_schedule_generate_tile_online(session, tile_task_prep_spark):
     )
 
     tile_schedule_ins = TileGenerateSchedule(
-        spark_session=session,
+        session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -109,7 +109,7 @@ async def test_schedule_monitor_tile_online(session):
     )
 
     tile_schedule_ins = TileGenerateSchedule(
-        spark_session=session,
+        session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -141,7 +141,7 @@ async def test_schedule_monitor_tile_online(session):
 
     tile_end_ts_2 = "2022-06-05T23:58:00Z"
     tile_schedule_ins = TileGenerateSchedule(
-        spark_session=session,
+        session=session,
         featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
@@ -197,7 +197,7 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
     )
 
     tile_schedule_ins = TileGenerateSchedule(
-        spark_session=session,
+        session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
