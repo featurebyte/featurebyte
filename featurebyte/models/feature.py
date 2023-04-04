@@ -276,6 +276,9 @@ class FeatureModel(FrozenFeatureModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
+    definition: Optional[str] = Field(
+        allow_mutation=False, default=None, description="Feature Definition"
+    )
 
 
 class FeatureSignature(FeatureByteBaseModel):

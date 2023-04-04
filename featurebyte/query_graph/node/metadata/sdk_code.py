@@ -284,8 +284,12 @@ class CodeGenerationConfig(BaseModel):
     CodeGenerationConfig is used to control the code generating style like whether to introduce a new variable to
     store some intermediate results.
 
+    feature_store_id: PydanticObjectId
+        Feature store ID used to construct unsaved table object
     feature_store_name: str
         Feature store name used to construct unsaved table object
+    table_id_to_info: Dict[PydanticObjectId, Any]
+        Mapping from table ID to table info (name, record_creation_timestamp_column, etc)
     final_output_name: str
         Variable name which contains final output
     to_use_saved_data: str
