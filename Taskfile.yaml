@@ -68,7 +68,6 @@ tasks:
     desc: "Run the linter"
     deps:
       - task: install
-      - task: format
     cmds:
       - task: lint-style
       - task: lint-type
