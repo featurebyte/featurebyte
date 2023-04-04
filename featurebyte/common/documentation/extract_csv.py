@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 import csv
 from dataclasses import dataclass
 
+from featurebyte.logger import logger
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 from featurebyte.common.documentation.resource_extractor import (
     ResourceDetails,
@@ -78,7 +79,11 @@ def get_resource_details_for_path(path: str) -> ResourceDetails:
 
 
 def dump_to_csv():
-    file_name = "debug/test.csv"
+    file_name = "debug/documentation.csv"
+    logger.info("############################################")
+    logger.info(f"# Generating CSV - {file_name} #")
+    logger.info("############################################")
+    logger.info("Building items to generate")
     with open(file_name, "w") as f:
         all_doc_items_to_generate = []
         for layout_item in get_overall_layout():
@@ -148,6 +153,7 @@ def dump_to_csv():
                         see_also="missing",
                     )
                 )
+        logger.info("Writing to CSV")
         writer = csv.writer(f)
         writer.writerow(
             [
@@ -176,4 +182,4 @@ def dump_to_csv():
                     doc_item.see_also,
                 ]
             )
-        print(f"done writing rows to {file_name}")
+        logger.info(f"Success - done writing rows to {file_name}")
