@@ -217,7 +217,9 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     >>> UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing") # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.UnexpectedValueImputation")
+    __fbautodoc__ = FBAutoDoc(
+        section=["Enums"], proxy_class="featurebyte.UnexpectedValueImputation"
+    )
 
     type: Literal[ConditionOperationField.NOT_IN] = Field(
         ConditionOperationField.NOT_IN, const=True
@@ -265,7 +267,9 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
     >>> ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0) # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.ValueBeyondEndpointImputation")
+    __fbautodoc__ = FBAutoDoc(
+        section=["Enums"], proxy_class="featurebyte.ValueBeyondEndpointImputation"
+    )
 
     type: Literal[
         ConditionOperationField.LESS_THAN,
