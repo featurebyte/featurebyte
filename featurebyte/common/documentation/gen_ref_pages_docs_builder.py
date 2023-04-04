@@ -3,13 +3,14 @@ Code to run in mkdocs#gen_ref_pages.py
 
 This is placed in here so that it can be imported as part of the featurebyte package.
 """
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+
 import importlib
 import inspect
 import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from mkautodoc.extension import import_from_string
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
@@ -18,7 +19,7 @@ import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
-from featurebyte.common.documentation.extract_csv import dump_to_csv, DOC_ITEMS, DocItem
+from featurebyte.common.documentation.extract_csv import DOC_ITEMS, DocItem, dump_to_csv
 from featurebyte.common.documentation.resource_extractor import get_resource_details
 from featurebyte.logger import logger
 
@@ -609,6 +610,7 @@ class DocsBuilder:
         self.should_generate_full_docs = os.environ.get(
             "FB_GENERATE_FULL_DOCS", should_generate_full_docs
         )
+        self.should_dump_to_csv = os.environ.get("FB_DUMP_TO_CSV", False)
 
     def get_doc_groups(self) -> Dict[DocGroupKey, DocGroupValue]:
         """
@@ -834,11 +836,14 @@ class DocsBuilder:
                     doc_path = api_path + ".md"
                     reverse_lookup_map[api_path.lower()] = doc_path
                     resource_details = get_resource_details(obj_path)
-                    DOC_ITEMS.add(api_path.lower(), DocItem(
-                        class_method_or_attribute=api_path,
-                        link=f"http://127.0.0.1:8000/{api_path}",
-                        resource_details=resource_details,
-                    ))
+                    DOC_ITEMS.add(
+                        api_path.lower(),
+                        DocItem(
+                            class_method_or_attribute=api_path,
+                            link=f"http://127.0.0.1:8000/{api_path}",
+                            resource_details=resource_details,
+                        ),
+                    )
                     self._build_and_write_to_file(
                         obj_path,
                         doc_group_value,
@@ -852,11 +857,14 @@ class DocsBuilder:
                     truncated_lookup_path = lookup_path.replace("featurebyte.", "")
                 doc_path_without_ext = doc_path.replace(".md", "")
                 resource_details = get_resource_details(obj_path)
-                DOC_ITEMS.add(truncated_lookup_path, DocItem(
-                    class_method_or_attribute=api_path,
-                    link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
-                    resource_details=resource_details,
-                ))
+                DOC_ITEMS.add(
+                    truncated_lookup_path,
+                    DocItem(
+                        class_method_or_attribute=api_path,
+                        link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
+                        resource_details=resource_details,
+                    ),
+                )
                 self._build_and_write_to_file(
                     obj_path,
                     doc_group_value,
@@ -915,8 +923,9 @@ class DocsBuilder:
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
 
-        # write all doc items
-        dump_to_csv()
+        if self.should_dump_to_csv:
+            # write all doc items
+            dump_to_csv()
         return updated_nav
 
 

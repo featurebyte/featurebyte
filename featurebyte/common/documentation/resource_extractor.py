@@ -119,9 +119,7 @@ class ResourceDetails(BaseModel):
 
     @property
     def description_string(self) -> str:
-        return " ".join(
-            [self.short_description or "", self.long_description or ""]
-        )
+        return " ".join([self.short_description or "", self.long_description or ""])
 
     @property
     def parameters_string(self) -> str:

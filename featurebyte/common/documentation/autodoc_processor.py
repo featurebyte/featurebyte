@@ -3,8 +3,9 @@ Autodoc Processor
 """
 from __future__ import annotations
 
-import re
 from typing import Any, List, Optional
+
+import re
 from xml.etree import ElementTree as etree
 
 from markdown import Markdown

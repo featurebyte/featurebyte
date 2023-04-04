@@ -1,12 +1,16 @@
 """
 Extract documentation into a CSV file.
 """
+from typing import Dict, List, Optional
+
 import csv
 from dataclasses import dataclass
-from typing import Dict, Optional, List
 
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
-from featurebyte.common.documentation.resource_extractor import ResourceDetails, get_resource_details
+from featurebyte.common.documentation.resource_extractor import (
+    ResourceDetails,
+    get_resource_details,
+)
 
 
 @dataclass
