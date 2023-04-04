@@ -24,7 +24,6 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel, TableStatus
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
@@ -468,27 +467,13 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         """
         assert cls._create_schema_class is not None
 
-        # construct an input node & insert into the global graph
         data_id_value = _id or ObjectId()
-        graph, inserted_node = cls.construct_graph_and_node(
-            feature_store_details=source_table.feature_store.get_feature_store_details(),
-            table_data_dict={
-                "tabular_source": source_table.tabular_source,
-                "columns_info": source_table.columns_info,
-                "_id": data_id_value,
-                **kwargs,
-            },
-            graph=GlobalQueryGraph(),
-        )
-
         data = cls._create_schema_class(  # pylint: disable=not-callable
             _id=data_id_value,
             name=name,
             tabular_source=source_table.tabular_source,
             columns_info=source_table.columns_info,
             record_creation_timestamp_column=record_creation_timestamp_column,
-            graph=graph,
-            node_name=inserted_node.name,
             **kwargs,
         )
 
