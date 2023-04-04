@@ -5,6 +5,37 @@ from typing import Any, Iterable, List, Mapping
 
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
+from featurebyte.common.documentation.constants import (
+    ACTIVATE,
+    ADD_METADATA,
+    CATALOG,
+    CREATE,
+    DATA_SOURCE,
+    ENTITY,
+    UTILITY_CLASSES,
+    EXPLORE,
+    FEATURE,
+    FEATURE_GROUP,
+    FEATURE_LIST,
+    FEATURE_STORE,
+    GET,
+    INFO,
+    JOIN,
+    LAGS,
+    LINEAGE,
+    LIST,
+    RELATIONSHIP,
+    SERVE,
+    TABLE,
+    TABLE_COLUMN,
+    TRANSFORM,
+    TYPE,
+    UPDATE,
+    VERSION,
+    VIEW,
+    VIEW_COLUMN,
+)
+
 
 class BetaWave3Nav(Nav):
     """
@@ -15,36 +46,37 @@ class BetaWave3Nav(Nav):
     """
 
     _custom_root_level_order = [
-        "FeatureStore",
-        "Catalog",
-        "DataSource",
-        "Table",
-        "TableColumn",
-        "Entity",
-        "Relationship",
-        "View",
-        "ViewColumn",
-        "Feature",
-        "FeatureGroup",
-        "FeatureList",
+        FEATURE_STORE,
+        CATALOG,
+        DATA_SOURCE,
+        TABLE,
+        TABLE_COLUMN,
+        ENTITY,
+        RELATIONSHIP,
+        VIEW,
+        VIEW_COLUMN,
+        FEATURE,
+        FEATURE_GROUP,
+        FEATURE_LIST,
+        UTILITY_CLASSES,
     ]
 
     _custom_second_level_order = [
-        "Type",
-        "Activate",
-        "List",
-        "Get",
-        "Create",
-        "Add Metadata",
-        "Join",
-        "Transform",
-        "Lags",
-        "Serve",
-        "Explore",
-        "Info",
-        "Lineage",
-        "Update",
-        "Version",
+        TYPE,
+        ACTIVATE,
+        LIST,
+        GET,
+        CREATE,
+        ADD_METADATA,
+        JOIN,
+        TRANSFORM,
+        LAGS,
+        SERVE,
+        EXPLORE,
+        INFO,
+        LINEAGE,
+        UPDATE,
+        VERSION,
     ]
 
     _custom_order_mapping = {

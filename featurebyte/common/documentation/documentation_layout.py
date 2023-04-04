@@ -5,6 +5,37 @@ from typing import List, Optional
 
 from dataclasses import dataclass
 
+from featurebyte.common.documentation.constants import (
+    ACTIVATE,
+    ADD_METADATA,
+    CATALOG,
+    CREATE,
+    DATA_SOURCE,
+    ENTITY,
+    UTILITY_CLASSES,
+    EXPLORE,
+    FEATURE,
+    FEATURE_GROUP,
+    FEATURE_LIST,
+    FEATURE_STORE,
+    GET,
+    INFO,
+    JOIN,
+    LAGS,
+    LINEAGE,
+    LIST,
+    RELATIONSHIP,
+    SERVE,
+    TABLE,
+    TABLE_COLUMN,
+    TRANSFORM,
+    TYPE,
+    UPDATE,
+    VERSION,
+    VIEW,
+    VIEW_COLUMN,
+)
+
 
 @dataclass
 class DocLayoutItem:
@@ -33,35 +64,6 @@ class DocLayoutItem:
         return "featurebyte." + self.doc_path_override
 
 
-ACTIVATE = "Activate"
-ADD_METADATA = "Add Metadata"
-CATALOG = "Catalog"
-CREATE = "Create"
-DATA_SOURCE = "DataSource"
-ENTITY = "Entity"
-EXPLORE = "Explore"
-FEATURE = "Feature"
-FEATURE_GROUP = "FeatureGroup"
-FEATURE_LIST = "FeatureList"
-FEATURE_STORE = "FeatureStore"
-GET = "Get"
-INFO = "Info"
-JOIN = "Join"
-LAGS = "Lags"
-LINEAGE = "Lineage"
-LIST = "List"
-RELATIONSHIP = "Relationship"
-SERVE = "Serve"
-TABLE = "Table"
-TABLE_COLUMN = "TableColumn"
-TRANSFORM = "Transform"
-TYPE = "Type"
-UPDATE = "Update"
-VERSION = "Version"
-VIEW = "View"
-VIEW_COLUMN = "ViewColumn"
-
-
 def _get_table_layout() -> List[DocLayoutItem]:
     """
     Return the layout for the table module.
@@ -72,7 +74,6 @@ def _get_table_layout() -> List[DocLayoutItem]:
         The layout for the data module.
     """
     return [
-        # DATA
         DocLayoutItem([TABLE]),
         DocLayoutItem([TABLE, GET, "Catalog.get_table"]),
         DocLayoutItem([TABLE, GET, "Table.get_by_id"]),
@@ -628,6 +629,24 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_enum_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the Enums used in featurebyte.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the Enums used in featurebyte.
+    """
+    return [
+        DocLayoutItem([UTILITY_CLASSES, "MissingValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, "DisguisedValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, "UnexpectedValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, "ValueBeyondEndpointImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, "StringValueImputation"]),
+    ]
+
+
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -650,4 +669,5 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_view_layout(),
         *_get_view_column_layout(),
         *_get_catalog_layout(),
+        *_get_enum_layout(),
     ]
