@@ -75,14 +75,7 @@ class TileRegistry(TileCommon):
             await retry_sql(self._session, insert_sql)
 
         if self.table_exist:
-            cols_df = await self._session.execute_query(f"SHOW COLUMNS IN {self.table_name}")
-            cols = []
-            logger.debug(f"cols_df: {cols_df}")
-            if cols_df is not None:
-                for _, row in cols_df.iterrows():
-                    cols.append(row[self.schema_column_name].upper())
-            logger.debug(f"cols: {cols}")
-
+            cols = await self.get_table_columns(self.table_name)
             tile_add_sql = f"ALTER TABLE {self.table_name} ADD COLUMN\n"
             add_statements = []
             for i, input_column in enumerate(input_value_columns):

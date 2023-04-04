@@ -121,11 +121,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 entity_filter_cols_str = " AND ".join(entity_filter_cols)
 
                 # check whether feature value column exists, if not add the new column
-                cols_df = await self._session.execute_query(f"SHOW COLUMNS IN {fs_table}")
-                cols = []
-                if cols_df is not None:
-                    for _, row in cols_df.iterrows():
-                        cols.append(row[self.schema_column_name].upper())
+                cols = await self.get_table_columns(fs_table)
                 col_exists = f_name.upper() in cols
 
                 logger.debug(f"col_exists: {col_exists}")

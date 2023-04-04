@@ -1,7 +1,7 @@
 """
 Base Class for SQL related operations
 """
-from typing import Any
+from typing import Any, List
 
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
@@ -62,3 +62,23 @@ class BaselSqlModel(BaseModel):
             return "column_name"
 
         return "col_name"
+
+    async def get_table_columns(self, table_name: str) -> List[str]:
+        """
+        Get column names for a table. The column names are returned in upper case.
+
+        Parameters
+        ----------
+        table_name: str
+            input table name
+
+        Returns
+        -------
+            list of column names in upper case
+        """
+        cols_df = await self._session.execute_query(f"SHOW COLUMNS IN {table_name}")
+        cols = []
+        if cols_df is not None:
+            for _, row in cols_df.iterrows():
+                cols.append(row[self.schema_column_name].upper())
+        return cols
