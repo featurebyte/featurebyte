@@ -39,7 +39,7 @@ tasks:
   build:
     desc: "Build the project"
     sources:
-      - featurebyte/
+      - featurebyte/**/*
       - pyproject.toml
       - poetry.lock
       - LICENSE
@@ -52,8 +52,8 @@ tasks:
   format:
     desc: "Format the code"
     sources:
-      - featurebyte/
-      - tests/
+      - featurebyte/**/*
+      - tests/**/*
       - poetry.lock
       - pyproject.toml
     deps:
@@ -85,8 +85,8 @@ tasks:
     sources:
       - poetry.lock
       - pyproject.toml
-      - featurebyte/
-      - tests/
+      - featurebyte/**/*
+      - tests/**/*
     cmds:
       - poetry run toml-sort --check poetry.lock pyproject.toml    # Check if user been using pre-commit hook
       - poetry run isort --diff --check-only --settings-path pyproject.toml .
@@ -100,8 +100,8 @@ tasks:
     sources:
       - poetry.lock
       - pyproject.toml
-      - featurebyte/
-      - tests/
+      - featurebyte/**/*
+      - tests/**/*
     cmds:
       - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py)' .
 
@@ -130,7 +130,7 @@ tasks:
     sources:
       - poetry.lock
       - pyproject.toml
-      - featurebyte/
+      - featurebyte/**/*
     cmds:
       - poetry run pip-licenses --packages '{{ .PACKAGES }}' --allow-only='{{ .PERMISSIVE_LICENSES }}'
       - poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5 --ignore-vul GHSA-74m5-2c7w-9w3x --ignore-vul GHSA-8fww-64cx-x8p5
@@ -140,7 +140,7 @@ tasks:
     sources:
       - poetry.lock
       - pyproject.toml
-      - featurebyte/
+      - featurebyte/**/*
     cmds:
       - poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
@@ -157,6 +157,11 @@ tasks:
     desc: Runs unit tests
     deps:
       - task: install
+    sources:
+      - poetry.lock
+      - pyproject.toml
+      - featurebyte/**/*
+      - tests/**/*
     cmds:
       - poetry run pytest --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
 
@@ -189,7 +194,7 @@ tasks:
   test-docs:
     desc: Runs documentation tests
     sources:
-      - featurebyte/
+      - featurebyte/**/*
     deps:
       - task: install
     cmds:
