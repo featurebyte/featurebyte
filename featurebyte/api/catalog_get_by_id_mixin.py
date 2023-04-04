@@ -25,8 +25,8 @@ class CatalogGetByIdMixin:
 
     @update_and_reset_catalog
     def get_data_source_by_feature_store_id(
-        self, id: ObjectId
-    ) -> DataSource:  # pylint: disable=redefined-builtin,invalid-name
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> DataSource:
         """
         Get data source by a given feature store id.
 
@@ -51,8 +51,8 @@ class CatalogGetByIdMixin:
 
     @update_and_reset_catalog
     def get_view_by_table_id(
-        self, id: ObjectId
-    ) -> View:  # pylint: disable=redefined-builtin,invalid-name
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> View:
         """
         Get view for a given table id.
 
@@ -77,8 +77,8 @@ class CatalogGetByIdMixin:
 
     @update_and_reset_catalog
     def get_feature_by_id(
-        self, id: ObjectId
-    ) -> Feature:  # pylint: disable=redefined-builtin,invalid-name
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> Feature:
         """
         Get a feature by id.
 
@@ -102,8 +102,8 @@ class CatalogGetByIdMixin:
 
     @update_and_reset_catalog
     def get_feature_list_by_id(
-        self, id: ObjectId
-    ) -> FeatureList:  # pylint: disable=redefined-builtin,invalid-name
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> FeatureList:
         """
         Get feature list by id.
 
@@ -127,8 +127,8 @@ class CatalogGetByIdMixin:
 
     @update_and_reset_catalog
     def get_table_by_id(
-        self, id: ObjectId
-    ) -> Any:  # pylint: disable=redefined-builtin,invalid-name
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> Any:
         """
         Get table by id.
 
@@ -152,8 +152,8 @@ class CatalogGetByIdMixin:
 
     @update_and_reset_catalog
     def get_relationship_by_id(
-        self, id: ObjectId
-    ) -> Relationship:  # pylint: disable=redefined-builtin,invalid-name
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> Relationship:
         """
         Get relationship by id.
 
@@ -177,8 +177,8 @@ class CatalogGetByIdMixin:
 
     @update_and_reset_catalog
     def get_feature_job_setting_analysis_by_id(
-        self, id: ObjectId
-    ) -> FeatureJobSettingAnalysis:  # pylint: disable=redefined-builtin,invalid-name
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> FeatureJobSettingAnalysis:
         """
         Get feature job setting analysis by id.
 
@@ -202,8 +202,8 @@ class CatalogGetByIdMixin:
 
     @update_and_reset_catalog
     def get_feature_store_by_id(
-        self, id: ObjectId
-    ) -> FeatureStore:  # pylint: disable=redefined-builtin,invalid-name
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> FeatureStore:
         """
         Get feature store by id.
 
@@ -227,8 +227,8 @@ class CatalogGetByIdMixin:
 
     @update_and_reset_catalog
     def get_entity_by_id(
-        self, id: ObjectId
-    ) -> Entity:  # pylint: disable=redefined-builtin,invalid-name
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> Entity:
         """
         Get entity by id.
 
@@ -252,8 +252,8 @@ class CatalogGetByIdMixin:
 
     @update_and_reset_catalog
     def get_periodic_task_by_id(
-        self, id: ObjectId
-    ) -> PeriodicTask:  # pylint: disable=redefined-builtin,invalid-name
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> PeriodicTask:
         """
         Get periodic task by id.
 
