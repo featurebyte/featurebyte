@@ -6,12 +6,12 @@ from typing import Dict, List, Optional
 import csv
 from dataclasses import dataclass
 
-from featurebyte.logger import logger
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 from featurebyte.common.documentation.resource_extractor import (
     ResourceDetails,
     get_resource_details,
 )
+from featurebyte.logger import logger
 
 
 @dataclass
@@ -19,6 +19,7 @@ class DocItem:
     """
     DocItem is a dataclass that is used to store metadata of a documentation item.
     """
+
     # eg. FeatureStore, FeatureStore.list
     class_method_or_attribute: str
     # link to docs, eg: http://127.0.0.1:8000/reference/featurebyte.api.feature_store.FeatureStore/
@@ -65,6 +66,7 @@ class DocItemToRender:
 
     Each field is a column in the CSV.
     """
+
     menu_item: str
     # eg. FeatureStore, FeatureStore.list
     class_method_or_attribute: str

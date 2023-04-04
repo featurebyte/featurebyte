@@ -3,13 +3,14 @@ Code to run in mkdocs#gen_ref_pages.py
 
 This is placed in here so that it can be imported as part of the featurebyte package.
 """
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+
 import importlib
 import inspect
 import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
