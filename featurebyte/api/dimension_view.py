@@ -7,6 +7,7 @@ from typing import Any, ClassVar
 
 from pydantic import Field
 
+from featurebyte.api.observation_view import ObservationViewMixin
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.view import View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
@@ -24,7 +25,7 @@ class DimensionViewColumn(ViewColumn):
     __fbautodoc__ = FBAutoDoc(section=["Column"])
 
 
-class DimensionView(View):
+class DimensionView(View, ObservationViewMixin):
     """
     A `DimensionView` allows a user to transform a `DimensionTable`.
 

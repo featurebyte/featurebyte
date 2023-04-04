@@ -8,6 +8,7 @@ from typing import Any, ClassVar, List, Optional
 from pydantic import Field
 
 from featurebyte.api.event_view import EventView
+from featurebyte.api.observation_view import ObservationViewMixin
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
@@ -27,7 +28,7 @@ class ItemViewColumn(ViewColumn):
     __fbautodoc__ = FBAutoDoc(section=["Column"])
 
 
-class ItemView(View, GroupByMixin):
+class ItemView(View, GroupByMixin, ObservationViewMixin):
     """
     An `ItemView` allows a user to transform an `ItemTable` to support the table preparation necessary before
     creating features.

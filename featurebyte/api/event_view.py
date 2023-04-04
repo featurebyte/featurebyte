@@ -10,6 +10,7 @@ import copy
 from pydantic import Field
 
 from featurebyte.api.lag import LaggableViewColumn
+from featurebyte.api.observation_view import ObservationViewMixin
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import validate_type_is_feature
@@ -34,7 +35,7 @@ class EventViewColumn(LaggableViewColumn):
     __fbautodoc__ = FBAutoDoc(section=["Column"])
 
 
-class EventView(View, GroupByMixin):
+class EventView(View, GroupByMixin, ObservationViewMixin):
     """
     An `EventView` allows a user to transform an `EventTable` to support the table preparation necessary before
     creating features.

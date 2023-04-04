@@ -7,6 +7,7 @@ from typing import Any, ClassVar, Optional
 
 from pydantic import Field
 
+from featurebyte.api.observation_view import ObservationViewMixin
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
@@ -24,7 +25,7 @@ class SCDViewColumn(ViewColumn):
     __fbautodoc__ = FBAutoDoc(section=["Column"])
 
 
-class SCDView(View, GroupByMixin):
+class SCDView(View, GroupByMixin, ObservationViewMixin):
     """
     A `SCDView` allows a user to transform a `SCDTable`.
 
