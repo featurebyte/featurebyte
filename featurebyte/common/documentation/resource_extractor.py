@@ -34,6 +34,10 @@ class ParameterDetails(BaseModel):
     def __str__(self) -> str:
         """
         String representation of parameter details
+
+        Returns
+        -------
+        str
         """
         if not self.name:
             return ""
@@ -55,6 +59,10 @@ class ExceptionDetails(BaseModel):
     def __str__(self) -> str:
         """
         String representation of exception details
+
+        Returns
+        -------
+        str
         """
         return f"{self.type}: {self.description}"
 

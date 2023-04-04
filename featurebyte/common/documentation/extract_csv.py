@@ -176,12 +176,12 @@ def _write_items_to_csv(file_name: str, all_doc_items_to_generate: List[DocItemT
         logger.info(f"Success - done writing rows to {file_name}")
 
 
-def _generate_items_to_render():
+def _generate_items_to_render() -> List[DocItemToRender]:
     """
     Generate the items to render.
     """
     logger.info("Building items to generate")
-    all_doc_items_to_generate = []
+    all_doc_items_to_generate: List[DocItemToRender] = []
     for layout_item in get_overall_layout():
         doc_path_override = layout_item.get_doc_path_override()
         if doc_path_override is not None:
