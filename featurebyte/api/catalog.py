@@ -805,7 +805,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
         --------
         Get data source.
 
-        >>> data_source = catalog.get_data_source_by_feature_store_id(ObjectId())
+        >>> data_source = catalog.get_data_source_by_feature_store_id(ObjectId())  # doctest: +SKIP
         """
         feature_store = FeatureStore.get_by_id(id=id)
         return feature_store.get_data_source()
@@ -829,7 +829,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
         --------
         Get an event view from an event table.
 
-        >>> event_view = catalog.get_view_by_table_id(ObjectId())
+        >>> event_view = catalog.get_view_by_table_id(ObjectId())  # doctest: +SKIP
         """
         table = Table.get_by_id(id=id)
         return table.get_view()  # type: ignore[no-any-return]
@@ -853,7 +853,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
         --------
         Get a saved feature.
 
-        >>> feature = catalog.get_feature_by_id(ObjectId)
+        >>> feature = catalog.get_feature_by_id(ObjectId)  # doctest: +SKIP
         """
         return Feature.get_by_id(id=id)
 
@@ -876,7 +876,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
         --------
         Get a saved feature list.
 
-        >>> feature_list = catalog.get_feature_list_by_id(ObjectId())
+        >>> feature_list = catalog.get_feature_list_by_id(ObjectId())  # doctest: +SKIP
         """
         return FeatureList.get_by_id(id=id)
 
@@ -899,7 +899,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
         --------
         Get a saved table.
 
-        >>> item_table = catalog.get_table_by_id(ObjectId())
+        >>> item_table = catalog.get_table_by_id(ObjectId())  # doctest: +SKIP
         """
         return Table.get_by_id(id=id)
 
@@ -968,7 +968,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
         --------
         Get a saved feature store.
 
-        >>> feature_store = catalog.get_feature_store_by_id(ObjectId())
+        >>> feature_store = catalog.get_feature_store_by_id(ObjectId())  # doctest: +SKIP
         """
         return FeatureStore.get_by_id(id=id)
 
@@ -991,7 +991,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
         --------
         Get a saved entity.
 
-        >>> entity = catalog.get_entity_by_id(ObjectId())
+        >>> entity = catalog.get_entity_by_id(ObjectId())  # doctest: +SKIP
         """
         return Entity.get_by_id(id=id)
 
