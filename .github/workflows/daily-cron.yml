@@ -68,7 +68,7 @@ jobs:
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
       - name: Install dependencies
-        run: make install
+        run: task install
   # Removing tags older than 30 days
   # Ignoring release/* tags
   tags:
