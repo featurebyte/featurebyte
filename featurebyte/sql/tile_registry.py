@@ -94,12 +94,11 @@ class TileRegistry(TileCommon):
             tile_add_sql = f"ALTER TABLE {self.table_name} ADD COLUMN\n"
             add_statements = []
             for i, input_column in enumerate(input_value_columns):
-                upper_col_name = input_column.upper()
-                if upper_col_name not in cols:
+                if input_column.upper() not in cols:
                     element_type = input_value_columns_types[i]
-                    add_statements.append(f"{upper_col_name} {element_type}")
+                    add_statements.append(f"{input_column} {element_type}")
                     if "_MONITOR" in self.table_name:
-                        add_statements.append(f"OLD_{upper_col_name} {element_type}")
+                        add_statements.append(f"OLD_{input_column} {element_type}")
 
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)

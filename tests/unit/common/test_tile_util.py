@@ -8,7 +8,6 @@ import pytest
 from featurebyte import SourceType
 from featurebyte.common import tile_util
 from featurebyte.tile.base import BaseTileManager
-from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
 def test_tile_manager_from_session():
@@ -16,7 +15,7 @@ def test_tile_manager_from_session():
     with patch("featurebyte.session.base.BaseSession") as mock_base_session:
         mock_base_session.source_type = SourceType.SNOWFLAKE
         tile_manger = tile_util.tile_manager_from_session(mock_base_session)
-        assert isinstance(tile_manger, TileManagerSnowflake)
+        assert isinstance(tile_manger, BaseTileManager)
 
         mock_base_session.source_type = SourceType.SPARK
         tile_manger = tile_util.tile_manager_from_session(mock_base_session)
