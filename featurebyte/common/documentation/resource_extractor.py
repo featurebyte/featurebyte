@@ -35,6 +35,9 @@ class ParameterDetails(BaseModel):
         """
         String representation of parameter details
         """
+        if not self.name:
+            return ""
+
         default = ")"
         if self.default is not None:
             default = f", default={self.default})"
@@ -48,6 +51,12 @@ class ExceptionDetails(BaseModel):
 
     type: Optional[str]
     description: Optional[str]
+
+    def __str__(self) -> str:
+        """
+        String representation of exception details
+        """
+        return f"{self.type}: {self.description}"
 
 
 def import_resource(resource_descriptor: str) -> Any:

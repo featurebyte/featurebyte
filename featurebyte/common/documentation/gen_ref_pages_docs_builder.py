@@ -12,15 +12,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
-from docstring_parser import parse
 from mkautodoc.extension import import_from_string
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
 import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.documentation.constants import EMPTY_VALUE
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
-from featurebyte.common.documentation.doc_types import Docstring
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 from featurebyte.common.documentation.resource_extractor import ResourceDetails, get_resource_details
 from featurebyte.logger import logger
@@ -60,6 +57,15 @@ class DocItem:
     def get_see_also(self) -> str:
         return self.resource_details.see_also if self.resource_details.see_also else ""
 
+    def get_returns(self) -> str:
+        return str(self.resource_details.returns) if self.resource_details.returns else ""
+
+    def get_raises(self) -> str:
+        if not self.resource_details.raises:
+            return ""
+        stringified_parameters = [str(parameter) for parameter in self.resource_details.raises]
+        return "\n".join(stringified_parameters)
+
 
 def convert_resource_details_to_doc_item(resource_details: ResourceDetails) -> DocItem:
     return DocItem(
@@ -82,6 +88,8 @@ class DocItemToRender:
     docstring_description: str
 
     parameters: str
+    returns: str
+    raises: str
     examples: str
     see_also: str
 
@@ -1034,6 +1042,8 @@ class DocsBuilder:
                             link=f"http://127.0.0.1:8000/reference/{link_without_md}",
                             docstring_description=doc_item.get_description(),
                             parameters=doc_item.get_parameters(),
+                            returns=doc_item.get_returns(),
+                            raises=doc_item.get_raises(),
                             examples=doc_item.get_examples(),
                             see_also=doc_item.get_see_also(),
                         )
@@ -1049,6 +1059,8 @@ class DocsBuilder:
                             link=doc_item.link,
                             docstring_description=doc_item.get_description(),
                             parameters=doc_item.get_parameters(),
+                            returns=doc_item.get_returns(),
+                            raises=doc_item.get_raises(),
                             examples=doc_item.get_examples(),
                             see_also=doc_item.get_see_also(),
                         )
@@ -1062,6 +1074,8 @@ class DocsBuilder:
                             link=doc_item.link,
                             docstring_description=doc_item.get_description(),
                             parameters=doc_item.get_parameters(),
+                            returns=doc_item.get_returns(),
+                            raises=doc_item.get_raises(),
                             examples=doc_item.get_examples(),
                             see_also=doc_item.get_see_also(),
                         )
@@ -1074,6 +1088,8 @@ class DocsBuilder:
                             link="missing",
                             docstring_description="missing",
                             parameters="missing",
+                            returns="missing",
+                            raises="missing",
                             examples="missing",
                             see_also="missing",
                         )
@@ -1086,6 +1102,8 @@ class DocsBuilder:
                     "link",
                     "docstring_description",
                     "parameters",
+                    "returns",
+                    "raises",
                     "examples",
                     "see_also",
                 ]
@@ -1098,6 +1116,8 @@ class DocsBuilder:
                         doc_item.link,
                         doc_item.docstring_description,
                         doc_item.parameters,
+                        doc_item.returns,
+                        doc_item.raises,
                         doc_item.examples,
                         doc_item.see_also,
                     ]
