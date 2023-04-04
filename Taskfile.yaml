@@ -81,7 +81,7 @@ tasks:
       PYLINT_DISABLE_FOR_TESTS: 'redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code'
       DARG_SOURCES:
         sh: |
-          echo "$(find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" ! -path "featurebyte/__main__.py" ! -path "featurebyte/datasets/*" ! -path "featurebyte/conftest.py" ! -path "featurebyte/common/documentation/*" | xargs)" "$(find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs)"
+          echo "$(find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" ! -path "featurebyte/__main__.py" ! -path "featurebyte/datasets/*" ! -path "featurebyte/conftest.py" | xargs)" "$(find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs)"
     sources:
       - poetry.lock
       - pyproject.toml
@@ -103,7 +103,7 @@ tasks:
       - featurebyte/
       - tests/
     cmds:
-      - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py|featurebyte/common/documentation/*)' .
+      - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py)' .
 
   lint-safety:
     desc: "Run the linter[safety]"
