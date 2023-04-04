@@ -8,13 +8,13 @@ from typing import Optional
 from featurebyte import SourceType
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.base import BaseTileManager
+from featurebyte.tile.manager import TileManager
 
 
 def tile_manager_from_session(
     session: BaseSession,
     task_manager: Optional[TaskManager] = None,
-) -> BaseTileManager:
+) -> TileManager:
     """
     Derive implementing TileManager instance based on input sessions
 
@@ -35,6 +35,6 @@ def tile_manager_from_session(
         if TileManager for session source type is not implemented yet
     """
     if session.source_type in [SourceType.SPARK, SourceType.SNOWFLAKE]:
-        return BaseTileManager(session=session, task_manager=task_manager)
+        return TileManager(session=session, task_manager=task_manager)
 
     raise ValueError(f"Tile Manager for {session.source_type} has not been implemented")

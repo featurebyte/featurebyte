@@ -480,7 +480,7 @@ async def test_online_enable___re_deploy_from_latest_tile_start(
     await feature_manager_no_sf_scheduling.online_disable(online_feature_spec)
 
     # re-deploy and verify that the tile start ts is the same as the last tile start ts
-    with patch("featurebyte.tile.base.BaseTileManager.generate_tiles") as mock_tile_manager:
+    with patch("featurebyte.tile.manager.TileManager.generate_tiles") as mock_tile_manager:
         await feature_manager_no_sf_scheduling.online_enable(online_feature_spec)
         kwargs = mock_tile_manager.mock_calls[0][2]
         assert kwargs["start_ts_str"] == last_tile_start_ts.strftime("%Y-%m-%dT%H:%M:%S.%fZ")

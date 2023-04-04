@@ -82,7 +82,7 @@ async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, ti
     )
 
     with mock.patch(
-        "featurebyte.tile.base.BaseTileManager._schedule_tiles_custom"
+        "featurebyte.tile.manager.TileManager._schedule_tiles_custom"
     ) as mock_schedule_tiles_custom:
         await tile_manager.schedule_online_tiles(mock_snowflake_tile, schedule_time=schedule_time)
         kwargs = mock_schedule_tiles_custom.call_args.kwargs
@@ -105,7 +105,7 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
     )
 
     with mock.patch(
-        "featurebyte.tile.base.BaseTileManager._schedule_tiles_custom"
+        "featurebyte.tile.manager.TileManager._schedule_tiles_custom"
     ) as mock_schedule_tiles_custom:
         await tile_manager.schedule_offline_tiles(
             tile_spec=mock_snowflake_tile, schedule_time=schedule_time
@@ -114,8 +114,8 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
         assert kwargs["next_job_time"] == next_job_time
 
 
-@mock.patch("featurebyte.tile.base.BaseTileManager.generate_tiles")
-@mock.patch("featurebyte.tile.base.BaseTileManager.update_tile_entity_tracker")
+@mock.patch("featurebyte.tile.manager.TileManager.generate_tiles")
+@mock.patch("featurebyte.tile.manager.TileManager.update_tile_entity_tracker")
 @pytest.mark.asyncio
 async def test_generate_tiles_on_demand(
     mock_generate_tiles,

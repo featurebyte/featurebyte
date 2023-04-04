@@ -25,7 +25,7 @@ from featurebyte.tile.scheduler import TileScheduler
 from featurebyte.tile.sql_template import tm_retrieve_tile_job_audit_logs
 
 
-class BaseTileManager(BaseModel):
+class TileManager(BaseModel):
     """
     Base Tile class
     """

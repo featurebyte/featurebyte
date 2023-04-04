@@ -12,7 +12,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.tile.base import BaseTileManager
+from featurebyte.tile.manager import TileManager
 
 
 @pytest_asyncio.fixture(name="tile_task_prep_spark")
@@ -104,6 +104,6 @@ async def tile_manager_fixture(session, tile_spec, feature, persistent):
     task_manager = TaskManager(
         user=User(id=feature.user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
-    yield BaseTileManager(session=session, task_manager=task_manager)
+    yield TileManager(session=session, task_manager=task_manager)
 
     await session.execute_query(f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER")

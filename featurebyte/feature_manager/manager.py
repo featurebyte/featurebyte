@@ -26,7 +26,7 @@ from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.base import BaseTileManager
+from featurebyte.tile.manager import TileManager
 from featurebyte.utils.snowflake.sql import escape_column_names
 
 
@@ -36,7 +36,7 @@ class FeatureManager(BaseModel):
     """
 
     _session: BaseSession = PrivateAttr()
-    _tile_manager: BaseTileManager = PrivateAttr()
+    _tile_manager: TileManager = PrivateAttr()
     _adapter: BaseAdapter = PrivateAttr()
 
     def __init__(

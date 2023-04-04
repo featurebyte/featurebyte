@@ -31,9 +31,9 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@mock.patch("featurebyte.tile.base.BaseTileManager.schedule_online_tiles")
-@mock.patch("featurebyte.tile.base.BaseTileManager.schedule_offline_tiles")
-@mock.patch("featurebyte.tile.base.BaseTileManager.generate_tiles")
+@mock.patch("featurebyte.tile.manager.TileManager.schedule_online_tiles")
+@mock.patch("featurebyte.tile.manager.TileManager.schedule_offline_tiles")
+@mock.patch("featurebyte.tile.manager.TileManager.generate_tiles")
 @pytest.mark.asyncio
 async def test_online_enable(
     mock_generate_tiles,
@@ -55,9 +55,7 @@ async def test_online_enable(
 
     mock_execute_query.return_value = []
 
-    with mock.patch(
-        "featurebyte.tile.base.BaseTileManager.tile_job_exists"
-    ) as mock_tile_job_exists:
+    with mock.patch("featurebyte.tile.manager.TileManager.tile_job_exists") as mock_tile_job_exists:
         mock_tile_job_exists.return_value = False
         await feature_manager.online_enable(feature_spec)
 
@@ -101,8 +99,8 @@ async def test_online_enable(
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@mock.patch("featurebyte.tile.base.BaseTileManager.schedule_online_tiles")
-@mock.patch("featurebyte.tile.base.BaseTileManager.schedule_offline_tiles")
+@mock.patch("featurebyte.tile.manager.TileManager.schedule_online_tiles")
+@mock.patch("featurebyte.tile.manager.TileManager.schedule_offline_tiles")
 @pytest.mark.asyncio
 async def test_online_enable_duplicate_tile_task(
     mock_schedule_offline_tiles,
@@ -131,9 +129,7 @@ async def test_online_enable_duplicate_tile_task(
         None,
         None,
     ]
-    with mock.patch(
-        "featurebyte.tile.base.BaseTileManager.tile_job_exists"
-    ) as mock_tile_job_exists:
+    with mock.patch("featurebyte.tile.manager.TileManager.tile_job_exists") as mock_tile_job_exists:
         with mock.patch(
             "featurebyte.feature_manager.manager.FeatureManager._generate_historical_tiles"
         ) as _:
@@ -165,7 +161,7 @@ async def test_online_disable(
     )
 
     mock_execute_query.side_effect = [None, None, None, None]
-    with mock.patch("featurebyte.tile.base.BaseTileManager.remove_tile_jobs") as mock_tile_manager:
+    with mock.patch("featurebyte.tile.manager.TileManager.remove_tile_jobs") as mock_tile_manager:
         mock_tile_manager.side_effect = None
         await feature_manager.online_disable(feature_spec)
 
