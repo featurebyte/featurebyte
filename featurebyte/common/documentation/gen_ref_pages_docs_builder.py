@@ -18,6 +18,7 @@ from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
 import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.documentation.constants import EMPTY_VALUE
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
 from featurebyte.common.documentation.doc_types import Docstring
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
@@ -58,6 +59,16 @@ class DocItem:
 
     def get_see_also(self) -> str:
         return self.resource_details.see_also if self.resource_details.see_also else ""
+
+
+def convert_resource_details_to_doc_item(resource_details: ResourceDetails) -> DocItem:
+    return DocItem(
+        menu_item="placeholder",
+        class_method_or_attribute="placeholder",
+        link="placeholder",
+        docstring_description="placeholder",
+        resource_details=resource_details,
+    )
 
 
 @dataclass
@@ -847,67 +858,15 @@ class DocsBuilder:
         return getattr(module, resource.__name__)
 
     @staticmethod
-    def get_docstring_for_path(path: str) -> str:
-        EMPTY_VALUE = inspect._empty
-        # import resource
-        parts = path.split("#")
-        if len(parts) > 1:
-            path = parts[0]
-        parts = path.split("::")
-        if len(parts) > 1:
-            # class member
-            resource_name = parts.pop(-1)
-            resource_realname = resource_name
-            class_descriptor = ".".join(parts)
-            resource_class = DocsBuilder.import_resource(class_descriptor)
-            resource_path = class_descriptor
-            class_fields = getattr(resource_class, "__fields__", None)
-            # print("resource class + resource name", ".".join([str(resource_class), str(resource_name)]))
-            resource = getattr(resource_class, resource_name, EMPTY_VALUE)
-            if resource == EMPTY_VALUE:
-                # pydantic field
-                resource = class_fields[resource_name]
-                resource_type = "property"
-            else:
-                resource_type = "method" if callable(resource) else "property"
-                # for class property get the signature from the getter function
-                if isinstance(resource, property):
-                    resource = resource.fget
+    def get_resource_details_for_path(path: str) -> ResourceDetails:
+        split_path = path.split(".")
+        # this is for instances where the override is a class
+        # eg. "api.groupby.GroupBy"
+        if split_path[-1][0].isupper():
+            return get_resource_details(path)
 
-                # get actual classname and name of the resource
-                try:
-                    resource_classname, resource_realname = resource.__qualname__.split(
-                        ".", maxsplit=1
-                    )
-                    resource_path = f"{resource.__module__}.{resource_classname}"
-                except AttributeError:
-                    pass
-            base_classes = None
-            method_type = "async" if inspect.iscoroutinefunction(resource) else None
-        elif path.endswith(".override"):
-            path = path.replace(".override", "")
-            split_path = path.split(".")
-            # this is for instances where the override is a class
-            # eg. "api.groupby.GroupBy.md"
-            if split_path[-1][0].isupper():
-                class_description = ".".join(split_path)
-                resource = DocsBuilder.import_resource(class_description)
-            else:
-                class_description = ".".join(split_path[:-1])
-                resource_class = DocsBuilder.import_resource(class_description)
-                resource = getattr(resource_class, split_path[-1], EMPTY_VALUE)
-        else:
-            # class
-            resource_class = DocsBuilder.import_resource(path)
-            resource = resource_class
-
-        # process docstring
-        docs = trim_docstring(getattr(resource, "__doc__", ""))
-        docstring = Docstring(parse(docs))
-        short_description = docstring.short_description
-        if getattr(resource, "field_info", None):
-            short_description = resource.field_info.description
-        return " ".join([short_description or "", docstring.long_description or ""])
+        class_description = ".".join(split_path[:-1])
+        return get_resource_details(f"{class_description}::{split_path[-1]}")
 
     def generate_documentation_for_docs(
         self, doc_groups: Dict[DocGroupKey, DocGroupValue]
@@ -971,13 +930,12 @@ class DocsBuilder:
                     )
                     doc_path = api_path + ".md"
                     reverse_lookup_map[api_path.lower()] = doc_path
-                    docstring = self.get_docstring_for_path(obj_path)
                     resource_details = get_resource_details(obj_path)
                     DOC_ITEMS.add(api_path.lower(), DocItem(
                         menu_item="placeholder",
                         class_method_or_attribute=api_path,
                         link=f"http://127.0.0.1:8000/{api_path}",
-                        docstring_description=docstring,
+                        docstring_description="",
                         resource_details=resource_details,
                     ))
                     self._build_and_write_to_file(
@@ -992,13 +950,12 @@ class DocsBuilder:
                 if truncated_lookup_path:
                     truncated_lookup_path = lookup_path.replace("featurebyte.", "")
                 doc_path_without_ext = doc_path.replace(".md", "")
-                docstring = self.get_docstring_for_path(obj_path)
                 resource_details = get_resource_details(obj_path)
                 DOC_ITEMS.add(truncated_lookup_path, DocItem(
                     menu_item="placeholder",
                     class_method_or_attribute=api_path,
                     link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
-                    docstring_description=docstring,
+                    docstring_description="",
                     resource_details=resource_details,
                 ))
                 self._build_and_write_to_file(
@@ -1059,7 +1016,6 @@ class DocsBuilder:
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
 
-        # TODO: fix missing for overrides
         # write all doc items
         file_name = "debug/test.csv"
         with open(file_name, "w") as f:
@@ -1069,17 +1025,17 @@ class DocsBuilder:
                 if doc_path_override is not None:
                     # handle those with explicit overrides
                     link_without_md = doc_path_override.replace(".md", "")
+                    resource_details = self.get_resource_details_for_path(link_without_md)
+                    doc_item = convert_resource_details_to_doc_item(resource_details)
                     all_doc_items_to_generate.append(
                         DocItemToRender(
                             menu_item=" > ".join(layout_item.menu_header),
                             class_method_or_attribute=link_without_md,
                             link=f"http://127.0.0.1:8000/reference/{link_without_md}",
-                            docstring_description=self.get_docstring_for_path(
-                                link_without_md + ".override"
-                            ),
-                            parameters="missing",
-                            examples="missing",
-                            see_also="missing",
+                            docstring_description=doc_item.get_description(),
+                            parameters=doc_item.get_parameters(),
+                            examples=doc_item.get_examples(),
+                            see_also=doc_item.get_see_also(),
                         )
                     )
                     continue
