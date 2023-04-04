@@ -154,7 +154,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
 
             # create feature definition
             sdk_code_gen_state = SDKCodeExtractor(graph=graph).extract(
-                node=graph.get_node_by_name(data.node_name),
+                node=graph.get_node_by_name(node_name),
                 to_use_saved_data=True,
                 table_id_to_info=table_id_to_info,
             )
