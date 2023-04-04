@@ -787,13 +787,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
         return PeriodicTask.get(name=name)
 
     @update_and_reset_catalog
-    def get_data_source_by_feature_store_id(self, feature_store_id: ObjectId) -> DataSource:
+    def get_data_source_by_feature_store_id(self, id: ObjectId) -> DataSource:
         """
         Get data source by a given feature store id.
 
         Parameters
         ----------
-        feature_store_id: ObjectId
+        id: ObjectId
             Feature store id.
 
         Returns
@@ -807,17 +807,17 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
 
         >>> data_source = catalog.get_data_source_by_feature_store_id(ObjectId())
         """
-        feature_store = FeatureStore.get_by_id(id=feature_store_id)
+        feature_store = FeatureStore.get_by_id(id=id)
         return feature_store.get_data_source()
 
     @update_and_reset_catalog
-    def get_view_by_table_id(self, table_id: ObjectId) -> View:
+    def get_view_by_table_id(self, id: ObjectId) -> View:
         """
         Get view for a given table id.
 
         Parameters
         ----------
-        table_id: ObjectId
+        id: ObjectId
             Table id.
 
         Returns
@@ -831,17 +831,17 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
 
         >>> event_view = catalog.get_view_by_table_id(ObjectId())
         """
-        table = Table.get_by_id(id=table_id)
+        table = Table.get_by_id(id=id)
         return table.get_view()  # type: ignore[no-any-return]
 
     @update_and_reset_catalog
-    def get_feature_by_id(self, feature_id: ObjectId) -> Feature:
+    def get_feature_by_id(self, id: ObjectId) -> Feature:
         """
         Get a feature by id.
 
         Parameters
         ----------
-        feature_id: ObjectId
+        id: ObjectId
             Feature id.
 
         Returns
@@ -855,7 +855,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
 
         >>> feature = catalog.get_feature_by_id(ObjectId)
         """
-        return Feature.get_by_id(id=feature_id)
+        return Feature.get_by_id(id=id)
 
     @update_and_reset_catalog
     def get_feature_list_by_id(self, id: ObjectId) -> FeatureList:
