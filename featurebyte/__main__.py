@@ -32,7 +32,7 @@ def start(
     local: bool = typer.Option(default=False, help="Do not pull new images from registry"),
 ) -> None:
     """Start application"""
-    start_app(app_name, local)
+    start_app(app_name, local=local)
 
 
 @app.command(name="playground")
@@ -49,28 +49,24 @@ def default(ctx: typer.Context) -> None:
     """Invoke default command"""
     if ctx.invoked_subcommand is not None:
         return
-    start_app(ApplicationName.FEATUREBYTE, False)
+    start_app(ApplicationName.FEATUREBYTE, local=False)
 
 
 @app.command(name="stop")
 def stop() -> None:
     """Stop all applications"""
-    for app_name in ApplicationName:
-        stop_app(app_name)
+    stop_app()
 
 
 @app.command(name="logs")
 def logs(
-    app_name: ApplicationName = typer.Argument(
-        default="featurebyte", help="Name of application to print logs for"
-    ),
     service_name: str = typer.Argument(default="all", help="Name of service to print logs for"),
     tail: int = typer.Argument(
         default=500, help="Number of lines to print from the end of the logs"
     ),
 ) -> None:
     """Print application logs"""
-    print_logs(app_name, service_name, tail)
+    print_logs(service_name, tail)
 
 
 @app.command(name="status")

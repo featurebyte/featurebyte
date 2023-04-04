@@ -36,67 +36,13 @@ class ApplicationName(str, Enum):
     DOCS = "docs"
 
 
-# Application messages
-messages = {
-    ApplicationName.FEATUREBYTE: {
-        "start": (
-            """
-            [bold green]Featurebyte application started successfully![/]
-
-            API server now running at: [cyan underline]http://127.0.0.1:8088[/].
-            You can now use the featurebyte SDK with the API server.
-            """
-        ),
-        "stop": (
-            """
-            [bold green]Featurebyte application stopped.[/]
-            """
-        ),
-    },
-    ApplicationName.SPARK: {
-        "start": (
-            """
-            [bold green]Spark application started successfully![/]
-
-            Spark thrift server now running at: [cyan underline]http://localhost:10000[/].
-            You can now use the Spark thrift server for a FeatureStore in the featurebyte SDK.
-            """
-        ),
-        "stop": (
-            """
-            [bold green]Spark application stopped.[/]
-            """
-        ),
-    },
-    ApplicationName.DOCS: {
-        "start": (
-            """
-            [bold green]Docs application started successfully![/]
-
-            Documentation server now running at: [cyan underline]http://localhost:8089[/].
-            You can now view the documentation at the above URL.
-            """
-        ),
-        "stop": (
-            """
-            [bold green]Docs application stopped.[/]
-            """
-        ),
-    },
-}
-
 console = Console()
 
 
 @contextmanager
-def get_docker_client(app_name: ApplicationName) -> Generator[DockerClient, None, None]:
+def get_docker_client() -> Generator[DockerClient, None, None]:
     """
     Get docker client
-
-    Parameters
-    ----------
-    app_name: ApplicationName
-        Name of application to get docker client for
 
     Yields
     -------
@@ -112,13 +58,13 @@ def get_docker_client(app_name: ApplicationName) -> Generator[DockerClient, None
             with open(compose_env_file, "w", encoding="utf8") as file_obj:
                 file_obj.write(f'LOCAL_UID="{uid}"\nLOCAL_GID="{user.pw_gid}"\n')
             docker = DockerClient(
-                compose_project_name=app_name.value,
+                compose_project_name="featurebyte",
                 compose_files=[os.path.join(get_package_root(), "docker/featurebyte.yml")],
                 compose_env_file=compose_env_file,
             )
         else:
             docker = DockerClient(
-                compose_project_name=app_name.value,
+                compose_project_name="featurebyte",
                 compose_files=[os.path.join(get_package_root(), "docker/featurebyte.yml")],
             )
         yield docker
@@ -164,20 +110,18 @@ def __setup_network() -> None:
         DockerClient().network.create("featurebyte", driver="bridge")
 
 
-def print_logs(app_name: ApplicationName, service_name: str, tail: int) -> None:
+def print_logs(service_name: str, tail: int) -> None:
     """
     Print service logs
 
     Parameters
     ----------
-    app_name: ApplicationName
-        Application name
     service_name: str
         Service name
     tail: int
         Number of lines to print
     """
-    with get_docker_client(app_name) as docker:
+    with get_docker_client() as docker:
         docker_logs = docker.compose.logs(follow=True, stream=True, tail=str(tail))
         for source, content in docker_logs:
             line = content.decode("utf-8").strip()
@@ -245,7 +189,8 @@ def __delete_docker_backup() -> None:
 
 def start_app(
     app_name: ApplicationName,
-    local: bool,
+    services: List[str] = None,
+    local: bool = False,
     verbose: bool = True,
 ) -> None:
     """
@@ -254,12 +199,15 @@ def start_app(
     Parameters
     ----------
     app_name : ApplicationName
-        Name of application to start
+        Application name
+    services : List[str]
+        List of services to start
     local : bool
         Do not pull new images from registry
     verbose : bool
         Print verbose output
     """
+    services = services or get_service_names(app_name)
     try:
         # Load config to ensure it exists before starting containers
         config = Configurations() # pylint: disable=unused-variable
@@ -270,11 +218,11 @@ def start_app(
         os.environ["FEATUREBYTE_TELEMETRY_ID"] = ":".join(
             [f"{(uuid.getnode() >> ele) & 0xff:02x}" for ele in range(0, 8 * 6, 8)][::-1]
         )
-        with get_docker_client(app_name) as docker:
+        with get_docker_client() as docker:
             if not local:
                 docker.compose.pull()
             __restore_docker_conf()  # Restore as early as possible
-            docker.compose.up(services=get_service_names(app_name), detach=True)
+            docker.compose.up(services=services, detach=True)
 
             # Wait for all services to be healthy
             def _wait_for_healthy(spinner_status: Optional[Status] = None) -> None:
@@ -298,8 +246,15 @@ def start_app(
             if verbose:
                 with console.status("Waiting for services to be healthy...") as spinner_status:
                     _wait_for_healthy(spinner_status)
-                if app_name in messages:
-                    console.print(Panel(Align.left(messages[app_name]["start"]), title=app_name.value, width=120))
+                    message = (
+                        """
+                        [bold green]Featurebyte application started successfully![/]
+
+                        API server now running at: [cyan underline]http://127.0.0.1:8088[/].
+                        You can now use the featurebyte SDK with the API server.
+                        """
+                    )
+                console.print(Panel(Align.left(message), title="FeatureByte Services", width=120))
             else:
                 _wait_for_healthy()
 
@@ -309,7 +264,7 @@ def start_app(
 
 
 def start_playground(local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True,
-                     force_import: bool = False) -> None:
+                     force_import: bool = False, verbose: bool = True) -> None:
     """
     Start featurebyte playground environment
 
@@ -323,17 +278,23 @@ def start_playground(local: bool = False, datasets: Optional[List[str]] = None, 
         Enable documentation service, by default True
     force_import : bool
         Import datasets even if they are already imported, by default False
+    verbose : bool
+        Print verbose output, by default True
     """
-    logger.info("Starting featurebyte service")
-    start_app(ApplicationName.FEATUREBYTE, local=local, verbose=False)
-    logger.info("Starting local spark service")
-    start_app(ApplicationName.SPARK, local=local, verbose=False)
+    num_steps = 4
+
+    # determine services to start
+    services = get_service_names(ApplicationName.FEATUREBYTE) + get_service_names(ApplicationName.SPARK)
     if docs_enabled and not local:
-        logger.info("Starting documentation service")
-        start_app(ApplicationName.DOCS, local=local, verbose=False)
+        services += get_service_names(ApplicationName.DOCS)
+
+    step = 1
+    logger.info(f"({step}/{num_steps}) Starting featurebyte services")
+    start_app(ApplicationName.FEATUREBYTE, services=services, local=local, verbose=verbose)
+    step += 1
 
     # create local spark feature store
-    logger.info("Creating local spark feature store")
+    logger.info(f"({step}/{num_steps}) Creating local spark feature store")
     Configurations().use_profile("local")
     feature_store = FeatureStore.get_or_create(
         name="playground",
@@ -349,8 +310,10 @@ def start_playground(local: bool = False, datasets: Optional[List[str]] = None, 
             featurebyte_schema="playground",
         ),
     )
+    step += 1
 
     # import datasets
+    logger.info(f"({step}/{num_steps}) Import datasets")
     existing_datasets = feature_store.get_data_source().list_schemas(database_name="spark_catalog")
     datasets = datasets or ["grocery", "healthcare", "creditcard"]
     for dataset in datasets:
@@ -359,32 +322,33 @@ def start_playground(local: bool = False, datasets: Optional[List[str]] = None, 
             continue
         logger.info(f"Importing dataset: {dataset}")
         import_dataset(dataset)
+    step += 1
 
+    logger.info(f"({step}/{num_steps}) Playground environment started successfully. Ready to go! 🚀")
 
-def stop_app(
-    app_name: ApplicationName,
-    verbose: Optional[bool] = True,
-) -> None:
+def stop_app(verbose: Optional[bool] = True) -> None:
     """
     Stop application
 
     Parameters
     ----------
-    app_name : ApplicationName
-        Name of application to stop
     verbose : Optional[bool]
         Print verbose output
     """
-    with get_docker_client(app_name) as docker:
+    with get_docker_client() as docker:
         docker.compose.down()
-    if verbose and app_name in messages:
-        console.print(Panel(Align.left(messages[app_name]["stop"]), title=app_name.value, width=120))
+    if verbose:
+        message = (
+        """
+        [bold green]Featurebyte application stopped.[/]
+        """
+        )
+        console.print(Panel(Align.left(message), title="FeatureByte Service", width=120))
 
 
 def get_status() -> None:
     """Get service status"""
-    table = Table(title="Service Status", width=120)
-    table.add_column("App", justify="left", style="cyan")
+    table = Table(title="Service Status", width=100)
     table.add_column("Name", justify="left", style="cyan")
     table.add_column("Status", justify="center")
     table.add_column("Health", justify="center")
@@ -398,14 +362,13 @@ def get_status() -> None:
         "exited": "red",
     }
 
-    for app_name in ApplicationName:
-        with get_docker_client(ApplicationName(app_name)) as docker:
-            containers = docker.compose.ps()
-            for container in containers:
-                health = container.state.health.status if container.state.health else "N/A"
-                app_health = Text(health, health_colors.get(health, "yellow"))
-                app_status = Text(
-                    container.state.status, status_colors.get(container.state.status, "yellow")
-                )
-                table.add_row(app_name, container.name, app_status, app_health)
+    with get_docker_client() as docker:
+        containers = docker.compose.ps()
+        for container in containers:
+            health = container.state.health.status if container.state.health else "N/A"
+            app_health = Text(health, health_colors.get(health, "yellow"))
+            app_status = Text(
+                container.state.status, status_colors.get(container.state.status, "yellow")
+            )
+            table.add_row(container.name, app_status, app_health)
     console.print(table)
