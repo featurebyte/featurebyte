@@ -3,9 +3,9 @@ Unit test for Catalog class
 """
 from __future__ import annotations
 
-import re
 from typing import Any
 
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from inspect import signature
@@ -113,7 +113,9 @@ def catalog_get_by_id_list():
         MethodMetadata("get_feature_list_by_id", FeatureList, "get_by_id"),
         MethodMetadata("get_table_by_id", Table, "get_by_id"),
         MethodMetadata("get_relationship_by_id", Relationship, "get_by_id"),
-        MethodMetadata("get_feature_job_setting_analysis_by_id", FeatureJobSettingAnalysis, "get_by_id"),
+        MethodMetadata(
+            "get_feature_job_setting_analysis_by_id", FeatureJobSettingAnalysis, "get_by_id"
+        ),
         MethodMetadata("get_feature_store_by_id", FeatureStore, "get_by_id"),
         MethodMetadata("get_entity_by_id", Entity, "get_by_id"),
         MethodMetadata("get_periodic_task_by_id", PeriodicTask, "get_by_id"),
