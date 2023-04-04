@@ -28,53 +28,12 @@ MISSING_DEBUG_MARKDOWN = "missing.md"
 
 @dataclass
 class DocItem:
-
-    # eg. FeatureStore, FeatureStore>List
-    menu_item: str
     # eg. FeatureStore, FeatureStore.list
     class_method_or_attribute: str
-    # ilnk to docs, eg: http://127.0.0.1:8000/reference/featurebyte.api.feature_store.FeatureStore/
+    # link to docs, eg: http://127.0.0.1:8000/reference/featurebyte.api.feature_store.FeatureStore/
     link: str
-    # the current docstring
-    docstring_description: str
-
+    # the resource details for this doc item
     resource_details: ResourceDetails
-
-    def get_description(self) -> str:
-        return " ".join(
-            [self.resource_details.short_description or "", self.resource_details.long_description or ""]
-        )
-
-    def get_parameters(self) -> str:
-        if not self.resource_details.parameters:
-            return ""
-        stringified_parameters = [str(parameter) for parameter in self.resource_details.parameters]
-        return "\n".join(stringified_parameters)
-
-    def get_examples(self) -> str:
-        return ",".join(self.resource_details.examples) if self.resource_details.examples else ""
-
-    def get_see_also(self) -> str:
-        return self.resource_details.see_also if self.resource_details.see_also else ""
-
-    def get_returns(self) -> str:
-        return str(self.resource_details.returns) if self.resource_details.returns else ""
-
-    def get_raises(self) -> str:
-        if not self.resource_details.raises:
-            return ""
-        stringified_parameters = [str(parameter) for parameter in self.resource_details.raises]
-        return "\n".join(stringified_parameters)
-
-
-def convert_resource_details_to_doc_item(resource_details: ResourceDetails) -> DocItem:
-    return DocItem(
-        menu_item="placeholder",
-        class_method_or_attribute="placeholder",
-        link="placeholder",
-        docstring_description="placeholder",
-        resource_details=resource_details,
-    )
 
 
 @dataclass
@@ -940,10 +899,8 @@ class DocsBuilder:
                     reverse_lookup_map[api_path.lower()] = doc_path
                     resource_details = get_resource_details(obj_path)
                     DOC_ITEMS.add(api_path.lower(), DocItem(
-                        menu_item="placeholder",
                         class_method_or_attribute=api_path,
                         link=f"http://127.0.0.1:8000/{api_path}",
-                        docstring_description="",
                         resource_details=resource_details,
                     ))
                     self._build_and_write_to_file(
@@ -960,10 +917,8 @@ class DocsBuilder:
                 doc_path_without_ext = doc_path.replace(".md", "")
                 resource_details = get_resource_details(obj_path)
                 DOC_ITEMS.add(truncated_lookup_path, DocItem(
-                    menu_item="placeholder",
                     class_method_or_attribute=api_path,
                     link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
-                    docstring_description="",
                     resource_details=resource_details,
                 ))
                 self._build_and_write_to_file(
@@ -1034,50 +989,51 @@ class DocsBuilder:
                     # handle those with explicit overrides
                     link_without_md = doc_path_override.replace(".md", "")
                     resource_details = self.get_resource_details_for_path(link_without_md)
-                    doc_item = convert_resource_details_to_doc_item(resource_details)
                     all_doc_items_to_generate.append(
                         DocItemToRender(
                             menu_item=" > ".join(layout_item.menu_header),
                             class_method_or_attribute=link_without_md,
                             link=f"http://127.0.0.1:8000/reference/{link_without_md}",
-                            docstring_description=doc_item.get_description(),
-                            parameters=doc_item.get_parameters(),
-                            returns=doc_item.get_returns(),
-                            raises=doc_item.get_raises(),
-                            examples=doc_item.get_examples(),
-                            see_also=doc_item.get_see_also(),
+                            docstring_description=resource_details.description_string,
+                            parameters=resource_details.parameters_string,
+                            returns=resource_details.returns_string,
+                            raises=resource_details.raises_string,
+                            examples=resource_details.examples_string,
+                            see_also=resource_details.see_also_string,
                         )
                     )
                     continue
 
                 if layout_item.get_api_path_override() in DOC_ITEMS.doc_items:
                     doc_item = DOC_ITEMS.get(layout_item.get_api_path_override())
+                    resource_details = doc_item.resource_details
                     all_doc_items_to_generate.append(
                         DocItemToRender(
                             menu_item=" > ".join(layout_item.menu_header),
                             class_method_or_attribute=doc_item.class_method_or_attribute,
                             link=doc_item.link,
-                            docstring_description=doc_item.get_description(),
-                            parameters=doc_item.get_parameters(),
-                            returns=doc_item.get_returns(),
-                            raises=doc_item.get_raises(),
-                            examples=doc_item.get_examples(),
-                            see_also=doc_item.get_see_also(),
+                            docstring_description=resource_details.description_string,
+                            parameters=resource_details.parameters_string,
+                            returns=resource_details.returns_string,
+                            raises=resource_details.raises_string,
+                            examples=resource_details.examples_string,
+                            see_also=resource_details.see_also_string,
                         )
                     )
                 elif layout_item.get_api_path_override().lower() in DOC_ITEMS.doc_items:
                     doc_item = DOC_ITEMS.get(layout_item.get_api_path_override().lower())
+                    resource_details = doc_item.resource_details
                     all_doc_items_to_generate.append(
                         DocItemToRender(
                             menu_item=" > ".join(layout_item.menu_header),
                             class_method_or_attribute=doc_item.class_method_or_attribute,
                             link=doc_item.link,
-                            docstring_description=doc_item.get_description(),
-                            parameters=doc_item.get_parameters(),
-                            returns=doc_item.get_returns(),
-                            raises=doc_item.get_raises(),
-                            examples=doc_item.get_examples(),
-                            see_also=doc_item.get_see_also(),
+                            docstring_description=resource_details.description_string,
+                            parameters=resource_details.parameters_string,
+                            returns=resource_details.returns_string,
+                            raises=resource_details.raises_string,
+                            examples=resource_details.examples_string,
+                            see_also=resource_details.see_also_string,
                         )
                     )
                 else:

@@ -261,9 +261,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             return list_item_str
 
         # Render description
-        content = " ".join(
-            [resource_details.short_description or "", resource_details.long_description or ""]
-        )
+        content = resource_details.description_string
         if content.strip():
             _render("Description", content)
 

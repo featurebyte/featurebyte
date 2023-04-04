@@ -117,6 +117,38 @@ class ResourceDetails(BaseModel):
             return import_resource(f"{self.path}.{self.name}")
         return getattr(import_resource(self.path), self.name)
 
+    @property
+    def description_string(self) -> str:
+        return " ".join(
+            [self.short_description or "", self.long_description or ""]
+        )
+
+    @property
+    def parameters_string(self) -> str:
+        if not self.parameters:
+            return ""
+        stringified_parameters = [str(parameter) for parameter in self.parameters]
+        return "\n".join(stringified_parameters)
+
+    @property
+    def examples_string(self) -> str:
+        return ",".join(self.examples) if self.examples else ""
+
+    @property
+    def see_also_string(self) -> str:
+        return self.see_also if self.see_also else ""
+
+    @property
+    def returns_string(self) -> str:
+        return str(self.returns) if self.returns else ""
+
+    @property
+    def raises_string(self) -> str:
+        if not self.raises:
+            return ""
+        stringified_parameters = [str(parameter) for parameter in self.raises]
+        return "\n".join(stringified_parameters)
+
 
 def get_params(
     signature: inspect.Signature, type_hints: dict[str, Any]
