@@ -25,7 +25,7 @@ from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreMo
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.model.table import AllTableDataT, SouceTableData
+from featurebyte.query_graph.model.table import AllTableDataT, SourceTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
@@ -415,7 +415,7 @@ class SourceTable(AbstractTableData):
 
     __fbautodoc__ = FBAutoDoc(section=["Table"])
 
-    _table_data_class: ClassVar[Type[AllTableDataT]] = SouceTableData
+    _table_data_class: ClassVar[Type[AllTableDataT]] = SourceTableData
 
     @property
     def columns_info(self) -> List[ColumnInfo]:
