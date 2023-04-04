@@ -31,6 +31,15 @@ class ParameterDetails(BaseModel):
     default: Optional[str]
     description: Optional[str]
 
+    def __str__(self) -> str:
+        """
+        String representation of parameter details
+        """
+        default = ")"
+        if self.default is not None:
+            default = f", default={self.default})"
+        return f"{self.name} ({self.type}{default}: {self.description}"
+
 
 class ExceptionDetails(BaseModel):
     """

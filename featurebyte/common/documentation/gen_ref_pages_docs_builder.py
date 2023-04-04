@@ -48,7 +48,10 @@ class DocItem:
         )
 
     def get_parameters(self) -> str:
-        return self.resource_details.parameters if self.resource_details.parameters else ""
+        if not self.resource_details.parameters:
+            return ""
+        stringified_parameters = [str(parameter) for parameter in self.resource_details.parameters]
+        return "\n".join(stringified_parameters)
 
     def get_examples(self) -> str:
         return ",".join(self.resource_details.examples) if self.resource_details.examples else ""
@@ -1056,6 +1059,7 @@ class DocsBuilder:
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
 
+        # TODO: fix missing for overrides
         # write all doc items
         file_name = "debug/test.csv"
         with open(file_name, "w") as f:
