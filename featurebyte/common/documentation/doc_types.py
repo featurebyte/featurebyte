@@ -1,8 +1,9 @@
 """
 Reused types
 """
-import os
 from typing import Optional
+
+import os
 
 from docstring_parser import DocstringMeta
 from docstring_parser.common import Docstring as BaseDocstring
