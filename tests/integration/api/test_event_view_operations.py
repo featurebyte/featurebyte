@@ -237,7 +237,6 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
     """
     Test operations that can be performed on an EventView before creating features
     """
-    observation_view = event_view.get_observation_view()
     # need to specify the constant as float, otherwise results will get truncated
     event_view["CUST_ID_X_SESSION_ID"] = event_view["CUST_ID"] * event_view["SESSION_ID"] / 1000.0
     event_view["LUCKY_CUSTOMER"] = event_view["CUST_ID_X_SESSION_ID"] > 140.0
