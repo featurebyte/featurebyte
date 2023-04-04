@@ -3,16 +3,14 @@ Code to run in mkdocs#gen_ref_pages.py
 
 This is placed in here so that it can be imported as part of the featurebyte package.
 """
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
-
 import csv
 import importlib
 import inspect
 import json
 import os
-import resource
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from docstring_parser import parse
 from mkautodoc.extension import import_from_string
@@ -20,9 +18,10 @@ from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
 import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.documentation.autodoc_processor import Docstring
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
+from featurebyte.common.documentation.doc_types import Docstring
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
+from featurebyte.common.documentation.resource_extractor import ResourceDetails, get_resource_details
 from featurebyte.logger import logger
 
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
@@ -41,8 +40,62 @@ class DocItem:
     # the current docstring
     docstring_description: str
 
+    resource_details: ResourceDetails
 
-DOC_ITEMS: Dict[str, DocItem] = {}
+    def get_description(self) -> str:
+        return " ".join(
+            [self.resource_details.short_description or "", self.resource_details.long_description or ""]
+        )
+
+    def get_parameters(self) -> str:
+        return self.resource_details.parameters if self.resource_details.parameters else ""
+
+    def get_examples(self) -> str:
+        return ",".join(self.resource_details.examples) if self.resource_details.examples else ""
+
+    def get_see_also(self) -> str:
+        return self.resource_details.see_also if self.resource_details.see_also else ""
+
+
+@dataclass
+class DocItemToRender:
+    menu_item: str
+    # eg. FeatureStore, FeatureStore.list
+    class_method_or_attribute: str
+    # ilnk to docs, eg: http://127.0.0.1:8000/reference/featurebyte.api.feature_store.FeatureStore/
+    link: str
+    # the current docstring
+    docstring_description: str
+
+    parameters: str
+    examples: str
+    see_also: str
+
+
+class DocItems:
+    """
+    DocItems is a singleton class that is used to store all of the documentation items
+    that are generated from the code.
+    """
+
+    def __init__(self):
+        self.doc_items: Dict[str, DocItem] = {}
+
+    def add(self, key: str, value: DocItem) -> None:
+        if not key.startswith("featurebyte."):
+            key = f"featurebyte.{key}"
+        self.doc_items[key] = value
+
+    def get(self, key: str) -> Optional[DocItem]:
+        if key not in self.doc_items:
+            return None
+        return self.doc_items.get(key)
+
+    def keys(self) -> List[str]:
+        return list(self.doc_items.keys())
+
+
+DOC_ITEMS = DocItems()
 
 
 @dataclass
@@ -916,12 +969,14 @@ class DocsBuilder:
                     doc_path = api_path + ".md"
                     reverse_lookup_map[api_path.lower()] = doc_path
                     docstring = self.get_docstring_for_path(obj_path)
-                    DOC_ITEMS[api_path.lower()] = DocItem(
+                    resource_details = get_resource_details(obj_path)
+                    DOC_ITEMS.add(api_path.lower(), DocItem(
                         menu_item="placeholder",
                         class_method_or_attribute=api_path,
                         link=f"http://127.0.0.1:8000/{api_path}",
                         docstring_description=docstring,
-                    )
+                        resource_details=resource_details,
+                    ))
                     self._build_and_write_to_file(
                         obj_path,
                         doc_group_value,
@@ -935,12 +990,14 @@ class DocsBuilder:
                     truncated_lookup_path = lookup_path.replace("featurebyte.", "")
                 doc_path_without_ext = doc_path.replace(".md", "")
                 docstring = self.get_docstring_for_path(obj_path)
-                DOC_ITEMS[truncated_lookup_path] = DocItem(
+                resource_details = get_resource_details(obj_path)
+                DOC_ITEMS.add(truncated_lookup_path, DocItem(
                     menu_item="placeholder",
                     class_method_or_attribute=api_path,
                     link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
                     docstring_description=docstring,
-                )
+                    resource_details=resource_details,
+                ))
                 self._build_and_write_to_file(
                     obj_path,
                     doc_group_value,
@@ -998,56 +1055,67 @@ class DocsBuilder:
         proxied_path_to_markdown_path = self.generate_documentation_for_docs(doc_groups_to_use)
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
-        return updated_nav
 
         # write all doc items
-        with open("debug/test.csv", "w") as f:
+        file_name = "debug/test.csv"
+        with open(file_name, "w") as f:
             all_doc_items_to_generate = []
             for layout_item in get_overall_layout():
-                lower_case_api_path = layout_item.api_path.lower()
                 doc_path_override = layout_item.get_doc_path_override()
                 if doc_path_override is not None:
                     # handle those with explicit overrides
                     link_without_md = doc_path_override.replace(".md", "")
                     all_doc_items_to_generate.append(
-                        DocItem(
+                        DocItemToRender(
                             menu_item=" > ".join(layout_item.menu_header),
                             class_method_or_attribute=link_without_md,
                             link=f"http://127.0.0.1:8000/reference/{link_without_md}",
                             docstring_description=self.get_docstring_for_path(
                                 link_without_md + ".override"
                             ),
+                            parameters="missing",
+                            examples="missing",
+                            see_also="missing",
                         )
                     )
                     continue
 
-                if lower_case_api_path in DOC_ITEMS:
-                    doc_item = DOC_ITEMS[lower_case_api_path]
+                if layout_item.get_api_path_override() in DOC_ITEMS.doc_items:
+                    doc_item = DOC_ITEMS.get(layout_item.get_api_path_override())
                     all_doc_items_to_generate.append(
-                        DocItem(
+                        DocItemToRender(
                             menu_item=" > ".join(layout_item.menu_header),
                             class_method_or_attribute=doc_item.class_method_or_attribute,
                             link=doc_item.link,
-                            docstring_description=doc_item.docstring_description,
+                            docstring_description=doc_item.get_description(),
+                            parameters=doc_item.get_parameters(),
+                            examples=doc_item.get_examples(),
+                            see_also=doc_item.get_see_also(),
                         )
                     )
-                elif layout_item.get_api_path_override().lower() in DOC_ITEMS:
-                    doc_item = DOC_ITEMS[layout_item.get_api_path_override().lower()]
+                elif layout_item.get_api_path_override().lower() in DOC_ITEMS.doc_items:
+                    doc_item = DOC_ITEMS.get(layout_item.get_api_path_override().lower())
                     all_doc_items_to_generate.append(
-                        DocItem(
+                        DocItemToRender(
                             menu_item=" > ".join(layout_item.menu_header),
                             class_method_or_attribute=doc_item.class_method_or_attribute,
                             link=doc_item.link,
-                            docstring_description=doc_item.docstring_description,
+                            docstring_description=doc_item.get_description(),
+                            parameters=doc_item.get_parameters(),
+                            examples=doc_item.get_examples(),
+                            see_also=doc_item.get_see_also(),
                         )
                     )
                 else:
                     all_doc_items_to_generate.append(
-                        DocItem(
+                        DocItemToRender(
                             menu_item=" > ".join(layout_item.menu_header),
                             class_method_or_attribute="missing",
                             link="missing",
                             docstring_description="missing",
+                            parameters="missing",
+                            examples="missing",
+                            see_also="missing",
                         )
                     )
             writer = csv.writer(f)
@@ -1069,12 +1137,13 @@ class DocsBuilder:
                         doc_item.class_method_or_attribute,
                         doc_item.link,
                         doc_item.docstring_description,
-                        "todo: parameters",
-                        "todo: examples",
-                        "todo: see_also",
+                        doc_item.parameters,
+                        doc_item.examples,
+                        doc_item.see_also,
                     ]
                 )
-            print("done writing rows to csv")
+            print(f"done writing rows to {file_name}")
+        return updated_nav
 
 
 def build_docs(set_edit_path_fn: Any, gen_files_open_fn: Any) -> None:
