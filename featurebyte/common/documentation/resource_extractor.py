@@ -127,10 +127,24 @@ class ResourceDetails(BaseModel):
 
     @property
     def description_string(self) -> str:
+        """
+        String representation of description
+
+        Returns
+        -------
+        str
+        """
         return " ".join([self.short_description or "", self.long_description or ""])
 
     @property
     def parameters_string(self) -> str:
+        """
+        String representation of parameters
+
+        Returns
+        -------
+        str
+        """
         if not self.parameters:
             return ""
         stringified_parameters = [str(parameter) for parameter in self.parameters]
@@ -138,18 +152,46 @@ class ResourceDetails(BaseModel):
 
     @property
     def examples_string(self) -> str:
+        """
+        String representation of examples
+
+        Returns
+        -------
+        str
+        """
         return ",".join(self.examples) if self.examples else ""
 
     @property
     def see_also_string(self) -> str:
+        """
+        String representation of see also
+
+        Returns
+        -------
+        str
+        """
         return self.see_also if self.see_also else ""
 
     @property
     def returns_string(self) -> str:
+        """
+        String representation of returns
+
+        Returns
+        -------
+        str
+        """
         return str(self.returns) if self.returns else ""
 
     @property
     def raises_string(self) -> str:
+        """
+        String representation of raises
+
+        Returns
+        -------
+        str
+        """
         if not self.raises:
             return ""
         stringified_parameters = [str(parameter) for parameter in self.raises]
