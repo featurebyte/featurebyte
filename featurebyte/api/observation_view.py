@@ -8,7 +8,8 @@ from typing import Optional
 from pydantic import Field
 
 from featurebyte.api.view import View
-from featurebyte.exception import ChangeViewNoJoinColumnError
+from featurebyte.core.frame import Frame
+from featurebyte.core.generic import QueryObject
 
 
 class ObservationViewMixin:
@@ -38,12 +39,9 @@ class ObservationViewMixin:
         )
 
 
-class ObservationView(View):
+class ObservationView(Frame, QueryObject):
     """
     ObservationView can be used to construct observations set for requesting features
     """
 
     point_in_time_column: Optional[str] = Field(default=None, allow_mutation=False)
-
-    def get_join_column(self) -> str:
-        raise ChangeViewNoJoinColumnError
