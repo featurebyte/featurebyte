@@ -150,7 +150,7 @@ def get_params(
             if render_kw_only_separator:
                 render_kw_only_separator = False
                 params.append(("*", None, None))
-        params.append((value, type_hints.get(parameter.name, Undefined), default))  # type: ignore[arg-type]
+        params.append((value, type_hints.get(parameter.name, Undefined), default))
     return params
 
 
@@ -232,7 +232,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
 
             # get actual classname and name of the resource
             try:
-                resource_classname, resource_realname = resource.__qualname__.split(  # type: ignore[union-attr]
+                resource_classname, resource_realname = resource.__qualname__.split(
                     ".", maxsplit=1
                 )
                 resource_path = f"{resource.__module__}.{resource_classname}"

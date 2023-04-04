@@ -13,7 +13,7 @@ from featurebyte import version
 REPLACE_VERSION_MODE = os.environ.get("FB_DOCS_REPLACE_VERSION", False)
 
 
-def get_docs_version():
+def get_docs_version() -> str:
     """
     Get docs version. This returns the major.minor version of featurebyte.
 
