@@ -24,7 +24,9 @@ class CatalogGetByIdMixin:
     """
 
     @update_and_reset_catalog
-    def get_data_source_by_feature_store_id(self, id: ObjectId) -> DataSource:  # pylint: disable=redefined-builtin,invalid-name
+    def get_data_source_by_feature_store_id(
+        self, id: ObjectId
+    ) -> DataSource:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get data source by a given feature store id.
 
@@ -48,7 +50,9 @@ class CatalogGetByIdMixin:
         return feature_store.get_data_source()
 
     @update_and_reset_catalog
-    def get_view_by_table_id(self, id: ObjectId) -> View:  # pylint: disable=redefined-builtin,invalid-name
+    def get_view_by_table_id(
+        self, id: ObjectId
+    ) -> View:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get view for a given table id.
 
@@ -72,7 +76,9 @@ class CatalogGetByIdMixin:
         return table.get_view()  # type: ignore[no-any-return]
 
     @update_and_reset_catalog
-    def get_feature_by_id(self, id: ObjectId) -> Feature:  # pylint: disable=redefined-builtin,invalid-name
+    def get_feature_by_id(
+        self, id: ObjectId
+    ) -> Feature:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get a feature by id.
 
@@ -95,7 +101,9 @@ class CatalogGetByIdMixin:
         return Feature.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_feature_list_by_id(self, id: ObjectId) -> FeatureList:  # pylint: disable=redefined-builtin,invalid-name
+    def get_feature_list_by_id(
+        self, id: ObjectId
+    ) -> FeatureList:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get feature list by id.
 
@@ -118,7 +126,9 @@ class CatalogGetByIdMixin:
         return FeatureList.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_table_by_id(self, id: ObjectId) -> Any:  # pylint: disable=redefined-builtin,invalid-name
+    def get_table_by_id(
+        self, id: ObjectId
+    ) -> Any:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get table by id.
 
@@ -141,7 +151,9 @@ class CatalogGetByIdMixin:
         return Table.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_relationship_by_id(self, id: ObjectId) -> Relationship:  # pylint: disable=redefined-builtin,invalid-name
+    def get_relationship_by_id(
+        self, id: ObjectId
+    ) -> Relationship:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get relationship by id.
 
@@ -164,7 +176,9 @@ class CatalogGetByIdMixin:
         return Relationship.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_feature_job_setting_analysis_by_id(self, id: ObjectId) -> FeatureJobSettingAnalysis:  # pylint: disable=redefined-builtin,invalid-name
+    def get_feature_job_setting_analysis_by_id(
+        self, id: ObjectId
+    ) -> FeatureJobSettingAnalysis:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get feature job setting analysis by id.
 
@@ -187,7 +201,9 @@ class CatalogGetByIdMixin:
         return FeatureJobSettingAnalysis.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_feature_store_by_id(self, id: ObjectId) -> FeatureStore:  # pylint: disable=redefined-builtin,invalid-name
+    def get_feature_store_by_id(
+        self, id: ObjectId
+    ) -> FeatureStore:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get feature store by id.
 
@@ -210,7 +226,9 @@ class CatalogGetByIdMixin:
         return FeatureStore.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_entity_by_id(self, id: ObjectId) -> Entity:  # pylint: disable=redefined-builtin,invalid-name
+    def get_entity_by_id(
+        self, id: ObjectId
+    ) -> Entity:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get entity by id.
 
@@ -233,7 +251,9 @@ class CatalogGetByIdMixin:
         return Entity.get_by_id(id=id)
 
     @update_and_reset_catalog
-    def get_periodic_task_by_id(self, id: ObjectId) -> PeriodicTask:  # pylint: disable=redefined-builtin,invalid-name
+    def get_periodic_task_by_id(
+        self, id: ObjectId
+    ) -> PeriodicTask:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get periodic task by id.
 

@@ -1,10 +1,11 @@
 """
 Catalog decorator.
 """
-from functools import wraps
 from typing import Any
 
-from featurebyte.config import get_active_catalog_id, activate_catalog
+from functools import wraps
+
+from featurebyte.config import activate_catalog, get_active_catalog_id
 
 
 def update_and_reset_catalog(func: Any) -> Any:
@@ -42,4 +43,5 @@ def update_and_reset_catalog(func: Any) -> Any:
         finally:
             # Reset catalog back to original state
             activate_catalog(active_catalog_id)
+
     return wrapper

@@ -15,6 +15,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
 from featurebyte.api.catalog_decorator import update_and_reset_catalog
+from featurebyte.api.catalog_get_by_id_mixin import CatalogGetByIdMixin
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
@@ -26,7 +27,6 @@ from featurebyte.api.relationship import Relationship
 from featurebyte.api.table import Table
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.api.catalog_get_by_id_mixin import CatalogGetByIdMixin
 from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.catalog import CatalogModel
