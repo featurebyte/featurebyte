@@ -3,7 +3,7 @@ FeatureService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict
 
 from bson import ObjectId
 
@@ -147,9 +147,10 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             table_service = TableService(
                 user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
             )
-            table_id_to_info = {}
+            table_id_to_info: Dict[ObjectId, Dict[str, Any]] = {}
             for table_id in document.table_ids:
-                table_id_to_info[table_id] = await table_service.get_document(document_id=table_id)
+                table = await table_service.get_document(document_id=table_id)
+                table_id_to_info[table_id] = table.dict()
 
             # create feature definition
             sdk_code_gen_state = SDKCodeExtractor(graph=graph).extract(

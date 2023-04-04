@@ -24,7 +24,6 @@ from featurebyte.api.feature_util import (
     filter_feature_list,
 )
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
-from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
