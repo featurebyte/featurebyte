@@ -12,12 +12,12 @@ tasks:
         msg: "yq is not installed. Please install it from https://github.com/mikefarah/yq"
       - sh: jq --version
         msg: "jq is not installed. Please install it from https://stedolan.github.io/jq/download/"
+    deps:
+      - task: install
     cmds:
       - poetry run pre-commit install
 
   install:
-    aliases:
-      - deps-install
     desc: "Install the project dependencies"
     sources:
       - pyproject.toml
