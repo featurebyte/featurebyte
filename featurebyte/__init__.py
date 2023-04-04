@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
+from featurebyte.api.credential import Credential
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.dimension_view import DimensionView
@@ -31,7 +32,11 @@ from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import AggFunc, SourceType, StorageType
-from featurebyte.models.credential import Credential, UsernamePasswordCredential
+from featurebyte.models.credential import (
+    AccessTokenCredential,
+    S3StorageCredential,
+    UsernamePasswordCredential,
+)
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -132,7 +137,6 @@ def playground(
 __all__ = [
     "Catalog",
     "ChangeView",
-    "Credential",
     "Configurations",
     "Table",
     "DimensionTable",
@@ -158,6 +162,10 @@ __all__ = [
     "SnowflakeDetails",
     "SparkDetails",
     "to_timedelta",
+    # credentials
+    "AccessTokenCredential",
+    "Credential",
+    "S3StorageCredential",
     "UsernamePasswordCredential",
     # enums
     "AggFunc",

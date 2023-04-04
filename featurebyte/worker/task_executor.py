@@ -7,7 +7,7 @@ from typing import Any
 
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.base import User
-from featurebyte.utils.credential import get_credential
+from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
@@ -24,12 +24,13 @@ class TaskExecutor:
 
     def __init__(self, payload: dict[str, Any], progress: Any = None) -> None:
         command = self.command_type(payload["command"])
+        credential_provider = MongoBackedCredentialProvider(persistent=get_persistent())
         self.task = TASK_MAP[command](
             user=User(id=payload.get("user_id")),
             payload=payload,
             progress=progress,
             get_persistent=get_persistent,
-            get_credential=get_credential,
+            get_credential=credential_provider.get_credential,
             get_storage=get_storage,
             get_temp_storage=get_temp_storage,
         )

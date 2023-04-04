@@ -29,7 +29,6 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.service.entity import EntityService
-from featurebyte.utils.credential import get_credential
 
 
 def test_retrieve_all_migration_methods():
@@ -57,7 +56,7 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 
 
 @pytest.mark.asyncio
-async def test_migrate_method_generator(user, persistent):
+async def test_migrate_method_generator(user, persistent, get_credential):
     """Test migrate method generator"""
     schema_metadata_service = SchemaMetadataService(
         user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
@@ -102,7 +101,7 @@ async def test_migrate_method_generator(user, persistent):
 
 
 @pytest.mark.asyncio
-async def test_migrate_method_generator__exclude_warehouse(user, persistent):
+async def test_migrate_method_generator__exclude_warehouse(user, persistent, get_credential):
     """Test migrate method generator with include_data_warehouse_migrations=False"""
     schema_metadata_service = SchemaMetadataService(
         user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
@@ -163,7 +162,7 @@ async def test_post_migration_sanity_check(persistent, user):
 
 
 @pytest.mark.asyncio
-async def test_run_migration(migration_check_persistent, user):
+async def test_run_migration(migration_check_persistent, user, get_credential):
     """Test run migration function"""
     persistent = migration_check_persistent
     schema_metadata_service = SchemaMetadataService(

@@ -18,7 +18,12 @@ from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
-from featurebyte import FeatureJobSetting, MissingValueImputation, SnowflakeDetails
+from featurebyte import (
+    FeatureJobSetting,
+    MissingValueImputation,
+    SnowflakeDetails,
+    UsernamePasswordCredential,
+)
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import DefaultVersionMode, Feature
@@ -32,6 +37,7 @@ from featurebyte.enum import AggFunc, DBVarType, InternalName
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID, VersionIdentifier
+from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.observation_table import SourceTableObservationInput
@@ -52,7 +58,6 @@ from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.tile.manager import TileManager
-from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import TASK_MAP
 from tests.unit.conftest_config import (
     config_file_fixture,
@@ -301,6 +306,10 @@ def snowflake_feature_store_params_fixture():
             sf_schema="sf_schema",
             database="sf_database",
         ),
+        "database_credential": UsernamePasswordCredential(
+            username="sf_user",
+            password="sf_password",
+        ),
     }
 
 
@@ -311,6 +320,23 @@ def snowflake_feature_store_fixture(snowflake_feature_store_params, snowflake_ex
     """
     _ = snowflake_execute_query
     return FeatureStore.create(**snowflake_feature_store_params)
+
+
+@pytest.fixture(name="credentials")
+def credentials_fixture(snowflake_feature_store_params):
+    """
+    Credentials fixture
+    """
+    return {
+        snowflake_feature_store_params["name"]: CredentialModel(
+            name="sf_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=UsernamePasswordCredential(
+                username="sf_user",
+                password="sf_password",
+            ),
+        )
+    }
 
 
 @pytest.fixture(name="snowflake_data_source")
@@ -860,14 +886,14 @@ def count_per_category_feature_2h_fixture(count_per_category_feature_group):
 
 
 @pytest.fixture(name="session_manager")
-def session_manager_fixture(config, snowflake_connector):
+def session_manager_fixture(credentials, snowflake_connector):
     """
     Session manager fixture
     """
     # pylint: disable=E1101
     _ = snowflake_connector
     session_cache.clear()
-    yield SessionManager(credentials=config.credentials)
+    yield SessionManager(credentials=credentials)
 
 
 @pytest.fixture
@@ -1216,20 +1242,20 @@ def app_container_fixture(persistent):
 
 
 @pytest.fixture(name="get_credential")
-def get_credential_fixture(config):
+def get_credential_fixture(credentials):
     """
     get_credential fixture
     """
 
     async def get_credential(user_id, feature_store_name):
         _ = user_id
-        return config.credentials.get(feature_store_name)
+        return credentials.get(feature_store_name)
 
     return get_credential
 
 
 @pytest.fixture(autouse=True, scope="function")
-def mock_task_manager(request, persistent, storage, temp_storage):
+def mock_task_manager(request, persistent, storage, temp_storage, get_credential):
     """
     Mock celery task manager for testing
     """

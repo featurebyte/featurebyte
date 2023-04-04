@@ -13,7 +13,6 @@ import pytest
 import pytest_asyncio
 
 from featurebyte.models.base import User
-from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import BaseTask
 
 
@@ -70,7 +69,9 @@ class BaseTaskTestSuite:
         """
         yield Mock()
 
-    async def execute_task(self, task_class, payload, persistent, progress, storage, temp_storage):
+    async def execute_task(
+        self, task_class, payload, persistent, progress, storage, temp_storage, get_credential
+    ):
         """
         Execute task with payload
         """
@@ -88,7 +89,9 @@ class BaseTaskTestSuite:
         await task.execute()
 
     @pytest_asyncio.fixture()
-    async def task_completed(self, mongo_persistent, progress, storage, temp_storage):
+    async def task_completed(
+        self, mongo_persistent, progress, storage, temp_storage, get_credential
+    ):
         """
         Test execution of the task
         """
@@ -100,4 +103,5 @@ class BaseTaskTestSuite:
             progress=progress,
             storage=storage,
             temp_storage=temp_storage,
+            get_credential=get_credential,
         )

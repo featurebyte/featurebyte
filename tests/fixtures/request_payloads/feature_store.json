@@ -5,7 +5,6 @@
         "Run `pytest --update-fixtures` to update it."
     ],
     "_id": "642db61d28e1dffe39df3521",
-    "credentials": null,
     "details": {
         "account": "sf_account",
         "database": "sf_database",

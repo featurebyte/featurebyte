@@ -7,8 +7,10 @@ from unittest import mock
 
 import pytest
 import yaml
+from bson import ObjectId
 
 from featurebyte import Configurations
+from featurebyte.models.credential import CredentialModel, UsernamePasswordCredential
 
 
 @pytest.fixture(name="config_file")
@@ -17,17 +19,6 @@ def config_file_fixture():
     Config file for unit testing
     """
     config_dict = {
-        "credential": [
-            {
-                "feature_store": "sf_featurestore",
-                "credential_type": "USERNAME_PASSWORD",
-                "username": "sf_user",
-                "password": "sf_password",
-            },
-            {
-                "feature_store": "sq_featurestore",
-            },
-        ],
         "profile": [
             {
                 "name": "local",
@@ -55,6 +46,24 @@ def config_fixture(config_file):
     Config object for unit testing
     """
     yield Configurations(config_file_path=config_file)
+
+
+@pytest.fixture(name="credentials")
+def credentials_fixture():
+    """
+    Credentials object for unit testing
+    """
+    return {
+        "sf_featurestore": CredentialModel(
+            name="sf_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=UsernamePasswordCredential(
+                username="sf_user",
+                password="sf_password",
+            ),
+        ),
+        "sq_featurestore": None,
+    }
 
 
 @pytest.fixture(name="mock_config_path_env")

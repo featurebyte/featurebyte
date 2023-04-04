@@ -12,7 +12,6 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.working_schema import drop_all_objects
-from featurebyte.utils.credential import get_credential
 from tests.util.helper import make_online_request
 
 
@@ -59,14 +58,14 @@ def deployed_feature_list_fixture(event_table):
 
 
 @pytest.fixture(name="migration_service")
-def migration_service_fixture(user, persistent):
+def migration_service_fixture(user, persistent, get_cred):
     """
     Fixture for DataWarehouseMigrationServiceV8
     """
     service = DataWarehouseMigrationServiceV8(
         user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
-    service.set_credential_callback(get_credential)
+    service.set_credential_callback(get_cred)
     return service
 
 

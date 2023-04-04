@@ -14,7 +14,6 @@ import websocket
 import yaml
 from bson import ObjectId
 from pydantic import AnyHttpUrl, BaseModel, Field, validator
-from pydantic.error_wrappers import ValidationError
 from requests import Response
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -22,10 +21,6 @@ from featurebyte.common.utils import get_version
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
-
-# data source to credential mapping
-Credentials = Dict[str, Optional[Credential]]
 
 # default local location
 DEFAULT_HOME_PATH: Path = Path.home().joinpath(".featurebyte")
@@ -276,7 +271,7 @@ class WebsocketClient:
 
 class Configurations:
     """
-    FeatureByte SDK settings. Contains general settings, database sources and credentials.
+    FeatureByte SDK settings. Contains general settings.
     """
 
     # documentation metadata
@@ -317,7 +312,6 @@ class Configurations:
         self.profile: Optional[Profile] = None
         self.profiles: Optional[List[Profile]] = None
         self.settings: Dict[str, Any] = {}
-        self.credentials: Credentials = {}
         self.logging: LoggingSettings = LoggingSettings()
         self._parse_config(self._config_file_path)
 
@@ -341,11 +335,6 @@ class Configurations:
         ----------
         path: Path
             Path to read configurations from
-
-        Raises
-        ------
-        InvalidSettingsError
-            Invalid Settings Error
         """
         if not os.path.exists(path):
             return
@@ -354,24 +343,6 @@ class Configurations:
             self.settings = yaml.safe_load(file_obj)
             if not self.settings:
                 return
-
-        credentials = self.settings.pop("credential", [])
-        for credential in credentials:
-            name = credential.pop("feature_store", "unnamed")
-            try:
-                # parse and store credentials
-                new_credential = Credential(
-                    **{
-                        "name": name,
-                        "credential_type": credential.get("credential_type", CredentialType.NONE),
-                        "credential": credential,
-                    },
-                )
-                self.credentials[name] = new_credential
-            except ValidationError as exc:
-                raise InvalidSettingsError(
-                    f"Invalid settings for feature store: {name}\n{str(exc)}"
-                ) from exc
 
         logging_settings = self.settings.pop("logging", None)
         if logging_settings:
@@ -502,37 +473,3 @@ class Configurations:
                 websocket_client.close()
         else:
             raise InvalidSettingsError("No profile setting specified")
-
-    def write_creds(self, credential: Credential, feature_store_name: str) -> bool:
-        """
-        Write creds will try to write the credentials to the configuration file. This will no-op if any other
-        credential's already exist in the config file.
-
-        Parameters
-        ----------
-        credential: Credential
-            credentials to write to the file
-        feature_store_name: str
-            the feature store associated with the credentials being passed in
-
-        Returns
-        -------
-        bool
-            True if we updated the config file, False if otherwise
-        """
-        if len(self.credentials) > 0:
-            return False
-
-        # Append text to file
-        with self._config_file_path.open(mode="a", encoding="utf-8") as config_file:
-            username_pw_cred = credential.credential
-            assert isinstance(username_pw_cred, UsernamePasswordCredential)
-            config_file.write(
-                "\n\n# credentials\n"
-                "credential:\n"
-                f"  - feature_store: {feature_store_name}\n"
-                f"    credential_type: {credential.credential_type}\n"
-                f"    username: {username_pw_cred.username}\n"
-                f"    password: {username_pw_cred.password}\n"
-            )
-        return True

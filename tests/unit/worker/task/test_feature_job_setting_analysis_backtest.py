@@ -50,6 +50,14 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             user_id=None,
         )
 
+    @pytest_asyncio.fixture(autouse=True)
+    async def setup(  # pylint: disable=W0221
+        self, mongo_persistent, storage, temp_storage, mock_event_dataset, get_credential
+    ):
+        _ = mock_event_dataset
+        persistent, _ = mongo_persistent
+        await self.setup_persistent_storage(persistent, storage, temp_storage)
+
         # save analyse
         payload = self.load_payload(
             "tests/fixtures/task_payloads/feature_job_setting_analysis.json"
@@ -61,15 +69,8 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             progress=None,
             storage=storage,
             temp_storage=temp_storage,
+            get_credential=get_credential,
         )
-
-    @pytest_asyncio.fixture(autouse=True)
-    async def setup(  # pylint: disable=W0221
-        self, mongo_persistent, storage, temp_storage, mock_event_dataset
-    ):
-        _ = mock_event_dataset
-        persistent, _ = mongo_persistent
-        await self.setup_persistent_storage(persistent, storage, temp_storage)
 
     @pytest.mark.asyncio
     async def test_execute_success(  # pylint: disable=too-many-locals
@@ -113,7 +114,9 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         ]
 
     @pytest.mark.asyncio
-    async def test_execute_fail(self, mongo_persistent, progress, storage, temp_storage):
+    async def test_execute_fail(
+        self, mongo_persistent, progress, storage, temp_storage, get_credential
+    ):
         """
         Test failed task execution
         """
@@ -132,6 +135,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
                 progress=progress,
                 storage=storage,
                 temp_storage=temp_storage,
+                get_credential=get_credential,
             )
         assert str(excinfo.value) == (
             f'FeatureJobSettingAnalysis (id: "{feature_job_setting_analysis_id}") not found. '

@@ -1,0 +1,148 @@
+"""
+Credential API routes
+"""
+from __future__ import annotations
+
+from typing import Optional, cast
+
+from http import HTTPStatus
+
+from fastapi import APIRouter, Request
+
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.credential import CredentialModel
+from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.common.schema import (
+    AuditLogSortByQuery,
+    NameQuery,
+    PageQuery,
+    PageSizeQuery,
+    SearchQuery,
+    SortByQuery,
+    SortDirQuery,
+)
+from featurebyte.schema.credential import CredentialList, CredentialUpdate
+
+router = APIRouter(prefix="/credential")
+
+
+@router.post("", response_model=CredentialModel, status_code=HTTPStatus.CREATED)
+async def create_credential(
+    request: Request,
+    data: CredentialModel,
+) -> CredentialModel:
+    """
+    Create credential
+    """
+    controller = request.state.app_container.credential_controller
+    return cast(CredentialModel, await controller.create_credential(data=data))
+
+
+@router.get(
+    "/{credential_id}",
+    response_model=CredentialModel,
+    status_code=HTTPStatus.OK,
+)
+async def retrieve_credential(
+    request: Request,
+    credential_id: PydanticObjectId,
+) -> CredentialModel:
+    """
+    Retrieve credential
+    """
+    controller = request.state.app_container.credential_controller
+    return cast(
+        CredentialModel,
+        await controller.get(
+            document_id=credential_id,
+        ),
+    )
+
+
+@router.get("", response_model=CredentialList, status_code=HTTPStatus.OK)
+async def list_credential(
+    request: Request,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
+    name: Optional[str] = NameQuery,
+) -> CredentialList:
+    """
+    List credentials
+    """
+    controller = request.state.app_container.credential_controller
+    return cast(
+        CredentialList,
+        await controller.list(
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            search=search,
+            name=name,
+        ),
+    )
+
+
+@router.patch(
+    "/{credential_id}",
+    response_model=CredentialModel,
+    status_code=HTTPStatus.OK,
+)
+async def update_credential(
+    request: Request,
+    credential_id: PydanticObjectId,
+    data: CredentialUpdate,
+) -> CredentialModel:
+    """
+    Update credential
+    """
+    controller = request.state.app_container.credential_controller
+    return cast(
+        CredentialModel,
+        await controller.update_credential(
+            credential_id=credential_id,
+            data=data,
+        ),
+    )
+
+
+@router.get("/audit/{credential_id}", response_model=AuditDocumentList)
+async def list_credential_audit_logs(
+    request: Request,
+    credential_id: PydanticObjectId,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = AuditLogSortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
+) -> AuditDocumentList:
+    """
+    List credential audit logs
+    """
+    controller = request.state.app_container.credential_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
+        document_id=credential_id,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        search=search,
+    )
+    return audit_doc_list
+
+
+@router.delete("/{credential_id}", status_code=HTTPStatus.NO_CONTENT)
+async def delete_credential(
+    request: Request,
+    credential_id: PydanticObjectId,
+) -> None:
+    """
+    Delete credential
+    """
+    controller = request.state.app_container.credential_controller
+    await controller.delete_credential(
+        credential_id=credential_id,
+    )

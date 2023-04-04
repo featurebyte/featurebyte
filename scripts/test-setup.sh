@@ -3,7 +3,7 @@
 set -e
 
 mkdir -p ~/.spark/data
-cd docker/test
+cd docker
 
 LOCAL_UID="$(id -u)" LOCAL_GID="$(id -g)" docker compose up -d
 while [[ $(docker container inspect -f "{{ .State.Health.Status }}" spark-thrift-test) != 'healthy' ]]; do

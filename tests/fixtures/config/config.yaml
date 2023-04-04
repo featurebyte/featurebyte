@@ -12,11 +12,5 @@ logging:
   level: INFO
   serialize: True
 
-credential:
-  - feature_store: "Snowflake FeatureStøre"
-    credential_type: USERNAME_PASSWORD
-    username: user
-    password: password
-
 storage:
   local_path: ~/.featurebyte_custom/data

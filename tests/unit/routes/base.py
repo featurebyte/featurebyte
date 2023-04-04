@@ -158,7 +158,7 @@ class BaseApiTestSuite:
         for _, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
             response = test_api_client.post(f"{self.base_route}", json=payload)
-            assert response.status_code == HTTPStatus.CREATED
+            assert response.status_code == HTTPStatus.CREATED, response.json()
             output.append(response)
         return output
 

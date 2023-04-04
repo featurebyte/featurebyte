@@ -93,7 +93,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
             response = api_client.post(
                 f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
             )
-            assert response.status_code == HTTPStatus.CREATED
+            assert response.status_code == HTTPStatus.CREATED, response.json()
 
     def multiple_success_payload_generator(self, api_client):
         """Payload generator to create multiple success response"""

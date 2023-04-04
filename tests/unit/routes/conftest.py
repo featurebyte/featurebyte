@@ -49,13 +49,13 @@ def test_api_client_persistent(persistent, user_id, temp_storage):
 
 
 @pytest.fixture(name="get_credential")
-def get_credential_fixture(config):
+def get_credential_fixture(credentials):
     """
     get_credential fixture
     """
 
     async def get_credential(user_id, feature_store_name):
         _ = user_id
-        return config.credentials.get(feature_store_name)
+        return credentials.get(feature_store_name)
 
     return get_credential

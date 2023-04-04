@@ -37,8 +37,11 @@ def snowflake_session_dict_fixture(snowflake_session_dict_without_credentials):
     """
     Snowflake session parameters with credentials
     """
-    snowflake_session_dict_without_credentials["username"] = "username"
-    snowflake_session_dict_without_credentials["password"] = "password"
+    snowflake_session_dict_without_credentials["database_credential"] = {
+        "credential_type": "USERNAME_PASSWORD",
+        "username": "username",
+        "password": "password",
+    }
     return snowflake_session_dict_without_credentials
 
 
@@ -49,8 +52,8 @@ async def test_snowflake_session__credential_from_config(snowflake_session_dict)
     Test snowflake session
     """
     session = SnowflakeSession(**snowflake_session_dict)
-    assert session.username == "username"
-    assert session.password == "password"
+    assert session.database_credential.username == "username"
+    assert session.database_credential.password == "password"
     assert await session.list_databases() == ["sf_database"]
     assert await session.list_schemas(database_name="sf_database") == ["sf_schema"]
     assert await session.list_tables(database_name="sf_database", schema_name="sf_schema") == [

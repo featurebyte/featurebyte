@@ -20,7 +20,7 @@ from featurebyte.service.base_document import DocumentUpdateSchema
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
-from featurebyte.utils.credential import ConfigCredentialProvider
+from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 if TYPE_CHECKING:
     from featurebyte.session.base import BaseSession
@@ -176,7 +176,7 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
         -------
         BaseSession
         """
-        credential_provider = ConfigCredentialProvider()
+        credential_provider = MongoBackedCredentialProvider(persistent=self.persistent)
         user = User(id=feature_store.user_id)
         session_validator_service = SessionValidatorService(
             user, self.persistent, self.catalog_id, credential_provider

@@ -22,11 +22,7 @@ from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import create_new_arrow_stream_writer
 from featurebyte.enum import DBVarType, InternalName, SourceType, StorageType
 from featurebyte.logger import logger
-from featurebyte.models.credential import (
-    BaseCredential,
-    BaseStorageCredential,
-    StorageCredentialType,
-)
+from featurebyte.models.credential import StorageCredential
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 from featurebyte.session.hive import AuthType, HiveConnection
 from featurebyte.session.simple_storage import (
@@ -54,16 +50,14 @@ class SparkSession(BaseSession):
     storage_type: StorageType
     storage_url: str
     storage_spark_url: str
-    storage_credential_type: Optional[StorageCredentialType]
-    storage_credential: Optional[BaseStorageCredential]
     region_name: Optional[str]
     featurebyte_catalog: str
     featurebyte_schema: str
     source_type: SourceType = Field(SourceType.SPARK, const=True)
+    storage_credential: Optional[StorageCredential]
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
-        self.storage_credential = BaseCredential(**data).storage_credential
         self._initialize_storage()
 
         auth = None

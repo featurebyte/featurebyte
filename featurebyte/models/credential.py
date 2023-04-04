@@ -1,12 +1,19 @@
 """
 Document model for stored credentials
 """
-from typing import Any, Dict, Optional
+from typing import List, Literal, Optional, Union
+from typing_extensions import Annotated
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr
 
 from featurebyte.enum import StrEnum
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    PydanticObjectId,
+    UniqueConstraintResolutionSignature,
+    UniqueValuesConstraint,
+)
 
 
 class CredentialType(StrEnum):
@@ -14,7 +21,6 @@ class CredentialType(StrEnum):
     Credential Type
     """
 
-    NONE = "NONE"
     USERNAME_PASSWORD = "USERNAME_PASSWORD"
     ACCESS_TOKEN = "ACCESS_TOKEN"
 
@@ -24,7 +30,6 @@ class StorageCredentialType(StrEnum):
     Storage Credential Type
     """
 
-    NONE = "NONE"
     S3 = "S3"
 
 
@@ -33,14 +38,23 @@ class BaseStorageCredential(FeatureByteBaseModel):
     Base storage credential
     """
 
+    credential_type: StorageCredentialType
 
-class S3Credential(BaseStorageCredential):
+
+class S3StorageCredential(BaseStorageCredential):
     """
     S3 storage credential
     """
 
+    credential_type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
     s3_access_key_id: StrictStr
     s3_secret_access_key: StrictStr
+
+
+StorageCredential = Annotated[
+    Union[S3StorageCredential],
+    Field(discriminator="credential_type"),
+]
 
 
 class BaseCredential(FeatureByteBaseModel):
@@ -48,40 +62,7 @@ class BaseCredential(FeatureByteBaseModel):
     Storage credential only
     """
 
-    storage_credential_type: Optional[StorageCredentialType] = Field(
-        default=StorageCredentialType.NONE
-    )
-    storage_credential: Optional[BaseStorageCredential]
-
-    @root_validator(pre=True)
-    @classmethod
-    def _populate_credential(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Populate credential with right class
-
-        Parameters
-        ----------
-        values: Dict[str, Any]
-            values to validate
-
-        Returns
-        -------
-        Dict[str, Any]
-        """
-        type_class_mapping = {
-            StorageCredentialType.NONE: BaseStorageCredential,
-            StorageCredentialType.S3: S3Credential,
-        }
-        storage_credential = values.get("storage_credential", {})
-        if isinstance(storage_credential, FeatureByteBaseModel):
-            storage_credential = storage_credential.dict()
-        values["storage_credential_type"] = values.get(
-            "storage_credential_type", StorageCredentialType.NONE
-        )
-        values["storage_credential"] = type_class_mapping[values["storage_credential_type"]](
-            **storage_credential
-        )
-        return values
+    credential_type: CredentialType
 
 
 class UsernamePasswordCredential(BaseCredential):
@@ -89,6 +70,9 @@ class UsernamePasswordCredential(BaseCredential):
     Username / Password credential
     """
 
+    credential_type: Literal[CredentialType.USERNAME_PASSWORD] = Field(
+        CredentialType.USERNAME_PASSWORD, const=True
+    )
     username: StrictStr
     password: StrictStr
 
@@ -98,42 +82,42 @@ class AccessTokenCredential(BaseCredential):
     Access token credential
     """
 
+    credential_type: Literal[CredentialType.ACCESS_TOKEN] = Field(
+        CredentialType.ACCESS_TOKEN, const=True
+    )
     access_token: StrictStr
 
 
-class Credential(FeatureByteBaseModel):
+SessionCredential = Annotated[
+    Union[UsernamePasswordCredential, AccessTokenCredential],
+    Field(discriminator="credential_type"),
+]
+
+
+class CredentialModel(FeatureByteBaseDocumentModel):
     """
     Credential model
     """
 
-    name: StrictStr
-    credential_type: CredentialType = Field(default=CredentialType.NONE)
-    credential: BaseCredential
+    feature_store_id: PydanticObjectId
+    database_credential: Optional[SessionCredential]
+    storage_credential: Optional[StorageCredential]
 
-    @root_validator(pre=True)
-    @classmethod
-    def _populate_credential(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    class Settings:
         """
-        Populate credential with right class
-
-        Parameters
-        ----------
-        values: Dict[str, Any]
-            values to validate
-
-        Returns
-        -------
-        Dict[str, Any]
+        Collection settings for Credential document
         """
-        type_class_mapping = {
-            CredentialType.NONE: BaseCredential,
-            CredentialType.ACCESS_TOKEN: AccessTokenCredential,
-            CredentialType.USERNAME_PASSWORD: UsernamePasswordCredential,
-        }
-        credential = values.get("credential", {})
-        if isinstance(credential, FeatureByteBaseModel):
-            credential = credential.dict()
-        values["credential"] = type_class_mapping[
-            values.get("credential_type", CredentialType.NONE)
-        ](**credential)
-        return values
+
+        collection_name = "credential"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            ),
+            UniqueValuesConstraint(
+                fields=("user_id", "feature_store_id"),
+                conflict_fields_signature={"feature_store_id": ["feature_store_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            ),
+        ]

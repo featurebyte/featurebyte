@@ -15,6 +15,7 @@ from pandas.testing import assert_frame_equal
 from featurebyte import FeatureStore
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.exception import CredentialsError
+from featurebyte.models.credential import CredentialModel
 from featurebyte.schema.feature_store import FeatureStoreSample
 from tests.unit.routes.base import BaseApiTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture
@@ -588,3 +589,33 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         response = test_api_client.post("/feature_store/sample", json=data_sample_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+
+    @pytest.mark.asyncio
+    async def test_credentials_stored(self, test_api_client_persistent):
+        """
+        Test that credentials are stored in the database upon successful Feature Store creation
+        """
+        test_api_client, persistent = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        feature_store_id = self.payload["_id"]
+
+        # check that no credential exists for the feature store before creation
+        credential = await persistent.find_one(
+            collection_name=CredentialModel.collection_name(),
+            query_filter={"feature_store_id": ObjectId(feature_store_id)},
+        )
+        assert not credential
+
+        # create feature store
+        payload = copy.deepcopy(self.payload)
+        response = test_api_client.post(f"{self.base_route}", json=payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED
+        assert response_dict["_id"] == feature_store_id
+
+        # check that no credential exists for the feature store before creation
+        credential = await persistent.find_one(
+            collection_name=CredentialModel.collection_name(),
+            query_filter={"feature_store_id": ObjectId(feature_store_id)},
+        )
+        assert credential

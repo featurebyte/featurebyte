@@ -10,6 +10,7 @@ from starlette.websockets import WebSocket
 
 import featurebyte.routes.catalog.api as catalog_api
 import featurebyte.routes.context.api as context_api
+import featurebyte.routes.credential.api as credential_api
 import featurebyte.routes.dimension_table.api as dimension_table_api
 import featurebyte.routes.entity.api as entity_api
 import featurebyte.routes.event_table.api as event_table_api
@@ -37,7 +38,7 @@ from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.utils.credential import ConfigCredentialProvider
+from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
@@ -69,7 +70,9 @@ def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
         active_catalog_id = active_catalog_id or PydanticObjectId(DEFAULT_CATALOG_ID)
         request.state.persistent = get_persistent()
         request.state.user = User()
-        request.state.get_credential = ConfigCredentialProvider().get_credential
+        request.state.get_credential = MongoBackedCredentialProvider(
+            persistent=request.state.persistent
+        ).get_credential
         request.state.get_storage = get_storage
         request.state.get_temp_storage = get_temp_storage
         request.state.app_container = AppContainer.get_instance(
@@ -121,6 +124,7 @@ def get_app() -> FastAPI:
         catalog_api,
         periodic_tasks_api,
         observation_table_api,
+        credential_api,
     ]
     dependencies = _get_api_deps()
     for resource_api in resource_apis:

@@ -22,6 +22,7 @@ from pydantic import ValidationError
 from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.base_table import TableApiObject, TableListMixin
 from featurebyte.api.catalog import Catalog, update_and_reset_catalog
+from featurebyte.api.credential import Credential
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -224,6 +225,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
     api_object_children = _inheritors(ApiObject)
     excluded_children = {
         Catalog,  # accessible as part of Catalog.get
+        Credential,  # accessible as part of Credential.get
         DimensionTable,  # accessible as part of catalog.(list|get)_table
         EventTable,  # accessible as part of catalog.(list|get)_table
         FeatureJobMixin,

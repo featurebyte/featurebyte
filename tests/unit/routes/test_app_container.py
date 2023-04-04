@@ -41,7 +41,7 @@ def test_construction__empty_app_config_has_two_instances(app_container_construc
         **app_container_constructor_params,
         app_config=app_container_config,
     )
-    assert len(app_container.instance_map) == 2
+    assert len(app_container.instance_map) == 3
 
 
 def test_construction__get_attr(app_container_constructor_params):
@@ -118,7 +118,7 @@ def test_construction__build_with_full_config(app_container_constructor_params):
         **app_container_constructor_params,
         app_config=app_container_config,
     )
-    assert len(app_container.instance_map) == 6
+    assert len(app_container.instance_map) == 7
 
 
 def test_construction__build_with_missing_deps(app_container_constructor_params):

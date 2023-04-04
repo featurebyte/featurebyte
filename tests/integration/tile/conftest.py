@@ -75,7 +75,7 @@ async def mock_feature_fixture(feature_model_dict, feature_store):
 
     feature_model_dict.update(
         {
-            "user_id": ObjectId(),
+            "user_id": None,
             "tabular_source": {
                 "feature_store_id": feature_store.id,
                 "table_details": TableDetails(table_name="some_random_table"),
