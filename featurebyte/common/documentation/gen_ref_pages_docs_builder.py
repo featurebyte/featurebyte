@@ -19,7 +19,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 from featurebyte.common.documentation.extract_csv import dump_to_csv, DOC_ITEMS, DocItem
-from featurebyte.common.documentation.resource_extractor import ResourceDetails, get_resource_details
+from featurebyte.common.documentation.resource_extractor import get_resource_details
 from featurebyte.logger import logger
 
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
