@@ -483,18 +483,11 @@ class Feature(
         str
         """
         try:
-            # retrieve all the table used to construct this feature
-            data_id_to_doc = {
-                data_id: Table.get_by_id(data_id).dict() for data_id in self.table_ids
-            }
+            definition = self.cached_model.definition
+            assert definition is not None, "Saved feature's definition should not be None."
+            return definition
         except RecordRetrievalException:
-            # table used to construct this feature has not been saved
-            data_id_to_doc = {}
-        return CodeStr(
-            self._generate_code(
-                to_format=True, to_use_saved_data=True, table_id_to_info=data_id_to_doc
-            )
-        )
+            return CodeStr(self._generate_code(to_format=True, to_use_saved_data=True))
 
     @property
     def primary_entity(self) -> List[Entity]:

@@ -468,6 +468,7 @@ def test_get_feature(saved_feature):
         "graph.nodes",
         "dtype",
         "catalog_id",
+        "definition",
     }
 
     with pytest.raises(RecordRetrievalException) as exc:

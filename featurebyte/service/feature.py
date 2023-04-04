@@ -19,6 +19,7 @@ from featurebyte.models.feature import (
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 from featurebyte.schema.feature import FeatureCreate, FeatureServiceUpdate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
@@ -146,8 +147,17 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             table_service = TableService(
                 user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
             )
+            table_id_to_info = {}
             for table_id in document.table_ids:
-                _ = await table_service.get_document(document_id=table_id)
+                table_id_to_info[table_id] = await table_service.get_document(document_id=table_id)
+
+            # create feature definition
+            sdk_code_gen_state = SDKCodeExtractor(graph=graph).extract(
+                node=graph.get_node_by_name(data.node_name),
+                to_use_saved_data=True,
+                table_id_to_info=table_id_to_info,
+            )
+            definition = sdk_code_gen_state.code_generator.generate(to_format=True)
 
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
@@ -155,6 +165,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
                     **document.dict(by_alias=True),
                     "graph": graph.dict(),
                     "node_name": node_name,
+                    "definition": definition,
                     "raw_graph": raw_graph.dict(),
                 },
                 user_id=self.user.id,
