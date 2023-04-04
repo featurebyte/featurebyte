@@ -35,6 +35,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -133,6 +134,11 @@ app_container_config.add_service_with_extra_deps(
         "feature_list_namespace_service",
         "version_service",
     ],
+)
+app_container_config.add_service_with_extra_deps(
+    "feature_list_status_service",
+    FeatureListStatusService,
+    ["feature_list_namespace_service", "feature_list_service"]
 )
 app_container_config.add_basic_service(
     "feature_job_setting_analysis_service", FeatureJobSettingAnalysisService
@@ -254,6 +260,7 @@ app_container_config.add_controller(
         "feature_list_namespace_service",
         "default_version_mode_service",
         "feature_readiness_service",
+        "feature_list_status_service",
         "info_service",
     ],
 )

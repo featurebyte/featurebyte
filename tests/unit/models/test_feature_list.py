@@ -110,13 +110,14 @@ def test_feature_list_namespace_model(feature_list_namespace_model_dict):
 def test_feature_list_status_ordering():
     """Test to cover feature list status ordering"""
     assert (
-        FeatureListStatus.TEMPLATE
+        FeatureListStatus.DEPLOYED
+        > FeatureListStatus.TEMPLATE
         > FeatureListStatus.PUBLIC_DRAFT
         > FeatureListStatus.DRAFT
         > FeatureListStatus.DEPRECATED
     )
     assert FeatureListStatus.min() == FeatureListStatus.DEPRECATED
-    assert FeatureListStatus.max() == FeatureListStatus.TEMPLATE
+    assert FeatureListStatus.max() == FeatureListStatus.DEPLOYED
 
 
 @pytest.mark.parametrize(

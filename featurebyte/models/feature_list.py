@@ -35,6 +35,7 @@ class FeatureListStatus(OrderedStrEnum):
     DRAFT = "DRAFT"
     PUBLIC_DRAFT = "PUBLIC_DRAFT"
     TEMPLATE = "TEMPLATE"
+    DEPLOYED = "DEPLOYED"
 
 
 class FeatureTypeFeatureCount(FeatureByteBaseModel):
