@@ -179,6 +179,11 @@ def _write_items_to_csv(file_name: str, all_doc_items_to_generate: List[DocItemT
 def _generate_items_to_render() -> List[DocItemToRender]:
     """
     Generate the items to render.
+
+    Returns
+    -------
+    List[DocItemToRender]
+        The items to render
     """
     logger.info("Building items to generate")
     all_doc_items_to_generate: List[DocItemToRender] = []
