@@ -570,12 +570,9 @@ class DocsBuilder:
     DocsBuilder is a class to build the API docs.
     """
 
-    def __init__(self, gen_files_open: Any, set_edit_path: Any, should_generate_full_docs=False):
+    def __init__(self, gen_files_open: Any, set_edit_path: Any):
         self.gen_files_open = gen_files_open
         self.set_edit_path = set_edit_path
-        self.should_generate_full_docs = os.environ.get(
-            "FB_GENERATE_FULL_DOCS", should_generate_full_docs
-        )
         self.should_dump_to_csv = os.environ.get("FB_DUMP_TO_CSV", False)
 
     def get_doc_groups(self) -> Dict[DocGroupKey, DocGroupValue]:
@@ -630,8 +627,6 @@ class DocsBuilder:
         autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
         if autodoc_config.section is not None:
             return autodoc_config.section
-        elif self.should_generate_full_docs:
-            return class_obj.__module__.split(".") + [class_obj.__name__]
         return None
 
     def initialize_missing_debug_doc(self) -> None:

@@ -264,7 +264,6 @@ tasks:
     env:
       PYTHONPATH:
         sh: echo "$(pwd)/docs/extensions"
-      FB_GENERATE_FULL_DOCS: 1
     cmds:
       - poetry run mkdocs serve --config-file mkdocs.yaml
 
@@ -275,7 +274,6 @@ tasks:
     env:
       PYTHONPATH:
         sh: echo "$(pwd)/docs/extensions"
-      FB_GENERATE_FULL_DOCS: 1
       FB_DUMP_TO_CSV: True
     cmds:
       - poetry run mkdocs serve --config-file mkdocs.yaml
