@@ -1,7 +1,7 @@
 """
 Reused types
 """
-from typing import Any, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import os
 from dataclasses import dataclass
@@ -226,6 +226,33 @@ class DocItem:
     resource_details: ResourceDetails
     # markdown file metadata
     markdown_file_metadata: MarkdownFileMetadata
+
+
+class DocItems:
+    """
+    DocItems is a class that is used to store all the documentation items that are generated from the code.
+
+    It's a light wrapper around a dictionary, but with some additional helpers on the write path to make sure
+    that keys are all prefixed with `featurebyte.`.
+    """
+
+    def __init__(self) -> None:
+        self.doc_items: Dict[str, DocItem] = {}
+
+    def add(self, key: str, value: DocItem) -> None:
+        if not key.startswith("featurebyte."):
+            key = f"featurebyte.{key}"
+        self.doc_items[key] = value
+
+    def get(self, key: str) -> Optional[DocItem]:
+        if key in self.doc_items:
+            return self.doc_items.get(key)
+        if key.lower() in self.doc_items:
+            return self.doc_items.get(key.lower())
+        return None
+
+    def keys(self) -> List[str]:
+        return list(self.doc_items.keys())
 
 
 def get_docs_version() -> str:

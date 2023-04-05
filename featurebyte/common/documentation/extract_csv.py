@@ -1,45 +1,18 @@
 """
 Extract documentation into a CSV file.
 """
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import csv
 from dataclasses import dataclass
 
-from featurebyte.common.documentation.doc_types import DocItem
+from featurebyte.common.documentation.doc_types import DocItems
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 from featurebyte.common.documentation.resource_extractor import (
     ResourceDetails,
     get_resource_details,
 )
 from featurebyte.logger import logger
-
-
-class DocItems:
-    """
-    DocItems is a class that is used to store all the documentation items that are generated from the code.
-
-    It's a light wrapper around a dictionary, but with some additional helpers on the write path to make sure
-    that keys are all prefixed with `featurebyte.`.
-    """
-
-    def __init__(self) -> None:
-        self.doc_items: Dict[str, DocItem] = {}
-
-    def add(self, key: str, value: DocItem) -> None:
-        if not key.startswith("featurebyte."):
-            key = f"featurebyte.{key}"
-        self.doc_items[key] = value
-
-    def get(self, key: str) -> Optional[DocItem]:
-        if key in self.doc_items:
-            return self.doc_items.get(key)
-        if key.lower() in self.doc_items:
-            return self.doc_items.get(key.lower())
-        return None
-
-    def keys(self) -> List[str]:
-        return list(self.doc_items.keys())
 
 
 @dataclass
