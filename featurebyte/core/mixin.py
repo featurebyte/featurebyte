@@ -196,7 +196,12 @@ class SampleMixin:
     """
 
     @typechecked
-    def preview(self: HasExtractPrunedGraphAndNode, limit: int = 10, **kwargs: Any) -> pd.DataFrame:
+    def preview(
+        self: HasExtractPrunedGraphAndNode,
+        limit: int = 10,
+        after_cleaning: bool = False,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
         """
         Retrieve a preview of the view / column.
 
@@ -204,6 +209,8 @@ class SampleMixin:
         ----------
         limit: int
             Maximum number of return rows.
+        after_cleaning: bool
+            Whether to apply cleaning operations.
         **kwargs: Any
             Additional keyword parameters.
 
@@ -240,7 +247,9 @@ class SampleMixin:
         - [View.describe](/reference/featurebyte.api.view.View.describe/):
           Retrieve a summary of a view.
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(
+            after_cleaning=after_cleaning, **kwargs
+        )
         payload = FeatureStorePreview(
             feature_store_name=self.feature_store.name,
             graph=pruned_graph,
@@ -272,6 +281,7 @@ class SampleMixin:
         seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
+        after_cleaning: bool = False,
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
@@ -287,6 +297,8 @@ class SampleMixin:
             Start of date range to sample from.
         to_timestamp: Optional[datetime]
             End of date range to sample from.
+        after_cleaning: bool
+            Whether to apply cleaning operations.
         **kwargs: Any
             Additional keyword parameters.
 
@@ -326,7 +338,9 @@ class SampleMixin:
         from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
         to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
 
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(
+            after_cleaning=after_cleaning, **kwargs
+        )
         payload = FeatureStoreSample(
             feature_store_name=self.feature_store.name,
             graph=pruned_graph,
@@ -350,6 +364,7 @@ class SampleMixin:
         seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
+        after_cleaning: bool = False,
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
@@ -365,6 +380,8 @@ class SampleMixin:
             Start of date range to sample from.
         to_timestamp: Optional[datetime]
             End of date range to sample from.
+        after_cleaning: bool
+            Whether to apply cleaning operations.
         **kwargs: Any
             Additional keyword parameters.
 
@@ -412,7 +429,9 @@ class SampleMixin:
         from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
         to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
 
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(
+            after_cleaning=after_cleaning, **kwargs
+        )
         payload = FeatureStoreSample(
             feature_store_name=self.feature_store.name,
             graph=pruned_graph,
