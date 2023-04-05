@@ -565,6 +565,27 @@ def populate_nav(nav: Nav, proxied_path_to_markdown_path: Dict[str, str]) -> Nav
     return nav
 
 
+def get_section_from_class_obj(class_obj: Any) -> Optional[List[str]]:
+    """
+    This returns the top level doc group. Specifically, the menu item (eg. View, Data etc.)
+
+    Parameters
+    ----------
+    class_obj: Any
+        The class object to get the doc group for.
+
+    Returns
+    -------
+    Optional[List[str]]
+        The doc group for the class.
+    """
+    # check for customized categorization specified in the class
+    autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
+    if autodoc_config.section is not None:
+        return autodoc_config.section
+    return None
+
+
 class DocsBuilder:
     """
     DocsBuilder is a class to build the API docs.
@@ -589,7 +610,7 @@ class DocsBuilder:
             try:
                 for class_obj in get_classes_for_module(module_str):
                     autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-                    menu_section = self.get_section_from_class_obj(class_obj)
+                    menu_section = get_section_from_class_obj(class_obj)
                     # Skip if the class is not tagged with the `__fbautodoc__` attribute.
                     if not menu_section:
                         continue
@@ -608,26 +629,6 @@ class DocsBuilder:
             except ModuleNotFoundError:
                 continue
         return doc_groups
-
-    def get_section_from_class_obj(self, class_obj: Any) -> Optional[List[str]]:
-        """
-        This returns the top level doc group. Specifically, the menu item (eg. View, Data etc.)
-
-        Parameters
-        ----------
-        class_obj: Any
-            The class object to get the doc group for.
-
-        Returns
-        -------
-        Optional[List[str]]
-            The doc group for the class.
-        """
-        # check for customized categorization specified in the class
-        autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-        if autodoc_config.section is not None:
-            return autodoc_config.section
-        return None
 
     def initialize_missing_debug_doc(self) -> None:
         """
