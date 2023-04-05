@@ -18,6 +18,8 @@ import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
+from featurebyte.common.documentation.extract_csv import DOC_ITEMS, DocItem, dump_to_csv
+from featurebyte.common.documentation.resource_extractor import get_resource_details
 from featurebyte.logger import logger
 
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
@@ -423,7 +425,8 @@ def build_markdown_format_str(obj_path: str, obj_type: str, api_to_use: str) -> 
 
 def infer_api_path_from_obj_path(obj_path: str) -> str:
     """
-    Infer the API path from the given object path.
+    Infer the API path from the given object path. This API path inferred should match the one provided in
+    documentation_layout.
 
     Parameters
     ----------
@@ -443,20 +446,20 @@ def infer_api_path_from_obj_path(obj_path: str) -> str:
         # converts to featurebyte.eventview.add_feature
         split_by_hash = split_obj_path[1].split("#")
         if len(split_by_hash) == 2:
-            joined = ".".join([split_by_hash[1], split_by_hash[0]]).lower()
-            return joined.lower()
+            joined = ".".join([split_by_hash[1], split_by_hash[0]])
+            return joined
         else:
             # converts to featurebyte.changeviewcolumn.lag
-            class_name = split_obj_path[0].split(".")[-1].lower()
-            return f"featurebyte.{class_name}.{split_obj_path[1]}".lower()
+            class_name = split_obj_path[0].split(".")[-1]
+            return f"featurebyte.{class_name}.{split_obj_path[1]}"
     elif len(split_obj_path) == 1:
         # featurebyte.api.item_view.ItemView#featurebyte
         split_by_hash = split_obj_path[0].split("#")
         if len(split_by_hash) == 2:
             class_str = split_by_hash[0].split(".")[-1]
-            joined = ".".join([split_by_hash[1], class_str]).lower()
-            return joined.lower()
-    return obj_path.lower()
+            joined = ".".join([split_by_hash[1], class_str])
+            return joined
+    return obj_path
 
 
 def get_paths_to_document() -> Dict[str, str]:
@@ -573,6 +576,7 @@ class DocsBuilder:
         self.should_generate_full_docs = os.environ.get(
             "FB_GENERATE_FULL_DOCS", should_generate_full_docs
         )
+        self.should_dump_to_csv = os.environ.get("FB_DUMP_TO_CSV", False)
 
     def get_doc_groups(self) -> Dict[DocGroupKey, DocGroupValue]:
         """
@@ -704,7 +708,6 @@ class DocsBuilder:
         path_components: List[str]
             The path components.
         """
-        # build string to write to file
         format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
 
         # write documentation page to file
@@ -748,7 +751,7 @@ class DocsBuilder:
 
             # generate markdown for documentation page
             obj_path = doc_group_key.get_obj_path(doc_group_value)
-            lookup_path = infer_api_path_from_obj_path(obj_path)
+            lookup_path = infer_api_path_from_obj_path(obj_path).lower()
             accessor_metadata = _get_accessor_metadata(doc_path)
             if (
                 lookup_path not in paths_to_document
@@ -765,6 +768,10 @@ class DocsBuilder:
             # add obj_path to reverse lookup map
             reverse_lookup_map[lookup_path] = doc_path
 
+            # get docstring
+            unlowered_api_path = infer_api_path_from_obj_path(obj_path)
+            api_path = unlowered_api_path.lower()
+
             if accessor_metadata:
                 # If this is an accessor, then we need to generate documentation for all the classes that use it.
                 for class_to_use in accessor_metadata.classes_using_accessor:
@@ -773,6 +780,15 @@ class DocsBuilder:
                     )
                     doc_path = api_path + ".md"
                     reverse_lookup_map[api_path.lower()] = doc_path
+                    resource_details = get_resource_details(obj_path)
+                    DOC_ITEMS.add(
+                        api_path.lower(),
+                        DocItem(
+                            class_method_or_attribute=api_path,
+                            link=f"http://127.0.0.1:8000/{api_path}",
+                            resource_details=resource_details,
+                        ),
+                    )
                     self._build_and_write_to_file(
                         obj_path,
                         doc_group_value,
@@ -781,6 +797,19 @@ class DocsBuilder:
                         path_components,
                     )
             else:
+                truncated_lookup_path = lookup_path
+                if truncated_lookup_path:
+                    truncated_lookup_path = lookup_path.replace("featurebyte.", "")
+                doc_path_without_ext = doc_path.replace(".md", "")
+                resource_details = get_resource_details(obj_path)
+                DOC_ITEMS.add(
+                    truncated_lookup_path,
+                    DocItem(
+                        class_method_or_attribute=api_path,
+                        link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
+                        resource_details=resource_details,
+                    ),
+                )
                 self._build_and_write_to_file(
                     obj_path,
                     doc_group_value,
@@ -838,6 +867,10 @@ class DocsBuilder:
         proxied_path_to_markdown_path = self.generate_documentation_for_docs(doc_groups_to_use)
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
+
+        if self.should_dump_to_csv:
+            # write all doc items
+            dump_to_csv()
         return updated_nav
 
 

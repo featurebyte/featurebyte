@@ -31,6 +31,22 @@ class ParameterDetails(BaseModel):
     default: Optional[str]
     description: Optional[str]
 
+    def __str__(self) -> str:
+        """
+        String representation of parameter details
+
+        Returns
+        -------
+        str
+        """
+        if not self.name:
+            return ""
+
+        default = ")"
+        if self.default is not None:
+            default = f", default={self.default})"
+        return f"{self.name} ({self.type}{default}: {self.description}"
+
 
 class ExceptionDetails(BaseModel):
     """
@@ -39,6 +55,16 @@ class ExceptionDetails(BaseModel):
 
     type: Optional[str]
     description: Optional[str]
+
+    def __str__(self) -> str:
+        """
+        String representation of exception details
+
+        Returns
+        -------
+        str
+        """
+        return f"{self.type}: {self.description}"
 
 
 def import_resource(resource_descriptor: str) -> Any:
@@ -57,11 +83,6 @@ def import_resource(resource_descriptor: str) -> Any:
     resource = import_from_string(resource_descriptor)
     module = inspect.getmodule(resource)
     if module is None:
-        return resource
-    try:
-        # reload module to capture updates in source code
-        module = importlib.reload(module)
-    except:
         return resource
     return getattr(module, resource.__name__)
 
@@ -98,6 +119,78 @@ class ResourceDetails(BaseModel):
         if self.type == "class":
             return import_resource(f"{self.path}.{self.name}")
         return getattr(import_resource(self.path), self.name)
+
+    @property
+    def description_string(self) -> str:
+        """
+        String representation of description
+
+        Returns
+        -------
+        str
+        """
+        return " ".join([self.short_description or "", self.long_description or ""])
+
+    @property
+    def parameters_string(self) -> str:
+        """
+        String representation of parameters
+
+        Returns
+        -------
+        str
+        """
+        if not self.parameters:
+            return ""
+        stringified_parameters = [str(parameter) for parameter in self.parameters]
+        return "\n".join(stringified_parameters)
+
+    @property
+    def examples_string(self) -> str:
+        """
+        String representation of examples
+
+        Returns
+        -------
+        str
+        """
+        return ",".join(self.examples) if self.examples else ""
+
+    @property
+    def see_also_string(self) -> str:
+        """
+        String representation of see also
+
+        Returns
+        -------
+        str
+        """
+        return self.see_also if self.see_also else ""
+
+    @property
+    def returns_string(self) -> str:
+        """
+        String representation of returns
+
+        Returns
+        -------
+        str
+        """
+        return str(self.returns) if self.returns else ""
+
+    @property
+    def raises_string(self) -> str:
+        """
+        String representation of raises
+
+        Returns
+        -------
+        str
+        """
+        if not self.raises:
+            return ""
+        stringified_parameters = [str(parameter) for parameter in self.raises]
+        return "\n".join(stringified_parameters)
 
 
 def get_params(
