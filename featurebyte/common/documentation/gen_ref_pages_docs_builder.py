@@ -586,6 +586,41 @@ def get_section_from_class_obj(class_obj: Any) -> Optional[List[str]]:
     return None
 
 
+def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
+    """
+    This returns a dictionary of doc groups.
+
+    Returns
+    -------
+    Dict[DocGroupKey, DocGroupValue]
+        A dictionary of doc groups.
+    """
+    doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
+    for module_str in get_featurebyte_python_files():
+        try:
+            for class_obj in get_classes_for_module(module_str):
+                autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
+                menu_section = get_section_from_class_obj(class_obj)
+                # Skip if the class is not tagged with the `__fbautodoc__` attribute.
+                if not menu_section:
+                    continue
+
+                doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(
+                    doc_groups, autodoc_config, menu_section, class_obj
+                )
+                doc_groups = add_class_attributes_to_doc_groups(
+                    doc_groups,
+                    class_obj,
+                    autodoc_config,
+                    proxy_path,
+                    menu_section,
+                    class_doc_group,
+                )
+        except ModuleNotFoundError:
+            continue
+    return doc_groups
+
+
 class DocsBuilder:
     """
     DocsBuilder is a class to build the API docs.
@@ -595,40 +630,6 @@ class DocsBuilder:
         self.gen_files_open = gen_files_open
         self.set_edit_path = set_edit_path
         self.should_dump_to_csv = os.environ.get("FB_DUMP_TO_CSV", False)
-
-    def get_doc_groups(self) -> Dict[DocGroupKey, DocGroupValue]:
-        """
-        This returns a dictionary of doc groups.
-
-        Returns
-        -------
-        Dict[DocGroupKey, DocGroupValue]
-            A dictionary of doc groups.
-        """
-        doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
-        for module_str in get_featurebyte_python_files():
-            try:
-                for class_obj in get_classes_for_module(module_str):
-                    autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-                    menu_section = get_section_from_class_obj(class_obj)
-                    # Skip if the class is not tagged with the `__fbautodoc__` attribute.
-                    if not menu_section:
-                        continue
-
-                    doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(
-                        doc_groups, autodoc_config, menu_section, class_obj
-                    )
-                    doc_groups = add_class_attributes_to_doc_groups(
-                        doc_groups,
-                        class_obj,
-                        autodoc_config,
-                        proxy_path,
-                        menu_section,
-                        class_doc_group,
-                    )
-            except ModuleNotFoundError:
-                continue
-        return doc_groups
 
     def initialize_missing_debug_doc(self) -> None:
         """
@@ -860,7 +861,7 @@ class DocsBuilder:
 
         # Build docs
         nav_to_use = BetaWave3Nav()
-        doc_groups_to_use = self.get_doc_groups()
+        doc_groups_to_use = get_doc_groups()
         proxied_path_to_markdown_path, doc_items = self.generate_documentation_for_docs(
             doc_groups_to_use
         )
