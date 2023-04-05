@@ -18,6 +18,7 @@ from featurebyte.routes.feature_list_namespace.controller import FeatureListName
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.item_table.controller import ItemTableController
+from featurebyte.routes.observation_table.controller import ObservationTableController
 from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.routes.scd_table.controller import SCDTableController
@@ -42,6 +43,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
 from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.parent_serving import ParentEntityLookupService
@@ -165,6 +167,7 @@ app_container_config.add_basic_service("relationship_info_service", Relationship
 app_container_config.add_basic_service("user_service", UserService)
 app_container_config.add_basic_service("view_construction_service", ViewConstructionService)
 app_container_config.add_basic_service("periodic_task_service", PeriodicTaskService)
+app_container_config.add_basic_service("observation_table_service", ObservationTableService)
 
 app_container_config.add_controller(
     "relationship_info_controller",
@@ -298,4 +301,7 @@ app_container_config.add_controller(
 )
 app_container_config.add_controller(
     "periodic_task_controller", PeriodicTaskController, ["periodic_task_service"]
+)
+app_container_config.add_controller(
+    "observation_table_controller", ObservationTableController, ["observation_table_service"]
 )
