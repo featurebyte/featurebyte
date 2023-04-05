@@ -1,6 +1,8 @@
 """
 Catalog - get_by_*_id mixin.
 """
+from __future__ import annotations
+
 from typing import Any
 
 from bson import ObjectId
