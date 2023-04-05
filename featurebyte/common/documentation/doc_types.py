@@ -1,9 +1,10 @@
 """
 Reused types
 """
-from typing import Optional
+from typing import List, Optional
 
 import os
+from dataclasses import dataclass
 
 from docstring_parser import DocstringMeta
 from docstring_parser.common import Docstring as BaseDocstring
@@ -11,6 +12,50 @@ from docstring_parser.common import Docstring as BaseDocstring
 from featurebyte import version
 
 REPLACE_VERSION_MODE = os.environ.get("FB_DOCS_REPLACE_VERSION", False)
+
+
+@dataclass
+class DocGroupValue:
+    """
+    DocGroupValue is used to contain some metadata about a specific DocGroupKey.
+
+    Example
+    --------
+    DocGroupValue(
+        doc_group=['View', 'ItemView', 'validate_simple_aggregate_parameters'],
+        obj_type='method',
+        proxy_path='featurebyte.ItemView',
+    )
+    """
+
+    doc_group: List[str]
+    obj_type: str
+    proxy_path: str
+
+
+@dataclass
+class MarkdownFileMetadata:
+    """
+    Metadata to determine what gets written to the intermediate markdown file used in documentation, that will
+    then be processed by mkdocs.
+
+    obj_path: str
+        The path to the object.
+    doc_group_value: DocGroupValue
+        The doc group value.
+    api_to_use: str
+        The API to use.
+    doc_path: str
+        The path to the documentation.
+    path_components: List[str]
+        The path components.
+    """
+
+    obj_path: str
+    doc_group_value: DocGroupValue
+    api_to_use: str
+    doc_path: str
+    path_components: List[str]
 
 
 def get_docs_version() -> str:

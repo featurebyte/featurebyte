@@ -17,6 +17,7 @@ from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
+from featurebyte.common.documentation.doc_types import DocGroupValue, MarkdownFileMetadata
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
 from featurebyte.common.documentation.extract_csv import DocItem, DocItems, dump_to_csv
 from featurebyte.common.documentation.resource_extractor import get_resource_details
@@ -24,25 +25,6 @@ from featurebyte.logger import logger
 
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
 MISSING_DEBUG_MARKDOWN = "missing.md"
-
-
-@dataclass
-class DocGroupValue:
-    """
-    DocGroupValue is used to contain some metadata about a specific DocGroupKey.
-
-    Example
-    --------
-    DocGroupValue(
-        doc_group=['View', 'ItemView', 'validate_simple_aggregate_parameters'],
-        obj_type='method',
-        proxy_path='featurebyte.ItemView',
-    )
-    """
-
-    doc_group: List[str]
-    obj_type: str
-    proxy_path: str
 
 
 @dataclass
@@ -681,11 +663,7 @@ class DocsBuilder:
 
     def _build_and_write_to_file(
         self,
-        obj_path: str,
-        doc_group_value: DocGroupValue,
-        api_to_use: str,
-        doc_path: str,
-        path_components: List[str],
+        metadata: MarkdownFileMetadata,
     ) -> None:
         """
         This function builds the markdown string and writes it to a file.
@@ -694,25 +672,19 @@ class DocsBuilder:
 
         Parameters
         ----------
-        obj_path: str
-            The path to the object.
-        doc_group_value: DocGroupValue
-            The doc group value.
-        api_to_use: str
-            The API to use.
-        doc_path: str
-            The path to the documentation.
-        path_components: List[str]
-            The path components.
+        metadata: MarkdownFileMetadata
+            The metadata for the markdown file.
         """
-        format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
+        format_str = build_markdown_format_str(
+            metadata.obj_path, metadata.doc_group_value.obj_type, metadata.api_to_use
+        )
 
         # write documentation page to file
-        full_doc_path = Path("reference", doc_path)
-        self.write_to_file(full_doc_path, doc_path, format_str)
+        full_doc_path = Path("reference", metadata.doc_path)
+        self.write_to_file(full_doc_path, metadata.doc_path, format_str)
 
         # Set edit path for the documentation. This will be the link that links back to where the code is defined.
-        source_path = "/".join(path_components) + ".py"
+        source_path = "/".join(metadata.path_components) + ".py"
         self.set_edit_path(full_doc_path, source_path)
 
     def generate_documentation_for_docs(
@@ -788,11 +760,13 @@ class DocsBuilder:
                         ),
                     )
                     self._build_and_write_to_file(
-                        obj_path,
-                        doc_group_value,
-                        api_path,
-                        doc_path,
-                        path_components,
+                        MarkdownFileMetadata(
+                            obj_path,
+                            doc_group_value,
+                            api_path,
+                            doc_path,
+                            path_components,
+                        )
                     )
             else:
                 truncated_lookup_path = lookup_path
@@ -809,11 +783,13 @@ class DocsBuilder:
                     ),
                 )
                 self._build_and_write_to_file(
-                    obj_path,
-                    doc_group_value,
-                    api_to_use,
-                    doc_path,
-                    path_components,
+                    MarkdownFileMetadata(
+                        obj_path,
+                        doc_group_value,
+                        api_to_use,
+                        doc_path,
+                        path_components,
+                    )
                 )
 
         if DEBUG_MODE:
