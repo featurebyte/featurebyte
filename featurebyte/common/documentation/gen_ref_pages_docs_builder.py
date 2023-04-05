@@ -17,9 +17,9 @@ from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
-from featurebyte.common.documentation.doc_types import DocGroupValue, MarkdownFileMetadata
+from featurebyte.common.documentation.doc_types import DocGroupValue, DocItem, MarkdownFileMetadata
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
-from featurebyte.common.documentation.extract_csv import DocItem, DocItems, dump_to_csv
+from featurebyte.common.documentation.extract_csv import DocItems, dump_to_csv
 from featurebyte.common.documentation.resource_extractor import get_resource_details
 from featurebyte.logger import logger
 
@@ -757,6 +757,13 @@ class DocsBuilder:
                             class_method_or_attribute=api_path,
                             link=f"http://127.0.0.1:8000/{api_path}",
                             resource_details=resource_details,
+                            markdown_file_metadata=MarkdownFileMetadata(
+                                obj_path,
+                                doc_group_value,
+                                api_path,
+                                doc_path,
+                                path_components,
+                            ),
                         ),
                     )
                     self._build_and_write_to_file(
@@ -780,8 +787,16 @@ class DocsBuilder:
                         class_method_or_attribute=api_path,
                         link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
                         resource_details=resource_details,
+                        markdown_file_metadata=MarkdownFileMetadata(
+                            obj_path,
+                            doc_group_value,
+                            api_to_use,
+                            doc_path,
+                            path_components,
+                        ),
                     ),
                 )
+                # TODO: move this
                 self._build_and_write_to_file(
                     MarkdownFileMetadata(
                         obj_path,
