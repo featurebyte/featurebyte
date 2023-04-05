@@ -93,15 +93,6 @@ async def production_ready_feature_list_fixture(feature_list, feature_readiness_
     yield feature_list
 
 
-@pytest.fixture(name="mock_update_data_warehouse")
-def mock_update_data_warehouse():
-    """Mock update data warehouse method"""
-    with patch(
-        "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"
-    ) as mock_update_data_warehouse:
-        yield mock_update_data_warehouse
-
-
 @pytest.mark.asyncio
 async def test_update_feature_list(
     feature_service,

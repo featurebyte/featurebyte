@@ -10,7 +10,11 @@ from bson.objectid import ObjectId
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
-from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
+from featurebyte.models.feature_list import (
+    FeatureListModel,
+    FeatureListNamespaceModel,
+    FeatureListStatus,
+)
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
@@ -19,6 +23,7 @@ from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.online_enable import OnlineEnableService
 
 
@@ -34,6 +39,7 @@ class DeployService(BaseService):
         persistent: Persistent,
         catalog_id: ObjectId,
         online_enable_service: OnlineEnableService,
+        feature_list_status_service: FeatureListStatusService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.feature_service = FeatureService(
@@ -43,6 +49,7 @@ class DeployService(BaseService):
         self.feature_list_service = FeatureListService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
+        self.feature_list_status_service = feature_list_status_service
         self.feature_list_namespace_service = FeatureListNamespaceService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
@@ -123,17 +130,41 @@ class DeployService(BaseService):
         document = await self.feature_list_namespace_service.get_document(
             document_id=feature_list_namespace_id
         )
-        return await self.feature_list_namespace_service.update_document(
+
+        # update deployed feature list ids
+        deployed_feature_list_ids = self._extract_deployed_feature_list_ids(
+            feature_list=feature_list,
+            document=document,
+        )
+        await self.feature_list_namespace_service.update_document(
             document_id=feature_list_namespace_id,
             data=FeatureListNamespaceServiceUpdate(
-                deployed_feature_list_ids=self._extract_deployed_feature_list_ids(
-                    feature_list=feature_list,
-                    document=document,
-                ),
+                deployed_feature_list_ids=deployed_feature_list_ids
             ),
             document=document,
-            return_document=return_document,
+            return_document=False,
         )
+
+        # update feature list status
+        feature_list_status = None
+        if deployed_feature_list_ids:
+            # if there is any deployed feature list, set status to deployed
+            feature_list_status = FeatureListStatus.DEPLOYED
+        elif document.status == FeatureListStatus.DEPLOYED and not deployed_feature_list_ids:
+            # if the deployed status has 0 deployed feature list, set status to public draft
+            feature_list_status = FeatureListStatus.PUBLIC_DRAFT
+
+        if feature_list_status:
+            await self.feature_list_status_service.update_feature_list_namespace_status(
+                feature_list_namespace_id=feature_list_namespace_id,
+                feature_list_status=feature_list_status,
+            )
+
+        if return_document:
+            return await self.feature_list_namespace_service.get_document(
+                document_id=feature_list_namespace_id
+            )
+        return None
 
     async def _validate_deployed_operation(
         self, feature_list: FeatureListModel, deployed: bool

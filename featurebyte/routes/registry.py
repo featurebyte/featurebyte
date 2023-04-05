@@ -96,7 +96,12 @@ app_container_config.add_service_with_extra_deps(
     ["session_manager_service", "entity_validation_service"],
 )
 app_container_config.add_service_with_extra_deps(
-    "deploy_service", DeployService, ["online_enable_service"]
+    "feature_list_status_service",
+    FeatureListStatusService,
+    ["feature_list_namespace_service", "feature_list_service"],
+)
+app_container_config.add_service_with_extra_deps(
+    "deploy_service", DeployService, ["online_enable_service", "feature_list_status_service"]
 )
 app_container_config.add_service_with_extra_deps(
     "preview_service",
@@ -134,11 +139,6 @@ app_container_config.add_service_with_extra_deps(
         "feature_list_namespace_service",
         "version_service",
     ],
-)
-app_container_config.add_service_with_extra_deps(
-    "feature_list_status_service",
-    FeatureListStatusService,
-    ["feature_list_namespace_service", "feature_list_service"]
 )
 app_container_config.add_basic_service(
     "feature_job_setting_analysis_service", FeatureJobSettingAnalysisService

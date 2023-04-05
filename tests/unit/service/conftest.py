@@ -820,3 +820,12 @@ def relationships(b_is_parent_of_a, c_is_parent_of_b):
     _ = b_is_parent_of_a
     _ = c_is_parent_of_b
     yield
+
+
+@pytest.fixture(name="mock_update_data_warehouse")
+def mock_update_data_warehouse():
+    """Mock update data warehouse method"""
+    with patch(
+        "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"
+    ) as mock_update_data_warehouse:
+        yield mock_update_data_warehouse
