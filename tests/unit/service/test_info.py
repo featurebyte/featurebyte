@@ -94,7 +94,7 @@ async def test_get_event_table_info(info_service, event_table, entity):
     info = await info_service.get_event_table_info(document_id=event_table.id, verbose=False)
     expected_info = EventTableInfo(
         name="sf_event_table",
-        status="DRAFT",
+        status="PUBLIC_DRAFT",
         event_timestamp_column="event_timestamp",
         event_id_column="col_int",
         record_creation_timestamp_column="created_at",
@@ -146,7 +146,7 @@ async def test_get_item_table_info(info_service, item_table, event_table):
     info = await info_service.get_item_table_info(document_id=item_table.id, verbose=False)
     expected_info = ItemTableInfo(
         name="sf_item_table",
-        status="DRAFT",
+        status="PUBLIC_DRAFT",
         event_id_column="event_id_col",
         item_id_column="item_id_col",
         event_table_name="sf_event_table",
@@ -190,7 +190,7 @@ async def test_get_dimension_table_info(info_service, dimension_table):
     )
     expected_info = DimensionTableInfo(
         name="sf_dimension_table",
-        status="DRAFT",
+        status="PUBLIC_DRAFT",
         dimension_id_column="col_int",
         record_creation_timestamp_column="created_at",
         table_details=TableDetails(
@@ -233,7 +233,7 @@ async def test_get_scd_table_info(info_service, scd_table):
     info = await info_service.get_scd_table_info(document_id=scd_table.id, verbose=False)
     expected_info = SCDTableInfo(
         name="sf_scd_table",
-        status="DRAFT",
+        status="PUBLIC_DRAFT",
         record_creation_timestamp_column=None,
         current_flag_column="is_active",
         natural_key_column="col_text",
@@ -317,9 +317,11 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
+        tables=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+        ],
         primary_table=[
-            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
         ],
         default_version_mode="AUTO",
         version_count=1,
@@ -429,9 +431,11 @@ def expected_feature_iet_info_fixture(feature_iet):
         primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
+        tables=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+        ],
         primary_table=[
-            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
         ],
         default_version_mode="AUTO",
         version_count=1,
@@ -530,9 +534,11 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
         primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
+        tables=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+        ],
         primary_table=[
-            TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
         ],
         default_version_mode="AUTO",
         version_count=1,
@@ -562,7 +568,9 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
         primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
+        tables=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -610,7 +618,9 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         primary_entity=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        tables=[TableBriefInfo(name="sf_event_table", status="DRAFT", catalog_name="default")],
+        tables=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],

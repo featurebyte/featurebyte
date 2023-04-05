@@ -26,13 +26,13 @@ from featurebyte.schema.table import TableServiceUpdate
 @pytest.mark.parametrize(
     "from_status,to_status,is_valid",
     [
-        (TableStatus.DRAFT, None, True),
-        (TableStatus.DRAFT, TableStatus.DRAFT, True),
-        (TableStatus.DRAFT, TableStatus.PUBLISHED, True),
+        (TableStatus.PUBLIC_DRAFT, None, True),
+        (TableStatus.PUBLIC_DRAFT, TableStatus.PUBLIC_DRAFT, True),
+        (TableStatus.PUBLIC_DRAFT, TableStatus.PUBLISHED, True),
         (TableStatus.PUBLISHED, TableStatus.DEPRECATED, True),
-        (TableStatus.DRAFT, TableStatus.DEPRECATED, False),
-        (TableStatus.PUBLISHED, TableStatus.DRAFT, False),
-        (TableStatus.DEPRECATED, TableStatus.DRAFT, False),
+        (TableStatus.PUBLIC_DRAFT, TableStatus.DEPRECATED, False),
+        (TableStatus.PUBLISHED, TableStatus.PUBLIC_DRAFT, False),
+        (TableStatus.DEPRECATED, TableStatus.PUBLIC_DRAFT, False),
     ],
 )
 async def test_update_table_status(

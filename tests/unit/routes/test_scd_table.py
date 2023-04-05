@@ -160,7 +160,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
                 "schema_name": "sf_schema",
                 "table_name": "scd_table",
             },
-            "status": "DRAFT",
+            "status": "PUBLIC_DRAFT",
             "entities": [],
             "semantics": ["scd_surrogate_key_id", "scd_natural_key_id"],
             "column_count": 10,

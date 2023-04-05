@@ -146,7 +146,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
                 "schema_name": "sf_schema",
                 "table_name": "items_table",
             },
-            "status": "DRAFT",
+            "status": "PUBLIC_DRAFT",
             "entities": [],
             "semantics": ["item_id"],
             "column_count": 6,

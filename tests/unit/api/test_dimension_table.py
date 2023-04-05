@@ -229,7 +229,7 @@ def assert_info_helper(dimension_table_info):
     assert dimension_table_info["entities"] == []
     assert dimension_table_info["name"] == "sf_dimension_table"
     assert dimension_table_info["record_creation_timestamp_column"] == "created_at"
-    assert dimension_table_info["status"] == "DRAFT"
+    assert dimension_table_info["status"] == "PUBLIC_DRAFT"
 
 
 def test_info(saved_dimension_table):
