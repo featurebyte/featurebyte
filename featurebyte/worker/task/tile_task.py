@@ -58,7 +58,7 @@ class TileTask(BaseTask):
         )
         db_session = await session_manager.get_session(feature_store)
 
-        instance = instance_class(spark_session=db_session, **instance_json)
+        instance = instance_class(session=db_session, **instance_json)
 
         await instance.execute()
 

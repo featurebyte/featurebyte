@@ -16,7 +16,6 @@ from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
 
-# pylint: disable=too-many-locals
 class TileGenerate(TileCommon):
     """
     Tile Generate script corresponding to SP_TILE_GENERATE stored procedure
@@ -31,10 +30,10 @@ class TileGenerate(TileCommon):
         """
         Execute tile generate operation
         """
-
+        # pylint: disable=too-many-statements
         tile_table_exist_flag = True
         try:
-            await self._spark.execute_query(f"select * from {self.tile_id} limit 1")
+            await self._session.execute_query(f"select * from {self.tile_id} limit 1")
         except Exception:  # pylint: disable=broad-except
             tile_table_exist_flag = False
 
@@ -43,7 +42,7 @@ class TileGenerate(TileCommon):
 
         # pylint: disable=duplicate-code
         await TileRegistry(
-            spark_session=self._spark,
+            session=self._session,
             sql=tile_sql,
             table_name=self.tile_id,
             table_exist=tile_table_exist_flag,
@@ -64,9 +63,11 @@ class TileGenerate(TileCommon):
         entity_insert_cols = []
         entity_filter_cols = []
         for element in self.entity_column_names:
-            element = element.strip()
-            entity_insert_cols.append(f"b.`{element}`")
-            entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
+            quote_element = self.quote_column(element.strip())
+            entity_insert_cols.append(f"b.{quote_element}")
+            entity_filter_cols.append(
+                self.quote_column_null_aware_equal(f"a.{quote_element}", f"b.{quote_element}")
+            )
 
         entity_insert_cols_str = ",".join(entity_insert_cols)
         entity_filter_cols_str = " AND ".join(entity_filter_cols)
@@ -88,10 +89,13 @@ class TileGenerate(TileCommon):
 
         # insert new records and update existing records
         if not tile_table_exist_flag:
-            logger.info("creating tile table: ", self.tile_id)
-            create_sql = construct_create_delta_table_query(self.tile_id, tile_sql)
-            await self._spark.execute_query(create_sql)
-
+            logger.debug(f"creating tile table: {self.tile_id}")
+            create_sql = construct_create_delta_table_query(
+                self.tile_id, tile_sql, session=self._session
+            )
+            logger.debug(f"create_sql: {create_sql}")
+            await self._session.execute_query(create_sql)
+            logger.debug(f"done creating table: {self.tile_id}")
         else:
             if self.entity_column_names:
                 on_condition_str = f"a.INDEX = b.INDEX AND {entity_filter_cols_str}"
@@ -112,7 +116,7 @@ class TileGenerate(TileCommon):
                             values ({values_str})
             """
             await retry_sql_with_cache(
-                session=self._spark, sql=merge_sql, cached_select_sql=tile_sql
+                session=self._session, sql=merge_sql, cached_select_sql=tile_sql
             )
 
         if self.last_tile_start_str:
@@ -135,7 +139,7 @@ class TileGenerate(TileCommon):
                 WHERE TILE_ID = '{self.tile_id}'
                 AND AGGREGATION_ID = '{self.aggregation_id}'
             """
-            await retry_sql(self._spark, update_tile_last_ind_sql)
+            await retry_sql(self._session, update_tile_last_ind_sql)
 
     def _construct_tile_sql_with_index(self) -> str:
 

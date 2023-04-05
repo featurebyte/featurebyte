@@ -13,12 +13,10 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.common.tile_util import tile_manager_from_session
-from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.sql_template import (
     tm_delete_online_store_mapping,
     tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
-    tm_last_tile_index,
     tm_upsert_online_store_mapping,
     tm_upsert_tile_feature_mapping,
 )
@@ -28,7 +26,7 @@ from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.base import BaseTileManager
+from featurebyte.tile.manager import TileManager
 from featurebyte.utils.snowflake.sql import escape_column_names
 
 
@@ -38,14 +36,13 @@ class FeatureManager(BaseModel):
     """
 
     _session: BaseSession = PrivateAttr()
-    _tile_manager: BaseTileManager = PrivateAttr()
+    _tile_manager: TileManager = PrivateAttr()
     _adapter: BaseAdapter = PrivateAttr()
 
     def __init__(
         self,
         session: BaseSession,
         task_manager: Optional[TaskManager] = None,
-        use_snowflake_scheduling: Optional[bool] = False,
         **kw: Any,
     ) -> None:
         """
@@ -57,8 +54,6 @@ class FeatureManager(BaseModel):
             input session for datasource
         task_manager: Optional[TaskManager]
             input task manager
-        use_snowflake_scheduling: Optional[bool]
-            whether to use snowflake scheduling
         kw: Any
             constructor arguments
         """
@@ -68,7 +63,6 @@ class FeatureManager(BaseModel):
         self._tile_manager = tile_manager_from_session(
             session=session,
             task_manager=task_manager,
-            use_snowflake_scheduling=use_snowflake_scheduling,
         )
 
     async def online_enable(
@@ -243,23 +237,6 @@ class FeatureManager(BaseModel):
         # disable tile scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
             await self._tile_manager.remove_tile_jobs(tile_spec)
-
-    async def retrieve_last_tile_index(self, feature: ExtendedFeatureModel) -> pd.DataFrame:
-        """
-        Get last_tile_index of all the tile_ids as dataframe
-
-        Parameters
-        ----------
-        feature: ExtendedFeatureModel
-            input feature instance
-
-        Returns
-        -------
-            last_tile_index of all the tile_ids as dataframe
-        """
-        sql = tm_last_tile_index.render(feature=feature)
-        result = await self._session.execute_query(sql)
-        return result
 
     async def retrieve_feature_tile_inconsistency_data(
         self, query_start_ts: str, query_end_ts: str

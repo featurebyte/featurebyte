@@ -44,13 +44,13 @@ from featurebyte.models.base import User
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.task import Task as TaskModel
+from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
-from featurebyte.tile.snowflake_tile import TileSpec
 from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import TASK_MAP
 
@@ -840,7 +840,7 @@ def tile_manager(session):
     """
     Tile Manager fixture
     """
-    return tile_manager_from_session(session=session, use_snowflake_scheduling=True)
+    return tile_manager_from_session(session=session)
 
 
 @pytest.fixture(name="feature_model_dict")

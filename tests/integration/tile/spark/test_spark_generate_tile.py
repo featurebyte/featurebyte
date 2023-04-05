@@ -34,7 +34,7 @@ async def test_generate_tile(session):
     )
 
     tile_generate_ins = TileGenerate(
-        spark_session=session,
+        session=session,
         featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
@@ -79,7 +79,7 @@ async def test_generate_tile_no_data(session):
     )
 
     tile_generate_ins = TileGenerate(
-        spark_session=session,
+        session=session,
         featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
@@ -124,7 +124,7 @@ async def test_generate_tile_new_value_column(session):
     )
 
     tile_generate_ins = TileGenerate(
-        spark_session=session,
+        session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -154,7 +154,7 @@ async def test_generate_tile_new_value_column(session):
     )
 
     tile_generate_ins = TileGenerate(
-        spark_session=session,
+        session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,

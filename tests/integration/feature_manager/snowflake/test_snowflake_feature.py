@@ -241,7 +241,7 @@ async def test_online_enabled_feature_spec(
     assert len(result) == 100
     expect_cols = online_feature_spec.precompute_queries[0].serving_names[:]
     expect_cols.append(online_feature_spec.feature.name)
-    assert list(result) == expect_cols
+    assert list(result)[:2] == expect_cols
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -389,30 +389,6 @@ async def test_online_disable___re_enable(
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_get_last_tile_index(
-    extended_feature_model,
-    snowflake_feature_expected_tile_spec_dict,
-    feature_manager_no_sf_scheduling,
-    tile_manager,
-    online_enabled_feature_spec,
-):
-    """
-    Test get_last_tile_index
-    """
-    _ = online_enabled_feature_spec
-
-    await tile_manager.insert_tile_registry(tile_spec=extended_feature_model.tile_specs[0])
-    last_index_df = await feature_manager_no_sf_scheduling.retrieve_last_tile_index(
-        extended_feature_model
-    )
-
-    assert len(last_index_df) == 1
-    assert last_index_df.iloc[0]["TILE_ID"] == "TILE_ID1"
-    assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == -1
-
-
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@pytest.mark.asyncio
 async def test_get_tile_monitor_summary(
     extended_feature_model, feature_manager_no_sf_scheduling, session, online_enabled_feature_spec
 ):
@@ -504,9 +480,7 @@ async def test_online_enable___re_deploy_from_latest_tile_start(
     await feature_manager_no_sf_scheduling.online_disable(online_feature_spec)
 
     # re-deploy and verify that the tile start ts is the same as the last tile start ts
-    with patch(
-        "featurebyte.tile.snowflake_tile.TileManagerSnowflake.generate_tiles"
-    ) as mock_tile_manager:
+    with patch("featurebyte.tile.manager.TileManager.generate_tiles") as mock_tile_manager:
         await feature_manager_no_sf_scheduling.online_enable(online_feature_spec)
         kwargs = mock_tile_manager.mock_calls[0][2]
         assert kwargs["start_ts_str"] == last_tile_start_ts.strftime("%Y-%m-%dT%H:%M:%S.%fZ")

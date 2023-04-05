@@ -1,15 +1,13 @@
 """
 Unit test for snowflake tile
 """
-import textwrap
 from datetime import datetime
 from unittest import mock
 
 import pytest
 
 from featurebyte.common import date_util
-from featurebyte.feature_manager.sql_template import tm_call_schedule_online_store
-from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.models.tile import TileSpec
 
 
 def test_construct_snowflaketile_time_modulo_error():
@@ -70,61 +68,6 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
 
 @pytest.mark.asyncio
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def test_populate_feature_store(mock_execute_query, mock_snowflake_tile, tile_manager):
-    """
-    Test populate_feature_store method in TileSnowflake
-    """
-    job_schedule_ts_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    await tile_manager.populate_feature_store(mock_snowflake_tile, job_schedule_ts_str)
-    expected_sql = textwrap.dedent(
-        tm_call_schedule_online_store.render(
-            aggregation_id=mock_snowflake_tile.aggregation_id,
-            job_schedule_ts_str=job_schedule_ts_str,
-        )
-    ).strip()
-    assert mock_execute_query.call_count == 1
-    args, _ = mock_execute_query.call_args
-    assert args[0].strip() == expected_sql
-
-
-@pytest.mark.asyncio
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def test_generate_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
-    """
-    Test generate_tiles method in TileSnowflake
-    """
-    _ = mock_execute_query
-    sql = await tile_manager.generate_tiles(
-        mock_snowflake_tile,
-        TileType.ONLINE,
-        "2022-06-20 15:00:00",
-        "2022-06-21 16:00:00",
-        "2022-06-21 15:55:00",
-    )
-    expected_sql = textwrap.dedent(
-        """
-        call SP_TILE_GENERATE(
-            'select c1 from dummy where tile_start_ts >= ''2022-06-20 15:00:00'' and tile_start_ts < ''2022-06-21 16:00:00''',
-            '__FB_TILE_START_DATE_COLUMN',
-            'LAST_TILE_START_DATE',
-            183,
-            3,
-            5,
-            '"col1"',
-            'col2',
-            'FLOAT',
-            'TILE_ID1',
-            'ONLINE',
-            '2022-06-21 15:55:00',
-            'agg_id1'
-        )
-        """
-    ).strip()
-    assert textwrap.dedent(sql).strip() == expected_sql
-
-
-@pytest.mark.asyncio
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test schedule_online_tiles method in TileSnowflake
@@ -139,7 +82,7 @@ async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, ti
     )
 
     with mock.patch(
-        "featurebyte.tile.base.BaseTileManager._schedule_tiles_custom"
+        "featurebyte.tile.manager.TileManager._schedule_tiles_custom"
     ) as mock_schedule_tiles_custom:
         await tile_manager.schedule_online_tiles(mock_snowflake_tile, schedule_time=schedule_time)
         kwargs = mock_schedule_tiles_custom.call_args.kwargs
@@ -162,7 +105,7 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
     )
 
     with mock.patch(
-        "featurebyte.tile.base.BaseTileManager._schedule_tiles_custom"
+        "featurebyte.tile.manager.TileManager._schedule_tiles_custom"
     ) as mock_schedule_tiles_custom:
         await tile_manager.schedule_offline_tiles(
             tile_spec=mock_snowflake_tile, schedule_time=schedule_time
@@ -171,23 +114,8 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
         assert kwargs["next_job_time"] == next_job_time
 
 
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@pytest.mark.asyncio
-async def test_insert_tile_registry(mock_execute_query, mock_snowflake_tile, tile_manager):
-    """
-    Test schedule_offline_tiles method in TileSnowflake
-    """
-    mock_execute_query.return_value = ["Element"]
-    flag = await tile_manager.insert_tile_registry(mock_snowflake_tile)
-    assert flag is False
-
-    mock_execute_query.return_value = []
-    flag = await tile_manager.insert_tile_registry(mock_snowflake_tile)
-    assert flag is True
-
-
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.generate_tiles")
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.update_tile_entity_tracker")
+@mock.patch("featurebyte.tile.manager.TileManager.generate_tiles")
+@mock.patch("featurebyte.tile.manager.TileManager.update_tile_entity_tracker")
 @pytest.mark.asyncio
 async def test_generate_tiles_on_demand(
     mock_generate_tiles,

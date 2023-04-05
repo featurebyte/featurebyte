@@ -23,7 +23,7 @@ class TileMonitor(TileCommon):
 
         tile_table_exist_flag = True
         try:
-            await self._spark.execute_query(f"select * from {self.tile_id} limit 1")
+            await self._session.execute_query(f"select * from {self.tile_id} limit 1")
         except Exception:  # pylint: disable=broad-except
             tile_table_exist_flag = False
 
@@ -36,7 +36,7 @@ class TileMonitor(TileCommon):
             tile_sql = self.monitor_sql.replace("'", "''")
 
             await TileRegistry(
-                spark_session=self._spark,
+                session=self._session,
                 sql=tile_sql,
                 table_name=self.tile_id,
                 table_exist=True,
@@ -101,18 +101,18 @@ class TileMonitor(TileCommon):
             monitor_table_name = f"{self.tile_id}_MONITOR"
             tile_monitor_exist_flag = True
             try:
-                await self._spark.execute_query(f"select * from {monitor_table_name} limit 1")
+                await self._session.execute_query(f"select * from {monitor_table_name} limit 1")
             except Exception:  # pylint: disable=broad-except
                 tile_monitor_exist_flag = False
             logger.debug(f"tile_monitor_exist_flag: {tile_monitor_exist_flag}")
 
             if not tile_monitor_exist_flag:
-                await self._spark.execute_query(
+                await self._session.execute_query(
                     f"create table {monitor_table_name} using delta as {compare_sql}"
                 )
             else:
                 tile_registry_ins = TileRegistry(
-                    spark_session=self._spark,
+                    session=self._session,
                     sql=tile_sql,
                     table_name=monitor_table_name,
                     table_exist=True,
@@ -171,7 +171,7 @@ class TileMonitor(TileCommon):
                         )
                 """
                 await retry_sql_with_cache(
-                    session=self._spark, sql=insert_sql, cached_select_sql=compare_sql
+                    session=self._session, sql=insert_sql, cached_select_sql=compare_sql
                 )
 
             insert_monitor_summary_sql = f"""
@@ -183,4 +183,4 @@ class TileMonitor(TileCommon):
                     current_timestamp()
                 FROM ({compare_sql})
             """
-            await retry_sql(self._spark, insert_monitor_summary_sql)
+            await retry_sql(self._session, insert_monitor_summary_sql)

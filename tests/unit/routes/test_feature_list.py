@@ -653,13 +653,14 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         mock_session.source_type = SourceType.SNOWFLAKE
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
-        response = test_api_client.post(
-            f"{self.base_route}/historical_features",
-            data={"payload": json.dumps(featurelist_get_historical_features_payload)},
-            files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
-            stream=True,
-        )
-        assert response.status_code == HTTPStatus.OK, response.json()
+        with patch("featurebyte.sql.tile_registry.TileRegistry.execute") as _:
+            response = test_api_client.post(
+                f"{self.base_route}/historical_features",
+                data={"payload": json.dumps(featurelist_get_historical_features_payload)},
+                files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
+                stream=True,
+            )
+            assert response.status_code == HTTPStatus.OK, response.json()
 
         # test streaming download works
         content = b""
