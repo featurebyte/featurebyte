@@ -603,6 +603,114 @@ def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
     return doc_groups
 
 
+def generate_documentation_for_docs(
+    doc_groups: Dict[DocGroupKey, DocGroupValue]
+) -> Tuple[Dict[str, str], DocItems]:
+    """
+    This function generates the documentation for the docs.
+
+    Parameters
+    ----------
+    doc_groups: Dict[DocGroupKey, DocGroupValue]
+        A dictionary of doc groups.
+
+    Returns
+    -------
+    Tuple[Dict[str, str], DocItems]
+        A tuple of a dictionary of markdown files and a DocItems object.
+    """
+
+    # A list of all the markdown files generated. Used for debugging.
+    # This reverse lookup map has a key of the user-accessible API path, and the value of the markdown file for
+    # the documentation.
+    reverse_lookup_map = {}
+    paths_to_document = get_paths_to_document()
+    doc_items = DocItems()
+    # create documentation page for each object
+    for doc_group_key, doc_group_value in doc_groups.items():
+        path_components = doc_group_key.module_path.split(".")
+        if should_skip_path(path_components):
+            continue
+
+        # determine file path for documentation page
+        doc_path = doc_group_key.get_markdown_doc_path()
+
+        # generate markdown for documentation page
+        obj_path = doc_group_key.get_obj_path(doc_group_value)
+        lookup_path = infer_api_path_from_obj_path(obj_path).lower()
+        accessor_metadata = _get_accessor_metadata(doc_path)
+        if (
+            lookup_path not in paths_to_document
+            and doc_path.lower() not in paths_to_document
+            and not accessor_metadata
+        ):
+            # Skip if this is not a path we want to document.
+            continue
+
+        api_to_use = paths_to_document.get(lookup_path, None)
+        if not api_to_use:
+            api_to_use = paths_to_document.get(doc_path.lower(), None)
+
+        # add obj_path to reverse lookup map
+        reverse_lookup_map[lookup_path] = doc_path
+
+        # get docstring
+        unlowered_api_path = infer_api_path_from_obj_path(obj_path)
+        api_path = unlowered_api_path.lower()
+
+        if accessor_metadata:
+            # If this is an accessor, then we need to generate documentation for all the classes that use it.
+            for class_to_use in accessor_metadata.classes_using_accessor:
+                api_path = get_api_path_to_use(
+                    doc_path, class_to_use, accessor_metadata.property_name
+                )
+                doc_path = api_path + ".md"
+                reverse_lookup_map[api_path.lower()] = doc_path
+                resource_details = get_resource_details(obj_path)
+                doc_items.add(
+                    api_path.lower(),
+                    DocItem(
+                        class_method_or_attribute=api_path,
+                        link=f"http://127.0.0.1:8000/{api_path}",
+                        resource_details=resource_details,
+                        markdown_file_metadata=MarkdownFileMetadata(
+                            obj_path,
+                            doc_group_value,
+                            api_path,
+                            doc_path,
+                            path_components,
+                        ),
+                    ),
+                )
+        else:
+            truncated_lookup_path = lookup_path
+            if truncated_lookup_path:
+                truncated_lookup_path = lookup_path.replace("featurebyte.", "")
+            doc_path_without_ext = doc_path.replace(".md", "")
+            resource_details = get_resource_details(obj_path)
+            doc_items.add(
+                truncated_lookup_path,
+                DocItem(
+                    class_method_or_attribute=api_path,
+                    link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
+                    resource_details=resource_details,
+                    markdown_file_metadata=MarkdownFileMetadata(
+                        obj_path,
+                        doc_group_value,
+                        api_to_use,
+                        doc_path,
+                        path_components,
+                    ),
+                ),
+            )
+
+    if DEBUG_MODE:
+        with open("debug/proxied_path_to_markdown_path.json", "w") as f:
+            f.write(json.dumps(reverse_lookup_map, indent=4))
+
+    return reverse_lookup_map, doc_items
+
+
 class DocsBuilder:
     """
     DocsBuilder is a class to build the API docs.
@@ -687,132 +795,6 @@ class DocsBuilder:
         source_path = "/".join(metadata.path_components) + ".py"
         self.set_edit_path(full_doc_path, source_path)
 
-    def generate_documentation_for_docs(
-        self, doc_groups: Dict[DocGroupKey, DocGroupValue]
-    ) -> Tuple[Dict[str, str], DocItems]:
-        """
-        This function generates the documentation for the docs.
-
-        Parameters
-        ----------
-        doc_groups: Dict[DocGroupKey, DocGroupValue]
-            A dictionary of doc groups.
-
-        Returns
-        -------
-        Tuple[Dict[str, str], DocItems]
-            A tuple of a dictionary of markdown files and a DocItems object.
-        """
-
-        # A list of all the markdown files generated. Used for debugging.
-        # This reverse lookup map has a key of the user-accessible API path, and the value of the markdown file for
-        # the documentation.
-        reverse_lookup_map = {}
-        paths_to_document = get_paths_to_document()
-        doc_items = DocItems()
-        # create documentation page for each object
-        for doc_group_key, doc_group_value in doc_groups.items():
-            path_components = doc_group_key.module_path.split(".")
-            if should_skip_path(path_components):
-                continue
-
-            # determine file path for documentation page
-            doc_path = doc_group_key.get_markdown_doc_path()
-
-            # generate markdown for documentation page
-            obj_path = doc_group_key.get_obj_path(doc_group_value)
-            lookup_path = infer_api_path_from_obj_path(obj_path).lower()
-            accessor_metadata = _get_accessor_metadata(doc_path)
-            if (
-                lookup_path not in paths_to_document
-                and doc_path.lower() not in paths_to_document
-                and not accessor_metadata
-            ):
-                # Skip if this is not a path we want to document.
-                continue
-
-            api_to_use = paths_to_document.get(lookup_path, None)
-            if not api_to_use:
-                api_to_use = paths_to_document.get(doc_path.lower(), None)
-
-            # add obj_path to reverse lookup map
-            reverse_lookup_map[lookup_path] = doc_path
-
-            # get docstring
-            unlowered_api_path = infer_api_path_from_obj_path(obj_path)
-            api_path = unlowered_api_path.lower()
-
-            if accessor_metadata:
-                # If this is an accessor, then we need to generate documentation for all the classes that use it.
-                for class_to_use in accessor_metadata.classes_using_accessor:
-                    api_path = get_api_path_to_use(
-                        doc_path, class_to_use, accessor_metadata.property_name
-                    )
-                    doc_path = api_path + ".md"
-                    reverse_lookup_map[api_path.lower()] = doc_path
-                    resource_details = get_resource_details(obj_path)
-                    doc_items.add(
-                        api_path.lower(),
-                        DocItem(
-                            class_method_or_attribute=api_path,
-                            link=f"http://127.0.0.1:8000/{api_path}",
-                            resource_details=resource_details,
-                            markdown_file_metadata=MarkdownFileMetadata(
-                                obj_path,
-                                doc_group_value,
-                                api_path,
-                                doc_path,
-                                path_components,
-                            ),
-                        ),
-                    )
-                    self._build_and_write_to_file(
-                        MarkdownFileMetadata(
-                            obj_path,
-                            doc_group_value,
-                            api_path,
-                            doc_path,
-                            path_components,
-                        )
-                    )
-            else:
-                truncated_lookup_path = lookup_path
-                if truncated_lookup_path:
-                    truncated_lookup_path = lookup_path.replace("featurebyte.", "")
-                doc_path_without_ext = doc_path.replace(".md", "")
-                resource_details = get_resource_details(obj_path)
-                doc_items.add(
-                    truncated_lookup_path,
-                    DocItem(
-                        class_method_or_attribute=api_path,
-                        link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
-                        resource_details=resource_details,
-                        markdown_file_metadata=MarkdownFileMetadata(
-                            obj_path,
-                            doc_group_value,
-                            api_to_use,
-                            doc_path,
-                            path_components,
-                        ),
-                    ),
-                )
-                # TODO: move this
-                self._build_and_write_to_file(
-                    MarkdownFileMetadata(
-                        obj_path,
-                        doc_group_value,
-                        api_to_use,
-                        doc_path,
-                        path_components,
-                    )
-                )
-
-        if DEBUG_MODE:
-            with open("debug/proxied_path_to_markdown_path.json", "w") as f:
-                f.write(json.dumps(reverse_lookup_map, indent=4))
-
-        return reverse_lookup_map, doc_items
-
     def write_summary_page(self, nav: Nav) -> None:
         """
         Write the SUMMARY.md file for the API Reference section.
@@ -826,6 +808,19 @@ class DocsBuilder:
         """
         logger.info("Writing API Reference SUMMARY")
         self.write_nav_to_file("reference/SUMMARY.md", "summary", nav)
+
+    def _write_doc_items_to_markdown_files(self, doc_items: DocItems) -> None:
+        """
+        Write the markdown files for each of the doc items.
+
+        Parameters
+        ----------
+        doc_items: DocItems
+            The doc items.
+        """
+        for key in doc_items.keys():
+            value = doc_items.get(key)
+            self._build_and_write_to_file(value.markdown_file_metadata)
 
     def build_docs(self) -> Nav:
         """
@@ -853,9 +848,10 @@ class DocsBuilder:
         # Build docs
         nav_to_use = BetaWave3Nav()
         doc_groups_to_use = get_doc_groups()
-        proxied_path_to_markdown_path, doc_items = self.generate_documentation_for_docs(
+        proxied_path_to_markdown_path, doc_items = generate_documentation_for_docs(
             doc_groups_to_use
         )
+        self._write_doc_items_to_markdown_files(doc_items)
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
 
