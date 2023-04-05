@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Literal, Optional, Union
 import pandas as pd
 from bson import ObjectId
 from pydantic import Field
-from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
