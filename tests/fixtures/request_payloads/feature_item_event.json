@@ -4,12 +4,12 @@
         "Instead, update the test conftest.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "641a57cde09d09ca1d757c41",
+    "_id": "642db61f28e1dffe39df355a",
     "dtype": "INT",
     "entity_ids": [
         "63f94ed6ea1f050131379204"
     ],
-    "feature_namespace_id": "641a57cde09d09ca1d757c42",
+    "feature_namespace_id": "642db61f28e1dffe39df355b",
     "graph": {
         "edges": [
             {
@@ -191,7 +191,7 @@
                         "type": "snowflake"
                     },
                     "id": "6337f9651050ee7d5980662d",
-                    "id_column": "event_id_col",
+                    "id_column": "item_id_col",
                     "table_details": {
                         "database_name": "sf_database",
                         "schema_name": "sf_schema",
@@ -355,7 +355,7 @@
     "name": "item_event_sum_cust_id_feature",
     "node_name": "project_1",
     "tabular_source": {
-        "feature_store_id": "6414004ac6834e5117ec155c",
+        "feature_store_id": "642db61d28e1dffe39df3521",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

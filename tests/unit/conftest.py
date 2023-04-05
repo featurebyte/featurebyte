@@ -34,6 +34,7 @@ from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID, VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
+from featurebyte.models.observation_table import SourceTableObservationInput
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
@@ -42,6 +43,7 @@ from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
+from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
@@ -1118,6 +1120,13 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         is_enabled=True,
         updated_by="63f6a145e549df8ccf123444",
     )
+    observation_table = ObservationTableCreate(
+        name="observation_table",
+        feature_store_id=snowflake_feature_store.id,
+        observation_input=SourceTableObservationInput(
+            source=snowflake_event_table.tabular_source,
+        ),
+    )
 
     if update_fixtures:
         generated_comment = [
@@ -1157,6 +1166,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (feature_job_setting_analysis, "feature_job_setting_analysis"),
             (context, "context"),
             (relationship_info, "relationship_info"),
+            (observation_table, "observation_table"),
         ]
         for schema, name in schema_payload_name_pairs:
             filename = f"{base_path}/{name}.json"

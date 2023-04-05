@@ -11,7 +11,7 @@
             "dtype": "INT",
             "entity_id": null,
             "name": "col_int",
-            "semantic_id": null
+            "semantic_id": "642db61d28e1dffe39df352f"
         },
         {
             "critical_data_info": null,
@@ -74,11 +74,11 @@
     "name": "sf_dimension_table",
     "record_creation_timestamp_column": "created_at",
     "tabular_source": {
-        "feature_store_id": "6414004ac6834e5117ec155c",
+        "feature_store_id": "642db61d28e1dffe39df3521",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
-            "table_name": "sf_table"
+            "table_name": "dimension_table"
         }
     },
     "type": "dimension_table"

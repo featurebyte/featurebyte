@@ -18,7 +18,7 @@
             "dtype": "VARCHAR",
             "entity_id": null,
             "name": "item_id_col",
-            "semantic_id": null
+            "semantic_id": "642db61d28e1dffe39df352b"
         },
         {
             "critical_data_info": null,
@@ -55,7 +55,7 @@
     "name": "sf_item_table",
     "record_creation_timestamp_column": null,
     "tabular_source": {
-        "feature_store_id": "6414004ac6834e5117ec155c",
+        "feature_store_id": "642db61d28e1dffe39df3521",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
