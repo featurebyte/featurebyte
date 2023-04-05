@@ -86,7 +86,6 @@ class TileScheduleOnlineStore(BaselSqlModel):
             entities_fname_str = ", ".join(
                 [self.quote_column(col) for col in entity_columns + [f_name]]
             )
-            logger.debug(f"entities_fname_str: {entities_fname_str}")
 
             current_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -95,27 +94,24 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 create_sql = construct_create_delta_table_query(
                     fs_table, f"select {entities_fname_str} from ({f_sql})", session=self._session
                 )
-                logger.debug(f"create_sql: {create_sql}")
                 await self._session.execute_query(create_sql)
 
                 await self._session.execute_query(
                     f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP"
                 )
 
-                logger.debug(f"creating online store table: {fs_table}")
                 await retry_sql(
                     session=self._session,
                     sql=f"UPDATE {fs_table} SET UPDATED_AT_{f_name} = to_timestamp('{current_ts}')",
                 )
-                logger.debug(f"done creating online store table: {fs_table}")
             else:
                 # feature store table already exists, insert records with the input feature sql
                 entity_insert_cols = []
                 entity_filter_cols = []
                 for element in entity_columns:
                     quote_element = self.quote_column(element)
-                    entity_insert_cols.append(f"""b.{quote_element}""")
-                    entity_filter_cols.append(f"""a.{quote_element} = b.{quote_element}""")
+                    entity_insert_cols.append(f"b.{quote_element}")
+                    entity_filter_cols.append(f"a.{quote_element} = b.{quote_element}")
 
                 entity_insert_cols_str = ", ".join(entity_insert_cols)
                 entity_filter_cols_str = " AND ".join(entity_filter_cols)
@@ -124,13 +120,11 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 cols = await self.get_table_columns(fs_table)
                 col_exists = f_name.upper() in cols
 
-                logger.debug(f"col_exists: {col_exists}")
                 quote_f_name = self.quote_column(f_name)
 
                 if not col_exists:
-                    logger.debug(f"adding column ({f_name}) to table {fs_table}")
                     await self._session.execute_query(
-                        f"""ALTER TABLE {fs_table} ADD COLUMN {quote_f_name} {f_value_type}"""
+                        f"ALTER TABLE {fs_table} ADD COLUMN {quote_f_name} {f_value_type}"
                     )
                     await self._session.execute_query(
                         f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP"
@@ -140,10 +134,10 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 # update or insert feature values for entities that are in entity universe
                 if entity_columns:
                     on_condition_str = entity_filter_cols_str
-                    values_args = f"""{entity_insert_cols_str}, b.{quote_f_name}"""
+                    values_args = f"{entity_insert_cols_str}, b.{quote_f_name}"
                 else:
                     on_condition_str = "true"
-                    values_args = f"""b.{quote_f_name}"""
+                    values_args = f"b.{quote_f_name}"
 
                 # update or insert feature values for entities that are in entity universe
                 merge_sql = f"""
@@ -156,14 +150,10 @@ class TileScheduleOnlineStore(BaselSqlModel):
                                  values ({values_args}, to_timestamp('{current_ts}'))
                  """
 
-                logger.debug(f"merging online store table: {fs_table}")
                 await retry_sql_with_cache(
                     session=self._session, sql=merge_sql, cached_select_sql=f_sql
                 )
-                logger.debug(f"done merging online store table: {fs_table}")
 
                 # remove feature values for entities that are not in entity universe
                 remove_values_sql = f"""UPDATE {fs_table} SET {quote_f_name} = NULL WHERE UPDATED_AT_{f_name} < to_timestamp('{current_ts}')"""
-                logger.debug(f"starting removing records not in scope: {fs_table}")
                 await retry_sql(session=self._session, sql=remove_values_sql)
-                logger.debug(f"done removing records not in scope: {fs_table}")

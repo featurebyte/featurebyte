@@ -1,5 +1,5 @@
 """
-Unit tests for featurebyte/query_graph/node/manager.py
+Unit tests for featurebyte/query_graph/node/base.py
 """
 from typing import Any, List, Literal
 

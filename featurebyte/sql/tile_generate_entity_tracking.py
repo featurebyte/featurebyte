@@ -5,7 +5,6 @@ from typing import Any, List
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
-from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.sql.base import BaselSqlModel
 from featurebyte.sql.common import construct_create_delta_table_query, retry_sql_with_cache
 
@@ -50,13 +49,9 @@ class TileGenerateEntityTracking(BaselSqlModel):
         escaped_entity_column_names = []
         for element in self.entity_column_names:
             quote_element = self.quote_column(element.strip())
-
-            entity_insert_cols.append(f"""b.{quote_element}""")
-            escaped_entity_column_names.append(f"""{quote_element}""")
-            if isinstance(self._session, SnowflakeSession):
-                entity_filter_cols.append(f"""EQUAL_NULL(a.{quote_element}, b.{quote_element})""")
-            else:
-                entity_filter_cols.append(f"""a.{quote_element} <=> b.{quote_element}""")
+            entity_insert_cols.append(f"b.{quote_element}")
+            escaped_entity_column_names.append(f"{quote_element}")
+            entity_filter_cols.append(self.quote_column_not_equal("a", "b", quote_element))
 
         escaped_entity_column_names_str = ",".join(escaped_entity_column_names)
 
