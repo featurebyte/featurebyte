@@ -30,8 +30,7 @@ class DocItem:
 
 class DocItems:
     """
-    DocItems is a class that is used to store all of the documentation items
-    that are generated from the code.
+    DocItems is a class that is used to store all the documentation items that are generated from the code.
 
     It's a light wrapper around a dictionary, but with some additional helpers on the write path to make sure
     that keys are all prefixed with `featurebyte.`.
@@ -54,9 +53,6 @@ class DocItems:
 
     def keys(self) -> List[str]:
         return list(self.doc_items.keys())
-
-
-DOC_ITEMS = DocItems()
 
 
 @dataclass
@@ -176,7 +172,7 @@ def _write_items_to_csv(file_name: str, all_doc_items_to_generate: List[DocItemT
         logger.info(f"Success - done writing rows to {file_name}")
 
 
-def _generate_items_to_render() -> List[DocItemToRender]:
+def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
     """
     Generate the items to render.
 
@@ -202,7 +198,7 @@ def _generate_items_to_render() -> List[DocItemToRender]:
                 )
             )
             continue
-        doc_item = DOC_ITEMS.get(layout_item.get_api_path_override())
+        doc_item = doc_items.get(layout_item.get_api_path_override())
         if doc_item is not None:
             all_doc_items_to_generate.append(
                 DocItemToRender(
@@ -231,7 +227,7 @@ def _generate_items_to_render() -> List[DocItemToRender]:
     return all_doc_items_to_generate
 
 
-def dump_to_csv() -> None:
+def dump_to_csv(doc_items: DocItems) -> None:
     """
     Dump the documentation to a CSV file.
     """
@@ -239,5 +235,5 @@ def dump_to_csv() -> None:
     logger.info("############################################")
     logger.info(f"# Generating CSV - {file_name} #")
     logger.info("############################################")
-    all_doc_items_to_generate = _generate_items_to_render()
+    all_doc_items_to_generate = _generate_items_to_render(doc_items)
     _write_items_to_csv(file_name, all_doc_items_to_generate)

@@ -18,7 +18,7 @@ import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
-from featurebyte.common.documentation.extract_csv import DOC_ITEMS, DocItem, dump_to_csv
+from featurebyte.common.documentation.extract_csv import DocItem, DocItems, dump_to_csv
 from featurebyte.common.documentation.resource_extractor import get_resource_details
 from featurebyte.logger import logger
 
@@ -720,7 +720,7 @@ class DocsBuilder:
 
     def generate_documentation_for_docs(
         self, doc_groups: Dict[DocGroupKey, DocGroupValue]
-    ) -> Dict[str, str]:
+    ) -> Tuple[Dict[str, str], DocItems]:
         """
         This function generates the documentation for the docs.
 
@@ -740,6 +740,7 @@ class DocsBuilder:
         # the documentation.
         reverse_lookup_map = {}
         paths_to_document = get_paths_to_document()
+        doc_items = DocItems()
         # create documentation page for each object
         for doc_group_key, doc_group_value in doc_groups.items():
             path_components = doc_group_key.module_path.split(".")
@@ -781,7 +782,7 @@ class DocsBuilder:
                     doc_path = api_path + ".md"
                     reverse_lookup_map[api_path.lower()] = doc_path
                     resource_details = get_resource_details(obj_path)
-                    DOC_ITEMS.add(
+                    doc_items.add(
                         api_path.lower(),
                         DocItem(
                             class_method_or_attribute=api_path,
@@ -802,7 +803,7 @@ class DocsBuilder:
                     truncated_lookup_path = lookup_path.replace("featurebyte.", "")
                 doc_path_without_ext = doc_path.replace(".md", "")
                 resource_details = get_resource_details(obj_path)
-                DOC_ITEMS.add(
+                doc_items.add(
                     truncated_lookup_path,
                     DocItem(
                         class_method_or_attribute=api_path,
@@ -822,7 +823,7 @@ class DocsBuilder:
             with open("debug/proxied_path_to_markdown_path.json", "w") as f:
                 f.write(json.dumps(reverse_lookup_map, indent=4))
 
-        return reverse_lookup_map
+        return reverse_lookup_map, doc_items
 
     def write_summary_page(self, nav: Nav) -> None:
         """
@@ -864,13 +865,15 @@ class DocsBuilder:
         # Build docs
         nav_to_use = BetaWave3Nav()
         doc_groups_to_use = self.get_doc_groups()
-        proxied_path_to_markdown_path = self.generate_documentation_for_docs(doc_groups_to_use)
+        proxied_path_to_markdown_path, doc_items = self.generate_documentation_for_docs(
+            doc_groups_to_use
+        )
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
 
         if self.should_dump_to_csv:
             # write all doc items
-            dump_to_csv()
+            dump_to_csv(doc_items)
         return updated_nav
 
 
