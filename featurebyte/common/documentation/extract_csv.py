@@ -176,6 +176,11 @@ def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
     """
     Generate the items to render.
 
+    Parameters
+    ----------
+    doc_items: DocItems
+        The doc items to generate the items to render for.
+
     Returns
     -------
     List[DocItemToRender]
@@ -230,6 +235,11 @@ def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
 def dump_to_csv(doc_items: DocItems) -> None:
     """
     Dump the documentation to a CSV file.
+
+    Parameters
+    ----------
+    doc_items: DocItems
+        The documentation items to dump to a CSV file
     """
     file_name = "debug/documentation.csv"
     logger.info("############################################")
