@@ -25,6 +25,7 @@ from featurebyte.common.documentation.constants import (
     LIST,
     RELATIONSHIP,
     SERVE,
+    SOURCE_TABLE,
     TABLE,
     TABLE_COLUMN,
     TRANSFORM,
@@ -649,6 +650,23 @@ def _get_enum_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_source_table_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the SourceTable module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the SourceTable module.
+    """
+    return [
+        DocLayoutItem([SOURCE_TABLE]),
+        DocLayoutItem([SOURCE_TABLE, "SourceTable.describe"]),
+        DocLayoutItem([SOURCE_TABLE, "SourceTable.preview"]),
+        DocLayoutItem([SOURCE_TABLE, "SourceTable.sample"]),
+    ]
+
+
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -672,4 +690,5 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_view_column_layout(),
         *_get_catalog_layout(),
         *_get_enum_layout(),
+        *_get_source_table_layout(),
     ]

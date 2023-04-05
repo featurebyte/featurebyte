@@ -413,7 +413,7 @@ class SourceTable(AbstractTableData):
     SourceTable class to preview table.
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["Table"])
+    __fbautodoc__ = FBAutoDoc(section=["Table"], proxy_class="featurebyte.SourceTable")
 
     _table_data_class: ClassVar[Type[AllTableDataT]] = SouceTableData
 
