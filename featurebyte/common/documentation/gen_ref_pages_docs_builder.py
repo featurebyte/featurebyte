@@ -731,8 +731,8 @@ class DocsBuilder:
 
         Returns
         -------
-        Dict[str, str]
-            A dictionary of the reverse lookup map.
+        Tuple[Dict[str, str], DocItems]
+            A tuple of a dictionary of markdown files and a DocItems object.
         """
 
         # A list of all the markdown files generated. Used for debugging.
