@@ -1,10 +1,11 @@
 """
-This module contains integration tests for TileSnowflake
+This module contains integration tests for TileManager
 """
 import pytest
 
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import TileType
+from featurebyte.session.spark import SparkSession
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
@@ -39,11 +40,13 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager, base
     last_tile_start_date_1 = "2022-07-06 10:52:14"
     last_tile_start_date_2 = "2022-07-07 10:52:14"
 
-    await session.execute_query(
-        base_sql_model.sql_table_with_delta(
-            f"CREATE TABLE {temp_entity_table} (PRODUCT_ACTION STRING, CUST_ID STRING, LAST_TILE_START_DATE STRING) {base_sql_model.delta_placeholder}"
-        )
-    )
+    create_sql = f"""
+        CREATE TABLE {temp_entity_table} (PRODUCT_ACTION STRING, CUST_ID STRING, LAST_TILE_START_DATE STRING)
+    """
+    if isinstance(session, SparkSession):
+        create_sql += f" USING DELTA"
+    await session.execute_query(create_sql)
+
     await session.execute_query(
         f"INSERT INTO {temp_entity_table} VALUES ('P1', 'C1', '{last_tile_start_date_1}') "
     )

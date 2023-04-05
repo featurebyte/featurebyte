@@ -1,11 +1,12 @@
 """
-Tile Monitor tests for Spark Session
+Tile Monitor tests for Spark and Snowflake Session
 """
 from datetime import datetime
 
 import pytest
 
 from featurebyte.enum import InternalName
+from featurebyte.sql.common import construct_create_delta_table_query
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_monitor import TileMonitor
 
@@ -90,11 +91,10 @@ async def test_monitor_tile__updated_tile(session, base_sql_model):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    await session.execute_query(
-        base_sql_model.sql_table_with_delta(
-            f"create table {table_name} {base_sql_model.delta_placeholder} as select * from TEMP_TABLE"
-        )
+    create_sql = construct_create_delta_table_query(
+        table_name, "select * from TEMP_TABLE", session=session
     )
+    await session.execute_query(create_sql)
 
     entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
@@ -164,11 +164,10 @@ async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    await session.execute_query(
-        base_sql_model.sql_table_with_delta(
-            f"create table {table_name} {base_sql_model.delta_placeholder} as select * from TEMP_TABLE"
-        )
+    create_sql = construct_create_delta_table_query(
+        table_name, "select * from TEMP_TABLE", session=session
     )
+    await session.execute_query(create_sql)
 
     entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)

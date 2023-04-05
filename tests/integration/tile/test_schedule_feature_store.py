@@ -1,5 +1,5 @@
 """
-This module contains integration tests for the stored procedure of online feature store
+This module contains integration tests for online feature store
 """
 from datetime import datetime
 

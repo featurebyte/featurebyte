@@ -1,11 +1,12 @@
 """
-This module contains integration tests for scheduled tile generation stored procedure
+This module contains integration tests for scheduled tile generation
 """
 from datetime import datetime
 
 import pytest
 
 from featurebyte.enum import InternalName
+from featurebyte.sql.common import construct_create_delta_table_query
 from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
 
 
@@ -96,11 +97,10 @@ async def test_schedule_monitor_tile_online(session, base_sql_model):
     tile_end_ts = "2022-06-05T23:53:00Z"
 
     table_name = f"SOURCE_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    await session.execute_query(
-        base_sql_model.sql_table_with_delta(
-            f"create table {table_name} {base_sql_model.delta_placeholder} as select * from TEMP_TABLE"
-        )
+    create_sql = construct_create_delta_table_query(
+        table_name, "select * from TEMP_TABLE", session=session
     )
+    await session.execute_query(create_sql)
 
     entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
