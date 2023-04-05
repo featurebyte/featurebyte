@@ -19,6 +19,7 @@ from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.scd_view import SCDView
+from featurebyte.api.source_table import SourceTable
 from featurebyte.api.table import Table
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations
@@ -153,9 +154,10 @@ __all__ = [
     "Series",
     "SCDTable",
     "SCDView",
-    "to_timedelta",
+    "SourceTable",
     "SnowflakeDetails",
     "SparkDetails",
+    "to_timedelta",
     "UsernamePasswordCredential",
     # enums
     "AggFunc",

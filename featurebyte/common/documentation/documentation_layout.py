@@ -25,6 +25,7 @@ from featurebyte.common.documentation.constants import (
     LIST,
     RELATIONSHIP,
     SERVE,
+    SOURCE_TABLE,
     TABLE,
     TABLE_COLUMN,
     TRANSFORM,
@@ -246,19 +247,19 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, CREATE, "View.as_features"]),
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
-        ),  # TODO:
+        ),
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy.aggregate"],
             doc_path_override="api.groupby.GroupBy.aggregate.md",
-        ),  # TODO:
+        ),
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy.aggregate_asat"],
             doc_path_override="api.groupby.GroupBy.aggregate_asat.md",
-        ),  # TODO:
+        ),
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy.aggregate_over"],
             doc_path_override="api.groupby.GroupBy.aggregate_over.md",
-        ),  # TODO:
+        ),
         DocLayoutItem([FEATURE, CREATE, "ViewColumn.as_feature"]),
         DocLayoutItem([FEATURE, EXPLORE, "Feature.preview"]),
         DocLayoutItem([FEATURE, INFO, "Feature.created_at"]),
@@ -270,6 +271,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, INFO, "Feature.is_datetime"]),
         DocLayoutItem([FEATURE, INFO, "Feature.is_numeric"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.entity_ids"]),
+        DocLayoutItem([FEATURE, LINEAGE, "Feature.primary_entity"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_list_ids"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_namespace_id"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_store"]),
@@ -371,6 +373,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.feature_ids"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.id"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.sql"]),
+        DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.primary_entity"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.deploy"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_feature_jobs_status"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_historical_features"]),
@@ -647,6 +650,23 @@ def _get_enum_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_source_table_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the SourceTable module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the SourceTable module.
+    """
+    return [
+        DocLayoutItem([SOURCE_TABLE]),
+        DocLayoutItem([SOURCE_TABLE, "SourceTable.describe"]),
+        DocLayoutItem([SOURCE_TABLE, "SourceTable.preview"]),
+        DocLayoutItem([SOURCE_TABLE, "SourceTable.sample"]),
+    ]
+
+
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -670,4 +690,5 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_view_column_layout(),
         *_get_catalog_layout(),
         *_get_enum_layout(),
+        *_get_source_table_layout(),
     ]
