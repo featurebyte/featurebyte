@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from functools import wraps
-
 import pandas as pd
 from bson import ObjectId
 from pydantic import Field
@@ -14,6 +12,8 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
+from featurebyte.api.catalog_decorator import update_and_reset_catalog
+from featurebyte.api.catalog_get_by_id_mixin import CatalogGetByIdMixin
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
@@ -32,47 +32,7 @@ from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
 
 
-def update_and_reset_catalog(func: Any) -> Any:
-    """
-    Decorator to update the catalog and reset it back to original state if needed.
-
-    If the calling catalog object has the same ID as the global state, we will just call the function that is being
-    decorated.
-    If not, this decorator will temporarily update the global catalog state to the catalog_id of the calling catalog
-    object, call the decorated function, and then reset the state back.
-
-    This is useful as an intermediate state for us to support a catalog object oriented syntax, while still maintaining
-    a global state for the catalog ID at the implementation level.
-
-    Parameters
-    ----------
-    func: Any
-        Function to decorate
-
-    Returns
-    -------
-    Any
-    """
-
-    @wraps(func)
-    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
-        active_catalog_id = get_active_catalog_id()
-        # If the catalog is already active, just call the function
-        if self.id == active_catalog_id:
-            return func(self, *args, **kwargs)
-        # Activate catalog of object
-        activate_catalog(self.id)
-        try:
-            return func(self, *args, **kwargs)
-        finally:
-            # Reset catalog back to original state
-            activate_catalog(active_catalog_id)
-
-    return wrapper
-
-
-@typechecked
-class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
+class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin):
     """
     A FeatureByte Catalog serves as a centralized repository for storing metadata about FeatureByte objects such as
     tables, entities, features, and feature lists associated with a specific domain. It functions as an effective tool
@@ -244,6 +204,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject):
 
         return item_list
 
+    @typechecked
     def update_name(self, name: str) -> None:
         """
         Update catalog name.

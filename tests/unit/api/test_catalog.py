@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from inspect import signature
@@ -14,30 +15,27 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+from bson import ObjectId
 from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
 
-from featurebyte import (
-    DimensionTable,
-    EventTable,
-    EventView,
-    Feature,
-    FeatureJobSettingAnalysis,
-    FeatureList,
-    FeatureStore,
-    ItemTable,
-    PeriodicTask,
-    Relationship,
-    SCDTable,
-    Table,
-)
 from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.base_table import TableApiObject, TableListMixin
 from featurebyte.api.catalog import Catalog, update_and_reset_catalog
+from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
-from featurebyte.api.feature import FeatureNamespace
+from featurebyte.api.event_table import EventTable
+from featurebyte.api.event_view import EventView
+from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_job import FeatureJobMixin
-from featurebyte.api.feature_list import FeatureListNamespace
+from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
+from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
+from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.item_table import ItemTable
+from featurebyte.api.periodic_task import PeriodicTask
+from featurebyte.api.relationship import Relationship
+from featurebyte.api.scd_table import SCDTable
+from featurebyte.api.table import Table
 from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -103,6 +101,23 @@ def catalog_create_methods_to_test_list():
     ]
 
 
+def catalog_get_by_id_list():
+    return [
+        MethodMetadata("get_data_source_by_feature_store_id", FeatureStore, "get_by_id"),
+        MethodMetadata("get_view_by_table_id", Table, "get_by_id"),
+        MethodMetadata("get_feature_by_id", Feature, "get_by_id"),
+        MethodMetadata("get_feature_list_by_id", FeatureList, "get_by_id"),
+        MethodMetadata("get_table_by_id", Table, "get_by_id"),
+        MethodMetadata("get_relationship_by_id", Relationship, "get_by_id"),
+        MethodMetadata(
+            "get_feature_job_setting_analysis_by_id", FeatureJobSettingAnalysis, "get_by_id"
+        ),
+        MethodMetadata("get_feature_store_by_id", FeatureStore, "get_by_id"),
+        MethodMetadata("get_entity_by_id", Entity, "get_by_id"),
+        MethodMetadata("get_periodic_task_by_id", PeriodicTask, "get_by_id"),
+    ]
+
+
 def test_all_relevant_methods_are_in_list():
     """
     Test that all the relevant get and list methods in the catalog class are in these lists above.
@@ -115,11 +130,34 @@ def test_all_relevant_methods_are_in_list():
         assert method.catalog_method_name in list_methods
 
     # Verify all relevant get methods are present
-    get_methods = {method for method in methods if method.startswith("get_")}
-    excluded_methods = {"get_by_id", "get_active", "get_or_create", "get_data_source", "get_view"}
+    get_methods = {
+        method for method in methods if method.startswith("get_") and not method.endswith("by_id")
+    }
+    excluded_methods = {
+        "get_active",
+        "get_or_create",
+        "get_data_source",
+        "get_view",
+        "get_view_by_table_id",
+        "get_data_source_by_feature_store_id",
+    }
     assert len(get_methods) - len(excluded_methods) == len(catalog_get_methods_to_test_list())
     for method in catalog_get_methods_to_test_list():
         assert method.catalog_method_name in get_methods
+
+    # Verify all relevant get_by_id methods are present
+    get_by_id_methods = []
+    for method in methods:
+        matches = re.search(r"^get(.*)by(.*)id", method)
+        if not matches:
+            continue
+        get_by_id_methods.append(method)
+    excluded_by_id_methods = {
+        "get_by_id",
+    }
+    assert len(get_by_id_methods) - len(excluded_by_id_methods) == len(catalog_get_by_id_list())
+    for method in catalog_get_by_id_list():
+        assert method.catalog_method_name in get_by_id_methods
 
     # Verify all relevant create methods are present
     create_methods = {method for method in methods if method.startswith("create_")}
@@ -146,11 +184,12 @@ def test_get_view(snowflake_event_table):
     assert type(view) == EventView
 
 
-def catalog_get_list_and_create_methods():
+def catalog_methods_to_test():
     return [
         *catalog_list_methods_to_test_list(),
         *catalog_get_methods_to_test_list(),
         *catalog_create_methods_to_test_list(),
+        *catalog_get_by_id_list(),
     ]
 
 
@@ -202,7 +241,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
 
 @pytest.mark.parametrize(
     "method_item",
-    catalog_get_list_and_create_methods(),
+    catalog_methods_to_test(),
 )
 def test_methods_have_same_parameters_as_delegated_method_call(method_item):
     """
@@ -233,13 +272,15 @@ def _invoke_method(catalog: Catalog, method_item: MethodMetadata):
         catalog_method_to_call("random_name")
     elif method_item.class_method_delegated == "create":
         catalog_method_to_call("random_name", [])
+    elif method_item.class_method_delegated == "get_by_id":
+        catalog_method_to_call(ObjectId())
     else:
         catalog_method_to_call()
 
 
 @pytest.mark.parametrize(
     "method_item",
-    catalog_get_list_and_create_methods(),
+    catalog_methods_to_test(),
 )
 def test_methods_call_the_correct_delegated_method(method_item):
     """
@@ -489,7 +530,7 @@ def test_activate():
 
 @pytest.mark.parametrize(
     "method_item",
-    catalog_get_list_and_create_methods(),
+    catalog_methods_to_test(),
 )
 def test_functions_are_called_from_active_catalog(method_item):
     """
