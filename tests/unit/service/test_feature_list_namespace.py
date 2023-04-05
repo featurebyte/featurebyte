@@ -72,9 +72,9 @@ async def test_update_document__status(feature_list_namespace_service, feature_l
     assert original_doc.status == FeatureListStatus.DRAFT
     updated_doc = await feature_list_namespace_service.update_document(
         document_id=feature_list.feature_list_namespace_id,
-        data=FeatureListNamespaceServiceUpdate(status=FeatureListStatus.PUBLISHED),
+        data=FeatureListNamespaceServiceUpdate(status=FeatureListStatus.TEMPLATE),
     )
-    assert updated_doc.status == FeatureListStatus.PUBLISHED
+    assert updated_doc.status == FeatureListStatus.TEMPLATE
     assert updated_doc.readiness_distribution == original_doc.readiness_distribution
     assert updated_doc.feature_list_ids == original_doc.feature_list_ids
     assert updated_doc.default_version_mode == original_doc.default_version_mode

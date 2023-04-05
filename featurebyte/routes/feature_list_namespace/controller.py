@@ -17,6 +17,7 @@ from featurebyte.schema.feature_list_namespace import (
 from featurebyte.schema.info import FeatureListNamespaceInfo
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.info import InfoService
 
@@ -37,11 +38,13 @@ class FeatureListNamespaceController(
         service: FeatureListNamespaceService,
         default_version_mode_service: DefaultVersionModeService,
         feature_readiness_service: FeatureReadinessService,
+        feature_list_status_service: FeatureListStatusService,
         info_service: InfoService,
     ):
         super().__init__(service)
         self.default_version_mode_service = default_version_mode_service
         self.feature_readiness_service = feature_readiness_service
+        self.feature_list_status_service = feature_list_status_service
         self.info_service = info_service
 
     async def update_feature_list_namespace(
@@ -97,10 +100,9 @@ class FeatureListNamespaceController(
             )
 
         if data.status:
-            await self.service.update_document(
-                document_id=feature_list_namespace_id,
-                data=FeatureListNamespaceServiceUpdate(status=data.status),
-                return_document=False,
+            await self.feature_list_status_service.update_feature_list_namespace_status(
+                feature_list_namespace_id=feature_list_namespace_id,
+                target_feature_list_status=data.status,
             )
 
         return await self.get(document_id=feature_list_namespace_id)

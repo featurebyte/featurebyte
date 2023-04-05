@@ -1324,7 +1324,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.update_status(FeatureListStatus.PUBLISHED)
+        >>> feature_list.update_status(FeatureListStatus.TEMPLATE)
         """
         self.feature_list_namespace.update(
             update_payload={"status": str(status)}, allow_update_local=False

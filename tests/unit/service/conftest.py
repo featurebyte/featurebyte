@@ -228,6 +228,12 @@ def parent_entity_lookup_service(app_container):
     return app_container.parent_entity_lookup_service
 
 
+@pytest.fixture(name="feature_list_status_service")
+def feature_list_status_service_fixture(app_container):
+    """Feature list status service fixture"""
+    return app_container.feature_list_status_service
+
+
 @pytest_asyncio.fixture(name="feature_store")
 async def feature_store_fixture(test_dir, feature_store_service):
     """FeatureStore model"""
@@ -820,3 +826,12 @@ def relationships(b_is_parent_of_a, c_is_parent_of_b):
     _ = b_is_parent_of_a
     _ = c_is_parent_of_b
     yield
+
+
+@pytest.fixture(name="mock_update_data_warehouse")
+def mock_update_data_warehouse():
+    """Mock update data warehouse method"""
+    with patch(
+        "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"
+    ) as mock_update_data_warehouse:
+        yield mock_update_data_warehouse

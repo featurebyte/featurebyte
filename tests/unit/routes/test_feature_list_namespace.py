@@ -152,14 +152,12 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             feature_id,
         ) = self._create_fl_namespace_with_manual_version_mode_and_new_feature_id(test_api_client)
 
-        # update feature list namespace status to PUBLISHED
+        # update feature list namespace status to TEMPLATE
         doc_id = response_dict["_id"]
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"status": "PUBLISHED"}
-        )
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"status": "TEMPLATE"})
         response_dict = response.json()
         assert response_dict["default_version_mode"] == "MANUAL"
-        assert response_dict["status"] == "PUBLISHED"
+        assert response_dict["status"] == "TEMPLATE"
         assert response_dict["readiness_distribution"] == [{"count": 1, "readiness": "DRAFT"}]
 
         # upgrade default feature_sum_30m to production ready & check the default feature list

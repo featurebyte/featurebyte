@@ -501,7 +501,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "default_version_mode": "AUTO",
             "version_count": 1,
             "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
-            "status": "DRAFT",
+            "status": "DEPLOYED",
             "feature_count": 1,
             "version": {"this": version, "default": version},
             "production_ready_fraction": {"this": 1.0, "default": 1.0},
