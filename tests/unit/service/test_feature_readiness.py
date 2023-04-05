@@ -4,6 +4,7 @@ Tests for FeatureReadinessService
 
 import pytest
 
+from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
@@ -283,3 +284,18 @@ async def test_update_document__manual_default_version_mode__default_feature_rea
             {"readiness": "PRODUCTION_READY", "count": 1}
         ],
     )
+
+
+@pytest.mark.asyncio
+async def test_feature_readiness__prohibit_transition_to_draft(feature, feature_readiness_service):
+    """Test that it is not possible to transition a feature to DRAFT readiness level"""
+    updated_feature = await feature_readiness_service.update_feature(
+        feature_id=feature.id, readiness="PUBLIC_DRAFT"
+    )
+    assert updated_feature.readiness == "PUBLIC_DRAFT"
+
+    with pytest.raises(DocumentUpdateError) as exc:
+        await feature_readiness_service.update_feature(feature_id=feature.id, readiness="DRAFT")
+
+    expected_msg = "Cannot update feature readiness to DRAFT."
+    assert expected_msg in str(exc.value)

@@ -1254,10 +1254,10 @@ def test_feature_list__check_feature_readiness_update(saved_feature_list, mock_a
         "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
     }
 
-    new_feat.update_readiness(readiness="DRAFT")
+    new_feat.update_readiness(readiness="PUBLIC_DRAFT")
     assert feature_list.production_ready_fraction == 0.0
     assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "DRAFT", "count": 1}]
+        "__root__": [{"readiness": "PUBLIC_DRAFT", "count": 1}]
     }
 
 
