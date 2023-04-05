@@ -9,9 +9,9 @@ from featurebyte.enum import InternalName
 from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_generate_tile_online(session, tile_task_prep_spark):
+async def test_schedule_generate_tile_online(session, tile_task_prep_spark, base_sql_model):
     """
     Test the stored procedure of generating tiles
     """
@@ -25,7 +25,7 @@ async def test_schedule_generate_tile_online(session, tile_task_prep_spark):
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:58:00Z"
 
-    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
+    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
         f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
@@ -81,9 +81,9 @@ async def test_schedule_generate_tile_online(session, tile_task_prep_spark):
     assert result["CREATED_AT"].iloc[3] > result["CREATED_AT"].iloc[2]
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_monitor_tile_online(session):
+async def test_schedule_monitor_tile_online(session, base_sql_model):
     """
     Test the stored procedure of monitoring tiles
     """
@@ -97,10 +97,12 @@ async def test_schedule_monitor_tile_online(session):
 
     table_name = f"SOURCE_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     await session.execute_query(
-        f"create table {table_name} using delta as select * from TEMP_TABLE"
+        base_sql_model.sql_table_with_delta(
+            f"create table {table_name} {base_sql_model.delta_placeholder} as select * from TEMP_TABLE"
+        )
     )
 
-    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
+    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
         f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
@@ -130,11 +132,18 @@ async def test_schedule_monitor_tile_online(session):
     )
     await tile_schedule_ins.execute()
 
+    # sql = f"""
+    #         UPDATE {table_name} SET VALUE = VALUE + 1
+    #         WHERE {InternalName.TILE_START_DATE} in (
+    #             to_timestamp('2022-06-05 23:33:00', 'yyyy-MM-dd HH:mm:ss'),
+    #             to_timestamp('2022-06-05 23:48:00', 'yyyy-MM-dd HH:mm:ss')
+    #         )
+    #       """
     sql = f"""
             UPDATE {table_name} SET VALUE = VALUE + 1
             WHERE {InternalName.TILE_START_DATE} in (
-                to_timestamp('2022-06-05 23:33:00', 'yyyy-MM-dd HH:mm:ss'),
-                to_timestamp('2022-06-05 23:48:00', 'yyyy-MM-dd HH:mm:ss')
+                to_timestamp('2022-06-05 23:33:00'),
+                to_timestamp('2022-06-05 23:48:00')
             )
           """
     await session.execute_query(sql)
@@ -172,9 +181,9 @@ async def test_schedule_monitor_tile_online(session):
     assert result["TILE_COUNT"].iloc[0] == 2
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spark):
+async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spark, base_sql_model):
     """
     Test the stored procedure of generating tiles
     """
@@ -188,7 +197,7 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
     tile_monitor = 2
     tile_end_ts = "2022-06-05T23:58:00Z"
 
-    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
+    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
         f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "

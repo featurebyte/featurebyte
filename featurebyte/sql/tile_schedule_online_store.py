@@ -1,5 +1,5 @@
 """
-Tile Generate online store Job Script for SP_TILE_SCHEDULE_ONLINE_STORE
+Tile Generate online store Job Script
 """
 from typing import Any
 
@@ -18,7 +18,7 @@ from featurebyte.sql.common import (
 
 class TileScheduleOnlineStore(BaselSqlModel):
     """
-    Tile Schedule Online Store script corresponding to SP_TILE_SCHEDULE_ONLINE_STORE stored procedure
+    Tile Schedule Online Store script
     """
 
     aggregation_id: str

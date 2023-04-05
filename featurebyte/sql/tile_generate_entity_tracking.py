@@ -1,5 +1,5 @@
 """
-Tile Generate entity tracking Job script for SP_TILE_GENERATE_ENTITY_TRACKING
+Tile Generate entity tracking Job script
 """
 from typing import Any, List
 
@@ -11,7 +11,7 @@ from featurebyte.sql.common import construct_create_delta_table_query, retry_sql
 
 class TileGenerateEntityTracking(BaselSqlModel):
     """
-    Tile Generate entity tracking script corresponding to SP_TILE_GENERATE_ENTITY_TRACKING stored procedure
+    Tile Generate entity tracking script
     """
 
     tile_last_start_date_column: str

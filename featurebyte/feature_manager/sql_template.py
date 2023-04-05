@@ -138,9 +138,3 @@ tm_delete_online_store_mapping = Template(
     WHERE AGGREGATION_ID = '{{agg_id}}'
 """
 )
-
-tm_call_schedule_online_store = Template(
-    """
-    call SP_TILE_SCHEDULE_ONLINE_STORE('{{aggregation_id}}', '{{job_schedule_ts_str}}')
-"""
-)

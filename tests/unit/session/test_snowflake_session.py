@@ -161,16 +161,6 @@ EXPECTED_FUNCTIONS = [
     "F_GET_RELATIVE_FREQUENCY",
 ]
 
-EXPECTED_PROCEDURES = [
-    "SP_TILE_REGISTRY",
-    "SP_TILE_GENERATE",
-    "SP_TILE_GENERATE_SCHEDULE",
-    "SP_TILE_MONITOR",
-    "SP_TILE_TRIGGER_GENERATE_SCHEDULE",
-    "SP_TILE_GENERATE_ENTITY_TRACKING",
-    "SP_TILE_SCHEDULE_ONLINE_STORE",
-]
-
 EXPECTED_TABLES = [
     "METADATA_SCHEMA",
     "TILE_REGISTRY",
@@ -213,16 +203,6 @@ def patched_snowflake_session_cls_fixture(
             }
         )
 
-    if is_procedures_missing:
-        procedures_output = pd.DataFrame({"name": [], "schema_name": []})
-    else:
-        procedures_output = pd.DataFrame(
-            {
-                "name": EXPECTED_PROCEDURES,
-                "schema_name": ["FEATUREBYTE"] * len(EXPECTED_PROCEDURES),
-            }
-        )
-
     if is_tables_missing:
         tables_output = pd.DataFrame({"name": [], "schema_name": []})
     else:
@@ -238,8 +218,6 @@ def patched_snowflake_session_cls_fixture(
             return None
         if query.startswith("SHOW USER FUNCTIONS"):
             return functions_output
-        if query.startswith("SHOW PROCEDURES"):
-            return procedures_output
         raise AssertionError(f"Unknown query: {query}")
 
     def mock_list_schemas(*args, **kwargs):
@@ -287,22 +265,10 @@ def test_schema_initializer__sql_objects(
         item["filename"] = os.path.basename(item["filename"])
         item["type"] = item["type"].value
     expected = [
-        {"filename": "SP_TILE_REGISTRY.sql", "identifier": "SP_TILE_REGISTRY", "type": "procedure"},
-        {"filename": "SP_TILE_MONITOR.sql", "identifier": "SP_TILE_MONITOR", "type": "procedure"},
-        {
-            "filename": "SP_TILE_SCHEDULE_ONLINE_STORE.sql",
-            "identifier": "SP_TILE_SCHEDULE_ONLINE_STORE",
-            "type": "procedure",
-        },
         {
             "filename": "F_TIMESTAMP_TO_INDEX.sql",
             "identifier": "F_TIMESTAMP_TO_INDEX",
             "type": "function",
-        },
-        {
-            "filename": "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",
-            "identifier": "SP_TILE_TRIGGER_GENERATE_SCHEDULE",
-            "type": "procedure",
         },
         {
             "filename": "F_INDEX_TO_TIMESTAMP.sql",
@@ -347,17 +313,6 @@ def test_schema_initializer__sql_objects(
         },
         {"filename": "T_TILE_REGISTRY.sql", "identifier": "TILE_REGISTRY", "type": "table"},
         {
-            "filename": "SP_TILE_GENERATE_SCHEDULE.sql",
-            "identifier": "SP_TILE_GENERATE_SCHEDULE",
-            "type": "procedure",
-        },
-        {"filename": "SP_TILE_GENERATE.sql", "identifier": "SP_TILE_GENERATE", "type": "procedure"},
-        {
-            "filename": "SP_TILE_GENERATE_ENTITY_TRACKING.sql",
-            "identifier": "SP_TILE_GENERATE_ENTITY_TRACKING",
-            "type": "procedure",
-        },
-        {
             "filename": "T_TILE_MONITOR_SUMMARY.sql",
             "identifier": "TILE_MONITOR_SUMMARY",
             "type": "table",
@@ -391,14 +346,11 @@ def check_create_commands(mock_session):
         "schema": 0,
         "tables": 0,
         "functions": 0,
-        "procedures": 0,
     }
     for call_args in mock_session.execute_query.call_args_list:
         args = call_args[0]
         if args[0].startswith("CREATE SCHEMA"):
             counts["schema"] += 1
-        if args[0].startswith("CREATE OR REPLACE PROCEDURE"):
-            counts["procedures"] += 1
         elif args[0].startswith("CREATE OR REPLACE FUNCTION"):
             counts["functions"] += 1
         elif args[0].startswith("CREATE TABLE"):
@@ -442,7 +394,6 @@ async def test_schema_initializer__dont_reinitialize(
     assert counts == {
         "schema": 0,
         "functions": len(EXPECTED_FUNCTIONS),
-        "procedures": len(EXPECTED_PROCEDURES),
         "tables": 1,
     }
 
@@ -496,7 +447,6 @@ async def test_schema_initializer__all_missing(
     assert counts == {
         "schema": 1,
         "functions": len(EXPECTED_FUNCTIONS),
-        "procedures": len(EXPECTED_PROCEDURES),
         "tables": len(EXPECTED_TABLES),
     }
 
@@ -526,7 +476,6 @@ async def test_schema_initializer__partial_missing(
     expected_counts = {
         "schema": 0,
         "functions": len(EXPECTED_FUNCTIONS),
-        "procedures": len(EXPECTED_PROCEDURES),
         "tables": 1,
     }
     if is_tables_missing:

@@ -18,7 +18,7 @@ from featurebyte.sql.tile_registry import TileRegistry
 
 class TileGenerate(TileCommon):
     """
-    Tile Generate script corresponding to SP_TILE_GENERATE stored procedure
+    Tile Generate script
     """
 
     tile_start_date_column: str

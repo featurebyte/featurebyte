@@ -6,18 +6,17 @@ from datetime import datetime
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import SourceType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.sql.base import BaselSqlModel
 from featurebyte.tile.manager import TileManager
 
 
 @pytest_asyncio.fixture(name="tile_task_prep_spark")
-async def tile_task_online_store_prep(session):
-    assert session.source_type == "spark"
+async def tile_task_online_store_prep(session, base_sql_model):
 
     entity_col_names = "__FB_TILE_START_DATE_COLUMN,PRODUCT_ACTION,CUST_ID"
     feature_name = "feature_1"
@@ -29,6 +28,7 @@ async def tile_task_online_store_prep(session):
     aggregation_id = f"some_agg_id_{suffix}"
 
     number_records = 2
+    quote_feature_name = base_sql_model.quote_column(feature_name)
     insert_mapping_sql = f"""
             insert into ONLINE_STORE_MAPPING(
                 TILE_ID,
@@ -46,7 +46,7 @@ async def tile_task_online_store_prep(session):
                 '{aggregation_id}',
                 '{feature_name}',
                 'FLOAT',
-                'select {entity_col_names}, cast(value_2 as float) as {feature_name} from {table_name} limit {number_records}',
+                'select {entity_col_names}, cast(value_2 as float) as {quote_feature_name} from {table_name} limit {number_records}',
                 '{feature_store_table_name}',
                 '{entity_col_names}',
                 false,
@@ -68,13 +68,10 @@ async def tile_task_online_store_prep(session):
 
 
 @pytest_asyncio.fixture(name="feature")
-async def mock_feature_fixture(feature_model_dict, session, feature_store):
+async def mock_feature_fixture(feature_model_dict, feature_store):
     """
     Fixture for a ExtendedFeatureModel object
     """
-
-    # this fixture was written to work for snowflake only
-    assert session.source_type == SourceType.SPARK
 
     feature_model_dict.update(
         {
@@ -99,7 +96,6 @@ async def mock_feature_fixture(feature_model_dict, session, feature_store):
 
 @pytest_asyncio.fixture(name="tile_manager")
 async def tile_manager_fixture(session, tile_spec, feature, persistent):
-    assert session.source_type == "spark"
 
     task_manager = TaskManager(
         user=User(id=feature.user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
@@ -107,3 +103,8 @@ async def tile_manager_fixture(session, tile_spec, feature, persistent):
     yield TileManager(session=session, task_manager=task_manager)
 
     await session.execute_query(f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER")
+
+
+@pytest_asyncio.fixture(name="base_sql_model")
+async def base_sql_model(session):
+    return BaselSqlModel(session)

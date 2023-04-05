@@ -220,7 +220,7 @@ async def test_online_enabled_feature_spec(
     result = result.drop(columns=["CREATED_AT"])
     assert_frame_equal(result, expected_df)
 
-    # validate as result of calling SP_TILE_GENERATE to generate historical tiles
+    # validate generate historical tiles
     sql = f"SELECT * FROM {expected_tile_id}"
     result = await session.execute_query(sql)
     assert len(result) == 100
@@ -235,7 +235,7 @@ async def test_online_enabled_feature_spec(
     result = result[:3].drop(columns=["CREATED_AT"])
     assert_frame_equal(result, expected_df)
 
-    # validate as result of calling SP_TILE_SCHEDULE_ONLINE_STORE to populate Online Store
+    # validate populate Online Store result
     sql = f"SELECT * FROM {feature_store_table_name}"
     result = await session.execute_query(sql)
     assert len(result) == 100
@@ -385,74 +385,6 @@ async def test_online_disable___re_enable(
         ]
     ]
     assert_frame_equal(result, expected_df)
-
-
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@pytest.mark.asyncio
-async def test_get_tile_monitor_summary(
-    extended_feature_model, feature_manager_no_sf_scheduling, session, online_enabled_feature_spec
-):
-    """
-    Test retrieve_feature_tile_inconsistency_data
-    """
-    assert session.source_type == "snowflake"
-
-    _ = online_enabled_feature_spec
-
-    entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
-    value_col_names = "VALUE"
-    value_col_types = "FLOAT"
-    table_name = "TEMP_TABLE"
-    tile_id = extended_feature_model.tile_specs[0].tile_id
-    agg_id = extended_feature_model.tile_specs[0].aggregation_id
-    tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 95"
-    monitor_tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 100"
-
-    await session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
-
-    sql = (
-        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
-        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE', null, '{agg_id}')"
-    )
-    await session.execute_query(sql)
-
-    sql = (
-        f"call SP_TILE_MONITOR('{monitor_tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, "
-        f"'{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE', '{agg_id}')"
-    )
-    await session.execute_query(sql)
-    sql = f"SELECT * FROM {tile_id}_MONITOR"
-    result = await session.execute_query(sql)
-    assert len(result) == 5
-
-    sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
-    result = await session.execute_query(sql)
-    assert result["TILE_COUNT"].iloc[0] == 5
-
-    result = await feature_manager_no_sf_scheduling.retrieve_feature_tile_inconsistency_data(
-        query_start_ts=(datetime.utcnow() - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S"),
-        query_end_ts=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-    )
-    assert len(result) == 5
-    expected_df = pd.DataFrame.from_dict(
-        {
-            "NAME": ["sum_30m", "sum_30m"],
-            "VERSION": ["v1", "v1"],
-            "TILE_ID": [tile_id, tile_id],
-            "TILE_START_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
-        }
-    )
-    result_df = result[:2][
-        [
-            "NAME",
-            "VERSION",
-            "TILE_ID",
-            "TILE_START_DATE",
-        ]
-    ]
-    result_df["TILE_START_DATE"] = result_df["TILE_START_DATE"].dt.strftime("%Y-%m-%d %H:%M:%S")
-
-    assert_frame_equal(expected_df, result_df)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

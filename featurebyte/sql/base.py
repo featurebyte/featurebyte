@@ -3,7 +3,7 @@ Base Class for SQL related operations
 """
 from typing import Any, List
 
-from pydantic.fields import PrivateAttr
+from pydantic.fields import Field, PrivateAttr
 from pydantic.main import BaseModel
 
 from featurebyte.session.base import BaseSession
@@ -16,6 +16,8 @@ class BaselSqlModel(BaseModel):
     """
 
     _session: BaseSession = PrivateAttr()
+
+    delta_placeholder: str = Field(default="<DELTA>")
 
     def __init__(self, session: BaseSession, **kwargs: Any):
         """
@@ -68,6 +70,24 @@ class BaselSqlModel(BaseModel):
             return f"EQUAL_NULL({left_expr}, {right_expr})"
 
         return f"{left_expr} <=> {right_expr}"
+
+    def sql_table_with_delta(self, sql_template: str) -> str:
+        """
+        Compares whether two expressions are null-safe equal
+
+        Parameters
+        ----------
+        sql_template: str
+            input sql
+
+        Returns
+        -------
+            null aware equal expression
+        """
+        if isinstance(self._session, SnowflakeSession):
+            return sql_template.replace(self.delta_placeholder, "")
+
+        return sql_template.replace(self.delta_placeholder, "USING DELTA")
 
     @property
     def schema_column_name(self) -> str:

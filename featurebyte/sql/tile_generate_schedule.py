@@ -1,5 +1,5 @@
 """
-Tile Generate Schedule script for SP_TILE_GENERATE
+Tile Generate Schedule script
 """
 from typing import Any, Dict, List
 
@@ -19,7 +19,7 @@ from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 class TileGenerateSchedule(TileCommon):
     """
-    Tile Generate Schedule script corresponding to SP_TILE_GENERATE_SCHEDULE stored procedure
+    Tile Generate Schedule script
     """
 
     offline_period_minute: int
