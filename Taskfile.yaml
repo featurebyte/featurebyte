@@ -268,15 +268,15 @@ tasks:
       - poetry run mkdocs serve --config-file mkdocs.yaml
 
   docs-dump-csv:
-    desc: "Build the documentation and reload the browser, and also dump a CSV of docs."
+    desc: "Dump the documentation into a CSV file for easy browsing."
     deps:
       - task: install
     env:
       PYTHONPATH:
         sh: echo "$(pwd)/docs/extensions"
-      FB_DUMP_TO_CSV: True
+
     cmds:
-      - poetry run mkdocs serve --config-file mkdocs.yaml
+      - poetry run python featurebyte/common/documentation/extract_csv.py
 
   docker-build:
     desc: "Build the docker image"

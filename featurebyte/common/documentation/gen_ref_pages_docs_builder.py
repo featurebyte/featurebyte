@@ -24,7 +24,6 @@ from featurebyte.common.documentation.doc_types import (
     MarkdownFileMetadata,
 )
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
-from featurebyte.common.documentation.extract_csv import dump_to_csv
 from featurebyte.common.documentation.resource_extractor import get_resource_details
 from featurebyte.logger import logger
 
@@ -724,7 +723,6 @@ class DocsBuilder:
     def __init__(self, gen_files_open: Any, set_edit_path: Any):
         self.gen_files_open = gen_files_open
         self.set_edit_path = set_edit_path
-        self.should_dump_to_csv = os.environ.get("FB_DUMP_TO_CSV", False)
 
     def initialize_missing_debug_doc(self) -> None:
         """
@@ -860,9 +858,6 @@ class DocsBuilder:
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
 
-        if self.should_dump_to_csv:
-            # write all doc items
-            dump_to_csv(doc_items)
         return updated_nav
 
 

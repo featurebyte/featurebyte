@@ -8,6 +8,10 @@ from dataclasses import dataclass
 
 from featurebyte.common.documentation.doc_types import DocItems
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
+from featurebyte.common.documentation.gen_ref_pages_docs_builder import (
+    generate_documentation_for_docs,
+    get_doc_groups,
+)
 from featurebyte.common.documentation.resource_extractor import (
     ResourceDetails,
     get_resource_details,
@@ -207,3 +211,9 @@ def dump_to_csv(doc_items: DocItems) -> None:
     logger.info("############################################")
     all_doc_items_to_generate = _generate_items_to_render(doc_items)
     _write_items_to_csv(file_name, all_doc_items_to_generate)
+
+
+if __name__ == "__main__":
+    doc_groups_to_use = get_doc_groups()
+    _, doc_items = generate_documentation_for_docs(doc_groups_to_use)
+    dump_to_csv(doc_items)
