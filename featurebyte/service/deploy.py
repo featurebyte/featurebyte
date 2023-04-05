@@ -155,9 +155,9 @@ class DeployService(BaseService):
             feature_list_status = FeatureListStatus.PUBLIC_DRAFT
 
         if feature_list_status:
-            await self.feature_list_status_service.update_feature_list_namespace(
+            await self.feature_list_status_service.update_feature_list_namespace_status(
                 feature_list_namespace_id=feature_list_namespace_id,
-                feature_list_status=feature_list_status,
+                target_feature_list_status=feature_list_status,
             )
 
         if return_document:

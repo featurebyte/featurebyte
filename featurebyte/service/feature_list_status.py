@@ -34,8 +34,8 @@ class FeatureListStatusService(BaseService):
         self.feature_list_namespace_service = feature_list_namespace_service
         self.feature_list_service = feature_list_service
 
-    async def update_feature_list_namespace(
-        self, feature_list_namespace_id: ObjectId, feature_list_status: FeatureListStatus
+    async def update_feature_list_namespace_status(
+        self, feature_list_namespace_id: ObjectId, target_feature_list_status: FeatureListStatus
     ) -> None:
         """
         Update feature list namespace
@@ -44,7 +44,7 @@ class FeatureListStatusService(BaseService):
         ----------
         feature_list_namespace_id: ObjectId
             Target FeatureListNamespace ID
-        feature_list_status: FeatureListStatus
+        target_feature_list_status: FeatureListStatus
             Target feature list status
 
         Raises
@@ -59,18 +59,18 @@ class FeatureListStatusService(BaseService):
             str(feature_list_id)
             for feature_list_id in feature_list_namespace.deployed_feature_list_ids
         ]
-        if feature_list_namespace.status == feature_list_status:
+        if feature_list_namespace.status == target_feature_list_status:
             # if no change in status, do nothing
             return
 
-        if feature_list_status == FeatureListStatus.DRAFT:
+        if target_feature_list_status == FeatureListStatus.DRAFT:
             # feature list is not allowed to be updated to draft status
             raise DocumentUpdateError(
                 f'Not allowed to update status of FeatureList (name: "{feature_list_namespace.name}") '
                 f"to draft status."
             )
 
-        if feature_list_status == FeatureListStatus.DEPLOYED:
+        if target_feature_list_status == FeatureListStatus.DEPLOYED:
             if not deployed_feature_list_ids:
                 raise DocumentUpdateError(
                     f'Not allowed to update status of FeatureList (name: "{feature_list_namespace.name}") '
@@ -86,7 +86,7 @@ class FeatureListStatusService(BaseService):
                     f"with deployed feature list ids: {json.dumps(deployed_feature_list_ids)}."
                 )
 
-            if feature_list_status != FeatureListStatus.PUBLIC_DRAFT:
+            if target_feature_list_status != FeatureListStatus.PUBLIC_DRAFT:
                 raise DocumentUpdateError(
                     f'Deployed FeatureList (name: "{feature_list_namespace.name}") can only be updated to '
                     f"public draft status."
@@ -94,6 +94,6 @@ class FeatureListStatusService(BaseService):
 
         await self.feature_list_namespace_service.update_document(
             document_id=feature_list_namespace_id,
-            data=FeatureListNamespaceServiceUpdate(status=feature_list_status),
+            data=FeatureListNamespaceServiceUpdate(status=target_feature_list_status),
             return_document=False,
         )

@@ -148,9 +148,9 @@ async def test_update_feature_list(
 
     # update feature list namespace status to deprecated and then deploy the feature list
     # should raise exception
-    await feature_list_status_service.update_feature_list_namespace(
+    await feature_list_status_service.update_feature_list_namespace_status(
         feature_list_namespace_id=feature_list.feature_list_namespace_id,
-        feature_list_status="DEPRECATED",
+        target_feature_list_status="DEPRECATED",
     )
     namespace = await feature_list_namespace_service.get_document(
         document_id=feature_list.feature_list_namespace_id

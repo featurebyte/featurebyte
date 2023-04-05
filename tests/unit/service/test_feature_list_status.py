@@ -49,9 +49,9 @@ async def test_feature_list_status__not_allow_update_to_deployed_without_deploye
 ):
     """Test deployed status validation check."""
     with pytest.raises(DocumentUpdateError) as exc:
-        await feature_list_status_service.update_feature_list_namespace(
+        await feature_list_status_service.update_feature_list_namespace_status(
             feature_list_namespace_id=feature_list_namespace.id,
-            feature_list_status=FeatureListStatus.DEPLOYED,
+            target_feature_list_status=FeatureListStatus.DEPLOYED,
         )
 
     expected_msg = (
@@ -64,9 +64,9 @@ async def test_feature_list_status__not_allow_update_to_deployed_without_deploye
 async def check_transit_to_draft_is_not_allow(feature_list_status_service, feature_list_namespace):
     """Test that a feature list namespace cannot be updated to draft status."""
     with pytest.raises(DocumentUpdateError) as exc:
-        await feature_list_status_service.update_feature_list_namespace(
+        await feature_list_status_service.update_feature_list_namespace_status(
             feature_list_namespace_id=feature_list_namespace.id,
-            feature_list_status=FeatureListStatus.DRAFT,
+            target_feature_list_status=FeatureListStatus.DRAFT,
         )
 
     expected_msg = (
@@ -96,9 +96,9 @@ async def test_feature_list_status__deployed_feature_list_transition_check(
         )
     else:
         with pytest.raises(DocumentUpdateError) as exc:
-            await feature_list_status_service.update_feature_list_namespace(
+            await feature_list_status_service.update_feature_list_namespace_status(
                 feature_list_namespace_id=feature_list_namespace_deployed.id,
-                feature_list_status=feature_list_status,
+                target_feature_list_status=feature_list_status,
             )
 
         assert len(feature_list_namespace_deployed.deployed_feature_list_ids) == 1
@@ -146,9 +146,9 @@ async def test_feature_list_status__allowed_status_transition(
     assert feature_list_namespace.status == FeatureListStatus.DRAFT
 
     # check transit from draft to public draft
-    await feature_list_status_service.update_feature_list_namespace(
+    await feature_list_status_service.update_feature_list_namespace_status(
         feature_list_namespace_id=feature_list_namespace.id,
-        feature_list_status=FeatureListStatus.PUBLIC_DRAFT,
+        target_feature_list_status=FeatureListStatus.PUBLIC_DRAFT,
     )
     namespace = await feature_list_namespace_service.get_document(
         document_id=feature_list_namespace.id
@@ -157,27 +157,27 @@ async def test_feature_list_status__allowed_status_transition(
     await check_transit_to_draft_is_not_allow(feature_list_status_service, namespace)
 
     # check transit from public draft to template
-    await feature_list_status_service.update_feature_list_namespace(
+    await feature_list_status_service.update_feature_list_namespace_status(
         feature_list_namespace_id=namespace.id,
-        feature_list_status=FeatureListStatus.TEMPLATE,
+        target_feature_list_status=FeatureListStatus.TEMPLATE,
     )
     namespace = await feature_list_namespace_service.get_document(document_id=namespace.id)
     assert namespace.status == FeatureListStatus.TEMPLATE
     await check_transit_to_draft_is_not_allow(feature_list_status_service, namespace)
 
     # check transit from template to deprecated
-    await feature_list_status_service.update_feature_list_namespace(
+    await feature_list_status_service.update_feature_list_namespace_status(
         feature_list_namespace_id=namespace.id,
-        feature_list_status=FeatureListStatus.DEPRECATED,
+        target_feature_list_status=FeatureListStatus.DEPRECATED,
     )
     namespace = await feature_list_namespace_service.get_document(document_id=namespace.id)
     assert namespace.status == FeatureListStatus.DEPRECATED
     await check_transit_to_draft_is_not_allow(feature_list_status_service, namespace)
 
     # check transit from deprecated to public draft
-    await feature_list_status_service.update_feature_list_namespace(
+    await feature_list_status_service.update_feature_list_namespace_status(
         feature_list_namespace_id=namespace.id,
-        feature_list_status=FeatureListStatus.PUBLIC_DRAFT,
+        target_feature_list_status=FeatureListStatus.PUBLIC_DRAFT,
     )
     namespace = await feature_list_namespace_service.get_document(document_id=namespace.id)
     assert namespace.status == FeatureListStatus.PUBLIC_DRAFT
@@ -203,9 +203,9 @@ async def test_feature_list_status__deployed_can_only_transit_to_public_draft(
     assert namespace.status == FeatureListStatus.DEPLOYED
 
     with pytest.raises(DocumentUpdateError) as exc:
-        await feature_list_status_service.update_feature_list_namespace(
+        await feature_list_status_service.update_feature_list_namespace_status(
             feature_list_namespace_id=namespace.id,
-            feature_list_status=feature_list_status,
+            target_feature_list_status=feature_list_status,
         )
 
     expected_msg = (
