@@ -3,7 +3,7 @@ Base Class for SQL related operations
 """
 from typing import Any, List
 
-from pydantic.fields import Field, PrivateAttr
+from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 
 from featurebyte.session.base import BaseSession
@@ -16,8 +16,6 @@ class BaselSqlModel(BaseModel):
     """
 
     _session: BaseSession = PrivateAttr()
-
-    delta_placeholder: str = Field(default="<DELTA>")
 
     def __init__(self, session: BaseSession, **kwargs: Any):
         """
