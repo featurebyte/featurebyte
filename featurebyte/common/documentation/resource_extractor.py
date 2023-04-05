@@ -84,11 +84,6 @@ def import_resource(resource_descriptor: str) -> Any:
     module = inspect.getmodule(resource)
     if module is None:
         return resource
-    try:
-        # reload module to capture updates in source code
-        module = importlib.reload(module)
-    except:
-        return resource
     return getattr(module, resource.__name__)
 
 
