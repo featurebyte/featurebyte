@@ -14,6 +14,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import display_html_in_notebook
 from featurebyte.config import Configurations
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
@@ -28,6 +29,10 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     """
     FeatureJobSettingAnalysis class
     """
+
+    __fbautodoc__ = FBAutoDoc(
+        section=["FeatureJob"], proxy_class="featurebyte.FeatureJobSettingAnalysis"
+    )
 
     # class variables
     _route = "/feature_job_setting_analysis"

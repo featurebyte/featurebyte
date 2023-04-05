@@ -15,6 +15,7 @@ from featurebyte.common.documentation.constants import (
     EXPLORE,
     FEATURE,
     FEATURE_GROUP,
+    FEATURE_JOB,
     FEATURE_LIST,
     FEATURE_STORE,
     GET,
@@ -667,6 +668,23 @@ def _get_source_table_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_feature_job_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the FeatureJob module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the FeatureJob module.
+    """
+    return [
+        DocLayoutItem([FEATURE_JOB, CREATE, "FeatureJobSetting"]),
+        DocLayoutItem([FEATURE_JOB, CREATE, "FeatureJobSettingAnalysis"]),
+        DocLayoutItem([FEATURE_JOB, CREATE, "TableFeatureJobSetting"]),
+        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.get_by_id"]),
+    ]
+
+
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -691,4 +709,5 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_catalog_layout(),
         *_get_enum_layout(),
         *_get_source_table_layout(),
+        *_get_feature_job_layout(),
     ]
