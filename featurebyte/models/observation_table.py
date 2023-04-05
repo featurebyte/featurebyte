@@ -25,7 +25,6 @@ class MaterializedTable(FeatureByteCatalogBaseDocumentModel):
     database.
     """
 
-    name: StrictStr
     location: TabularSource
 
 
@@ -64,7 +63,6 @@ class ObservationTableModel(MaterializedTable):
     """
 
     observation_input: ObservationInput
-    column_names: List[StrictStr]
     context_id: Optional[PydanticObjectId] = Field(default=None)
 
     class Settings:

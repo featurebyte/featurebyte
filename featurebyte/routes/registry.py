@@ -303,5 +303,7 @@ app_container_config.add_controller(
     "periodic_task_controller", PeriodicTaskController, ["periodic_task_service"]
 )
 app_container_config.add_controller(
-    "observation_table_controller", ObservationTableController, ["observation_table_service"]
+    "observation_table_controller",
+    ObservationTableController,
+    ["observation_table_service", "task_controller"],
 )

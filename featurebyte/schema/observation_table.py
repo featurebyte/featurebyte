@@ -5,42 +5,28 @@ from __future__ import annotations
 
 from typing import List, Optional, Union
 
-from featurebyte.models.base import PydanticObjectId
+from bson import ObjectId
+from pydantic import Field, StrictStr
+
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.observation_table import (
-    MaterializedTable,
     ObservationTableModel,
+    SourceTableObservationInput,
     ViewObservationInput,
 )
 from featurebyte.schema.common.base import PaginationMixin
 
 
-class ObservationTableCreateBase(MaterializedTable):
+class ObservationTableCreate(FeatureByteBaseModel):
     """
-    ObservationTableModel creation schema's common attributes
+    ObservationTableModel creation schema
     """
 
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    name: StrictStr
+    feature_store_id: PydanticObjectId
     context_id: Optional[PydanticObjectId]
-
-
-class ObservationTableCreateFromView(ObservationTableCreateBase):
-    """
-    ObservationTableModel creation schema for creating from a view
-    """
-
-    observation_input: ViewObservationInput
-
-
-class ObservationTableCreateFromSourceTable(ObservationTableCreateBase):
-    """
-    ObservationTableModel creation schema for creating from a source table
-    """
-
-    observation_input: ObservationTableCreateFromSourceTable
-
-
-ObservationTableCreate = Union[
-    ObservationTableCreateFromView, ObservationTableCreateFromSourceTable
-]
+    observation_input: Union[ViewObservationInput, SourceTableObservationInput]
 
 
 class ObservationTableList(PaginationMixin):
