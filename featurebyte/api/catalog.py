@@ -32,7 +32,6 @@ from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
 
 
-@typechecked
 class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin):
     """
     A FeatureByte Catalog serves as a centralized repository for storing metadata about FeatureByte objects such as
