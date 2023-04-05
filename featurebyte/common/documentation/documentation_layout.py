@@ -5,6 +5,37 @@ from typing import List, Optional
 
 from dataclasses import dataclass
 
+from featurebyte.common.documentation.constants import (
+    ACTIVATE,
+    ADD_METADATA,
+    CATALOG,
+    CREATE,
+    DATA_SOURCE,
+    ENTITY,
+    EXPLORE,
+    FEATURE,
+    FEATURE_GROUP,
+    FEATURE_LIST,
+    FEATURE_STORE,
+    GET,
+    INFO,
+    JOIN,
+    LAGS,
+    LINEAGE,
+    LIST,
+    RELATIONSHIP,
+    SERVE,
+    TABLE,
+    TABLE_COLUMN,
+    TRANSFORM,
+    TYPE,
+    UPDATE,
+    UTILITY_CLASSES,
+    VERSION,
+    VIEW,
+    VIEW_COLUMN,
+)
+
 
 @dataclass
 class DocLayoutItem:
@@ -33,35 +64,6 @@ class DocLayoutItem:
         return "featurebyte." + self.doc_path_override
 
 
-ACTIVATE = "Activate"
-ADD_METADATA = "Add Metadata"
-CATALOG = "Catalog"
-CREATE = "Create"
-DATA_SOURCE = "DataSource"
-ENTITY = "Entity"
-EXPLORE = "Explore"
-FEATURE = "Feature"
-FEATURE_GROUP = "FeatureGroup"
-FEATURE_LIST = "FeatureList"
-FEATURE_STORE = "FeatureStore"
-GET = "Get"
-INFO = "Info"
-JOIN = "Join"
-LAGS = "Lags"
-LINEAGE = "Lineage"
-LIST = "List"
-RELATIONSHIP = "Relationship"
-SERVE = "Serve"
-TABLE = "Table"
-TABLE_COLUMN = "TableColumn"
-TRANSFORM = "Transform"
-TYPE = "Type"
-UPDATE = "Update"
-VERSION = "Version"
-VIEW = "View"
-VIEW_COLUMN = "ViewColumn"
-
-
 def _get_table_layout() -> List[DocLayoutItem]:
     """
     Return the layout for the table module.
@@ -72,7 +74,6 @@ def _get_table_layout() -> List[DocLayoutItem]:
         The layout for the data module.
     """
     return [
-        # DATA
         DocLayoutItem([TABLE]),
         DocLayoutItem([TABLE, GET, "Catalog.get_table"]),
         DocLayoutItem([TABLE, GET, "Table.get_by_id"]),
@@ -126,10 +127,6 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [TABLE, INFO, "Table.record_creation_timestamp_column"],
             doc_path_override="api.base_table.TableApiObject.record_creation_timestamp_column.md",
-        ),
-        DocLayoutItem(
-            [TABLE, INFO, "Table.saved"],
-            doc_path_override="api.base_table.TableApiObject.saved.md",
         ),
         DocLayoutItem(
             [TABLE, INFO, "Table.status"],
@@ -224,7 +221,6 @@ def _get_entity_layout() -> List[DocLayoutItem]:
         DocLayoutItem([ENTITY, INFO, "Entity.name"]),
         DocLayoutItem([ENTITY, INFO, "Entity.name_history"]),
         DocLayoutItem([ENTITY, INFO, "Entity.parents"]),
-        DocLayoutItem([ENTITY, INFO, "Entity.saved"]),
         DocLayoutItem([ENTITY, INFO, "Entity.serving_names"]),
         DocLayoutItem([ENTITY, INFO, "Entity.update_name"]),
         DocLayoutItem([ENTITY, INFO, "Entity.updated_at"]),
@@ -409,7 +405,6 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.details"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.info"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.name"]),
-        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.saved"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.type"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.updated_at"]),
         DocLayoutItem([FEATURE_STORE, LINEAGE, "FeatureStore.id"]),
@@ -454,7 +449,6 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.created_at"]),
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.info"]),
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.name"]),
-        DocLayoutItem([RELATIONSHIP, INFO, "Relationship.saved"]),
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.updated_at"]),
         DocLayoutItem([RELATIONSHIP, LINEAGE, "Relationship.id"]),
         DocLayoutItem([RELATIONSHIP, UPDATE, "Relationship.enable"]),
@@ -629,10 +623,27 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, INFO, "Catalog.created_at"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.info"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.name"]),
-        DocLayoutItem([CATALOG, INFO, "Catalog.saved"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.updated_at"]),
         DocLayoutItem([CATALOG, LINEAGE, "Catalog.id"]),
         DocLayoutItem([CATALOG, UPDATE, "Catalog.update_name"]),
+    ]
+
+
+def _get_enum_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the Enums used in featurebyte.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the Enums used in featurebyte.
+    """
+    return [
+        DocLayoutItem([UTILITY_CLASSES, "MissingValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, "DisguisedValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, "UnexpectedValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, "ValueBeyondEndpointImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, "StringValueImputation"]),
     ]
 
 
@@ -658,4 +669,5 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_view_layout(),
         *_get_view_column_layout(),
         *_get_catalog_layout(),
+        *_get_enum_layout(),
     ]
