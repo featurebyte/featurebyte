@@ -246,19 +246,19 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, CREATE, "View.as_features"]),
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
-        ),  # TODO:
+        ),
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy.aggregate"],
             doc_path_override="api.groupby.GroupBy.aggregate.md",
-        ),  # TODO:
+        ),
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy.aggregate_asat"],
             doc_path_override="api.groupby.GroupBy.aggregate_asat.md",
-        ),  # TODO:
+        ),
         DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy.aggregate_over"],
             doc_path_override="api.groupby.GroupBy.aggregate_over.md",
-        ),  # TODO:
+        ),
         DocLayoutItem([FEATURE, CREATE, "ViewColumn.as_feature"]),
         DocLayoutItem([FEATURE, EXPLORE, "Feature.preview"]),
         DocLayoutItem([FEATURE, INFO, "Feature.created_at"]),
