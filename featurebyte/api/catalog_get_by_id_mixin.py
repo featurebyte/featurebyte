@@ -96,7 +96,7 @@ class CatalogGetByIdMixin:
         --------
         Get a saved feature.
 
-        >>> feature = catalog.get_feature_by_id(ObjectId)  # doctest: +SKIP
+        >>> feature = catalog.get_feature_by_id(ObjectId())  # doctest: +SKIP
         """
         return Feature.get_by_id(id=id)
 
