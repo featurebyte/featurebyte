@@ -51,7 +51,7 @@ class BaselSqlModel(BaseModel):
 
     def quote_column_null_aware_equal(self, left_expr: str, right_expr: str) -> str:
         """
-        Quote column name based on session type
+        Compares whether two expressions are null-safe equal
 
         Parameters
         ----------
