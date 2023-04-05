@@ -100,7 +100,7 @@ class FeatureListNamespaceController(
             )
 
         if data.status:
-            await self.feature_list_status_service.update_feature_list_namespace_status(
+            await self.feature_list_status_service.update_feature_list_namespace(
                 feature_list_namespace_id=feature_list_namespace_id,
                 feature_list_status=data.status,
             )

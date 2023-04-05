@@ -34,11 +34,11 @@ class FeatureListStatusService(BaseService):
         self.feature_list_namespace_service = feature_list_namespace_service
         self.feature_list_service = feature_list_service
 
-    async def update_feature_list_namespace_status(
+    async def update_feature_list_namespace(
         self, feature_list_namespace_id: ObjectId, feature_list_status: FeatureListStatus
     ) -> None:
         """
-        Update feature list namespace status
+        Update feature list namespace
 
         Parameters
         ----------
@@ -55,16 +55,13 @@ class FeatureListStatusService(BaseService):
         feature_list_namespace = await self.feature_list_namespace_service.get_document(
             document_id=feature_list_namespace_id
         )
+        deployed_feature_list_ids = [
+            str(feature_list_id)
+            for feature_list_id in feature_list_namespace.deployed_feature_list_ids
+        ]
         if feature_list_namespace.status == feature_list_status:
             # if no change in status, do nothing
             return
-
-        if feature_list_namespace.status == FeatureListStatus.DEPRECATED:
-            # if feature list is deprecated, it cannot be updated to any other status
-            raise DocumentUpdateError(
-                f'FeatureList (name: "{feature_list_namespace.name}") is deprecated. '
-                f"It cannot be updated to any other status."
-            )
 
         if feature_list_status == FeatureListStatus.DRAFT:
             # feature list is not allowed to be updated to draft status
@@ -73,13 +70,16 @@ class FeatureListStatusService(BaseService):
                 f"to draft status."
             )
 
+        if feature_list_status == FeatureListStatus.DEPLOYED:
+            if not deployed_feature_list_ids:
+                raise DocumentUpdateError(
+                    f'Not allowed to update status of FeatureList (name: "{feature_list_namespace.name}") '
+                    f"to deployed status without deployed feature list."
+                )
+
         if feature_list_namespace.status == FeatureListStatus.DEPLOYED:
             # if feature list is deployed, it can only be updated to public draft status if there is no
             # deployed feature list
-            deployed_feature_list_ids = [
-                str(feature_list_id)
-                for feature_list_id in feature_list_namespace.deployed_feature_list_ids
-            ]
             if deployed_feature_list_ids:
                 raise DocumentUpdateError(
                     f'Not allowed to update status of FeatureList (name: "{feature_list_namespace.name}") '

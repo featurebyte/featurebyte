@@ -98,6 +98,7 @@ async def test_update_feature_list(
     feature_service,
     feature_list_namespace_service,
     feature_list_service,
+    feature_list_status_service,
     production_ready_feature_list,
     deploy_service,
     mock_update_data_warehouse,
@@ -144,6 +145,26 @@ async def test_update_feature_list(
         expected_deployed=False,
         expected_deployed_feature_list_ids=[],
     )
+
+    # update feature list namespace status to deprecated and then deploy the feature list
+    # should raise exception
+    await feature_list_status_service.update_feature_list_namespace(
+        feature_list_namespace_id=feature_list.feature_list_namespace_id,
+        feature_list_status="DEPRECATED",
+    )
+    namespace = await feature_list_namespace_service.get_document(
+        document_id=feature_list.feature_list_namespace_id
+    )
+    assert namespace.status == "DEPRECATED"
+    with pytest.raises(DocumentUpdateError) as exc:
+        await deploy_service.update_feature_list(
+            feature_list_id=feature_list.id,
+            deployed=True,
+            return_document=True,
+            get_credential=Mock(),
+        )
+    expected_msg = "Deprecated feature list cannot be deployed."
+    assert expected_msg in str(exc.value)
 
 
 @pytest.mark.asyncio

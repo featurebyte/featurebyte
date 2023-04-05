@@ -155,7 +155,7 @@ class DeployService(BaseService):
             feature_list_status = FeatureListStatus.PUBLIC_DRAFT
 
         if feature_list_status:
-            await self.feature_list_status_service.update_feature_list_namespace_status(
+            await self.feature_list_status_service.update_feature_list_namespace(
                 feature_list_namespace_id=feature_list_namespace_id,
                 feature_list_status=feature_list_status,
             )
@@ -169,8 +169,15 @@ class DeployService(BaseService):
     async def _validate_deployed_operation(
         self, feature_list: FeatureListModel, deployed: bool
     ) -> None:
-        # if enabling deployment, check is there any feature with readiness not equal to production ready
         if deployed:
+            # if deploying, check feature list status is not deprecated
+            feature_list_namespace = await self.feature_list_namespace_service.get_document(
+                document_id=feature_list.feature_list_namespace_id
+            )
+            if feature_list_namespace.status == FeatureListStatus.DEPRECATED:
+                raise DocumentUpdateError("Deprecated feature list cannot be deployed.")
+
+            # if enabling deployment, check is there any feature with readiness not equal to production ready
             query_filter = {"_id": {"$in": feature_list.feature_ids}}
             async for feature in self.feature_service.list_documents_iterator(
                 query_filter=query_filter

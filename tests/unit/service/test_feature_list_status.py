@@ -11,24 +11,6 @@ from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 
 
-@pytest.fixture(name="feature_list_status_service")
-def feature_list_status_service_fixture(app_container):
-    """Feature list status service fixture"""
-    return app_container.feature_list_status_service
-
-
-@pytest_asyncio.fixture(name="feature_list_namespace_deprecated")
-async def feature_list_namespace_deprecated_fixture(
-    feature_list_namespace_service, feature_list_namespace
-):
-    """Feature list namespace deprecated fixture"""
-    await feature_list_namespace_service.update_document(
-        document_id=feature_list_namespace.id,
-        data=FeatureListNamespaceServiceUpdate(status=FeatureListStatus.DEPRECATED),
-    )
-    return await feature_list_namespace_service.get_document(document_id=feature_list_namespace.id)
-
-
 @pytest_asyncio.fixture(name="feature_list_namespace_deployed")
 async def feature_list_namespace_deployed_fixture(
     deploy_service,
@@ -62,28 +44,19 @@ async def feature_list_namespace_deployed_fixture(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "feature_list_status",
-    [
-        FeatureListStatus.DRAFT,
-        FeatureListStatus.PUBLIC_DRAFT,
-        FeatureListStatus.TEMPLATE,
-        FeatureListStatus.DEPLOYED,
-    ],
-)
-async def test_feature_list_status__deprecated_feature_list_cannot_update(
-    feature_list_status_service, feature_list_namespace_deprecated, feature_list_status
+async def test_feature_list_status__not_allow_update_to_deployed_without_deployed_feature_list(
+    feature_list_status_service, feature_list_namespace
 ):
-    """Test that a deprecated feature list cannot be updated to any other status."""
+    """Test deployed status validation check."""
     with pytest.raises(DocumentUpdateError) as exc:
-        await feature_list_status_service.update_feature_list_namespace_status(
-            feature_list_namespace_id=feature_list_namespace_deprecated.id,
-            feature_list_status=feature_list_status,
+        await feature_list_status_service.update_feature_list_namespace(
+            feature_list_namespace_id=feature_list_namespace.id,
+            feature_list_status=FeatureListStatus.DEPLOYED,
         )
 
     expected_msg = (
-        f'FeatureList (name: "{feature_list_namespace_deprecated.name}") is deprecated. '
-        "It cannot be updated to any other status."
+        f'Not allowed to update status of FeatureList (name: "{feature_list_namespace.name}") '
+        "to deployed status without deployed feature list."
     )
     assert expected_msg in str(exc.value)
 
@@ -91,7 +64,7 @@ async def test_feature_list_status__deprecated_feature_list_cannot_update(
 async def check_transit_to_draft_is_not_allow(feature_list_status_service, feature_list_namespace):
     """Test that a feature list namespace cannot be updated to draft status."""
     with pytest.raises(DocumentUpdateError) as exc:
-        await feature_list_status_service.update_feature_list_namespace_status(
+        await feature_list_status_service.update_feature_list_namespace(
             feature_list_namespace_id=feature_list_namespace.id,
             feature_list_status=FeatureListStatus.DRAFT,
         )
@@ -123,7 +96,7 @@ async def test_feature_list_status__deployed_feature_list_transition_check(
         )
     else:
         with pytest.raises(DocumentUpdateError) as exc:
-            await feature_list_status_service.update_feature_list_namespace_status(
+            await feature_list_status_service.update_feature_list_namespace(
                 feature_list_namespace_id=feature_list_namespace_deployed.id,
                 feature_list_status=feature_list_status,
             )
@@ -173,7 +146,7 @@ async def test_feature_list_status__allowed_status_transition(
     assert feature_list_namespace.status == FeatureListStatus.DRAFT
 
     # check transit from draft to public draft
-    await feature_list_status_service.update_feature_list_namespace_status(
+    await feature_list_status_service.update_feature_list_namespace(
         feature_list_namespace_id=feature_list_namespace.id,
         feature_list_status=FeatureListStatus.PUBLIC_DRAFT,
     )
@@ -184,7 +157,7 @@ async def test_feature_list_status__allowed_status_transition(
     await check_transit_to_draft_is_not_allow(feature_list_status_service, namespace)
 
     # check transit from public draft to template
-    await feature_list_status_service.update_feature_list_namespace_status(
+    await feature_list_status_service.update_feature_list_namespace(
         feature_list_namespace_id=namespace.id,
         feature_list_status=FeatureListStatus.TEMPLATE,
     )
@@ -193,12 +166,21 @@ async def test_feature_list_status__allowed_status_transition(
     await check_transit_to_draft_is_not_allow(feature_list_status_service, namespace)
 
     # check transit from template to deprecated
-    await feature_list_status_service.update_feature_list_namespace_status(
+    await feature_list_status_service.update_feature_list_namespace(
         feature_list_namespace_id=namespace.id,
         feature_list_status=FeatureListStatus.DEPRECATED,
     )
     namespace = await feature_list_namespace_service.get_document(document_id=namespace.id)
     assert namespace.status == FeatureListStatus.DEPRECATED
+    await check_transit_to_draft_is_not_allow(feature_list_status_service, namespace)
+
+    # check transit from deprecated to public draft
+    await feature_list_status_service.update_feature_list_namespace(
+        feature_list_namespace_id=namespace.id,
+        feature_list_status=FeatureListStatus.PUBLIC_DRAFT,
+    )
+    namespace = await feature_list_namespace_service.get_document(document_id=namespace.id)
+    assert namespace.status == FeatureListStatus.PUBLIC_DRAFT
 
 
 @pytest.mark.asyncio
@@ -221,10 +203,13 @@ async def test_feature_list_status__deployed_can_only_transit_to_public_draft(
     assert namespace.status == FeatureListStatus.DEPLOYED
 
     with pytest.raises(DocumentUpdateError) as exc:
-        await feature_list_status_service.update_feature_list_namespace_status(
+        await feature_list_status_service.update_feature_list_namespace(
             feature_list_namespace_id=namespace.id,
             feature_list_status=feature_list_status,
         )
 
-    expected_msg = f'Deployed FeatureList (name: "{feature_list_namespace.name}") can only be updated to public draft status.'
+    expected_msg = (
+        f'Deployed FeatureList (name: "{feature_list_namespace.name}") can only be updated '
+        "to public draft status."
+    )
     assert expected_msg in str(exc.value)
