@@ -51,7 +51,9 @@ class TileGenerateEntityTracking(BaselSqlModel):
             quote_element = self.quote_column(element.strip())
             entity_insert_cols.append(f"b.{quote_element}")
             escaped_entity_column_names.append(f"{quote_element}")
-            entity_filter_cols.append(self.quote_column_not_equal("a", "b", quote_element))
+            entity_filter_cols.append(
+                self.quote_column_null_aware_equal(f"a.{quote_element}", f"b.{quote_element}")
+            )
 
         escaped_entity_column_names_str = ",".join(escaped_entity_column_names)
 

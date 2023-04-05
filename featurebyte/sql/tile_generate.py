@@ -65,7 +65,9 @@ class TileGenerate(TileCommon):
         for element in self.entity_column_names:
             quote_element = self.quote_column(element.strip())
             entity_insert_cols.append(f"b.{quote_element}")
-            entity_filter_cols.append(self.quote_column_not_equal("a", "b", quote_element))
+            entity_filter_cols.append(
+                self.quote_column_null_aware_equal(f"a.{quote_element}", f"b.{quote_element}")
+            )
 
         entity_insert_cols_str = ",".join(entity_insert_cols)
         entity_filter_cols_str = " AND ".join(entity_filter_cols)

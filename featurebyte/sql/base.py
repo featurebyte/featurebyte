@@ -49,29 +49,25 @@ class BaselSqlModel(BaseModel):
 
         return f"`{col_val}`"
 
-    def quote_column_not_equal(
-        self, left_symbol: str, right_symbol: str, quote_element: str
-    ) -> str:
+    def quote_column_null_aware_equal(self, left_expr: str, right_expr: str) -> str:
         """
         Quote column name based on session type
 
         Parameters
         ----------
-        left_symbol: str
-            left symbol
-        right_symbol: str
-            right symbol
-        quote_element: str
-            quoted input column name
+        left_expr: str
+            left expression
+        right_expr: str
+            right expression
 
         Returns
         -------
-            quoted column name
+            null aware equal expression
         """
         if isinstance(self._session, SnowflakeSession):
-            return f"EQUAL_NULL({left_symbol}.{quote_element}, {right_symbol}.{quote_element})"
+            return f"EQUAL_NULL({left_expr}, {right_expr})"
 
-        return f"{left_symbol}.{quote_element} <=> {right_symbol}.{quote_element}"
+        return f"{left_expr} <=> {right_expr}"
 
     @property
     def schema_column_name(self) -> str:
