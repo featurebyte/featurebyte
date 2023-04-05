@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 import pandas as pd
 from bson import ObjectId
 from pydantic import Field
+from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
@@ -203,6 +204,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         return item_list
 
+    @typechecked
     def update_name(self, name: str) -> None:
         """
         Update catalog name.
