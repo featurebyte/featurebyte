@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
+from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
@@ -214,6 +215,25 @@ class FeatureReadinessService(BaseService):
             )
         return self.conditional_return(document=updated_document, condition=return_document)
 
+    async def _validate_readiness_transition(
+        self, document: FeatureModel, target_readiness: FeatureReadiness, ignore_guardrails: bool
+    ) -> None:
+        # validate the readiness transition is valid or not
+        if target_readiness == FeatureReadiness.PRODUCTION_READY:
+            assert document.name is not None
+            await self.production_ready_validator.validate(
+                promoted_feature_name=document.name,
+                promoted_feature_id=document.id,
+                promoted_feature_graph=document.graph,
+                ignore_guardrails=ignore_guardrails,
+            )
+
+        if (
+            document.readiness != FeatureReadiness.DRAFT
+            and target_readiness == FeatureReadiness.DRAFT
+        ):
+            raise DocumentUpdateError("Cannot update feature readiness to DRAFT.")
+
     async def update_feature(
         self,
         feature_id: ObjectId,
@@ -242,14 +262,9 @@ class FeatureReadinessService(BaseService):
         Optional[FeatureModel]
         """
         document = await self.feature_service.get_document(document_id=feature_id)
-        if readiness == FeatureReadiness.PRODUCTION_READY:
-            assert document.name is not None
-            await self.production_ready_validator.validate(
-                promoted_feature_name=document.name,
-                promoted_feature_id=document.id,
-                promoted_feature_graph=document.graph,
-                ignore_guardrails=ignore_guardrails,
-            )
+        await self._validate_readiness_transition(
+            document=document, target_readiness=readiness, ignore_guardrails=ignore_guardrails
+        )
         if document.readiness != readiness:
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(

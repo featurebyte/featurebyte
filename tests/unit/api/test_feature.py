@@ -713,12 +713,12 @@ def test_update_readiness_and_default_version_mode(saved_feature):
     assert saved_feature.readiness == FeatureReadiness.DRAFT
     saved_feature.update_readiness("PRODUCTION_READY")
     assert saved_feature.readiness == FeatureReadiness.PRODUCTION_READY
-    saved_feature.update_readiness(FeatureReadiness.DRAFT)
-    assert saved_feature.readiness == FeatureReadiness.DRAFT
+    saved_feature.update_readiness(FeatureReadiness.PUBLIC_DRAFT)
+    assert saved_feature.readiness == FeatureReadiness.PUBLIC_DRAFT
 
     # check update on the same readiness
-    saved_feature.update_readiness(FeatureReadiness.DRAFT)
-    assert saved_feature.readiness == FeatureReadiness.DRAFT
+    saved_feature.update_readiness(FeatureReadiness.PUBLIC_DRAFT)
+    assert saved_feature.readiness == FeatureReadiness.PUBLIC_DRAFT
 
     # check default version mode
     assert saved_feature.default_version_mode == DefaultVersionMode.AUTO
