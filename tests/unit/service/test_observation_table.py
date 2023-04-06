@@ -24,7 +24,6 @@ def observation_table_from_source_table_fixture(event_table):
         name="observation_table_from_source_table",
         location=location,
         observation_input=observation_input,
-        column_names=["POINT_IN_TIME", "user_id"],
     )
 
 

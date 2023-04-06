@@ -57,6 +57,8 @@ class ObservationTableTask(BaseTask):
             ),
         )
 
+        # TODO: add actual materialization logic here before creating the ObservationTable document
+
         logger.debug("Creating a new ObservationTable", extras=location.table_details.dict())
         observation_table = ObservationTableModel(
             _id=self.payload.output_document_id,

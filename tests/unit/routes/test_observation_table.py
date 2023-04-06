@@ -28,6 +28,19 @@ class TestObservationTableApi(BaseAsyncApiTestSuite):
         ),
     ]
 
+    unknown_context_id = str(ObjectId())
+    create_unprocessable_payload_expected_detail_pairs = [
+        (
+            {
+                **payload,
+                "_id": str(ObjectId()),
+                "name": "new_table",
+                "context_id": unknown_context_id,
+            },
+            f'Context (id: "{unknown_context_id}") not found. Please save the Context object first.',
+        )
+    ]
+
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """
         Setup for post route
@@ -37,6 +50,16 @@ class TestObservationTableApi(BaseAsyncApiTestSuite):
         response = api_client.post(
             "/feature_store", params={"catalog_id": catalog_id}, json=payload
         )
+        assert response.status_code == HTTPStatus.CREATED
+
+        # save entity
+        payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
+        response = api_client.post("/entity", params={"catalog_id": catalog_id}, json=payload)
+        assert response.status_code == HTTPStatus.CREATED
+
+        # save context
+        payload = self.load_payload("tests/fixtures/request_payloads/context.json")
+        response = api_client.post("/context", params={"catalog_id": catalog_id}, json=payload)
         assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):

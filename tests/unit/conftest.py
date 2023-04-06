@@ -1126,6 +1126,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         observation_input=SourceTableObservationInput(
             source=snowflake_event_table.tabular_source,
         ),
+        context_id=context.id,
     )
 
     if update_fixtures:
