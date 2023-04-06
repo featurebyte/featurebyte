@@ -77,7 +77,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
           "event_timestamp" AS "event_timestamp",
           "created_at" AS "created_at",
           "cust_id" AS "cust_id"
-        FROM "sf_database"."sf_schema"."sf_table"
+        FROM "sf_database"."sf_schema"."dimension_table"
       )
     ) AS T0
       ON REQ."COL_TEXT" = T0."COL_TEXT"
