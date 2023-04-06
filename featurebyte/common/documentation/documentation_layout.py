@@ -649,6 +649,9 @@ def _get_enum_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, "UnexpectedValueImputation"]),
         DocLayoutItem([UTILITY_CLASSES, "ValueBeyondEndpointImputation"]),
         DocLayoutItem([UTILITY_CLASSES, "StringValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, "AggFunc"]),
+        DocLayoutItem([UTILITY_CLASSES, "SourceType"]),
+        DocLayoutItem([UTILITY_CLASSES, "StorageType"]),
     ]
 
 

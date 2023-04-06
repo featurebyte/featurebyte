@@ -6,6 +6,8 @@ from __future__ import annotations
 import functools
 from enum import Enum
 
+from featurebyte.common.doc_util import FBAutoDoc
+
 
 @functools.total_ordering
 class OrderedEnum(Enum):
@@ -176,6 +178,8 @@ class AggFunc(StrEnum):
     Supported aggregation functions in groupby
     """
 
+    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.AggFunc")
+
     SUM = "sum", "Compute sum of values"
     AVG = "avg", "Compute average value"
     MIN = "min", "Compute minimum value"
@@ -201,6 +205,8 @@ class SourceType(StrEnum):
     Database or data warehouse source type
     """
 
+    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.SourceType")
+
     SNOWFLAKE = "snowflake", "Snowflake connection details"
     SQLITE = "sqlite", "SQLite connection details"
     DATABRICKS = "databricks", "DataBricks connection details"
@@ -225,6 +231,8 @@ class StorageType(StrEnum):
     """
     Distributed storage type
     """
+
+    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.StorageType")
 
     FILE = "file"
     S3 = "s3", "s3 Storage"
