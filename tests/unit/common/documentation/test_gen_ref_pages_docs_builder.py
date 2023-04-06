@@ -13,7 +13,6 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.gen_ref_pages_docs_builder import (
     MISSING_DEBUG_MARKDOWN,
     DocsBuilder,
-    get_section_from_class_obj,
 )
 
 
@@ -29,21 +28,6 @@ class TestClassWithAutodoc:
 
 class TestClassWithoutAutdoc:
     pass
-
-
-@pytest.mark.parametrize(
-    "test_class,expected_output",
-    [
-        (TestClassWithAutodoc, ["Test"]),
-        (TestClassWithoutAutdoc, None),
-    ],
-)
-def test_get_section_from_class_obj(test_class, expected_output):
-    """
-    Test get_section_from_class_obj
-    """
-    section = get_section_from_class_obj(test_class)
-    assert section == expected_output
 
 
 class NoopLinesWriter:
