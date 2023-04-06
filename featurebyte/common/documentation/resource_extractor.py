@@ -152,6 +152,20 @@ def _format_example(example: DocstringExample) -> str:
 def _get_return_param_details(
     docstring_returns: Optional[DocstringReturns], return_type_from_signature: Any
 ) -> ParameterDetails:
+    """
+    Helper function to get return details from docstring.
+
+    Parameters
+    ----------
+    docstring_returns: Optional[DocstringReturns]
+        Return details from docstring
+    return_type_from_signature: Any
+        Return type from signature
+
+    Returns
+    -------
+    ParameterDetails
+    """
     current_return_type = format_param_type(return_type_from_signature)
     if not current_return_type and docstring_returns:
         current_return_type = docstring_returns.type_name
@@ -190,6 +204,20 @@ def _get_raises_from_docstring(docstring_raises: List[DocstringRaises]) -> List[
 def _get_param_details(
     parameters: List[Any], parameters_desc: Dict[str, str]
 ) -> List[ParameterDetails]:
+    """
+    Helper function to get parameter details from docstring.
+
+    Parameters
+    ----------
+    parameters: List[Any]
+        List of parameters
+    parameters_desc: Dict[str, str]
+        Dictionary of parameter descriptions
+
+    Returns
+    -------
+    List[ParameterDetails]
+    """
     details = []
     for param_name, param_type, param_default in parameters:
         param_type_string = format_param_type(param_type) if param_type else None
