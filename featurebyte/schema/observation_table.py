@@ -11,8 +11,7 @@ from pydantic import Field, StrictStr
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.observation_table import (
     ObservationTableModel,
-    SourceTableObservationInput,
-    ViewObservationInput,
+    ObservationInput,
 )
 from featurebyte.schema.common.base import PaginationMixin
 
@@ -26,7 +25,7 @@ class ObservationTableCreate(FeatureByteBaseModel):
     name: StrictStr
     feature_store_id: PydanticObjectId
     context_id: Optional[PydanticObjectId]
-    observation_input: Union[ViewObservationInput, SourceTableObservationInput]
+    observation_input: ObservationInput
 
 
 class ObservationTableList(PaginationMixin):
