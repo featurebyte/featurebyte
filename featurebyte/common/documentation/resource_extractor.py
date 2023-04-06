@@ -3,14 +3,15 @@ Extract resource details given a path descriptor.
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, get_type_hints
+from typing import Any, Dict, List, Optional, get_type_hints
 
 import inspect
 import re
+from enum import Enum
 
 from docstring_parser import parse
-from docstring_parser.common import DocstringExample, DocstringReturns
-from mkautodoc.extension import import_from_string, trim_docstring
+from docstring_parser.common import DocstringExample, DocstringRaises, DocstringReturns
+from mkautodoc.extension import trim_docstring
 from pydantic.fields import ModelField, Undefined
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -114,6 +115,123 @@ def get_params_from_signature(resource: Any) -> tuple[List[Any], Any]:
     return [], type(resource)
 
 
+def _format_example(example: DocstringExample) -> str:
+    """
+    Clean doctest comments from snippets
+
+    Parameters
+    ----------
+    example: DocstringExample
+        Docstring example
+
+    Returns
+    -------
+    str
+    """
+    content = []
+    snippet = None
+    if example.snippet:
+        snippet = re.sub(r" +# doctest: .*", "", example.snippet)
+
+    if example.description:
+        # docstring_parser parses lines without >>> prefix as description.
+        # The following logic extracts lines that follows a snippet but preceding an empty line
+        # as part of the snippet, which will be rendered in a single code block,
+        # consistent with the expected behavior for examples in the numpy docstring format
+        parts = example.description.split("\n\n", maxsplit=1)
+        if snippet and len(parts) > 0:
+            snippet += f"\n{parts.pop(0)}"
+        content.append("\n\n".join(parts))
+
+    if snippet:
+        content.insert(0, f"\n```pycon\n{snippet}\n```")
+
+    return "\n".join(content)
+
+
+def _get_return_param_details(
+    docstring_returns: Optional[DocstringReturns], return_type_from_signature: Any
+) -> ParameterDetails:
+    """
+    Helper function to get return details from docstring.
+
+    Parameters
+    ----------
+    docstring_returns: Optional[DocstringReturns]
+        Return details from docstring
+    return_type_from_signature: Any
+        Return type from signature
+
+    Returns
+    -------
+    ParameterDetails
+    """
+    current_return_type = format_param_type(return_type_from_signature)
+    if not current_return_type and docstring_returns:
+        current_return_type = docstring_returns.type_name
+    return ParameterDetails(
+        name=docstring_returns.return_name if docstring_returns else None,
+        type=current_return_type,
+        default=None,
+        description=docstring_returns.description if docstring_returns else None,
+    )
+
+
+def _get_raises_from_docstring(docstring_raises: List[DocstringRaises]) -> List[ExceptionDetails]:
+    """
+    Helper function to get exception details from docstring.
+
+    Parameters
+    ----------
+    docstring_raises: List[DocstringRaises]
+        List of exceptions raised by a resource
+
+    Returns
+    -------
+    List[ExceptionDetails]
+    """
+    raises = []
+    for exc_type in docstring_raises:
+        raises.append(
+            ExceptionDetails(
+                type=exc_type.type_name,
+                description=exc_type.description,
+            )
+        )
+    return raises
+
+
+def _get_param_details(
+    parameters: List[Any], parameters_desc: Dict[str, str]
+) -> List[ParameterDetails]:
+    """
+    Helper function to get parameter details from docstring.
+
+    Parameters
+    ----------
+    parameters: List[Any]
+        List of parameters
+    parameters_desc: Dict[str, str]
+        Dictionary of parameter descriptions
+
+    Returns
+    -------
+    List[ParameterDetails]
+    """
+    details = []
+    for param_name, param_type, param_default in parameters:
+        param_type_string = format_param_type(param_type) if param_type else None
+        details.append(
+            ParameterDetails(
+                name=param_name,
+                type=param_type_string,
+                default=format_literal(param_default),
+                description=parameters_desc.get(param_name),
+            )
+        )
+    return details
+
+
 def get_resource_details(resource_descriptor: str) -> ResourceDetails:
     """
     Get details about a resource to be documented
@@ -197,61 +315,15 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         else {}
     )
 
-    # get raises
-    raises = []
-    for exc_type in docstring.raises:
-        raises.append(
-            ExceptionDetails(
-                type=exc_type.type_name,
-                description=exc_type.description,
-            )
-        )
-
-    def _format_example(example: DocstringExample) -> str:
-        """
-        Clean doctest comments from snippets
-
-        Parameters
-        ----------
-        example: DocstringExample
-            Docstring example
-
-        Returns
-        -------
-        str
-        """
-        content = []
-        snippet = None
-        if example.snippet:
-            snippet = re.sub(r" +# doctest: .*", "", example.snippet)
-
-        if example.description:
-            # docstring_parser parses lines without >>> prefix as description.
-            # The following logic extracts lines that follows a snippet but preceding an empty line
-            # as part of the snippet, which will be rendered in a single code block,
-            # consistent with the expected behavior for examples in the numpy docstring format
-            parts = example.description.split("\n\n", maxsplit=1)
-            if snippet and len(parts) > 0:
-                snippet += f"\n{parts.pop(0)}"
-            content.append("\n\n".join(parts))
-
-        if snippet:
-            content.insert(0, f"\n```pycon\n{snippet}\n```")
-
-        return "\n".join(content)
-
-    def _get_return_param_details(
-        docstring_returns: Optional[DocstringReturns], return_type_from_signature: Any
-    ) -> ParameterDetails:
-        current_return_type = format_param_type(return_type_from_signature)
-        if not current_return_type and docstring_returns:
-            current_return_type = docstring_returns.type_name
-        return ParameterDetails(
-            name=docstring_returns.return_name if docstring_returns else None,
-            type=current_return_type,
-            default=None,
-            description=docstring_returns.description if docstring_returns else None,
-        )
+    if issubclass(resource_class, Enum):
+        parameters_desc = {}
+        parameters = []
+        for item in resource_class:
+            enum_name = item.value.upper()
+            # param_name, param_type, param_default
+            # TODO: make this a dataclass
+            parameters.append((enum_name, "", None))
+            parameters_desc[enum_name] = item.__doc__.strip()
 
     return ResourceDetails(
         name=resource_name,
@@ -263,17 +335,9 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         method_type=method_type,
         short_description=short_description,
         long_description=docstring.long_description,
-        parameters=[
-            ParameterDetails(
-                name=param_name,
-                type=format_param_type(param_type),
-                default=format_literal(param_default),
-                description=parameters_desc.get(param_name),
-            )
-            for param_name, param_type, param_default in parameters
-        ],
+        parameters=_get_param_details(parameters, parameters_desc),
         returns=_get_return_param_details(docstring.returns, return_type),
-        raises=raises,
+        raises=_get_raises_from_docstring(docstring.raises),
         examples=[_format_example(example) for example in docstring.examples],
         see_also=docstring.see_also.description if docstring.see_also else None,
     )
