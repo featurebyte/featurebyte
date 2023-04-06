@@ -19,6 +19,7 @@ from featurebyte.common.documentation.constants import (
     FEATURE_LIST,
     FEATURE_STORE,
     GET,
+    IMPUTATION,
     INFO,
     JOIN,
     LAGS,
@@ -35,7 +36,7 @@ from featurebyte.common.documentation.constants import (
     UTILITY_CLASSES,
     VERSION,
     VIEW,
-    VIEW_COLUMN,
+    VIEW_COLUMN, ENUMS,
 )
 
 
@@ -81,6 +82,8 @@ class BetaWave3Nav(Nav):
         LINEAGE,
         UPDATE,
         VERSION,
+        ENUMS,
+        IMPUTATION,
     ]
 
     _custom_order_mapping = {
