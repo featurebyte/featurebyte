@@ -4,15 +4,15 @@
         "Instead, update the test conftest.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "6414004bc6834e5117ec1589",
-    "default_feature_id": "6414004bc6834e5117ec156f",
+    "_id": "642db61f28e1dffe39df3560",
+    "default_feature_id": "642db61e28e1dffe39df3542",
     "default_version_mode": "AUTO",
     "dtype": "FLOAT",
     "entity_ids": [
         "63f94ed6ea1f050131379214"
     ],
     "feature_ids": [
-        "6414004bc6834e5117ec156f"
+        "642db61e28e1dffe39df3542"
     ],
     "name": "sum_30m",
     "readiness": "DRAFT",

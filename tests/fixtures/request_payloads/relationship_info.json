@@ -7,8 +7,8 @@
     "_id": "63f6a145e549df8ccf123456",
     "is_enabled": true,
     "name": "child_parent_relationship",
-    "primary_table_id": "6337f9651050ee7d5980660d",
     "primary_entity_id": "63f94ed6ea1f050131379214",
+    "primary_table_id": "6337f9651050ee7d5980660d",
     "related_entity_id": "63f94ed6ea1f050131379204",
     "relationship_type": "child_parent",
     "updated_by": "63f6a145e549df8ccf123444"

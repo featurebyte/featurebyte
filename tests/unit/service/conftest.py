@@ -234,6 +234,12 @@ def feature_list_status_service_fixture(app_container):
     return app_container.feature_list_status_service
 
 
+@pytest.fixture(name="observation_table_service")
+def observation_table_service(app_container):
+    """ObservationTableService fixture"""
+    return app_container.observation_table_service
+
+
 @pytest_asyncio.fixture(name="feature_store")
 async def feature_store_fixture(test_dir, feature_store_service):
     """FeatureStore model"""
