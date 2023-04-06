@@ -83,7 +83,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["Series"],
         proxy_class="featurebyte.Series",
     )
 

@@ -9,25 +9,10 @@ from dataclasses import dataclass
 
 import pytest
 
-from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.gen_ref_pages_docs_builder import (
     MISSING_DEBUG_MARKDOWN,
     DocsBuilder,
 )
-
-
-class TestClassWithAutodoc:
-    """
-    Test class with FBAutodoc provided
-    """
-
-    __fbautodoc__ = FBAutoDoc(
-        section=["Test"],
-    )
-
-
-class TestClassWithoutAutdoc:
-    pass
 
 
 class NoopLinesWriter:

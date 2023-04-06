@@ -68,7 +68,7 @@ class ViewColumn(Series, SampleMixin):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["ViewColumn"], proxy_class="featurebyte.ViewColumn")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ViewColumn")
 
     _parent: Optional[View] = PrivateAttr(default=None)
 
@@ -120,7 +120,7 @@ class GroupByMixin:
     Mixin that provides groupby functionality to a View object
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["View"])
+    __fbautodoc__ = FBAutoDoc()
 
     @typechecked
     def groupby(self, by_keys: Union[str, List[str]], category: Optional[str] = None) -> GroupBy:
@@ -216,7 +216,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     graphical representation of intended operations.
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["View"], proxy_class="featurebyte.View")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.View")
 
     # class variables
     _view_graph_node_type: ClassVar[GraphNodeType]
