@@ -86,7 +86,7 @@ class Feature(
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Feature"], proxy_class="featurebyte.Feature")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Feature")
 
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
