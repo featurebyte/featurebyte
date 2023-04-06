@@ -12,6 +12,7 @@ from featurebyte.common.documentation.constants import (
     CREATE,
     DATA_SOURCE,
     ENTITY,
+    ENUMS,
     EXPLORE,
     FEATURE,
     FEATURE_GROUP,
@@ -36,7 +37,7 @@ from featurebyte.common.documentation.constants import (
     UTILITY_CLASSES,
     VERSION,
     VIEW,
-    VIEW_COLUMN, ENUMS,
+    VIEW_COLUMN,
 )
 
 
