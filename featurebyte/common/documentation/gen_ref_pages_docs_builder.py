@@ -17,32 +17,18 @@ from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 import featurebyte
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.custom_nav import BetaWave3Nav
+from featurebyte.common.documentation.doc_types import (
+    DocGroupValue,
+    DocItem,
+    DocItems,
+    MarkdownFileMetadata,
+)
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
-from featurebyte.common.documentation.extract_csv import DOC_ITEMS, DocItem, dump_to_csv
 from featurebyte.common.documentation.resource_extractor import get_resource_details
 from featurebyte.logger import logger
 
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
 MISSING_DEBUG_MARKDOWN = "missing.md"
-
-
-@dataclass
-class DocGroupValue:
-    """
-    DocGroupValue is used to contain some metadata about a specific DocGroupKey.
-
-    Example
-    --------
-    DocGroupValue(
-        doc_group=['View', 'ItemView', 'validate_simple_aggregate_parameters'],
-        obj_type='method',
-        proxy_path='featurebyte.ItemView',
-    )
-    """
-
-    doc_group: List[str]
-    obj_type: str
-    proxy_path: str
 
 
 @dataclass
@@ -565,74 +551,178 @@ def populate_nav(nav: Nav, proxied_path_to_markdown_path: Dict[str, str]) -> Nav
     return nav
 
 
+def get_section_from_class_obj(class_obj: Any) -> Optional[List[str]]:
+    """
+    This returns the top level doc group. Specifically, the menu item (eg. View, Data etc.)
+
+    Parameters
+    ----------
+    class_obj: Any
+        The class object to get the doc group for.
+
+    Returns
+    -------
+    Optional[List[str]]
+        The doc group for the class.
+    """
+    # check for customized categorization specified in the class
+    autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
+    if autodoc_config.section is not None:
+        return autodoc_config.section
+    return None
+
+
+def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
+    """
+    This returns a dictionary of doc groups.
+
+    Returns
+    -------
+    Dict[DocGroupKey, DocGroupValue]
+        A dictionary of doc groups.
+    """
+    doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
+    for module_str in get_featurebyte_python_files():
+        try:
+            for class_obj in get_classes_for_module(module_str):
+                autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
+                menu_section = get_section_from_class_obj(class_obj)
+                # Skip if the class is not tagged with the `__fbautodoc__` attribute.
+                if not menu_section:
+                    continue
+
+                doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(
+                    doc_groups, autodoc_config, menu_section, class_obj
+                )
+                doc_groups = add_class_attributes_to_doc_groups(
+                    doc_groups,
+                    class_obj,
+                    autodoc_config,
+                    proxy_path,
+                    menu_section,
+                    class_doc_group,
+                )
+        except ModuleNotFoundError:
+            continue
+    return doc_groups
+
+
+def generate_documentation_for_docs(
+    doc_groups: Dict[DocGroupKey, DocGroupValue]
+) -> Tuple[Dict[str, str], DocItems]:
+    """
+    This function generates the documentation for the docs.
+
+    Parameters
+    ----------
+    doc_groups: Dict[DocGroupKey, DocGroupValue]
+        A dictionary of doc groups.
+
+    Returns
+    -------
+    Tuple[Dict[str, str], DocItems]
+        A tuple of a dictionary of markdown files and a DocItems object.
+    """
+
+    # A list of all the markdown files generated. Used for debugging.
+    # This reverse lookup map has a key of the user-accessible API path, and the value of the markdown file for
+    # the documentation.
+    reverse_lookup_map = {}
+    paths_to_document = get_paths_to_document()
+    doc_items = DocItems()
+    # create documentation page for each object
+    for doc_group_key, doc_group_value in doc_groups.items():
+        path_components = doc_group_key.module_path.split(".")
+        if should_skip_path(path_components):
+            continue
+
+        # determine file path for documentation page
+        doc_path = doc_group_key.get_markdown_doc_path()
+
+        # generate markdown for documentation page
+        obj_path = doc_group_key.get_obj_path(doc_group_value)
+        lookup_path = infer_api_path_from_obj_path(obj_path).lower()
+        accessor_metadata = _get_accessor_metadata(doc_path)
+        if (
+            lookup_path not in paths_to_document
+            and doc_path.lower() not in paths_to_document
+            and not accessor_metadata
+        ):
+            # Skip if this is not a path we want to document.
+            continue
+
+        api_to_use = paths_to_document.get(lookup_path, None)
+        if not api_to_use:
+            api_to_use = paths_to_document.get(doc_path.lower(), None)
+
+        # add obj_path to reverse lookup map
+        reverse_lookup_map[lookup_path] = doc_path
+
+        # get docstring
+        unlowered_api_path = infer_api_path_from_obj_path(obj_path)
+        api_path = unlowered_api_path.lower()
+
+        if accessor_metadata:
+            # If this is an accessor, then we need to generate documentation for all the classes that use it.
+            for class_to_use in accessor_metadata.classes_using_accessor:
+                api_path = get_api_path_to_use(
+                    doc_path, class_to_use, accessor_metadata.property_name
+                )
+                doc_path = api_path + ".md"
+                reverse_lookup_map[api_path.lower()] = doc_path
+                resource_details = get_resource_details(obj_path)
+                doc_items.add(
+                    api_path.lower(),
+                    DocItem(
+                        class_method_or_attribute=api_path,
+                        link=f"http://127.0.0.1:8000/{api_path}",
+                        resource_details=resource_details,
+                        markdown_file_metadata=MarkdownFileMetadata(
+                            obj_path,
+                            doc_group_value,
+                            api_path,
+                            doc_path,
+                            path_components,
+                        ),
+                    ),
+                )
+        else:
+            truncated_lookup_path = lookup_path
+            if truncated_lookup_path:
+                truncated_lookup_path = lookup_path.replace("featurebyte.", "")
+            doc_path_without_ext = doc_path.replace(".md", "")
+            resource_details = get_resource_details(obj_path)
+            doc_items.add(
+                truncated_lookup_path,
+                DocItem(
+                    class_method_or_attribute=api_path,
+                    link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
+                    resource_details=resource_details,
+                    markdown_file_metadata=MarkdownFileMetadata(
+                        obj_path,
+                        doc_group_value,
+                        api_to_use,
+                        doc_path,
+                        path_components,
+                    ),
+                ),
+            )
+
+    if DEBUG_MODE:
+        with open("debug/proxied_path_to_markdown_path.json", "w") as f:
+            f.write(json.dumps(reverse_lookup_map, indent=4))
+
+    return reverse_lookup_map, doc_items
+
+
 class DocsBuilder:
     """
     DocsBuilder is a class to build the API docs.
     """
 
-    def __init__(self, gen_files_open: Any, set_edit_path: Any, should_generate_full_docs=False):
+    def __init__(self, gen_files_open: Any, set_edit_path: Any):
         self.gen_files_open = gen_files_open
         self.set_edit_path = set_edit_path
-        self.should_generate_full_docs = os.environ.get(
-            "FB_GENERATE_FULL_DOCS", should_generate_full_docs
-        )
-        self.should_dump_to_csv = os.environ.get("FB_DUMP_TO_CSV", False)
-
-    def get_doc_groups(self) -> Dict[DocGroupKey, DocGroupValue]:
-        """
-        This returns a dictionary of doc groups.
-
-        Returns
-        -------
-        Dict[DocGroupKey, DocGroupValue]
-            A dictionary of doc groups.
-        """
-        doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
-        for module_str in get_featurebyte_python_files():
-            try:
-                for class_obj in get_classes_for_module(module_str):
-                    autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-                    menu_section = self.get_section_from_class_obj(class_obj)
-                    # Skip if the class is not tagged with the `__fbautodoc__` attribute.
-                    if not menu_section:
-                        continue
-
-                    doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(
-                        doc_groups, autodoc_config, menu_section, class_obj
-                    )
-                    doc_groups = add_class_attributes_to_doc_groups(
-                        doc_groups,
-                        class_obj,
-                        autodoc_config,
-                        proxy_path,
-                        menu_section,
-                        class_doc_group,
-                    )
-            except ModuleNotFoundError:
-                continue
-        return doc_groups
-
-    def get_section_from_class_obj(self, class_obj: Any) -> Optional[List[str]]:
-        """
-        This returns the top level doc group. Specifically, the menu item (eg. View, Data etc.)
-
-        Parameters
-        ----------
-        class_obj: Any
-            The class object to get the doc group for.
-
-        Returns
-        -------
-        Optional[List[str]]
-            The doc group for the class.
-        """
-        # check for customized categorization specified in the class
-        autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-        if autodoc_config.section is not None:
-            return autodoc_config.section
-        elif self.should_generate_full_docs:
-            return class_obj.__module__.split(".") + [class_obj.__name__]
-        return None
 
     def initialize_missing_debug_doc(self) -> None:
         """
@@ -684,11 +774,7 @@ class DocsBuilder:
 
     def _build_and_write_to_file(
         self,
-        obj_path: str,
-        doc_group_value: DocGroupValue,
-        api_to_use: str,
-        doc_path: str,
-        path_components: List[str],
+        metadata: MarkdownFileMetadata,
     ) -> None:
         """
         This function builds the markdown string and writes it to a file.
@@ -697,132 +783,20 @@ class DocsBuilder:
 
         Parameters
         ----------
-        obj_path: str
-            The path to the object.
-        doc_group_value: DocGroupValue
-            The doc group value.
-        api_to_use: str
-            The API to use.
-        doc_path: str
-            The path to the documentation.
-        path_components: List[str]
-            The path components.
+        metadata: MarkdownFileMetadata
+            The metadata for the markdown file.
         """
-        format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type, api_to_use)
+        format_str = build_markdown_format_str(
+            metadata.obj_path, metadata.doc_group_value.obj_type, metadata.api_to_use
+        )
 
         # write documentation page to file
-        full_doc_path = Path("reference", doc_path)
-        self.write_to_file(full_doc_path, doc_path, format_str)
+        full_doc_path = Path("reference", metadata.doc_path)
+        self.write_to_file(full_doc_path, metadata.doc_path, format_str)
 
         # Set edit path for the documentation. This will be the link that links back to where the code is defined.
-        source_path = "/".join(path_components) + ".py"
+        source_path = "/".join(metadata.path_components) + ".py"
         self.set_edit_path(full_doc_path, source_path)
-
-    def generate_documentation_for_docs(
-        self, doc_groups: Dict[DocGroupKey, DocGroupValue]
-    ) -> Dict[str, str]:
-        """
-        This function generates the documentation for the docs.
-
-        Parameters
-        ----------
-        doc_groups: Dict[DocGroupKey, DocGroupValue]
-            A dictionary of doc groups.
-
-        Returns
-        -------
-        Dict[str, str]
-            A dictionary of the reverse lookup map.
-        """
-
-        # A list of all the markdown files generated. Used for debugging.
-        # This reverse lookup map has a key of the user-accessible API path, and the value of the markdown file for
-        # the documentation.
-        reverse_lookup_map = {}
-        paths_to_document = get_paths_to_document()
-        # create documentation page for each object
-        for doc_group_key, doc_group_value in doc_groups.items():
-            path_components = doc_group_key.module_path.split(".")
-            if should_skip_path(path_components):
-                continue
-
-            # determine file path for documentation page
-            doc_path = doc_group_key.get_markdown_doc_path()
-
-            # generate markdown for documentation page
-            obj_path = doc_group_key.get_obj_path(doc_group_value)
-            lookup_path = infer_api_path_from_obj_path(obj_path).lower()
-            accessor_metadata = _get_accessor_metadata(doc_path)
-            if (
-                lookup_path not in paths_to_document
-                and doc_path.lower() not in paths_to_document
-                and not accessor_metadata
-            ):
-                # Skip if this is not a path we want to document.
-                continue
-
-            api_to_use = paths_to_document.get(lookup_path, None)
-            if not api_to_use:
-                api_to_use = paths_to_document.get(doc_path.lower(), None)
-
-            # add obj_path to reverse lookup map
-            reverse_lookup_map[lookup_path] = doc_path
-
-            # get docstring
-            unlowered_api_path = infer_api_path_from_obj_path(obj_path)
-            api_path = unlowered_api_path.lower()
-
-            if accessor_metadata:
-                # If this is an accessor, then we need to generate documentation for all the classes that use it.
-                for class_to_use in accessor_metadata.classes_using_accessor:
-                    api_path = get_api_path_to_use(
-                        doc_path, class_to_use, accessor_metadata.property_name
-                    )
-                    doc_path = api_path + ".md"
-                    reverse_lookup_map[api_path.lower()] = doc_path
-                    resource_details = get_resource_details(obj_path)
-                    DOC_ITEMS.add(
-                        api_path.lower(),
-                        DocItem(
-                            class_method_or_attribute=api_path,
-                            link=f"http://127.0.0.1:8000/{api_path}",
-                            resource_details=resource_details,
-                        ),
-                    )
-                    self._build_and_write_to_file(
-                        obj_path,
-                        doc_group_value,
-                        api_path,
-                        doc_path,
-                        path_components,
-                    )
-            else:
-                truncated_lookup_path = lookup_path
-                if truncated_lookup_path:
-                    truncated_lookup_path = lookup_path.replace("featurebyte.", "")
-                doc_path_without_ext = doc_path.replace(".md", "")
-                resource_details = get_resource_details(obj_path)
-                DOC_ITEMS.add(
-                    truncated_lookup_path,
-                    DocItem(
-                        class_method_or_attribute=api_path,
-                        link=f"http://127.0.0.1:8000/reference/{doc_path_without_ext}/",
-                        resource_details=resource_details,
-                    ),
-                )
-                self._build_and_write_to_file(
-                    obj_path,
-                    doc_group_value,
-                    api_to_use,
-                    doc_path,
-                    path_components,
-                )
-
-        if DEBUG_MODE:
-            with open("debug/proxied_path_to_markdown_path.json", "w") as f:
-                f.write(json.dumps(reverse_lookup_map, indent=4))
-
-        return reverse_lookup_map
 
     def write_summary_page(self, nav: Nav) -> None:
         """
@@ -837,6 +811,19 @@ class DocsBuilder:
         """
         logger.info("Writing API Reference SUMMARY")
         self.write_nav_to_file("reference/SUMMARY.md", "summary", nav)
+
+    def _write_doc_items_to_markdown_files(self, doc_items: DocItems) -> None:
+        """
+        Write the markdown files for each of the doc items.
+
+        Parameters
+        ----------
+        doc_items: DocItems
+            The doc items.
+        """
+        for key in doc_items.keys():
+            value = doc_items.get(key)
+            self._build_and_write_to_file(value.markdown_file_metadata)
 
     def build_docs(self) -> Nav:
         """
@@ -863,14 +850,14 @@ class DocsBuilder:
 
         # Build docs
         nav_to_use = BetaWave3Nav()
-        doc_groups_to_use = self.get_doc_groups()
-        proxied_path_to_markdown_path = self.generate_documentation_for_docs(doc_groups_to_use)
+        doc_groups_to_use = get_doc_groups()
+        proxied_path_to_markdown_path, doc_items = generate_documentation_for_docs(
+            doc_groups_to_use
+        )
+        self._write_doc_items_to_markdown_files(doc_items)
         updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
 
-        if self.should_dump_to_csv:
-            # write all doc items
-            dump_to_csv()
         return updated_nav
 
 

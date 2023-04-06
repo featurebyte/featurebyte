@@ -1,62 +1,22 @@
 """
 Extract documentation into a CSV file.
 """
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import csv
 from dataclasses import dataclass
 
+from featurebyte.common.documentation.doc_types import DocItems
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
+from featurebyte.common.documentation.gen_ref_pages_docs_builder import (
+    generate_documentation_for_docs,
+    get_doc_groups,
+)
 from featurebyte.common.documentation.resource_extractor import (
     ResourceDetails,
     get_resource_details,
 )
 from featurebyte.logger import logger
-
-
-@dataclass
-class DocItem:
-    """
-    DocItem is a dataclass that is used to store metadata of a documentation item.
-    """
-
-    # eg. FeatureStore, FeatureStore.list
-    class_method_or_attribute: str
-    # link to docs, eg: http://127.0.0.1:8000/reference/featurebyte.api.feature_store.FeatureStore/
-    link: str
-    # the resource details for this doc item
-    resource_details: ResourceDetails
-
-
-class DocItems:
-    """
-    DocItems is a class that is used to store all of the documentation items
-    that are generated from the code.
-
-    It's a light wrapper around a dictionary, but with some additional helpers on the write path to make sure
-    that keys are all prefixed with `featurebyte.`.
-    """
-
-    def __init__(self) -> None:
-        self.doc_items: Dict[str, DocItem] = {}
-
-    def add(self, key: str, value: DocItem) -> None:
-        if not key.startswith("featurebyte."):
-            key = f"featurebyte.{key}"
-        self.doc_items[key] = value
-
-    def get(self, key: str) -> Optional[DocItem]:
-        if key in self.doc_items:
-            return self.doc_items.get(key)
-        if key.lower() in self.doc_items:
-            return self.doc_items.get(key.lower())
-        return None
-
-    def keys(self) -> List[str]:
-        return list(self.doc_items.keys())
-
-
-DOC_ITEMS = DocItems()
 
 
 @dataclass
@@ -176,9 +136,14 @@ def _write_items_to_csv(file_name: str, all_doc_items_to_generate: List[DocItemT
         logger.info(f"Success - done writing rows to {file_name}")
 
 
-def _generate_items_to_render() -> List[DocItemToRender]:
+def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
     """
     Generate the items to render.
+
+    Parameters
+    ----------
+    doc_items: DocItems
+        The doc items to generate the items to render for.
 
     Returns
     -------
@@ -202,7 +167,7 @@ def _generate_items_to_render() -> List[DocItemToRender]:
                 )
             )
             continue
-        doc_item = DOC_ITEMS.get(layout_item.get_api_path_override())
+        doc_item = doc_items.get(layout_item.get_api_path_override())
         if doc_item is not None:
             all_doc_items_to_generate.append(
                 DocItemToRender(
@@ -231,13 +196,24 @@ def _generate_items_to_render() -> List[DocItemToRender]:
     return all_doc_items_to_generate
 
 
-def dump_to_csv() -> None:
+def dump_to_csv(doc_items: DocItems) -> None:
     """
     Dump the documentation to a CSV file.
+
+    Parameters
+    ----------
+    doc_items: DocItems
+        The documentation items to dump to a CSV file
     """
     file_name = "debug/documentation.csv"
     logger.info("############################################")
     logger.info(f"# Generating CSV - {file_name} #")
     logger.info("############################################")
-    all_doc_items_to_generate = _generate_items_to_render()
+    all_doc_items_to_generate = _generate_items_to_render(doc_items)
     _write_items_to_csv(file_name, all_doc_items_to_generate)
+
+
+if __name__ == "__main__":
+    doc_groups_to_use = get_doc_groups()
+    _, doc_items = generate_documentation_for_docs(doc_groups_to_use)
+    dump_to_csv(doc_items)

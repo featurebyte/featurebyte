@@ -13,6 +13,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.gen_ref_pages_docs_builder import (
     MISSING_DEBUG_MARKDOWN,
     DocsBuilder,
+    get_section_from_class_obj,
 )
 
 
@@ -31,24 +32,17 @@ class TestClassWithoutAutdoc:
 
 
 @pytest.mark.parametrize(
-    "test_class,expected_output,gen_docs_override",
+    "test_class,expected_output",
     [
-        (TestClassWithAutodoc, ["Test"], False),
-        (TestClassWithoutAutdoc, None, False),
-        (TestClassWithAutodoc, ["Test"], True),
-        (
-            TestClassWithoutAutdoc,
-            ["test_gen_ref_pages_docs_builder", "TestClassWithoutAutdoc"],
-            True,
-        ),
+        (TestClassWithAutodoc, ["Test"]),
+        (TestClassWithoutAutdoc, None),
     ],
 )
-def test_get_section_from_class_obj(test_class, expected_output, gen_docs_override):
+def test_get_section_from_class_obj(test_class, expected_output):
     """
     Test get_section_from_class_obj
     """
-    docs_builder = DocsBuilder(None, None, gen_docs_override)
-    section = docs_builder.get_section_from_class_obj(test_class)
+    section = get_section_from_class_obj(test_class)
     assert section == expected_output
 
 
