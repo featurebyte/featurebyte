@@ -264,7 +264,8 @@ def get_docs_version() -> str:
     str
         Docs version
     """
-    return version.rsplit(".", 1)[0]
+    split_current_version = version.split(".")
+    return ".".join(split_current_version[:2])
 
 
 class Docstring(BaseDocstring):
