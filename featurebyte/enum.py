@@ -175,19 +175,19 @@ class DBVarType(StrEnum):
 
 class AggFunc(StrEnum):
     """
-    Supported aggregation functions in groupby
+    Supported aggregation functions in groupby.
     """
 
     __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.AggFunc")
 
-    SUM = "sum", "Compute sum of values"
-    AVG = "avg", "Compute average value"
-    MIN = "min", "Compute minimum value"
-    MAX = "max", "Compute maximum value"
-    COUNT = "count", "Compute row count"
-    NA_COUNT = "na_count", "Compute count of missing values"
-    STD = "std", "Compute standard deviation of values"
-    LATEST = "latest", "Compute the latest value"
+    SUM = "sum", "Compute sum of values."
+    AVG = "avg", "Compute average value."
+    MIN = "min", "Compute minimum value."
+    MAX = "max", "Compute maximum value."
+    COUNT = "count", "Compute row count."
+    NA_COUNT = "na_count", "Compute count of missing values."
+    STD = "std", "Compute standard deviation of values."
+    LATEST = "latest", "Compute the latest value."
 
     @classmethod
     def all(cls) -> list[str]:
@@ -202,18 +202,18 @@ class AggFunc(StrEnum):
 
 class SourceType(StrEnum):
     """
-    Database or data warehouse source type
+    Database or data warehouse source type.
     """
 
     __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.SourceType")
 
-    SNOWFLAKE = "snowflake", "Snowflake connection details"
-    SQLITE = "sqlite", "SQLite connection details"
-    DATABRICKS = "databricks", "DataBricks connection details"
-    SPARK = "spark", "Spark connection details"
+    SNOWFLAKE = "snowflake", "Snowflake connection details."
+    SQLITE = "sqlite", "SQLite connection details."
+    DATABRICKS = "databricks", "DataBricks connection details."
+    SPARK = "spark", "Spark connection details."
 
     # TEST source type should only be used for mocking in unit tests.
-    TEST = "test", "For testing only"
+    TEST = "test", "For testing only."
 
     @classmethod
     def credential_required_types(cls) -> list[str]:
@@ -229,13 +229,13 @@ class SourceType(StrEnum):
 
 class StorageType(StrEnum):
     """
-    Distributed storage type
+    Distributed storage type.
     """
 
     __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.StorageType")
 
-    FILE = "file"
-    S3 = "s3", "s3 Storage"
+    FILE = "file", "Local file storage."
+    S3 = "s3", "S3 Storage."
 
 
 class SpecialColumnName(StrEnum):

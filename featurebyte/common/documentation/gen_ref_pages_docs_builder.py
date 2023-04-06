@@ -545,7 +545,7 @@ def populate_nav(nav: Nav, proxied_path_to_markdown_path: Dict[str, str]) -> Nav
         elif DEBUG_MODE:
             print("key not found", item_path)
         if markdown_path == MISSING_DEBUG_MARKDOWN:
-            print("! WARNING: unable to find markdown path for ", item_path)
+            logger.warning("! unable to find markdown path for ", item_path)
         nav[header] = markdown_path
         rendered.add(markdown_path)
     return nav
