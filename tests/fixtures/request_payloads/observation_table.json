@@ -16,6 +16,7 @@
                 "schema_name": "sf_schema",
                 "table_name": "sf_table"
             }
-        }
+        },
+        "type": "source_table"
     }
 }

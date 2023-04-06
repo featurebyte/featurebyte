@@ -3,7 +3,7 @@ ObservationTableModel models
 """
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 from pydantic import Field, StrictStr
 
@@ -44,6 +44,7 @@ class ViewObservationInput(FeatureByteBaseModel):
 
     graph: QueryGraphModel
     node_name: StrictStr
+    type: Literal[ObservationInputType.VIEW] = Field(ObservationInputType.VIEW, const=True)
 
 
 class SourceTableObservationInput(FeatureByteBaseModel):
@@ -52,9 +53,14 @@ class SourceTableObservationInput(FeatureByteBaseModel):
     """
 
     source: TabularSource
+    type: Literal[ObservationInputType.SOURCE_TABLE] = Field(
+        ObservationInputType.SOURCE_TABLE, const=True
+    )
 
 
-ObservationInput = Union[ViewObservationInput, SourceTableObservationInput]
+ObservationInput = Annotated[
+    Union[ViewObservationInput, SourceTableObservationInput], Field(discriminator="type")
+]
 
 
 class ObservationTableModel(MaterializedTable):
