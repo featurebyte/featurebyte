@@ -24,6 +24,9 @@ class MaterializedTable(FeatureByteCatalogBaseDocumentModel):
     """
     MaterializedTable represents a table that has been materialized and stored in feature store
     database.
+
+    location: TabularSource
+        The table that stores the materialized data
     """
 
     location: TabularSource
@@ -41,6 +44,13 @@ class ObservationInputType(StrEnum):
 class ViewObservationInput(FeatureByteBaseModel):
     """
     ViewObservationInput is the input for creating an ObservationTableModel from a view
+
+    graph: QueryGraphModel
+        The query graph that defines the view
+    node_name: str
+        The name of the node in the query graph that defines the view
+    type: Literal[ObservationInputType.VIEW]
+        The type of the input. Must be VIEW for this class
     """
 
     graph: QueryGraphModel
@@ -51,6 +61,11 @@ class ViewObservationInput(FeatureByteBaseModel):
 class SourceTableObservationInput(FeatureByteBaseModel):
     """
     SourceTableObservationInput is the input for creating an ObservationTableModel from a source table
+
+    source: TabularSource
+        The source table
+    type: Literal[ObservationInputType.SOURCE_TABLE]
+        The type of the input. Must be SOURCE_TABLE for this class
     """
 
     source: TabularSource
@@ -67,6 +82,11 @@ ObservationInput = Annotated[
 class ObservationTableModel(MaterializedTable):
     """
     ObservationTableModel is a table that can be used to request historical features
+
+    observation_input: ObservationInput
+        The input that defines how the observation table is created
+    context_id: Optional[PydanticObjectId]
+        The id of the context that the observation table is associated with
     """
 
     observation_input: ObservationInput
