@@ -7,11 +7,12 @@ import pytest
 
 from featurebyte.enum import InternalName
 from featurebyte.sql.tile_generate import TileGenerate
+from tests.integration.tile.hepler import format_timestamp_expr
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile(session):
+async def test_generate_tile(session, base_sql_model):
     """
     Test normal generation of tiles
     """
@@ -25,12 +26,13 @@ async def test_generate_tile(session):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
+    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
+    fmt_timestamp_expr = format_timestamp_expr(session, InternalName.TILE_START_DATE)
     tile_sql = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
-        f"WHERE date_format({InternalName.TILE_START_DATE}, 'yyyy-MM-dd HH:mm:ss') >= '2022-06-05 23:48:00' "
-        f"AND date_format({InternalName.TILE_START_DATE}, 'yyyy-MM-dd HH:mm:ss') < '2022-06-05 23:58:00'"
+        f"WHERE {fmt_timestamp_expr} >= '2022-06-05 23:48:00' "
+        f"AND {fmt_timestamp_expr} < '2022-06-05 23:58:00'"
     )
 
     tile_generate_ins = TileGenerate(
@@ -56,9 +58,9 @@ async def test_generate_tile(session):
     assert result["TILE_COUNT"].iloc[0] == 2
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile_no_data(session):
+async def test_generate_tile_no_data(session, base_sql_model):
     """
     Test generation of tile with no tile table
     """
@@ -70,12 +72,13 @@ async def test_generate_tile_no_data(session):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
+    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
+    fmt_timestamp_expr = format_timestamp_expr(session, InternalName.TILE_START_DATE)
     tile_sql = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} "
         f"FROM {table_name} "
-        f"WHERE date_format({InternalName.TILE_START_DATE}, 'yyyy-MM-dd HH:mm:ss') > '2022-06-05 23:58:00'"
+        f"WHERE {fmt_timestamp_expr} > '2022-06-05 23:58:00'"
     )
 
     tile_generate_ins = TileGenerate(
@@ -101,9 +104,9 @@ async def test_generate_tile_no_data(session):
     assert result["TILE_COUNT"].iloc[0] == 0
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile_new_value_column(session):
+async def test_generate_tile_new_value_column(session, base_sql_model):
     """
     Test normal generation of tiles
     """
@@ -115,12 +118,13 @@ async def test_generate_tile_new_value_column(session):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
+    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
+    fmt_timestamp_expr = format_timestamp_expr(session, InternalName.TILE_START_DATE)
     tile_sql = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
-        f"WHERE date_format({InternalName.TILE_START_DATE}, 'yyyy-MM-dd HH:mm:ss') >= '2022-06-05 23:48:00' "
-        f"AND date_format({InternalName.TILE_START_DATE}, 'yyyy-MM-dd HH:mm:ss') < '2022-06-05 23:58:00'"
+        f"WHERE {fmt_timestamp_expr} >= '2022-06-05 23:48:00' "
+        f"AND {fmt_timestamp_expr} < '2022-06-05 23:58:00'"
     )
 
     tile_generate_ins = TileGenerate(
@@ -149,8 +153,8 @@ async def test_generate_tile_new_value_column(session):
     value_col_names_2_str = ",".join(value_col_names_2)
     tile_sql_2 = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_2_str} FROM {table_name} "
-        f"WHERE date_format({InternalName.TILE_START_DATE}, 'yyyy-MM-dd HH:mm:ss') >= '2022-06-05 23:48:00' "
-        f"AND date_format({InternalName.TILE_START_DATE}, 'yyyy-MM-dd HH:mm:ss') < '2022-06-05 23:58:00'"
+        f"WHERE {fmt_timestamp_expr} >= '2022-06-05 23:48:00' "
+        f"AND {fmt_timestamp_expr} < '2022-06-05 23:58:00'"
     )
 
     tile_generate_ins = TileGenerate(

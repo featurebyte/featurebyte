@@ -1,15 +1,15 @@
 """
-Tile Monitor Job for SP_TILE_MONITOR
+Tile Monitor Job
 """
 from featurebyte.logger import logger
-from featurebyte.sql.common import retry_sql, retry_sql_with_cache
+from featurebyte.sql.common import construct_create_table_query, retry_sql, retry_sql_with_cache
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
 
 class TileMonitor(TileCommon):
     """
-    Tile Monitor script corresponding to SP_TILE_MONITOR stored procedure
+    Tile Monitor script
     """
 
     monitor_sql: str
@@ -67,7 +67,10 @@ class TileMonitor(TileCommon):
             """
 
             entity_filter_cols_str = " AND ".join(
-                [f"a.`{c}` = b.`{c}`" for c in self.entity_column_names]
+                [
+                    f"a.{self.quote_column(c)} = b.{self.quote_column(c)}"
+                    for c in self.entity_column_names
+                ]
             )
             value_select_cols_str = " , ".join(
                 [f"b.{c} as OLD_{c}" for c in self.value_column_names]
@@ -107,9 +110,10 @@ class TileMonitor(TileCommon):
             logger.debug(f"tile_monitor_exist_flag: {tile_monitor_exist_flag}")
 
             if not tile_monitor_exist_flag:
-                await self._session.execute_query(
-                    f"create table {monitor_table_name} using delta as {compare_sql}"
+                create_sql = construct_create_table_query(
+                    monitor_table_name, compare_sql, session=self._session
                 )
+                await self._session.execute_query(create_sql)
             else:
                 tile_registry_ins = TileRegistry(
                     session=self._session,

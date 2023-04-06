@@ -1,5 +1,5 @@
 """
-Tile Generate online store Job Script for SP_TILE_SCHEDULE_ONLINE_STORE
+Tile Generate online store Job Script
 """
 from typing import Any
 
@@ -10,7 +10,7 @@ from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
 from featurebyte.sql.common import (
     CACHE_TABLE_PLACEHOLDER,
-    construct_create_delta_table_query,
+    construct_create_table_query,
     retry_sql,
     retry_sql_with_cache,
 )
@@ -18,7 +18,7 @@ from featurebyte.sql.common import (
 
 class TileScheduleOnlineStore(BaselSqlModel):
     """
-    Tile Schedule Online Store script corresponding to SP_TILE_SCHEDULE_ONLINE_STORE stored procedure
+    Tile Schedule Online Store script
     """
 
     aggregation_id: str
@@ -91,7 +91,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
 
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
-                create_sql = construct_create_delta_table_query(
+                create_sql = construct_create_table_query(
                     fs_table, f"select {entities_fname_str} from ({f_sql})", session=self._session
                 )
                 await self._session.execute_query(create_sql)

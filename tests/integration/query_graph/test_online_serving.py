@@ -33,8 +33,7 @@ def features_fixture(event_table, source_type):
         windows=["24h"],
         feature_names=["EVENT_COUNT_BY_ACTION_24h"],
     )
-    # Use this feature group to test handling of empty entity column names list in
-    # SP_TILE_SCHEDULE_ONLINE_STORE
+    # Use this feature group to test handling of empty entity column names list
     feature_without_entity = event_view.groupby([], category="PRODUCT_ACTION").aggregate_over(
         method="count",
         windows=["24h", "7d"],

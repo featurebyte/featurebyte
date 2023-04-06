@@ -1,18 +1,19 @@
 """
-Tile Monitor tests for Spark Session
+Tile Monitor tests for Spark and Snowflake Session
 """
 from datetime import datetime
 
 import pytest
 
 from featurebyte.enum import InternalName
+from featurebyte.sql.common import construct_create_table_query
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_monitor import TileMonitor
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile__missing_tile(session):
+async def test_monitor_tile__missing_tile(session, base_sql_model):
     """
     Test monitoring with missing tiles
     """
@@ -24,7 +25,7 @@ async def test_monitor_tile__missing_tile(session):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
+    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 95"
     monitor_tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 100"
@@ -76,9 +77,9 @@ async def test_monitor_tile__missing_tile(session):
     assert result["TILE_COUNT"].iloc[0] == 5
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile__updated_tile(session):
+async def test_monitor_tile__updated_tile(session, base_sql_model):
     """
     Test monitoring with outdated tiles in which the tile value has been incremented by 1
     """
@@ -90,11 +91,12 @@ async def test_monitor_tile__updated_tile(session):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    await session.execute_query(
-        f"create table {table_name} using delta as select * from TEMP_TABLE"
+    create_sql = construct_create_table_query(
+        table_name, "select * from TEMP_TABLE", session=session
     )
+    await session.execute_query(create_sql)
 
-    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
+    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 10"
     monitor_tile_sql = tile_sql
@@ -148,9 +150,9 @@ async def test_monitor_tile__updated_tile(session):
     assert result["TILE_COUNT"].iloc[0] == 10
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile__updated_tile_new_column(session):
+async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
     """
     Test monitoring with outdated tiles in which the tile value has been incremented by 1
     """
@@ -162,11 +164,12 @@ async def test_monitor_tile__updated_tile_new_column(session):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    await session.execute_query(
-        f"create table {table_name} using delta as select * from TEMP_TABLE"
+    create_sql = construct_create_table_query(
+        table_name, "select * from TEMP_TABLE", session=session
     )
+    await session.execute_query(create_sql)
 
-    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
+    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 10"
 
@@ -223,9 +226,9 @@ async def test_monitor_tile__updated_tile_new_column(session):
     assert result["TILE_COUNT"].iloc[0] == 10
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile__partial_columns(session):
+async def test_monitor_tile__partial_columns(session, base_sql_model):
     """
     Test monitoring with missing tiles
     """
@@ -237,7 +240,7 @@ async def test_monitor_tile__partial_columns(session):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
+    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 90"
     monitor_tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 95"

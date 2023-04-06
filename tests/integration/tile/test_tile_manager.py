@@ -1,13 +1,14 @@
 """
-This module contains integration tests for TileSnowflake
+This module contains integration tests for TileManager
 """
 import pytest
 
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import TileType
+from featurebyte.session.spark import SparkSession
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tiles(tile_spec, session, tile_manager):
     """
@@ -27,9 +28,9 @@ async def test_generate_tiles(tile_spec, session, tile_manager):
     assert result["TILE_COUNT"].iloc[0] == 5
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_update_tile_entity_tracker(tile_spec, session, tile_manager):
+async def test_update_tile_entity_tracker(tile_spec, session, tile_manager, base_sql_model):
     """
     Test update_tile_entity_tracker method in TileSnowflake
     """
@@ -39,9 +40,13 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager):
     last_tile_start_date_1 = "2022-07-06 10:52:14"
     last_tile_start_date_2 = "2022-07-07 10:52:14"
 
-    await session.execute_query(
-        f"CREATE TABLE {temp_entity_table} (PRODUCT_ACTION STRING, CUST_ID STRING, LAST_TILE_START_DATE STRING) USING delta"
-    )
+    create_sql = f"""
+        CREATE TABLE {temp_entity_table} (PRODUCT_ACTION STRING, CUST_ID STRING, LAST_TILE_START_DATE STRING)
+    """
+    if isinstance(session, SparkSession):
+        create_sql += f" USING DELTA"
+    await session.execute_query(create_sql)
+
     await session.execute_query(
         f"INSERT INTO {temp_entity_table} VALUES ('P1', 'C1', '{last_tile_start_date_1}') "
     )
@@ -89,7 +94,7 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager):
     assert result["LAST_TILE_START_DATE"].iloc[2] == last_tile_start_date_3
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tiles_on_demand(session, tile_spec, tile_manager):
     """

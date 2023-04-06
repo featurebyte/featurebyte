@@ -126,10 +126,9 @@ async def test_drop_all_and_recreate(
     async def _get_object_counts():
         num_tables = len(await _list_objects("TABLES"))
         num_functions = len(await _list_objects("USER FUNCTIONS"))
-        num_procedures = len(await _list_objects("USER PROCEDURES"))
 
         tasks_result = await periodic_service.list_documents()
-        return num_tables, num_functions, num_procedures, tasks_result["total"]
+        return num_tables, num_functions, tasks_result["total"]
 
     async def _get_tasks():
         # Filter tasks by aggregation ids of the feature list of this current test only (other
@@ -165,10 +164,9 @@ async def test_drop_all_and_recreate(
     original_tasks, task_ids = await _get_tasks()
 
     # Check current object counts
-    init_num_tables, num_functions, num_procedures, num_tasks = await _get_object_counts()
+    init_num_tables, num_functions, num_tasks = await _get_object_counts()
     assert init_num_tables > 0
     assert num_functions > 0
-    assert num_procedures > 0
     assert num_tasks > 0
 
     # Drop everything
@@ -177,10 +175,9 @@ async def test_drop_all_and_recreate(
         await periodic_service.delete_document(task_id)
 
     # Check objects are indeed dropped
-    num_tables, num_functions, num_procedures, num_tasks = await _get_object_counts()
+    num_tables, num_functions, num_tasks = await _get_object_counts()
     assert num_tables < init_num_tables
     assert num_functions == 0
-    assert num_procedures == 0
     assert num_tasks == 0
 
     # Check online requests can no longer be made
