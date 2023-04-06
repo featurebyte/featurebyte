@@ -74,7 +74,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         event_table_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
         """
-        List saved features
+        List saved feature job setting analysis
 
         Parameters
         ----------
