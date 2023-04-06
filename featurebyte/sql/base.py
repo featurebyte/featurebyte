@@ -119,7 +119,7 @@ class BaselSqlModel(BaseModel):
         table_exist_flag = True
         try:
             await self._session.execute_query(f"select * from {table_name} limit 1")
-        except Exception:  # pylint: disable=broad-except
+        except self._session._no_schema_error:  # pylint: disable=protected-access
             table_exist_flag = False
 
         return table_exist_flag
