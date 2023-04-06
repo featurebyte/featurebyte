@@ -27,11 +27,8 @@ class TileGenerate(TileCommon):
         Execute tile generate operation
         """
         # pylint: disable=too-many-statements
-        tile_table_exist_flag = True
-        try:
-            await self._session.execute_query(f"select * from {self.tile_id} limit 1")
-        except Exception:  # pylint: disable=broad-except
-            tile_table_exist_flag = False
+        tile_table_exist_flag = await self.table_exists(self.tile_id)
+        logger.debug(f"tile_table_exist_flag: {tile_table_exist_flag}")
 
         # 2. Update TILE_REGISTRY & Add New Columns TILE Table
         tile_sql = self.sql.replace("'", "''")

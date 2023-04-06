@@ -102,3 +102,24 @@ class BaselSqlModel(BaseModel):
             for _, row in cols_df.iterrows():
                 cols.append(row[self.schema_column_name].upper())
         return cols
+
+    async def table_exists(self, table_name: str) -> bool:
+        """
+        Check if table exists
+
+        Parameters
+        ----------
+        table_name: str
+            input table name
+
+        Returns
+        -------
+            True if table exists, False otherwise
+        """
+        table_exist_flag = True
+        try:
+            await self._session.execute_query(f"select * from {table_name} limit 1")
+        except Exception:  # pylint: disable=broad-except
+            table_exist_flag = False
+
+        return table_exist_flag

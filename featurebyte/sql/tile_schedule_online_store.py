@@ -76,11 +76,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
             )
 
             # check if feature store table exists
-            fs_table_exist_flag = True
-            try:
-                await self._session.execute_query(f"select * from {fs_table} limit 1")
-            except Exception:  # pylint: disable=broad-except
-                fs_table_exist_flag = False
+            fs_table_exist_flag = await self.table_exists(fs_table)
             logger.debug(f"fs_table_exist_flag: {fs_table_exist_flag}")
 
             entities_fname_str = ", ".join(

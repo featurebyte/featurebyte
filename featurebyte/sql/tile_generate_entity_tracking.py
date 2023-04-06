@@ -38,11 +38,8 @@ class TileGenerateEntityTracking(BaselSqlModel):
         """
 
         tracking_table_name = self.tile_id + "_ENTITY_TRACKER"
-        tracking_table_exist_flag = True
-        try:
-            await self._session.execute_query(f"select * from {tracking_table_name} limit 1")
-        except Exception:  # pylint: disable=broad-except
-            tracking_table_exist_flag = False
+        tracking_table_exist_flag = await self.table_exists(tracking_table_name)
+        logger.debug(f"tracking_table_exist_flag: {tracking_table_exist_flag}")
 
         entity_insert_cols = []
         entity_filter_cols = []
