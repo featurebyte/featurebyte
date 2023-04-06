@@ -621,6 +621,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, GET, "Catalog.get"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_active"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_view"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list"]),
         DocLayoutItem([CATALOG, CREATE, "Catalog.create"]),
         DocLayoutItem([CATALOG, CREATE, "Catalog.get_or_create"]),
