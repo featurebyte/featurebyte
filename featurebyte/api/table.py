@@ -41,7 +41,6 @@ class Table(TableListMixin):
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["Table"],
         proxy_class="featurebyte.Table",
     )
 
