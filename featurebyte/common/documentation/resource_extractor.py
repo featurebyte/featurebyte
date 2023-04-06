@@ -11,7 +11,7 @@ from enum import Enum
 
 from docstring_parser import parse
 from docstring_parser.common import DocstringExample, DocstringRaises, DocstringReturns
-from mkautodoc.extension import import_from_string, trim_docstring
+from mkautodoc.extension import trim_docstring
 from pydantic.fields import ModelField, Undefined
 
 from featurebyte.common.doc_util import FBAutoDoc
