@@ -21,7 +21,7 @@ class DimensionViewColumn(ViewColumn):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Column"])
+    __fbautodoc__ = FBAutoDoc()
 
 
 class DimensionView(View):
@@ -37,7 +37,6 @@ class DimensionView(View):
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["View"],
         proxy_class="featurebyte.DimensionView",
     )
 

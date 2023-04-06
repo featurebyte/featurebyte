@@ -21,7 +21,7 @@ class SCDViewColumn(ViewColumn):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Column"])
+    __fbautodoc__ = FBAutoDoc()
 
 
 class SCDView(View, GroupByMixin):
@@ -37,7 +37,6 @@ class SCDView(View, GroupByMixin):
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["View"],
         proxy_class="featurebyte.SCDView",
     )
 

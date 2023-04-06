@@ -25,7 +25,7 @@ class ChangeViewColumn(LaggableViewColumn):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Column"])
+    __fbautodoc__ = FBAutoDoc()
 
 
 class ChangeView(View, GroupByMixin):
@@ -70,7 +70,6 @@ class ChangeView(View, GroupByMixin):
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["View"],
         proxy_class="featurebyte.ChangeView",
     )
 

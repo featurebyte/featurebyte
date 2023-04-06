@@ -139,7 +139,7 @@ class MissingValueImputation(BaseCleaningOperation):
     >>> MissingValueImputation(imputed_value=0) # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.MissingValueImputation")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.MissingValueImputation")
 
     type: Literal[ConditionOperationField.MISSING] = Field(
         ConditionOperationField.MISSING, const=True
@@ -176,7 +176,7 @@ class DisguisedValueImputation(BaseCleaningOperation):
     >>> DisguisedValueImputation(disguised_values=[-999], imputed_value=0) # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.DisguisedValueImputation")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DisguisedValueImputation")
 
     type: Literal[ConditionOperationField.DISGUISED] = Field(
         ConditionOperationField.DISGUISED, const=True
@@ -217,9 +217,7 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     >>> UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing") # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(
-        section=["Enums"], proxy_class="featurebyte.UnexpectedValueImputation"
-    )
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UnexpectedValueImputation")
 
     type: Literal[ConditionOperationField.NOT_IN] = Field(
         ConditionOperationField.NOT_IN, const=True
@@ -267,9 +265,7 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
     >>> ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0) # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(
-        section=["Enums"], proxy_class="featurebyte.ValueBeyondEndpointImputation"
-    )
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ValueBeyondEndpointImputation")
 
     type: Literal[
         ConditionOperationField.LESS_THAN,
@@ -326,7 +322,7 @@ class StringValueImputation(BaseCleaningOperation):
     >>> StringValueImputation(imputed_value=0) # doctest: +SKIP
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.StringValueImputation")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.StringValueImputation")
 
     type: Literal[ConditionOperationField.IS_STRING] = Field(
         ConditionOperationField.IS_STRING, const=True

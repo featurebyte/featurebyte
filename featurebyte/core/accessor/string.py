@@ -43,9 +43,7 @@ class StringAccessor:
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["Series"],
         proxy_class="featurebyte.Series",
-        accessor_name="str",
     )
 
     def __init__(self, obj: FrozenSeries):

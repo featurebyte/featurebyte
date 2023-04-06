@@ -31,7 +31,7 @@ class EventViewColumn(LaggableViewColumn):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Column"])
+    __fbautodoc__ = FBAutoDoc()
 
 
 class EventView(View, GroupByMixin):
@@ -45,7 +45,7 @@ class EventView(View, GroupByMixin):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["View"], proxy_class="featurebyte.EventView")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.EventView")
 
     # class variables
     _series_class = EventViewColumn

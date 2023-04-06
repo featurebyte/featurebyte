@@ -36,7 +36,6 @@ class Relationship(ApiObject):
     """
 
     __fbautodoc__ = FBAutoDoc(
-        section=["Relationship"],
         proxy_class="featurebyte.Relationship",
     )
 

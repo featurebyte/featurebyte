@@ -30,9 +30,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     FeatureJobSettingAnalysis class
     """
 
-    __fbautodoc__ = FBAutoDoc(
-        section=["FeatureJob"], proxy_class="featurebyte.FeatureJobSettingAnalysis"
-    )
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureJobSettingAnalysis")
 
     # class variables
     _route = "/feature_job_setting_analysis"

@@ -175,7 +175,6 @@ def get_classes_for_module(module_str: str) -> Generator[Any, Any, Any]:
 def add_class_to_doc_group(
     doc_groups: Dict[DocGroupKey, DocGroupValue],
     autodoc_config: FBAutoDoc,
-    menu_section: Optional[List[str]],
     class_obj: Any,
 ) -> Tuple[Dict[DocGroupKey, DocGroupValue], Optional[str], Optional[List[str]]]:
     """
@@ -187,8 +186,6 @@ def add_class_to_doc_group(
         Dictionary of doc groups.
     autodoc_config: FBAutoDoc
         Autodoc config.
-    menu_section: Optional[List[str]]
-        Menu section.
     class_obj: Any
         Class object.
 
@@ -197,44 +194,23 @@ def add_class_to_doc_group(
     Tuple[Dict[DocGroupKey, DocGroupValue], Optional[str], Optional[List[str]]]
         Tuple of updated doc_groups, menu_section, and menu_subsection.
     """
-    # proxy class is used for two purposes:
-    #
-    # 1. document a shorter path to access a class
+    # proxy class is used to document a shorter path to access a class
     #    e.g. featurebyte.api.event_table.EventData -> featurebyte.EventData
     #    proxy_class="featurebyte.EventData"
     #    EventData is documented with the proxy path
     #    EventData.{property} is documented with the proxy path
-    #
-    # 2. document a preferred way to access a property
-    #    e.g. featurebyte.core.string.StringAccessor.len -> featurebyte.Series.str.len
-    #    proxy_class="featurebyte.Series", accessor_name="str"
-    #    StringAccessor is not documented
-    #    StringAccessor.{property} is documented with the proxy path
-
     class_name = class_obj.__name__
     module_path = class_obj.__module__
-    if not autodoc_config.accessor_name:
-        if autodoc_config.proxy_class:
-            proxy_path = ".".join(autodoc_config.proxy_class.split(".")[:-1])
-        else:
-            proxy_path = None
-        if class_name != menu_section[-1]:
-            class_doc_group = menu_section + [class_name]
-        else:
-            class_doc_group = menu_section
-        doc_groups[DocGroupKey(module_path, class_name, None)] = DocGroupValue(
-            class_doc_group,
-            "class",
-            proxy_path,
-        )
+    if autodoc_config.proxy_class:
+        proxy_path = ".".join(autodoc_config.proxy_class.split(".")[:-1])
     else:
-        proxy_path = ".".join([autodoc_config.proxy_class, autodoc_config.accessor_name])
-        class_doc_group = menu_section
-        doc_groups[DocGroupKey(module_path, class_name, None)] = DocGroupValue(
-            menu_section + [autodoc_config.accessor_name],
-            "class",
-            autodoc_config.proxy_class,
-        )
+        proxy_path = None
+    class_doc_group = [class_name]
+    doc_groups[DocGroupKey(module_path, class_name, None)] = DocGroupValue(
+        class_doc_group,
+        "class",
+        proxy_path,
+    )
     return doc_groups, proxy_path, class_doc_group
 
 
@@ -243,7 +219,6 @@ def add_class_attributes_to_doc_groups(
     class_obj: Any,
     autodoc_config: FBAutoDoc,
     proxy_path: Optional[str],
-    menu_section: Optional[List[str]],
     class_doc_group: Optional[List[str]],
 ) -> Dict[DocGroupKey, DocGroupValue]:
     """
@@ -259,8 +234,6 @@ def add_class_attributes_to_doc_groups(
         Autodoc configuration.
     proxy_path: Optional[str]
         Proxy path to use.
-    menu_section: Optional[List[str]]
-        Menu section to use.
     class_doc_group: Optional[List[str]]
         Class doc group to use.
 
@@ -285,16 +258,9 @@ def add_class_attributes_to_doc_groups(
         # add documentation page for properties
         member_proxy_path = None
         if autodoc_config.proxy_class:
-            if autodoc_config.accessor_name:
-                # proxy class name specified e.g. str, cd
-                member_proxy_path = proxy_path
-                member_doc_group = menu_section + [
-                    ".".join([autodoc_config.accessor_name, attribute_name])
-                ]
-            else:
-                # proxy class name not specified, only proxy path used
-                member_proxy_path = ".".join([proxy_path, class_obj.__name__])
-                member_doc_group = class_doc_group + [attribute_name]
+            # proxy class name not specified, only proxy path used
+            member_proxy_path = ".".join([proxy_path, class_obj.__name__])
+            member_doc_group = class_doc_group + [attribute_name]
         else:
             member_doc_group = class_doc_group + [attribute_name]
         doc_groups[
@@ -551,27 +517,6 @@ def populate_nav(nav: Nav, proxied_path_to_markdown_path: Dict[str, str]) -> Nav
     return nav
 
 
-def get_section_from_class_obj(class_obj: Any) -> Optional[List[str]]:
-    """
-    This returns the top level doc group. Specifically, the menu item (eg. View, Data etc.)
-
-    Parameters
-    ----------
-    class_obj: Any
-        The class object to get the doc group for.
-
-    Returns
-    -------
-    Optional[List[str]]
-        The doc group for the class.
-    """
-    # check for customized categorization specified in the class
-    autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-    if autodoc_config.section is not None:
-        return autodoc_config.section
-    return None
-
-
 def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
     """
     This returns a dictionary of doc groups.
@@ -585,21 +530,19 @@ def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
     for module_str in get_featurebyte_python_files():
         try:
             for class_obj in get_classes_for_module(module_str):
-                autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
-                menu_section = get_section_from_class_obj(class_obj)
+                autodoc_config = class_obj.__dict__.get("__fbautodoc__", None)
                 # Skip if the class is not tagged with the `__fbautodoc__` attribute.
-                if not menu_section:
+                if not autodoc_config:
                     continue
 
                 doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(
-                    doc_groups, autodoc_config, menu_section, class_obj
+                    doc_groups, autodoc_config, class_obj
                 )
                 doc_groups = add_class_attributes_to_doc_groups(
                     doc_groups,
                     class_obj,
                     autodoc_config,
                     proxy_path,
-                    menu_section,
                     class_doc_group,
                 )
         except ModuleNotFoundError:

@@ -14,7 +14,7 @@ class PeriodicTask(PeriodicTaskModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["PeriodicTask"])
+    __fbautodoc__ = FBAutoDoc()
 
     # class variables
     _route = "/periodic_task"

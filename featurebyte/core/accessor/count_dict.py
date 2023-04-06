@@ -70,9 +70,7 @@ class CountDictAccessor:
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["Series"],
         proxy_class="featurebyte.Series",
-        accessor_name="cd",
     )
 
     def __init__(self, obj: Feature):

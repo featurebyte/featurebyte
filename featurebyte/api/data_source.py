@@ -27,7 +27,6 @@ class DataSource:
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["DataSource"],
         proxy_class="featurebyte.DataSource",
     )
 

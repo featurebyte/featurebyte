@@ -30,7 +30,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Entity"], proxy_class="featurebyte.Entity")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Entity")
 
     # class variables
     _route = "/entity"

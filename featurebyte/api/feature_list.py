@@ -394,7 +394,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["FeatureGroup"], proxy_class="featurebyte.FeatureGroup")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureGroup")
 
     @typechecked
     def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
@@ -629,7 +629,6 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["FeatureList"],
         proxy_class="featurebyte.FeatureList",
     )
 

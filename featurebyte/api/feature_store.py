@@ -28,10 +28,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        section=["FeatureStore"],
-        proxy_class="featurebyte.FeatureStore",
-    )
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureStore")
 
     # class variables
     _route = "/feature_store"
