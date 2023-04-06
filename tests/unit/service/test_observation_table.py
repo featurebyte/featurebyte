@@ -9,6 +9,9 @@ from featurebyte.query_graph.model.common_table import TabularSource
 
 @pytest.fixture(name="observation_table_from_source_table")
 def observation_table_from_source_table_fixture(event_table):
+    """
+    Fixture for an ObservationTable from a source table
+    """
     observation_input = SourceTableObservationInput(source=event_table.tabular_source)
     location = TabularSource(
         **{

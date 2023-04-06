@@ -10,7 +10,7 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
-from featurebyte.service.base_table_document import BaseDocumentService
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.context import ContextService
 
 
@@ -32,6 +32,19 @@ class ObservationTableService(
     async def get_observation_table_task_payload(
         self, data: ObservationTableCreate
     ) -> ObservationTableTaskPayload:
+        """
+        Validate and convert a ObservationTableCreate schema to a ObservationTableTaskPayload schema
+        which will be used to initiate the ObservationTable creation task.
+
+        Parameters
+        ----------
+        data: ObservationTableCreate
+            ObservationTable creation payload
+
+        Returns
+        -------
+        ObservationTableTaskPayload
+        """
 
         # Check any conflict with existing documents
         output_document_id = data.id or ObjectId()

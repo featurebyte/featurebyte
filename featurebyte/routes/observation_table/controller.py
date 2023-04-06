@@ -35,6 +35,10 @@ class ObservationTableController(
         ----------
         data: ObservationTableCreate
             ObservationTable creation payload
+
+        Returns
+        -------
+        Task
         """
         payload = await self.service.get_observation_table_task_payload(data=data)
         task_id = await self.task_controller.task_manager.submit(payload=payload)
