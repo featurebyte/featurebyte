@@ -38,7 +38,11 @@ def test_all_keys_present_in_root_level_order():
         all_root_keys.add(item.menu_header[0])
 
     currently_mapped_keys = set(BetaWave3Nav._custom_root_level_order)
-    assert all_root_keys == currently_mapped_keys
+    assert all_root_keys == currently_mapped_keys, (
+        "If this test fails, it is likely that we will need to add a "
+        "new key to _custom_root_level_order to indicate what ordering "
+        "we want it to appear in."
+    )
 
 
 def test_all_keys_present_in_second_level_order():
@@ -55,4 +59,8 @@ def test_all_keys_present_in_second_level_order():
             all_second_level_keys.add(menu_header[1])
 
     currently_mapped_keys = set(BetaWave3Nav._custom_second_level_order)
-    assert all_second_level_keys == currently_mapped_keys
+    assert all_second_level_keys == currently_mapped_keys, (
+        "If this test fails, it is likely that we will need to "
+        "add a new key to _custom_root_level_order to indicate "
+        "what ordering we want it to appear in."
+    )
