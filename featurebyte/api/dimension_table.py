@@ -42,7 +42,7 @@ class DimensionTable(TableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Table"], proxy_class="featurebyte.DimensionTable")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DimensionTable")
 
     # class variables
     _route = "/dimension_table"

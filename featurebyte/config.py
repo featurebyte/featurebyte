@@ -281,7 +281,6 @@ class Configurations:
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["Configurations"],
         proxy_class="featurebyte.Configurations",
         skipped_members=["get_client"],
     )
