@@ -25,10 +25,9 @@ class TileRegistry(TileCommon):
         input_value_columns_types = [value for value in self.value_column_types if value.strip()]
         logger.debug(f"input_value_columns_types: {input_value_columns_types}")
 
-        registry_df = await self._session.execute_query(
-            f"SELECT COUNT(*) as TILE_COUNT from tile_registry "
-            f"WHERE TILE_ID = '{self.tile_id}' "
-            f"AND AGGREGATION_ID = '{self.aggregation_id}' "
+        registry_df = await retry_sql(
+            self._session,
+            f"SELECT COUNT(*) as TILE_COUNT from tile_registry WHERE TILE_ID = '{self.tile_id}' AND AGGREGATION_ID = '{self.aggregation_id}' ",
         )
 
         if registry_df is not None and registry_df["TILE_COUNT"].iloc[0] == 0:
@@ -88,4 +87,4 @@ class TileRegistry(TileCommon):
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)
                 logger.debug(f"tile_add_sql: {tile_add_sql}")
-                await self._session.execute_query(tile_add_sql)
+                await retry_sql(self._session, tile_add_sql)

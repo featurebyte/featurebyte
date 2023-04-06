@@ -85,7 +85,7 @@ class TileGenerate(TileCommon):
             logger.debug(f"creating tile table: {self.tile_id}")
             create_sql = construct_create_table_query(self.tile_id, tile_sql, session=self._session)
             logger.debug(f"create_sql: {create_sql}")
-            await self._session.execute_query(create_sql)
+            await retry_sql(self._session, create_sql)
             logger.debug(f"done creating table: {self.tile_id}")
         else:
             if self.entity_column_names:

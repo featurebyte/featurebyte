@@ -104,7 +104,7 @@ class TileMonitor(TileCommon):
                 create_sql = construct_create_table_query(
                     monitor_table_name, compare_sql, session=self._session
                 )
-                await self._session.execute_query(create_sql)
+                await retry_sql(self._session, create_sql)
             else:
                 tile_registry_ins = TileRegistry(
                     session=self._session,
