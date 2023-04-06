@@ -3,7 +3,8 @@ ObservationTableModel models
 """
 from __future__ import annotations
 
-from typing import Annotated, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
+from typing_extensions import Annotated
 
 from pydantic import Field, StrictStr
 
