@@ -48,7 +48,5 @@ class FBAutoDoc(BaseModel):
     FeatureByte Auto Documentation parameters
     """
 
-    # TODO: remove section
-    section: Optional[List[str]] = Field(default=None)
     skipped_members: List[str] = Field(default=COMMON_SKIPPED_ATTRIBUTES)
     proxy_class: Optional[str] = Field(default=None)
