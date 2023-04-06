@@ -24,7 +24,7 @@ class ItemViewColumn(ViewColumn):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Column"])
+    __fbautodoc__ = FBAutoDoc()
 
 
 class ItemView(View, GroupByMixin):
@@ -54,7 +54,6 @@ class ItemView(View, GroupByMixin):
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
-        section=["View"],
         proxy_class="featurebyte.ItemView",
     )
 

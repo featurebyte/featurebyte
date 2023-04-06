@@ -28,7 +28,7 @@ class GroupBy:
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["GroupBy"])
+    __fbautodoc__ = FBAutoDoc()
 
     @typechecked
     def __init__(

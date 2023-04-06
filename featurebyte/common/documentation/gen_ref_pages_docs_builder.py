@@ -194,20 +194,11 @@ def add_class_to_doc_group(
     Tuple[Dict[DocGroupKey, DocGroupValue], Optional[str], Optional[List[str]]]
         Tuple of updated doc_groups, menu_section, and menu_subsection.
     """
-    # proxy class is used for two purposes:
-    #
-    # 1. document a shorter path to access a class
+    # proxy class is used to document a shorter path to access a class
     #    e.g. featurebyte.api.event_table.EventData -> featurebyte.EventData
     #    proxy_class="featurebyte.EventData"
     #    EventData is documented with the proxy path
     #    EventData.{property} is documented with the proxy path
-    #
-    # 2. document a preferred way to access a property
-    #    e.g. featurebyte.core.string.StringAccessor.len -> featurebyte.Series.str.len
-    #    proxy_class="featurebyte.Series", accessor_name="str"
-    #    StringAccessor is not documented
-    #    StringAccessor.{property} is documented with the proxy path
-
     class_name = class_obj.__name__
     module_path = class_obj.__module__
     if autodoc_config.proxy_class:
