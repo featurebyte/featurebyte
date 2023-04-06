@@ -6,7 +6,7 @@ from datetime import datetime
 import pytest
 
 from featurebyte.enum import InternalName
-from featurebyte.sql.common import construct_create_delta_table_query
+from featurebyte.sql.common import construct_create_table_query
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_monitor import TileMonitor
 
@@ -91,7 +91,7 @@ async def test_monitor_tile__updated_tile(session, base_sql_model):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    create_sql = construct_create_delta_table_query(
+    create_sql = construct_create_table_query(
         table_name, "select * from TEMP_TABLE", session=session
     )
     await session.execute_query(create_sql)
@@ -164,7 +164,7 @@ async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
     tile_id = f"TEMP_TABLE_{ts_str}"
     agg_id = f"AGG_ID_{ts_str}"
 
-    create_sql = construct_create_delta_table_query(
+    create_sql = construct_create_table_query(
         table_name, "select * from TEMP_TABLE", session=session
     )
     await session.execute_query(create_sql)

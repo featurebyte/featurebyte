@@ -6,7 +6,7 @@ from typing import Any, List
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
-from featurebyte.sql.common import construct_create_delta_table_query, retry_sql_with_cache
+from featurebyte.sql.common import construct_create_table_query, retry_sql_with_cache
 
 
 class TileGenerateEntityTracking(BaselSqlModel):
@@ -64,7 +64,7 @@ class TileGenerateEntityTracking(BaselSqlModel):
 
         # create table or insert new records or update existing records
         if not tracking_table_exist_flag:
-            create_sql = construct_create_delta_table_query(
+            create_sql = construct_create_table_query(
                 tracking_table_name, self.entity_table, session=self._session
             )
             logger.debug(f"create_sql: {create_sql}")

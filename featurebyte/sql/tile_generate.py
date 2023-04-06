@@ -7,11 +7,7 @@ import dateutil.parser
 
 from featurebyte.common import date_util
 from featurebyte.logger import logger
-from featurebyte.sql.common import (
-    construct_create_delta_table_query,
-    retry_sql,
-    retry_sql_with_cache,
-)
+from featurebyte.sql.common import construct_create_table_query, retry_sql, retry_sql_with_cache
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
@@ -90,9 +86,7 @@ class TileGenerate(TileCommon):
         # insert new records and update existing records
         if not tile_table_exist_flag:
             logger.debug(f"creating tile table: {self.tile_id}")
-            create_sql = construct_create_delta_table_query(
-                self.tile_id, tile_sql, session=self._session
-            )
+            create_sql = construct_create_table_query(self.tile_id, tile_sql, session=self._session)
             logger.debug(f"create_sql: {create_sql}")
             await self._session.execute_query(create_sql)
             logger.debug(f"done creating table: {self.tile_id}")

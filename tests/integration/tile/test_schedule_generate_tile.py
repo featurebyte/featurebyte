@@ -6,7 +6,7 @@ from datetime import datetime
 import pytest
 
 from featurebyte.enum import InternalName
-from featurebyte.sql.common import construct_create_delta_table_query
+from featurebyte.sql.common import construct_create_table_query
 from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
 
 
@@ -97,7 +97,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model):
     tile_end_ts = "2022-06-05T23:53:00Z"
 
     table_name = f"SOURCE_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    create_sql = construct_create_delta_table_query(
+    create_sql = construct_create_table_query(
         table_name, "select * from TEMP_TABLE", session=session
     )
     await session.execute_query(create_sql)
@@ -132,13 +132,6 @@ async def test_schedule_monitor_tile_online(session, base_sql_model):
     )
     await tile_schedule_ins.execute()
 
-    # sql = f"""
-    #         UPDATE {table_name} SET VALUE = VALUE + 1
-    #         WHERE {InternalName.TILE_START_DATE} in (
-    #             to_timestamp('2022-06-05 23:33:00', 'yyyy-MM-dd HH:mm:ss'),
-    #             to_timestamp('2022-06-05 23:48:00', 'yyyy-MM-dd HH:mm:ss')
-    #         )
-    #       """
     sql = f"""
             UPDATE {table_name} SET VALUE = VALUE + 1
             WHERE {InternalName.TILE_START_DATE} in (

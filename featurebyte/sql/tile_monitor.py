@@ -2,11 +2,7 @@
 Tile Monitor Job
 """
 from featurebyte.logger import logger
-from featurebyte.sql.common import (
-    construct_create_delta_table_query,
-    retry_sql,
-    retry_sql_with_cache,
-)
+from featurebyte.sql.common import construct_create_table_query, retry_sql, retry_sql_with_cache
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
@@ -114,7 +110,7 @@ class TileMonitor(TileCommon):
             logger.debug(f"tile_monitor_exist_flag: {tile_monitor_exist_flag}")
 
             if not tile_monitor_exist_flag:
-                create_sql = construct_create_delta_table_query(
+                create_sql = construct_create_table_query(
                     monitor_table_name, compare_sql, session=self._session
                 )
                 await self._session.execute_query(create_sql)

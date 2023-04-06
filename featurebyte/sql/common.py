@@ -17,7 +17,7 @@ TABLE_PROPERTIES = "TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.mi
 CACHE_TABLE_PLACEHOLDER = "<CACHE_TABLE>"
 
 
-def construct_create_delta_table_query(
+def construct_create_table_query(
     table_name: str,
     table_query: str,
     partition_keys: Optional[str] = None,
