@@ -50,7 +50,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     # pylint: disable=too-many-public-methods
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Catalog"], proxy_class="featurebyte.Catalog")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Catalog")
 
     # class variables
     _route = "/catalog"
