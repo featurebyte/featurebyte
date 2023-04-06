@@ -43,7 +43,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
     )
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["FeatureJob"], proxy_class="featurebyte.FeatureJobSetting")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureJobSetting")
 
     blind_spot: str
     frequency: str
@@ -131,9 +131,7 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
     Table feature job setting schema
     """
 
-    __fbautodoc__ = FBAutoDoc(
-        section=["FeatureJob"], proxy_class="featurebyte.TableFeatureJobSetting"
-    )
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableFeatureJobSetting")
 
     table_name: str
     feature_job_setting: FeatureJobSetting
