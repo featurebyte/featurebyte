@@ -3,16 +3,13 @@ ObservationTableModel API payload schema
 """
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from bson import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.observation_table import (
-    ObservationTableModel,
-    ObservationInput,
-)
+from featurebyte.models.observation_table import ObservationInput, ObservationTableModel
 from featurebyte.schema.common.base import PaginationMixin
 
 

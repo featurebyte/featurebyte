@@ -3,10 +3,13 @@ ObservationTableService class
 """
 from __future__ import annotations
 
+from typing import Any
+
 from bson import ObjectId
 
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.persistent import Persistent
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
@@ -24,6 +27,16 @@ class ObservationTableService(
     """
 
     document_class = ObservationTableModel
+
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        context_service: ContextService,
+    ):
+        super().__init__(user, persistent, catalog_id)
+        self.context_service = context_service
 
     @property
     def class_name(self) -> str:
@@ -56,10 +69,7 @@ class ObservationTableService(
             # Check if the context document exists when provided. This should perform additional
             # validation once additional information such as request schema are available in the
             # context.
-            context_service = ContextService(
-                user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-            )
-            await context_service.get_document(document_id=data.context_id)
+            await self.context_service.get_document(document_id=data.context_id)
 
         return ObservationTableTaskPayload(
             **data.dict(),

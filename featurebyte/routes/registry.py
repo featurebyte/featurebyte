@@ -122,6 +122,13 @@ app_container_config.add_service_with_extra_deps(
         "feature_store_service",
     ],
 )
+app_container_config.add_service_with_extra_deps(
+    "observation_table_service",
+    ObservationTableService,
+    [
+        "context_service",
+    ],
+)
 
 app_container_config.add_basic_service("context_service", ContextService)
 app_container_config.add_basic_service("entity_service", EntityService)
@@ -167,7 +174,6 @@ app_container_config.add_basic_service("relationship_info_service", Relationship
 app_container_config.add_basic_service("user_service", UserService)
 app_container_config.add_basic_service("view_construction_service", ViewConstructionService)
 app_container_config.add_basic_service("periodic_task_service", PeriodicTaskService)
-app_container_config.add_basic_service("observation_table_service", ObservationTableService)
 
 app_container_config.add_controller(
     "relationship_info_controller",
