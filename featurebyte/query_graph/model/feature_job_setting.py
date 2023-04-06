@@ -1,10 +1,11 @@
 """
 Feature Job Setting Model
 """
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from pydantic import root_validator
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
 from featurebyte.models.base import FeatureByteBaseModel
 
@@ -13,12 +14,14 @@ class FeatureJobSetting(FeatureByteBaseModel):
     """
     Model for Feature Job Setting
 
-    The setting is defined by 3 main duration parameters.
+    The setting is defined by 3 main duration parameters:
+
     - Frequency: how often we want the job to run
     - Blind spot: the length of time that we deliberately want to from feature derivation. For example, if we
       calculate features at 10am, a blind spot of 2h means we only use data up to 8am.
       This is useful to account for data delay in the warehouse, as without this, the features can be noisy.
     - Time modulo frequency: an offset to specify when feature jobs are run.
+
     Note that these duration parameters are the same duration type strings that pandas accepts in pd.Timedelta().
 
     Examples
@@ -40,7 +43,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
     )
     """
 
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.FeatureJobSetting", "")
+    __fbautodoc__ = FBAutoDoc(section=["FeatureJob"], proxy_class="featurebyte.FeatureJobSetting")
 
     blind_spot: str
     frequency: str
@@ -127,6 +130,10 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
     """
     Table feature job setting schema
     """
+
+    __fbautodoc__ = FBAutoDoc(
+        section=["FeatureJob"], proxy_class="featurebyte.TableFeatureJobSetting"
+    )
 
     table_name: str
     feature_job_setting: FeatureJobSetting

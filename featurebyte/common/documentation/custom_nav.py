@@ -15,6 +15,7 @@ from featurebyte.common.documentation.constants import (
     EXPLORE,
     FEATURE,
     FEATURE_GROUP,
+    FEATURE_JOB,
     FEATURE_LIST,
     FEATURE_STORE,
     GET,
@@ -60,6 +61,7 @@ class BetaWave3Nav(Nav):
         FEATURE,
         FEATURE_GROUP,
         FEATURE_LIST,
+        FEATURE_JOB,
         UTILITY_CLASSES,
     ]
 
