@@ -177,6 +177,6 @@ class SQLType(Enum):
 
     BUILD_TILE = "build_tile"
     BUILD_TILE_ON_DEMAND = "build_tile_on_demand"
-    EVENT_VIEW_PREVIEW = "event_view_preview"
+    MATERIALISE = "materialise"
     AGGREGATION = "aggregation"
     POST_AGGREGATION = "post_aggregation"
