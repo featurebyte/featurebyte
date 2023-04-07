@@ -812,7 +812,7 @@ def test_create_observation_table_from_event_view(snowflake_event_table, snowfla
     query = re.sub(r"OBSERVATION_TABLE_\w{24}", "OBSERVATION_TABLE", query)
     expected = textwrap.dedent(
         """
-        CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
+        CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
           "col_int" AS "col_int",
           "event_timestamp" AS "event_timestamp",

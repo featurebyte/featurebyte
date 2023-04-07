@@ -202,7 +202,7 @@ def test_create_observation_table(snowflake_database_table, snowflake_execute_qu
     query = re.sub(r"OBSERVATION_TABLE_\w{24}", "OBSERVATION_TABLE", query)
     expected = textwrap.dedent(
         """
-        CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
+        CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
           *
         FROM "sf_database"."sf_schema"."sf_table"
