@@ -850,9 +850,14 @@ class SourceTable(AbstractTableData):
             current_flag_column=current_flag_column,
         )
 
-    def create_observation_table(self, name) -> ObservationTable:
+    def create_observation_table(self, name: str) -> ObservationTable:
         """
         Create an observation table from this source table.
+
+        Parameters
+        ----------
+        name: str
+            Observation table name.
 
         Returns
         -------

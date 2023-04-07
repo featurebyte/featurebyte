@@ -32,7 +32,6 @@ def create_table_as(table_details: TableDetails, select_expr: Select) -> Express
     return expressions.Create(
         this=expressions.Table(this=destination_expr),
         kind="TABLE",
-        replace=True,
         expression=select_expr,
     )
 
