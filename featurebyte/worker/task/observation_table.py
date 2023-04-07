@@ -8,9 +8,13 @@ from typing import Any, cast
 from bson import ObjectId
 
 from featurebyte.logger import logger
-from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.models.observation_table import ObservationTableModel, SourceTableObservationInput
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.materialisation import (
+    get_materialise_from_source_sql,
+    get_materialise_from_view_sql,
+)
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -58,7 +62,21 @@ class ObservationTableTask(BaseTask):
             ),
         )
 
-        # TODO: add actual materialization logic here before creating the ObservationTable document
+        if isinstance(payload.observation_input, SourceTableObservationInput):
+            query = get_materialise_from_source_sql(
+                source=payload.observation_input.source.table_details,
+                destination=location.table_details,
+                source_type=feature_store.type,
+            )
+        else:
+            query = get_materialise_from_view_sql(
+                graph=payload.observation_input.graph,
+                node_name=payload.observation_input.node_name,
+                destination=location.table_details,
+                source_type=feature_store.type,
+            )
+
+        await db_session.execute_query(query)
 
         logger.debug("Creating a new ObservationTable", extras=location.table_details.dict())
         observation_table = ObservationTableModel(

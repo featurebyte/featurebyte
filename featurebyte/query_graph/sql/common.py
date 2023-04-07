@@ -3,7 +3,7 @@ Common helpers and data structures for feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Sequence, Tuple, Union
+from typing import Dict, Sequence, Tuple, Union
 
 from enum import Enum
 
@@ -87,6 +87,28 @@ def get_qualified_column_identifier(
         column_name = quoted_identifier(column_name)  # type: ignore[assignment]
     expr = expressions.Column(this=column_name, table=table)
     return expr
+
+
+def get_fully_qualified_table_name(table_details_dict: Dict[str, str]) -> Expression:
+    """
+    Get an expression for fully qualified table name
+
+    Parameters
+    ----------
+    table_details_dict: Dict[str, str]
+        Table details dictionary
+
+    Returns
+    -------
+    Expression
+    """
+    schema_name = table_details_dict.get("schema_name")
+    database_name = table_details_dict.get("database_name")
+    return expressions.Table(
+        this=quoted_identifier(table_details_dict["table_name"]),
+        db=quoted_identifier(schema_name) if schema_name else None,
+        catalog=quoted_identifier(database_name) if database_name else None,
+    )
 
 
 def get_dialect_from_source_type(source_type: SourceType) -> str:

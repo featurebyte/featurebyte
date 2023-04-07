@@ -956,3 +956,24 @@ class GraphInterpreter:
             row_indices,
             columns,
         )
+
+    def construct_materialise_expr(self, node_name: str) -> expressions.Select:
+        """
+        Construct SQL to materialise a given node representing a View object
+
+        Parameters
+        ----------
+        node_name : str
+            Query graph node name
+
+        Returns
+        -------
+        Select
+        """
+        flat_graph, flat_node = self.flatten_graph(node_name=node_name)
+        # TODO: should probably rename EVENT_VIEW_PREVIEW to something else, maybe MATERIALISE
+        sql_graph = SQLOperationGraph(
+            flat_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=self.source_type
+        )
+        sql_node = sql_graph.build(flat_node)
+        return cast(expressions.Select, sql_node.sql)
