@@ -72,7 +72,7 @@ def list_profiles() -> pd.DataFrame:
     --------
     >>> fb.list_profiles()
         name                api_url api_token
-    0  local  http://localhost:8088      None
+    0  local  http://127.0.0.1:8088      None
     """
     profiles = Configurations().profiles
     return pd.DataFrame([profile.dict() for profile in profiles] if profiles else [])

@@ -8,11 +8,11 @@ from typing import Any, Dict, Optional
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import SavableApiObject
+from featurebyte.api.api_object import ForeignKeyMapping, SavableApiObject
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.credential import CredentialModel, DatabaseCredential, StorageCredential
-from featurebyte.schema.credential import CredentialUpdate
+from featurebyte.schema.credential import CredentialRead, CredentialUpdate
 
 
 @typechecked
@@ -27,13 +27,18 @@ class Credential(CredentialModel, SavableApiObject):
     # class variables
     _route = "/credential"
     _update_schema_class = CredentialUpdate
-    _list_schema = CredentialModel
+    _list_schema = CredentialRead
     _get_schema = CredentialModel
     _list_fields = [
-        "name",
+        "feature_store",
         "created_at",
         "updated_at",
-    ]  # , "database_credential_type", "storage_credential_type"]
+        "database_credential_type",
+        "storage_credential_type",
+    ]
+    _list_foreign_keys = [
+        ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store"),
+    ]
 
     # pydantic instance variable (public)
     saved: bool = Field(
@@ -51,8 +56,8 @@ class Credential(CredentialModel, SavableApiObject):
     def create(
         cls,
         feature_store: FeatureStore,
-        database_credential: Optional[DatabaseCredential],
-        storage_credential: Optional[StorageCredential],
+        database_credential: Optional[DatabaseCredential] = None,
+        storage_credential: Optional[StorageCredential] = None,
     ) -> Credential:
         """
         Create and return an instance of a credential.
@@ -95,10 +100,10 @@ class Credential(CredentialModel, SavableApiObject):
         credential.save()
         return credential
 
-    def update_credential(
+    def update_credentials(
         self,
-        database_credential: Optional[DatabaseCredential],
-        storage_credential: Optional[StorageCredential],
+        database_credential: Optional[DatabaseCredential] = None,
+        storage_credential: Optional[StorageCredential] = None,
     ) -> None:
         """
         Update credential details.
@@ -113,7 +118,7 @@ class Credential(CredentialModel, SavableApiObject):
         Examples
         --------
         >>> credential = fb.Credential.get_by_id("playground")  # doctest: +SKIP
-        >>> credential.update_credential(  # doctest: +SKIP
+        >>> credential.update_credentials(  # doctest: +SKIP
         ...     storage_credential=S3StorageCredential(
         ...         s3_access_key_id="access_key_id",
         ...         s3_secret_access_key="s3_secret_access_key",
