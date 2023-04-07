@@ -80,6 +80,7 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_feature_stores", FeatureStore, "list"),
         MethodMetadata("list_entities", Entity, "list"),
         MethodMetadata("list_periodic_tasks", PeriodicTask, "list"),
+        MethodMetadata("list_observation_tables", ObservationTable, "list"),
     ]
 
 
@@ -93,6 +94,7 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_feature_store", FeatureStore, "get"),
         MethodMetadata("get_entity", Entity, "get"),
         MethodMetadata("get_periodic_task", PeriodicTask, "get"),
+        MethodMetadata("get_observation_table", ObservationTable, "get"),
     ]
 
 
@@ -232,7 +234,6 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         SavableApiObject,
         TableApiObject,
         TableListMixin,
-        ObservationTable,  # still experimental
     }
     assert len(api_object_children) == len(method_list) + len(excluded_children)
 

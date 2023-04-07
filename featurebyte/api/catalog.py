@@ -20,6 +20,7 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.table import Table
@@ -512,6 +513,29 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return PeriodicTask.list(include_id=include_id)
 
     @update_and_reset_catalog
+    def list_observation_tables(self, include_id: Optional[bool] = False) -> pd.DataFrame:
+        """
+        List saved observation tables.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of observation tables.
+
+        Examples
+        --------
+        List saved observation tables.
+
+        >>> periodic_tasks = catalog.list_periodic_tasks()
+        """
+        return ObservationTable.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def get_data_source(self, feature_store_name: str) -> DataSource:
         """
         Get data source by a given feature store name.
@@ -746,3 +770,26 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> periodic_task = catalog.get_periodic_task("task_name")  # doctest: +SKIP
         """
         return PeriodicTask.get(name=name)
+
+    @update_and_reset_catalog
+    def get_observation_table(self, name: str) -> ObservationTable:
+        """
+        Get observation table by name.
+
+        Parameters
+        ----------
+        name: str
+            Observation table name.
+
+        Returns
+        -------
+        ObservationTable
+            Observation table object.
+
+        Examples
+        --------
+        Get a saved observation table.
+
+        >>> periodic_task = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        """
+        return ObservationTable.get(name=name)
