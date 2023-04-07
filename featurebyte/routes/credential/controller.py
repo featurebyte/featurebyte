@@ -3,6 +3,8 @@ Credential API routes
 """
 from __future__ import annotations
 
+from bson import ObjectId
+
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.credential import CredentialModel
 from featurebyte.routes.common.base import BaseDocumentController
@@ -12,7 +14,9 @@ from featurebyte.schema.credential import (
     CredentialServiceUpdate,
     CredentialUpdate,
 )
+from featurebyte.schema.info import CredentialInfo
 from featurebyte.service.credential import CredentialService
+from featurebyte.service.info import InfoService
 
 
 class CredentialController(
@@ -27,8 +31,10 @@ class CredentialController(
     def __init__(
         self,
         service: CredentialService,
+        info_service: InfoService,
     ):
         super().__init__(service)
+        self.info_service = info_service
 
     async def create_credential(
         self,
@@ -90,3 +96,27 @@ class CredentialController(
             ID of credential to update
         """
         await self.service.delete_document(document_id=credential_id)
+
+    async def get_info(
+        self,
+        credential_id: ObjectId,
+        verbose: bool,
+    ) -> CredentialInfo:
+        """
+        Get credential info given credential ID
+
+        Parameters
+        ----------
+        credential_id: ObjectId
+            Credential ID
+        verbose: bool
+            Flag to control verbose level
+
+        Returns
+        -------
+        CredentialInfo
+        """
+        info_document = await self.info_service.get_credential_info(
+            document_id=credential_id, verbose=verbose
+        )
+        return info_document

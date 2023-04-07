@@ -25,6 +25,7 @@ from featurebyte.query_graph.node.metadata.operation import GroupOperationStruct
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (
     CatalogInfo,
+    CredentialInfo,
     DimensionTableInfo,
     EntityBriefInfoList,
     EntityInfo,
@@ -46,6 +47,7 @@ from featurebyte.schema.table import TableList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.credential import CredentialService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -111,6 +113,9 @@ class InfoService(BaseService):
             user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.catalog_service = CatalogService(
+            user=user, persistent=persistent, catalog_id=catalog_id
+        )
+        self.credential_service = CredentialService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.relationship_info_service = RelationshipInfoService(
@@ -834,4 +839,36 @@ class InfoService(BaseService):
             name=catalog.name,
             created_at=catalog.created_at,
             updated_at=catalog.updated_at,
+        )
+
+    async def get_credential_info(self, document_id: ObjectId, verbose: bool) -> CredentialInfo:
+        """
+        Get credential info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        CredentialInfo
+        """
+        _ = verbose
+        credential = await self.credential_service.get_document(document_id=document_id)
+        return CredentialInfo(
+            name=credential.name,
+            feature_store_info=await self.get_feature_store_info(
+                document_id=credential.feature_store_id, verbose=verbose
+            ),
+            database_credential_type=credential.database_credential.credential_type
+            if credential.database_credential
+            else None,
+            storage_credential_type=credential.storage_credential.credential_type
+            if credential.storage_credential
+            else None,
+            created_at=credential.created_at,
+            updated_at=credential.updated_at,
         )

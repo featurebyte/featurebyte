@@ -97,7 +97,7 @@ class FeatureStoreController(
                 name=document.name,
                 feature_store_id=document.id,
                 database_credential=data.database_credential,
-                storage_credentials=data.storage_credential,
+                storage_credential=data.storage_credential,
             )
 
             async def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:

@@ -177,10 +177,7 @@ app_container_config.add_basic_service("periodic_task_service", PeriodicTaskServ
 app_container_config.add_service_with_extra_deps(
     "credential_service",
     CredentialService,
-    [
-        "feature_store_service",
-        "feature_store_warehouse_service",
-    ],
+    ["feature_store_warehouse_service"],
 )
 
 app_container_config.add_controller(
@@ -324,5 +321,5 @@ app_container_config.add_controller(
     ["observation_table_service", "task_controller"],
 )
 app_container_config.add_controller(
-    "credential_controller", CredentialController, ["credential_service"]
+    "credential_controller", CredentialController, ["credential_service", "info_service"]
 )

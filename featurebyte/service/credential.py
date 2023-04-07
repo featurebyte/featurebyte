@@ -11,7 +11,6 @@ from featurebyte.models.credential import CredentialModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.credential import CredentialServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 
 
@@ -29,11 +28,9 @@ class CredentialService(
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
-        feature_store_service: FeatureStoreService,
-        feature_store_warehouse_service: FeatureStoreWarehouseService,
+        feature_store_warehouse_service: Optional[FeatureStoreWarehouseService] = None,
     ):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
-        self.feature_store_service = feature_store_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
 
     async def _validate_credential(self, credential: CredentialModel) -> None:
@@ -45,12 +42,14 @@ class CredentialService(
         credential: CredentialModel
             CredentialModel to validate
         """
+        # feature_store_warehouse_service needs to be provided
+        assert self.feature_store_warehouse_service
+
         # test credential works
-        feature_store_service = FeatureStoreService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
-        feature_store = await feature_store_service.get_document(
-            document_id=credential.feature_store_id
+        feature_store = (
+            await self.feature_store_warehouse_service.feature_store_service.get_document(
+                document_id=credential.feature_store_id
+            )
         )
 
         async def get_credential(**kwargs: Any) -> CredentialModel:

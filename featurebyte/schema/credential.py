@@ -36,7 +36,17 @@ class CredentialRead(FeatureByteBaseDocumentModel):
     @classmethod
     def convert_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Convert credentials to the correct type
+        Convert credentials to the correct type.
+
+        Parameters
+        ----------
+        values: Dict[str, Any]
+            Values to validate
+
+        Returns
+        -------
+        Dict[str, Any]
+            Validated values
         """
         if values.get("database_credential"):
             values["database_credential_type"] = values["database_credential"]["credential_type"]

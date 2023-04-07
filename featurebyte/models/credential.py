@@ -4,11 +4,11 @@ Document model for stored credentials
 from typing import List, Literal, Optional, Union
 from typing_extensions import Annotated
 
-import base64
-import os
+import os  # pylint: disable=wrong-import-order
+from base64 import b64encode  # pylint: disable=wrong-import-order
 
 from cryptography.fernet import Fernet
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
@@ -25,16 +25,36 @@ PASSWORD_SECRET = os.environ.get("CONFIG_PASSWORD_SECRET", "T3gUGT(Q)eSSsX+@xZQf
 def encrypt_value(value: str) -> str:
     """
     Encrypt value
+
+    Parameters
+    ----------
+    value: str
+        Value to encrypt
+
+    Returns
+    -------
+    str
+        Encrypted value
     """
-    cipher_suite = Fernet(base64.b64encode(PASSWORD_SECRET.encode("utf-8")))
+    cipher_suite = Fernet(b64encode(PASSWORD_SECRET.encode("utf-8")))
     return cipher_suite.encrypt(value.encode("utf-8")).decode("utf-8")
 
 
 def decrypt_value(encrypted_value: str) -> str:
     """
     Decrypt value
+
+    Parameters
+    ----------
+    encrypted_value: str
+        Encrypted value
+
+    Returns
+    -------
+    str
+        Decrypted value
     """
-    cipher_suite = Fernet(base64.b64encode(PASSWORD_SECRET.encode("utf-8")))
+    cipher_suite = Fernet(b64encode(PASSWORD_SECRET.encode("utf-8")))
     return cipher_suite.decrypt(encrypted_value.encode("utf-8")).decode("utf-8")
 
 

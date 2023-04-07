@@ -131,7 +131,9 @@ class S3SimpleStorage(SimpleStorage):
             session_params["aws_access_key_id"] = storage_credential.s3_access_key_id
             session_params["aws_secret_access_key"] = storage_credential.s3_secret_access_key
         else:
-            raise NotImplementedError("Unsupported remote storage credential")
+            raise NotImplementedError(
+                f"Unsupported remote storage credential: {storage_credential}"
+            )
 
         protocol, path = storage_url.split("//")
         parts = path.split("/")

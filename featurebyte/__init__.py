@@ -67,8 +67,15 @@ def list_profiles() -> pd.DataFrame:
     -------
     pd.DataFrame
         List of service profiles
+
+    Examples
+    --------
+    >>> fb.list_profiles()
+        name                api_url api_token
+    0  local  http://localhost:8088      None
     """
-    return pd.DataFrame([profile.dict() for profile in Configurations().profiles])
+    profiles = Configurations().profiles
+    return pd.DataFrame([profile.dict() for profile in profiles] if profiles else [])
 
 
 def use_profile(profile: str) -> Dict[str, str]:
@@ -84,32 +91,61 @@ def use_profile(profile: str) -> Dict[str, str]:
     -------
     Dict[str, str]
         Remote and local SDK versions
+
+    Examples
+    --------
+    >>> fb.use_profile("local")  # doctest: +SKIP
+    {'remote sdk': '0.1.1', 'local sdk': '0.1.1'}
     """
     return Configurations().use_profile(profile)
 
 
-def list_credentials() -> pd.DataFrame:
+def list_credentials(
+    include_id: Optional[bool] = False,
+) -> pd.DataFrame:
     """
     List all credentials
+
+    Parameters
+    ----------
+    include_id: Optional[bool]
+        Whether to include id in the list
 
     Returns
     -------
     pd.DataFrame
         List of credentials
+
+    Examples
+    --------
+    >>> fb.list_credentials()[["name"]]
+             name
+    0  playground
     """
-    return Credential.list()
+    return Credential.list(include_id=include_id)
 
 
-def list_feature_stores() -> pd.DataFrame:
+def list_feature_stores(include_id: Optional[bool] = False) -> pd.DataFrame:
     """
     List all feature stores
+
+    Parameters
+    ----------
+    include_id: Optional[bool]
+        Whether to include id in the list
 
     Returns
     -------
     pd.DataFrame
         List of feature stores
+
+    Examples
+    --------
+    >>> fb.list_feature_stores()[["name", "type"]]
+             name   type
+    0  playground  spark
     """
-    return FeatureStore.list()
+    return FeatureStore.list(include_id=include_id)
 
 
 def get_feature_store(name: str) -> FeatureStore:
@@ -125,23 +161,40 @@ def get_feature_store(name: str) -> FeatureStore:
     -------
     FeatureStore
         Feature store
+
+    Examples
+    --------
+    >>> feature_store = fb.get_feature_store("playground")
     """
     return FeatureStore.get(name)
 
 
-def list_catalogs() -> pd.DataFrame:
+def list_catalogs(include_id: Optional[bool] = False) -> pd.DataFrame:
     """
     List all catalogs
+
+    Parameters
+    ----------
+    include_id: Optional[bool]
+        Whether to include id in the list
+
 
     Returns
     -------
     pd.DataFrame
         List of catalogs
+
+    Examples
+    --------
+    >>> fb.list_catalogs()[["name", "active"]]
+              name  active
+        0  grocery    True
+        1  default   False
     """
-    return Catalog.list()
+    return Catalog.list(include_id=include_id)
 
 
-def activate_catalog(name: str) -> Catalog:
+def activate_and_get_catalog(name: str) -> Catalog:
     """
     Activate catalog by name
 
@@ -154,6 +207,10 @@ def activate_catalog(name: str) -> Catalog:
     -------
     Catalog
         Catalog
+
+    Examples
+    --------
+    >>> catalog = fb.activate_and_get_catalog("grocery")
     """
     return Catalog.activate(name)
 

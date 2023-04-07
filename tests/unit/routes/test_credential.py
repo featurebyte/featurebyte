@@ -181,3 +181,40 @@ class TestCredentialApi(BaseApiTestSuite):
                 "type": "type_error",
             }
         ]
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
+        """Test retrieve info"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
+        expected_info_response = {
+            "name": "grocery",
+            "updated_at": None,
+        }
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict.items() > expected_info_response.items(), response_dict
+        assert "created_at" in response_dict
+        expected_feature_store_info = {
+            "name": "sf_featurestore",
+            "source": "snowflake",
+            "database_details": {
+                "account": "sf_account",
+                "warehouse": "sf_warehouse",
+                "database": "sf_database",
+                "sf_schema": "sf_schema",
+            },
+        }
+        assert response_dict["feature_store_info"].items() > expected_feature_store_info.items()
+
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
+        assert response.status_code == HTTPStatus.OK, response.text
+        verbose_response_dict = verbose_response.json()
+        assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
+        assert "created_at" in verbose_response_dict

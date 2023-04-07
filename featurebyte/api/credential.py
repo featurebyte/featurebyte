@@ -113,7 +113,7 @@ class Credential(CredentialModel, SavableApiObject):
         Examples
         --------
         >>> credential = fb.Credential.get_by_id("playground")  # doctest: +SKIP
-        >>> credential.update_credential(
+        >>> credential.update_credential(  # doctest: +SKIP
         ...     storage_credential=S3StorageCredential(
         ...         s3_access_key_id="access_key_id",
         ...         s3_secret_access_key="s3_secret_access_key",

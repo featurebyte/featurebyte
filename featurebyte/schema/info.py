@@ -11,6 +11,7 @@ from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
+from featurebyte.models.credential import DatabaseCredentialType, StorageCredentialType
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListStatus,
@@ -351,26 +352,18 @@ class CatalogInfo(CatalogBriefInfo, BaseInfo):
     """
 
 
-class CatalogBriefInfoList(FeatureByteBaseModel):
+class CredentialBriefInfo(BaseBriefInfo):
     """
-    Paginated list of Catalog brief info
+    Credential brief info schema
     """
 
-    __root__: List[CatalogBriefInfo]
+    database_credential_type: Optional[DatabaseCredentialType]
+    storage_credential_type: Optional[StorageCredentialType]
 
-    @classmethod
-    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> CatalogBriefInfoList:
-        """
-        Construct Catalog brief info list from paginated data
 
-        Parameters
-        ----------
-        paginated_data: dict[str, Any]
-            Paginated data
+class CredentialInfo(CredentialBriefInfo, BaseInfo):
+    """
+    Credential info schema
+    """
 
-        Returns
-        -------
-        CatalogBriefInfoList
-        """
-        catalog_project = DictProject(rule=("data", ["name"]))
-        return CatalogBriefInfoList(__root__=catalog_project.project(paginated_data))
+    feature_store_info: FeatureStoreInfo

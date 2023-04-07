@@ -20,8 +20,10 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
 from featurebyte.schema.credential import CredentialList, CredentialRead, CredentialUpdate
+from featurebyte.schema.info import CredentialInfo
 
 router = APIRouter(prefix="/credential")
 
@@ -68,6 +70,7 @@ async def list_credential(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    feature_store_id: Optional[PydanticObjectId] = None,
 ) -> CredentialList:
     """
     List credentials
@@ -82,6 +85,7 @@ async def list_credential(
             sort_dir=sort_dir,
             search=search,
             name=name,
+            query_filter={} if feature_store_id is None else {"feature_store_id": feature_store_id},
         ),
     )
 
@@ -107,6 +111,23 @@ async def update_credential(
             data=data,
         ),
     )
+
+
+@router.get("/{credential_id}/info", response_model=CredentialInfo)
+async def get_credential_info(
+    request: Request,
+    credential_id: PydanticObjectId,
+    verbose: bool = VerboseQuery,
+) -> CredentialInfo:
+    """
+    Retrieve catalog info
+    """
+    controller = request.state.app_container.credential_controller
+    info = await controller.get_info(
+        credential_id=credential_id,
+        verbose=verbose,
+    )
+    return cast(CredentialInfo, info)
 
 
 @router.get("/audit/{credential_id}", response_model=AuditDocumentList)
