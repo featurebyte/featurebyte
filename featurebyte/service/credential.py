@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-import os
-
 from bson.objectid import ObjectId
 
 from featurebyte.models.credential import CredentialModel
@@ -15,8 +13,6 @@ from featurebyte.schema.credential import CredentialServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
-
-PASSWORD_SECRET = os.environ.get("CONFIG_PASSWORD_SECRET", "ReplaceThisSecretKey")
 
 
 class CredentialService(
@@ -91,9 +87,10 @@ class CredentialService(
         -------
         CredentialModel
         """
-        document = self.document_class(**data.json_dict())
-        await self._validate_credential(credential=document)
-        return await super().create_document(data=document)
+        credential = self.document_class(**data.json_dict())
+        await self._validate_credential(credential=credential)
+        credential.encrypt()
+        return await super().create_document(data=credential)
 
     async def update_document(
         self,
@@ -125,11 +122,13 @@ class CredentialService(
         """
         if document is None:
             document = await self.get_document(document_id=document_id)
+            document.decrypt()
 
         # verify credential is valid
         update_dict = data.dict(exclude_none=exclude_none)
         updated_document = self.document_class(**{**document.json_dict(), **update_dict})
         await self._validate_credential(credential=updated_document)
+        data.encrypt()
 
         return await super().update_document(
             document_id=document_id,

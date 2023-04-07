@@ -8,6 +8,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.credential import decrypt_value
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -100,14 +101,23 @@ class TestCredentialApi(BaseApiTestSuite):
                     "credential_type": "ACCESS_TOKEN",
                     "access_token": "test2",
                 },
+                "storage_credential": {
+                    "credential_type": "S3",
+                    "s3_access_key_id": "test1",
+                    "s3_secret_access_key": "test2",
+                },
             },
         )
         assert response.status_code == HTTPStatus.OK, response.json()
         result = response.json()
-        assert result["database_credential"] == {
-            "credential_type": "ACCESS_TOKEN",
-            "access_token": "test2",
-        }
+
+        # credentials should not exposed in response
+        assert "database_credential" not in result
+        assert "storage_credential" not in result
+
+        # credential types will be exposed instead
+        assert result["database_credential_type"] == "ACCESS_TOKEN"
+        assert result["storage_credential_type"] == "S3"
 
         # test get audit records
         response = test_api_client.get(f"{self.base_route}/audit/{credential_id}")
@@ -115,12 +125,13 @@ class TestCredentialApi(BaseApiTestSuite):
         results = response.json()
         assert results["total"] == 2
         assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
-        assert [
+        previous_values = [
             record["previous_values"].get("database_credential") for record in results["data"]
-        ] == [
-            {"credential_type": "USERNAME_PASSWORD", "username": "user", "password": "pass"},
-            None,
         ]
+        assert previous_values[0]["credential_type"] == "USERNAME_PASSWORD"
+        assert decrypt_value(previous_values[0]["username"]) == "user"
+        assert decrypt_value(previous_values[0]["password"]) == "pass"
+        assert previous_values[1] is None
 
     def test_update_404(self, test_api_client_persistent):
         """

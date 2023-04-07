@@ -12,7 +12,7 @@ from featurebyte.api.data_source import DataSource
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.credential import SessionCredential, StorageCredential
+from featurebyte.models.credential import DatabaseCredential, StorageCredential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
@@ -45,7 +45,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     )
 
     # optional credential parameters
-    database_credential: Optional[SessionCredential] = None
+    database_credential: Optional[DatabaseCredential] = None
     storage_credential: Optional[StorageCredential] = None
 
     def _get_create_payload(self) -> dict[str, Any]:
@@ -58,7 +58,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         name: str,
         source_type: SourceType,
         details: DatabaseDetails,
-        database_credential: Optional[SessionCredential] = None,
+        database_credential: Optional[DatabaseCredential] = None,
         storage_credential: Optional[StorageCredential] = None,
     ) -> FeatureStore:
         """
@@ -75,7 +75,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
             Type of the feature store.
         details: DatabaseDetails
             Details of the database to use for the feature store.
-        database_credential: Optional[SessionCredential]
+        database_credential: Optional[DatabaseCredential]
             Credential details to use when connecting to the database.
         storage_credential: Optional[StorageCredential]
             Credential details to use when connecting to the storage.
@@ -105,7 +105,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         name: str,
         source_type: SourceType,
         details: DatabaseDetails,
-        database_credential: Optional[SessionCredential] = None,
+        database_credential: Optional[DatabaseCredential] = None,
         storage_credential: Optional[StorageCredential] = None,
     ) -> FeatureStore:
         """
@@ -123,7 +123,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
             Type of the feature store.
         details: DatabaseDetails
             Details of the database to use for the feature store.
-        database_credential: Optional[SessionCredential]
+        database_credential: Optional[DatabaseCredential]
             Credential details to use when connecting to the database.
         storage_credential: Optional[StorageCredential]
             Credential details to use when connecting to the storage.

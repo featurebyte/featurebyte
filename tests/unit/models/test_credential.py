@@ -1,6 +1,7 @@
 """
 Test document model for stored credentials
 """
+import copy
 import json
 
 import pytest
@@ -10,7 +11,7 @@ from featurebyte.enum import SourceType
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
-    CredentialType,
+    DatabaseCredentialType,
     S3StorageCredential,
     StorageCredentialType,
     UsernamePasswordCredential,
@@ -36,18 +37,18 @@ def storage_credential_fixture(request):
 
 
 @pytest.fixture(
-    name="credential",
-    params=[None, CredentialType.USERNAME_PASSWORD, CredentialType.ACCESS_TOKEN],
+    name="database_credential",
+    params=[None, DatabaseCredentialType.USERNAME_PASSWORD, DatabaseCredentialType.ACCESS_TOKEN],
 )
-def credential_fixture(request):
+def database_credential_fixture(request):
     """
-    Fixture for a Credential object
+    Fixture for a DatabaseCredential object
     """
     if not request.param:
         return None
-    if request.param == CredentialType.ACCESS_TOKEN:
+    if request.param == DatabaseCredentialType.ACCESS_TOKEN:
         credential = AccessTokenCredential(access_token="access_token")
-    elif request.param == CredentialType.USERNAME_PASSWORD:
+    elif request.param == DatabaseCredentialType.USERNAME_PASSWORD:
         credential = UsernamePasswordCredential(username="test", password="password")
     else:
         raise ValueError("Invalid credential type")
@@ -75,16 +76,25 @@ def feature_store_fixture():
     )
 
 
-def test_credentials_serialize_json(feature_store, credential, storage_credential):
+def test_credentials_serialize_json(feature_store, database_credential, storage_credential):
     """
     Test serialization to json
     """
     credential = CredentialModel(
         name="SF Credentials",
         feature_store_id=feature_store.id,
-        database_credential=credential,
+        database_credential=database_credential,
         storage_credential=storage_credential,
     )
-    credential_json = credential.json(by_alias=True)
-    credential_dict = CredentialModel(**json.loads(credential_json)).json_dict()
-    assert credential_dict == credential.json_dict()
+    credential_to_serialize = copy.deepcopy(credential)
+    credential_to_serialize.encrypt()
+    credential_json = credential_to_serialize.json(by_alias=True)
+    deserialized_credential = CredentialModel(**json.loads(credential_json))
+
+    # check that the credential is encrypted
+    if database_credential or storage_credential:
+        assert deserialized_credential.json_dict() != credential.json_dict()
+
+    # check that the credential is decrypted correctly
+    deserialized_credential.decrypt()
+    assert deserialized_credential.json_dict() == credential.json_dict()

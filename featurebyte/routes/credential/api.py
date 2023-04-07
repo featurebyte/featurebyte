@@ -21,38 +21,38 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.credential import CredentialList, CredentialUpdate
+from featurebyte.schema.credential import CredentialList, CredentialRead, CredentialUpdate
 
 router = APIRouter(prefix="/credential")
 
 
-@router.post("", response_model=CredentialModel, status_code=HTTPStatus.CREATED)
+@router.post("", response_model=CredentialRead, status_code=HTTPStatus.CREATED)
 async def create_credential(
     request: Request,
     data: CredentialModel,
-) -> CredentialModel:
+) -> CredentialRead:
     """
     Create credential
     """
     controller = request.state.app_container.credential_controller
-    return cast(CredentialModel, await controller.create_credential(data=data))
+    return cast(CredentialRead, await controller.create_credential(data=data))
 
 
 @router.get(
     "/{credential_id}",
-    response_model=CredentialModel,
+    response_model=CredentialRead,
     status_code=HTTPStatus.OK,
 )
 async def retrieve_credential(
     request: Request,
     credential_id: PydanticObjectId,
-) -> CredentialModel:
+) -> CredentialRead:
     """
     Retrieve credential
     """
     controller = request.state.app_container.credential_controller
     return cast(
-        CredentialModel,
+        CredentialRead,
         await controller.get(
             document_id=credential_id,
         ),
@@ -88,20 +88,20 @@ async def list_credential(
 
 @router.patch(
     "/{credential_id}",
-    response_model=CredentialModel,
+    response_model=CredentialRead,
     status_code=HTTPStatus.OK,
 )
 async def update_credential(
     request: Request,
     credential_id: PydanticObjectId,
     data: CredentialUpdate,
-) -> CredentialModel:
+) -> CredentialRead:
     """
     Update credential
     """
     controller = request.state.app_container.credential_controller
     return cast(
-        CredentialModel,
+        CredentialRead,
         await controller.update_credential(
             credential_id=credential_id,
             data=data,

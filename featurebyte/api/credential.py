@@ -11,7 +11,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.models.credential import CredentialModel, SessionCredential, StorageCredential
+from featurebyte.models.credential import CredentialModel, DatabaseCredential, StorageCredential
 from featurebyte.schema.credential import CredentialUpdate
 
 
@@ -29,7 +29,11 @@ class Credential(CredentialModel, SavableApiObject):
     _update_schema_class = CredentialUpdate
     _list_schema = CredentialModel
     _get_schema = CredentialModel
-    _list_fields = ["name", "created_at", "updated_at", "credential_type"]
+    _list_fields = [
+        "name",
+        "created_at",
+        "updated_at",
+    ]  # , "database_credential_type", "storage_credential_type"]
 
     # pydantic instance variable (public)
     saved: bool = Field(
@@ -47,7 +51,7 @@ class Credential(CredentialModel, SavableApiObject):
     def create(
         cls,
         feature_store: FeatureStore,
-        database_credential: Optional[SessionCredential],
+        database_credential: Optional[DatabaseCredential],
         storage_credential: Optional[StorageCredential],
     ) -> Credential:
         """
@@ -57,7 +61,7 @@ class Credential(CredentialModel, SavableApiObject):
         ----------
         feature_store: FeatureStore
             FeatureStore object to associate the credential with.
-        database_credential: Optional[SessionCredential]
+        database_credential: Optional[DatabaseCredential]
             Session credential details.
         storage_credential: Optional[StorageCredential]
             Storage credential details.
@@ -93,7 +97,7 @@ class Credential(CredentialModel, SavableApiObject):
 
     def update_credential(
         self,
-        database_credential: Optional[SessionCredential],
+        database_credential: Optional[DatabaseCredential],
         storage_credential: Optional[StorageCredential],
     ) -> None:
         """
@@ -101,7 +105,7 @@ class Credential(CredentialModel, SavableApiObject):
 
         Parameters
         ----------
-        database_credential: Optional[SessionCredential]
+        database_credential: Optional[DatabaseCredential]
             Session credential details.
         storage_credential: Optional[StorageCredential]
             Storage credential details.

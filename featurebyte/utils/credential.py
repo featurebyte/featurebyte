@@ -61,8 +61,8 @@ class MongoBackedCredentialProvider(CredentialProvider):
             collection_name=CredentialModel.collection_name(),
             query_filter={"user_id": user_id, "feature_store_id": feature_store["_id"]},
         )
-        # if document:
-        #     return decrypt_credential(CredentialModel(**document))
         if document:
-            return CredentialModel(**document)
+            credential = CredentialModel(**document)
+            credential.decrypt()
+            return credential
         return None

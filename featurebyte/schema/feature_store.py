@@ -10,7 +10,7 @@ from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.credential import SessionCredential, StorageCredential
+from featurebyte.models.credential import DatabaseCredential, StorageCredential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -27,7 +27,7 @@ class FeatureStoreCreate(FeatureByteBaseModel):
     name: StrictStr
     type: SourceType
     details: DatabaseDetails
-    database_credential: Optional[SessionCredential]
+    database_credential: Optional[DatabaseCredential]
     storage_credential: Optional[StorageCredential]
 
 
