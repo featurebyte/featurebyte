@@ -1,8 +1,12 @@
 """
 Unit test for SourceTable
 """
+import re
+import textwrap
+
 import pandas as pd
 
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, TableDataType
 from tests.util.helper import check_sdk_code_generation
 
@@ -177,3 +181,31 @@ def test_get_or_create_scd_table__create(snowflake_database_table_scd_table):
     assert scd_table.effective_timestamp_column == "effective_timestamp"
     assert scd_table.end_timestamp_column == "end_timestamp"
     assert scd_table.current_flag_column == "is_active"
+
+
+def test_create_observation_table(snowflake_database_table, snowflake_execute_query):
+    """
+    Test creating ObservationTable from SourceTable
+    """
+    observation_table = snowflake_database_table.create_observation_table("my_observation_table")
+
+    # Check return type
+    assert isinstance(observation_table, ObservationTable)
+    assert observation_table.name == "my_observation_table"
+
+    # Check that the correct query was executed
+    query = snowflake_execute_query.call_args[0][0]
+    observation_table_name_pattern = r"OBSERVATION_TABLE_\w{24}"
+    assert re.search(observation_table_name_pattern, query)
+
+    # Remove the dynamic component before comparing
+    query = re.sub(r"OBSERVATION_TABLE_\w{24}", "OBSERVATION_TABLE", query)
+    expected = textwrap.dedent(
+        """
+        CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
+        SELECT
+          *
+        FROM "sf_database"."sf_schema"."sf_table"
+        """
+    ).strip()
+    assert query == expected
