@@ -24,6 +24,7 @@ from typeguard import typechecked
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import (
     append_rsuffix_to_column_info,
@@ -46,12 +47,14 @@ from featurebyte.exception import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.observation_table import ViewObservationInput
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import BaseGraphNode
+from featurebyte.schema.observation_table import ObservationTableCreate
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -857,3 +860,28 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             features.append(feature)
 
         return FeatureGroup(features)
+
+    def create_observation_table(self, name: str) -> ObservationTable:
+        """
+        Create an ObservationTable from the View
+
+        Parameters
+        ----------
+        name: str
+            Name of the ObservationTable
+
+        Returns
+        -------
+        ObservationTable
+            ObservationTable object.
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        payload = ObservationTableCreate(
+            name=name,
+            feature_store_id=self.feature_store.id,
+            observation_input=ViewObservationInput(graph=pruned_graph, node_name=mapped_node.name),
+        )
+        observation_table_doc = ObservationTable.post_async_task(
+            route="/observation_table", payload=payload.json_dict()
+        )
+        return ObservationTable.get_by_id(observation_table_doc["_id"])

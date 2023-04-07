@@ -3,6 +3,8 @@ Unit test for EventView class
 """
 
 import copy
+import re
+import textwrap
 from unittest import mock
 from unittest.mock import PropertyMock
 
@@ -12,6 +14,7 @@ from bson import ObjectId
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
@@ -785,3 +788,37 @@ def test_sdk_code_generation(saved_event_table, update_fixtures):
         update_fixtures=update_fixtures,
         table_id=saved_event_table.id,
     )
+
+
+def test_create_observation_table_from_event_view(snowflake_event_table, snowflake_execute_query):
+    """
+    Test creating ObservationTable from an EventView
+    """
+    view = snowflake_event_table.get_view()
+    view["POINT_IN_TIME"] = view["event_timestamp"]
+    view = view[["POINT_IN_TIME", "cust_id"]]
+
+    observation_table = view.create_observation_table("my_observation_table_from_event_view")
+
+    assert isinstance(observation_table, ObservationTable)
+    assert observation_table.name == "my_observation_table_from_event_view"
+
+    # Check that the correct query was executed
+    query = snowflake_execute_query.call_args[0][0]
+    observation_table_name_pattern = r"OBSERVATION_TABLE_\w{24}"
+    assert re.search(observation_table_name_pattern, query)
+
+    # Remove the dynamic component before comparing
+    query = re.sub(r"OBSERVATION_TABLE_\w{24}", "OBSERVATION_TABLE", query)
+    expected = textwrap.dedent(
+        """
+        CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
+        SELECT
+          "col_int" AS "col_int",
+          "event_timestamp" AS "event_timestamp",
+          "cust_id" AS "cust_id",
+          "event_timestamp" AS "POINT_IN_TIME"
+        FROM "sf_database"."sf_schema"."sf_table"
+        """
+    ).strip()
+    assert query == expected
