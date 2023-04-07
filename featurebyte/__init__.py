@@ -1,6 +1,8 @@
 """Python Library for FeatureOps"""
 from typing import Dict, List, Optional
 
+import pandas as pd
+
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.credential import Credential
@@ -57,6 +59,18 @@ from featurebyte.schema.feature_list import FeatureVersionInfo
 version: str = get_version()
 
 
+def list_profiles() -> pd.DataFrame:
+    """
+    List all service profiles
+
+    Returns
+    -------
+    pd.DataFrame
+        List of service profiles
+    """
+    return pd.DataFrame([profile.dict() for profile in Configurations().profiles])
+
+
 def use_profile(profile: str) -> Dict[str, str]:
     """
     Use service profile specified in configuration file
@@ -72,6 +86,76 @@ def use_profile(profile: str) -> Dict[str, str]:
         Remote and local SDK versions
     """
     return Configurations().use_profile(profile)
+
+
+def list_credentials() -> pd.DataFrame:
+    """
+    List all credentials
+
+    Returns
+    -------
+    pd.DataFrame
+        List of credentials
+    """
+    return Credential.list()
+
+
+def list_feature_stores() -> pd.DataFrame:
+    """
+    List all feature stores
+
+    Returns
+    -------
+    pd.DataFrame
+        List of feature stores
+    """
+    return FeatureStore.list()
+
+
+def get_feature_store(name: str) -> FeatureStore:
+    """
+    Get feature store by name
+
+    Parameters
+    ----------
+    name : str
+        Feature store name
+
+    Returns
+    -------
+    FeatureStore
+        Feature store
+    """
+    return FeatureStore.get(name)
+
+
+def list_catalogs() -> pd.DataFrame:
+    """
+    List all catalogs
+
+    Returns
+    -------
+    pd.DataFrame
+        List of catalogs
+    """
+    return Catalog.list()
+
+
+def activate_catalog(name: str) -> Catalog:
+    """
+    Activate catalog by name
+
+    Parameters
+    ----------
+    name : str
+        Catalog name
+
+    Returns
+    -------
+    Catalog
+        Catalog
+    """
+    return Catalog.activate(name)
 
 
 def start(local: bool = False) -> None:
