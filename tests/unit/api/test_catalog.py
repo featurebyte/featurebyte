@@ -32,6 +32,7 @@ from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalys
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_table import ItemTable
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_table import SCDTable
@@ -231,6 +232,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         SavableApiObject,
         TableApiObject,
         TableListMixin,
+        ObservationTable,  # still experimental
     }
     assert len(api_object_children) == len(method_list) + len(excluded_children)
 
