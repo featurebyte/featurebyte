@@ -863,10 +863,10 @@ class InfoService(BaseService):
             feature_store_info=await self.get_feature_store_info(
                 document_id=credential.feature_store_id, verbose=verbose
             ),
-            database_credential_type=credential.database_credential.credential_type
+            database_credential_type=credential.database_credential.type
             if credential.database_credential
             else None,
-            storage_credential_type=credential.storage_credential.credential_type
+            storage_credential_type=credential.storage_credential.type
             if credential.storage_credential
             else None,
             created_at=credential.created_at,

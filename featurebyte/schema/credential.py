@@ -49,9 +49,9 @@ class CredentialRead(FeatureByteBaseDocumentModel):
             Validated values
         """
         if values.get("database_credential"):
-            values["database_credential_type"] = values["database_credential"]["credential_type"]
+            values["database_credential_type"] = values["database_credential"]["type"]
         if values.get("storage_credential"):
-            values["storage_credential_type"] = values["storage_credential"]["credential_type"]
+            values["storage_credential_type"] = values["storage_credential"]["type"]
         return values
 
 

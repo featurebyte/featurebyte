@@ -24,7 +24,7 @@ def databricks_session_dict():
         "featurebyte_catalog": "hive_metastore",
         "featurebyte_schema": "featurebyte",
         "database_credential": {
-            "credential_type": "ACCESS_TOKEN",
+            "type": "ACCESS_TOKEN",
             "access_token": "some-databricks-access-token",
         },
     }

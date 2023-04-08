@@ -95,7 +95,7 @@ class BaseDatabaseCredential(BaseCredential):
     Storage credential only
     """
 
-    credential_type: DatabaseCredentialType
+    type: DatabaseCredentialType
 
 
 class UsernamePasswordCredential(BaseDatabaseCredential):
@@ -103,7 +103,7 @@ class UsernamePasswordCredential(BaseDatabaseCredential):
     Username / Password credential
     """
 
-    credential_type: Literal[DatabaseCredentialType.USERNAME_PASSWORD] = Field(
+    type: Literal[DatabaseCredentialType.USERNAME_PASSWORD] = Field(
         DatabaseCredentialType.USERNAME_PASSWORD, const=True
     )
     username: StrictStr
@@ -115,7 +115,7 @@ class AccessTokenCredential(BaseDatabaseCredential):
     Access token credential
     """
 
-    credential_type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(
+    type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(
         DatabaseCredentialType.ACCESS_TOKEN, const=True
     )
     access_token: StrictStr
@@ -123,7 +123,7 @@ class AccessTokenCredential(BaseDatabaseCredential):
 
 DatabaseCredential = Annotated[
     Union[UsernamePasswordCredential, AccessTokenCredential],
-    Field(discriminator="credential_type"),
+    Field(discriminator="type"),
 ]
 
 
@@ -141,7 +141,7 @@ class BaseStorageCredential(BaseCredential):
     Base storage credential
     """
 
-    credential_type: StorageCredentialType
+    type: StorageCredentialType
 
 
 class S3StorageCredential(BaseStorageCredential):
@@ -149,14 +149,14 @@ class S3StorageCredential(BaseStorageCredential):
     S3 storage credential
     """
 
-    credential_type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
+    type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
     s3_access_key_id: StrictStr
     s3_secret_access_key: StrictStr
 
 
 StorageCredential = Annotated[
     Union[S3StorageCredential],
-    Field(discriminator="credential_type"),
+    Field(discriminator="type"),
 ]
 
 

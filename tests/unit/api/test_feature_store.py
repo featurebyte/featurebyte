@@ -38,7 +38,7 @@ async def test_get_session(
         "sf_schema": "sf_schema",
         "database": "sf_database",
         "database_credential": {
-            "credential_type": "USERNAME_PASSWORD",
+            "type": "USERNAME_PASSWORD",
             "username": "sf_user",
             "password": "sf_password",
         },

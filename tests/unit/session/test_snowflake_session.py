@@ -38,7 +38,7 @@ def snowflake_session_dict_fixture(snowflake_session_dict_without_credentials):
     Snowflake session parameters with credentials
     """
     snowflake_session_dict_without_credentials["database_credential"] = {
-        "credential_type": "USERNAME_PASSWORD",
+        "type": "USERNAME_PASSWORD",
         "username": "username",
         "password": "password",
     }

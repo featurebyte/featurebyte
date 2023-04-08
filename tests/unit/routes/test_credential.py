@@ -98,11 +98,11 @@ class TestCredentialApi(BaseApiTestSuite):
             f"{self.base_route}/{credential_id}",
             json={
                 "database_credential": {
-                    "credential_type": "ACCESS_TOKEN",
+                    "type": "ACCESS_TOKEN",
                     "access_token": "test2",
                 },
                 "storage_credential": {
-                    "credential_type": "S3",
+                    "type": "S3",
                     "s3_access_key_id": "test1",
                     "s3_secret_access_key": "test2",
                 },
@@ -128,7 +128,7 @@ class TestCredentialApi(BaseApiTestSuite):
         previous_values = [
             record["previous_values"].get("database_credential") for record in results["data"]
         ]
-        assert previous_values[0]["credential_type"] == "USERNAME_PASSWORD"
+        assert previous_values[0]["type"] == "USERNAME_PASSWORD"
         assert decrypt_value(previous_values[0]["username"]) == "user"
         assert decrypt_value(previous_values[0]["password"]) == "pass"
         assert previous_values[1] is None
@@ -143,7 +143,7 @@ class TestCredentialApi(BaseApiTestSuite):
             f"{self.base_route}/{unknown_credential_id}",
             json={
                 "database_credential": {
-                    "credential_type": "ACCESS_TOKEN",
+                    "type": "ACCESS_TOKEN",
                     "access_token": "test2",
                 },
             },

@@ -74,16 +74,16 @@ async def test_credential_update(credential, snowflake_feature_store, persistent
             (
                 "UPDATE",
                 'update: "sf_featurestore"',
-                "database_credential.credential_type",
-                "USERNAME_PASSWORD",
-                "ACCESS_TOKEN",
+                "database_credential.password",
+                before_record["database_credential"]["password"],
+                np.nan,
             ),
             (
                 "UPDATE",
                 'update: "sf_featurestore"',
-                "database_credential.password",
-                before_record["database_credential"]["password"],
-                np.nan,
+                "database_credential.type",
+                "USERNAME_PASSWORD",
+                "ACCESS_TOKEN",
             ),
             (
                 "UPDATE",
@@ -93,13 +93,6 @@ async def test_credential_update(credential, snowflake_feature_store, persistent
                 np.nan,
             ),
             ("UPDATE", 'update: "sf_featurestore"', "storage_credential", None, np.nan),
-            (
-                "UPDATE",
-                'update: "sf_featurestore"',
-                "storage_credential.credential_type",
-                np.nan,
-                "S3",
-            ),
             (
                 "UPDATE",
                 'update: "sf_featurestore"',
@@ -113,6 +106,13 @@ async def test_credential_update(credential, snowflake_feature_store, persistent
                 "storage_credential.s3_secret_access_key",
                 np.nan,
                 after_record["storage_credential"]["s3_secret_access_key"],
+            ),
+            (
+                "UPDATE",
+                'update: "sf_featurestore"',
+                "storage_credential.type",
+                np.nan,
+                "S3",
             ),
             (
                 "UPDATE",
@@ -131,16 +131,16 @@ async def test_credential_update(credential, snowflake_feature_store, persistent
             (
                 "INSERT",
                 'insert: "sf_featurestore"',
-                "database_credential.credential_type",
+                "database_credential.password",
                 np.nan,
-                "USERNAME_PASSWORD",
+                before_record["database_credential"]["password"],
             ),
             (
                 "INSERT",
                 'insert: "sf_featurestore"',
-                "database_credential.password",
+                "database_credential.type",
                 np.nan,
-                before_record["database_credential"]["password"],
+                "USERNAME_PASSWORD",
             ),
             (
                 "INSERT",
