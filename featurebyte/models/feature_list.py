@@ -338,7 +338,7 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
             values["table_ids"] = cls.derive_table_ids(features)
         return values
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -355,6 +355,12 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.RENAME,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("feature_namespace_ids"),
+            pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("table_ids"),
         ]
 
 
@@ -409,15 +415,7 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
         MongoDB settings
         """
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
-            pymongo.operations.IndexModel("feature_namespace_ids"),
-            pymongo.operations.IndexModel("entity_ids"),
-            pymongo.operations.IndexModel("table_ids"),
+        indexes = FrozenFeatureListNamespaceModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_list_ids"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
             pymongo.operations.IndexModel("default_feature_list_id"),
@@ -523,6 +521,12 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
             ),
         ]
 
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("version"),
+            pymongo.operations.IndexModel("feature_ids"),
+            pymongo.operations.IndexModel("feature_list_namespace_id"),
+        ]
+
 
 class FeatureListModel(FrozenFeatureListModel):
     """
@@ -584,9 +588,6 @@ class FeatureListModel(FrozenFeatureListModel):
         """
 
         indexes = FrozenFeatureListModel.Settings.indexes + [
-            pymongo.operations.IndexModel("version"),
-            pymongo.operations.IndexModel("feature_ids"),
-            pymongo.operations.IndexModel("feature_list_namespace_id"),
             pymongo.operations.IndexModel("online_enabled_feature_ids"),
             pymongo.operations.IndexModel("deployed"),
             [

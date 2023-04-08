@@ -42,7 +42,7 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
         """
         return FeatureStoreDetails(**self.json_dict())
 
-    class Settings:
+    class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -66,11 +66,7 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
             ),
         ]
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("type"),
             pymongo.operations.IndexModel("details"),
             [
