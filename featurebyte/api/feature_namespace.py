@@ -98,6 +98,10 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     @classmethod
     def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
         features = super()._post_process_list(item_list)
+
+        # replace id with default_feature_id
+        features["id"] = features["default_feature_id"]
+
         # add online_enabled
         features["online_enabled"] = features[
             ["default_feature_id", "online_enabled_feature_ids"]

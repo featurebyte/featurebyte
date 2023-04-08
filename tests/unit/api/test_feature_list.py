@@ -10,6 +10,7 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
+from featurebyte import list_deployments
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import (
@@ -567,12 +568,13 @@ def test_get_feature_list(saved_feature_list):
 
 def test_list(saved_feature_list):
     """Test listing feature list"""
-    feature_lists = FeatureList.list()
+    feature_lists = FeatureList.list(include_id=True)
     saved_feature_list_namespace = FeatureListNamespace.get(saved_feature_list.name)
     assert_frame_equal(
         feature_lists,
         pd.DataFrame(
             {
+                "id": [saved_feature_list.id],
                 "name": [saved_feature_list_namespace.name],
                 "num_features": 1,
                 "status": [saved_feature_list_namespace.status],
@@ -786,9 +788,30 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     """
     Test that deploying a feature list that already has features that are production ready doesn't error.
     """
+    deployments = list_deployments()
+    assert_frame_equal(
+        deployments,
+        pd.DataFrame(columns=["catalog", "feature_list", "feature_list_id", "num_features"]),
+    )
+
     feature_list.save()
     feature_list.deploy(enable=True, make_production_ready=True)
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
+
+    deployments = list_deployments()
+    assert_frame_equal(
+        deployments,
+        pd.DataFrame(
+            [
+                {
+                    "catalog": "default",
+                    "feature_list": "feature_list_name",
+                    "feature_list_id": feature_list.id,
+                    "num_features": len(feature_list.feature_names),
+                }
+            ]
+        ),
+    )
 
     # Deploy again to show that we don't error
     feature_list.deploy(enable=True, make_production_ready=True)

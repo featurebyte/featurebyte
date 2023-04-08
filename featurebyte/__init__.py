@@ -275,6 +275,51 @@ def playground(
     )
 
 
+def list_deployments() -> pd.DataFrame:
+    """
+    List all deployments
+
+    Returns
+    -------
+    pd.DataFrame
+        List of deployments
+
+    Examples
+    --------
+    >>> fb.list_deployments()
+    Empty DataFrame
+    Columns: [catalog, feature_list, feature_list_id, num_features]
+    Index: []
+    """
+    # get active catalog
+    current_catalog = Catalog.get_active()
+    assert current_catalog.name
+
+    try:
+
+        deployments = []
+
+        # check deployed feature lists in each catalog
+        for catalog_name in Catalog.list().name:
+            catalog = Catalog.activate(catalog_name)
+            feature_lists = FeatureList.list(include_id=True)
+            feature_lists["feature_list_id"] = feature_lists["id"]
+            feature_lists = feature_lists[feature_lists.deployed]
+            for record in feature_lists.to_dict("records"):
+                record["catalog"] = catalog.name
+                record["feature_list"] = record["name"]
+                deployments.append(record)
+
+        fields = ["catalog", "feature_list", "feature_list_id", "num_features"]
+        if deployments:
+            return pd.DataFrame(deployments)[fields]
+        return pd.DataFrame(columns=fields)
+
+    finally:
+        # reactivate originally active catalog
+        Catalog.activate(current_catalog.name)
+
+
 __all__ = [
     "Catalog",
     "ChangeView",
