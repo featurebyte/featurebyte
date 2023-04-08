@@ -3,6 +3,8 @@ This module contains Semantic related models
 """
 from typing import List
 
+import pymongo
+
 from featurebyte.models.base import UniqueValuesConstraint
 from featurebyte.models.relationship import Relationship
 
@@ -42,4 +44,16 @@ class SemanticModel(Relationship):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=None,
             ),
+        ]
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("parents"),
+            pymongo.operations.IndexModel("ancestor_ids"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

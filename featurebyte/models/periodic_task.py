@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from datetime import datetime
 
+import pymongo
 from pydantic import BaseModel, Field
 
 from featurebyte.models.base import (
@@ -87,4 +88,17 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("task"),
+            [
+                ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
+            ],
         ]

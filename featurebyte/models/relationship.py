@@ -3,6 +3,7 @@ This module contains Relation mixin model
 """
 from typing import Any, Dict, List, Optional
 
+import pymongo
 from bson import ObjectId
 from pydantic import Field, root_validator, validator
 
@@ -91,6 +92,22 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
                 },
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
+        ]
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("relationship_type"),
+            pymongo.operations.IndexModel("primary_entity_id"),
+            pymongo.operations.IndexModel("related_entity_id"),
+            pymongo.operations.IndexModel("primary_table_id"),
+            pymongo.operations.IndexModel("is_enabled"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]
 
     @root_validator

@@ -7,6 +7,7 @@ from typing import List
 
 from datetime import datetime
 
+import pymongo
 from pydantic import StrictStr
 
 from featurebyte.models.base import (
@@ -62,4 +63,14 @@ class CatalogModel(FeatureByteBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

@@ -8,6 +8,7 @@ from typing import Any, List, Optional
 import functools
 from collections import defaultdict
 
+import pymongo
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 from typeguard import typechecked
@@ -403,6 +404,29 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
         construct_sort_validator()
     )
 
+    class Settings(FrozenFeatureListNamespaceModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("feature_namespace_ids"),
+            pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("table_ids"),
+            pymongo.operations.IndexModel("feature_list_ids"),
+            pymongo.operations.IndexModel("deployed_feature_list_ids"),
+            pymongo.operations.IndexModel("default_feature_list_id"),
+            pymongo.operations.IndexModel("status"),
+            [
+                ("name", pymongo.TEXT),
+            ],
+        ]
+
 
 class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
     """
@@ -553,3 +577,25 @@ class FeatureListModel(FrozenFeatureListModel):
                 "readiness_distribution total count is different from total feature ids."
             )
         return value
+
+    class Settings(FrozenFeatureListModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("version"),
+            pymongo.operations.IndexModel("feature_ids"),
+            pymongo.operations.IndexModel("feature_list_namespace_id"),
+            pymongo.operations.IndexModel("online_enabled_feature_ids"),
+            pymongo.operations.IndexModel("deployed"),
+            [
+                ("name", pymongo.TEXT),
+                ("version", pymongo.TEXT),
+            ],
+        ]

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 
+import pymongo
 from pydantic import BaseModel
 
 from featurebyte.models.base import (
@@ -77,6 +78,18 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
+        ]
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("event_table_id"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]
 
 

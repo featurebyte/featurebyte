@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
+import pymongo
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 
@@ -121,6 +122,26 @@ class FeatureNamespaceModel(FrozenFeatureNamespaceModel):
     _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(
         construct_sort_validator()
     )
+
+    class Settings(FrozenFeatureNamespaceModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("table_ids"),
+            pymongo.operations.IndexModel(
+                [
+                    ("name", pymongo.TEXT),
+                ],
+            ),
+        ]
 
 
 class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
@@ -280,6 +301,35 @@ class FeatureModel(FrozenFeatureModel):
     definition: Optional[str] = Field(
         allow_mutation=False, default=None, description="Feature Definition"
     )
+
+    class Settings(FrozenFeatureModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("dtype"),
+            pymongo.operations.IndexModel("version"),
+            pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("table_ids"),
+            pymongo.operations.IndexModel("primary_table_ids"),
+            pymongo.operations.IndexModel("feature_namespace_id"),
+            pymongo.operations.IndexModel("feature_list_ids"),
+            pymongo.operations.IndexModel("readiness"),
+            pymongo.operations.IndexModel("online_enabled"),
+            pymongo.operations.IndexModel("deployed_feature_list_ids"),
+            pymongo.operations.IndexModel(
+                [
+                    ("name", pymongo.TEXT),
+                    ("version", pymongo.TEXT),
+                ],
+            ),
+        ]
 
 
 class FeatureSignature(FeatureByteBaseModel):

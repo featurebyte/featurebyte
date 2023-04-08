@@ -7,6 +7,7 @@ from typing import List
 
 from datetime import datetime
 
+import pymongo
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import TableDataType
@@ -106,4 +107,16 @@ class EntityModel(EntityRelationship):
                 conflict_fields_signature={"serving_name": ["serving_names", 0]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("serving_names"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

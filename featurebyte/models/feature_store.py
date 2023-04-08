@@ -7,6 +7,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
 from abc import ABC, abstractmethod
 
+import pymongo
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import OrderedStrEnum
@@ -63,6 +64,19 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
                 conflict_fields_signature={"details": ["details"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("type"),
+            pymongo.operations.IndexModel("details"),
+            [
+                ("name", pymongo.TEXT),
+                ("type", pymongo.TEXT),
+            ],
         ]
 
 
@@ -218,4 +232,17 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
                 conflict_fields_signature={"tabular_source": ["tabular_source"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("type"),
+            pymongo.operations.IndexModel("status"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

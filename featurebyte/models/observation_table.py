@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import List, Literal, Optional, Union
 from typing_extensions import Annotated
 
+import pymongo
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import StrEnum
@@ -109,4 +110,16 @@ class ObservationTableModel(MaterializedTable):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = [
+            pymongo.operations.IndexModel("user_id"),
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("name"),
+            pymongo.operations.IndexModel("created_at"),
+            pymongo.operations.IndexModel("updated_at"),
+            pymongo.operations.IndexModel("context_id"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

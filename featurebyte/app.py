@@ -69,7 +69,7 @@ def _get_api_deps() -> Callable[[Request], None]:
         request.state.get_credential = ConfigCredentialProvider().get_credential
         request.state.get_storage = get_storage
         request.state.get_temp_storage = get_temp_storage
-        catalog_id = ObjectId(request.query_params.get("catalog_id", DEFAULT_CATALOG_ID))
+        catalog_id = ObjectId(request.headers.get("catalog_id", DEFAULT_CATALOG_ID))
         request.state.app_container = AppContainer.get_instance(
             user=request.state.user,
             persistent=request.state.persistent,
