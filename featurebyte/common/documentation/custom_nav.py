@@ -12,6 +12,7 @@ from featurebyte.common.documentation.constants import (
     CREATE,
     DATA_SOURCE,
     ENTITY,
+    ENUMS,
     EXPLORE,
     FEATURE,
     FEATURE_GROUP,
@@ -19,6 +20,7 @@ from featurebyte.common.documentation.constants import (
     FEATURE_LIST,
     FEATURE_STORE,
     GET,
+    IMPUTATION,
     INFO,
     JOIN,
     LAGS,
@@ -81,6 +83,8 @@ class BetaWave3Nav(Nav):
         LINEAGE,
         UPDATE,
         VERSION,
+        ENUMS,
+        IMPUTATION,
     ]
 
     _custom_order_mapping = {

@@ -12,6 +12,7 @@ from featurebyte.common.documentation.constants import (
     CREATE,
     DATA_SOURCE,
     ENTITY,
+    ENUMS,
     EXPLORE,
     FEATURE,
     FEATURE_GROUP,
@@ -19,6 +20,7 @@ from featurebyte.common.documentation.constants import (
     FEATURE_LIST,
     FEATURE_STORE,
     GET,
+    IMPUTATION,
     INFO,
     JOIN,
     LAGS,
@@ -644,14 +646,14 @@ def _get_enum_layout() -> List[DocLayoutItem]:
         The layout for the Enums used in featurebyte.
     """
     return [
-        DocLayoutItem([UTILITY_CLASSES, "MissingValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, "DisguisedValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, "UnexpectedValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, "ValueBeyondEndpointImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, "StringValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, "AggFunc"]),
-        DocLayoutItem([UTILITY_CLASSES, "SourceType"]),
-        DocLayoutItem([UTILITY_CLASSES, "StorageType"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "MissingValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "DisguisedValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "UnexpectedValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "ValueBeyondEndpointImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "StringValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
     ]
 
 
@@ -666,9 +668,9 @@ def _get_source_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([SOURCE_TABLE]),
-        DocLayoutItem([SOURCE_TABLE, "SourceTable.describe"]),
-        DocLayoutItem([SOURCE_TABLE, "SourceTable.preview"]),
-        DocLayoutItem([SOURCE_TABLE, "SourceTable.sample"]),
+        DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.describe"]),
+        DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.preview"]),
+        DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.sample"]),
     ]
 
 
