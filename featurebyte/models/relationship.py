@@ -41,11 +41,32 @@ class Relationship(FeatureByteBaseDocumentModel):
         construct_sort_validator(field="id")
     )
 
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("parents"),
+            pymongo.operations.IndexModel("ancestor_ids"),
+        ]
+
 
 class CatalogRelationship(Relationship, FeatureByteCatalogBaseDocumentModel):
     """
     Catalog-specific relationship model
     """
+
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("parents"),
+            pymongo.operations.IndexModel("ancestor_ids"),
+        ]
 
 
 class RelationshipType(StrEnum):
@@ -72,7 +93,7 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
     is_enabled: bool
     updated_by: Optional[PydanticObjectId]
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         Settings
         """
@@ -94,12 +115,7 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
             ),
         ]
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("relationship_type"),
             pymongo.operations.IndexModel("primary_entity_id"),
             pymongo.operations.IndexModel("related_entity_id"),

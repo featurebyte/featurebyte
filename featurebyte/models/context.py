@@ -28,7 +28,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
     graph: Optional[QueryGraph]
     node_name: Optional[str]
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB Settings
         """
@@ -47,12 +47,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
             ),
         ]
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             [
                 ("name", pymongo.TEXT),
             ],

@@ -208,7 +208,7 @@ class APIClient(BaseAPIClient):
         """
         try:
             headers = kwargs.get("headers", {})
-            headers["catalog_id"] = str(get_active_catalog_id())
+            headers["active-catalog-id"] = str(get_active_catalog_id())
             kwargs["headers"] = headers
             return super().request(
                 method,

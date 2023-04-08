@@ -60,7 +60,7 @@ class FrozenFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
         construct_sort_validator()
     )
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -77,6 +77,12 @@ class FrozenFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.RENAME,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("dtype"),
+            pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("table_ids"),
         ]
 
 
@@ -128,14 +134,11 @@ class FeatureNamespaceModel(FrozenFeatureNamespaceModel):
         MongoDB settings
         """
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
-            pymongo.operations.IndexModel("entity_ids"),
-            pymongo.operations.IndexModel("table_ids"),
+        indexes = FrozenFeatureNamespaceModel.Settings.indexes + [
+            pymongo.operations.IndexModel("feature_ids"),
+            pymongo.operations.IndexModel("online_enabled_feature_ids"),
+            pymongo.operations.IndexModel("readiness"),
+            pymongo.operations.IndexModel("default_feature_id"),
             pymongo.operations.IndexModel(
                 [
                     ("name", pymongo.TEXT),
@@ -233,7 +236,7 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
         operation_structure = self.graph.extract_operation_structure(self.node)
         return operation_structure.to_group_operation_structure()
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -250,6 +253,16 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"], "version": ["version"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("dtype"),
+            pymongo.operations.IndexModel("version"),
+            pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("table_ids"),
+            pymongo.operations.IndexModel("primary_table_ids"),
+            pymongo.operations.IndexModel("feature_namespace_id"),
+            pymongo.operations.IndexModel("feature_list_ids"),
         ]
 
 
@@ -307,19 +320,7 @@ class FeatureModel(FrozenFeatureModel):
         MongoDB settings
         """
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
-            pymongo.operations.IndexModel("dtype"),
-            pymongo.operations.IndexModel("version"),
-            pymongo.operations.IndexModel("entity_ids"),
-            pymongo.operations.IndexModel("table_ids"),
-            pymongo.operations.IndexModel("primary_table_ids"),
-            pymongo.operations.IndexModel("feature_namespace_id"),
-            pymongo.operations.IndexModel("feature_list_ids"),
+        indexes = FrozenFeatureModel.Settings.indexes + [
             pymongo.operations.IndexModel("readiness"),
             pymongo.operations.IndexModel("online_enabled"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),

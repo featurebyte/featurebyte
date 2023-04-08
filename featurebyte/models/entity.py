@@ -13,6 +13,7 @@ from pydantic import Field, StrictStr
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
+    FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -85,7 +86,7 @@ class EntityModel(EntityRelationship):
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -109,12 +110,7 @@ class EntityModel(EntityRelationship):
             ),
         ]
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("serving_names"),
             [
                 ("name", pymongo.TEXT),

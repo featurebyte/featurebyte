@@ -150,13 +150,15 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         # save feature store
         payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
         response = api_client.post(
-            "/feature_store", params={"catalog_id": catalog_id}, json=payload
+            "/feature_store", headers={"active-catalog-id": str(catalog_id)}, json=payload
         )
         assert response.status_code == HTTPStatus.CREATED
 
         # save event table
         payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
-        response = api_client.post("/event_table", params={"catalog_id": catalog_id}, json=payload)
+        response = api_client.post(
+            "/event_table", headers={"active-catalog-id": str(catalog_id)}, json=payload
+        )
         assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):

@@ -18,6 +18,16 @@ def test_indexes():
     Test model indexes
     """
 
+    def check_field(resource, attribute):
+        """
+        Check pydantic resource has fields in attribute string in dot notation
+        e.g. tabular_source.feature_store_id
+        """
+        fields = attribute.split(".")
+        assert fields[0] in resource.__fields__, f"{fields[0]} not in {resource}"
+        if len(fields) > 1:
+            check_field(resource.__fields__[fields[0]].type_, ".".join(fields[1:]))
+
     def get_verified_indexes(model):
         """
         Get indexes for model
@@ -30,11 +40,11 @@ def test_indexes():
                 if isinstance(index, IndexModel):
                     for key in index.document["key"]:
                         indexed_fields.add(key)
-                        assert key in model.__fields__, f"{key} not in {model}"
+                        check_field(model, key)
                 else:
                     for (key, _) in index:
                         indexed_fields.add(key)
-                        assert key in model.__fields__, f"{key} not in {model}"
+                        check_field(model, key)
 
             if model != Task:
                 # check that basic fields are indexed for all models except Task

@@ -5,8 +5,7 @@ from typing import Callable
 
 import aioredis
 import uvicorn
-from bson import ObjectId
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Header, Request
 from starlette.websockets import WebSocket
 
 import featurebyte.routes.catalog.api as catalog_api
@@ -33,7 +32,7 @@ from featurebyte import Configurations
 from featurebyte.common.utils import get_version
 from featurebyte.logger import logger
 from featurebyte.middleware import ExceptionMiddleware, TelemetryMiddleware
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId, User
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
@@ -44,17 +43,19 @@ from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
 
 
-def _get_api_deps() -> Callable[[Request], None]:
+def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
     """
     Get API dependency injection function
 
     Returns
     -------
-    Callable[Request]
+    Callable[Request, PydanticObjectId]
         Dependency injection function
     """
 
-    def _dep_injection_func(request: Request) -> None:
+    def _dep_injection_func(
+        request: Request, active_catalog_id: PydanticObjectId = Header(None)
+    ) -> None:
         """
         Inject dependencies into the requests
 
@@ -62,14 +63,15 @@ def _get_api_deps() -> Callable[[Request], None]:
         ----------
         request: Request
             Request object to be updated
+        active_catalog_id: PydanticObjectId
+            Catalog ID from header
         """
-
+        active_catalog_id = active_catalog_id or PydanticObjectId(DEFAULT_CATALOG_ID)
         request.state.persistent = get_persistent()
         request.state.user = User()
         request.state.get_credential = ConfigCredentialProvider().get_credential
         request.state.get_storage = get_storage
         request.state.get_temp_storage = get_temp_storage
-        catalog_id = ObjectId(request.headers.get("catalog_id", DEFAULT_CATALOG_ID))
         request.state.app_container = AppContainer.get_instance(
             user=request.state.user,
             persistent=request.state.persistent,
@@ -77,10 +79,10 @@ def _get_api_deps() -> Callable[[Request], None]:
             task_manager=TaskManager(
                 user=request.state.user,
                 persistent=request.state.persistent,
-                catalog_id=catalog_id,
+                catalog_id=active_catalog_id,
             ),
             storage=get_storage(),
-            container_id=catalog_id,
+            container_id=active_catalog_id,
         )
 
     return _dep_injection_func

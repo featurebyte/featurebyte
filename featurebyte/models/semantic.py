@@ -27,7 +27,7 @@ class SemanticModel(Relationship):
         Datetime when the Entity object was last updated
     """
 
-    class Settings:
+    class Settings(Relationship.Settings):
         """
         MongoDB settings
         """
@@ -46,13 +46,7 @@ class SemanticModel(Relationship):
             ),
         ]
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
-            pymongo.operations.IndexModel("parents"),
-            pymongo.operations.IndexModel("ancestor_ids"),
+        indexes = Relationship.Settings.indexes + [
             [
                 ("name", pymongo.TEXT),
             ],

@@ -32,6 +32,15 @@ class MaterializedTable(FeatureByteCatalogBaseDocumentModel):
 
     location: TabularSource
 
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("location.feature_store_id"),
+        ]
+
 
 class ObservationInputType(StrEnum):
     """
@@ -93,7 +102,7 @@ class ObservationTableModel(MaterializedTable):
     observation_input: ObservationInput
     context_id: Optional[PydanticObjectId] = Field(default=None)
 
-    class Settings:
+    class Settings(MaterializedTable.Settings):
         """
         MongoDB settings
         """
@@ -112,12 +121,7 @@ class ObservationTableModel(MaterializedTable):
             ),
         ]
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
+        indexes = MaterializedTable.Settings.indexes + [
             pymongo.operations.IndexModel("context_id"),
             [
                 ("name", pymongo.TEXT),

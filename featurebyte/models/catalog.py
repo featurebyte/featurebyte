@@ -46,7 +46,7 @@ class CatalogModel(FeatureByteBaseDocumentModel):
         Datetime when the Catalog object was last updated
     """
 
-    class Settings:
+    class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -65,11 +65,7 @@ class CatalogModel(FeatureByteBaseDocumentModel):
             ),
         ]
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
             [
                 ("name", pymongo.TEXT),
             ],

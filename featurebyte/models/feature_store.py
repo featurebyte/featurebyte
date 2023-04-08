@@ -210,7 +210,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         Tuple[GraphNode, List[ColumnInfo]]
         """
 
-    class Settings(FeatureByteBaseDocumentModel.Settings):
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -234,14 +234,10 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
             ),
         ]
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("type"),
             pymongo.operations.IndexModel("status"),
+            pymongo.operations.IndexModel("tabular_source.feature_store_id"),
             [
                 ("name", pymongo.TEXT),
             ],

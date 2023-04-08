@@ -504,7 +504,7 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
             )
         return feature_clusters
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -583,12 +583,7 @@ class FeatureListModel(FrozenFeatureListModel):
         MongoDB settings
         """
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
+        indexes = FrozenFeatureListModel.Settings.indexes + [
             pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("feature_ids"),
             pymongo.operations.IndexModel("feature_list_namespace_id"),

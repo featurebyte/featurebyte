@@ -66,7 +66,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     analysis_result: AnalysisResult
     analysis_report: str
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -80,12 +80,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
             ),
         ]
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("event_table_id"),
             [
                 ("name", pymongo.TEXT),

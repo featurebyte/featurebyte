@@ -92,9 +92,9 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(
-                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
+                f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
             )
-            assert response.status_code == HTTPStatus.CREATED
+            assert response.status_code == HTTPStatus.CREATED, response.json()
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""

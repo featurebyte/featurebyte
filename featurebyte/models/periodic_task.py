@@ -71,7 +71,7 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
 
     no_changes: Optional[bool]
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         Collection settings for celery beat periodic task document
         """
@@ -90,12 +90,7 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
             ),
         ]
 
-        indexes = [
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("catalog_id"),
-            pymongo.operations.IndexModel("name"),
-            pymongo.operations.IndexModel("created_at"),
-            pymongo.operations.IndexModel("updated_at"),
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("task"),
             [
                 ("name", pymongo.TEXT),
