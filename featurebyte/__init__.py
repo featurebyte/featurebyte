@@ -1,5 +1,7 @@
 """Python Library for FeatureOps"""
-from typing import Dict, List, Optional
+from typing import Any, List, Optional
+
+import sys
 
 import pandas as pd
 
@@ -24,6 +26,7 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.source_table import SourceTable
 from featurebyte.api.table import Table
+from featurebyte.common.env_util import is_notebook
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations
 from featurebyte.core.series import Series
@@ -34,6 +37,12 @@ from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import AggFunc, SourceType, StorageType
+from featurebyte.exception import (
+    FeatureByteException,
+    FeatureByteSDKException,
+    InvalidSettingsError,
+)
+from featurebyte.logger import logger
 from featurebyte.models.credential import (
     AccessTokenCredential,
     S3StorageCredential,
@@ -78,26 +87,29 @@ def list_profiles() -> pd.DataFrame:
     return pd.DataFrame([profile.dict() for profile in profiles] if profiles else [])
 
 
-def use_profile(profile: str) -> Dict[str, str]:
+def use_profile(profile: str) -> None:
     """
-    Use service profile specified in configuration file
+    Use service profile specified in configuration file.
 
     Parameters
     ----------
     profile: str
         Profile name
-
-    Returns
-    -------
-    Dict[str, str]
-        Remote and local SDK versions
-
-    Examples
-    --------
-    >>> fb.use_profile("local")  # doctest: +SKIP
-    {'remote sdk': '0.1.1', 'local sdk': '0.1.1'}
     """
-    return Configurations().use_profile(profile)
+    try:
+        logger.info(f"Using profile: {profile}")
+        versions = Configurations().use_profile(profile)
+        if versions["remote sdk"] != versions["local sdk"]:
+            logger.warning(
+                f"Remote SDK version ({versions['remote sdk']}) is different from local ({versions['local sdk']}). "
+                "Update local SDK to avoid unexpected behavior."
+            )
+        else:
+            logger.info(f"SDK version: {versions['local sdk']}")
+    finally:
+        current_profile = Configurations().profile
+        if current_profile:
+            logger.info(f"Active profile: {current_profile.name} ({current_profile.api_url})")
 
 
 def list_credentials(
@@ -277,7 +289,10 @@ def playground(
 
 def list_deployments() -> pd.DataFrame:
     """
-    List all deployments
+    List all deployments across all catalogs.
+    Deployed features are updated regularly based on their job settings and consume recurring compute resources
+    in the data warehouse.
+    It is recommended to delete deployments when they are no longer needed to avoid unnecessary costs.
 
     Returns
     -------
@@ -290,6 +305,10 @@ def list_deployments() -> pd.DataFrame:
     Empty DataFrame
     Columns: [catalog, feature_list, feature_list_id, num_features]
     Index: []
+
+    See Also
+    --------
+    - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/) Deploy / Undeploy a feature list
     """
     # get active catalog
     current_catalog = Catalog.get_active()
@@ -376,3 +395,56 @@ __all__ = [
     "stop",
     "playground",
 ]
+
+
+def log_env_summary() -> None:
+    """
+    Print environment summary
+    """
+    conf = Configurations()
+    current_profile = conf.profile
+
+    # configuration informaton
+    logger.info(f"Using configuration file at: {conf.config_file_path}")
+
+    # profile informaton
+    if not current_profile:
+        logger.error(
+            f"No profile found. Please update your configuration file at {conf.config_file_path}"
+        )
+        return
+
+    use_profile(current_profile.name)
+
+    # catalog informaton
+    current_catalog = Catalog.get_active()
+    logger.info(f"Active catalog: {current_catalog.name}")
+
+    # list deployments
+    deployments = list_deployments()
+    deployed_features_count = deployments.num_features.sum()
+    logger.info(f"{deployments.shape[0]} deployments, {deployed_features_count} features deployed")
+
+
+if is_notebook():
+    # custom exception handler for notebook environment
+    # pylint: disable=import-outside-toplevel
+    import IPython  # pylint: disable=import-error
+
+    shell = IPython.core.interactiveshell.InteractiveShell
+    default_showtraceback = shell.showtraceback
+
+    def _showtraceback(cls: Any, *args: Any, **kwargs: Any) -> None:
+        _, exc, tb_obj = sys.exc_info()
+        if isinstance(exc, FeatureByteException):
+            logger.error(exc)
+            if tb_obj and tb_obj.tb_next:
+                invoke_frame = tb_obj.tb_next
+                invoke_frame.tb_next = None
+                raise FeatureByteSDKException(exc).with_traceback(invoke_frame) from None
+        default_showtraceback(cls, *args, **kwargs)
+
+    IPython.core.interactiveshell.InteractiveShell.showtraceback = _showtraceback
+
+    # log environment summary
+    log_env_summary()

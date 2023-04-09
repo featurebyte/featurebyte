@@ -403,14 +403,21 @@ class Configurations:
         profile_names = [profile.name for profile in Configurations().profiles or []]
         if profile_name not in profile_names:
             raise InvalidSettingsError(f"Profile not found: {profile_name}")
-        os.environ["FEATUREBYTE_PROFILE"] = profile_name
+
         # test connection
-        client = Configurations().get_client()
-        response = client.get("/status")
-        if response.status_code != HTTPStatus.OK:
-            raise InvalidSettingsError(f"Service endpoint is inaccessible: {client.base_url}")
-        sdk_version = response.json()["sdk_version"]
-        return {"remote sdk": sdk_version, "local sdk": get_version()}
+        current_profile_name = os.environ.get("FEATUREBYTE_PROFILE", profile_names[0])
+        try:
+            os.environ["FEATUREBYTE_PROFILE"] = profile_name
+            client = Configurations().get_client()
+            response = client.get("/status")
+            if response.status_code != HTTPStatus.OK:
+                raise InvalidSettingsError(f"Service endpoint is inaccessible: {client.base_url}")
+            sdk_version = response.json()["sdk_version"]
+            return {"remote sdk": sdk_version, "local sdk": get_version()}
+        except InvalidSettingsError:
+            # restore previous profile
+            os.environ["FEATUREBYTE_PROFILE"] = current_profile_name
+            raise
 
     def get_client(self) -> APIClient:
         """
