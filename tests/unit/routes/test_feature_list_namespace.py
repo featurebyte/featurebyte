@@ -253,6 +253,54 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "Cannot set default feature list ID when default version mode is not MANUAL"
         )
 
+    def test_delete_200(self, test_api_client_persistent):
+        """Test delete (success)"""
+        test_api_client, _ = test_api_client_persistent
+        (
+            response_dict,
+            _,
+        ) = self._create_fl_namespace_with_manual_version_mode_and_new_feature_id(test_api_client)
+        doc_id = response_dict["_id"]
+        feature_list_ids = response_dict["feature_list_ids"]
+
+        # check feature list before delete
+        for feature_list_id in feature_list_ids:
+            response = test_api_client.get(f"/feature_list/{feature_list_id}")
+            assert response.status_code == HTTPStatus.OK
+
+        # delete feature list namespace
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+
+        # check that feature list namespace and feature list are deleted
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+        for feature_list_id in feature_list_ids:
+            response = test_api_client.get(f"/feature_list/{feature_list_id}")
+            assert response.status_code == HTTPStatus.NOT_FOUND
+
+    def test_delete_422(self, test_api_client_persistent):
+        """Test delete (unprocessable entity)"""
+        test_api_client, _ = test_api_client_persistent
+        (
+            response_dict,
+            _,
+        ) = self._create_fl_namespace_with_manual_version_mode_and_new_feature_id(test_api_client)
+        doc_id = response_dict["_id"]
+
+        # update feature list status to public draft
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"status": "PUBLIC_DRAFT"}
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        # delete feature list namespace
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        expected_detail = "Cannot delete feature list namespace that is not in DRAFT status."
+        assert response.json()["detail"] == expected_detail
+
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""
