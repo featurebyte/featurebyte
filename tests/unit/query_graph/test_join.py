@@ -68,7 +68,7 @@ def test_item_table_join_event_table_attributes(global_graph, item_table_join_ev
     Test SQL generation for ItemTable joined with EventTable
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
     )
     sql_tree = sql_graph.build(item_table_join_event_table_node).sql
     expected = textwrap.dedent(
@@ -108,7 +108,7 @@ def test_item_table_join_event_table_attributes_with_filter(
     Test SQL generation for ItemTable joined with EventTable with filter
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
     )
     sql_tree = sql_graph.build(item_table_join_event_table_filtered_node).sql
     expected = textwrap.dedent(
@@ -226,7 +226,7 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
     Test SQL generation for non-time aware feature in ItemTable joined into EventView
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
     )
     sql_tree = sql_graph.build(order_size_feature_join_node).sql
     expected = textwrap.dedent(
@@ -281,7 +281,7 @@ def test_derived_expression_from_join_node(global_graph, derived_expression_from
     Test derived expression from join node
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
     )
     sql_tree = sql_graph.build(derived_expression_from_join_node).sql_standalone
     expected = textwrap.dedent(
@@ -399,7 +399,7 @@ def test_scd_join(global_graph, scd_join_node):
     Test SQL generation for SCD join
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
     )
     sql_tree = sql_graph.build(scd_join_node).sql
     expected = textwrap.dedent(

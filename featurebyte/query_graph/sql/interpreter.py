@@ -306,7 +306,7 @@ class GraphInterpreter:
         """
         flat_graph, flat_node = self.flatten_graph(node_name=node_name)
         sql_graph = SQLOperationGraph(
-            flat_graph, sql_type=SQLType.MATERIALISE, source_type=self.source_type
+            flat_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
         )
         sql_node = sql_graph.build(flat_node)
 
@@ -957,9 +957,9 @@ class GraphInterpreter:
             columns,
         )
 
-    def construct_materialise_expr(self, node_name: str) -> expressions.Select:
+    def construct_materialize_expr(self, node_name: str) -> expressions.Select:
         """
-        Construct SQL to materialise a given node representing a View object
+        Construct SQL to materialize a given node representing a View object
 
         Parameters
         ----------
@@ -972,7 +972,7 @@ class GraphInterpreter:
         """
         flat_graph, flat_node = self.flatten_graph(node_name=node_name)
         sql_graph = SQLOperationGraph(
-            flat_graph, sql_type=SQLType.MATERIALISE, source_type=self.source_type
+            flat_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
         )
         sql_node = sql_graph.build(flat_node)
         return cast(expressions.Select, sql_node.sql)

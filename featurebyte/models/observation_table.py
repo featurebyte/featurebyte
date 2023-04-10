@@ -23,8 +23,8 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.materialisation import (
-    get_materialise_from_source_sql,
-    get_materialise_from_view_sql,
+    get_materialize_from_source_sql,
+    get_materialize_from_view_sql,
 )
 
 
@@ -64,7 +64,7 @@ class BaseObservationInput(FeatureByteBaseModel):
     """
 
     @abstractmethod
-    def get_materialise_sql(self, destination: TableDetails, source_type: SourceType) -> str:
+    def get_materialize_sql(self, destination: TableDetails, source_type: SourceType) -> str:
         """
         Get the SQL statement that materializes the observation table
 
@@ -97,8 +97,8 @@ class ViewObservationInput(BaseObservationInput):
     node_name: StrictStr
     type: Literal[ObservationInputType.VIEW] = Field(ObservationInputType.VIEW, const=True)
 
-    def get_materialise_sql(self, destination: TableDetails, source_type: SourceType) -> str:
-        return get_materialise_from_view_sql(
+    def get_materialize_sql(self, destination: TableDetails, source_type: SourceType) -> str:
+        return get_materialize_from_view_sql(
             graph=self.graph,
             node_name=self.node_name,
             destination=destination,
@@ -121,8 +121,8 @@ class SourceTableObservationInput(BaseObservationInput):
         ObservationInputType.SOURCE_TABLE, const=True
     )
 
-    def get_materialise_sql(self, destination: TableDetails, source_type: SourceType) -> str:
-        return get_materialise_from_source_sql(
+    def get_materialize_sql(self, destination: TableDetails, source_type: SourceType) -> str:
+        return get_materialize_from_source_sql(
             source=self.source.table_details,
             destination=destination,
             source_type=source_type,

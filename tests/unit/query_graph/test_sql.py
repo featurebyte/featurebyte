@@ -47,7 +47,7 @@ def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type
     if parameters is None:
         parameters = {}
     if sql_type is None:
-        sql_type = SQLType.MATERIALISE
+        sql_type = SQLType.MATERIALIZE
     mock_query_node = Mock(type=node_type)
     mock_query_node.parameters.dict.return_value = parameters
     mock_graph = Mock()
@@ -250,7 +250,7 @@ def test_make_input_node_escape_special_characters():
         make_context(
             node_type=NodeType.INPUT,
             parameters=parameters,
-            sql_type=SQLType.MATERIALISE,
+            sql_type=SQLType.MATERIALIZE,
         )
     )
     expected = textwrap.dedent(

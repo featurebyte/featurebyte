@@ -36,13 +36,13 @@ def create_table_as(table_details: TableDetails, select_expr: Select) -> Express
     )
 
 
-def get_materialise_from_source_sql(
+def get_materialize_from_source_sql(
     source: TableDetails,
     destination: TableDetails,
     source_type: SourceType,
 ) -> str:
     """
-    Construct SQL query to materialise a table from a source table
+    Construct SQL query to materialize a table from a source table
 
     Parameters
     ----------
@@ -62,21 +62,21 @@ def get_materialise_from_source_sql(
     return sql_to_string(copy_table_expr, source_type=source_type)
 
 
-def get_materialise_from_view_sql(
+def get_materialize_from_view_sql(
     graph: QueryGraphModel,
     node_name: str,
     destination: TableDetails,
     source_type: SourceType,
 ) -> str:
     """
-    Construct SQL query to materialise a view given its query graph
+    Construct SQL query to materialize a view given its query graph
 
     Parameters
     ----------
     graph: QueryGraphModel
         Query graph
     node_name: str
-        Name of the node to materialise
+        Name of the node to materialize
     destination: TableDetails
         Destination table details
     source_type: SourceType
@@ -87,6 +87,6 @@ def get_materialise_from_view_sql(
     str
     """
     interpreter = GraphInterpreter(query_graph=graph, source_type=source_type)
-    table_expr = interpreter.construct_materialise_expr(node_name)
+    table_expr = interpreter.construct_materialize_expr(node_name)
     query = create_table_as(destination, table_expr)
     return sql_to_string(query, source_type=source_type)

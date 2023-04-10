@@ -58,7 +58,7 @@ class ObservationTableTask(BaseTask):
             ),
         )
 
-        query = payload.observation_input.get_materialise_sql(
+        query = payload.observation_input.get_materialize_sql(
             destination=location.table_details, source_type=feature_store.type
         )
         await db_session.execute_query(query)
