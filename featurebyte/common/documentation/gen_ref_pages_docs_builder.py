@@ -789,7 +789,8 @@ class DocsBuilder:
         Nav
             The navigation.
         """
-        self.initialize_missing_debug_doc()
+        if DEBUG_MODE:
+            self.initialize_missing_debug_doc()
 
         # Build docs
         nav_to_use = BetaWave3Nav()
