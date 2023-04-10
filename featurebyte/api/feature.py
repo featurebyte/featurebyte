@@ -312,7 +312,7 @@ class Feature(
         client = Configurations().get_client()
         response = client.delete(url=f"{cls._route}/{id}")
         if response.status_code != HTTPStatus.OK:
-            raise RecordDeletionException(response, f"Failed to delete the specified feature.")
+            raise RecordDeletionException(response, "Failed to delete the specified feature.")
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:
