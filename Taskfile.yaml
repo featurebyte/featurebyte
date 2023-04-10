@@ -264,6 +264,7 @@ tasks:
     env:
       PYTHONPATH:
         sh: echo "$(pwd)/docs/extensions"
+      FB_DOCS_DEBUG_MODE: True
     cmds:
       - poetry run mkdocs serve --config-file mkdocs.yaml
 
