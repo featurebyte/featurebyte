@@ -300,3 +300,68 @@ async def test_feature_readiness__prohibit_transition_to_draft(feature, feature_
 
     expected_msg = "Cannot update feature readiness to DRAFT."
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_feature_readiness__update_feature_namespace_with_deletion__auto_mode(
+    feature_readiness_service, feature_namespace_service, feature, setup_for_feature_readiness
+):
+    """Test that feature namespace is updated when a feature is deleted (auto mode)"""
+    new_feature_id, _ = setup_for_feature_readiness
+    feature_namespace = await feature_namespace_service.get_document(
+        document_id=feature.feature_namespace_id
+    )
+    assert feature_namespace.default_version_mode == "AUTO"
+    assert feature_namespace.feature_ids == [feature.id, new_feature_id]
+    assert feature_namespace.default_feature_id == feature.id
+    assert feature_namespace.readiness == "DRAFT"
+
+    # check feature readiness service
+    updated_feature_namespace = await feature_readiness_service.update_feature_namespace(
+        feature_namespace_id=feature.feature_namespace_id,
+        deleted_feature_ids=[feature.id],
+        return_document=True,
+    )
+    assert updated_feature_namespace.feature_ids == [new_feature_id]
+    assert updated_feature_namespace.default_feature_id == new_feature_id
+    assert updated_feature_namespace.readiness == "DEPRECATED"
+
+    updated_feature_namespace = await feature_readiness_service.update_feature_namespace(
+        feature_namespace_id=feature.feature_namespace_id,
+        deleted_feature_ids=[new_feature_id],
+        return_document=True,
+    )
+    assert updated_feature_namespace.feature_ids == []
+
+
+@pytest.mark.asyncio
+async def test_feature_readiness__update_feature_namespace_with_deletion__manual_mode(
+    feature_readiness_service, feature_namespace_service, feature, setup_for_feature_readiness
+):
+    """Test that feature namespace is updated when a feature is deleted (manual mode)"""
+    new_feature_id, _ = setup_for_feature_readiness
+    feature_namespace = await feature_namespace_service.update_document(
+        document_id=feature.feature_namespace_id,
+        data=FeatureNamespaceServiceUpdate(default_version_mode="MANUAL"),
+    )
+    assert feature_namespace.default_version_mode == "MANUAL"
+    assert feature_namespace.feature_ids == [feature.id, new_feature_id]
+    assert feature_namespace.default_feature_id == feature.id
+    assert feature_namespace.readiness == "DRAFT"
+
+    # check feature readiness service
+    updated_feature_namespace = await feature_readiness_service.update_feature_namespace(
+        feature_namespace_id=feature.feature_namespace_id,
+        deleted_feature_ids=[new_feature_id],
+        return_document=True,
+    )
+    assert updated_feature_namespace.feature_ids == [feature.id]
+    assert updated_feature_namespace.default_feature_id == feature.id
+    assert updated_feature_namespace.readiness == "DRAFT"
+
+    with pytest.raises(AssertionError) as exc:
+        await feature_readiness_service.update_feature_namespace(
+            feature_namespace_id=feature.feature_namespace_id,
+            deleted_feature_ids=[feature.id],
+        )
+    assert "default feature should not be deleted" in str(exc.value)

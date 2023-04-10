@@ -198,6 +198,12 @@ class DocumentUpdateError(DocumentError):
     """
 
 
+class DocumentDeletionError(DocumentError):
+    """
+    Raise when the document invalid deletion happens
+    """
+
+
 class DocumentInconsistencyError(DocumentError):
     """
     Raise when the document consistency issue is detected
