@@ -12,13 +12,8 @@ import pymongo
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import SourceType, StrEnum
-from featurebyte.models.base import (
-    FeatureByteBaseModel,
-    FeatureByteCatalogBaseDocumentModel,
-    PydanticObjectId,
-    UniqueConstraintResolutionSignature,
-    UniqueValuesConstraint,
-)
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.materialized_table import MaterializedTable
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
@@ -26,27 +21,6 @@ from featurebyte.query_graph.sql.materialisation import (
     get_materialize_from_source_sql,
     get_materialize_from_view_sql,
 )
-
-
-class MaterializedTable(FeatureByteCatalogBaseDocumentModel):
-    """
-    MaterializedTable represents a table that has been materialized and stored in feature store
-    database.
-
-    location: TabularSource
-        The table that stores the materialized data
-    """
-
-    location: TabularSource
-
-    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("location.feature_store_id"),
-        ]
 
 
 class ObservationInputType(StrEnum):
@@ -145,6 +119,8 @@ class ObservationTableModel(MaterializedTable):
     """
 
     observation_input: ObservationInput
+    column_names: List[StrictStr]
+    most_recent_point_in_time: StrictStr
     context_id: Optional[PydanticObjectId] = Field(default=None)
 
     class Settings(MaterializedTable.Settings):
@@ -153,18 +129,6 @@ class ObservationTableModel(MaterializedTable):
         """
 
         collection_name: str = "observation_table"
-        unique_constraints: List[UniqueValuesConstraint] = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-        ]
 
         indexes = MaterializedTable.Settings.indexes + [
             pymongo.operations.IndexModel("context_id"),

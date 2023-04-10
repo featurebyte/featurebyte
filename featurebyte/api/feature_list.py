@@ -44,6 +44,8 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.modeling_table import ModelingTable
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
@@ -92,6 +94,7 @@ from featurebyte.schema.feature_list import (
     FeatureVersionInfo,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
+from featurebyte.schema.modeling_table import ModelingTableCreate
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):
@@ -1239,6 +1242,46 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                 progress_bar()  # pylint: disable=not-callable
 
         return pd.concat(output, ignore_index=True)
+
+    def get_historical_features_async(
+        self,
+        observation_set: ObservationTable,
+        modeling_table_name: str,
+        serving_names_mapping: Optional[Dict[str, str]] = None,
+    ) -> ModelingTable:
+        """
+        Materialize feature list using an observation table asynchronously. The historical features
+        will be materialized into a modeling table.
+
+        Parameters
+        ----------
+        observation_set: ObservationTable
+            Observation table with `POINT_IN_TIME` and serving names columns
+        modeling_table_name: str
+            Name of the modeling table to be created
+        serving_names_mapping : Optional[Dict[str, str]]
+            Optional serving names mapping if the training events table has different serving name
+
+        Returns
+        -------
+        ModelingTable
+        """
+        featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
+            feature_list_id=self.id,
+            feature_clusters=self._get_feature_clusters(),
+            serving_names_mapping=serving_names_mapping,
+        )
+        feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id
+        payload = ModelingTableCreate(
+            name=modeling_table_name,
+            observation_table_id=observation_set.id,
+            feature_store_id=feature_store_id,
+            featurelist_get_historical_features=featurelist_get_historical_features,
+        )
+        modeling_table_doc = self.post_async_task(
+            route="/modeling_table", payload=payload.json_dict()
+        )
+        return ModelingTable.get_by_id(modeling_table_doc["_id"])
 
     @typechecked
     def create_new_version(

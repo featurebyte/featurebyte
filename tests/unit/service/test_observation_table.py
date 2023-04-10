@@ -27,6 +27,8 @@ def observation_table_from_source_table_fixture(event_table):
         name="observation_table_from_source_table",
         location=location,
         observation_input=observation_input,
+        column_names=["a", "b", "c"],
+        most_recent_point_in_time="2023-01-15T10:00:00",
     )
 
 

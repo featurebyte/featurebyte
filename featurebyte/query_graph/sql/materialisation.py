@@ -6,10 +6,14 @@ from __future__ import annotations
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 
@@ -89,4 +93,28 @@ def get_materialize_from_view_sql(
     interpreter = GraphInterpreter(query_graph=graph, source_type=source_type)
     table_expr = interpreter.construct_materialize_expr(node_name)
     query = create_table_as(destination, table_expr)
+    return sql_to_string(query, source_type=source_type)
+
+
+def get_most_recent_point_in_time_sql(
+    destination: TableDetails,
+    source_type: SourceType,
+) -> str:
+    """
+    Construct SQL query to get the most recent point in time
+
+    Parameters
+    ----------
+    destination: TableDetails
+        Destination table details
+    source_type: SourceType
+        Source type information
+
+    Returns
+    -------
+    str
+    """
+    query = expressions.select(
+        expressions.Max(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME))
+    ).from_(get_fully_qualified_table_name(destination.dict()))
     return sql_to_string(query, source_type=source_type)

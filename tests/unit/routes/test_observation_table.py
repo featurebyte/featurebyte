@@ -3,6 +3,7 @@ Tests for ObservationTable routes
 """
 from http import HTTPStatus
 
+import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
@@ -74,3 +75,10 @@ class TestObservationTableApi(BaseAsyncApiTestSuite):
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
+
+    @pytest.fixture(autouse=True)
+    def always_patched_observation_table_service(self, patched_observation_table_service):
+        """
+        Patch get_most_recent_point_in_time_sql
+        """
+        _ = patched_observation_table_service

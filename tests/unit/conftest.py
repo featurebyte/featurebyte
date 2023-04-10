@@ -659,19 +659,38 @@ def snowflake_event_view_entity_feature_job_fixture(
     yield event_view
 
 
+@pytest.fixture(name="patched_observation_table_service")
+def patched_observation_table_service():
+    """
+    Patch ObservationTableService.get_additional_metadata
+    """
+    with patch(
+        "featurebyte.service.observation_table.ObservationTableService.get_additional_metadata",
+        return_value={
+            "column_names": ["a", "b", "c"],
+            "most_recent_point_in_time": "2023-01-15 10:00:00",
+        },
+    ):
+        yield
+
+
 @pytest.fixture(name="observation_table_from_source")
-def observation_table_from_source_fixture(snowflake_database_table):
+def observation_table_from_source_fixture(
+    snowflake_database_table, patched_observation_table_service
+):
     """
     Observation table created from SourceTable
     """
+    _ = patched_observation_table_service
     return snowflake_database_table.create_observation_table("observation_table_from_source_table")
 
 
 @pytest.fixture(name="observation_table_from_view")
-def observation_table_from_view_fixture(snowflake_event_view):
+def observation_table_from_view_fixture(snowflake_event_view, patched_observation_table_service):
     """
     Observation table created from EventView
     """
+    _ = patched_observation_table_service
     return snowflake_event_view.create_observation_table("observation_table_from_event_view")
 
 

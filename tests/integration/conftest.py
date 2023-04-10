@@ -1347,7 +1347,7 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred):
                 yield
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(scope="module")
 def mock_post_async_task():
     """Mock post_async_task"""
 

@@ -3,7 +3,7 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Dict, Optional, Tuple
+from typing import Any, AsyncGenerator, Dict, Optional, Tuple, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -13,12 +13,14 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DocumentNotFoundError, MissingPointInTimeColumnError
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,
-    get_historical_features_sql,
+    get_historical_features_expr,
 )
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
@@ -395,10 +397,11 @@ class PreviewService(BaseService):
 
     async def get_historical_features(
         self,
-        observation_set: pd.DataFrame,
+        observation_set: Union[pd.DataFrame, ObservationTableModel],
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
         get_credential: Any,
-    ) -> AsyncGenerator[bytes, None]:
+        output_table_details: Optional[TableDetails] = None,
+    ) -> Optional[AsyncGenerator[bytes, None]]:
         """
         Get historical features for Feature List
 
@@ -425,7 +428,11 @@ class PreviewService(BaseService):
             document_id=feature_cluster.feature_store_id
         )
 
-        request_column_names = set(observation_set.columns)
+        if isinstance(observation_set, pd.DataFrame):
+            request_column_names = set(observation_set.columns)
+        else:
+            request_column_names = set(observation_set.column_names)
+
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
                 graph=feature_cluster.graph,
@@ -460,6 +467,7 @@ class PreviewService(BaseService):
             source_type=feature_store.type,
             is_feature_list_deployed=is_feature_list_deployed,
             parent_serving_preparation=parent_serving_preparation,
+            output_table_details=output_table_details,
         )
 
     async def feature_sql(self, feature_sql: FeatureSQL) -> str:
@@ -549,7 +557,7 @@ class PreviewService(BaseService):
             feature_cluster.node_names[0]
         ).parameters.feature_store_details.type
 
-        return get_historical_features_sql(
+        expr = get_historical_features_expr(
             request_table_name=REQUEST_TABLE_NAME,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
@@ -557,3 +565,4 @@ class PreviewService(BaseService):
             source_type=source_type,
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
         )
+        return sql_to_string(expr, source_type=source_type)

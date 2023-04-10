@@ -5,6 +5,7 @@ import re
 import textwrap
 
 import pandas as pd
+import pytest
 
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, TableDataType
@@ -183,6 +184,7 @@ def test_get_or_create_scd_table__create(snowflake_database_table_scd_table):
     assert scd_table.current_flag_column == "is_active"
 
 
+@pytest.mark.usefixtures("patched_observation_table_service")
 def test_create_observation_table(snowflake_database_table, snowflake_execute_query):
     """
     Test creating ObservationTable from SourceTable

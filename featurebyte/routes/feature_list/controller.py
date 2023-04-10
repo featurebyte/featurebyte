@@ -300,6 +300,7 @@ class FeatureListController(
                 featurelist_get_historical_features=featurelist_get_historical_features,
                 get_credential=get_credential,
             )
+            assert bytestream is not None
         except (
             MissingPointInTimeColumnError,
             TooRecentPointInTimeError,

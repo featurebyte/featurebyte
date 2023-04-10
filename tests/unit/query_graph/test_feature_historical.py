@@ -12,13 +12,22 @@ from featurebyte import exception
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.schema import SQLiteDetails
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
+    convert_point_in_time_dtype_if_needed,
     get_historical_features,
-    get_historical_features_sql,
+    get_historical_features_expr,
+    get_internal_observation_set,
     validate_historical_requests_point_in_time,
 )
 from tests.util.helper import assert_equal_with_expected_fixture
+
+
+def get_historical_features_sql(**kwargs):
+    """Get historical features SQL"""
+    expr = get_historical_features_expr(**kwargs)
+    source_type = kwargs["source_type"]
+    return sql_to_string(expr, source_type=source_type)
 
 
 @pytest.fixture(name="mocked_session")
@@ -209,13 +218,16 @@ def test_validate_historical_requests_point_in_time():
     observation_set = original_observation_set.copy()
 
     # this should not fail and convert point-in-time values to UTC
-    validated_observation_set = validate_historical_requests_point_in_time(observation_set)
+    converted_observation_set = convert_point_in_time_dtype_if_needed(observation_set)
+    validate_historical_requests_point_in_time(
+        get_internal_observation_set(converted_observation_set)
+    )
     expected_df = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.date_range("2020-01-01T02:00:00", freq="D", periods=10),
         }
     )
-    assert_frame_equal(validated_observation_set, expected_df)
+    assert_frame_equal(converted_observation_set, expected_df)
 
     # observation_set should not be modified
     assert_frame_equal(observation_set, original_observation_set)

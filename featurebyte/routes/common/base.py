@@ -25,6 +25,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.mixin import Document
+from featurebyte.service.modeling_table import ModelingTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.relationship import ParentT, RelationshipService
@@ -55,6 +56,7 @@ DocumentServiceT = TypeVar(
     PeriodicTaskService,
     ObservationTableService,
     CredentialService,
+    ModelingTableService,
 )
 
 
