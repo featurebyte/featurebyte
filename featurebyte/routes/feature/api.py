@@ -73,7 +73,7 @@ async def update_feature(
     return feature
 
 
-@router.delete("/{feature_id}")
+@router.delete("/{feature_id}", status_code=HTTPStatus.NO_CONTENT)
 async def delete_feature(request: Request, feature_id: PydanticObjectId) -> None:
     """
     Delete Feature

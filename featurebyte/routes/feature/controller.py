@@ -233,21 +233,23 @@ class FeatureController(
                 f"{pformat(feature_list_info)}"
             )
 
-        # delete feature from the persistent
-        await self.service.delete_document(document_id=feature_id)
-        await self.feature_readiness_service.update_feature_namespace(
-            feature_namespace_id=feature.feature_namespace_id,
-            deleted_feature_ids=[feature_id],
-            return_document=False,
-        )
-        feature_namespace = await self.feature_namespace_service.get_document(
-            document_id=feature.feature_namespace_id
-        )
-        if not feature_namespace.feature_ids:
-            # delete feature namespace if it has no more feature
-            await self.feature_namespace_service.delete_document(
+        # use transaction to ensure atomicity
+        async with self.service.persistent.start_transaction():
+            # delete feature from the persistent
+            await self.service.delete_document(document_id=feature_id)
+            await self.feature_readiness_service.update_feature_namespace(
+                feature_namespace_id=feature.feature_namespace_id,
+                deleted_feature_ids=[feature_id],
+                return_document=False,
+            )
+            feature_namespace = await self.feature_namespace_service.get_document(
                 document_id=feature.feature_namespace_id
             )
+            if not feature_namespace.feature_ids:
+                # delete feature namespace if it has no more feature
+                await self.feature_namespace_service.delete_document(
+                    document_id=feature.feature_namespace_id
+                )
 
     async def list_features(
         self,

@@ -419,7 +419,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json()["readiness"] == "PRODUCTION_READY"
 
-    def test_delete_200(self, test_api_client_persistent, create_success_response):
+    def test_delete_204(self, test_api_client_persistent, create_success_response):
         """Test delete (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -432,7 +432,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         # delete feature
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.NO_CONTENT
 
         # check that the feature & feature namespace are deleted
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
@@ -441,7 +441,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"/feature_namespace/{namespace_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
 
-    def test_delete_200__namespace_not_deleted(
+    def test_delete_204__namespace_not_deleted(
         self, test_api_client_persistent, create_success_response
     ):
         """Test delete (success)"""
@@ -476,7 +476,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         # delete feature
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.NO_CONTENT
 
         # check namespace after delete
         namespace_dict = test_api_client.get(f"/feature_namespace/{namespace_id}").json()
