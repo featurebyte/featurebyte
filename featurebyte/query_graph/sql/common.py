@@ -106,6 +106,8 @@ def get_fully_qualified_table_name(table_details_dict: Dict[str, str]) -> Expres
     database_name = table_details_dict.get("database_name")
     table_name = table_details_dict.get("table_name")
     assert table_name is not None
+    # expressions.Table's notation for three part fully qualified name is
+    # {catalog}.{db}.{this}
     return expressions.Table(
         this=quoted_identifier(table_name),
         db=quoted_identifier(schema_name) if schema_name else None,
