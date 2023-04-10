@@ -250,7 +250,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         )
         assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert update_response.json()["detail"] == (
-            "Cannot set default feature list ID when default version mode is not MANUAL"
+            "Cannot set default feature list ID when default version mode is not MANUAL."
         )
 
     def test_delete_200(self, test_api_client_persistent):

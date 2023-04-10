@@ -238,7 +238,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         )
         assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert update_response.json()["detail"] == (
-            "Cannot set default feature ID when default version mode is not MANUAL"
+            "Cannot set default feature ID when default version mode is not MANUAL."
         )
 
     @pytest.mark.asyncio

@@ -88,7 +88,7 @@ class FeatureListNamespaceController(
             )
             if feature_list_namespace.default_version_mode != DefaultVersionMode.MANUAL:
                 raise DocumentUpdateError(
-                    "Cannot set default feature list ID when default version mode is not MANUAL"
+                    "Cannot set default feature list ID when default version mode is not MANUAL."
                 )
 
             # update feature list namespace default feature list ID and update feature readiness

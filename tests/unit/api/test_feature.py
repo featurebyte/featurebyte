@@ -662,7 +662,7 @@ def test_feature__as_default_version(saved_feature):
     # check setting default version fails when default version mode is not MANUAL
     with pytest.raises(RecordUpdateException) as exc:
         saved_feature.as_default_version()
-    expected = "Cannot set default feature ID when default version mode is not MANUAL"
+    expected = "Cannot set default feature ID when default version mode is not MANUAL."
     assert expected in str(exc.value)
 
     # check get by name use the default version

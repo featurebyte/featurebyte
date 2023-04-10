@@ -161,7 +161,7 @@ class FeatureNamespaceController(
             feature_namespace = await self.service.get_document(document_id=feature_namespace_id)
             if feature_namespace.default_version_mode != DefaultVersionMode.MANUAL:
                 raise DocumentUpdateError(
-                    "Cannot set default feature ID when default version mode is not MANUAL"
+                    "Cannot set default feature ID when default version mode is not MANUAL."
                 )
 
             # update feature namespace default feature ID and update feature readiness
