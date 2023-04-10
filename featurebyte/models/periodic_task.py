@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from datetime import datetime
 
+import pymongo
 from pydantic import BaseModel, Field
 
 from featurebyte.models.base import (
@@ -70,7 +71,7 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
 
     no_changes: Optional[bool]
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         Collection settings for celery beat periodic task document
         """
@@ -87,4 +88,12 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("task"),
+            [
+                ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
+            ],
         ]

@@ -207,9 +207,9 @@ class APIClient(BaseAPIClient):
             Invalid service endpoint
         """
         try:
-            params = kwargs.get("params", {})
-            params["catalog_id"] = str(get_active_catalog_id())
-            kwargs["params"] = params
+            headers = kwargs.get("headers", {})
+            headers["active-catalog-id"] = str(get_active_catalog_id())
+            kwargs["headers"] = headers
             return super().request(
                 method,
                 self.base_url + str(url),

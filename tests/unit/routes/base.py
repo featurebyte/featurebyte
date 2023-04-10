@@ -140,7 +140,7 @@ class BaseApiTestSuite:
         id_before = self.payload["_id"]
         response = test_api_client.post(f"{self.base_route}", json=self.payload)
         response_dict = response.json()
-        assert response.status_code == HTTPStatus.CREATED
+        assert response.status_code == HTTPStatus.CREATED, response_dict
         assert response_dict["_id"] == id_before
         return response
 
@@ -475,7 +475,7 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         payload["_id"] = str(ObjectId())
         payload["catalog_id"] = str(catalog_id)
         response = test_api_client.post(
-            f"{self.base_route}", params={"catalog_id": catalog_id}, json=payload
+            f"{self.base_route}", headers={"active-catalog-id": str(catalog_id)}, json=payload
         )
         assert response.status_code == HTTPStatus.CREATED, response.json()
         return response
@@ -509,7 +509,9 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         custom_catalog_document_id = create_success_response_non_default_catalog.json()["_id"]
 
         # expect to see document in the catalog
-        response = test_api_client.get(f"{self.base_route}", params={"catalog_id": catalog_id})
+        response = test_api_client.get(
+            f"{self.base_route}", headers={"active-catalog-id": str(catalog_id)}
+        )
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 1
@@ -534,7 +536,7 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         # expect to see document in the catalog
         response = test_api_client.get(
             f"{self.base_route}/{custom_catalog_document_id}",
-            params={"catalog_id": catalog_id},
+            headers={"active-catalog-id": str(catalog_id)},
         )
         assert response.status_code == HTTPStatus.OK
         results = response.json()
@@ -746,7 +748,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(
-                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
+                f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
             )
             assert response.status_code == HTTPStatus.CREATED
 

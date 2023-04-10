@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 
+import pymongo
 from pydantic import BaseModel
 
 from featurebyte.models.base import (
@@ -65,7 +66,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     analysis_result: AnalysisResult
     analysis_report: str
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -77,6 +78,13 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("event_table_id"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]
 
 

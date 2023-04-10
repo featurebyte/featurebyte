@@ -7,6 +7,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
 from abc import ABC, abstractmethod
 
+import pymongo
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import OrderedStrEnum
@@ -41,7 +42,7 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
         """
         return FeatureStoreDetails(**self.json_dict())
 
-    class Settings:
+    class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -63,6 +64,15 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
                 conflict_fields_signature={"details": ["details"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("type"),
+            pymongo.operations.IndexModel("details"),
+            [
+                ("name", pymongo.TEXT),
+                ("type", pymongo.TEXT),
+            ],
         ]
 
 
@@ -196,7 +206,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         Tuple[GraphNode, List[ColumnInfo]]
         """
 
-    class Settings(FeatureByteBaseDocumentModel.Settings):
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -218,4 +228,13 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
                 conflict_fields_signature={"tabular_source": ["tabular_source"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("type"),
+            pymongo.operations.IndexModel("status"),
+            pymongo.operations.IndexModel("tabular_source.feature_store_id"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

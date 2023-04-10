@@ -3,6 +3,8 @@ This module contains context related models.
 """
 from typing import List, Optional
 
+import pymongo
+
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
@@ -26,7 +28,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
     graph: Optional[QueryGraph]
     node_name: Optional[str]
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB Settings
         """
@@ -43,4 +45,10 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

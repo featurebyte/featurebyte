@@ -103,9 +103,8 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         """Post payloads from the fixture requests"""
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            params = {"catalog_id": catalog_id} if catalog_id else None
-
-            response = api_client.post(f"/{api_object}", params=params, json=payload)
+            headers = {"active-catalog-id": str(catalog_id)} if catalog_id else None
+            response = api_client.post(f"/{api_object}", headers=headers, json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
     @pytest_asyncio.fixture

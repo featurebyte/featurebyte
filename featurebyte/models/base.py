@@ -3,7 +3,7 @@ FeatureByte specific BaseModel
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import json
 from datetime import datetime
@@ -12,6 +12,7 @@ from bson.errors import InvalidId
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field, StrictStr, root_validator, validator
 from pydantic.errors import DictError, PydanticTypeError
+from pymongo.operations import IndexModel
 
 from featurebyte.enum import StrEnum
 
@@ -270,6 +271,13 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         collection_name: str
         unique_constraints: List[UniqueValuesConstraint]
 
+        indexes: List[Union[IndexModel, List[Tuple[str, str]]]] = [
+            IndexModel("user_id"),
+            IndexModel("name"),
+            IndexModel("created_at"),
+            IndexModel("updated_at"),
+        ]
+
 
 class VersionIdentifier(BaseModel):
     """
@@ -331,6 +339,15 @@ class FeatureByteCatalogBaseDocumentModel(FeatureByteBaseDocumentModel):
         if catalog_id is None:
             values["catalog_id"] = DEFAULT_CATALOG_ID
         return values
+
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            IndexModel("catalog_id"),
+        ]
 
 
 class User(FeatureByteBaseModel):
