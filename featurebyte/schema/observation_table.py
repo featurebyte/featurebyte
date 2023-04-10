@@ -13,7 +13,11 @@ from featurebyte.models.base import (
     FeatureByteBaseModel,
     PydanticObjectId,
 )
-from featurebyte.models.observation_table import ObservationInput, ObservationTableModel
+from featurebyte.models.observation_table import (
+    ObservationInput,
+    ObservationInputType,
+    ObservationTableModel,
+)
 from featurebyte.schema.common.base import PaginationMixin
 
 
@@ -42,16 +46,12 @@ class ObservationTableListRecord(FeatureByteBaseDocumentModel):
     This model determines the schema when listing observation tables via ObservationTable.list()
     """
 
-    database_name: StrictStr
-    schema_name: StrictStr
-    table_name: StrictStr
+    feature_store_id: PydanticObjectId
+    type: ObservationInputType
 
     @root_validator(pre=True)
     @classmethod
     def _extract_location(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        location = values.pop("location")
-        table_details = location["table_details"]
-        values["database_name"] = table_details["database_name"]
-        values["schema_name"] = table_details["schema_name"]
-        values["table_name"] = table_details["table_name"]
+        values["type"] = values["observation_input"]["type"]
+        values["feature_store_id"] = values["location"]["feature_store_id"]
         return values

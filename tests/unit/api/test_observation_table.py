@@ -11,7 +11,10 @@ from featurebyte.models.observation_table import ObservationTableModel
 
 @pytest.fixture(name="observation_table_dict")
 def observation_table_dict_fixture(snowflake_event_table):
-    feature_store_id = ObjectId()
+    """
+    Dict representation of an ObservationTable
+    """
+    feature_store_id = snowflake_event_table.tabular_source.feature_store_id
     return ObservationTableModel(
         **{
             "name": "my_observation_table",
@@ -29,6 +32,19 @@ def observation_table_dict_fixture(snowflake_event_table):
             },
         }
     ).dict()
+
+
+@pytest_asyncio.fixture(name="saved_feature_store_document")
+async def saved_feature_store_document_fixture(mock_get_persistent, snowflake_feature_store):
+    """
+    Saved feature store fixture
+    """
+    persistent = mock_get_persistent()
+    await persistent.insert_one(
+        collection_name="feature_store",
+        document=snowflake_feature_store.dict(),
+        user_id=None,
+    )
 
 
 @pytest_asyncio.fixture(name="saved_observation_table_document")
@@ -72,7 +88,9 @@ def test_get(observation_table_dict):
     assert observation_table.name == observation_table_dict["name"]
 
 
-@pytest.mark.usefixtures("multiple_saved_observation_table_documents")
+@pytest.mark.usefixtures(
+    "multiple_saved_observation_table_documents", "saved_feature_store_document"
+)
 def test_list():
     """
     Test listing ObservationTable objects
@@ -82,7 +100,13 @@ def test_list():
         "id",
         "created_at",
         "name",
-        "database_name",
-        "schema_name",
-        "table_name",
+        "feature_store_name",
+        "type",
     ]
+    assert df["name"].tolist() == [
+        "my_observation_table_2",
+        "my_observation_table_1",
+        "my_observation_table_0",
+    ]
+    assert (df["feature_store_name"] == "sf_featurestore").all()
+    assert (df["type"] == "source_table").all()

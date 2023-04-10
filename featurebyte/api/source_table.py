@@ -14,7 +14,6 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.observation_table import ObservationTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
@@ -37,6 +36,7 @@ if TYPE_CHECKING:
     from featurebyte.api.dimension_table import DimensionTable
     from featurebyte.api.event_table import EventTable
     from featurebyte.api.item_table import ItemTable
+    from featurebyte.api.observation_table import ObservationTable
     from featurebyte.api.scd_table import SCDTable
 else:
     DimensionTable = TypeVar("DimensionTable")
@@ -863,6 +863,9 @@ class SourceTable(AbstractTableData):
         -------
         ObservationTable
         """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.observation_table import ObservationTable
+
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
