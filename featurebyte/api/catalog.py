@@ -531,7 +531,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         List saved observation tables.
 
-        >>> periodic_tasks = catalog.list_periodic_tasks()
+        >>> observation_tables = catalog.list_observation_tables()
         """
         return ObservationTable.list(include_id=include_id)
 
@@ -790,6 +790,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved observation table.
 
-        >>> periodic_task = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
         """
         return ObservationTable.get(name=name)
