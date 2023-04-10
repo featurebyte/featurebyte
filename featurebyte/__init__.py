@@ -28,7 +28,7 @@ from featurebyte.api.source_table import SourceTable
 from featurebyte.api.table import Table
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.utils import get_version
-from featurebyte.config import Configurations
+from featurebyte.config import Configurations, Profile
 from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.datasets.app import import_dataset
@@ -37,11 +37,7 @@ from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import AggFunc, SourceType, StorageType
-from featurebyte.exception import (
-    FeatureByteException,
-    FeatureByteSDKException,
-    InvalidSettingsError,
-)
+from featurebyte.exception import FeatureByteException, InvalidSettingsError
 from featurebyte.logger import logger
 from featurebyte.models.credential import (
     AccessTokenCredential,
@@ -87,6 +83,38 @@ def list_profiles() -> pd.DataFrame:
     return pd.DataFrame([profile.dict() for profile in profiles] if profiles else [])
 
 
+def get_active_profile() -> Profile:
+    """
+    Get active profile from configuration file.
+
+    Returns
+    -------
+    Profile
+
+    Raises
+    ------
+    InvalidSettingsError
+        If no profile is found in configuration file
+    """
+    conf = Configurations()
+    if not conf.profile:
+        logger.error(
+            f"No profile found. Please update your configuration file at {conf.config_file_path}"
+        )
+        raise InvalidSettingsError("No profile found")
+
+    logger.info(f"Active profile: {conf.profile.name} ({conf.profile.api_url})")
+    versions = Configurations().check_sdk_versions()
+    if versions["remote sdk"] != versions["local sdk"]:
+        logger.warning(
+            f"Remote SDK version ({versions['remote sdk']}) is different from local ({versions['local sdk']}). "
+            "Update local SDK to avoid unexpected behavior."
+        )
+    else:
+        logger.info(f"SDK version: {versions['local sdk']}")
+    return conf.profile
+
+
 def use_profile(profile: str) -> None:
     """
     Use service profile specified in configuration file.
@@ -98,18 +126,10 @@ def use_profile(profile: str) -> None:
     """
     try:
         logger.info(f"Using profile: {profile}")
-        versions = Configurations().use_profile(profile)
-        if versions["remote sdk"] != versions["local sdk"]:
-            logger.warning(
-                f"Remote SDK version ({versions['remote sdk']}) is different from local ({versions['local sdk']}). "
-                "Update local SDK to avoid unexpected behavior."
-            )
-        else:
-            logger.info(f"SDK version: {versions['local sdk']}")
+        Configurations().use_profile(profile)
     finally:
-        current_profile = Configurations().profile
-        if current_profile:
-            logger.info(f"Active profile: {current_profile.name} ({current_profile.api_url})")
+        # report active profile
+        get_active_profile()
 
 
 def list_credentials(
@@ -401,20 +421,13 @@ def log_env_summary() -> None:
     """
     Print environment summary
     """
-    conf = Configurations()
-    current_profile = conf.profile
 
     # configuration informaton
+    conf = Configurations()
     logger.info(f"Using configuration file at: {conf.config_file_path}")
 
-    # profile informaton
-    if not current_profile:
-        logger.error(
-            f"No profile found. Please update your configuration file at {conf.config_file_path}"
-        )
-        return
-
-    use_profile(current_profile.name)
+    # report active profile
+    get_active_profile()
 
     # catalog informaton
     current_catalog = Catalog.get_active()
@@ -427,7 +440,14 @@ def log_env_summary() -> None:
 
 
 if is_notebook():
-    # custom exception handler for notebook environment
+    # Custom exception handler for notebook environment to make error messages more readable.
+    # Overrides the default IPython exception handler to repackage featurebyte exceptions
+    # to keeps only the last stack frame (the one that invoked the featurebyte api).
+    #
+    # This keeps two key pieces of information in the stack trace:
+    # 1. The exception class and message
+    # 2. The line number of the code that invoked the featurebyte api
+
     # pylint: disable=import-outside-toplevel
     import IPython  # pylint: disable=import-error
 
@@ -435,16 +455,22 @@ if is_notebook():
     default_showtraceback = shell.showtraceback
 
     def _showtraceback(cls: Any, *args: Any, **kwargs: Any) -> None:
-        _, exc, tb_obj = sys.exc_info()
-        if isinstance(exc, FeatureByteException):
-            logger.error(exc)
+        exc_cls, exc_obj, tb_obj = sys.exc_info()
+        if isinstance(exc_obj, FeatureByteException) and not exc_obj.repackaged:
+            logger.error(exc_obj)
+            assert exc_cls
+            assert issubclass(exc_cls, FeatureByteException)
             if tb_obj and tb_obj.tb_next:
                 invoke_frame = tb_obj.tb_next
                 invoke_frame.tb_next = None
-                raise FeatureByteSDKException(exc).with_traceback(invoke_frame) from None
+                raise exc_cls(exc_obj, repackaged=True).with_traceback(invoke_frame) from None
         default_showtraceback(cls, *args, **kwargs)
 
     IPython.core.interactiveshell.InteractiveShell.showtraceback = _showtraceback
 
     # log environment summary
-    log_env_summary()
+    try:
+        log_env_summary()
+    except InvalidSettingsError as exc:
+        # import should not fail - warn and continue
+        logger.warning(exc)

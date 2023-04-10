@@ -9,16 +9,16 @@ from requests.exceptions import JSONDecodeError
 from requests.models import Response
 
 
-class FeatureByteSDKException(Exception):
-    """
-    FeatureByte SDK Exception used to wrap all SDK exceptions
-    """
-
-
 class FeatureByteException(Exception):
     """
-    Base exception class for FeatureByte related exceptions
+    Base exception class for FeatureByte related exceptions.
+    Use this class as a base class for all exceptions raised by FeatureByte SDK so that
+    they can be repackaged for readability in a notebook environment.
     """
+
+    def __init__(self, *args: Any, repackaged: bool = False, **kwargs: Any) -> None:
+        self.repackaged = repackaged
+        super().__init__(*args, **kwargs)
 
 
 class ResponseException(FeatureByteException):

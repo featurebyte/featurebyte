@@ -366,7 +366,34 @@ class Configurations:
                         break
 
     @classmethod
-    def use_profile(cls, profile_name: str) -> Dict[str, str]:
+    def check_sdk_versions(cls) -> Dict[str, str]:
+        """
+        Check SDK versions of client and server for the active profile
+
+        Returns
+        -------
+        Dict[str, str]
+            Remote and local SDK versions
+
+        Raises
+        ------
+        InvalidSettingsError
+            Invalid service endpoint
+
+        Examples
+        --------
+        >>> Configurations.check_sdk_versions()  # doctest: +SKIP
+        {'remote sdk': '0.1.0.dev368', 'local sdk': '0.1.0.dev368'}
+        """
+        client = Configurations().get_client()
+        response = client.get("/status")
+        if response.status_code != HTTPStatus.OK:
+            raise InvalidSettingsError(f"Service endpoint is inaccessible: {client.base_url}")
+        sdk_version = response.json()["sdk_version"]
+        return {"remote sdk": sdk_version, "local sdk": get_version()}
+
+    @classmethod
+    def use_profile(cls, profile_name: str) -> None:
         """
         Use a service profile specified in the configuration file.
 
@@ -374,11 +401,6 @@ class Configurations:
         ----------
         profile_name: str
             Name of profile to use
-
-        Returns
-        -------
-        Dict[str, str]
-            Remote and local SDK versions
 
         Raises
         ------
@@ -396,27 +418,23 @@ class Configurations:
         ```
         Use service profile `featurebyte`
 
-        >>> import featurebyte as fb
-        >>> fb.Configuration.use_profile("featurebyte")  # doctest: +SKIP
-        {'remote sdk': '0.1.0.dev368', 'local sdk': '0.1.0.dev368'}
+        >>> fb.Configuration.use_profile("local")
         """
         profile_names = [profile.name for profile in Configurations().profiles or []]
         if profile_name not in profile_names:
             raise InvalidSettingsError(f"Profile not found: {profile_name}")
 
         # test connection
-        current_profile_name = os.environ.get("FEATUREBYTE_PROFILE", profile_names[0])
+        current_profile_name = os.environ.get("FEATUREBYTE_PROFILE")
         try:
             os.environ["FEATUREBYTE_PROFILE"] = profile_name
-            client = Configurations().get_client()
-            response = client.get("/status")
-            if response.status_code != HTTPStatus.OK:
-                raise InvalidSettingsError(f"Service endpoint is inaccessible: {client.base_url}")
-            sdk_version = response.json()["sdk_version"]
-            return {"remote sdk": sdk_version, "local sdk": get_version()}
+            cls.check_sdk_versions()
         except InvalidSettingsError:
             # restore previous profile
-            os.environ["FEATUREBYTE_PROFILE"] = current_profile_name
+            if current_profile_name:
+                os.environ["FEATUREBYTE_PROFILE"] = current_profile_name
+            else:
+                os.environ.pop("FEATUREBYTE_PROFILE", None)
             raise
 
     def get_client(self) -> APIClient:
