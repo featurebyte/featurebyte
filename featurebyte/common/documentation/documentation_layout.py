@@ -125,20 +125,12 @@ def _get_table_layout() -> List[DocLayoutItem]:
             doc_path_override="api.base_table.TableApiObject.name.md",
         ),
         DocLayoutItem(
-            [TABLE, INFO, "Table.primary_key_columns"],
-            doc_path_override="api.base_table.TableApiObject.primary_key_columns.md",
-        ),
-        DocLayoutItem(
             [TABLE, INFO, "Table.record_creation_timestamp_column"],
             doc_path_override="api.base_table.TableApiObject.record_creation_timestamp_column.md",
         ),
         DocLayoutItem(
             [TABLE, INFO, "Table.status"],
             doc_path_override="api.base_table.TableApiObject.status.md",
-        ),
-        DocLayoutItem(
-            [TABLE, INFO, "Table.table_data"],
-            doc_path_override="api.base_table.TableApiObject.table_data.md",
         ),
         DocLayoutItem(
             [TABLE, INFO, "Table.type"],
@@ -166,10 +158,6 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [TABLE, LINEAGE, "Table.preview_sql"],
             doc_path_override="api.base_table.TableApiObject.preview_sql.md",
-        ),
-        DocLayoutItem(
-            [TABLE, LINEAGE, "Table.tabular_source"],
-            doc_path_override="api.base_table.TableApiObject.tabular_source.md",
         ),
         DocLayoutItem([TABLE, LINEAGE, "ItemTable.event_table_id"]),
         DocLayoutItem([TABLE, TYPE, "DimensionTable"]),
@@ -282,7 +270,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, LINEAGE, "Feature.id"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.definition"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.preview_sql"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.tabular_source"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.catalog_id"]),
         DocLayoutItem([FEATURE, SERVE, "Feature.get_feature_jobs_status"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.abs"]),
@@ -501,12 +488,9 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, INFO, "View.columns_info"]),
         DocLayoutItem([VIEW, INFO, "View.dtypes"]),
         DocLayoutItem([VIEW, INFO, "View.entity_columns"]),
-        DocLayoutItem([VIEW, INFO, "View.get_excluded_columns_as_other_view"]),
         DocLayoutItem([VIEW, INFO, "View.get_join_column"]),
         DocLayoutItem([VIEW, LINEAGE, "View.feature_store"]),
-        DocLayoutItem([VIEW, LINEAGE, "View.graph"]),
         DocLayoutItem([VIEW, LINEAGE, "View.preview_sql"]),
-        DocLayoutItem([VIEW, LINEAGE, "View.tabular_source"]),
         DocLayoutItem([VIEW, TYPE, "ChangeView"]),
         DocLayoutItem([VIEW, TYPE, "DimensionView"]),
         DocLayoutItem([VIEW, TYPE, "EventView"]),
@@ -569,9 +553,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW_COLUMN, LAGS, "ChangeViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LAGS, "EventViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.feature_store"]),
-        DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.graph"]),
         DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.preview_sql"]),
-        DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.tabular_source"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.astype"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.abs"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.ceil"]),
