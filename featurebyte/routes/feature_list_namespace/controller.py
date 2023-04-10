@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentUpdateError
+from featurebyte.exception import DocumentDeletionError, DocumentUpdateError
 from featurebyte.models.feature import DefaultVersionMode
-from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceList,
@@ -16,6 +16,7 @@ from featurebyte.schema.feature_list_namespace import (
 )
 from featurebyte.schema.info import FeatureListNamespaceInfo
 from featurebyte.service.default_version_mode import DefaultVersionModeService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_readiness import FeatureReadinessService
@@ -36,12 +37,14 @@ class FeatureListNamespaceController(
     def __init__(
         self,
         service: FeatureListNamespaceService,
+        feature_list_service: FeatureListService,
         default_version_mode_service: DefaultVersionModeService,
         feature_readiness_service: FeatureReadinessService,
         feature_list_status_service: FeatureListStatusService,
         info_service: InfoService,
     ):
         super().__init__(service)
+        self.feature_list_service = feature_list_service
         self.default_version_mode_service = default_version_mode_service
         self.feature_readiness_service = feature_readiness_service
         self.feature_list_status_service = feature_list_status_service
@@ -106,6 +109,35 @@ class FeatureListNamespaceController(
             )
 
         return await self.get(document_id=feature_list_namespace_id)
+
+    async def delete_feature_list_namespace(self, feature_list_namespace_id: ObjectId) -> None:
+        """
+        Delete feature list namespace
+
+        Parameters
+        ----------
+        feature_list_namespace_id: ObjectId
+            Feature list namespace ID
+
+        Raises
+        ------
+        DocumentDeletionError
+            When the feature list namespace is not in DRAFT status
+        """
+        feature_list_namespace = await self.service.get_document(
+            document_id=feature_list_namespace_id
+        )
+        if feature_list_namespace.status != FeatureListStatus.DRAFT:
+            raise DocumentDeletionError(
+                "Cannot delete feature list namespace that is not in DRAFT status."
+            )
+
+        # delete feature lists within feature list namespace
+        for feature_list_id in feature_list_namespace.feature_list_ids:
+            await self.feature_list_service.delete_document(document_id=feature_list_id)
+
+        # delete feature list namespace
+        await self.service.delete_document(document_id=feature_list_namespace_id)
 
     async def get_info(
         self,
