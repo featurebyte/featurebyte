@@ -547,6 +547,20 @@ def test_create_new_version(saved_feature, snowflake_event_table):
     assert groupby_node_params["frequency"] == 30 * 60
     assert groupby_node_params["time_modulo_frequency"] == 15 * 60
 
+    # before deletion
+    _ = Feature.get_by_id(new_version.id)
+
+    # check feature deletion
+    Feature.delete(id=new_version.id)
+
+    # check that feature is no longer retrievable
+    with pytest.raises(RecordRetrievalException) as exc_info:
+        Feature.get_by_id(new_version.id)
+    expected_msg = (
+        f'Feature (id: "{new_version.id}") not found. Please save the Feature object first.'
+    )
+    assert expected_msg in str(exc_info.value)
+
 
 def test_create_new_version__with_data_cleaning_operations(
     saved_feature, snowflake_event_table, update_fixtures

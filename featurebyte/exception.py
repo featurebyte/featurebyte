@@ -94,6 +94,12 @@ class RecordRetrievalException(ResponseException):
     """
 
 
+class RecordDeletionException(ResponseException):
+    """
+    General failure during deleting an existing record at persistent layer
+    """
+
+
 class MissingPointInTimeColumnError(Exception):
     """
     Raised when point in time column is not provided
