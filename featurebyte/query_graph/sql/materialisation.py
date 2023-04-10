@@ -6,7 +6,7 @@ from __future__ import annotations
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte import SourceType
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string

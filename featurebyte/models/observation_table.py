@@ -6,9 +6,11 @@ from __future__ import annotations
 from typing import List, Literal, Optional, Union
 from typing_extensions import Annotated
 
+from abc import abstractmethod  # pylint: disable=wrong-import-order
+
 from pydantic import Field, StrictStr
 
-from featurebyte.enum import StrEnum
+from featurebyte.enum import SourceType, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
@@ -18,6 +20,11 @@ from featurebyte.models.base import (
 )
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.materialisation import (
+    get_materialise_from_source_sql,
+    get_materialise_from_view_sql,
+)
 
 
 class MaterializedTable(FeatureByteCatalogBaseDocumentModel):
@@ -41,7 +48,30 @@ class ObservationInputType(StrEnum):
     SOURCE_TABLE = "source_table"
 
 
-class ViewObservationInput(FeatureByteBaseModel):
+class BaseObservationInput(FeatureByteBaseModel):
+    """
+    BaseObservationInput is the base class for all ObservationInput types
+    """
+
+    @abstractmethod
+    def get_materialise_sql(self, destination: TableDetails, source_type: SourceType) -> str:
+        """
+        Get the SQL statement that materializes the observation table
+
+        Parameters
+        ----------
+        destination: TableDetails
+            The destination table
+        source_type: SourceType
+            The source type of the destination table
+
+        Returns
+        -------
+        str
+        """
+
+
+class ViewObservationInput(BaseObservationInput):
     """
     ViewObservationInput is the input for creating an ObservationTableModel from a view
 
@@ -57,8 +87,16 @@ class ViewObservationInput(FeatureByteBaseModel):
     node_name: StrictStr
     type: Literal[ObservationInputType.VIEW] = Field(ObservationInputType.VIEW, const=True)
 
+    def get_materialise_sql(self, destination: TableDetails, source_type: SourceType) -> str:
+        return get_materialise_from_view_sql(
+            graph=self.graph,
+            node_name=self.node_name,
+            destination=destination,
+            source_type=source_type,
+        )
 
-class SourceTableObservationInput(FeatureByteBaseModel):
+
+class SourceTableObservationInput(BaseObservationInput):
     """
     SourceTableObservationInput is the input for creating an ObservationTableModel from a source table
 
@@ -72,6 +110,13 @@ class SourceTableObservationInput(FeatureByteBaseModel):
     type: Literal[ObservationInputType.SOURCE_TABLE] = Field(
         ObservationInputType.SOURCE_TABLE, const=True
     )
+
+    def get_materialise_sql(self, destination: TableDetails, source_type: SourceType) -> str:
+        return get_materialise_from_source_sql(
+            source=self.source.table_details,
+            destination=destination,
+            source_type=source_type,
+        )
 
 
 ObservationInput = Annotated[
