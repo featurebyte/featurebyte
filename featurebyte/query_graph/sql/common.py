@@ -104,8 +104,10 @@ def get_fully_qualified_table_name(table_details_dict: Dict[str, str]) -> Expres
     """
     schema_name = table_details_dict.get("schema_name")
     database_name = table_details_dict.get("database_name")
+    table_name = table_details_dict.get("table_name")
+    assert table_name is not None
     return expressions.Table(
-        this=quoted_identifier(table_details_dict["table_name"]),
+        this=quoted_identifier(table_name),
         db=quoted_identifier(schema_name) if schema_name else None,
         catalog=quoted_identifier(database_name) if database_name else None,
     )
