@@ -461,6 +461,40 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         # upgrade readiness level to production ready first and then deploy the feature list
         self._make_production_ready_and_deploy(test_api_client, create_response_dict)
 
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+
+        # list deployments
+        response = test_api_client.get("/deployment")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == {
+            "page": 1,
+            "page_size": 10,
+            "total": 1,
+            "data": [
+                {
+                    "_id": doc_id,
+                    "name": response_dict["name"],
+                    "feature_list_namespace_id": response_dict["feature_list_namespace_id"],
+                    "feature_list_version": response_dict["version"],
+                    "catalog_id": response_dict["catalog_id"],
+                    "num_feature": len(response_dict["feature_ids"]),
+                    "user_id": response_dict["user_id"],
+                    "created_at": response_dict["created_at"],
+                    "updated_at": response_dict["updated_at"],
+                }
+            ],
+        }
+
+        # deployment summary
+        response = test_api_client.get("/deployment/summary")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == {
+            "num_feature_list": 1,
+            "num_feature": len(create_response_dict["feature_ids"]),
+        }
+
         # disable deployment
         response = test_api_client.post(
             f"{self.base_route}/{doc_id}/deploy", json={"deployed": False}
@@ -471,6 +505,24 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["deployed"] is False
+
+        # list deployments
+        response = test_api_client.get("/deployment")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == {
+            "page": 1,
+            "page_size": 10,
+            "total": 0,
+            "data": [],
+        }
+
+        # deployment summary
+        response = test_api_client.get("/deployment/summary")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == {
+            "num_feature_list": 0,
+            "num_feature": 0,
+        }
 
     def test_update_200__deploy_with_make_production_ready(
         self, test_api_client_persistent, create_success_response, api_object_to_id

@@ -418,7 +418,7 @@ class Configurations:
         ```
         Use service profile `featurebyte`
 
-        >>> fb.Configuration.use_profile("local")
+        >>> fb.Configurations().use_profile("local")
         """
         profile_names = [profile.name for profile in Configurations().profiles or []]
         if profile_name not in profile_names:

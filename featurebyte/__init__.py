@@ -2,6 +2,7 @@
 from typing import Any, List, Optional
 
 import sys
+from http import HTTPStatus
 
 import pandas as pd
 
@@ -9,6 +10,7 @@ from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.credential import Credential
 from featurebyte.api.data_source import DataSource
+from featurebyte.api.deployment import Deployment
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.entity import Entity
@@ -37,7 +39,11 @@ from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import AggFunc, SourceType, StorageType
-from featurebyte.exception import FeatureByteException, InvalidSettingsError
+from featurebyte.exception import (
+    FeatureByteException,
+    InvalidSettingsError,
+    RecordRetrievalException,
+)
 from featurebyte.logger import logger
 from featurebyte.models.credential import (
     AccessTokenCredential,
@@ -59,6 +65,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ValueBeyondEndpointImputation,
 )
 from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails, SparkDetails
+from featurebyte.schema.deployment import DeploymentSummary
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
@@ -123,13 +130,21 @@ def use_profile(profile: str) -> None:
     ----------
     profile: str
         Profile name
+
+    Examples
+    --------
+    Use the local profile
+    >>> fb.use_profile("local")
     """
     try:
         logger.info(f"Using profile: {profile}")
         Configurations().use_profile(profile)
     finally:
         # report active profile
-        get_active_profile()
+        try:
+            get_active_profile()
+        except InvalidSettingsError:
+            pass
 
 
 def list_credentials(
@@ -307,12 +322,19 @@ def playground(
     )
 
 
-def list_deployments() -> pd.DataFrame:
+def list_deployments(
+    include_id: Optional[bool] = False,
+) -> pd.DataFrame:
     """
     List all deployments across all catalogs.
     Deployed features are updated regularly based on their job settings and consume recurring compute resources
     in the data warehouse.
     It is recommended to delete deployments when they are no longer needed to avoid unnecessary costs.
+
+    Parameters
+    ----------
+    include_id: Optional[bool]
+        Whether to include id in the list
 
     Returns
     -------
@@ -323,40 +345,14 @@ def list_deployments() -> pd.DataFrame:
     --------
     >>> fb.list_deployments()
     Empty DataFrame
-    Columns: [catalog, feature_list, feature_list_id, num_features]
+    Columns: [catalog, name, feature_list_version, num_feature]
     Index: []
 
     See Also
     --------
     - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/) Deploy / Undeploy a feature list
     """
-    # get active catalog
-    current_catalog = Catalog.get_active()
-    assert current_catalog.name
-
-    try:
-
-        deployments = []
-
-        # check deployed feature lists in each catalog
-        for catalog_name in Catalog.list().name:
-            catalog = Catalog.activate(catalog_name)
-            feature_lists = FeatureList.list(include_id=True)
-            feature_lists["feature_list_id"] = feature_lists["id"]
-            feature_lists = feature_lists[feature_lists.deployed]
-            for record in feature_lists.to_dict("records"):
-                record["catalog"] = catalog.name
-                record["feature_list"] = record["name"]
-                deployments.append(record)
-
-        fields = ["catalog", "feature_list", "feature_list_id", "num_features"]
-        if deployments:
-            return pd.DataFrame(deployments)[fields]
-        return pd.DataFrame(columns=fields)
-
-    finally:
-        # reactivate originally active catalog
-        Catalog.activate(current_catalog.name)
+    return Deployment.list(include_id=include_id)
 
 
 __all__ = [
@@ -419,7 +415,12 @@ __all__ = [
 
 def log_env_summary() -> None:
     """
-    Print environment summary
+    Print environment summary.
+
+    Raises
+    ------
+    RecordRetrievalException
+        Failed to fetch deployment summary.
     """
 
     # configuration informaton
@@ -434,9 +435,15 @@ def log_env_summary() -> None:
     logger.info(f"Active catalog: {current_catalog.name}")
 
     # list deployments
-    deployments = list_deployments()
-    deployed_features_count = deployments.num_features.sum()
-    logger.info(f"{deployments.shape[0]} deployments, {deployed_features_count} features deployed")
+    client = conf.get_client()
+    response = client.get("/deployment/summary")
+    if response.status_code != HTTPStatus.OK:
+        raise RecordRetrievalException(response, "Failed to fetch deployment summary")
+    summary = DeploymentSummary(**response.json())
+    logger.info(
+        f"{summary.num_feature_list} feature list{'s' if summary.num_feature_list else ''}, "
+        f"{summary.num_feature} feature{'s' if summary.num_feature else ''} deployed"
+    )
 
 
 if is_notebook():

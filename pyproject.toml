@@ -103,6 +103,7 @@ boto3 = { version = "1.24.59", optional = true }   # Upstream aiobotocore only a
 cachetools = { version = "^5.2.0", optional = true }
 celery = { version = "^5.2.6", extras = ["redis"], optional = true }
 celerybeat-mongo = { version = "^0.2.0", optional = true }
+cryptography = "38.0.4"
 databricks-cli = { version = "^0.17.3", optional = true }
 fastapi = { version =  "^0.85.1", optional = true }
 featurebyte-databricks-sql-connector = { version = "^2.2.0", source = "featurebyte_np", optional = true }

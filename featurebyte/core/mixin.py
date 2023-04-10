@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Protocol, Union
 
+import time
 from abc import abstractmethod
 from datetime import datetime
 from http import HTTPStatus
@@ -17,6 +18,7 @@ from featurebyte.common.utils import dataframe_from_json, validate_datetime_inpu
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
+from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
@@ -240,6 +242,7 @@ class SampleMixin:
         - [View.describe](/reference/featurebyte.api.view.View.describe/):
           Retrieve a summary of a view.
         """
+        tic = time.time()
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStorePreview(
             feature_store_name=self.feature_store.name,
@@ -252,6 +255,9 @@ class SampleMixin:
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
+
+        elapsed = time.time() - tic
+        logger.debug(f"Preview took {elapsed:.2f}s")
         return dataframe_from_json(response.json())
 
     @property
@@ -343,6 +349,7 @@ class SampleMixin:
         - [View.sample](/reference/featurebyte.api.view.View.sample/):
           Retrieve a sample of a view.
         """
+        tic = time.time()
         payload = self._get_sample_payload(from_timestamp, to_timestamp, **kwargs)  # type: ignore[misc]
         client = Configurations().get_client()
         response = client.post(
@@ -350,6 +357,9 @@ class SampleMixin:
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
+
+        elapsed = time.time() - tic
+        logger.debug(f"Sample took {elapsed:.2f}s")
         return dataframe_from_json(response.json())
 
     @typechecked
@@ -418,6 +428,7 @@ class SampleMixin:
         - [View.sample](/reference/featurebyte.api.view.View.sample/):
           Retrieve a sample of a view.
         """
+        tic = time.time()
         from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
         to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
 
@@ -436,4 +447,7 @@ class SampleMixin:
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
+
+        elapsed = time.time() - tic
+        logger.debug(f"Describe took {elapsed:.2f}s")
         return dataframe_from_json(response.json())
