@@ -261,7 +261,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
 
         See Also
         --------
-        - [Entity.create](/reference/featurebyte.api.entity.Entity.create/): Entity.create
+        - [Catalog.create_entity](/reference/featurebyte.api.catalog.Catalog.create_entity/): Catalog.create_entity
         """
         try:
             return Entity.get(name=name)

@@ -106,6 +106,39 @@ class ExceptionDetails(BaseModel):
         return f"{self.type}: {self.description}"
 
 
+def get_docs_version() -> str:
+    """
+    Get docs version. This returns the major.minor version of featurebyte.
+
+    Returns
+    -------
+    str
+        Docs version
+    """
+    split_current_version = version.split(".")
+    return ".".join(split_current_version[:2])
+
+
+def update_description_with_version(description: str) -> str:
+    """
+    Update description with version. This replaces the reference link with the versioned link.
+
+    Parameters
+    ----------
+    description : str
+        Description
+
+    Returns
+    -------
+    str
+        Description with version
+    """
+    docs_version = get_docs_version()
+    if f"{docs_version}/reference" in description:
+        return description
+    return description.replace("/reference", f"/{docs_version}/reference")
+
+
 class ResourceDetails(BaseModel):
     """
     Pydantic model to capture resource details
@@ -148,7 +181,8 @@ class ResourceDetails(BaseModel):
         -------
         str
         """
-        return " ".join([self.short_description or "", self.long_description or ""])
+        description = " ".join([self.short_description or "", self.long_description or ""])
+        return update_description_with_version(description)
 
     @property
     def parameters_string(self) -> str:
@@ -255,19 +289,6 @@ class DocItems:
         return list(self.doc_items.keys())
 
 
-def get_docs_version() -> str:
-    """
-    Get docs version. This returns the major.minor version of featurebyte.
-
-    Returns
-    -------
-    str
-        Docs version
-    """
-    split_current_version = version.split(".")
-    return ".".join(split_current_version[:2])
-
-
 class Docstring(BaseDocstring):
     """
     Docstring with extended support
@@ -294,7 +315,7 @@ class Docstring(BaseDocstring):
         description = see_also_item.description
         if description is not None and REPLACE_VERSION_MODE:
             # Replace the reference link with the versioned link
-            description = description.replace("/reference", f"/{get_docs_version()}/reference")
+            description = update_description_with_version(description)
         return DocstringMeta(
             args=see_also_item.args,
             description=description,

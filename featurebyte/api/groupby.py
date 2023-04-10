@@ -216,7 +216,7 @@ class GroupBy:
         ...    feature_name="Number of Credit Cards",
         ... )
         >>> feature  # doctest: +SKIP
-        Feature[FLOAT](name=Number of Credit Cards, node_name=alias_1)
+        Feature(name=Number of Credit Cards, node_name=alias_1)
         """
         return AsAtAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
