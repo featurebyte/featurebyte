@@ -97,6 +97,9 @@ jobs:
         run: |
           poetry config virtualenvs.in-project true
           poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+      - name: Install packages needed for build
+        run: |
+          sudo apt-get install libsasl2-dev gcc
       - name: Bump Version
         run: |
           poetry version -- ${{ github.event.inputs.version }}
