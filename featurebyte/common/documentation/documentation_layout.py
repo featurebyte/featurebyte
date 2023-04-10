@@ -240,6 +240,9 @@ def _get_feature_layout() -> List[DocLayoutItem]:
             [FEATURE, CREATE, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
         ),
         DocLayoutItem(
+            [FEATURE, CREATE, "view.groupby"], doc_path_override="api.view.GroupByMixin.groupby.md"
+        ),
+        DocLayoutItem(
             [FEATURE, CREATE, "view.GroupBy.aggregate"],
             doc_path_override="api.groupby.GroupBy.aggregate.md",
         ),
