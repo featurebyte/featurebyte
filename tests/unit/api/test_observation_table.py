@@ -6,7 +6,6 @@ import pytest
 from featurebyte.api.observation_table import ObservationTable
 
 
-@pytest.mark.usefixtures("saved_observation_table_document")
 def test_get(observation_table_from_source):
     """
     Test retrieving an ObservationTable object by name
