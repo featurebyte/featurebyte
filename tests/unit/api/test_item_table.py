@@ -395,7 +395,7 @@ def assert_info_helper(item_table_info):
     assert item_table_info["item_id_column"] == "item_id_col"
     assert len(item_table_info["entities"]) == 1
     assert item_table_info["name"] == "sf_item_table"
-    assert item_table_info["status"] == "DRAFT"
+    assert item_table_info["status"] == "PUBLIC_DRAFT"
 
 
 def test_info(saved_item_table):

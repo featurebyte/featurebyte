@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
+import pymongo
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import SourceType, StrEnum
@@ -37,6 +38,15 @@ class MaterializedTable(FeatureByteCatalogBaseDocumentModel):
     """
 
     location: TabularSource
+
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("location.feature_store_id"),
+        ]
 
 
 class ObservationInputType(StrEnum):
@@ -137,7 +147,7 @@ class ObservationTableModel(MaterializedTable):
     observation_input: ObservationInput
     context_id: Optional[PydanticObjectId] = Field(default=None)
 
-    class Settings:
+    class Settings(MaterializedTable.Settings):
         """
         MongoDB settings
         """
@@ -154,4 +164,11 @@ class ObservationTableModel(MaterializedTable):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = MaterializedTable.Settings.indexes + [
+            pymongo.operations.IndexModel("context_id"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

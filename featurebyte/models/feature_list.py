@@ -8,6 +8,7 @@ from typing import Any, List, Optional
 import functools
 from collections import defaultdict
 
+import pymongo
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 from typeguard import typechecked
@@ -337,7 +338,7 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
             values["table_ids"] = cls.derive_table_ids(features)
         return values
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -354,6 +355,12 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.RENAME,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("feature_namespace_ids"),
+            pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("table_ids"),
         ]
 
 
@@ -402,6 +409,21 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
     _sort_feature_list_ids_validator = validator("feature_list_ids", allow_reuse=True)(
         construct_sort_validator()
     )
+
+    class Settings(FrozenFeatureListNamespaceModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = FrozenFeatureListNamespaceModel.Settings.indexes + [
+            pymongo.operations.IndexModel("feature_list_ids"),
+            pymongo.operations.IndexModel("deployed_feature_list_ids"),
+            pymongo.operations.IndexModel("default_feature_list_id"),
+            pymongo.operations.IndexModel("status"),
+            [
+                ("name", pymongo.TEXT),
+            ],
+        ]
 
 
 class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
@@ -480,7 +502,7 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
             )
         return feature_clusters
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -497,6 +519,12 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"], "version": ["version"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("version"),
+            pymongo.operations.IndexModel("feature_ids"),
+            pymongo.operations.IndexModel("feature_list_namespace_id"),
         ]
 
 
@@ -553,3 +581,17 @@ class FeatureListModel(FrozenFeatureListModel):
                 "readiness_distribution total count is different from total feature ids."
             )
         return value
+
+    class Settings(FrozenFeatureListModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = FrozenFeatureListModel.Settings.indexes + [
+            pymongo.operations.IndexModel("online_enabled_feature_ids"),
+            pymongo.operations.IndexModel("deployed"),
+            [
+                ("name", pymongo.TEXT),
+                ("version", pymongo.TEXT),
+            ],
+        ]

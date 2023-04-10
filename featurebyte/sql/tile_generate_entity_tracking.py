@@ -6,7 +6,7 @@ from typing import Any, List
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
-from featurebyte.sql.common import construct_create_table_query, retry_sql_with_cache
+from featurebyte.sql.common import construct_create_table_query, retry_sql, retry_sql_with_cache
 
 
 class TileGenerateEntityTracking(BaselSqlModel):
@@ -38,11 +38,8 @@ class TileGenerateEntityTracking(BaselSqlModel):
         """
 
         tracking_table_name = self.tile_id + "_ENTITY_TRACKER"
-        tracking_table_exist_flag = True
-        try:
-            await self._session.execute_query(f"select * from {tracking_table_name} limit 1")
-        except Exception:  # pylint: disable=broad-except
-            tracking_table_exist_flag = False
+        tracking_table_exist_flag = await self.table_exists(tracking_table_name)
+        logger.debug(f"tracking_table_exist_flag: {tracking_table_exist_flag}")
 
         entity_insert_cols = []
         entity_filter_cols = []
@@ -68,7 +65,7 @@ class TileGenerateEntityTracking(BaselSqlModel):
                 tracking_table_name, self.entity_table, session=self._session
             )
             logger.debug(f"create_sql: {create_sql}")
-            await self._session.execute_query(create_sql)
+            await retry_sql(self._session, create_sql)
         else:
             merge_sql = f"""
                 merge into {tracking_table_name} a using ({self.entity_table}) b

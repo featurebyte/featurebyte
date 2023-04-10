@@ -374,7 +374,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         try:
             return self.cached_model.status  # pylint: disable=no-member
         except RecordRetrievalException:
-            return TableStatus.DRAFT
+            return TableStatus.PUBLIC_DRAFT
 
     @property
     def record_creation_timestamp_column(self) -> Optional[str]:

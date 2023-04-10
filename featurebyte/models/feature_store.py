@@ -7,6 +7,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
 from abc import ABC, abstractmethod
 
+import pymongo
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import OrderedStrEnum
@@ -41,7 +42,7 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
         """
         return FeatureStoreDetails(**self.json_dict())
 
-    class Settings:
+    class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -65,12 +66,21 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
             ),
         ]
 
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("type"),
+            pymongo.operations.IndexModel("details"),
+            [
+                ("name", pymongo.TEXT),
+                ("type", pymongo.TEXT),
+            ],
+        ]
+
 
 class TableStatus(OrderedStrEnum):
     """Table status"""
 
     DEPRECATED = "DEPRECATED"
-    DRAFT = "DRAFT"
+    PUBLIC_DRAFT = "PUBLIC_DRAFT"
     PUBLISHED = "PUBLISHED"
 
 
@@ -127,7 +137,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         Record creation timestamp column name
     """
 
-    status: TableStatus = Field(default=TableStatus.DRAFT, allow_mutation=False)
+    status: TableStatus = Field(default=TableStatus.PUBLIC_DRAFT, allow_mutation=False)
     record_creation_timestamp_column: Optional[StrictStr]
     _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
@@ -196,7 +206,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         Tuple[GraphNode, List[ColumnInfo]]
         """
 
-    class Settings(FeatureByteBaseDocumentModel.Settings):
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -218,4 +228,13 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
                 conflict_fields_signature={"tabular_source": ["tabular_source"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("type"),
+            pymongo.operations.IndexModel("status"),
+            pymongo.operations.IndexModel("tabular_source.feature_store_id"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

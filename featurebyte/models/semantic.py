@@ -3,6 +3,8 @@ This module contains Semantic related models
 """
 from typing import List
 
+import pymongo
+
 from featurebyte.models.base import UniqueValuesConstraint
 from featurebyte.models.relationship import Relationship
 
@@ -25,7 +27,7 @@ class SemanticModel(Relationship):
         Datetime when the Entity object was last updated
     """
 
-    class Settings:
+    class Settings(Relationship.Settings):
         """
         MongoDB settings
         """
@@ -42,4 +44,10 @@ class SemanticModel(Relationship):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=None,
             ),
+        ]
+
+        indexes = Relationship.Settings.indexes + [
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

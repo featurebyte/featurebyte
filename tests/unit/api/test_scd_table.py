@@ -256,7 +256,7 @@ def assert_info_helper(scd_table_info):
     """
     assert scd_table_info["entities"] == []
     assert scd_table_info["name"] == "sf_scd_table"
-    assert scd_table_info["status"] == "DRAFT"
+    assert scd_table_info["status"] == "PUBLIC_DRAFT"
     assert scd_table_info["natural_key_column"] == "col_text"
     assert scd_table_info["surrogate_key_column"] == "col_int"
     assert scd_table_info["effective_timestamp_column"] == "effective_timestamp"

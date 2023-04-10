@@ -126,7 +126,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
 
         # create document for insertion
         document = self.document_class(
-            user_id=self.user.id, status=TableStatus.DRAFT, **payload_dict
+            user_id=self.user.id, status=TableStatus.PUBLIC_DRAFT, **payload_dict
         )
 
         # check any conflict with existing documents

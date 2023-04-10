@@ -319,7 +319,7 @@ def test_info(saved_feature):
         "primary_entity": [
             {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
         ],
-        "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
+        "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}],
         "table_feature_job_setting": {
             "this": [data_feature_job_setting],
             "default": [data_feature_job_setting],

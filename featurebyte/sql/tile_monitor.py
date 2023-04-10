@@ -21,12 +21,7 @@ class TileMonitor(TileCommon):
         Execute tile monitor operation
         """
 
-        tile_table_exist_flag = True
-        try:
-            await self._session.execute_query(f"select * from {self.tile_id} limit 1")
-        except Exception:  # pylint: disable=broad-except
-            tile_table_exist_flag = False
-
+        tile_table_exist_flag = await self.table_exists(self.tile_id)
         logger.debug(f"tile_table_exist_flag: {tile_table_exist_flag}")
 
         if not tile_table_exist_flag:
@@ -102,18 +97,14 @@ class TileMonitor(TileCommon):
             """
 
             monitor_table_name = f"{self.tile_id}_MONITOR"
-            tile_monitor_exist_flag = True
-            try:
-                await self._session.execute_query(f"select * from {monitor_table_name} limit 1")
-            except Exception:  # pylint: disable=broad-except
-                tile_monitor_exist_flag = False
+            tile_monitor_exist_flag = await self.table_exists(monitor_table_name)
             logger.debug(f"tile_monitor_exist_flag: {tile_monitor_exist_flag}")
 
             if not tile_monitor_exist_flag:
                 create_sql = construct_create_table_query(
                     monitor_table_name, compare_sql, session=self._session
                 )
-                await self._session.execute_query(create_sql)
+                await retry_sql(self._session, create_sql)
             else:
                 tile_registry_ins = TileRegistry(
                     session=self._session,

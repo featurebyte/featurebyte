@@ -115,7 +115,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(
-                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
+                f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
             )
             assert response.status_code == HTTPStatus.CREATED
 
@@ -432,7 +432,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
-            "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
+            "tables": [
+                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}
+            ],
             "dtype": "FLOAT",
             "default_version_mode": "AUTO",
             "version_count": 1,

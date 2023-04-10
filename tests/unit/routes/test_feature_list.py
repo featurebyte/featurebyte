@@ -92,9 +92,9 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(
-                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
+                f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
             )
-            assert response.status_code == HTTPStatus.CREATED
+            assert response.status_code == HTTPStatus.CREATED, response.json()
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
@@ -497,7 +497,9 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
-            "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
+            "tables": [
+                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}
+            ],
             "default_version_mode": "AUTO",
             "version_count": 1,
             "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
@@ -540,7 +542,9 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
-            "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
+            "tables": [
+                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}
+            ],
             "default_version_mode": "AUTO",
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
             "version_count": 1,

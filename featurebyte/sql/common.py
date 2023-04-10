@@ -8,6 +8,8 @@ from typing import Optional
 import asyncio
 from datetime import datetime
 
+import pandas as pd
+
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
@@ -64,7 +66,7 @@ async def retry_sql(
     sql: str,
     retry_num: int = 3,
     sleep_interval: int = 1,
-) -> None:
+) -> pd.DataFrame | None:
     """
     Retry sql operation
 
@@ -79,6 +81,11 @@ async def retry_sql(
     sleep_interval: int
         Sleep interval between retries
 
+    Returns
+    -------
+    pd.DataFrame
+        Result of the sql operation
+
     Raises
     ------
     Exception
@@ -87,14 +94,16 @@ async def retry_sql(
 
     for i in range(retry_num):
         try:
-            await session.execute_query(sql)
-            break
+            return await session.execute_query(sql)
         except Exception as err:  # pylint: disable=broad-exception-caught
             logger.warning(f"Problem with sql run {i} with sql: {sql}")
             if i == retry_num - 1:
+                logger.error(f"Error with sql: {err}")
                 raise err
 
         await asyncio.sleep(sleep_interval)
+
+    return None
 
 
 async def retry_sql_with_cache(

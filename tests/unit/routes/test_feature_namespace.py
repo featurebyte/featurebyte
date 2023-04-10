@@ -103,9 +103,8 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         """Post payloads from the fixture requests"""
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            params = {"catalog_id": catalog_id} if catalog_id else None
-
-            response = api_client.post(f"/{api_object}", params=params, json=payload)
+            headers = {"active-catalog-id": str(catalog_id)} if catalog_id else None
+            response = api_client.post(f"/{api_object}", headers=headers, json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
     @pytest_asyncio.fixture
@@ -265,9 +264,11 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             "primary_entity": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
-            "tables": [{"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}],
+            "tables": [
+                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}
+            ],
             "primary_table": [
-                {"name": "sf_event_table", "status": "DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}
             ],
             "default_version_mode": "AUTO",
             "default_feature_id": response_dict["default_feature_id"],

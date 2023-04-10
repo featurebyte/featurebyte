@@ -53,7 +53,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
             WHERE
               AGGREGATION_ID ILIKE '{self.aggregation_id}' AND IS_DELETED = FALSE
         """
-        online_store_df = await self._session.execute_query(select_sql)
+        online_store_df = await retry_sql(self._session, select_sql)
         if online_store_df is None or len(online_store_df) == 0:
             return
 
@@ -76,11 +76,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
             )
 
             # check if feature store table exists
-            fs_table_exist_flag = True
-            try:
-                await self._session.execute_query(f"select * from {fs_table} limit 1")
-            except Exception:  # pylint: disable=broad-except
-                fs_table_exist_flag = False
+            fs_table_exist_flag = await self.table_exists(fs_table)
             logger.debug(f"fs_table_exist_flag: {fs_table_exist_flag}")
 
             entities_fname_str = ", ".join(
@@ -94,10 +90,11 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 create_sql = construct_create_table_query(
                     fs_table, f"select {entities_fname_str} from ({f_sql})", session=self._session
                 )
-                await self._session.execute_query(create_sql)
+                await retry_sql(self._session, create_sql)
 
-                await self._session.execute_query(
-                    f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP"
+                await retry_sql(
+                    self._session,
+                    f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP",
                 )
 
                 await retry_sql(
@@ -123,11 +120,13 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 quote_f_name = self.quote_column(f_name)
 
                 if not col_exists:
-                    await self._session.execute_query(
-                        f"ALTER TABLE {fs_table} ADD COLUMN {quote_f_name} {f_value_type}"
+                    await retry_sql(
+                        self._session,
+                        f"ALTER TABLE {fs_table} ADD COLUMN {quote_f_name} {f_value_type}",
                     )
-                    await self._session.execute_query(
-                        f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP"
+                    await retry_sql(
+                        self._session,
+                        f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP",
                     )
                     logger.debug(f"done adding column ({f_name}) to table {fs_table}")
 

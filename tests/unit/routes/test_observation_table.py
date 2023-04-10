@@ -48,18 +48,22 @@ class TestObservationTableApi(BaseAsyncApiTestSuite):
         # save feature store
         payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
         response = api_client.post(
-            "/feature_store", params={"catalog_id": catalog_id}, json=payload
+            "/feature_store", headers={"active-catalog-id": str(catalog_id)}, json=payload
         )
         assert response.status_code == HTTPStatus.CREATED
 
         # save entity
         payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
-        response = api_client.post("/entity", params={"catalog_id": catalog_id}, json=payload)
+        response = api_client.post(
+            "/entity", headers={"active-catalog-id": str(catalog_id)}, json=payload
+        )
         assert response.status_code == HTTPStatus.CREATED
 
         # save context
         payload = self.load_payload("tests/fixtures/request_payloads/context.json")
-        response = api_client.post("/context", params={"catalog_id": catalog_id}, json=payload)
+        response = api_client.post(
+            "/context", headers={"active-catalog-id": str(catalog_id)}, json=payload
+        )
         assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):

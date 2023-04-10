@@ -7,6 +7,7 @@ from typing import List
 
 from datetime import datetime
 
+import pymongo
 from pydantic import StrictStr
 
 from featurebyte.models.base import (
@@ -45,7 +46,7 @@ class CatalogModel(FeatureByteBaseDocumentModel):
         Datetime when the Catalog object was last updated
     """
 
-    class Settings:
+    class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -62,4 +63,10 @@ class CatalogModel(FeatureByteBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

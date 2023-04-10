@@ -7,11 +7,13 @@ from typing import List
 
 from datetime import datetime
 
+import pymongo
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
+    FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -84,7 +86,7 @@ class EntityModel(EntityRelationship):
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
@@ -106,4 +108,11 @@ class EntityModel(EntityRelationship):
                 conflict_fields_signature={"serving_name": ["serving_names", 0]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("serving_names"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

@@ -12,6 +12,7 @@ from featurebyte.common.documentation.constants import (
     CREATE,
     DATA_SOURCE,
     ENTITY,
+    ENUMS,
     EXPLORE,
     FEATURE,
     FEATURE_GROUP,
@@ -19,6 +20,7 @@ from featurebyte.common.documentation.constants import (
     FEATURE_LIST,
     FEATURE_STORE,
     GET,
+    IMPUTATION,
     INFO,
     JOIN,
     LAGS,
@@ -123,20 +125,12 @@ def _get_table_layout() -> List[DocLayoutItem]:
             doc_path_override="api.base_table.TableApiObject.name.md",
         ),
         DocLayoutItem(
-            [TABLE, INFO, "Table.primary_key_columns"],
-            doc_path_override="api.base_table.TableApiObject.primary_key_columns.md",
-        ),
-        DocLayoutItem(
             [TABLE, INFO, "Table.record_creation_timestamp_column"],
             doc_path_override="api.base_table.TableApiObject.record_creation_timestamp_column.md",
         ),
         DocLayoutItem(
             [TABLE, INFO, "Table.status"],
             doc_path_override="api.base_table.TableApiObject.status.md",
-        ),
-        DocLayoutItem(
-            [TABLE, INFO, "Table.table_data"],
-            doc_path_override="api.base_table.TableApiObject.table_data.md",
         ),
         DocLayoutItem(
             [TABLE, INFO, "Table.type"],
@@ -164,10 +158,6 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [TABLE, LINEAGE, "Table.preview_sql"],
             doc_path_override="api.base_table.TableApiObject.preview_sql.md",
-        ),
-        DocLayoutItem(
-            [TABLE, LINEAGE, "Table.tabular_source"],
-            doc_path_override="api.base_table.TableApiObject.tabular_source.md",
         ),
         DocLayoutItem([TABLE, LINEAGE, "ItemTable.event_table_id"]),
         DocLayoutItem([TABLE, TYPE, "DimensionTable"]),
@@ -280,7 +270,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, LINEAGE, "Feature.id"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.definition"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.preview_sql"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.tabular_source"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.catalog_id"]),
         DocLayoutItem([FEATURE, SERVE, "Feature.get_feature_jobs_status"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.abs"]),
@@ -499,12 +488,9 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, INFO, "View.columns_info"]),
         DocLayoutItem([VIEW, INFO, "View.dtypes"]),
         DocLayoutItem([VIEW, INFO, "View.entity_columns"]),
-        DocLayoutItem([VIEW, INFO, "View.get_excluded_columns_as_other_view"]),
         DocLayoutItem([VIEW, INFO, "View.get_join_column"]),
         DocLayoutItem([VIEW, LINEAGE, "View.feature_store"]),
-        DocLayoutItem([VIEW, LINEAGE, "View.graph"]),
         DocLayoutItem([VIEW, LINEAGE, "View.preview_sql"]),
-        DocLayoutItem([VIEW, LINEAGE, "View.tabular_source"]),
         DocLayoutItem([VIEW, TYPE, "ChangeView"]),
         DocLayoutItem([VIEW, TYPE, "DimensionView"]),
         DocLayoutItem([VIEW, TYPE, "EventView"]),
@@ -567,9 +553,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW_COLUMN, LAGS, "ChangeViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LAGS, "EventViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.feature_store"]),
-        DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.graph"]),
         DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.preview_sql"]),
-        DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.tabular_source"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.astype"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.abs"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.ceil"]),
@@ -644,14 +628,14 @@ def _get_enum_layout() -> List[DocLayoutItem]:
         The layout for the Enums used in featurebyte.
     """
     return [
-        DocLayoutItem([UTILITY_CLASSES, "MissingValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, "DisguisedValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, "UnexpectedValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, "ValueBeyondEndpointImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, "StringValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, "AggFunc"]),
-        DocLayoutItem([UTILITY_CLASSES, "SourceType"]),
-        DocLayoutItem([UTILITY_CLASSES, "StorageType"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "MissingValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "DisguisedValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "UnexpectedValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "ValueBeyondEndpointImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "StringValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
     ]
 
 
@@ -666,9 +650,9 @@ def _get_source_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([SOURCE_TABLE]),
-        DocLayoutItem([SOURCE_TABLE, "SourceTable.describe"]),
-        DocLayoutItem([SOURCE_TABLE, "SourceTable.preview"]),
-        DocLayoutItem([SOURCE_TABLE, "SourceTable.sample"]),
+        DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.describe"]),
+        DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.preview"]),
+        DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.sample"]),
     ]
 
 

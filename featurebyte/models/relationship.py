@@ -3,6 +3,7 @@ This module contains Relation mixin model
 """
 from typing import Any, Dict, List, Optional
 
+import pymongo
 from bson import ObjectId
 from pydantic import Field, root_validator, validator
 
@@ -40,11 +41,32 @@ class Relationship(FeatureByteBaseDocumentModel):
         construct_sort_validator(field="id")
     )
 
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("parents"),
+            pymongo.operations.IndexModel("ancestor_ids"),
+        ]
+
 
 class CatalogRelationship(Relationship, FeatureByteCatalogBaseDocumentModel):
     """
     Catalog-specific relationship model
     """
+
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("catalog_id"),
+            pymongo.operations.IndexModel("parents"),
+            pymongo.operations.IndexModel("ancestor_ids"),
+        ]
 
 
 class RelationshipType(StrEnum):
@@ -71,7 +93,7 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
     is_enabled: bool
     updated_by: Optional[PydanticObjectId]
 
-    class Settings:
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         Settings
         """
@@ -91,6 +113,17 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
                 },
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
+        ]
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("relationship_type"),
+            pymongo.operations.IndexModel("primary_entity_id"),
+            pymongo.operations.IndexModel("related_entity_id"),
+            pymongo.operations.IndexModel("primary_table_id"),
+            pymongo.operations.IndexModel("is_enabled"),
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]
 
     @root_validator
