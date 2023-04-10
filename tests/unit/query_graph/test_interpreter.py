@@ -77,7 +77,7 @@ def test_graph_interpreter_super_simple(simple_graph):
     """Test using a simple query graph"""
     graph, node = simple_graph
     sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+        graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SNOWFLAKE
     )
     sql_tree = sql_graph.build(node).sql
     expected = textwrap.dedent(
@@ -103,7 +103,7 @@ def test_graph_interpreter_assign_scalar(graph, node_input):
         input_nodes=[node_input],
     )
     sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+        graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SNOWFLAKE
     )
     sql_tree = sql_graph.build(assign).sql
     expected = textwrap.dedent(
@@ -245,7 +245,7 @@ def test_graph_interpreter_project_multiple_columns(graph, node_input):
         input_nodes=[node_input],
     )
     sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+        graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SNOWFLAKE
     )
     sql_tree = sql_graph.build(proj).sql
     expected = textwrap.dedent(

@@ -3,13 +3,21 @@ ObservationTableModel API payload schema
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, root_validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.observation_table import ObservationInput, ObservationTableModel
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    PydanticObjectId,
+)
+from featurebyte.models.observation_table import (
+    ObservationInput,
+    ObservationInputType,
+    ObservationTableModel,
+)
 from featurebyte.schema.common.base import PaginationMixin
 
 
@@ -31,3 +39,19 @@ class ObservationTableList(PaginationMixin):
     """
 
     data: List[ObservationTableModel]
+
+
+class ObservationTableListRecord(FeatureByteBaseDocumentModel):
+    """
+    This model determines the schema when listing observation tables via ObservationTable.list()
+    """
+
+    feature_store_id: PydanticObjectId
+    type: ObservationInputType
+
+    @root_validator(pre=True)
+    @classmethod
+    def _extract_location(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        values["type"] = values["observation_input"]["type"]
+        values["feature_store_id"] = values["location"]["feature_store_id"]
+        return values

@@ -633,6 +633,22 @@ def snowflake_event_view_entity_feature_job_fixture(
     yield event_view
 
 
+@pytest.fixture(name="observation_table_from_source")
+def observation_table_from_source_fixture(snowflake_database_table):
+    """
+    Observation table created from SourceTable
+    """
+    return snowflake_database_table.create_observation_table("observation_table_from_source_table")
+
+
+@pytest.fixture(name="observation_table_from_view")
+def observation_table_from_view_fixture(snowflake_event_view):
+    """
+    Observation table created from EventView
+    """
+    return snowflake_event_view.create_observation_table("observation_table_from_event_view")
+
+
 @pytest.fixture(name="grouped_event_view")
 def grouped_event_view_fixture(snowflake_event_view_with_entity):
     """

@@ -58,7 +58,10 @@ class ObservationTableTask(BaseTask):
             ),
         )
 
-        # TODO: add actual materialization logic here before creating the ObservationTable document
+        query = payload.observation_input.get_materialise_sql(
+            destination=location.table_details, source_type=feature_store.type
+        )
+        await db_session.execute_query(query)
 
         logger.debug("Creating a new ObservationTable", extras=location.table_details.dict())
         observation_table = ObservationTableModel(

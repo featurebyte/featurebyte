@@ -32,6 +32,7 @@ from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalys
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_table import ItemTable
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_table import SCDTable
@@ -79,6 +80,7 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_feature_stores", FeatureStore, "list"),
         MethodMetadata("list_entities", Entity, "list"),
         MethodMetadata("list_periodic_tasks", PeriodicTask, "list"),
+        MethodMetadata("list_observation_tables", ObservationTable, "list"),
     ]
 
 
@@ -92,6 +94,7 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_feature_store", FeatureStore, "get"),
         MethodMetadata("get_entity", Entity, "get"),
         MethodMetadata("get_periodic_task", PeriodicTask, "get"),
+        MethodMetadata("get_observation_table", ObservationTable, "get"),
     ]
 
 

@@ -250,7 +250,7 @@ def test_window_function__as_filter(global_graph, input_node):
         input_nodes=[assign_node, binary_node],
     )
     sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+        graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SNOWFLAKE
     )
     sql_tree = sql_graph.build(filtered_node).sql
     expected = textwrap.dedent(
@@ -275,7 +275,7 @@ def test_window_function__multiple_filters(graph_with_window_function_filter):
     """Test when condition derived from window function is used as filter"""
     graph, filtered_node_2 = graph_with_window_function_filter
     sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+        graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SNOWFLAKE
     )
     sql_tree = sql_graph.build(filtered_node_2).sql
     expected = textwrap.dedent(
@@ -305,9 +305,7 @@ def test_window_function__as_filter_qualify_not_supported(graph_with_window_func
     Test window function as filter but QUALIFY is not supported
     """
     graph, node = graph_with_window_function_filter
-    sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SPARK
-    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SPARK)
     sql_tree = sql_graph.build(node).sql
     expected = textwrap.dedent(
         """
@@ -359,9 +357,7 @@ def test_window_function__as_filter_qualify_not_supported_unnamed(
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[project_node],
     )
-    sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SPARK
-    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALISE, source_type=SourceType.SPARK)
     sql_tree = sql_graph.build(add_node).sql_standalone
     expected = textwrap.dedent(
         """

@@ -22,6 +22,7 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
+from featurebyte.models.observation_table import SourceTableObservationInput
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -29,11 +30,13 @@ from featurebyte.query_graph.model.table import AllTableDataT, SouceTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.schema.observation_table import ObservationTableCreate
 
 if TYPE_CHECKING:
     from featurebyte.api.dimension_table import DimensionTable
     from featurebyte.api.event_table import EventTable
     from featurebyte.api.item_table import ItemTable
+    from featurebyte.api.observation_table import ObservationTable
     from featurebyte.api.scd_table import SCDTable
 else:
     DimensionTable = TypeVar("DimensionTable")
@@ -846,3 +849,29 @@ class SourceTable(AbstractTableData):
             end_timestamp_column=end_timestamp_column,
             current_flag_column=current_flag_column,
         )
+
+    def create_observation_table(self, name: str) -> ObservationTable:
+        """
+        Create an observation table from this source table.
+
+        Parameters
+        ----------
+        name: str
+            Observation table name.
+
+        Returns
+        -------
+        ObservationTable
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.observation_table import ObservationTable
+
+        payload = ObservationTableCreate(
+            name=name,
+            feature_store_id=self.feature_store.id,
+            observation_input=SourceTableObservationInput(source=self.tabular_source),
+        )
+        observation_table_doc = ObservationTable.post_async_task(
+            route="/observation_table", payload=payload.json_dict()
+        )
+        return ObservationTable.get_by_id(observation_table_doc["_id"])

@@ -112,7 +112,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         info_repr = ""
         try:
             info_repr = repr(self.info())
-        except RecordCreationException:
+        except (RecordCreationException, RecordRetrievalException):
             # object has not been saved yet
             pass
 

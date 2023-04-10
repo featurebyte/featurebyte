@@ -10,10 +10,10 @@ from dataclasses import dataclass
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import SourceType, TableDataType
+from featurebyte.enum import TableDataType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name
 
 
 @dataclass
@@ -25,25 +25,8 @@ class InputNode(TableNode):
     query_node_type = NodeType.INPUT
 
     def from_query_impl(self, select_expr: Select) -> Select:
-        dbtable: Expression
-        if self.feature_store["type"] in {
-            SourceType.SNOWFLAKE,
-            SourceType.DATABRICKS,
-            SourceType.SPARK,
-        }:
-            database = self.dbtable["database_name"]
-            schema = self.dbtable["schema_name"]
-            table = self.dbtable["table_name"]
-            # expressions.Table's notation for three part fully qualified name is
-            # {catalog}.{db}.{this}
-            dbtable = expressions.Table(
-                this=quoted_identifier(table),
-                db=quoted_identifier(schema),
-                catalog=quoted_identifier(database),
-            )
-        else:
-            dbtable = quoted_identifier(self.dbtable["table_name"])
 
+        dbtable = get_fully_qualified_table_name(self.dbtable)
         select_expr = select_expr.from_(dbtable)
 
         # Optionally, filter SCD table to only include current records. This is done only for
