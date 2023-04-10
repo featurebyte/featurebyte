@@ -3,11 +3,12 @@ CredentialService
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from bson.objectid import ObjectId
 
 from featurebyte.models.credential import CredentialModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.credential import CredentialServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
@@ -32,6 +33,31 @@ class CredentialService(
     ):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
         self.feature_store_warehouse_service = feature_store_warehouse_service
+
+    def _construct_get_query_filter(
+        self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
+    ) -> QueryFilter:
+        query_filter = super()._construct_get_query_filter(
+            document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
+        # credentials are personal to the user
+        query_filter["user_id"] = self.user.id
+        return query_filter
+
+    def _construct_list_query_filter(
+        self,
+        query_filter: Optional[Dict[str, Any]] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> QueryFilter:
+        output = super()._construct_list_query_filter(
+            query_filter=query_filter,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
+        )
+        # credentials are personal to the user
+        output["user_id"] = self.user.id
+        return output
 
     async def _validate_credential(self, credential: CredentialModel) -> None:
         """

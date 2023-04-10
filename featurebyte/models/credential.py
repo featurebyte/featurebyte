@@ -7,6 +7,7 @@ from typing_extensions import Annotated
 import os  # pylint: disable=wrong-import-order
 from base64 import b64encode  # pylint: disable=wrong-import-order
 
+import pymongo
 from cryptography.fernet import Fernet
 from pydantic import Field, StrictStr
 
@@ -187,7 +188,7 @@ class CredentialModel(FeatureByteBaseDocumentModel):
         if self.storage_credential:
             self.storage_credential.decrypt()
 
-    class Settings:
+    class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         Collection settings for Credential document
         """
@@ -204,4 +205,10 @@ class CredentialModel(FeatureByteBaseDocumentModel):
                 conflict_fields_signature={"feature_store_id": ["feature_store_id"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
+        ]
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            [
+                ("name", pymongo.TEXT),
+            ],
         ]

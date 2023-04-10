@@ -6,10 +6,12 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
+from bson import ObjectId
 
 from featurebyte import AccessTokenCredential, S3StorageCredential, UsernamePasswordCredential
 from featurebyte.api.credential import Credential
-from featurebyte.exception import DuplicatedRecordException
+from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
+from featurebyte.models.credential import CredentialModel
 
 
 @pytest.fixture(name="credential")
@@ -251,3 +253,25 @@ def test_get_credentials(credential):
         "database_credential",
         "storage_credential",
     }
+
+
+@pytest.mark.asyncio
+async def test_get_credential_user_access(credential, persistent):
+    """
+    Get and list credentials should be accessible only to the owner
+    """
+    await persistent.update_one(
+        collection_name=CredentialModel.collection_name(),
+        query_filter={"_id": credential.id},
+        update={"$set": {"user_id": ObjectId()}},
+        user_id=None,
+    )
+
+    with pytest.raises(RecordRetrievalException) as exc:
+        Credential.get_by_id(credential.id)
+    assert (
+        f'Credential (id: "{credential.id}") not found. ' "Please save the Credential object first."
+    ) in str(exc.value)
+
+    credentials = Credential.list()
+    assert credentials.shape[0] == 0
