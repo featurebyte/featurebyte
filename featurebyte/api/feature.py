@@ -731,7 +731,7 @@ class Feature(
 
         >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
         >>> feature.info()["tables"]
-        [{'name': 'GROCERYINVOICE', 'status': 'DRAFT', 'catalog_name': 'grocery'}]
+        [{'name': 'GROCERYINVOICE', 'status': 'PUBLIC_DRAFT', 'catalog_name': 'grocery'}]
 
         Create a new version of a feature with irrelevant table cleaning operations (for example, the specified
         table name or column name is not used by the feature):

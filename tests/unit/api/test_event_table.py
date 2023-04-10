@@ -302,7 +302,7 @@ def test_info(saved_event_table, cust_id_entity):
         "event_timestamp_column": "event_timestamp",
         "record_creation_timestamp_column": "created_at",
         "default_feature_job_setting": None,
-        "status": "DRAFT",
+        "status": "PUBLIC_DRAFT",
         "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}],
         "column_count": 9,
         "table_details": {

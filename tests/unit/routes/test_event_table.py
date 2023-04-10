@@ -176,7 +176,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
 
         # the other fields should be unchanged
         data_model_dict.pop("default_feature_job_setting")
-        data_model_dict["status"] = TableStatus.DRAFT
+        data_model_dict["status"] = TableStatus.PUBLIC_DRAFT
         assert update_response_dict == data_model_dict
 
         # test get audit records
@@ -221,7 +221,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert insert_id
 
         # expect status to be draft
-        assert response_dict["status"] == TableStatus.DRAFT
+        assert response_dict["status"] == TableStatus.PUBLIC_DRAFT
 
         data_update_dict["name"] = "Some other name"
         data_update_dict["source"] = "Some other source"
@@ -271,7 +271,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
                         "frequency": "30m",
                         "time_modulo_frequency": "5m",
                     },
-                    "status": "DRAFT",
+                    "status": "PUBLIC_DRAFT",
                 },
             )
             assert response.status_code == HTTPStatus.OK
@@ -314,7 +314,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 "frequency": "30m",
                 "time_modulo_frequency": "5m",
             },
-            "status": "DRAFT",
+            "status": "PUBLIC_DRAFT",
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],

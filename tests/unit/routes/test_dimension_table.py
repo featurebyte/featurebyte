@@ -150,7 +150,7 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
                 "schema_name": "sf_schema",
                 "table_name": "dimension_table",
             },
-            "status": "DRAFT",
+            "status": "PUBLIC_DRAFT",
             "entities": [],
             "semantics": ["dimension_id"],
             "column_count": 9,

@@ -13,6 +13,7 @@ from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 @pytest.mark.asyncio
 async def test_update_feature__no_update(feature_readiness_service, feature):
     """Test update_feature when the readiness is the same"""
+    assert feature.readiness == FeatureReadiness.DRAFT
     updated_feature = await feature_readiness_service.update_feature(
         feature_id=feature.id, readiness=feature.readiness
     )

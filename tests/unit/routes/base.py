@@ -824,7 +824,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
-        assert create_success_response.json()["status"] == "DRAFT"
+        assert create_success_response.json()["status"] == "PUBLIC_DRAFT"
 
     def test_update_fails_table_not_found(self, test_api_client_persistent, data_update_dict):
         """
@@ -854,7 +854,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             f"{self.base_route}/{response_dict['_id']}", json=data_update_dict
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": "Invalid status transition from DRAFT to DEPRECATED."}
+        assert response.json() == {
+            "detail": "Invalid status transition from PUBLIC_DRAFT to DEPRECATED."
+        }
 
     def test_update_status_only(self, test_api_client_persistent, data_response):
         """
@@ -863,7 +865,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         # insert a record
         test_api_client, _ = test_api_client_persistent
         current_data = data_response.json()
-        assert current_data.pop("status") == "DRAFT"
+        assert current_data.pop("status") == "PUBLIC_DRAFT"
         assert current_data.pop("updated_at") is not None
 
         response = test_api_client.patch(
@@ -892,7 +894,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             "INSERT",
         ]
         assert [record["previous_values"].get("status") for record in results["data"]] == [
-            "DRAFT",
+            "PUBLIC_DRAFT",
             None,
             None,
         ]

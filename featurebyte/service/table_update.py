@@ -92,7 +92,7 @@ class TableUpdateService(BaseService):
         if data.status is not None and current_status != data.status:
             # check eligibility of status transition
             eligible_transitions = {
-                TableStatus.DRAFT: {TableStatus.PUBLISHED},
+                TableStatus.PUBLIC_DRAFT: {TableStatus.PUBLISHED},
                 TableStatus.PUBLISHED: {TableStatus.DEPRECATED},
                 TableStatus.DEPRECATED: {},
             }

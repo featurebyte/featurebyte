@@ -70,7 +70,7 @@ class TableStatus(OrderedStrEnum):
     """Table status"""
 
     DEPRECATED = "DEPRECATED"
-    DRAFT = "DRAFT"
+    PUBLIC_DRAFT = "PUBLIC_DRAFT"
     PUBLISHED = "PUBLISHED"
 
 
@@ -127,7 +127,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         Record creation timestamp column name
     """
 
-    status: TableStatus = Field(default=TableStatus.DRAFT, allow_mutation=False)
+    status: TableStatus = Field(default=TableStatus.PUBLIC_DRAFT, allow_mutation=False)
     record_creation_timestamp_column: Optional[StrictStr]
     _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
