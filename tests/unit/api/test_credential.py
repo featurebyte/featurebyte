@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import AccessTokenCredential, S3StorageCredential
+from featurebyte import AccessTokenCredential, S3StorageCredential, UsernamePasswordCredential
 from featurebyte.api.credential import Credential
 from featurebyte.exception import DuplicatedRecordException
 
@@ -21,13 +21,36 @@ def credential_fixture(snowflake_feature_store):
     yield credential
 
 
+def test_credential_creation__success(snowflake_feature_store, credential):
+    """
+    Credential creation success
+    """
+    Credential.delete(credential.id)
+    with mock.patch("featurebyte.service.credential.CredentialService._validate_credential"):
+        new_credential = Credential.create(
+            feature_store_name=snowflake_feature_store.name,
+            database_credential=UsernamePasswordCredential(
+                username="username", password="password"
+            ),
+            storage_credential=S3StorageCredential(
+                s3_access_key_id="access_key_id", s3_secret_access_key="s3_secret_access_key"
+            ),
+        )
+    assert new_credential.saved
+    assert new_credential.id is not None
+    assert new_credential.feature_store_id == snowflake_feature_store.id
+    assert new_credential.name == snowflake_feature_store.name
+    assert new_credential.database_credential_type == "USERNAME_PASSWORD"
+    assert new_credential.storage_credential_type == "S3"
+
+
 def test_credential_creation__conflict(snowflake_feature_store):
     """
     Credential creation conflict
     """
     with mock.patch("featurebyte.service.credential.CredentialService._validate_credential"):
         with pytest.raises(DuplicatedRecordException) as exc:
-            Credential.create(feature_store=snowflake_feature_store)
+            Credential.create(feature_store_name=snowflake_feature_store.name)
     assert f'Credential (feature_store_id: "{snowflake_feature_store.id}") already exists' in str(
         exc.value
     )
@@ -218,3 +241,13 @@ def test_get_credentials(credential):
     """
     retrieved_credential = Credential.get(credential.name)
     assert retrieved_credential.json_dict() == credential.json_dict()
+    assert set(retrieved_credential.json_dict().keys()) == {
+        "_id",
+        "name",
+        "user_id",
+        "created_at",
+        "updated_at",
+        "feature_store_id",
+        "database_credential",
+        "storage_credential",
+    }
