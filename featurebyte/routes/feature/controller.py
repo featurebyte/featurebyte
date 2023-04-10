@@ -235,10 +235,13 @@ class FeatureController(
 
         # delete feature from the persistent
         await self.service.delete_document(document_id=feature_id)
-        feature_namespace = await self.feature_readiness_service.update_feature_namespace(
+        await self.feature_readiness_service.update_feature_namespace(
             feature_namespace_id=feature.feature_namespace_id,
             deleted_feature_ids=[feature_id],
-            return_document=True,
+            return_document=False,
+        )
+        feature_namespace = await self.feature_namespace_service.get_document(
+            document_id=feature.feature_namespace_id
         )
         if not feature_namespace.feature_ids:
             # delete feature namespace if it has no more feature

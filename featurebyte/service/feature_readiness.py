@@ -3,7 +3,7 @@ FeatureReadinessService
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 from bson.objectid import ObjectId
 
@@ -156,15 +156,13 @@ class FeatureReadinessService(BaseService):
             )
         return self.conditional_return(document=document, condition=return_document)
 
-    async def _get_default_feature(
-        self, feature_ids: list[ObjectId]
-    ) -> tuple[ObjectId, FeatureReadiness]:
+    async def _get_default_feature(self, feature_ids: Sequence[ObjectId]) -> FeatureModel:
         """
         Get default feature from list of feature IDs
 
         Parameters
         ----------
-        feature_ids: list[ObjectId]
+        feature_ids: Sequence[ObjectId]
             Feature IDs
 
         Returns

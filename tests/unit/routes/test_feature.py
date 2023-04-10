@@ -441,6 +441,47 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"/feature_namespace/{namespace_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
 
+    def test_delete_200__namespace_not_deleted(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        namespace_id = create_response_dict["feature_namespace_id"]
+
+        # create another feature in the same namespace
+        response = test_api_client.post(
+            f"{self.base_route}",
+            json={
+                "source_feature_id": doc_id,
+                "table_feature_job_settings": [
+                    {
+                        "table_name": "sf_event_table",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
+            },
+        )
+        assert response.status_code == HTTPStatus.CREATED
+        new_feature_id = response.json()["_id"]
+
+        # check namespace before delete
+        namespace_dict = test_api_client.get(f"/feature_namespace/{namespace_id}").json()
+        assert namespace_dict["feature_ids"] == [doc_id, new_feature_id]
+
+        # delete feature
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+
+        # check namespace after delete
+        namespace_dict = test_api_client.get(f"/feature_namespace/{namespace_id}").json()
+        assert namespace_dict["feature_ids"] == [new_feature_id]
+
     def check_that_feature_is_not_deleted(self, test_api_client, doc_id, namespace_id):
         """Check that the feature & feature namespace are not deleted"""
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
