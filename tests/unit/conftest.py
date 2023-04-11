@@ -698,13 +698,16 @@ def observation_table_from_view_fixture(snowflake_event_view, patched_observatio
 
 
 @pytest.fixture(name="modeling_table")
-def modeling_table_fixture(observation_table_from_source):
+def modeling_table_fixture(float_feature, observation_table_from_source):
     """
     Fixture for a ModelingTable
     """
-    location = observation_table_from_source.location.copy().dict()
-    location["table_details"]["table_name"] = "MODELING_TABLE_123"
-    return ModelingTableModel(location=location, name="my_modeling_table")
+    feature_list = FeatureList([float_feature], name="feature_list_for_modeling_table")
+    feature_list.save()
+    modeling_table = feature_list.get_historical_features_async(
+        observation_table_from_source, "my_modeling_table"
+    )
+    return modeling_table
 
 
 @pytest.fixture(name="grouped_event_view")

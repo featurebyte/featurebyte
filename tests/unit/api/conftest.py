@@ -291,7 +291,7 @@ def feature_job_logs_fixture():
     return job_logs
 
 
-@pytest.fixture(autouse=True, scope="function")
+@pytest.fixture(scope="function")
 def mock_post_async_task():
     """Mock post_async_task"""
 
