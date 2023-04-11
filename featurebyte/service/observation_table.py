@@ -136,6 +136,11 @@ class ObservationTableService(
         Returns
         -------
         dict[str, Any]
+
+        Raises
+        ------
+        MissingPointInTimeColumnError
+            If the point in time column is missing.
         """
         table_schema = await db_session.list_table_schema(
             table_name=destination.table_name,

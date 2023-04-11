@@ -24,7 +24,6 @@ from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     get_fully_qualified_table_name,
-    quoted_identifier,
     sql_to_string,
 )
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
@@ -51,7 +50,6 @@ class ObservationSet(ABC):
         -------
         list[str]
         """
-        pass
 
     @property
     @abstractmethod
@@ -81,21 +79,21 @@ class DataFrameObservationSet(ObservationSet):
     Observation set based on an in memory pandas DataFrame
     """
 
-    def __init__(self, df: pd.DataFrame):
-        self.df = convert_point_in_time_dtype_if_needed(df)
+    def __init__(self, dataframe: pd.DataFrame):
+        self.dataframe = convert_point_in_time_dtype_if_needed(dataframe)
 
     @property
     def columns(self) -> list[str]:
-        return cast(list[str], self.df.columns.tolist())
+        return cast(list[str], self.dataframe.columns.tolist())
 
     @property
     def most_recent_point_in_time(self) -> pd.Timestamp:
-        return self.df[SpecialColumnName.POINT_IN_TIME].max()
+        return self.dataframe[SpecialColumnName.POINT_IN_TIME].max()
 
     async def register_as_request_table(
         self, session: BaseSession, request_table_name: str
     ) -> None:
-        await session.register_table(request_table_name, self.df)
+        await session.register_table(request_table_name, self.dataframe)
 
 
 class MaterializedTableObservationSet(ObservationSet):
@@ -155,6 +153,10 @@ def convert_point_in_time_dtype_if_needed(observation_set: pd.DataFrame) -> pd.D
     ----------
     observation_set : pd.DataFrame
         Observation set
+
+    Returns
+    -------
+    pd.DataFrame
     """
     if SpecialColumnName.POINT_IN_TIME not in observation_set.columns:
         return observation_set
@@ -204,8 +206,8 @@ def validate_request_schema(observation_set: ObservationSet) -> None:
 
     Parameters
     ----------
-    observation_set: DataFrame
-        Observation set DataFrame
+    observation_set: ObservationSet
+        Observation set
 
     Raises
     ------
@@ -363,6 +365,10 @@ async def get_historical_features(
         on demand.
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    output_table_details: Optional[TableDetails]
+        Optional output table details to write the results to. If this parameter is provided, the
+        function will return None (intended to be used when handling asynchronous historical
+        requests).
 
     Returns
     -------

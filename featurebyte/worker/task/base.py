@@ -3,7 +3,7 @@ Base models for task and task payload
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from abc import abstractmethod
 from enum import Enum
@@ -70,6 +70,13 @@ class BaseTask:
 
     @property
     def app_container(self) -> AppContainer:
+        """
+        Get an AppContainer instance
+
+        Returns
+        -------
+        AppContainer
+        """
         if self._app_container is None:
             self._app_container = AppContainer.get_instance(
                 user=self.user,
@@ -83,7 +90,7 @@ class BaseTask:
                 storage=self.get_storage(),
                 container_id=self.payload.catalog_id,
             )
-        return self._app_container
+        return cast(AppContainer, self._app_container)
 
     @abstractmethod
     async def execute(self) -> Any:

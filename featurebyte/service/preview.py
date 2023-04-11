@@ -413,6 +413,8 @@ class PreviewService(BaseService):
             FeatureListGetHistoricalFeatures object
         get_credential: Any
             Get credential handler function
+        output_table_details: Optional[TableDetails]
+            Optional output table details to write the results to
 
         Returns
         -------

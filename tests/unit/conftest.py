@@ -40,7 +40,6 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, VersionIdentifier
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
-from featurebyte.models.modeling_table import ModelingTableModel
 from featurebyte.models.observation_table import SourceTableObservationInput
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.task import Task as TaskModel

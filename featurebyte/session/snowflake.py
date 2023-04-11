@@ -334,7 +334,7 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
             parts = name.split("(", 1)
             name = f"{quoted_identifier(parts[0])}({parts[1]}"
         else:
-            name = quoted_identifier(name)
+            name = f"{quoted_identifier(name)}"
         return f"{self._schema_qualifier}.{name}"
 
     async def _list_objects(self, object_type: str) -> pd.DataFrame:
