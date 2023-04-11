@@ -281,7 +281,34 @@ class Feature(
         return self._list(include_id=include_id, params={"name": self.name})
 
     @classmethod
-    def delete(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
+    @typechecked
+    def delete(cls, name: str, version: str) -> None:
+        """
+        Delete a feature. A feature can only be deleted if
+        * the feature readiness is DRAFT
+        * the feature is not used in any feature list
+        * the feature is not a default feature with manual version mode
+
+        Parameters
+        ----------
+        name : str
+            Feature name
+        version : str
+            Feature version
+
+        Examples
+        --------
+        Delete a feature by name
+
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> fb.Feature.delete(name=feature.name, version=feature.version.to_str())  # doctest: +SKIP
+        """
+        feature = cls.get(name=name, version=version)
+        cls.delete_by_id(feature.id)
+
+    @classmethod
+    @typechecked
+    def delete_by_id(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
         """
         Delete a feature. A feature can only be deleted if
         * the feature readiness is DRAFT
@@ -300,10 +327,10 @@ class Feature(
 
         Examples
         --------
-        Delete a feature
+        Delete a feature by ID
 
         >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> fb.Feature.delete(feature.id)  # doctest: +SKIP
+        >>> fb.Feature.delete_by_id(feature.id)  # doctest: +SKIP
 
         See Also
         --------

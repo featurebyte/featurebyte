@@ -27,7 +27,7 @@ def test_credential_creation__success(snowflake_feature_store, credential):
     """
     Credential creation success
     """
-    Credential.delete(credential.id)
+    Credential.delete(credential.name)
     with mock.patch("featurebyte.service.credential.CredentialService._validate_credential"):
         new_credential = Credential.create(
             feature_store_name=snowflake_feature_store.name,

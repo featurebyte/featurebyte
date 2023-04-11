@@ -151,7 +151,27 @@ class Credential(SavableApiObject):
         return credential
 
     @classmethod
-    def delete(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
+    def delete(cls, name: str) -> None:
+        """
+        Delete a credential by name. Note that associated feature store will no longer be able to access the data
+        warehouse until a new credential is created. Please use with caution.
+
+        Parameters
+        ----------
+        name: str
+            Credential name
+
+        Examples
+        --------
+        Delete a credential by name
+        >>> credential = fb.Credential.get("playground")
+        >>> fb.Credential.delete(credential.name)  # doctest: +SKIP
+        """
+        cred = cls.get(name)
+        cls.delete_by_id(cred.id)
+
+    @classmethod
+    def delete_by_id(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
         """
         Delete a credential. Note that associated feature store will no longer be able to access the data warehouse
         until a new credential is created. Please use with caution.
@@ -168,9 +188,9 @@ class Credential(SavableApiObject):
 
         Examples
         --------
-        Delete a credential
+        Delete a credential by ID
         >>> credential = fb.Credential.get("playground")
-        >>> fb.Credential.delete(credential.id)  # doctest: +SKIP
+        >>> fb.Credential.delete_by_id(credential.id)  # doctest: +SKIP
 
         See Also
         --------

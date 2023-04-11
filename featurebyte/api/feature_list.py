@@ -614,7 +614,27 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         return feature_lists
 
     @classmethod
-    def delete(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
+    @typechecked
+    def delete(cls, name: str) -> None:
+        """
+        Delete feature list namespace.
+
+        Parameters
+        ----------
+        name: str
+            Feature list namespace name
+
+        Examples
+        --------
+        Delete a feature list namespace by name
+
+        >>> fb.FeatureListNamespace.delete("invoice_feature_list")  # doctest: +SKIP
+        """
+        feature_list_namespace = cls.get(name)
+        cls.delete_by_id(feature_list_namespace.id)
+
+    @classmethod
+    def delete_by_id(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
         """
         Delete feature list namespace.
 
@@ -630,10 +650,10 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
 
         Examples
         --------
-        Delete a feature list namespace
+        Delete a feature list namespace by ID
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> fb.FeatureListNamespace.delete(feature_list.feature_list_namespace_id)  # doctest: +SKIP
+        >>> fb.FeatureListNamespace.delete_by_id(feature_list.feature_list_namespace_id)  # doctest: +SKIP
         """
         client = Configurations().get_client()
         response = client.delete(url=f"{cls._route}/{id}")
@@ -796,6 +816,27 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                     resolution=' Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.',
                 ) from exc
             raise exc
+
+    @classmethod
+    @typechecked
+    def delete(cls, name: str) -> None:
+        """
+        Delete a FeatureList object from the persistent data store. A feature list can only be deleted if the
+        feature list status is DRAFT.
+
+        Parameters
+        ----------
+        name: str
+            Name of the FeatureList to delete.
+
+        Examples
+        --------
+        Delete a FeatureList.
+
+        >>> catalog.delete("invoice_feature_list")  # doctest: +SKIP
+        """
+        feature_list_namespace = FeatureListNamespace.get(name=name)
+        FeatureListNamespace.delete_by_id(id=feature_list_namespace.id)
 
     @root_validator(pre=True)
     @classmethod
