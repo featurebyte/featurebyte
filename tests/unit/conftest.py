@@ -666,12 +666,18 @@ def patched_observation_table_service():
     """
     Patch ObservationTableService.get_additional_metadata
     """
-    with patch(
-        "featurebyte.service.observation_table.ObservationTableService.get_additional_metadata",
-        return_value={
+
+    async def mocked_get_additional_metadata(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return {
             "column_names": ["POINT_IN_TIME", "cust_id"],
             "most_recent_point_in_time": "2023-01-15 10:00:00",
-        },
+        }
+
+    with patch(
+        "featurebyte.service.observation_table.ObservationTableService.get_additional_metadata",
+        Mock(side_effect=mocked_get_additional_metadata),
     ):
         yield
 
