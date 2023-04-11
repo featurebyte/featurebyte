@@ -1034,29 +1034,29 @@ url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featureby
 category = "main"
 description = "Free utilities from FeatureByte"
 files = [
-    {file = "featurebyte_freeware-0.2.5-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:5611d0d9efa0d47454e908ceac8b1f0988ee4c3d184c0ee85e8761f53100ea96"},
-    {file = "featurebyte_freeware-0.2.5-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fdf5f948533ea646977a72773467e08b2757b34b561499cee9d28e7159ef66b0"},
-    {file = "featurebyte_freeware-0.2.5-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:0111b5813285d83d6bfae3ac69a356f8b27850fb3f36c5f8036833a9a90e9055"},
-    {file = "featurebyte_freeware-0.2.5-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:f9ebbea02a21835820c45b28f07c3a2384057f6f5501ecad3c3a07e4f3accf16"},
-    {file = "featurebyte_freeware-0.2.5-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:3f32388d29bda4b8f024fb2b38497a9ed148169a274ad37d4cdb51b4a6aa50c4"},
-    {file = "featurebyte_freeware-0.2.5-cp310-cp310-win_amd64.whl", hash = "sha256:d58e233f8467acb15559e415f238d9601ab8dad71bb32c723ab1c85ec42d54ce"},
-    {file = "featurebyte_freeware-0.2.5-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:34a05be818d07b7158b1b5b4f2de917c1178803d0cdf10c3557156b27491d09a"},
-    {file = "featurebyte_freeware-0.2.5-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3433d0e6587e46d86ad58cc92026839687d55bdcf92e154e77eece7b1fac2ca3"},
-    {file = "featurebyte_freeware-0.2.5-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c4f98d94bf210cb43063a2ae49c6cef762aa9a9ae0861f90f3a829b75d5a4ff5"},
-    {file = "featurebyte_freeware-0.2.5-cp38-cp38-musllinux_1_1_i686.whl", hash = "sha256:87c9c0c339edc7b3dd18a9fb41e5ebe5e50704997015e3d6a9f55ecfffbd532c"},
-    {file = "featurebyte_freeware-0.2.5-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:c2e806115c6aa75ff5e0a13d011d01a79bd03d47590a75c2488b526ea305c378"},
-    {file = "featurebyte_freeware-0.2.5-cp38-cp38-win_amd64.whl", hash = "sha256:be5075b8b43c352ef6f6616e3712768032ee1c2452e0080cff4ff91a22ad600f"},
-    {file = "featurebyte_freeware-0.2.5-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:bfa7835b10b7468da580c0c6d79f60e9be2d0b9b0dbf911cca98a0cacea0bbee"},
-    {file = "featurebyte_freeware-0.2.5-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:971aeb4b7f2e81ebe4176c6e744f2011125c5cdb9207da63916cd0e58afd33bd"},
-    {file = "featurebyte_freeware-0.2.5-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7a2b206d067c31889b853043c2f6d9c4b122b86162fca56507bd52c8b9c16a12"},
-    {file = "featurebyte_freeware-0.2.5-cp39-cp39-musllinux_1_1_i686.whl", hash = "sha256:4a70b5a27135b6c3613b2fb8d7c1879633049ffdac7ae765020a2d1c40db6f57"},
-    {file = "featurebyte_freeware-0.2.5-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:7a43290e892704c9cdefac7f345b6ded5b5c6b019fe7ab2d81cbdc58a757a941"},
-    {file = "featurebyte_freeware-0.2.5-cp39-cp39-win_amd64.whl", hash = "sha256:38ac6520c4f0e8da8535a3f44b8cd3cdf23aa9e7d0129d60ce6b8dabc4b9168c"},
+    {file = "featurebyte_freeware-0.2.6-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:d7f0399cd8ac8bc04d555e9d764861eef2cdb3875f68bfc31383b0b523042101"},
+    {file = "featurebyte_freeware-0.2.6-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:8275ce8e32fd22425ef9fbc5257873d1c050f2d700e62c447f1e68eeaf47992d"},
+    {file = "featurebyte_freeware-0.2.6-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:a0d20073c6c69f73bee8bb76a403dc6fff0629bd3e6b78866650bf9f4253560b"},
+    {file = "featurebyte_freeware-0.2.6-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5fae9ec66a9c5eca62a1cadc7ce73706dcdd39cde3556689ff565dad53b0c12e"},
+    {file = "featurebyte_freeware-0.2.6-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:4dc3d87ea94f543b0b9cdfa70997943f292beeec5bc85df2dc2f2282d040442b"},
+    {file = "featurebyte_freeware-0.2.6-cp310-cp310-win_amd64.whl", hash = "sha256:0aa5eeaf16417bbc1c5d6c55f2da9ddbc9d8beb6116bef16c68e6b39962c6529"},
+    {file = "featurebyte_freeware-0.2.6-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:0d8041cd0f54d501d5280459a531015c3dfce8c33ae68744b19ff9972f041d48"},
+    {file = "featurebyte_freeware-0.2.6-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:83480d7f44334e2399a05cba59f9bfc65960ec779146377388d9309870ab8bcd"},
+    {file = "featurebyte_freeware-0.2.6-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:cfa4972ad7e4570320614226ba3ffe207518f344990091a663410a1226e8f159"},
+    {file = "featurebyte_freeware-0.2.6-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7d7f18f77e0217e90c363bb2a37a059de5bf81d4b9e635238fe8e85df6654c27"},
+    {file = "featurebyte_freeware-0.2.6-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:766904823962176df73e434f753e07b172a47e25219d804883056bf384b3fb88"},
+    {file = "featurebyte_freeware-0.2.6-cp38-cp38-win_amd64.whl", hash = "sha256:1b1539bd773456181d7817a915c2acb07e5c9891e2c2418c72d2c3de0ec382e6"},
+    {file = "featurebyte_freeware-0.2.6-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:5fd1c14352fca1a3de897ed9e7a10fbcab359842432872a53ff84445732ff3d0"},
+    {file = "featurebyte_freeware-0.2.6-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:f1844c5c37ff3c4e30b019dff803a97cc05db434cf19659e7b5c673e858bc5e3"},
+    {file = "featurebyte_freeware-0.2.6-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:544403e0f5734e9fa2f93f68acbbcfc9400a126f6608de73a0aed431f79adc1f"},
+    {file = "featurebyte_freeware-0.2.6-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:86fe358ef85fd126719d75ca2fa38ac804e1d343ea80b7bb642a49fba18e65f0"},
+    {file = "featurebyte_freeware-0.2.6-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:f575c82dacf5a4b064a45514de2c64ad7f2af7a687aea900d4a67b20762a9305"},
+    {file = "featurebyte_freeware-0.2.6-cp39-cp39-win_amd64.whl", hash = "sha256:d81b69a218af2b3ec5ecc24a75c2ed37ae167cdc8b69a7aeb9feed8ca5b4ed27"},
 ]
 name = "featurebyte-freeware"
 optional = true
 python-versions = "<3.11,>=3.8"
-version = "0.2.5"
+version = "0.2.6"
 
 [package.dependencies]
 Jinja2 = ">=3.1.2"
