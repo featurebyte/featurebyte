@@ -3,7 +3,8 @@ Pydantic schemas for handling API payloads for credential routes
 """
 from typing import Any, Dict, List, Optional
 
-from pydantic import root_validator
+from bson import ObjectId
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -22,6 +23,18 @@ from featurebyte.models.credential import (
     StorageCredentialType,
 )
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
+
+
+class CredentialCreate(FeatureByteBaseModel):
+    """
+    Schema for credential creation
+    """
+
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    name: Optional[StrictStr]
+    feature_store_id: PydanticObjectId
+    database_credential: Optional[DatabaseCredential]
+    storage_credential: Optional[StorageCredential]
 
 
 class CredentialRead(FeatureByteBaseDocumentModel):

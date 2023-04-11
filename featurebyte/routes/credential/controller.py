@@ -9,6 +9,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.credential import CredentialModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.credential import (
+    CredentialCreate,
     CredentialList,
     CredentialRead,
     CredentialServiceUpdate,
@@ -38,15 +39,15 @@ class CredentialController(
 
     async def create_credential(
         self,
-        data: CredentialModel,
+        data: CredentialCreate,
     ) -> CredentialRead:
         """
         Create credential
 
         Parameters
         ----------
-        data: CredentialModel
-            CredentialModel object
+        data: CredentialCreate
+            CredentialCreate object
 
         Returns
         -------

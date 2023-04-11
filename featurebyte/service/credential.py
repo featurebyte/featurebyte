@@ -12,13 +12,13 @@ from featurebyte.logger import logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.schema.credential import CredentialServiceUpdate
+from featurebyte.schema.credential import CredentialCreate, CredentialServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 
 
 class CredentialService(
-    BaseDocumentService[CredentialModel, CredentialModel, CredentialServiceUpdate]
+    BaseDocumentService[CredentialModel, CredentialCreate, CredentialServiceUpdate]
 ):
     """
     CredentialService class
@@ -101,13 +101,13 @@ class CredentialService(
             get_credential=get_credential,
         )
 
-    async def create_document(self, data: CredentialModel) -> CredentialModel:
+    async def create_document(self, data: CredentialCreate) -> CredentialModel:
         """
         Create document at persistent
 
         Parameters
         ----------
-        data: CredentialModel
+        data: CredentialCreate
             Credential creation payload object
 
         Returns
@@ -117,7 +117,7 @@ class CredentialService(
         credential = self.document_class(**data.json_dict())
         await self._validate_credential(credential=credential)
         credential.encrypt()
-        return await super().create_document(data=credential)
+        return await super().create_document(data=CredentialCreate(**credential.json_dict()))
 
     async def update_document(
         self,

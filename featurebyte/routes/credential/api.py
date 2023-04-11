@@ -10,7 +10,6 @@ from http import HTTPStatus
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.credential import CredentialModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -22,7 +21,12 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.credential import CredentialList, CredentialRead, CredentialUpdate
+from featurebyte.schema.credential import (
+    CredentialCreate,
+    CredentialList,
+    CredentialRead,
+    CredentialUpdate,
+)
 from featurebyte.schema.info import CredentialInfo
 
 router = APIRouter(prefix="/credential")
@@ -31,7 +35,7 @@ router = APIRouter(prefix="/credential")
 @router.post("", response_model=CredentialRead, status_code=HTTPStatus.CREATED)
 async def create_credential(
     request: Request,
-    data: CredentialModel,
+    data: CredentialCreate,
 ) -> CredentialRead:
     """
     Create credential

@@ -224,7 +224,7 @@ class BaseApiTestSuite:
         test_api_client, _ = test_api_client_persistent
         unprocessable_payload, expected_detail = create_unprocessable_payload_expected_detail
         response = test_api_client.post(f"{self.base_route}", json=unprocessable_payload)
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == expected_detail
 
     def test_get_200(self, test_api_client_persistent, create_success_response, user_id):

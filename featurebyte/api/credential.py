@@ -18,13 +18,12 @@ from featurebyte.config import Configurations
 from featurebyte.exception import RecordDeletionException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.credential import (
-    CredentialModel,
     DatabaseCredential,
     DatabaseCredentialType,
     StorageCredential,
     StorageCredentialType,
 )
-from featurebyte.schema.credential import CredentialRead, CredentialUpdate
+from featurebyte.schema.credential import CredentialCreate, CredentialRead, CredentialUpdate
 
 
 @typechecked
@@ -69,7 +68,7 @@ class Credential(SavableApiObject):
     )
 
     def _get_create_payload(self) -> Dict[str, Any]:
-        data = CredentialModel(**self.json_dict())
+        data = CredentialCreate(**self.json_dict())
         return data.json_dict()
 
     @property
