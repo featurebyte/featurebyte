@@ -2,7 +2,7 @@
 Common fixtures for worker task tests
 """
 import os
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 import pandas as pd
 import pytest
@@ -42,7 +42,7 @@ def mock_event_dataset():
     ]
     mock_patches = {}
     for target, side_effect in mock_targets:
-        mock_patch = patch(target, side_effect=side_effect)
+        mock_patch = patch(target, side_effect=side_effect, new_callable=AsyncMock)
         mock_patch.start()
         mock_patches[target] = mock_patch
 
