@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import AsyncGenerator, Optional, Union, cast
+from typing import AsyncGenerator, Optional, Union, cast, List
 
 import datetime
 import time
@@ -83,8 +83,8 @@ class DataFrameObservationSet(ObservationSet):
         self.dataframe = convert_point_in_time_dtype_if_needed(dataframe)
 
     @property
-    def columns(self) -> list[str]:
-        return cast(list[str], self.dataframe.columns.tolist())
+    def columns(self) -> List[str]:
+        return cast(List[str], self.dataframe.columns.tolist())
 
     @property
     def most_recent_point_in_time(self) -> pd.Timestamp:
