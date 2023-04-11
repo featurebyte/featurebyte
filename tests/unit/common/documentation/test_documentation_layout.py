@@ -34,7 +34,14 @@ def test_all_init_methods_are_exposed():
         "playground",
     }
     for method in all_exposed_methods:
-        if method in classes_and_properties and method not in excluded_methods:
+        if method in classes_and_properties and method in excluded_methods:
+            assert False, (
+                f"Method {method} is both in classes_and_properties and excluded_methods. Please update "
+                f"the test_all_init_methods_are_exposed test. You'll likely want to remove the method from "
+                f"excluded_methods."
+            )
+        if method in classes_and_properties or method in excluded_methods:
+            # Skip if docs exist, or we explicitly want to exclude it.
             continue
         missing_methods.append(method)
     assert len(missing_methods) == 0, f"Missing methods: {missing_methods}"
