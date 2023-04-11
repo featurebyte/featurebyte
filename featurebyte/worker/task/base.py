@@ -8,8 +8,10 @@ from typing import Any, Dict
 from abc import abstractmethod
 from enum import Enum
 
+from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.task_manager import TaskManager
 
 TASK_MAP: Dict[Enum, type[BaseTask]] = {}
 
@@ -40,6 +42,7 @@ class BaseTask:
         self.get_temp_storage = get_temp_storage
         self.get_credential = get_credential
         self.progress = progress
+        self._app_container = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -64,6 +67,23 @@ class BaseTask:
         if self.progress:
             progress = ProgressModel(percent=percent, message=message)
             self.progress.put(progress.dict(exclude_none=True))
+
+    @property
+    def app_container(self) -> AppContainer:
+        if self._app_container is None:
+            self._app_container = AppContainer.get_instance(
+                user=self.user,
+                persistent=self.get_persistent(),
+                temp_storage=self.get_temp_storage(),
+                task_manager=TaskManager(
+                    user=self.user,
+                    persistent=self.get_persistent(),
+                    catalog_id=self.payload.catalog_id,
+                ),
+                storage=self.get_storage(),
+                container_id=self.payload.catalog_id,
+            )
+        return self._app_container
 
     @abstractmethod
     async def execute(self) -> Any:

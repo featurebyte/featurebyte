@@ -6,12 +6,10 @@ from __future__ import annotations
 from typing import Any, cast
 
 from featurebyte.models.modeling_table import ModelingTableModel
-from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.worker.task.modeling_table import ModelingTableTaskPayload
 from featurebyte.service.modeling_table import ModelingTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 
 
@@ -28,19 +26,7 @@ class ModelingTableTask(BaseTask):
         """
         payload = cast(ModelingTableTaskPayload, self.payload)
 
-        # TODO: move this to BaseTask?
-        app_container = AppContainer.get_instance(
-            user=self.user,
-            persistent=self.get_persistent(),
-            temp_storage=self.get_temp_storage(),
-            task_manager=TaskManager(
-                user=self.user,
-                persistent=self.get_persistent(),
-                catalog_id=payload.catalog_id,
-            ),
-            storage=self.get_storage(),
-            container_id=payload.catalog_id,
-        )
+        app_container = self.app_container
 
         observation_table_service: ObservationTableService = app_container.observation_table_service
         observation_table_model = await observation_table_service.get_document(

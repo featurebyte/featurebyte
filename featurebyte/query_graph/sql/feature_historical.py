@@ -191,7 +191,6 @@ def validate_historical_requests_point_in_time(observation_set: ObservationSet) 
     """
     # Latest point in time must be older than 48 hours
     latest_point_in_time = observation_set.most_recent_point_in_time
-    # TODO: update this to use TZ aware
     recency = datetime.datetime.now() - latest_point_in_time
     if recency <= pd.Timedelta(HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR, unit="h"):
         raise TooRecentPointInTimeError(
