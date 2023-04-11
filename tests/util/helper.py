@@ -8,7 +8,9 @@ from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
+from bson import ObjectId
 from pandas.core.dtypes.common import is_numeric_dtype
+from sqlglot import expressions
 
 from featurebyte import get_version
 from featurebyte.api.source_table import AbstractTableData
@@ -16,6 +18,7 @@ from featurebyte.core.generic import QueryObject
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
@@ -318,3 +321,48 @@ def make_online_request(client, feature_list, entity_serving_names):
         json=data.json_dict(),
     )
     return res
+
+
+async def create_observation_table_from_dataframe(session, df, data_source):
+    """
+    Create an ObservationTable from a pandas DataFrame
+    """
+    unique_id = ObjectId()
+    db_table_name = f"df_{unique_id}"
+    await session.register_table(db_table_name, df, temporary=False)
+    return data_source.get_table(
+        db_table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    ).create_observation_table(f"observation_table_{unique_id}")
+
+
+async def get_dataframe_from_materialized_table(session, materialized_table):
+    """
+    Retrieve pandas DataFrame from a materialized table
+    """
+    query = sql_to_string(
+        expressions.select("*").from_(
+            get_fully_qualified_table_name(materialized_table.location.table_details.dict())
+        ),
+        source_type=session.source_type,
+    )
+    return await session.execute_query(query)
+
+
+async def get_historical_features_async_dataframe_helper(
+    feature_list, df_observation_set, session, data_source, **kwargs
+):
+    """
+    Helper to call get_historical_features_async using DataFrame as input, converted to an
+    intermediate observation table
+    """
+    observation_table = await create_observation_table_from_dataframe(
+        session, df_observation_set, data_source
+    )
+    modeling_table_name = f"modeling_table_{ObjectId()}"
+    modeling_table = feature_list.get_historical_features_async(
+        observation_table, modeling_table_name, **kwargs
+    )
+    df_historical_features = await get_dataframe_from_materialized_table(session, modeling_table)
+    return df_historical_features
