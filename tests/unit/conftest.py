@@ -1208,7 +1208,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         feature_list_id=feature_list.id,
         observation_table_id=observation_table.id,
         featurelist_get_historical_features=FeatureListGetHistoricalFeatures(
-            feature_clusters=[],
+            feature_clusters=feature_list._get_feature_clusters(),
         ),
     )
 
