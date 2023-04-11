@@ -6,14 +6,19 @@ from __future__ import annotations
 from typing import Any, Dict, Literal, Union, cast
 
 from http import HTTPStatus
+from pprint import pformat
 
 from bson.objectid import ObjectId
 from fastapi.exceptions import HTTPException
 
-from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
+from featurebyte.exception import (
+    DocumentDeletionError,
+    MissingPointInTimeColumnError,
+    RequiredEntityNotProvidedError,
+)
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import FeatureModel, FeatureReadiness
+from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.routes.common.base import (
     BaseDocumentController,
     DerivePrimaryEntityMixin,
@@ -32,6 +37,7 @@ from featurebyte.schema.info import FeatureInfo
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
@@ -53,6 +59,7 @@ class FeatureController(
     def __init__(
         self,
         service: FeatureService,
+        feature_namespace_service: FeatureNamespaceService,
         entity_service: EntityService,
         feature_list_service: FeatureListService,
         feature_readiness_service: FeatureReadinessService,
@@ -62,6 +69,7 @@ class FeatureController(
         feature_store_warehouse_service: FeatureStoreWarehouseService,
     ):
         super().__init__(service)
+        self.feature_namespace_service = feature_namespace_service
         self.entity_service = entity_service
         self.feature_list_service = feature_list_service
         self.feature_readiness_service = feature_readiness_service
@@ -173,6 +181,75 @@ class FeatureController(
                 return_document=False,
             )
         return await self.get(document_id=feature_id)
+
+    async def delete_feature(self, feature_id: ObjectId) -> None:
+        """
+        Delete Feature at persistent
+
+        Parameters
+        ----------
+        feature_id: ObjectId
+            Feature ID
+
+        Raises
+        ------
+        DocumentDeletionError
+            * If the feature is not in draft readiness
+            * If the feature is the default feature and the default version mode is manual
+            * If the feature is in any saved feature list
+        """
+        feature = await self.service.get_document(document_id=feature_id)
+        feature_namespace = await self.feature_namespace_service.get_document(
+            document_id=feature.feature_namespace_id
+        )
+
+        if feature.readiness != FeatureReadiness.DRAFT:
+            raise DocumentDeletionError("Only feature with draft readiness can be deleted.")
+
+        if (
+            feature_namespace.default_feature_id == feature_id
+            and feature_namespace.default_version_mode == DefaultVersionMode.MANUAL
+        ):
+            raise DocumentDeletionError(
+                "Feature is the default feature of the feature namespace and the default version mode is manual. "
+                "Please set another feature as the default feature or change the default version mode to auto."
+            )
+
+        if feature.feature_list_ids:
+            feature_list_info = []
+            async for feature_list in self.feature_list_service.list_documents_iterator(
+                query_filter={"_id": {"$in": feature.feature_list_ids}}
+            ):
+                feature_list_info.append(
+                    {
+                        "id": str(feature_list["_id"]),
+                        "name": feature_list["name"],
+                        "version": VersionIdentifier(**feature_list["version"]).to_str(),
+                    }
+                )
+
+            raise DocumentDeletionError(
+                f"Feature is still in use by feature list(s). Please remove the following feature list(s) first:\n"
+                f"{pformat(feature_list_info)}"
+            )
+
+        # use transaction to ensure atomicity
+        async with self.service.persistent.start_transaction():
+            # delete feature from the persistent
+            await self.service.delete_document(document_id=feature_id)
+            await self.feature_readiness_service.update_feature_namespace(
+                feature_namespace_id=feature.feature_namespace_id,
+                deleted_feature_ids=[feature_id],
+                return_document=False,
+            )
+            feature_namespace = await self.feature_namespace_service.get_document(
+                document_id=feature.feature_namespace_id
+            )
+            if not feature_namespace.feature_ids:
+                # delete feature namespace if it has no more feature
+                await self.feature_namespace_service.delete_document(
+                    document_id=feature.feature_namespace_id
+                )
 
     async def list_features(
         self,

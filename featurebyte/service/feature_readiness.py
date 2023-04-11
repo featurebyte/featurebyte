@@ -3,7 +3,7 @@ FeatureReadinessService
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 from bson.objectid import ObjectId
 
@@ -156,9 +156,37 @@ class FeatureReadinessService(BaseService):
             )
         return self.conditional_return(document=document, condition=return_document)
 
+    async def _get_default_feature(self, feature_ids: Sequence[ObjectId]) -> FeatureModel:
+        """
+        Get default feature from list of feature IDs
+
+        Parameters
+        ----------
+        feature_ids: Sequence[ObjectId]
+            Feature IDs
+
+        Returns
+        -------
+        FeatureModel
+        """
+        assert len(feature_ids) > 0, "feature_ids should not be empty"
+        default_feature_id = feature_ids[0]
+        default_feature = await self.feature_service.get_document(document_id=default_feature_id)
+        for feature_id in feature_ids[1:]:
+            feature = await self.feature_service.get_document(document_id=feature_id)
+            if feature.readiness > default_feature.readiness:
+                default_feature = feature
+            elif (
+                feature.readiness == default_feature.readiness
+                and feature.created_at > default_feature.created_at  # type: ignore[operator]
+            ):
+                default_feature = feature
+        return default_feature
+
     async def update_feature_namespace(
         self,
         feature_namespace_id: ObjectId,
+        deleted_feature_ids: Optional[list[ObjectId]] = None,
         return_document: bool = True,
     ) -> Optional[FeatureNamespaceModel]:
         """
@@ -168,6 +196,8 @@ class FeatureReadinessService(BaseService):
         ----------
         feature_namespace_id: ObjectId
             FeatureNamespace ID
+        deleted_feature_ids: Optional[list[ObjectId]]
+            Deleted feature IDs
         return_document: bool
             Whether to return updated document
 
@@ -178,32 +208,32 @@ class FeatureReadinessService(BaseService):
         document = await self.feature_namespace_service.get_document(
             document_id=feature_namespace_id
         )
-        default_feature = await self.feature_service.get_document(
-            document_id=document.default_feature_id
-        )
+        excluded_feature_ids = set(deleted_feature_ids or [])
         update_dict: dict[str, Any] = {}
+        feature_ids = [
+            feature_id
+            for feature_id in document.feature_ids
+            if feature_id not in excluded_feature_ids
+        ]
+        if feature_ids != document.feature_ids:
+            update_dict["feature_ids"] = feature_ids
+
         if document.default_version_mode == DefaultVersionMode.AUTO:
             # when default version mode is AUTO & (feature is not specified or already in current namespace)
-            readiness = min(FeatureReadiness)
-            for feature_id in document.feature_ids:
-                version = await self.feature_service.get_document(document_id=feature_id)
-                if version.readiness > readiness:
-                    readiness = FeatureReadiness(version.readiness)
-                    default_feature = version
-                elif (
-                    version.readiness == readiness
-                    and version.created_at > default_feature.created_at  # type: ignore[operator]
-                ):
-                    default_feature = version
-            update_dict["readiness"] = default_feature.readiness
-            update_dict["default_feature_id"] = default_feature.id
-
-        if (
-            document.default_version_mode == DefaultVersionMode.MANUAL
-            and default_feature.readiness != document.readiness
-        ):
-            # when feature readiness get updated and feature namespace in manual default mode
-            update_dict["readiness"] = default_feature.readiness
+            if feature_ids:
+                default_feature = await self._get_default_feature(feature_ids=feature_ids)
+                update_dict["default_feature_id"] = default_feature.id
+                update_dict["readiness"] = default_feature.readiness
+        else:
+            assert (
+                document.default_feature_id not in excluded_feature_ids
+            ), "default feature should not be deleted"
+            default_feature = await self.feature_service.get_document(
+                document_id=document.default_feature_id
+            )
+            if default_feature.readiness != document.readiness:
+                # when feature readiness get updated and feature namespace in manual default mode
+                update_dict["readiness"] = default_feature.readiness
 
         updated_document: Optional[FeatureNamespaceModel] = document
         if update_dict:

@@ -26,6 +26,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
     TestFeatureApi class
     """
 
+    # pylint: disable=too-many-public-methods
+
     class_name = "Feature"
     base_route = "/feature"
     payload = BaseCatalogApiTestSuite.load_payload(
@@ -416,6 +418,167 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         )
         assert response.status_code == HTTPStatus.OK
         assert response.json()["readiness"] == "PRODUCTION_READY"
+
+    def test_delete_204(self, test_api_client_persistent, create_success_response):
+        """Test delete (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        namespace_id = create_response_dict["feature_namespace_id"]
+
+        namespace_response = test_api_client.get(f"/feature_namespace/{namespace_id}")
+        assert namespace_response.status_code == HTTPStatus.OK
+        assert namespace_response.json()["feature_ids"] == [doc_id]
+
+        # delete feature
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.NO_CONTENT
+
+        # check that the feature & feature namespace are deleted
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+        response = test_api_client.get(f"/feature_namespace/{namespace_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+    def test_delete_204__namespace_not_deleted(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        namespace_id = create_response_dict["feature_namespace_id"]
+
+        # create another feature in the same namespace
+        response = test_api_client.post(
+            f"{self.base_route}",
+            json={
+                "source_feature_id": doc_id,
+                "table_feature_job_settings": [
+                    {
+                        "table_name": "sf_event_table",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
+            },
+        )
+        assert response.status_code == HTTPStatus.CREATED
+        new_feature_id = response.json()["_id"]
+
+        # check namespace before delete
+        namespace_dict = test_api_client.get(f"/feature_namespace/{namespace_id}").json()
+        assert namespace_dict["feature_ids"] == [doc_id, new_feature_id]
+
+        # delete feature
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.NO_CONTENT
+
+        # check namespace after delete
+        namespace_dict = test_api_client.get(f"/feature_namespace/{namespace_id}").json()
+        assert namespace_dict["feature_ids"] == [new_feature_id]
+
+    def check_that_feature_is_not_deleted(self, test_api_client, doc_id, namespace_id):
+        """Check that the feature & feature namespace are not deleted"""
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+
+        response = test_api_client.get(f"/feature_namespace/{namespace_id}")
+        assert response.status_code == HTTPStatus.OK
+
+    def test_delete_422__non_draft_feature(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete (unprocessible)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+
+        # change feature readiness to public draft
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"readiness": "PUBLIC_DRAFT"}
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        # check that the feature cannot be deleted
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+        expected_error = "Only feature with draft readiness can be deleted."
+        assert response.json()["detail"] == expected_error
+
+        # check that the feature is not deleted
+        self.check_that_feature_is_not_deleted(
+            test_api_client, doc_id, create_response_dict["feature_namespace_id"]
+        )
+
+    def test_delete_422__manual_mode_default_feature(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete (unprocessible)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        namespace_id = create_response_dict["feature_namespace_id"]
+
+        # set the feature namespace default version mode to manual first
+        response = test_api_client.patch(
+            f"/feature_namespace/{namespace_id}", json={"default_version_mode": "MANUAL"}
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict["default_version_mode"] == "MANUAL"
+        assert response_dict["default_feature_id"] == doc_id
+
+        # check that the feature cannot be deleted
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+        expected_error = (
+            "Feature is the default feature of the feature namespace and the default version mode is manual. "
+            "Please set another feature as the default feature or change the default version mode to auto."
+        )
+        assert response.json()["detail"] == expected_error
+
+        # check that the feature is not deleted
+        self.check_that_feature_is_not_deleted(test_api_client, doc_id, namespace_id)
+
+    def test_delete_422__feature_used_in_a_saved_feature_list(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete (unprocessible)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+
+        # use the feature to create a saved feature list
+        response = test_api_client.post(
+            "/feature_list", json={"name": "test", "feature_ids": [doc_id]}
+        )
+        feature_list_dict = response.json()
+        feature_list_id = feature_list_dict["_id"]
+        feature_list_version = feature_list_dict["version"]["name"]
+        assert response.status_code == HTTPStatus.CREATED
+        assert feature_list_dict["feature_ids"] == [doc_id]
+
+        # check that the feature cannot be deleted
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+        expected_error = (
+            "Feature is still in use by feature list(s). Please remove the following feature list(s) first:\n"
+            f"[{{'id': '{feature_list_id}', 'name': 'test', 'version': '{feature_list_version}'}}]"
+        )
+        assert response.json()["detail"] == expected_error
+
+        # check that the feature is not deleted
+        self.check_that_feature_is_not_deleted(
+            test_api_client, doc_id, create_response_dict["feature_namespace_id"]
+        )
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):

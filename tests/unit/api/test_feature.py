@@ -1,5 +1,5 @@
 """
-Unit test for Feature & FeatureList classes
+Unit test for Feature classes
 """
 import textwrap
 from datetime import datetime
@@ -15,10 +15,11 @@ from pandas.testing import assert_frame_equal
 from featurebyte import MissingValueImputation, get_version
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature, FeatureNamespace
-from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
+    RecordDeletionException,
     RecordRetrievalException,
     RecordUpdateException,
 )
@@ -547,6 +548,20 @@ def test_create_new_version(saved_feature, snowflake_event_table):
     assert groupby_node_params["frequency"] == 30 * 60
     assert groupby_node_params["time_modulo_frequency"] == 15 * 60
 
+    # before deletion
+    _ = Feature.get_by_id(new_version.id)
+
+    # check feature deletion
+    Feature.delete(id=new_version.id)
+
+    # check that feature is no longer retrievable
+    with pytest.raises(RecordRetrievalException) as exc_info:
+        Feature.get_by_id(new_version.id)
+    expected_msg = (
+        f'Feature (id: "{new_version.id}") not found. Please save the Feature object first.'
+    )
+    assert expected_msg in str(exc_info.value)
+
 
 def test_create_new_version__with_data_cleaning_operations(
     saved_feature, snowflake_event_table, update_fixtures
@@ -1000,6 +1015,21 @@ def test_feature_synchronization(saved_feature):
 
     # check the clone's readiness value
     assert cloned_feat.readiness == target_readiness
+
+
+def test_feature_deletion_failure(saved_feature):
+    """Test feature deletion failure"""
+    feature_list = FeatureList([saved_feature], name="test_feature_list")
+    feature_list.save()
+    with pytest.raises(RecordDeletionException) as exc_info:
+        Feature.delete(id=saved_feature.id)
+
+    version = feature_list.version.to_str()
+    expected_msg = (
+        "Feature is still in use by feature list(s). Please remove the following feature list(s) first:\n"
+        f"[{{'id': '{feature_list.id}',\n  'name': 'test_feature_list',\n  'version': '{version}'}}]"
+    )
+    assert expected_msg == exc_info.value.response.json()["detail"]
 
 
 def test_feature_properties_from_cached_model__before_save(float_feature):
