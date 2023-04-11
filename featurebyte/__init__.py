@@ -300,6 +300,7 @@ __all__ = [
     "SCDTable",
     "SCDView",
     "SourceTable",
+    "DatabricksDetails",
     "SnowflakeDetails",
     "SparkDetails",
     "to_timedelta",

@@ -7,6 +7,7 @@ from typing import ClassVar, Optional, Union
 
 from pydantic import Field, StrictStr
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel
 
@@ -19,6 +20,8 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
 
 class SnowflakeDetails(BaseDatabaseDetails):
     """Model for Snowflake data source information"""
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SnowflakeDetails")
 
     account: StrictStr
     warehouse: StrictStr
@@ -36,6 +39,8 @@ class SQLiteDetails(BaseDatabaseDetails):
 class DatabricksDetails(BaseDatabaseDetails):
     """Model for Databricks data source information"""
 
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")
+
     server_hostname: StrictStr
     http_path: StrictStr
     featurebyte_catalog: StrictStr
@@ -44,6 +49,8 @@ class DatabricksDetails(BaseDatabaseDetails):
 
 class SparkDetails(BaseDatabaseDetails):
     """Model for Spark data source information"""
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SparkDetails")
 
     host: StrictStr = Field(default="127.0.0.1")
     port: int = Field(default=10000)

@@ -38,6 +38,7 @@ from featurebyte.common.documentation.constants import (
     VERSION,
     VIEW,
     VIEW_COLUMN,
+    WAREHOUSE,
 )
 
 
@@ -651,6 +652,9 @@ def _get_enum_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
+        DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),
+        DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SnowflakeDetails"]),
+        DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SparkDetails"]),
     ]
 
 
