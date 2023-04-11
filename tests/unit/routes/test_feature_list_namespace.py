@@ -253,7 +253,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "Cannot set default feature list ID when default version mode is not MANUAL."
         )
 
-    def test_delete_200(self, test_api_client_persistent):
+    def test_delete_204(self, test_api_client_persistent):
         """Test delete (success)"""
         test_api_client, _ = test_api_client_persistent
         (
@@ -270,7 +270,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
 
         # delete feature list namespace
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.NO_CONTENT
 
         # check that feature list namespace and feature list are deleted
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
