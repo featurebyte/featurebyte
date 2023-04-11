@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import AsyncGenerator, Optional, Union, cast, List
+from typing import AsyncGenerator, List, Optional, Union, cast
 
 import datetime
 import time
