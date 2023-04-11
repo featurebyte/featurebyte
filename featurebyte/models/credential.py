@@ -5,7 +5,6 @@ from typing import List, Literal, Optional, Union
 from typing_extensions import Annotated
 
 import os  # pylint: disable=wrong-import-order
-from base64 import b64encode  # pylint: disable=wrong-import-order
 
 import pymongo
 from cryptography.fernet import Fernet
@@ -20,7 +19,9 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 
-PASSWORD_SECRET = os.environ.get("CONFIG_PASSWORD_SECRET", "T3gUGT(Q)eSSsX+@xZQf&r5vwJ%zQsfr")
+PASSWORD_SECRET = os.environ.get(
+    "CONFIG_PASSWORD_SECRET", "VDNnVUdUKFEpZVNTc1grQHhaUWYmcjV2d0olelFzZnI="
+)
 
 
 def encrypt_value(value: str) -> str:
@@ -37,7 +38,7 @@ def encrypt_value(value: str) -> str:
     str
         Encrypted value
     """
-    cipher_suite = Fernet(b64encode(PASSWORD_SECRET.encode("utf-8")))
+    cipher_suite = Fernet(PASSWORD_SECRET.encode("utf-8"))
     return cipher_suite.encrypt(value.encode("utf-8")).decode("utf-8")
 
 
@@ -55,7 +56,7 @@ def decrypt_value(encrypted_value: str) -> str:
     str
         Decrypted value
     """
-    cipher_suite = Fernet(b64encode(PASSWORD_SECRET.encode("utf-8")))
+    cipher_suite = Fernet(PASSWORD_SECRET.encode("utf-8"))
     return cipher_suite.decrypt(encrypted_value.encode("utf-8")).decode("utf-8")
 
 
