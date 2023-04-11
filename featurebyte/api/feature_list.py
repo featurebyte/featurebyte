@@ -64,6 +64,7 @@ from featurebyte.exception import (
     DuplicatedRecordException,
     FeatureListNotOnlineEnabledError,
     RecordCreationException,
+    RecordDeletionException,
     RecordRetrievalException,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -608,6 +609,35 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
                 feature_lists.tables.apply(lambda table_list: table in table_list)
             ]
         return feature_lists
+
+    @classmethod
+    def delete(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
+        """
+        Delete feature list namespace.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Feature list namespace ID
+
+        Raises
+        ------
+        RecordDeletionException
+            If the feature list namespace cannot be deleted
+
+        Examples
+        --------
+        Delete a feature list namespace
+
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> fb.FeatureListNamespace.delete(feature_list.feature_list_namespace_id)  # doctest: +SKIP
+        """
+        client = Configurations().get_client()
+        response = client.delete(url=f"{cls._route}/{id}")
+        if response.status_code != HTTPStatus.NO_CONTENT:
+            raise RecordDeletionException(
+                response, "Failed to delete the specified feature list namespace."
+            )
 
 
 # pylint: disable=too-many-public-methods
