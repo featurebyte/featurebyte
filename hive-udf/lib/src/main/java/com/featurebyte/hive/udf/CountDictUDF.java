@@ -71,7 +71,9 @@ public abstract class CountDictUDF extends GenericUDF {
   }
 
   protected double convertMapValueAsDouble(Object obj) {
-    return ((DoubleWritable) converters[1].convert(obj)).get();
+    DoubleWritable value = (DoubleWritable) converters[1].convert(obj);
+    if (value == null) return Double.NaN;
+    return value.get();
   }
 
 }

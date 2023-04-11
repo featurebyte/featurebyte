@@ -1,7 +1,6 @@
 package com.featurebyte.hive.udf;
 
 import org.apache.hadoop.hive.serde2.objectinspector.*;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;

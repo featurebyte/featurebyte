@@ -1,7 +1,7 @@
 package com.featurebyte.hive.udf;
 
 import org.apache.hadoop.hive.serde2.objectinspector.*;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -71,10 +71,16 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     double normOther = 0.0;
 
     for (Map.Entry<String, Object> set : counts.entrySet()) {
-      double value = ((DoubleWritable) converter.convert(set.getValue())).get();
+      DoubleWritable count = (DoubleWritable) converter.convert(set.getValue());
+      if (count == null) continue;
+      double value = count.get();
+      if (Double.isNaN(value)) continue;
       Object objectOther = countsOther.getOrDefault(set.getKey(), null);
       if (objectOther != null) {
-        double valueOther = ((DoubleWritable) converterOther.convert(objectOther)).get();
+        DoubleWritable countOther = (DoubleWritable) converterOther.convert(objectOther);
+        if (countOther == null) continue;
+        double valueOther = countOther.get();
+        if (Double.isNaN(valueOther)) continue;
         dotProduct = dotProduct + value * valueOther;
         normOther += valueOther * valueOther;
       }
@@ -84,7 +90,9 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     Set<String> keySet = countsOther.keySet();
     keySet.removeAll(counts.keySet());
     for (String k : keySet) {
-      double value = ((DoubleWritable) converterOther.convert(countsOther.get(k))).get();
+      DoubleWritable count = (DoubleWritable) converterOther.convert(countsOther.get(k));
+      if (count == null) continue;
+      double value = count.get();
       normOther += value * value;
     }
 

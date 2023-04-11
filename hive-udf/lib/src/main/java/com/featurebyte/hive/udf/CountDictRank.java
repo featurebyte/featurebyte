@@ -5,7 +5,7 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.io.DoubleWritable;
 
 import java.util.Comparator;
 import java.util.List;
