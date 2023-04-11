@@ -223,6 +223,7 @@ max-line-length = 150
 [tool.pylint.main]
 disable = ["Miscellaneous"]
 extension-pkg-whitelist = ["pydantic"]
+ignored-modules = ["featurebyte_freeware"]
 jobs = 0
 output-format = "text"
 recursive = false
