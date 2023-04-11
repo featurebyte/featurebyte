@@ -14,7 +14,8 @@ from typeguard import typechecked
 from featurebyte.api.api_object import ForeignKeyMapping, SavableApiObject
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.exception import RecordDeletionException, RecordRetrievalException
+from featurebyte.config import Configurations
+from featurebyte.exception import RecordDeletionException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.credential import (
     CredentialModel,
@@ -52,11 +53,14 @@ class Credential(SavableApiObject):
     ]
 
     # pydantic instance variable (internal use)
-    internal_feature_store_id: PydanticObjectId = Field(alias="feature_store_id")
     internal_database_credential: Optional[DatabaseCredential] = Field(alias="database_credential")
     internal_storage_credential: Optional[StorageCredential] = Field(alias="storage_credential")
 
     # pydantic instance variable (public)
+    feature_store_id: PydanticObjectId = Field(
+        allow_mutation=False,
+        description="Id of the feature store that the credential is associated with.",
+    )
     saved: bool = Field(
         default=False,
         allow_mutation=False,
@@ -67,21 +71,6 @@ class Credential(SavableApiObject):
     def _get_create_payload(self) -> Dict[str, Any]:
         data = CredentialModel(**self.json_dict())
         return data.json_dict()
-
-    @property
-    def feature_store_id(self) -> ObjectId:
-        """
-        Get the feature store id that the credential is associated with.
-
-        Returns
-        -------
-        ObjectId
-            Feature store id.
-        """
-        try:
-            return self.cached_model.feature_store_id
-        except RecordRetrievalException:
-            return self.internal_feature_store_id
 
     @property
     def database_credential_type(self) -> Optional[DatabaseCredentialType]:
@@ -188,9 +177,6 @@ class Credential(SavableApiObject):
         --------
         - [Credential.update_credentials](/reference/featurebyte.api.credential.Credential.update_credentials/)
         """
-        # pylint: disable=import-outside-toplevel
-        from featurebyte.config import Configurations
-
         client = Configurations().get_client()
         response = client.delete(url=f"{cls._route}/{id}")
         if response.status_code != HTTPStatus.NO_CONTENT:
