@@ -30,7 +30,7 @@ tasks:
   build-jar:
     desc: "Compile the hive jar files"
     sources:
-      - hive-udf/
+      - hive-udf/**/*
     cmds:
       - cd hive-udf && ./gradlew test && ./gradlew shadowJar
       - rm -f featurebyte/sql/spark/*.jar
