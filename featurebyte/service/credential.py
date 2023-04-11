@@ -6,7 +6,9 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from bson.objectid import ObjectId
+from cryptography.fernet import InvalidToken
 
+from featurebyte.logger import logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Persistent
@@ -147,7 +149,12 @@ class CredentialService(
         """
         if document is None:
             document = await self.get_document(document_id=document_id)
+
+        # ensure document is decrypted
+        try:
             document.decrypt()
+        except InvalidToken:
+            logger.warning("Credential is already decrypted")
 
         # verify credential is valid
         update_dict = data.dict(exclude_none=exclude_none)

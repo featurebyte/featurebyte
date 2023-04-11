@@ -15,6 +15,7 @@ from featurebyte.models.base import (
 
 # pylint: disable=too-many-ancestors
 from featurebyte.models.credential import (
+    CredentialModel,
     DatabaseCredential,
     DatabaseCredentialType,
     StorageCredential,
@@ -59,7 +60,7 @@ class CredentialRead(FeatureByteBaseDocumentModel):
         MongoDB settings
         """
 
-        collection_name: str = "credential"
+        collection_name: str = CredentialModel.collection_name()
 
 
 class CredentialList(PaginationMixin):
