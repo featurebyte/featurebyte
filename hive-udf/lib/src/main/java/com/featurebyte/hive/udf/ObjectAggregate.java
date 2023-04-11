@@ -1,5 +1,9 @@
 package com.featurebyte.hive.udf;
 
+import static org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category.PRIMITIVE;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -10,23 +14,16 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category.PRIMITIVE;
-
 @Description(name = "object_agg", value = "_FUNC_(x) - Aggregate objects")
 public class ObjectAggregate extends AbstractGenericUDAFResolver {
 
-  public ObjectAggregate() {
-  }
+  public ObjectAggregate() {}
 
   @Override
-  public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters)
-    throws SemanticException {
+  public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {
     if (parameters.length != 2) {
-      throw new UDFArgumentTypeException(parameters.length - 1,
-        "Exactly two arguments are expected.");
+      throw new UDFArgumentTypeException(
+          parameters.length - 1, "Exactly two arguments are expected.");
     }
 
     if (parameters[0].getCategory() != PRIMITIVE) {
@@ -48,7 +45,7 @@ public class ObjectAggregate extends AbstractGenericUDAFResolver {
 
   static class MapAggregationBuffer extends GenericUDAFEvaluator.AbstractAggregationBuffer {
 
-    final private Map<Object, Object> container;
+    private final Map<Object, Object> container;
 
     public MapAggregationBuffer() {
       container = new HashMap<>();
@@ -59,12 +56,11 @@ public class ObjectAggregate extends AbstractGenericUDAFResolver {
     private transient ObjectInspector inputKeyOI;
     private transient ObjectInspector inputValueOI;
     private transient MapObjectInspector internalMergeOI;
-    public ObjectAggregatorEvaluator() {
-    }
+
+    public ObjectAggregatorEvaluator() {}
 
     @Override
-    public ObjectInspector init(Mode m, ObjectInspector[] parameters)
-      throws HiveException {
+    public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
       super.init(m, parameters);
       if (m == Mode.PARTIAL1 || m == Mode.COMPLETE) {
         // original inputs
@@ -130,5 +126,4 @@ public class ObjectAggregate extends AbstractGenericUDAFResolver {
       myagg.container.put(k, v);
     }
   }
-
 }

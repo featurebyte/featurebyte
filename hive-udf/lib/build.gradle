@@ -10,6 +10,7 @@ plugins {
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id "com.diffplug.spotless" version "6.18.0"
 }
 
 repositories {
@@ -40,9 +41,28 @@ java {
     targetCompatibility = "1.8"
 }
 
-shadowJar{
-  archivesBaseName = 'featurebyte-hive-udf'
-  zip64 = true
+shadowJar {
+archivesBaseName = 'featurebyte-hive-udf'
+zip64 = true
+}
+
+spotless {
+format 'misc', {
+    // define the files to apply `misc` to
+    target '*.gradle', '*.md', '.gitignore'
+
+    // define the steps to apply to those files
+    trimTrailingWhitespace()
+    indentWithSpaces()
+    endWithNewline()
+}
+java {
+    removeUnusedImports()
+    // apply a specific flavor of google-java-format
+    googleJavaFormat('1.16.0')
+    // fix formatting of type annotations
+    formatAnnotations()
+}
 }
 
 group = 'com.featurebyte.hive.udf'

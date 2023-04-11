@@ -1,27 +1,25 @@
 package com.featurebyte.hive.udf;
 
-import org.apache.hadoop.hive.serde2.objectinspector.*;
-import org.apache.hadoop.io.DoubleWritable;
+import java.util.Map;
+import java.util.Set;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.DoubleWritable;
 
-import java.util.Map;
-import java.util.Set;
-
-
-@Description(name = "F_COUNT_COSINE_SIMILARITY",
-    value = "_FUNC_(counts) "
-        + "- compute cosine similarity between two count dictionaries"
-)
+@Description(
+    name = "F_COUNT_COSINE_SIMILARITY",
+    value = "_FUNC_(counts) " + "- compute cosine similarity between two count dictionaries")
 public class CountDictCosineSimilarity extends CountDictUDF {
-  final private DoubleWritable output = new DoubleWritable();
+  private final DoubleWritable output = new DoubleWritable();
 
   private transient MapObjectInspector otherInputMapOI;
-  final private transient PrimitiveCategory[] otherInputTypes = new PrimitiveCategory[2];
-  final private transient ObjectInspectorConverters.Converter[] otherConverters = new ObjectInspectorConverters.Converter[2];
+  private final transient PrimitiveCategory[] otherInputTypes = new PrimitiveCategory[2];
+  private final transient ObjectInspectorConverters.Converter[] otherConverters =
+      new ObjectInspectorConverters.Converter[2];
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -45,7 +43,7 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     }
     Map<String, Object> counts1 = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
     Map<String, Object> counts2 = (Map<String, Object>) otherInputMapOI.getMap(arguments[1].get());
-    if (counts1.size() == 0 ||  counts2.size() == 0) {
+    if (counts1.size() == 0 || counts2.size() == 0) {
       output.set(0.0);
       return output;
     }
@@ -58,8 +56,7 @@ public class CountDictCosineSimilarity extends CountDictUDF {
       countsOther = counts2;
       converter = converters[1];
       converterOther = otherConverters[1];
-    }
-    else {
+    } else {
       counts = counts2;
       countsOther = counts1;
       converter = otherConverters[1];
@@ -102,6 +99,6 @@ public class CountDictCosineSimilarity extends CountDictUDF {
 
   @Override
   public String getDisplayString(String[] children) {
-      return "F_COUNT_DICT_COSINE_SIMILARITY";
+    return "F_COUNT_DICT_COSINE_SIMILARITY";
   }
 }

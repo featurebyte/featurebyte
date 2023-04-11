@@ -32,7 +32,7 @@ tasks:
     sources:
       - hive-udf/**/*
     cmds:
-      - cd hive-udf && ./gradlew test && ./gradlew shadowJar
+      - cd hive-udf && ./gradlew spotlessApply && ./gradlew test && ./gradlew shadowJar
       - rm -f featurebyte/sql/spark/*.jar
       - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
 

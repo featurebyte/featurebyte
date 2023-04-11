@@ -1,21 +1,19 @@
 package com.featurebyte.hive.udf;
 
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import java.util.Map;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.DoubleWritable;
 
-import java.util.Map;
-
-@Description(name = "F_GET_RELATIVE_FREQUENCY",
-  value = "_FUNC_(counts, key) "
-    + "- compute relative frequency of a key in a dictionary"
-)
+@Description(
+    name = "F_GET_RELATIVE_FREQUENCY",
+    value = "_FUNC_(counts, key) " + "- compute relative frequency of a key in a dictionary")
 public class CountDictRelativeFrequency extends CountDictSingleStringArgumentUDF {
 
-  final private DoubleWritable output = new DoubleWritable();
+  private final DoubleWritable output = new DoubleWritable();
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {

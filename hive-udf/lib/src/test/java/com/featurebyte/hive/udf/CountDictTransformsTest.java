@@ -1,5 +1,9 @@
 package com.featurebyte.hive.udf;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -11,20 +15,17 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class CountDictTransformsTest {
-  final private Map<String, DoubleWritable> countDict;
-  final private Map<String, DoubleWritable> countDictOther;
-  final private ObjectInspector mapValueOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-    PrimitiveObjectInspectorFactory.writableStringObjectInspector,
-    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector
-  );
-  final private ObjectInspector stringValueOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-  final private ObjectInspector boolValueOI = PrimitiveObjectInspectorFactory.javaBooleanObjectInspector;
+  private final Map<String, DoubleWritable> countDict;
+  private final Map<String, DoubleWritable> countDictOther;
+  private final ObjectInspector mapValueOI =
+      ObjectInspectorFactory.getStandardMapObjectInspector(
+          PrimitiveObjectInspectorFactory.writableStringObjectInspector,
+          PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+  private final ObjectInspector stringValueOI =
+      PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+  private final ObjectInspector boolValueOI =
+      PrimitiveObjectInspectorFactory.javaBooleanObjectInspector;
 
   public CountDictTransformsTest() {
     countDict = new HashMap<String, DoubleWritable>();
@@ -44,6 +45,7 @@ public class CountDictTransformsTest {
     countDictOther.put("watermelon", new DoubleWritable(Double.NaN));
     countDictOther.put("kiwi", null);
   }
+
   @Test
   public void testCountDictEntropy() throws HiveException {
     CountDictEntropy udf = new CountDictEntropy();
@@ -90,8 +92,7 @@ public class CountDictTransformsTest {
     ObjectInspector[] arguments = {mapValueOI, stringValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {
-      new GenericUDF.DeferredJavaObject(countDict),
-      new GenericUDF.DeferredJavaObject("watermelon"),
+      new GenericUDF.DeferredJavaObject(countDict), new GenericUDF.DeferredJavaObject("watermelon"),
     };
     HashMap<String, DoubleWritable> expected = new HashMap<String, DoubleWritable>(countDict);
     expected.remove("watermelon");
@@ -118,8 +119,7 @@ public class CountDictTransformsTest {
     ObjectInspector[] arguments = {mapValueOI, stringValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {
-      new GenericUDF.DeferredJavaObject(countDict),
-      new GenericUDF.DeferredJavaObject("apple"),
+      new GenericUDF.DeferredJavaObject(countDict), new GenericUDF.DeferredJavaObject("apple"),
     };
     DoubleWritable output = (DoubleWritable) udf.evaluate(args);
     assertEquals(0.10695187165775401, output.get());

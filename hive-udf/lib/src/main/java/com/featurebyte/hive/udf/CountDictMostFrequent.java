@@ -1,20 +1,18 @@
 package com.featurebyte.hive.udf;
 
-import org.apache.hadoop.hive.serde2.objectinspector.*;
-import org.apache.hadoop.io.Text;
+import java.util.Map;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.Text;
 
-import java.util.Map;
-
-@Description(name = "F_COUNT_DICT_MOST_FREQUENT",
-  value = "_FUNC_(counts) "
-    + "- compute most frequent value from count dictionary"
-)
+@Description(
+    name = "F_COUNT_DICT_MOST_FREQUENT",
+    value = "_FUNC_(counts) " + "- compute most frequent value from count dictionary")
 public class CountDictMostFrequent extends CountDictUDF {
-  final private Text output = new Text();
+  private final Text output = new Text();
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -40,7 +38,9 @@ public class CountDictMostFrequent extends CountDictUDF {
       if (doubleValue > mostFrequentValue) {
         mostFrequentValue = doubleValue;
         mostFrequentKey = key;
-      } else if (doubleValue == mostFrequentValue && mostFrequentKey != null && key.compareTo(mostFrequentKey) < 0) {
+      } else if (doubleValue == mostFrequentValue
+          && mostFrequentKey != null
+          && key.compareTo(mostFrequentKey) < 0) {
         mostFrequentKey = key;
       }
     }
