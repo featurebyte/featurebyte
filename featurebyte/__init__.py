@@ -1,8 +1,11 @@
 """Python Library for FeatureOps"""
 from typing import Dict, List, Optional
 
+import pandas as pd
+
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
+from featurebyte.api.credential import Credential
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.dimension_view import DimensionView
@@ -31,7 +34,11 @@ from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import AggFunc, SourceType, StorageType
-from featurebyte.models.credential import Credential, UsernamePasswordCredential
+from featurebyte.models.credential import (
+    AccessTokenCredential,
+    S3StorageCredential,
+    UsernamePasswordCredential,
+)
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -52,6 +59,25 @@ from featurebyte.schema.feature_list import FeatureVersionInfo
 version: str = get_version()
 
 
+def list_profiles() -> pd.DataFrame:
+    """
+    List all service profiles
+
+    Returns
+    -------
+    pd.DataFrame
+        List of service profiles
+
+    Examples
+    --------
+    >>> fb.list_profiles()
+        name                api_url api_token
+    0  local  http://127.0.0.1:8088      None
+    """
+    profiles = Configurations().profiles
+    return pd.DataFrame([profile.dict() for profile in profiles] if profiles else [])
+
+
 def use_profile(profile: str) -> Dict[str, str]:
     """
     Use service profile specified in configuration file
@@ -65,8 +91,128 @@ def use_profile(profile: str) -> Dict[str, str]:
     -------
     Dict[str, str]
         Remote and local SDK versions
+
+    Examples
+    --------
+    >>> fb.use_profile("local")  # doctest: +SKIP
+    {'remote sdk': '0.1.1', 'local sdk': '0.1.1'}
     """
     return Configurations().use_profile(profile)
+
+
+def list_credentials(
+    include_id: Optional[bool] = False,
+) -> pd.DataFrame:
+    """
+    List all credentials
+
+    Parameters
+    ----------
+    include_id: Optional[bool]
+        Whether to include id in the list
+
+    Returns
+    -------
+    pd.DataFrame
+        List of credentials
+
+    Examples
+    --------
+    >>> fb.list_credentials()[["feature_store", "database_credential_type", "storage_credential_type"]]
+      feature_store database_credential_type storage_credential_type
+    0    playground                     None                    None
+    """
+    return Credential.list(include_id=include_id)
+
+
+def list_feature_stores(include_id: Optional[bool] = False) -> pd.DataFrame:
+    """
+    List all feature stores
+
+    Parameters
+    ----------
+    include_id: Optional[bool]
+        Whether to include id in the list
+
+    Returns
+    -------
+    pd.DataFrame
+        List of feature stores
+
+    Examples
+    --------
+    >>> fb.list_feature_stores()[["name", "type"]]
+             name   type
+    0  playground  spark
+    """
+    return FeatureStore.list(include_id=include_id)
+
+
+def get_feature_store(name: str) -> FeatureStore:
+    """
+    Get feature store by name
+
+    Parameters
+    ----------
+    name : str
+        Feature store name
+
+    Returns
+    -------
+    FeatureStore
+        Feature store
+
+    Examples
+    --------
+    >>> feature_store = fb.get_feature_store("playground")
+    """
+    return FeatureStore.get(name)
+
+
+def list_catalogs(include_id: Optional[bool] = False) -> pd.DataFrame:
+    """
+    List all catalogs
+
+    Parameters
+    ----------
+    include_id: Optional[bool]
+        Whether to include id in the list
+
+
+    Returns
+    -------
+    pd.DataFrame
+        List of catalogs
+
+    Examples
+    --------
+    >>> fb.list_catalogs()[["name", "active"]]
+              name  active
+        0  grocery    True
+        1  default   False
+    """
+    return Catalog.list(include_id=include_id)
+
+
+def activate_and_get_catalog(name: str) -> Catalog:
+    """
+    Activate catalog by name
+
+    Parameters
+    ----------
+    name : str
+        Catalog name
+
+    Returns
+    -------
+    Catalog
+        Catalog
+
+    Examples
+    --------
+    >>> catalog = fb.activate_and_get_catalog("grocery")
+    """
+    return Catalog.activate(name)
 
 
 def start(local: bool = False) -> None:
@@ -132,7 +278,6 @@ def playground(
 __all__ = [
     "Catalog",
     "ChangeView",
-    "Credential",
     "Configurations",
     "Table",
     "DimensionTable",
@@ -158,6 +303,10 @@ __all__ = [
     "SnowflakeDetails",
     "SparkDetails",
     "to_timedelta",
+    # credentials
+    "AccessTokenCredential",
+    "Credential",
+    "S3StorageCredential",
     "UsernamePasswordCredential",
     # enums
     "AggFunc",

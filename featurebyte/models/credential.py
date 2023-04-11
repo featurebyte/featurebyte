@@ -1,139 +1,214 @@
 """
 Document model for stored credentials
 """
-from typing import Any, Dict, Optional
+from typing import List, Literal, Optional, Union
+from typing_extensions import Annotated
 
-from pydantic import Field, StrictStr, root_validator
+import os  # pylint: disable=wrong-import-order
+from base64 import b64encode  # pylint: disable=wrong-import-order
+
+import pymongo
+from cryptography.fernet import Fernet
+from pydantic import Field, StrictStr
 
 from featurebyte.enum import StrEnum
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    PydanticObjectId,
+    UniqueConstraintResolutionSignature,
+    UniqueValuesConstraint,
+)
+
+PASSWORD_SECRET = os.environ.get("CONFIG_PASSWORD_SECRET", "T3gUGT(Q)eSSsX+@xZQf&r5vwJ%zQsfr")
 
 
-class CredentialType(StrEnum):
+def encrypt_value(value: str) -> str:
+    """
+    Encrypt value
+
+    Parameters
+    ----------
+    value: str
+        Value to encrypt
+
+    Returns
+    -------
+    str
+        Encrypted value
+    """
+    cipher_suite = Fernet(b64encode(PASSWORD_SECRET.encode("utf-8")))
+    return cipher_suite.encrypt(value.encode("utf-8")).decode("utf-8")
+
+
+def decrypt_value(encrypted_value: str) -> str:
+    """
+    Decrypt value
+
+    Parameters
+    ----------
+    encrypted_value: str
+        Encrypted value
+
+    Returns
+    -------
+    str
+        Decrypted value
+    """
+    cipher_suite = Fernet(b64encode(PASSWORD_SECRET.encode("utf-8")))
+    return cipher_suite.decrypt(encrypted_value.encode("utf-8")).decode("utf-8")
+
+
+class BaseCredential(FeatureByteBaseModel):
+    """
+    Base Credential class
+    """
+
+    def encrypt(self) -> None:
+        """
+        Encrypt credentials
+        """
+        for field in self.__fields__.values():
+            if field.type_ == StrictStr:
+                setattr(self, field.name, encrypt_value(getattr(self, field.name)))
+
+    def decrypt(self) -> None:
+        """
+        Decrypt credentials
+        """
+        for field in self.__fields__.values():
+            if field.type_ == StrictStr:
+                setattr(self, field.name, decrypt_value(getattr(self, field.name)))
+
+
+# Database Credentials
+class DatabaseCredentialType(StrEnum):
     """
     Credential Type
     """
 
-    NONE = "NONE"
     USERNAME_PASSWORD = "USERNAME_PASSWORD"
     ACCESS_TOKEN = "ACCESS_TOKEN"
 
 
+class BaseDatabaseCredential(BaseCredential):
+    """
+    Storage credential only
+    """
+
+    type: DatabaseCredentialType
+
+
+class UsernamePasswordCredential(BaseDatabaseCredential):
+    """
+    Username / Password credential
+    """
+
+    type: Literal[DatabaseCredentialType.USERNAME_PASSWORD] = Field(
+        DatabaseCredentialType.USERNAME_PASSWORD, const=True
+    )
+    username: StrictStr
+    password: StrictStr
+
+
+class AccessTokenCredential(BaseDatabaseCredential):
+    """
+    Access token credential
+    """
+
+    type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(
+        DatabaseCredentialType.ACCESS_TOKEN, const=True
+    )
+    access_token: StrictStr
+
+
+DatabaseCredential = Annotated[
+    Union[UsernamePasswordCredential, AccessTokenCredential],
+    Field(discriminator="type"),
+]
+
+
+# Storage Credentials
 class StorageCredentialType(StrEnum):
     """
     Storage Credential Type
     """
 
-    NONE = "NONE"
     S3 = "S3"
 
 
-class BaseStorageCredential(FeatureByteBaseModel):
+class BaseStorageCredential(BaseCredential):
     """
     Base storage credential
     """
 
+    type: StorageCredentialType
 
-class S3Credential(BaseStorageCredential):
+
+class S3StorageCredential(BaseStorageCredential):
     """
     S3 storage credential
     """
 
+    type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
     s3_access_key_id: StrictStr
     s3_secret_access_key: StrictStr
 
 
-class BaseCredential(FeatureByteBaseModel):
-    """
-    Storage credential only
-    """
-
-    storage_credential_type: Optional[StorageCredentialType] = Field(
-        default=StorageCredentialType.NONE
-    )
-    storage_credential: Optional[BaseStorageCredential]
-
-    @root_validator(pre=True)
-    @classmethod
-    def _populate_credential(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Populate credential with right class
-
-        Parameters
-        ----------
-        values: Dict[str, Any]
-            values to validate
-
-        Returns
-        -------
-        Dict[str, Any]
-        """
-        type_class_mapping = {
-            StorageCredentialType.NONE: BaseStorageCredential,
-            StorageCredentialType.S3: S3Credential,
-        }
-        storage_credential = values.get("storage_credential", {})
-        if isinstance(storage_credential, FeatureByteBaseModel):
-            storage_credential = storage_credential.dict()
-        values["storage_credential_type"] = values.get(
-            "storage_credential_type", StorageCredentialType.NONE
-        )
-        values["storage_credential"] = type_class_mapping[values["storage_credential_type"]](
-            **storage_credential
-        )
-        return values
+StorageCredential = Annotated[
+    Union[S3StorageCredential],
+    Field(discriminator="type"),
+]
 
 
-class UsernamePasswordCredential(BaseCredential):
-    """
-    Username / Password credential
-    """
-
-    username: StrictStr
-    password: StrictStr
-
-
-class AccessTokenCredential(BaseCredential):
-    """
-    Access token credential
-    """
-
-    access_token: StrictStr
-
-
-class Credential(FeatureByteBaseModel):
+class CredentialModel(FeatureByteBaseDocumentModel):
     """
     Credential model
     """
 
-    name: StrictStr
-    credential_type: CredentialType = Field(default=CredentialType.NONE)
-    credential: BaseCredential
+    feature_store_id: PydanticObjectId
+    database_credential: Optional[DatabaseCredential]
+    storage_credential: Optional[StorageCredential]
 
-    @root_validator(pre=True)
-    @classmethod
-    def _populate_credential(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def encrypt(self) -> None:
         """
-        Populate credential with right class
-
-        Parameters
-        ----------
-        values: Dict[str, Any]
-            values to validate
-
-        Returns
-        -------
-        Dict[str, Any]
+        Encrypt credentials
         """
-        type_class_mapping = {
-            CredentialType.NONE: BaseCredential,
-            CredentialType.ACCESS_TOKEN: AccessTokenCredential,
-            CredentialType.USERNAME_PASSWORD: UsernamePasswordCredential,
-        }
-        credential = values.get("credential", {})
-        if isinstance(credential, FeatureByteBaseModel):
-            credential = credential.dict()
-        values["credential"] = type_class_mapping[
-            values.get("credential_type", CredentialType.NONE)
-        ](**credential)
-        return values
+        if self.database_credential:
+            self.database_credential.encrypt()
+        if self.storage_credential:
+            self.storage_credential.encrypt()
+
+    def decrypt(self) -> None:
+        """
+        Decrypt credentials
+        """
+        if self.database_credential:
+            self.database_credential.decrypt()
+        if self.storage_credential:
+            self.storage_credential.decrypt()
+
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """
+        Collection settings for Credential document
+        """
+
+        collection_name = "credential"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            ),
+            UniqueValuesConstraint(
+                fields=("user_id", "feature_store_id"),
+                conflict_fields_signature={"feature_store_id": ["feature_store_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            ),
+        ]
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            [
+                ("name", pymongo.TEXT),
+            ],
+        ]

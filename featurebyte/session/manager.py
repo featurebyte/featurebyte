@@ -3,7 +3,7 @@ SessionManager class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict
 
 import json
 import time
@@ -12,9 +12,9 @@ from asyncache import cached
 from cachetools import TTLCache
 from pydantic import BaseModel
 
-from featurebyte.config import Credentials
 from featurebyte.enum import SourceType
 from featurebyte.logger import logger
+from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.session.base import BaseSession
@@ -87,7 +87,7 @@ class SessionManager(BaseModel):
     Session manager to manage session of different database sources
     """
 
-    credentials: Credentials
+    credentials: Dict[str, CredentialModel]
 
     async def get_session_with_params(
         self, feature_store_name: str, session_type: SourceType, details: DatabaseDetails
@@ -123,7 +123,16 @@ class SessionManager(BaseModel):
                 f'Credentials do not contain info for the feature store "{feature_store_name}"!'
             )
 
-        credential_params = credential.credential.dict() if credential else {}
+        credential_params = (
+            {
+                key: value
+                for key, value in credential.json_dict().items()
+                if key in ["database_credential", "storage_credential"]
+            }
+            if credential
+            else {}
+        )
+
         json_str = json.dumps(
             {
                 "type": session_type,

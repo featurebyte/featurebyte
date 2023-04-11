@@ -12,7 +12,7 @@ import boto3
 from bson import ObjectId
 from smart_open import open as remote_open
 
-from featurebyte.models.credential import BaseStorageCredential, S3Credential
+from featurebyte.models.credential import S3StorageCredential, StorageCredential
 
 FileMode = Literal["r", "w", "rb", "wb"]
 
@@ -23,7 +23,7 @@ class SimpleStorage(ABC):
     """
 
     def __init__(
-        self, storage_url: str, storage_credential: Optional[BaseStorageCredential] = None
+        self, storage_url: str, storage_credential: Optional[StorageCredential] = None
     ) -> None:
         """
         Initialize storage class
@@ -122,16 +122,18 @@ class S3SimpleStorage(SimpleStorage):
     def __init__(
         self,
         storage_url: str,
-        storage_credential: Optional[BaseStorageCredential] = None,
+        storage_credential: Optional[StorageCredential] = None,
         region_name: Optional[str] = None,
     ) -> None:
         super().__init__(storage_url=storage_url, storage_credential=storage_credential)
         session_params = {"region_name": region_name}
-        if isinstance(storage_credential, S3Credential):
+        if isinstance(storage_credential, S3StorageCredential):
             session_params["aws_access_key_id"] = storage_credential.s3_access_key_id
             session_params["aws_secret_access_key"] = storage_credential.s3_secret_access_key
         else:
-            raise NotImplementedError("Unsupported remote storage credential")
+            raise NotImplementedError(
+                f"Unsupported remote storage credential: {storage_credential}"
+            )
 
         protocol, path = storage_url.split("//")
         parts = path.split("/")

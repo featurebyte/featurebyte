@@ -21,9 +21,12 @@ def databricks_session_dict():
     return {
         "server_hostname": "some-databricks-hostname",
         "http_path": "some-databricks-http-endpoint",
-        "access_token": "some-databricks-access-token",
         "featurebyte_catalog": "hive_metastore",
         "featurebyte_schema": "featurebyte",
+        "database_credential": {
+            "type": "ACCESS_TOKEN",
+            "access_token": "some-databricks-access-token",
+        },
     }
 
 
@@ -139,7 +142,7 @@ async def test_databricks_session(databricks_session_dict):
     session = DatabricksSession(**databricks_session_dict)
     assert session.server_hostname == "some-databricks-hostname"
     assert session.http_path == "some-databricks-http-endpoint"
-    assert session.access_token == "some-databricks-access-token"
+    assert session.database_credential.access_token == "some-databricks-access-token"
     assert await session.list_databases() == ["hive_metastore", "samples"]
     assert await session.list_schemas(database_name="hive_metastore") == ["default", "demo"]
     assert await session.list_tables(database_name="hive_metastore", schema_name="default") == [

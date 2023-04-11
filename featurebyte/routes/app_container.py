@@ -12,6 +12,7 @@ from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.service.task_manager import AbstractTaskManager
 from featurebyte.storage import Storage
+from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 
 class AppContainer:
@@ -56,6 +57,7 @@ class AppContainer:
         self.instance_map: Dict[str, Any] = {
             "task_controller": TaskController(task_manager=task_manager),
             "tempdata_controller": TempDataController(temp_storage=temp_storage),
+            "credential_provider": MongoBackedCredentialProvider(persistent=persistent),
         }
 
         # build no dependency objects

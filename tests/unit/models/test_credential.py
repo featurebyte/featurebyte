@@ -1,26 +1,58 @@
 """
 Test document model for stored credentials
 """
+import copy
 import json
 
 import pytest
 
 from featurebyte import SnowflakeDetails
 from featurebyte.enum import SourceType
-from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
+from featurebyte.models.credential import (
+    AccessTokenCredential,
+    CredentialModel,
+    DatabaseCredentialType,
+    S3StorageCredential,
+    StorageCredentialType,
+    UsernamePasswordCredential,
+)
 from featurebyte.models.feature_store import FeatureStoreModel
 
 
-@pytest.fixture(name="username_password_credential")
-def username_password_credential_fixture():
+@pytest.fixture(name="storage_credential", params=[None, StorageCredentialType.S3])
+def storage_credential_fixture(request):
     """
-    Fixture for a UsernamePasswordCredential object
-    Returns
-    -------
-    UsernamePasswordCredential
-        UsernamePasswordCredential object
+    Fixture for a StorageCredential object
     """
-    return UsernamePasswordCredential(username="test", password="password")
+    if not request.param:
+        return None
+    if request.param == StorageCredentialType.S3:
+        credential = S3StorageCredential(
+            s3_access_key_id="access_key_id",
+            s3_secret_access_key="secret_access_key",
+        )
+    else:
+        raise ValueError("Invalid storage credential type")
+    return credential.json_dict()
+
+
+@pytest.fixture(
+    name="database_credential",
+    params=[None, DatabaseCredentialType.USERNAME_PASSWORD, DatabaseCredentialType.ACCESS_TOKEN],
+)
+def database_credential_fixture(request):
+    """
+    Fixture for a DatabaseCredential object
+    """
+    if not request.param:
+        return None
+    if request.param == DatabaseCredentialType.ACCESS_TOKEN:
+        credential = AccessTokenCredential(access_token="access_token")
+    elif request.param == DatabaseCredentialType.USERNAME_PASSWORD:
+        credential = UsernamePasswordCredential(username="test", password="password")
+    else:
+        raise ValueError("Invalid credential type")
+    return credential.json_dict()
 
 
 @pytest.fixture(name="feature_store")
@@ -44,27 +76,25 @@ def feature_store_fixture():
     )
 
 
-@pytest.fixture(name="credential")
-def credential_fixture(feature_store, username_password_credential):
-    """
-    Fixture for a Credential object
-    Returns
-    -------
-    Credential
-        Credential object
-    """
-    return Credential(
-        name="SF Credentials",
-        feature_store=feature_store,
-        credential_type=CredentialType.USERNAME_PASSWORD,
-        credential=username_password_credential,
-    )
-
-
-def test_credential_serialize_json(credential):
+def test_credentials_serialize_json(feature_store, database_credential, storage_credential):
     """
     Test serialization to json
     """
-    credential_json = credential.json()
-    credential_dict = Credential(**json.loads(credential_json))
-    assert credential_dict == credential.dict()
+    credential = CredentialModel(
+        name="SF Credentials",
+        feature_store_id=feature_store.id,
+        database_credential=database_credential,
+        storage_credential=storage_credential,
+    )
+    credential_to_serialize = copy.deepcopy(credential)
+    credential_to_serialize.encrypt()
+    credential_json = credential_to_serialize.json(by_alias=True)
+    deserialized_credential = CredentialModel(**json.loads(credential_json))
+
+    # check that the credential is encrypted
+    if database_credential or storage_credential:
+        assert deserialized_credential.json_dict() != credential.json_dict()
+
+    # check that the credential is decrypted correctly
+    deserialized_credential.decrypt()
+    assert deserialized_credential.json_dict() == credential.json_dict()

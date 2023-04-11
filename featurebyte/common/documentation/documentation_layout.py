@@ -397,7 +397,6 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_STORE, CREATE, "FeatureStore.create"]),
         DocLayoutItem([FEATURE_STORE, CREATE, "FeatureStore.get_or_create"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.created_at"]),
-        DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.credentials"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.details"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.info"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.name"]),

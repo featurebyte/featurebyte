@@ -12,7 +12,7 @@ from featurebyte.api.data_source import DataSource
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.credential import Credential
+from featurebyte.models.credential import DatabaseCredential, StorageCredential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
@@ -45,7 +45,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     )
 
     # optional credential parameters
-    credentials: Optional[Credential] = None
+    database_credential: Optional[DatabaseCredential] = None
+    storage_credential: Optional[StorageCredential] = None
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = FeatureStoreCreate(**self.json_dict())
@@ -57,7 +58,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         name: str,
         source_type: SourceType,
         details: DatabaseDetails,
-        credentials: Optional[Credential] = None,
+        database_credential: Optional[DatabaseCredential] = None,
+        storage_credential: Optional[StorageCredential] = None,
     ) -> FeatureStore:
         """
         Create and return an instance of a feature store.
@@ -73,10 +75,10 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
             Type of the feature store.
         details: DatabaseDetails
             Details of the database to use for the feature store.
-        credentials: Optional[Credential]
-            Credentials to use when connecting to the database.
-            These will be ignored if there are already credentials specified for the feature store in
-            the configuration file.
+        database_credential: Optional[DatabaseCredential]
+            Credential details to use when connecting to the database.
+        storage_credential: Optional[StorageCredential]
+            Credential details to use when connecting to the storage.
 
         Returns
         -------
@@ -88,7 +90,11 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         """
         # Construct object, and save to persistent layer.
         feature_store = FeatureStore(
-            name=name, type=source_type, details=details, credentials=credentials
+            name=name,
+            type=source_type,
+            details=details,
+            database_credential=database_credential,
+            storage_credential=storage_credential,
         )
         feature_store.save()
         return feature_store
@@ -99,7 +105,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         name: str,
         source_type: SourceType,
         details: DatabaseDetails,
-        credentials: Optional[Credential] = None,
+        database_credential: Optional[DatabaseCredential] = None,
+        storage_credential: Optional[StorageCredential] = None,
     ) -> FeatureStore:
         """
         Create and return an instance of a feature store. If a feature store with the same name already exists,
@@ -116,10 +123,10 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
             Type of the feature store.
         details: DatabaseDetails
             Details of the database to use for the feature store.
-        credentials: Optional[Credential]
-            Credentials to use when connecting to the database.
-            These will be ignored if there are already credentials specified for the feature store in
-            the configuration file.
+        database_credential: Optional[DatabaseCredential]
+            Credential details to use when connecting to the database.
+        storage_credential: Optional[StorageCredential]
+            Credential details to use when connecting to the storage.
 
         Returns
         -------
@@ -158,7 +165,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
                 name=name,
                 source_type=source_type,
                 details=details,
-                credentials=credentials,
+                database_credential=database_credential,
+                storage_credential=storage_credential,
             )
 
     def get_data_source(self) -> DataSource:

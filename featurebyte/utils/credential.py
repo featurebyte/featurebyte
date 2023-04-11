@@ -3,12 +3,14 @@ Utility functions for credential management
 """
 from __future__ import annotations
 
+from typing import Any, Optional
+
 from abc import ABC, abstractmethod
 
 from bson.objectid import ObjectId
 
-from featurebyte.config import Configurations
-from featurebyte.models.credential import Credential
+from featurebyte.models.credential import CredentialModel
+from featurebyte.models.feature_store import FeatureStoreModel
 
 
 class CredentialProvider(ABC):
@@ -19,7 +21,7 @@ class CredentialProvider(ABC):
     @abstractmethod
     async def get_credential(
         self, user_id: ObjectId | None, feature_store_name: str
-    ) -> Credential | None:
+    ) -> CredentialModel | None:
         """
         Retrieve credentials from some persistent source.
 
@@ -32,39 +34,35 @@ class CredentialProvider(ABC):
 
         Returns
         -------
-        Credential
-            Credential for the database source
+        CredentialModel
+            CredentialModel for the feature store
         """
 
 
-class ConfigCredentialProvider(CredentialProvider):
+class MongoBackedCredentialProvider(CredentialProvider):
     """
-    ConfigCredentialProvider will retrieve the users credentials from a configuration file.
+    MongoBackedCredentialProvider will retrieve credentials from a mongo database.
     """
+
+    def __init__(self, persistent: Any):
+        self.persistent = persistent
 
     async def get_credential(
-        self, user_id: ObjectId | None, feature_store_name: str
-    ) -> Credential | None:
-        _ = user_id
-        config = Configurations()
-        return config.credentials.get(feature_store_name)
+        self, user_id: Optional[ObjectId], feature_store_name: str
+    ) -> Optional[CredentialModel]:
+        feature_store = await self.persistent.find_one(
+            collection_name=FeatureStoreModel.collection_name(),
+            query_filter={"name": feature_store_name},
+        )
+        if not feature_store:
+            return None
 
-
-async def get_credential(user_id: ObjectId | None, feature_store_name: str) -> Credential | None:
-    """
-    Delegate to the ConfigCredentialProvider. We will look to deprecate direct access to this function in the future.
-
-    Parameters
-    ----------
-    user_id: ObjectId | None
-        User ID
-    feature_store_name: str
-        FeatureStore name
-
-    Returns
-    -------
-    Credential
-        Credential for the database source
-    """
-    credential_provider = ConfigCredentialProvider()
-    return await credential_provider.get_credential(user_id, feature_store_name)
+        document = await self.persistent.find_one(
+            collection_name=CredentialModel.collection_name(),
+            query_filter={"user_id": user_id, "feature_store_id": feature_store["_id"]},
+        )
+        if document:
+            credential = CredentialModel(**document)
+            credential.decrypt()
+            return credential
+        return None

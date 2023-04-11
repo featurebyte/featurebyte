@@ -24,6 +24,7 @@ from featurebyte.common.utils import create_new_arrow_stream_writer, pa_table_to
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CredentialsError
 from featurebyte.logger import logger
+from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
@@ -45,17 +46,15 @@ class SnowflakeSession(BaseSession):
     warehouse: str
     database: str
     sf_schema: str
-    username: str
-    password: str
     source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
+    database_credential: UsernamePasswordCredential
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
-
         try:
             self._connection = connector.connect(
-                user=data["username"],
-                password=data["password"],
+                user=self.database_credential.username,
+                password=self.database_credential.password,
                 account=data["account"],
                 warehouse=data["warehouse"],
                 database=data["database"],

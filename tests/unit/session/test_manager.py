@@ -1,8 +1,6 @@
 """
 Tests for SessionManager class
 """
-import os
-import tempfile
 from unittest.mock import Mock, patch
 
 import pytest
@@ -10,7 +8,6 @@ from loguru import logger
 from pytest import LogCaptureFixture
 
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.config import Configurations
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.session.manager import SessionManager, session_cache
 
@@ -29,14 +26,14 @@ def caplog_handle_fixture(caplog: LogCaptureFixture):
 
 
 @pytest.fixture(name="session_manager")
-def session_manager_fixture(config, snowflake_connector):
+def session_manager_fixture(config, credentials, snowflake_connector):
     """
     Session manager fixture
     """
     # pylint: disable=no-member
     _ = snowflake_connector
     session_cache.clear()
-    yield SessionManager(credentials=config.credentials)
+    yield SessionManager(credentials=credentials)
 
 
 @pytest.fixture(name="sqlite_feature_store")
@@ -104,16 +101,13 @@ async def test_session_manager__get_cached_properly(
 
 
 @pytest.mark.asyncio
-async def test_session_manager__wrong_configuration_file(snowflake_feature_store):
+async def test_session_manager__no_credentials(snowflake_feature_store):
     """
-    Test exception raised when wrong configuration file is used
+    Test exception raised when no credentials are provided
     """
-    with tempfile.TemporaryDirectory() as temp_dir:
-        non_existent_path = os.path.join(temp_dir, "non", "existent", "path")
-        config = Configurations(non_existent_path)
-        session_manager = SessionManager(credentials=config.credentials)
-        with pytest.raises(ValueError) as exc:
-            _ = await session_manager.get_session(snowflake_feature_store)
-        assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(
-            exc.value
-        )
+    session_manager = SessionManager(credentials={})
+    with pytest.raises(ValueError) as exc:
+        _ = await session_manager.get_session(snowflake_feature_store)
+    assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(
+        exc.value
+    )

@@ -11,7 +11,6 @@ from featurebyte import Feature, FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV6
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.utils.credential import get_credential
 
 
 @pytest.fixture(scope="session")
@@ -127,6 +126,7 @@ async def test_data_warehouse_migration_v6(
     event_table,
     session,
     bad_feature_stores,
+    get_credential,
 ):
     """
     Test data warehouse migration

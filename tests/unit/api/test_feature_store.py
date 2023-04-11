@@ -9,6 +9,7 @@ import pytest
 import pytest_asyncio
 from pandas.testing import assert_frame_equal
 
+from featurebyte import UsernamePasswordCredential
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.source_table import SourceTable
 from featurebyte.enum import SourceType
@@ -23,23 +24,24 @@ from featurebyte.session.manager import SessionManager
 
 @pytest.mark.asyncio
 async def test_get_session(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store, config
+    snowflake_connector, snowflake_execute_query, snowflake_feature_store, credentials
 ):
     """
     Test DatabaseSource.get_session return expected session
     """
     _ = snowflake_connector, snowflake_execute_query
-    session = await SessionManager(credentials=config.credentials).get_session(
-        snowflake_feature_store
-    )
+    session = await SessionManager(credentials=credentials).get_session(snowflake_feature_store)
     assert session.dict() == {
         "source_type": "snowflake",
         "account": "sf_account",
         "warehouse": "sf_warehouse",
         "sf_schema": "sf_schema",
         "database": "sf_database",
-        "username": "sf_user",
-        "password": "sf_password",
+        "database_credential": {
+            "type": "USERNAME_PASSWORD",
+            "username": "sf_user",
+            "password": "sf_password",
+        },
     }
 
 
@@ -249,6 +251,9 @@ async def test_feature_store_create(
             warehouse="sf_warehouse",
             sf_schema="sf_schema",
             database="sf_database",
+        ),
+        database_credential=UsernamePasswordCredential(
+            username="sf_username", password="sf_password"
         ),
     )
     # assert that we have a correct instance returned

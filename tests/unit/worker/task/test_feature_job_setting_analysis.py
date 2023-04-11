@@ -112,7 +112,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         ]
 
     @pytest.mark.asyncio
-    async def test_execute_fail(self, mongo_persistent, progress, storage, temp_storage):
+    async def test_execute_fail(
+        self, mongo_persistent, progress, storage, temp_storage, get_credential
+    ):
         """
         Test failed task execution
         """
@@ -130,6 +132,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                 progress=progress,
                 storage=storage,
                 temp_storage=temp_storage,
+                get_credential=get_credential,
             )
         assert (
             str(excinfo.value)

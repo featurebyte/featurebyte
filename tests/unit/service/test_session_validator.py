@@ -11,15 +11,15 @@ from featurebyte.app import User
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
 from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
 from featurebyte.service.session_validator import SessionValidatorService, ValidateStatus
-from featurebyte.utils.credential import ConfigCredentialProvider
+from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 
 @pytest.fixture(name="credential_provider")
-def get_credential_provider_fixture():
+def get_credential_provider_fixture(persistent):
     """
-    Fixture to get a ConfigCredentialProvider
+    Fixture to get a MongoBackedCredentialProvider
     """
-    return ConfigCredentialProvider()
+    return MongoBackedCredentialProvider(persistent=persistent)
 
 
 @pytest.fixture(name="session_validator_service")

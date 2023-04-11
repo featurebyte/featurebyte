@@ -28,6 +28,7 @@ from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.exception import RecordRetrievalException
+from featurebyte.logger import logger
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
@@ -105,6 +106,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         """
         catalog = cls.get(name)
         activate_catalog(catalog.id)
+        logger.info(f"Catalog activated: {catalog.name}")
         return catalog
 
     @classmethod

@@ -14,7 +14,7 @@ from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
-from featurebyte.utils.credential import ConfigCredentialProvider
+from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 
 class ValidateStatus(StrEnum):
@@ -37,7 +37,7 @@ class SessionValidatorService:
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
-        credential_provider: ConfigCredentialProvider,
+        credential_provider: MongoBackedCredentialProvider,
     ):
         self.user = user
         self.persistent = persistent
@@ -112,14 +112,14 @@ class SessionValidatorService:
             session for the parameters passed in
         """
         if get_credential is not None:
-            credentials = await get_credential(
+            credential = await get_credential(
                 user_id=self.user.id, feature_store_name=feature_store_name
             )
         else:
-            credentials = await self.credential_provider.get_credential(
+            credential = await self.credential_provider.get_credential(
                 user_id=self.user.id, feature_store_name=feature_store_name
             )
-        session_manager = SessionManager(credentials={feature_store_name: credentials})
+        session_manager = SessionManager(credentials={feature_store_name: credential})
         return await session_manager.get_session_with_params(
             feature_store_name, session_type, details
         )

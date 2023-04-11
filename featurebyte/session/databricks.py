@@ -9,6 +9,7 @@ from typing import Any, OrderedDict
 import collections
 
 import pandas as pd
+from pydantic import Field
 
 try:
     from databricks import sql as databricks_sql
@@ -18,8 +19,7 @@ try:
 except ImportError:
     HAS_DATABRICKS_SQL_CONNECTOR = False
 
-from pydantic import Field
-
+from featurebyte import AccessTokenCredential
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.logger import logger
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
@@ -35,10 +35,10 @@ class DatabricksSession(BaseSession):
 
     server_hostname: str
     http_path: str
-    access_token: str
     featurebyte_catalog: str
     featurebyte_schema: str
     source_type: SourceType = Field(SourceType.DATABRICKS, const=True)
+    database_credential: AccessTokenCredential
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
@@ -49,7 +49,7 @@ class DatabricksSession(BaseSession):
         self._connection = databricks_sql.connect(
             server_hostname=data["server_hostname"],
             http_path=data["http_path"],
-            access_token=data["access_token"],
+            access_token=self.database_credential.access_token,
             catalog=self.featurebyte_catalog,
             schema=self.featurebyte_schema,
         )

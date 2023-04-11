@@ -1,5 +1,6 @@
 /catalog
 /context
+/credential
 /dimension_table
 /entity
 /event_table

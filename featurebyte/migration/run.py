@@ -24,7 +24,7 @@ from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.utils.credential import get_credential as get_credential_from_config
+from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 BaseDocumentServiceT = BaseDocumentService[
     FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
@@ -232,6 +232,10 @@ async def run_mongo_migration(persistent: MongoDB) -> None:
     persistent: MongoDB
         Mongo persistent object
     """
+    credential_provider = MongoBackedCredentialProvider(persistent=persistent)
     await run_migration(
-        User(), persistent, get_credential_from_config, include_data_warehouse_migrations=False
+        User(),
+        persistent,
+        credential_provider.get_credential,
+        include_data_warehouse_migrations=False,
     )

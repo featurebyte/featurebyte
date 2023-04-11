@@ -6,6 +6,7 @@ This contains all the dependencies that we want to register in order to get our 
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.context.controller import ContextController
+from featurebyte.routes.credential.controller import CredentialController
 from featurebyte.routes.dimension_table.controller import DimensionTableController
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_table.controller import EventTableController
@@ -26,6 +27,7 @@ from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.table.controller import TableController
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
+from featurebyte.service.credential import CredentialService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.dimension_table import DimensionTableService
@@ -60,10 +62,8 @@ from featurebyte.service.table_update import TableUpdateService
 from featurebyte.service.user_service import UserService
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
-from featurebyte.utils.credential import ConfigCredentialProvider
 
 app_container_config = AppContainerConfig()
-app_container_config.add_no_dep_objects("credential_provider", ConfigCredentialProvider)
 
 app_container_config.add_service_with_extra_deps(
     "session_validator_service", SessionValidatorService, ["credential_provider"]
@@ -174,6 +174,11 @@ app_container_config.add_basic_service("relationship_info_service", Relationship
 app_container_config.add_basic_service("user_service", UserService)
 app_container_config.add_basic_service("view_construction_service", ViewConstructionService)
 app_container_config.add_basic_service("periodic_task_service", PeriodicTaskService)
+app_container_config.add_service_with_extra_deps(
+    "credential_service",
+    CredentialService,
+    ["feature_store_warehouse_service"],
+)
 
 app_container_config.add_controller(
     "relationship_info_controller",
@@ -296,6 +301,7 @@ app_container_config.add_controller(
         "session_manager_service",
         "session_validator_service",
         "feature_store_warehouse_service",
+        "credential_service",
     ],
 )
 
@@ -313,4 +319,7 @@ app_container_config.add_controller(
     "observation_table_controller",
     ObservationTableController,
     ["observation_table_service", "task_controller"],
+)
+app_container_config.add_controller(
+    "credential_controller", CredentialController, ["credential_service", "info_service"]
 )

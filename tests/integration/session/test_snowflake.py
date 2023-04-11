@@ -10,11 +10,11 @@ from featurebyte.session.snowflake import SnowflakeSchemaInitializer, SnowflakeS
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schema_initializer(config, feature_store):
+async def test_schema_initializer(config, feature_store, credentials_mapping):
     """
     Test the session initialization in snowflake works properly.
     """
-    session_manager = SessionManager(credentials=config.credentials)
+    session_manager = SessionManager(credentials=credentials_mapping)
     session = await session_manager.get_session(feature_store)
     assert isinstance(session, SnowflakeSession)
     initializer = SnowflakeSchemaInitializer(session)

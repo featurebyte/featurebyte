@@ -41,6 +41,11 @@ from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.logger import logger
 from featurebyte.models.base import User
+from featurebyte.models.credential import (
+    AccessTokenCredential,
+    CredentialModel,
+    UsernamePasswordCredential,
+)
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.task import Task as TaskModel
@@ -51,7 +56,6 @@ from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
-from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import TASK_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
@@ -122,49 +126,56 @@ def pytest_collection_modifyitems(config, items):
     items[:] = filtered_items
 
 
+@pytest.fixture(name="credentials_mapping", scope="session")
+def credentials_mapping_fixture():
+    """
+    Credentials for integration testing
+    """
+    username_password = CredentialModel(
+        name="snowflake_featurestore",
+        feature_store_id=ObjectId(),
+        database_credential=UsernamePasswordCredential(
+            username=os.getenv("SNOWFLAKE_USER"),
+            password=os.getenv("SNOWFLAKE_PASSWORD"),
+        ),
+    )
+    return {
+        "snowflake_featurestore": username_password,
+        "snowflake_featurestore_invalid_because_same_schema_a": username_password,
+        "snowflake_featurestore_invalid_because_same_schema_b": username_password,
+        "snowflake_featurestore_unreachable": username_password,
+        "snowflake_featurestore_wrong_creds": CredentialModel(
+            name="snowflake_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=UsernamePasswordCredential(
+                username="wrong-user",
+                password="wrong-password",
+            ),
+        ),
+        "sqlite_datasource": CredentialModel(
+            name="sqlite_datasource",
+            feature_store_id=ObjectId(),
+        ),
+        "databricks_featurestore": CredentialModel(
+            name="snowflake_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=AccessTokenCredential(
+                access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
+            ),
+        ),
+        "spark_featurestore": CredentialModel(
+            name="spark_featurestore",
+            feature_store_id=ObjectId(),
+        ),
+    }
+
+
 @pytest.fixture(name="config", scope="session")
 def config_fixture():
     """
     Config object for integration testing
     """
-    username_password = {
-        "credential_type": "USERNAME_PASSWORD",
-        "username": os.getenv("SNOWFLAKE_USER"),
-        "password": os.getenv("SNOWFLAKE_PASSWORD"),
-    }
     config_dict = {
-        "credential": [
-            {
-                "feature_store": "snowflake_featurestore",
-                **username_password,
-            },
-            {
-                "feature_store": "snowflake_featurestore_invalid_because_same_schema_a",
-                **username_password,
-            },
-            {
-                "feature_store": "snowflake_featurestore_invalid_because_same_schema_b",
-                **username_password,
-            },
-            {
-                "feature_store": "snowflake_featurestore_unreachable",
-                **username_password,
-            },
-            {
-                "feature_store": "snowflake_featurestore_wrong_creds",
-                "credential_type": "USERNAME_PASSWORD",
-                "username": "wrong-user",
-                "password": "wrong-password",
-            },
-            {
-                "feature_store": "sqlite_datasource",
-            },
-            {
-                "feature_store": "databricks_featurestore",
-                "credential_type": "ACCESS_TOKEN",
-                "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
-            },
-        ],
         "profile": [
             {
                 "name": "local",
@@ -242,8 +253,11 @@ def mock_get_persistent_fixture(persistent):
     """
     Mock get_persistent in featurebyte/app.py
     """
-    with mock.patch("featurebyte.app.get_persistent") as mock_persistent:
+    with mock.patch("featurebyte.app.get_persistent") as mock_persistent, mock.patch(
+        "featurebyte.worker.task_executor.get_persistent"
+    ) as mock_persistent_worker:
         mock_persistent.return_value = persistent
+        mock_persistent_worker.return_value = persistent
         yield
 
 
@@ -344,9 +358,21 @@ def feature_store_name_fixture(source_type):
     return f"{source_type}_featurestore"
 
 
+@pytest.fixture(name="feature_store_credential", scope="session")
+def feature_store_credential_fixture(feature_store_name, credentials_mapping):
+    """
+    Fixture for a CredentialModel specific to source_type
+    """
+    return credentials_mapping.get(feature_store_name)
+
+
 @pytest.fixture(name="feature_store", scope="session")
 def feature_store_fixture(
-    source_type, feature_store_name, feature_store_details, mock_get_persistent
+    source_type,
+    feature_store_name,
+    feature_store_details,
+    feature_store_credential,
+    mock_get_persistent,
 ):
     """
     Feature store fixture
@@ -356,6 +382,8 @@ def feature_store_fixture(
         name=feature_store_name,
         source_type=source_type,
         details=feature_store_details,
+        database_credential=feature_store_credential.database_credential,
+        storage_credential=feature_store_credential.storage_credential,
     )
     yield feature_store
 
@@ -583,11 +611,11 @@ def sqlite_filename_fixture(transaction_data):
 
 
 @pytest.fixture(name="session_manager", scope="session")
-def get_session_manager(config):
+def get_session_manager(credentials_mapping):
     """
     Fixture to return a session manager with real login credentials
     """
-    return SessionManager(credentials=config.credentials)
+    return SessionManager(credentials=credentials_mapping)
 
 
 @pytest.fixture(name="dimension_data_table_name", scope="session")
@@ -1220,15 +1248,15 @@ def dimension_view_fixture(dimension_table):
     return dimension_table.get_view()
 
 
-@pytest.fixture(name="get_cred")
-def get_get_cred(config):
+@pytest.fixture(name="get_cred", scope="session")
+def get_get_cred(credentials_mapping):
     """
     Fixture to get a test get_credential
     """
 
     async def get_credential(user_id, feature_store_name):
         _ = user_id
-        return config.credentials.get(feature_store_name)
+        return credentials_mapping.get(feature_store_name)
 
     return get_credential
 
@@ -1252,7 +1280,7 @@ def temp_storage_fixture():
 
 
 @pytest.fixture(autouse=True, scope="module")
-def mock_task_manager(request, persistent, storage, temp_storage):
+def mock_task_manager(request, persistent, storage, temp_storage, get_cred):
     """
     Mock celery task manager for testing
     """
@@ -1269,7 +1297,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     payload=kwargs,
                     progress=Mock(),
                     user=User(id=kwargs.get("user_id")),
-                    get_credential=get_credential,
+                    get_credential=get_cred,
                     get_persistent=lambda: persistent,
                     get_storage=lambda: storage,
                     get_temp_storage=lambda: temp_storage,

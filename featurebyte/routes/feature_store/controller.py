@@ -7,8 +7,7 @@ from typing import Any, List
 
 from bson.objectid import ObjectId
 
-from featurebyte.config import Configurations
-from featurebyte.models.credential import Credential
+from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.routes.common.base import BaseDocumentController
@@ -19,6 +18,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreSample,
 )
 from featurebyte.schema.info import FeatureStoreInfo
+from featurebyte.service.credential import CredentialService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
@@ -45,6 +45,7 @@ class FeatureStoreController(
         session_manager_service: SessionManagerService,
         session_validator_service: SessionValidatorService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
+        credential_service: CredentialService,
     ):
         super().__init__(service)
         self.preview_service = preview_service
@@ -52,28 +53,7 @@ class FeatureStoreController(
         self.session_manager_service = session_manager_service
         self.session_validator_service = session_validator_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
-
-    async def persist_credentials_if_needed(
-        self, credential: Credential, feature_store_name: str
-    ) -> bool:
-        """
-        Persists the credentials to the local config file. This will be a no-op if credentials already exist
-        in the persistent layer for the feature_store_name provided.
-
-        Parameters
-        ----------
-        credential: Credential
-            credential's that we want to persist
-        feature_store_name: str
-            feature store name associated with the credentials
-
-        Returns
-        -------
-        bool
-            whether the credential was persisted
-        """
-        config = Configurations()
-        return config.write_creds(credential, feature_store_name)
+        self.credential_service = credential_service
 
     async def create_feature_store(
         self,
@@ -110,44 +90,46 @@ class FeatureStoreController(
         # Validate that feature store ID isn't claimed by the working schema.
         # If the feature store ID is already in use, this will throw an error.
         async with self.service.persistent.start_transaction():
-            # Override get_credential if credentials are provided
-            get_credentials_to_use = get_credential
-            creds_from_params = data.credentials
-            if creds_from_params is not None:
-
-                async def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
-                    """
-                    Updated get_credential will try to look up the credentials from config.
-
-                    If there are credentials in the config, we will ignore whatever is passed in here.
-                    If not, we will use the params that are passed in.
-
-                    Parameters
-                    ----------
-                    user_id: str
-                        user id
-                    feature_store_name: str
-                        feature store name
-
-                    Returns
-                    -------
-                    Any
-                        credentials
-                    """
-                    cred = await get_credential(user_id, feature_store_name)
-                    if cred is not None:
-                        return cred
-                    return creds_from_params
-
-                get_credentials_to_use = _updated_get_credential
-
             # Create the new feature store. If one already exists, we'll throw an error here.
             document = await self.service.create_document(data)
+            # Check credentials
+            credential = CredentialModel(
+                name=document.name,
+                feature_store_id=document.id,
+                database_credential=data.database_credential,
+                storage_credential=data.storage_credential,
+            )
+
+            async def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
+                """
+                Updated get_credential will try to look up the credentials from config.
+
+                If there are credentials in the config, we will ignore whatever is passed in here.
+                If not, we will use the params that are passed in.
+
+                Parameters
+                ----------
+                user_id: str
+                    user id
+                feature_store_name: str
+                    feature store name
+
+                Returns
+                -------
+                Any
+                    credentials
+                """
+                cred = await get_credential(user_id, feature_store_name)
+                if cred is not None:
+                    return cred
+                return credential
+
+            get_credential_to_use = _updated_get_credential
             await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
                 feature_store_name=data.name,
                 session_type=data.type,
                 details=data.details,
-                get_credential=get_credentials_to_use,
+                get_credential=get_credential_to_use,
                 users_feature_store_id=document.id,
             )
             # Retrieve a session for initializing
@@ -155,16 +137,13 @@ class FeatureStoreController(
                 feature_store=FeatureStoreModel(
                     name=data.name, type=data.type, details=data.details
                 ),
-                get_credential=get_credentials_to_use,
+                get_credential=get_credential_to_use,
             )
+            # Try to persist credential
+            await self.credential_service.create_document(data=credential)
             # If no error thrown from creating, try to create the metadata table with the feature store ID.
             metadata_schema_initializer = MetadataSchemaInitializer(session)
             await metadata_schema_initializer.update_feature_store_id(str(document.id))
-
-            # Try to persist params.
-            # If there's nothing in the config, we will write the current credentials to the config,
-            if creds_from_params is not None:
-                await self.persist_credentials_if_needed(creds_from_params, data.name)
 
         return document
 

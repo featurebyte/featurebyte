@@ -12,7 +12,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
-from featurebyte.utils.credential import ConfigCredentialProvider
+from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 
 class SessionManagerService:
@@ -25,7 +25,7 @@ class SessionManagerService:
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
-        credential_provider: ConfigCredentialProvider,
+        credential_provider: MongoBackedCredentialProvider,
         session_validator_service: SessionValidatorService,
     ):
         self.user = user

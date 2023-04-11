@@ -107,22 +107,6 @@ def test_inner_get_routes(test_api_client, resource_name, dependent_resources):
 @pytest.fixture(name="api_config", scope="module")
 def config_fixture(test_api_client):
     config_dict = {
-        "credential": [
-            {
-                "feature_store": "snowflake_featurestore",
-                "credential_type": "USERNAME_PASSWORD",
-                "username": os.getenv("SNOWFLAKE_USER"),
-                "password": os.getenv("SNOWFLAKE_PASSWORD"),
-            },
-            {
-                "feature_store": "sqlite_datasource",
-            },
-            {
-                "feature_store": "databricks_featurestore",
-                "credential_type": "ACCESS_TOKEN",
-                "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
-            },
-        ],
         "profile": [
             {
                 "name": "local",
