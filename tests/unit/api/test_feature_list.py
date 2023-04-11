@@ -24,6 +24,7 @@ from featurebyte.exception import (
     DuplicatedRecordException,
     FeatureListNotOnlineEnabledError,
     ObjectHasBeenSavedError,
+    RecordDeletionException,
     RecordRetrievalException,
     RecordUpdateException,
 )
@@ -1321,6 +1322,43 @@ def test_feature_list_properties_from_cached_model__after_save(saved_feature_lis
     assert saved_feature_list.is_default is True
     assert saved_feature_list.default_version_mode == DefaultVersionMode.AUTO
     assert saved_feature_list.status == FeatureListStatus.DRAFT
+
+
+def test_delete_feature_list_namespace__success(saved_feature_list):
+    """Test delete feature list namespace (success)"""
+    assert saved_feature_list.status == FeatureListStatus.DRAFT
+    FeatureListNamespace.delete(saved_feature_list.feature_list_namespace_id)
+
+    # check feature list namespace & feature list records are deleted
+    with pytest.raises(RecordRetrievalException) as exc_info:
+        FeatureListNamespace.get_by_id(saved_feature_list.feature_list_namespace_id)
+
+    expected_msg = (
+        f'FeatureListNamespace (id: "{saved_feature_list.feature_list_namespace_id}") not found. '
+        "Please save the FeatureList object first."
+    )
+    assert expected_msg in str(exc_info.value)
+
+    with pytest.raises(RecordRetrievalException) as exc_info:
+        FeatureList.get_by_id(saved_feature_list.id)
+
+    expected_msg = (
+        f'FeatureList (id: "{saved_feature_list.id}") not found. '
+        "Please save the FeatureList object first."
+    )
+    assert expected_msg in str(exc_info.value)
+
+
+def test_delete_feature_list_namespace__failure(saved_feature_list):
+    """Test delete feature list namespace (failure)"""
+    saved_feature_list.update_status(FeatureListStatus.PUBLIC_DRAFT)
+    assert saved_feature_list.status == FeatureListStatus.PUBLIC_DRAFT
+
+    with pytest.raises(RecordDeletionException) as exc_info:
+        FeatureListNamespace.delete(saved_feature_list.feature_list_namespace_id)
+
+    expected_msg = "Cannot delete feature list namespace that is not in DRAFT status."
+    assert expected_msg in str(exc_info.value)
 
 
 def test_primary_entity__unsaved_feature_list(feature_list, cust_id_entity):

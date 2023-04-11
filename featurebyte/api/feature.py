@@ -291,7 +291,7 @@ class Feature(
         Parameters
         ----------
         id : ObjectId
-            Feature id
+            Feature ID
 
         Raises
         ------
