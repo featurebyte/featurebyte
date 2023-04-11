@@ -40,7 +40,7 @@ class Credential(SavableApiObject):
     _route = "/credential"
     _update_schema_class = CredentialUpdate
     _list_schema = CredentialRead
-    _get_schema = CredentialModel
+    _get_schema = CredentialRead
     _list_fields = [
         "feature_store",
         "created_at",
@@ -82,7 +82,7 @@ class Credential(SavableApiObject):
         Optional[DatabaseCredentialType]
             Database credential type.
         """
-        database_credential_type = self.info().get("database_credential_type")
+        database_credential_type = self.cached_model.database_credential_type
         if database_credential_type:
             return DatabaseCredentialType(database_credential_type)
         return None
@@ -97,7 +97,7 @@ class Credential(SavableApiObject):
         Optional[StorageCredentialType]
             Storage credential type.
         """
-        storage_credential_type = self.info().get("storage_credential_type")
+        storage_credential_type = self.cached_model.storage_credential_type
         if storage_credential_type:
             return StorageCredentialType(storage_credential_type)
         return None

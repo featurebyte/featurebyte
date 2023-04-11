@@ -54,6 +54,13 @@ class CredentialRead(FeatureByteBaseDocumentModel):
             values["storage_credential_type"] = values["storage_credential"]["type"]
         return values
 
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "credential"
+
 
 class CredentialList(PaginationMixin):
     """
