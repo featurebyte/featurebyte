@@ -670,7 +670,7 @@ def patched_observation_table_service():
     with patch(
         "featurebyte.service.observation_table.ObservationTableService.get_additional_metadata",
         return_value={
-            "column_names": ["a", "b", "c"],
+            "column_names": ["POINT_IN_TIME", "cust_id"],
             "most_recent_point_in_time": "2023-01-15 10:00:00",
         },
     ):

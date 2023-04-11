@@ -2,9 +2,11 @@
 Tests for ModelingTable routes
 """
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
+from sqlglot import expressions
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseAsyncApiTestSuite
@@ -79,3 +81,18 @@ class TestModelingTableApi(BaseAsyncApiTestSuite):
         Patch ObservationTableService so get_additional_metadata always passes
         """
         _ = patched_observation_table_service
+
+    @pytest.fixture(autouse=True)
+    def always_patched_get_historical_feature(self):
+        """
+        Patch parts of get_historical_features that have coverage elsewhere and not relevant to unit
+        testing the routes
+        """
+        with patch(
+            "featurebyte.query_graph.sql.feature_historical.get_historical_features_expr",
+            return_value=expressions.select("*").from_("my_table"),
+        ):
+            with patch(
+                "featurebyte.query_graph.sql.feature_historical.compute_tiles_on_demand",
+            ):
+                yield

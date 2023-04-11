@@ -5,11 +5,11 @@
         "Run `pytest --update-fixtures` to update it."
     ],
     "_id": "64354817821307b617838165",
-    "feature_store_id": "64354816821307b617838120",
+    "feature_store_id": "642db61d28e1dffe39df3521",
     "featurelist_get_historical_features": {
         "feature_clusters": [
             {
-                "feature_store_id": "64354816821307b617838120",
+                "feature_store_id": "642db61d28e1dffe39df3521",
                 "graph": {
                     "edges": [
                         {
@@ -193,5 +193,5 @@
         "serving_names_mapping": null
     },
     "name": "modeling_table",
-    "observation_table_id": "64354817821307b617838164"
+    "observation_table_id": "642db61f28e1dffe39df3563"
 }
