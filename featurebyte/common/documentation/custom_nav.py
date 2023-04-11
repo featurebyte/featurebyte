@@ -38,6 +38,7 @@ from featurebyte.common.documentation.constants import (
     VERSION,
     VIEW,
     VIEW_COLUMN,
+    WAREHOUSE,
 )
 
 
@@ -85,6 +86,7 @@ class BetaWave3Nav(Nav):
         VERSION,
         ENUMS,
         IMPUTATION,
+        WAREHOUSE,
     ]
 
     _custom_order_mapping = {
