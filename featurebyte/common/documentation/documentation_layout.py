@@ -261,6 +261,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, INFO, "Feature.info"]),
         DocLayoutItem([FEATURE, INFO, "Feature.name"]),
         DocLayoutItem([FEATURE, INFO, "Feature.saved"]),
+        DocLayoutItem([FEATURE, INFO, "Feature.readiness"]),
         DocLayoutItem([FEATURE, INFO, "Feature.updated_at"]),
         DocLayoutItem([FEATURE, INFO, "Feature.is_datetime"]),
         DocLayoutItem([FEATURE, INFO, "Feature.is_numeric"]),
@@ -635,6 +636,8 @@ def _get_enum_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "UnexpectedValueImputation"]),
         DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "ValueBeyondEndpointImputation"]),
         DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "StringValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "ColumnCleaningOperation"]),
+        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "TableCleaningOperation"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
@@ -671,7 +674,14 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_JOB, CREATE, "FeatureJobSetting"]),
         DocLayoutItem([FEATURE_JOB, CREATE, "FeatureJobSettingAnalysis"]),
         DocLayoutItem([FEATURE_JOB, CREATE, "TableFeatureJobSetting"]),
+        DocLayoutItem([FEATURE_JOB, INFO, "FeatureJobSettingAnalysis.info"]),
+        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.get"]),
         DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.get_by_id"]),
+        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.display_report"]),
+        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.download_report"]),
+        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.get_recommendation"]),
+        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.backtest"]),
+        DocLayoutItem([FEATURE_JOB, LIST, "FeatureJobSettingAnalysis.list"]),
     ]
 
 

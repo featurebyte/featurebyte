@@ -360,6 +360,8 @@ class ColumnCleaningOperation(FeatureByteBaseModel):
     ColumnCleaningOperation schema
     """
 
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ColumnCleaningOperation")
+
     column_name: str
     cleaning_operations: Sequence[CleaningOperation]
 
@@ -368,6 +370,8 @@ class TableCleaningOperation(FeatureByteBaseModel):
     """
     TableCleaningOperation schema
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableCleaningOperation")
 
     table_name: str
     column_cleaning_operations: List[ColumnCleaningOperation]
