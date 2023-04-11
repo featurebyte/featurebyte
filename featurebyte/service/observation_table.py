@@ -3,7 +3,7 @@ ObservationTableService class
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Dict, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -122,7 +122,7 @@ class ObservationTableService(
     @staticmethod
     async def get_additional_metadata(
         db_session: BaseSession, destination: TableDetails
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         Get additional metadata for the materialized observation table.
 
