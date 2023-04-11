@@ -18,11 +18,10 @@ class ObservationTable(ObservationTableModel, ApiObject):
     _list_schema = ObservationTableListRecord
     _get_schema = ObservationTableModel
     _list_fields = [
-        "id",
-        "created_at",
         "name",
-        "feature_store_name",
         "type",
+        "feature_store_name",
+        "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),

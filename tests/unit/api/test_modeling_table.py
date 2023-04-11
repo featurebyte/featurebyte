@@ -21,10 +21,11 @@ def test_list():
     """
     df = ModelingTable.list()
     assert df.columns.tolist() == [
-        "id",
-        "created_at",
         "name",
         "feature_store_name",
+        "observation_table_name",
+        "created_at",
     ]
     assert df["name"].tolist() == ["my_modeling_table"]
     assert df["feature_store_name"].tolist() == ["sf_featurestore"]
+    assert df["observation_table_name"].tolist() == ["observation_table_from_source_table"]

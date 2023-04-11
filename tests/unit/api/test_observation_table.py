@@ -21,11 +21,10 @@ def test_list():
     """
     df = ObservationTable.list()
     assert df.columns.tolist() == [
-        "id",
-        "created_at",
         "name",
-        "feature_store_name",
         "type",
+        "feature_store_name",
+        "created_at",
     ]
     assert df["name"].tolist() == [
         "observation_table_from_event_view",

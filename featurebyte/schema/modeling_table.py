@@ -44,9 +44,11 @@ class ModelingTableListRecord(FeatureByteBaseDocumentModel):
     """
 
     feature_store_id: PydanticObjectId
+    observation_table_id: PydanticObjectId
 
     @root_validator(pre=True)
     @classmethod
     def _extract(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         values["feature_store_id"] = values["location"]["feature_store_id"]
+        values["observation_table_id"] = values["observation_table_id"]
         return values
