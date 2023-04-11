@@ -9,9 +9,12 @@ from dataclasses import dataclass
 
 import pytest
 
+from featurebyte.common.documentation.documentation_layout import DocLayoutItem
 from featurebyte.common.documentation.gen_ref_pages_docs_builder import (
     MISSING_DEBUG_MARKDOWN,
     DocsBuilder,
+    _get_markdown_file_path_for_doc_layout_item,
+    get_missing_core_object_file_template,
 )
 
 
@@ -105,3 +108,32 @@ def test_all_docs(noop_set_edit_path):
         if extracted_nav_item.is_missing(files_open_wrapper.all_file_names):
             failed_items.append(extracted_nav_item)
     assert len(failed_items) == 0, f"Missing docs: {failed_items}"
+
+
+def test_get_missing_core_object_file_template():
+    """
+    Test get missing core object file template.
+    """
+    content = get_missing_core_object_file_template("hello", "random string")
+    assert content == f"Missing hello markdown documentation file.\n\nrandom string"
+
+
+@pytest.mark.parametrize(
+    "item,dictionary,expected",
+    [
+        (DocLayoutItem([]), {}, MISSING_DEBUG_MARKDOWN),
+        (DocLayoutItem([], doc_path_override="hello"), {}, "featurebyte.hello"),
+        (DocLayoutItem(["a", "b", "cDe"]), {"featurebyte.cde": "file_path"}, "file_path"),
+        (
+            DocLayoutItem(["a", "b", "def"]),
+            {"featurebyte.cde": "file_path"},
+            MISSING_DEBUG_MARKDOWN,
+        ),
+    ],
+)
+def test_get_markdown_file_path_for_doc_layout_item(item, dictionary, expected):
+    """
+    Test get markdown file path for doc layout item.
+    """
+    markdown_file_path = _get_markdown_file_path_for_doc_layout_item(item, dictionary)
+    assert markdown_file_path == expected
