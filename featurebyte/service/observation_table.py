@@ -8,6 +8,8 @@ from typing import Any, cast
 import pandas as pd
 from bson import ObjectId
 
+from featurebyte.enum import SpecialColumnName
+from featurebyte.exception import MissingPointInTimeColumnError
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
@@ -141,6 +143,11 @@ class ObservationTableService(
             schema_name=destination.schema_name,
         )
         column_names = list(table_schema.keys())
+
+        if SpecialColumnName.POINT_IN_TIME not in column_names:
+            raise MissingPointInTimeColumnError(
+                f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
+            )
 
         most_recent_point_in_time = await ObservationTableService.get_most_recent_point_in_time(
             db_session=db_session,

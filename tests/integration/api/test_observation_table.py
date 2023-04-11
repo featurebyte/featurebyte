@@ -47,7 +47,7 @@ async def test_observation_table_from_source_table(
     source_table = data_source.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
-        table_name="TEST_TABLE",
+        table_name="ORIGINAL_OBSERVATION_TABLE",
     )
     observation_table = source_table.create_observation_table(f"MY_OBSERVATION_TABLE_{source_type}")
     assert observation_table.name == f"MY_OBSERVATION_TABLE_{source_type}"

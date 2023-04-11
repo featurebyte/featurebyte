@@ -582,6 +582,16 @@ def scd_dataframe_fixture(transaction_data):
     yield data
 
 
+@pytest.fixture(name="observation_table_dataframe", scope="session")
+def observation_table_dataframe_fixture(scd_dataframe):
+    """
+    DataFrame fixture for observation table
+    """
+    df = scd_dataframe[["Effective Timestamp", "User ID"]]
+    df.rename({"Effective Timestamp": "POINT_IN_TIME"}, axis=1, inplace=True)
+    return df
+
+
 @pytest.fixture(name="expected_joined_event_item_dataframe", scope="session")
 def expected_joined_event_item_dataframe_fixture(transaction_data_upper_case, items_dataframe):
     """
@@ -642,6 +652,7 @@ async def datasets_registration_helper_fixture(
     dimension_data_table_name,
     scd_dataframe,
     scd_data_table_name,
+    observation_table_dataframe,
 ):
     """
     Reusable helper to register all the datasets used in integration tests
@@ -704,6 +715,9 @@ async def datasets_registration_helper_fixture(
 
     # SCD table
     helper.add_table(scd_data_table_name, scd_dataframe)
+
+    # Observation table
+    helper.add_table("ORIGINAL_OBSERVATION_TABLE", observation_table_dataframe)
 
     # Tile table for tile manager integration tests
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))

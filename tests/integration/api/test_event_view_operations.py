@@ -601,7 +601,7 @@ async def get_historical_features_async_dataframe_helper(
     return df_historical_features
 
 
-@pytest.mark.parametrize("use_async_workflow", [True])
+@pytest.mark.parametrize("use_async_workflow", [False, True])
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_get_historical_features(
