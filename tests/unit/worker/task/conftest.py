@@ -2,7 +2,7 @@
 Common fixtures for worker task tests
 """
 import os
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pandas as pd
 import pytest
