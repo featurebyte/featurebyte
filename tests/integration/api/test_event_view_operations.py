@@ -584,7 +584,7 @@ async def get_dataframe_from_materialized_table(session, materialized_table):
 
 
 async def get_historical_features_async_dataframe_helper(
-    feature_list, df_observation_set, session, data_source
+    feature_list, df_observation_set, session, data_source, **kwargs
 ):
     """
     Helper to call get_historical_features_async using DataFrame as input, converted to an
@@ -595,7 +595,7 @@ async def get_historical_features_async_dataframe_helper(
     )
     modeling_table_name = f"modeling_table_{ObjectId()}"
     modeling_table = feature_list.get_historical_features_async(
-        observation_table, modeling_table_name
+        observation_table, modeling_table_name, **kwargs
     )
     df_historical_features = await get_dataframe_from_materialized_table(session, modeling_table)
     return df_historical_features
@@ -715,26 +715,37 @@ async def test_get_historical_features(
         df_historical_features, df_historical_expected, dict_like_columns=["COUNT_BY_ACTION_24h"]
     )
 
-    # check that making multiple request calls produces the same result
-    max_batch_size = int((len(df_training_events) / 2.0) + 1)
-    df_historical_multi = feature_list.get_historical_features(
-        df_training_events, max_batch_size=max_batch_size
-    )
-    sort_cols = list(df_training_events.columns)
-    fb_assert_frame_equal(
-        df_historical_features.sort_values(sort_cols).reset_index(drop=True),
-        df_historical_multi.sort_values(sort_cols).reset_index(drop=True),
-        dict_like_columns=["COUNT_BY_ACTION_24h"],
-    )
+    if not use_async_workflow:
+        # check that making multiple request calls produces the same result
+        max_batch_size = int((len(df_training_events) / 2.0) + 1)
+        df_historical_multi = feature_list.get_historical_features(
+            df_training_events, max_batch_size=max_batch_size
+        )
+        sort_cols = list(df_training_events.columns)
+        fb_assert_frame_equal(
+            df_historical_features.sort_values(sort_cols).reset_index(drop=True),
+            df_historical_multi.sort_values(sort_cols).reset_index(drop=True),
+            dict_like_columns=["COUNT_BY_ACTION_24h"],
+        )
 
     # Test again using the same feature list and table but with serving names mapping
-    _test_get_historical_features_with_serving_names(
-        feature_list, df_training_events, df_historical_expected
+    await _test_get_historical_features_with_serving_names(
+        feature_list,
+        df_training_events,
+        df_historical_expected,
+        session,
+        data_source,
+        use_async_workflow,
     )
 
 
-def _test_get_historical_features_with_serving_names(
-    feature_list, df_training_events, df_historical_expected
+async def _test_get_historical_features_with_serving_names(
+    feature_list,
+    df_training_events,
+    df_historical_expected,
+    session,
+    data_source,
+    use_async_workflow,
 ):
     """Test getting historical features from FeatureList with alternative serving names"""
 
@@ -746,10 +757,19 @@ def _test_get_historical_features_with_serving_names(
     assert "new_user id" in df_training_events
     assert "new_user id" in df_historical_expected
 
-    df_historical_features = feature_list.get_historical_features(
-        df_training_events,
-        serving_names_mapping=mapping,
-    )
+    if use_async_workflow:
+        df_historical_features = await get_historical_features_async_dataframe_helper(
+            feature_list=feature_list,
+            df_observation_set=df_training_events,
+            session=session,
+            data_source=data_source,
+            serving_names_mapping=mapping,
+        )
+    else:
+        df_historical_features = feature_list.get_historical_features(
+            df_training_events,
+            serving_names_mapping=mapping,
+        )
     fb_assert_frame_equal(
         df_historical_features,
         df_historical_expected,
