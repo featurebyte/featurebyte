@@ -40,6 +40,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, VersionIdentifier
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
+from featurebyte.models.modeling_table import ModelingTableModel
 from featurebyte.models.observation_table import SourceTableObservationInput
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.task import Task as TaskModel
@@ -48,7 +49,9 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
+from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
+from featurebyte.schema.modeling_table import ModelingTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.task import TaskStatus
@@ -694,6 +697,16 @@ def observation_table_from_view_fixture(snowflake_event_view, patched_observatio
     return snowflake_event_view.create_observation_table("observation_table_from_event_view")
 
 
+@pytest.fixture(name="modeling_table")
+def modeling_table_fixture(observation_table_from_source):
+    """
+    Fixture for a ModelingTable
+    """
+    location = observation_table_from_source.location.copy().dict()
+    location["table_details"]["table_name"] = "MODELING_TABLE_123"
+    return ModelingTableModel(location=location, name="my_modeling_table")
+
+
 @pytest.fixture(name="grouped_event_view")
 def grouped_event_view_fixture(snowflake_event_view_with_entity):
     """
@@ -1189,6 +1202,15 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         ),
         context_id=context.id,
     )
+    modeling_table = ModelingTableCreate(
+        name="modeling_table",
+        feature_store_id=snowflake_feature_store.id,
+        feature_list_id=feature_list.id,
+        observation_table_id=observation_table.id,
+        featurelist_get_historical_features=FeatureListGetHistoricalFeatures(
+            feature_clusters=[],
+        ),
+    )
 
     if update_fixtures:
         generated_comment = [
@@ -1229,6 +1251,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (context, "context"),
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
+            (modeling_table, "modeling_table"),
         ]
         for schema, name in schema_payload_name_pairs:
             filename = f"{base_path}/{name}.json"

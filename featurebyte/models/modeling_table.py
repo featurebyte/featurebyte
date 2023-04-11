@@ -14,7 +14,7 @@ class ModelingTableModel(MaterializedTable):
     ModelingTable is the result of asynchronous historical features requests
     """
 
-    observation_table_id: PydanticObjectId
+    observation_table_id: Optional[PydanticObjectId]
     feature_list_id: Optional[PydanticObjectId]
 
     class Settings(MaterializedTable.Settings):
