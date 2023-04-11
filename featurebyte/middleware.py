@@ -1,7 +1,6 @@
 """
 Handles API requests middleware
 """
-import sys
 from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 
 import inspect
@@ -235,7 +234,6 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
         self.user_ip = user_ip
 
     async def _send_telemetry(self, payload: Dict[str, Any]) -> None:
-        sys.exit(255)
         try:
             requests.post(self.endpoint, json=payload, timeout=1)  # set timeout to 1 second
         except Exception:  # pylint: disable=broad-except
