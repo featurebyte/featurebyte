@@ -39,7 +39,7 @@ class TableStatusService(BaseService):
         if current_status != status:
             # check eligibility of status transition
             eligible_transitions = {
-                TableStatus.PUBLIC_DRAFT: {TableStatus.PUBLISHED},
+                TableStatus.PUBLIC_DRAFT: {TableStatus.PUBLISHED, TableStatus.DEPRECATED},
                 TableStatus.PUBLISHED: {TableStatus.DEPRECATED},
                 TableStatus.DEPRECATED: {},
             }
