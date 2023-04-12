@@ -855,9 +855,16 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         response = test_api_client.patch(
             f"{self.base_route}/{response_dict['_id']}", json=data_update_dict
         )
+        assert response.status_code == HTTPStatus.OK
+
+        # try to update to PUBLIC_DRAFT from DEPRECATED
+        data_update_dict["status"] = "PUBLIC_DRAFT"
+        response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}", json=data_update_dict
+        )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
-            "detail": "Invalid status transition from PUBLIC_DRAFT to DEPRECATED."
+            "detail": "Invalid status transition from DEPRECATED to PUBLIC_DRAFT."
         }
 
     def test_update_status_only(self, test_api_client_persistent, data_response):

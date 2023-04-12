@@ -24,6 +24,7 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -1270,6 +1271,41 @@ def test_feature_create_new_version__multiple_event_table(
     assert group_by_params.blind_spot == expected_job_settings["blind_spot"]
     assert group_by_params.frequency == expected_job_settings["frequency"]
     assert group_by_params.time_modulo_frequency == expected_job_settings["time_modulo_frequency"]
+
+
+def test_deprecate_table_auto_quarantine_affected_features(saved_feature, snowflake_event_table):
+    """Test deprecate table auto quarantine affected features"""
+    # create a new feature & a new feature list
+    new_feature = saved_feature.create_new_version(
+        table_feature_job_settings=[
+            TableFeatureJobSetting(
+                table_name=snowflake_event_table.name,
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="15m", frequency="30m", time_modulo_frequency="5m"
+                ),
+            ),
+        ],
+    )
+    feature_list = FeatureList([new_feature], name="test")
+    feature_list.save()
+
+    # check status before deprecate table
+    assert saved_feature.readiness == FeatureReadiness.DRAFT
+    assert new_feature.readiness == FeatureReadiness.DRAFT
+    assert snowflake_event_table.id in saved_feature.table_ids
+    assert snowflake_event_table.id in new_feature.table_ids
+    assert snowflake_event_table.status == TableStatus.PUBLIC_DRAFT
+    expected_read_dist = [{"readiness": "DRAFT", "count": 1}]
+    assert feature_list.readiness_distribution.__root__ == expected_read_dist
+    assert feature_list.feature_list_namespace.readiness_distribution.__root__ == expected_read_dist
+
+    # deprecate table and check post deprecation status
+    snowflake_event_table.update_status(TableStatus.DEPRECATED)
+    assert saved_feature.readiness == FeatureReadiness.QUARANTINE
+    assert new_feature.readiness == FeatureReadiness.QUARANTINE
+    expected_read_dist = [{"readiness": "QUARANTINE", "count": 1}]
+    assert feature_list.readiness_distribution.__root__ == expected_read_dist
+    assert feature_list.feature_list_namespace.readiness_distribution.__root__ == expected_read_dist
 
 
 def test_primary_entity__unsaved_feature(float_feature, cust_id_entity):

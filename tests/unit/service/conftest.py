@@ -41,7 +41,6 @@ from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableColumnsInfoService
-from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.version import VersionService
 
 
@@ -149,9 +148,9 @@ def table_columns_info_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="table_status_service")
-def table_status_service_fixture(user, persistent):
+def table_status_service_fixture(app_container):
     """TableStatusService fixture"""
-    return TableStatusService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.table_status_service
 
 
 @pytest.fixture(name="feature_readiness_service")
