@@ -502,6 +502,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, INFO, "View.columns_info"]),
         DocLayoutItem([VIEW, INFO, "View.dtypes"]),
         DocLayoutItem([VIEW, INFO, "View.entity_columns"]),
+        DocLayoutItem([VIEW, INFO, "View.timestamp_column"]),
         DocLayoutItem([VIEW, INFO, "View.get_join_column"]),
         DocLayoutItem([VIEW, LINEAGE, "View.feature_store"]),
         DocLayoutItem([VIEW, LINEAGE, "View.preview_sql"]),
