@@ -5,17 +5,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from http import HTTPStatus
-
-from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ForeignKeyMapping, SavableApiObject
+from featurebyte.api.api_object import DeletableApiObject, ForeignKeyMapping, SavableApiObject
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.config import Configurations
-from featurebyte.exception import RecordDeletionException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.credential import (
     DatabaseCredential,
@@ -27,7 +22,7 @@ from featurebyte.schema.credential import CredentialCreate, CredentialRead, Cred
 
 
 @typechecked
-class Credential(SavableApiObject):
+class Credential(DeletableApiObject, SavableApiObject):
     """
     Credential class
     """
@@ -155,11 +150,6 @@ class Credential(SavableApiObject):
         Delete a credential. Note that associated feature store will no longer be able to access the data warehouse
         until a new credential is created. Please use with caution.
 
-        Parameters
-        ----------
-        id : ObjectId
-            Credential id
-
         Raises
         ------
         RecordDeletionException
@@ -175,10 +165,7 @@ class Credential(SavableApiObject):
         --------
         - [Credential.update_credentials](/reference/featurebyte.api.credential.Credential.update_credentials/)
         """
-        client = Configurations().get_client()
-        response = client.delete(url=f"{self._route}/{self.id}")
-        if response.status_code != HTTPStatus.NO_CONTENT:
-            raise RecordDeletionException(response, "Failed to delete the specified credential.")
+        self._delete()
 
     def update_credentials(
         self,

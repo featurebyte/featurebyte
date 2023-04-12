@@ -19,7 +19,7 @@ from bson import ObjectId
 from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
 
-from featurebyte.api.api_object import ApiObject, SavableApiObject
+from featurebyte.api.api_object import ApiObject, DeletableApiObject, SavableApiObject
 from featurebyte.api.base_table import TableApiObject, TableListMixin
 from featurebyte.api.catalog import Catalog, update_and_reset_catalog
 from featurebyte.api.credential import Credential
@@ -237,6 +237,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         ItemTable,  # accessible as part of catalog.(list|get)_table
         SCDTable,  # accessible as part of catalog.(list|get)_table
         SavableApiObject,
+        DeletableApiObject,
         TableApiObject,
         TableListMixin,
     }

@@ -28,6 +28,7 @@ from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
     RecordCreationException,
+    RecordDeletionException,
     RecordRetrievalException,
     RecordUpdateException,
 )
@@ -924,3 +925,15 @@ class SavableApiObject(ApiObject):
             **self._get_init_params_from_object(),
             saved=True,
         )
+
+
+class DeletableApiObject(ApiObject):
+    """
+    DeleteMixin contains common methods used to delete an object
+    """
+
+    def _delete(self) -> None:
+        client = Configurations().get_client()
+        response = client.delete(url=f"{self._route}/{self.id}")
+        if response.status_code != HTTPStatus.NO_CONTENT:
+            raise RecordDeletionException(response, "Failed to delete the specified object.")
