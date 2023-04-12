@@ -1245,7 +1245,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     def get_historical_features_async(
         self,
-        observation_set: ObservationTable,
+        observation_table: ObservationTable,
         modeling_table_name: str,
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> ModelingTable:
@@ -1255,7 +1255,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Parameters
         ----------
-        observation_set: ObservationTable
+        observation_table: ObservationTable
             Observation table with `POINT_IN_TIME` and serving names columns
         modeling_table_name: str
             Name of the modeling table to be created
@@ -1274,7 +1274,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id
         payload = ModelingTableCreate(
             name=modeling_table_name,
-            observation_table_id=observation_set.id,
+            observation_table_id=observation_table.id,
             feature_store_id=feature_store_id,
             featurelist_get_historical_features=featurelist_get_historical_features,
         )
