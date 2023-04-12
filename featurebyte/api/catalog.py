@@ -247,25 +247,37 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def create_entity(self, name: str, serving_names: List[str]) -> Entity:
         """
-        Create a new entity with the provided name and serving names.
+                Registers a new Entity object in the catalog.
 
-        Parameters
-        ----------
-        name: str
-            Entity name
-        serving_names: List[str]
-            Names of the serving columns
+                An Entity object defines an entity type represented in tables of the catalog, allowing for automatic table
+                joins, unit of analysis, and organization of features, feature lists, and use cases.
 
-        Returns
-        -------
-        Entity
-            Newly created entity.
+                To create a new Entity object, you need to provide a name for the entity and its serving names.
 
-        Examples
-        --------
-        Create a new entity.
+                An entity's serving name is the name of the unique identifier that is used to identify the entity during a
+                preview or serving request. Typically, the serving name for an entity is the name of the primary key (or
+                natural key) of the table that represents the entity. For convenience, an entity can have multiple serving
+                names but the unique identifier should remain unique.
 
-        >>> entity = catalog.create_entity("customer", ["customer_id"])
+        For example, the serving names of a Customer entity could be 'CustomerID' and 'CustID'."
+
+                Parameters
+                ----------
+                name: str
+                    Entity name
+                serving_names: List[str]
+                    Names of the serving columns
+
+                Returns
+                -------
+                Entity
+                    Newly created entity.
+
+                Examples
+                --------
+                Create a new entity.
+
+                >>> entity = catalog.create_entity("customer", ["customer_id"])
         """
         return Entity.create(name=name, serving_names=serving_names)
 
@@ -277,7 +289,12 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
-        List features that have been saved.
+        Generates a DataFrame that contains various attributes of the registered features, such as their names,
+        types, corresponding tables, related entities, creation dates, and the state of readiness and online
+        availability of their default version.
+
+        The returned DataFrame can be filtered by the primary entity or the primary table of the features in the
+        catalog.
 
         Parameters
         ----------
@@ -478,7 +495,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def list_entities(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
-        List saved entities.
+        Returns a DataFrame that contains various attributes of the entities registered in the catalog, such as
+        their names, serving names and creation dates.
 
         Parameters
         ----------
@@ -595,7 +613,11 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def get_feature(self, name: str, version: Optional[str] = None) -> Feature:
         """
-        Get a feature by name and version.
+        Gets a Feature object from the catalog using the feature's name and optionally its version name. If no
+        version name is provided, the default version of the feature is returned.
+
+        The Feature object includes the logical plan for computing the feature and can be used to create a FeatureList
+        object for training and predicting machine learning models for a specific use case.
 
         Parameters
         ----------
@@ -741,7 +763,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def get_entity(self, name: str) -> Entity:
         """
-        Get entity by name.
+        Gets an Entity object from the catalog based on its name.
+
+        An Entity object defines an entity type represented in tables of the catalog, allowing for automatic table
+        joins, unit of analysis, and organization of features, feature lists, and use cases.
 
         Parameters
         ----------

@@ -88,9 +88,25 @@ class GroupBy:
         skip_fill_na: bool = False,
     ) -> FeatureGroup:
         """
-        Aggregate given value_column for each group specified in keys over a list of time windows
+        The aggregate_over method of a GroupBy instance returns a FeatureGroup containing Aggregate Over a Window
+        Feature objects. These Feature objects aggregate data from the column specified by the value_column parameter,
+        using the aggregation method provided by the method parameter. The aggregation is performed within specific
+        time frames prior to the point-in-time indicated in the feature request. The time frames are defined by the
+        windows parameter. Each Feature object within the FeatureGroup corresponds to a window in the list provided
+        by the windows parameter. The primary entity of the Feature is determined by the grouping key of the GroupBy
+        instance.
 
-        This aggregation is available to EventView, ItemView, and ChangeView.
+        These features are often used for analyzing event and item data.
+
+        If the GroupBy instance involves computation across a categorical column, the resulting Feature object is a
+        Cross Aggregate Over a Window Feature. In this scenario, the feature value after materialization is a
+        dictionary with keys representing the categories of the categorical column and their corresponding values
+        indicating the aggregated values for each category.
+
+        You can choose to fill the feature value with a default value if the column being aggregated is empty.
+
+        Additional transformations can be performed on the Feature objects, and the Feature objects within the
+        FeatureGroup are added to the catalog only when explicitly saved.
 
         Parameters
         ----------
@@ -172,7 +188,30 @@ class GroupBy:
         skip_fill_na: bool = False,
     ) -> Feature:
         """
-        Aggregate a column in SCDView as at a point in time
+        The aggregate_as_at method of a GroupBy instance returns an Aggregate ""as at"" Feature object. The object
+        aggregates data from the column specified by the value_column parameter using the aggregation method provided
+        by the method parameter. By default, the aggrgegation is done on rows active at the point-in-time indicated in
+        the feature request. The primary entity of the Feature is determined by the grouping key of the GroupBy
+        instance,
+
+        These aggregation operations are exclusively available for Slowly Changing Dimension (SCD) views, and the
+        grouping key used in the GroupBy instance should not be the natural key of the SCD view.
+
+        For instance, a possible example of an aggregate ‘as at’ feature from a Credit Cards table could be the
+        count of credit cards held by a customer at the point-in-time indicated in the feature request.
+
+        If an offset is defined, the aggregation uses the active rows of the SCD view's data at the point-in-time
+        indicated in the feature request, minus the specified offset.
+
+        If the GroupBy instance involves computation across a categorical column, the returned Feature object is a
+        Cross Aggregate "as at" Feature. In this scenario, the feature value after materialization is a dictionary
+        with keys representing the categories of the categorical column and their corresponding values indicating
+        the aggregated values for each category.
+
+        You may choose to fill the feature value with a default value if the column to be aggregated is empty.
+
+        It is possible to perform additional transformations on the Feature object, and the Feature object is added
+        to the catalog solely when explicitly saved.
 
         Parameters
         ----------
@@ -240,9 +279,24 @@ class GroupBy:
         skip_fill_na: bool = False,
     ) -> Feature:
         """
-        Aggregate given value_column for each group specified in keys, without time windows
+        The aggregate method of a GroupBy class instance returns a Simple Aggregate Feature object. This object
+        aggregates data from the column specified by the value_column parameter using the aggregation method
+        provided by the method parameter, without taking into account the order or sequence of the data. The primary
+        entity of the Feature is determined by the grouping key of the GroupBy instance.
 
-        This aggregation is available to ItemView.
+        If the GroupBy class instance involves computation across a categorical column, the resulting Feature object
+        is a Simple Cross Aggregate Feature. In this scenario, the feature value after materialization is a dictionary
+        with keys representing the categories of the categorical column and their corresponding values indicating the
+        aggregated values for each category.
+
+        You can choose to fill the feature value with a default value if the column being aggregated is empty.
+
+        It's important to note that additional transformations can be performed on the Feature object. The Feature
+        object is added to the catalog only when explicitly saved.
+
+        To avoid time leakage, simple aggregation is exclusively supported for Item views. This is applicable when
+        the grouping key corresponds to the event key of the Item view. An example of such features includes the count
+        of items in an Order.
 
         Parameters
         ----------

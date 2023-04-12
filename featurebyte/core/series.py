@@ -1088,7 +1088,7 @@ class Series(FrozenSeries):
     @typechecked
     def fillna(self, other: Scalar) -> None:
         """
-        Replaces missing value in each element with the provided value in-place
+        Replaces missing value in each element with the provided value in-place.
 
         Parameters
         ----------

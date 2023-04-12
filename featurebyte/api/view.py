@@ -84,7 +84,18 @@ class ViewColumn(Series, SampleMixin):
     @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
         """
-        Create a lookup feature directly using this column
+        Creates a lookup feature directly from the column in the View. The entity associated with the feature is
+        identified by the primary key of the table. However, if the View is a Slowly Changing Dimension (SCD) view,
+        the entity is identified by the natural key of the table.
+
+        For SCD views, lookup features are materialized through point-in-time joins, and the resulting value
+        represents the active row at the point-in-time indicated in the feature request. For instance, a customer
+        feature could be the customer's street address at the point-in-time of the request. To obtain a feature value
+        at a specific time before the request's point-in-time, an offset can be specified. For example, setting the
+        offset to 9 weeks would represent the customer's street address 9 weeks prior to the request's point-in-time.
+
+        It is possible to perform additional transformations on the feature, and the feature is added to the catalog
+        solely when explicitly saved.
 
         Parameters
         ----------
@@ -783,7 +794,20 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         offset: Optional[str] = None,
     ) -> FeatureGroup:
         """
-        Create lookup features directly from the columns in the View
+        Creates lookup features directly from the column in the View. The primary entity associated with the features
+        is identified by the primary key of the table. However, if the View is a Slowly Changing Dimension (SCD) view,
+        the primary entity is identified by the natural key of the table.
+
+        For SCD views, lookup features are materialized through point-in-time joins, and the resulting value represents
+        the active row at the point-in-time indicated in the feature request. For instance, a customer feature could
+        be the customer's street address at the point-in-time indicated in the request. To obtain a feature value at
+        a specific time prior to the request's point-in-time, an offset can be specified. For example, setting the
+        offset to 9 weeks would represent the customer's street address 9 weeks prior to the request's point-in-time.
+
+        The returned object is a FeatureGroup which is a temporary collection of Feature objects.
+
+        It is possible to perform additional transformations on the Feature objects, and the Feature objects are added
+        to the catalog solely when explicitly saved.
 
         Parameters
         ----------
