@@ -227,7 +227,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
                 fields=("tabular_source",),
                 conflict_fields_signature={"tabular_source": ["tabular_source"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-                extra_query_params={"status": {"$ne": TableStatus.DEPRECATED}},
+                extra_query_params={"status": {"$ne": TableStatus.DEPRECATED.value}},
             ),
         ]
 
