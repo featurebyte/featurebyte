@@ -76,9 +76,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @classmethod
     def activate(cls, name: str) -> Catalog:
         """
-        Activate catalog with the provided name. Exactly one catalog is active at any time.
-        If no catalog has been activated, the default catalog will be active.
+        Activates and returns a Catalog object with the provided name. Exactly one catalog is active at any time.
         Only assets that belong to the active catalog are accessible.
+
+        By employing a catalog, team members can effortlessly add, search, retrieve, and reuse the necessary tables,
+        entities, features, and feature lists while obtaining comprehensive information about their properties. This
+        information includes their type, creation date, related versions, readiness, status, and other descriptive
+        details.
 
         Parameters
         ----------
@@ -183,7 +187,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @classmethod
     def get_active(cls) -> Catalog:
         """
-        Get the currently active catalog.
+        Gets the currently active catalog.
 
         Returns
         -------
@@ -210,7 +214,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @typechecked
     def update_name(self, name: str) -> None:
         """
-        Update catalog name.
+        Updates the catalog name.
 
         Parameters
         ----------

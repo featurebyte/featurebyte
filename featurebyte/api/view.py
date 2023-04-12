@@ -262,7 +262,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     @property
     def entity_columns(self) -> list[str]:
         """
-        List of entity columns
+        List the names of the columns in the view identifying or referencing entities.
 
         Returns
         -------
@@ -341,7 +341,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     @abstractmethod
     def get_join_column(self) -> str:
         """
-        Returns the join column
+        Returns the column from the view that serves as the linking column when the view is joined with another view.
 
         Returns
         -------

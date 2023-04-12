@@ -26,9 +26,13 @@ class SCDViewColumn(ViewColumn):
 
 class SCDView(View, GroupByMixin):
     """
-    A `SCDView` allows a user to transform a `SCDTable`.
+    A SCDView object is a modified version of the SCDTable object that provides additional capabilities for
+    transforming data. With an SCDView, you can create and transform columns and filter records prior to
+    feature declaration.
 
-    Transformations supported are the same as for `EventView` or `ItemView` except for lag that is not supported.
+    SCD views are typically used to create Lookup features for the entity represented by the natural key of the table
+    or to create Aggregate As At features for other entities. They can also be used to enrich views of event or
+    item tables through joins.
 
     See Also
     --------

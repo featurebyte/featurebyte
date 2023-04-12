@@ -305,7 +305,8 @@ class SCDTable(TableApiObject):
     @property
     def natural_key_column(self) -> str:
         """
-        Natural key column name of the SCDTable
+        Returns the name of the column representing the natural key of a Slowly Changing Dimension (SCD) table. This
+        column is used to distinguish each active row and facilitate tracking of changes over time.
 
         Returns
         -------
@@ -319,7 +320,8 @@ class SCDTable(TableApiObject):
     @property
     def effective_timestamp_column(self) -> str:
         """
-        Effective timestamp column name of the SCDTable
+        Returns the name of the column representing the effective timestamp of a Slowly Changing Dimension (SCD) table.
+        This column is used to indicate when a row started to be active.
 
         Returns
         -------
@@ -333,7 +335,10 @@ class SCDTable(TableApiObject):
     @property
     def surrogate_key_column(self) -> Optional[str]:
         """
-        Surrogate key column name of the SCDTable
+        Returns the name of the column representing the surrogate key of a Slowly Changing Dimension (SCD) table.
+        The column is an artificial key assigned by the system and is used as a unique identifier assigned to each
+        record of the SCD table. As the column is not intended to be used for feature engineering, the views created
+        from a SCD table do not contain this column by default.
 
         Returns
         -------
@@ -347,7 +352,9 @@ class SCDTable(TableApiObject):
     @property
     def end_timestamp_column(self) -> Optional[str]:
         """
-        End timestamp column name of the SCDTable
+        Returns the name of the column representing the end (or expiration) timestamp of a Slowly Changing Dimension
+        (SCD) table. This column is used to indicate when a row stopped to be active. As the column is not intended to
+        be used for feature engineering, the views created from a SCD table do not contain this column by default.
 
         Returns
         -------
@@ -361,7 +368,10 @@ class SCDTable(TableApiObject):
     @property
     def current_flag_column(self) -> Optional[str]:
         """
-        Current flag column name of the SCDTable
+        Returns the name of the column representing the current flag of a Slowly Changing Dimension (SCD) table.
+        This column is used to indicate if a row is currently active in the Data Warehouse. As the column is not
+        intended to be used for feature engineering, the views created from a SCD table do not contain this
+        column by default.
 
         Returns
         -------

@@ -29,23 +29,19 @@ class ItemViewColumn(ViewColumn):
 
 class ItemView(View, GroupByMixin):
     """
-    An `ItemView` allows a user to transform an `ItemTable` to support the table preparation necessary before
-    creating features.
+    An ItemView object is a modified version of the ItemTable object that provides additional capabilities for
+    transforming data. With an ItemView, you can create and transform columns, extract lags and filter records
+    prior to feature declaration.
 
-    When an `ItemView` is created, the event_timestamp and the entities of the event table the item table is associated
-    with are automatically added. Users can join more columns from the event table if desired.
+    When you create an ItemView, the object automatically adds the event_timestamp and entity columns from the
+    associated event table. You can also include additional columns from the event table if desired. However:
 
-    Transformations supported are the same as an `EventView` except for:
+    - lag (and inter-event time) computation is only possible for entities that are not inherited from the event table.
+    - imported columns from the event table or their derivatives cannot be aggregated per an entity inherited from the
+    event table. Those features must be engineered directly from the event table.
 
-    - lag (and inter event time) can be computed only for entities that are not inherited from the event table
-
-    Features can be easily created from ItemViews in a similar way as for features created from EventViews, with a
-    few differences:
-
-    - features for the event_id and its children (item_id) are not time based. Features for other entities are time
-      based like for EventViews.
-    - columns imported from the event table or their derivatives can not be aggregated per an entity inherited from
-      the event table. Those features should be engineered directly from the event table.
+    Item views are typically used to create Lookup features for the item entity, to create Simple Aggregate features
+    for the event entity or to create Aggregate Over a Window features for other entities."
 
     See Also
     --------

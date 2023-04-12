@@ -681,7 +681,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def abs(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Compute the absolute numeric value of each element.
+        Computes the absolute numeric value of each element.
 
         Returns
         -------
@@ -912,7 +912,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def ceil(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Round each element to the nearest equal or larger integer.
+        Rounds each element to the nearest equal or larger integer.
 
         Returns
         -------

@@ -30,8 +30,8 @@ class ChangeViewColumn(LaggableViewColumn):
 
 class ChangeView(View, GroupByMixin):
     """
-    `ChangeView` is used to capture changes in SCDTable in an easy manner. This is useful as changes in
-    `SCDTable` may constitute powerful features such as:
+    A `ChangeView` object is used to capture changes in SCDTable object in an easy manner. This is useful as
+    changes in `SCDTable` may constitute powerful features such as:
 
     - how many times has a customer moved in the past 6 months?
     - if they moved the past 6 months, where did they use to live?
@@ -39,29 +39,17 @@ class ChangeView(View, GroupByMixin):
     - did they have any new kids in the family?
     - do they have a new job?
 
-    To support such important features, users can create a `ChangeView` from a `SCDTable`.
+    This new view tracks all changes for a given column (identified as track_changes_column when the view is created).
+    The resulting view has 5 columns:
 
-    This new view tracks all changes for a given column. The resulting view has 5 columns:
-
-    - past_valid_from_timestamp
-    - new_valid_from_timestamp (which is the event timestamp of the event view and equal to the effective, or start,
-      timestamp of the SCD)
     - the natural key of the SCDView
     - past_<name_of_column_tracked>: value of the column before the change
     - new_<name_of_column_tracked>: value of the column after the change
+    - past_valid_from_timestamp (equal to the effective timestamp of the SCD before the change)
+    - new_valid_from_timestamp (equal to the effective timestamp of the SCD after the change)
 
-    To create this `ChangeView`, users need to provide:
-
-    - the name of the SCD table
-    - the name of the SCD column for which they want to track changes
-
-    Optionally, the default Feature Job Setting for the View. If none is provided, we will default to once a day, at the
-    time of the creation of the view.
-
-    Optionally, users can also provide a `prefix` parameter. This will allow users to specify a custom prefix for the
-    new column values if they prefer.
-
-    Features can be created the same way as features from an Event View.
+    The ChangeView can be used to create Aggregates of Changes Over a Window features, similar to Aggregates Over a
+    Window features created from an Event View.
 
     See Also
     --------

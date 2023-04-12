@@ -26,9 +26,12 @@ class DimensionViewColumn(ViewColumn):
 
 class DimensionView(View):
     """
-    A `DimensionView` allows a user to transform a `DimensionTable`.
+    A DimensionView object is a modified version of the DimensionTable object that provides additional capabilities
+    for transforming data. With a DimensionView, you can create and transform columns and filter records prior to
+    feature declaration.
 
-    Transformations supported are the same as for `EventView` or `ItemView` except for lag that is not supported.
+    Dimension views are commonly used to create Lookup features, and they can also be used to enrich views of other
+    tables through joins.
 
     See Also
     --------

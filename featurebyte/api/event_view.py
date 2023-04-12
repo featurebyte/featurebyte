@@ -36,8 +36,12 @@ class EventViewColumn(LaggableViewColumn):
 
 class EventView(View, GroupByMixin):
     """
-    An `EventView` allows a user to transform an `EventTable` to support the table preparation necessary before
-    creating features.
+    An EventView object is a modified version of the EventTable object that provides additional capabilities for
+    transforming data. With an EventView, you can create and transform columns, extract lags and filter records
+    prior to feature declaration.
+
+    Event views are typically used to create Lookup features for the event entity, to create Aggregate Over a
+    Window features for other entities or enrich the item data by joining to the related Item view.
 
     See Also
     --------
