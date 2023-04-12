@@ -13,7 +13,7 @@ from bson import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import SavableApiObject
+from featurebyte.api.api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_namespace import FeatureNamespace
@@ -32,11 +32,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import FrozenSeries, Series
-from featurebyte.exception import (
-    RecordCreationException,
-    RecordDeletionException,
-    RecordRetrievalException,
-)
+from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
@@ -72,6 +68,7 @@ class Feature(
     ProtectedColumnsQueryObject,
     Series,
     FrozenFeatureModel,
+    DeletableApiObject,
     SavableApiObject,
     CdAccessorMixin,
     FeatureJobMixin,
@@ -280,39 +277,25 @@ class Feature(
         """
         return self._list(include_id=include_id, params={"name": self.name})
 
-    @classmethod
-    def delete(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
+    def delete(self) -> None:
         """
         Delete a feature. A feature can only be deleted if
         * the feature readiness is DRAFT
         * the feature is not used in any feature list
         * the feature is not a default feature with manual version mode
 
-        Parameters
-        ----------
-        id : ObjectId
-            Feature ID
-
-        Raises
-        ------
-        RecordDeletionException
-            If the feature cannot be deleted
-
         Examples
         --------
-        Delete a feature
+        Delete a feature.
 
         >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> fb.Feature.delete(feature.id)  # doctest: +SKIP
+        >>> feature.delete()  # doctest: +SKIP
 
         See Also
         --------
         - [Feature.update_default_version_mode](/reference/featurebyte.api.feature.Feature.update_default_version_mode/)
         """
-        client = Configurations().get_client()
-        response = client.delete(url=f"{cls._route}/{id}")
-        if response.status_code != HTTPStatus.NO_CONTENT:
-            raise RecordDeletionException(response, "Failed to delete the specified feature.")
+        self._delete()
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:

@@ -34,8 +34,8 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import (
     PAGINATED_CALL_PAGE_SIZE,
-    ApiObject,
     ConflictResolution,
+    DeletableApiObject,
     ForeignKeyMapping,
     SavableApiObject,
 )
@@ -66,7 +66,6 @@ from featurebyte.exception import (
     DuplicatedRecordException,
     FeatureListNotOnlineEnabledError,
     RecordCreationException,
-    RecordDeletionException,
     RecordRetrievalException,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -450,7 +449,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
             self[feature_name].save(conflict_resolution=conflict_resolution)
 
 
-class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
+class FeatureListNamespace(FrozenFeatureListNamespaceModel, DeletableApiObject):
     """
     FeatureListNamespace represents all the versions of the FeatureList that have the same FeatureList name.
 
@@ -613,38 +612,24 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             ]
         return feature_lists
 
-    @classmethod
-    def delete(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
+    def delete(self) -> None:
         """
         Delete feature list namespace.
 
-        Parameters
-        ----------
-        id: ObjectId
-            Feature list namespace ID
-
-        Raises
-        ------
-        RecordDeletionException
-            If the feature list namespace cannot be deleted
-
         Examples
         --------
-        Delete a feature list namespace
+        Delete a feature list namespace.
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> fb.FeatureListNamespace.delete(feature_list.feature_list_namespace_id)  # doctest: +SKIP
+        >>> feature_list.feature_list_namespace.delete()  # doctest: +SKIP
         """
-        client = Configurations().get_client()
-        response = client.delete(url=f"{cls._route}/{id}")
-        if response.status_code != HTTPStatus.NO_CONTENT:
-            raise RecordDeletionException(
-                response, "Failed to delete the specified feature list namespace."
-            )
+        self._delete()
 
 
 # pylint: disable=too-many-public-methods
-class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, FeatureJobMixin):
+class FeatureList(
+    BaseFeatureGroup, FrozenFeatureListModel, DeletableApiObject, SavableApiObject, FeatureJobMixin
+):
     """
     A Feature List is a set of features that is typically crafted to address a specific Use Case, and is typically how
     a user interacts with their collection of features.
@@ -796,6 +781,21 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                     resolution=' Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.',
                 ) from exc
             raise exc
+
+    def delete(self) -> None:
+        """
+        Delete a FeatureList object from the persistent data store. A feature list can only be deleted if
+        * the feature list status is DRAFT
+        * the feature list is not a default feature list with manual version mode
+
+        Examples
+        --------
+        Delete a FeatureList.
+
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.delete()  # doctest: +SKIP
+        """
+        self._delete()
 
     @root_validator(pre=True)
     @classmethod

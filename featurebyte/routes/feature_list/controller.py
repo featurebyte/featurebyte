@@ -14,6 +14,7 @@ from fastapi.responses import StreamingResponse
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
+    DocumentDeletionError,
     FeatureListNotOnlineEnabledError,
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
@@ -22,8 +23,8 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import FeatureReadiness
-from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_list import (
@@ -43,6 +44,7 @@ from featurebyte.schema.worker.task.feature_list_deploy import FeatureListDeploy
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
@@ -65,6 +67,7 @@ class FeatureListController(
     def __init__(
         self,
         service: FeatureListService,
+        feature_list_namespace_service: FeatureListNamespaceService,
         feature_readiness_service: FeatureReadinessService,
         deploy_service: DeployService,
         preview_service: PreviewService,
@@ -76,6 +79,7 @@ class FeatureListController(
         task_controller: TaskController,
     ):
         super().__init__(service)
+        self.feature_list_namespace_service = feature_list_namespace_service
         self.feature_readiness_service = feature_readiness_service
         self.deploy_service = deploy_service
         self.preview_service = preview_service
@@ -145,6 +149,54 @@ class FeatureListController(
                 )
 
         return await self.get(document_id=feature_list_id)
+
+    async def delete_feature_list(self, feature_list_id: ObjectId) -> None:
+        """
+        Delete FeatureList at persistent
+
+        Raises
+        ------
+        DocumentDeletionError
+            If feature list is not in DRAFT status or is the default feature list of the feature list namespace
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            FeatureList ID
+        """
+        feature_list = await self.service.get_document(document_id=feature_list_id)
+        feature_list_namespace = await self.feature_list_namespace_service.get_document(
+            document_id=feature_list.feature_list_namespace_id
+        )
+        if feature_list_namespace.status != FeatureListStatus.DRAFT:
+            raise DocumentDeletionError("Only feature list with DRAFT status can be deleted.")
+
+        if (
+            feature_list_namespace.default_feature_list_id == feature_list_id
+            and feature_list_namespace.default_version_mode == DefaultVersionMode.MANUAL
+        ):
+            raise DocumentDeletionError(
+                "Feature list is the default feature list of the feature list namespace and the "
+                "default version mode is manual. Please set another feature list as the default feature list "
+                "or change the default version mode to auto."
+            )
+
+        # use transaction to ensure atomicity
+        async with self.service.persistent.start_transaction():
+            await self.service.delete_document(document_id=feature_list_id)
+            await self.feature_readiness_service.update_feature_list_namespace(
+                feature_list_namespace_id=feature_list.feature_list_namespace_id,
+                deleted_feature_list_ids=[feature_list_id],
+                return_document=False,
+            )
+            feature_list_namespace = await self.feature_list_namespace_service.get_document(
+                document_id=feature_list.feature_list_namespace_id
+            )
+            if not feature_list_namespace.feature_list_ids:
+                # delete feature list namespace if it has no more feature list
+                await self.feature_list_namespace_service.delete_document(
+                    document_id=feature_list.feature_list_namespace_id
+                )
 
     async def deploy_feature_list(
         self,

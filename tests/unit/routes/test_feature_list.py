@@ -1,6 +1,7 @@
 """
 Tests for FeatureList route
 """
+# pylint: disable=too-many-lines
 import json
 import textwrap
 from collections import defaultdict
@@ -194,10 +195,11 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.status_code == HTTPStatus.CREATED
         assert response.json()["feature_ids"] == sorted(payload_multi["feature_ids"])
 
-    def test_create_201__create_new_version(
+    @pytest.fixture(name="new_feature_list_version_response")
+    def new_feature_list_version_response_fixture(
         self, test_api_client_persistent, create_success_response
     ):
-        """Test create new version (success)"""
+        """New feature list version response"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
 
@@ -226,10 +228,18 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             self.base_route,
             json={"source_feature_list_id": create_response_dict["_id"], "features": []},
         )
+        assert response.json()["feature_ids"] == [feature_response_dict["_id"]]
+        return response
+
+    def test_create_201__create_new_version(
+        self, create_success_response, new_feature_list_version_response
+    ):
+        """Test create new version (success)"""
+        create_response_dict = create_success_response.json()
+        response = new_feature_list_version_response
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED
         assert response_dict["version"] == {"name": get_version(), "suffix": 1}
-        assert response_dict["feature_ids"] == [feature_response_dict["_id"]]
         assert (
             response_dict["feature_list_namespace_id"]
             == create_response_dict["feature_list_namespace_id"]
@@ -526,6 +536,109 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["deployed"] is False
+
+    def test_delete_204(self, test_api_client_persistent, create_success_response):
+        """Test delete (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        namespace_id = create_response_dict["feature_list_namespace_id"]
+
+        namespace_response = test_api_client.get(f"/feature_list_namespace/{namespace_id}")
+        assert namespace_response.status_code == HTTPStatus.OK
+        assert namespace_response.json()["feature_list_ids"] == [doc_id]
+
+        # delete feature list
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.NO_CONTENT
+
+        # check that feature list and feature list namespace are deleted
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+        response = test_api_client.get(f"/feature_list_namespace/{namespace_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+    def test_delete_204__namespace_not_deleted(
+        self, test_api_client_persistent, create_success_response, new_feature_list_version_response
+    ):
+        """Test delete (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        new_doc_id = new_feature_list_version_response.json()["_id"]
+        namespace_id = create_response_dict["feature_list_namespace_id"]
+
+        # check namespace before delete
+        namespace_dict = test_api_client.get(f"/feature_list_namespace/{namespace_id}").json()
+        assert namespace_dict["feature_list_ids"] == [doc_id, new_doc_id]
+
+        # delete feature list
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.NO_CONTENT
+
+        # check namespace after delete
+        namespace_dict = test_api_client.get(f"/feature_list_namespace/{namespace_id}").json()
+        assert namespace_dict["feature_list_ids"] == [new_doc_id]
+
+    def test_delete_422__non_draft_feature_list(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete (unprocessible entity)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        namespace_id = create_response_dict["feature_list_namespace_id"]
+
+        # change status to public draft
+        response = test_api_client.patch(
+            f"/feature_list_namespace/{namespace_id}", json={"status": "PUBLIC_DRAFT"}
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        # check that feature list cannot be deleted
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+        expected_error = "Only feature list with DRAFT status can be deleted."
+        assert response.json()["detail"] == expected_error
+
+        # check that feature list is not deleted
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+
+    def test_delete_422__manual_mode_default_feature_list(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete (unprocessible entity)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        namespace_id = create_response_dict["feature_list_namespace_id"]
+
+        # set feature list namespace default version mode to manual first
+        response = test_api_client.patch(
+            f"/feature_list_namespace/{namespace_id}", json={"default_version_mode": "MANUAL"}
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict["default_version_mode"] == "MANUAL"
+        assert response_dict["default_feature_list_id"] == doc_id
+
+        # check that the feature list cannot be deleted
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+        expected_error = (
+            "Feature list is the default feature list of the feature list namespace and the default version "
+            "mode is manual. Please set another feature list as the default feature list or "
+            "change the default version mode to auto."
+        )
+        assert response.json()["detail"] == expected_error
+
+        # check that the feature list is not deleted
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):

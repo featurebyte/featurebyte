@@ -81,6 +81,15 @@ async def update_feature_list(
     return feature_list
 
 
+@router.delete("/{feature_list_id}", status_code=HTTPStatus.NO_CONTENT)
+async def delete_feature_list(request: Request, feature_list_id: PydanticObjectId) -> None:
+    """
+    Delete FeatureList
+    """
+    controller = request.state.app_container.feature_list_controller
+    await controller.delete_feature_list(feature_list_id=feature_list_id)
+
+
 @router.post("/{feature_list_id}/deploy", response_model=Task, status_code=HTTPStatus.CREATED)
 async def deploy_feature_list(
     request: Request, feature_list_id: PydanticObjectId, data: FeatureListUpdate
