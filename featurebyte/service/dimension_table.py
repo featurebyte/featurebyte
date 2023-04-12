@@ -16,6 +16,7 @@ class DimensionTableService(
     """
 
     document_class = DimensionTableModel
+    document_update_class = DimensionTableServiceUpdate
 
     @property
     def class_name(self) -> str:

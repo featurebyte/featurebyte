@@ -16,6 +16,7 @@ class EventTableService(
     """
 
     document_class = EventTableModel
+    document_update_class = EventTableServiceUpdate
 
     @property
     def class_name(self) -> str:

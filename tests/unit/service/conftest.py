@@ -40,7 +40,8 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
-from featurebyte.service.table_update import TableUpdateService
+from featurebyte.service.table_columns_info import TableColumnsInfoService
+from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.version import VersionService
 
 
@@ -141,10 +142,16 @@ def feature_list_service_fixture(user, persistent):
     return FeatureListService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
-@pytest.fixture(name="table_update_service")
-def table_update_service_fixture(user, persistent):
-    """TableUpdateService fixture"""
-    return TableUpdateService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+@pytest.fixture(name="table_columns_info_service")
+def table_columns_info_service_fixture(user, persistent):
+    """TableColumnsInfoService fixture"""
+    return TableColumnsInfoService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+
+
+@pytest.fixture(name="table_status_service")
+def table_status_service_fixture(user, persistent):
+    """TableStatusService fixture"""
+    return TableStatusService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="feature_readiness_service")

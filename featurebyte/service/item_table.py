@@ -16,6 +16,7 @@ class ItemTableService(
     """
 
     document_class = ItemTableModel
+    document_update_class = ItemTableServiceUpdate
 
     @property
     def class_name(self) -> str:

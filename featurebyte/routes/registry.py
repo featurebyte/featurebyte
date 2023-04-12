@@ -58,7 +58,8 @@ from featurebyte.service.semantic import SemanticService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.service.table import TableService
-from featurebyte.service.table_update import TableUpdateService
+from featurebyte.service.table_columns_info import TableColumnsInfoService
+from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.user_service import UserService
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
@@ -156,7 +157,8 @@ app_container_config.add_basic_service(
     "feature_list_namespace_service", FeatureListNamespaceService
 )
 app_container_config.add_basic_service("feature_namespace_service", FeatureNamespaceService)
-app_container_config.add_basic_service("table_update_service", TableUpdateService)
+app_container_config.add_basic_service("table_columns_info_service", TableColumnsInfoService)
+app_container_config.add_basic_service("table_status_service", TableStatusService)
 app_container_config.add_service_with_extra_deps(
     "default_version_mode_service",
     DefaultVersionModeService,
@@ -196,7 +198,8 @@ app_container_config.add_controller(
     EventTableController,
     [
         "event_table_service",
-        "table_update_service",
+        "table_columns_info_service",
+        "table_status_service",
         "semantic_service",
         "info_service",
     ],
@@ -207,7 +210,8 @@ app_container_config.add_controller(
     DimensionTableController,
     [
         "dimension_table_service",
-        "table_update_service",
+        "table_columns_info_service",
+        "table_status_service",
         "semantic_service",
         "info_service",
     ],
@@ -217,7 +221,8 @@ app_container_config.add_controller(
     ItemTableController,
     [
         "item_table_service",
-        "table_update_service",
+        "table_columns_info_service",
+        "table_status_service",
         "semantic_service",
         "info_service",
     ],
@@ -227,7 +232,8 @@ app_container_config.add_controller(
     SCDTableController,
     [
         "scd_table_service",
-        "table_update_service",
+        "table_columns_info_service",
+        "table_status_service",
         "semantic_service",
         "info_service",
     ],

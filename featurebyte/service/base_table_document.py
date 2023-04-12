@@ -24,6 +24,8 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
     BaseTableDocumentService class
     """
 
+    document_update_class: type[DocumentUpdate]
+
     @property
     def table_type(self) -> str:
         """
