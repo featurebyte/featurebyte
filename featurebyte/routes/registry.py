@@ -275,6 +275,7 @@ app_container_config.add_controller(
     FeatureListController,
     [
         "feature_list_service",
+        "feature_list_namespace_service",
         "feature_readiness_service",
         "deploy_service",
         "preview_service",
