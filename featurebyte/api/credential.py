@@ -145,7 +145,7 @@ class Credential(DeletableApiObject, SavableApiObject):
         credential.save()
         return credential
 
-    def delete(self) -> None:  # pylint: disable=redefined-builtin,invalid-name
+    def delete(self) -> None:
         """
         Delete a credential. Note that associated feature store will no longer be able to access the data warehouse
         until a new credential is created. Please use with caution.

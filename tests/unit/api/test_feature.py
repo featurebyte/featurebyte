@@ -564,8 +564,8 @@ def test_create_new_version(saved_feature, snowflake_event_table):
     assert expected_msg in str(exc_info.value)
 
 
-def test_delete_by_name_and_version(saved_feature):
-    """Test deletion of feature by name and version"""
+def test_delete_feature(saved_feature):
+    """Test deletion of feature"""
     assert saved_feature.readiness == FeatureReadiness.DRAFT
     saved_feature.delete()
 

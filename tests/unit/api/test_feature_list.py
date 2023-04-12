@@ -1327,7 +1327,7 @@ def test_feature_list_properties_from_cached_model__after_save(saved_feature_lis
 def test_delete_feature_list_namespace__success(saved_feature_list):
     """Test delete feature list namespace (success)"""
     assert saved_feature_list.status == FeatureListStatus.DRAFT
-    saved_feature_list.delete()
+    saved_feature_list.feature_list_namespace.delete()
 
     # check feature list namespace & feature list records are deleted
     with pytest.raises(RecordRetrievalException) as exc_info:
@@ -1349,8 +1349,8 @@ def test_delete_feature_list_namespace__success(saved_feature_list):
     assert expected_msg in str(exc_info.value)
 
 
-def test_delete_feature_list_by_name(saved_feature_list):
-    """Test delete feature list by name"""
+def test_delete_feature_list(saved_feature_list):
+    """Test delete feature list"""
     assert saved_feature_list.status == FeatureListStatus.DRAFT
     saved_feature_list.delete()
 

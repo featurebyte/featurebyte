@@ -277,7 +277,7 @@ class Feature(
         """
         return self._list(include_id=include_id, params={"name": self.name})
 
-    def delete(self) -> None:  # pylint: disable=redefined-builtin,invalid-name
+    def delete(self) -> None:
         """
         Delete a feature. A feature can only be deleted if
         * the feature readiness is DRAFT

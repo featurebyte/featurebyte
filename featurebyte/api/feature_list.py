@@ -612,7 +612,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, DeletableApiObject):
             ]
         return feature_lists
 
-    def delete(self) -> None:  # pylint: disable=redefined-builtin,invalid-name
+    def delete(self) -> None:
         """
         Delete feature list namespace.
 
