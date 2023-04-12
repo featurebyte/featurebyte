@@ -11,6 +11,7 @@ from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.schema.credential import CredentialCreate
 from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
     FeatureStoreList,
@@ -140,7 +141,9 @@ class FeatureStoreController(
                 get_credential=get_credential_to_use,
             )
             # Try to persist credential
-            await self.credential_service.create_document(data=credential)
+            await self.credential_service.create_document(
+                data=CredentialCreate(**credential.json_dict())
+            )
             # If no error thrown from creating, try to create the metadata table with the feature store ID.
             metadata_schema_initializer = MetadataSchemaInitializer(session)
             await metadata_schema_initializer.update_feature_store_id(str(document.id))
