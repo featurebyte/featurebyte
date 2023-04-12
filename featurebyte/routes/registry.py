@@ -19,6 +19,7 @@ from featurebyte.routes.feature_list_namespace.controller import FeatureListName
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.item_table.controller import ItemTableController
+from featurebyte.routes.modeling_table.controller import ModelingTableController
 from featurebyte.routes.observation_table.controller import ObservationTableController
 from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
@@ -45,6 +46,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
 from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.modeling_table import ModelingTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
@@ -127,7 +129,15 @@ app_container_config.add_service_with_extra_deps(
     "observation_table_service",
     ObservationTableService,
     [
+        "feature_store_service",
         "context_service",
+    ],
+)
+app_container_config.add_service_with_extra_deps(
+    "modeling_table_service",
+    ModelingTableService,
+    [
+        "feature_store_service",
     ],
 )
 
@@ -329,4 +339,9 @@ app_container_config.add_controller(
 )
 app_container_config.add_controller(
     "credential_controller", CredentialController, ["credential_service", "info_service"]
+)
+app_container_config.add_controller(
+    "modeling_table_controller",
+    ModelingTableController,
+    ["modeling_table_service", "task_controller"],
 )

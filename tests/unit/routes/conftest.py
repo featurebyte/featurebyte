@@ -4,13 +4,15 @@ Fixture for API unit tests
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 
 from featurebyte.app import app
+from featurebyte.enum import SourceType
+from featurebyte.session.base import BaseSession
 
 
 @pytest.fixture(scope="session")
@@ -30,6 +32,11 @@ def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
     with patch(
         "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
     ) as mocked_get_session:
+        mocked_get_session.return_value = Mock(
+            name="MockedSession",
+            spec=BaseSession,
+            source_type=SourceType.SNOWFLAKE,
+        )
         yield mocked_get_session
 
 

@@ -11,6 +11,7 @@
 /feature_namespace
 /feature_store
 /item_table
+/modeling_table
 /observation_table
 /periodic_task
 /relationship_info

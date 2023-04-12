@@ -5,12 +5,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from bson import ObjectId
-
 from featurebyte.logger import logger
 from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -48,20 +44,28 @@ class ObservationTableTask(BaseTask):
         )
         db_session = await session_manager.get_session(feature_store)
 
-        destination_table_name = f"OBSERVATION_TABLE_{ObjectId()}"
-        location = TabularSource(
-            feature_store_id=payload.feature_store_id,
-            table_details=TableDetails(
-                database_name=db_session.database_name,
-                schema_name=db_session.schema_name,
-                table_name=destination_table_name,
-            ),
+        context_service = ContextService(
+            user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
         )
-
-        query = payload.observation_input.get_materialise_sql(
+        observation_table_service = ObservationTableService(
+            user=self.user,
+            persistent=persistent,
+            catalog_id=self.payload.catalog_id,
+            context_service=context_service,
+            feature_store_service=feature_store_service,
+        )
+        location = await observation_table_service.generate_materialized_table_location(
+            self.get_credential,
+            payload.feature_store_id,
+        )
+        query = payload.observation_input.get_materialize_sql(
             destination=location.table_details, source_type=feature_store.type
         )
         await db_session.execute_query(query)
+
+        additional_metadata = await observation_table_service.get_additional_metadata(
+            db_session, location.table_details
+        )
 
         logger.debug("Creating a new ObservationTable", extras=location.table_details.dict())
         observation_table = ObservationTableModel(
@@ -71,16 +75,8 @@ class ObservationTableTask(BaseTask):
             location=location,
             context_id=payload.context_id,
             observation_input=payload.observation_input,
+            **additional_metadata,
         )
 
-        context_service = ContextService(
-            user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
-        )
-        observation_table_service = ObservationTableService(
-            user=self.user,
-            persistent=persistent,
-            catalog_id=self.payload.catalog_id,
-            context_service=context_service,
-        )
         created_doc = await observation_table_service.create_document(observation_table)
         assert created_doc.id == payload.output_document_id

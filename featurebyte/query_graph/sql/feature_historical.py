@@ -3,22 +3,31 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, List, Optional, Union, cast
 
 import datetime
 import time
+from abc import ABC, abstractmethod
 
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
+from sqlglot import expressions
 
 from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logger import logger
+from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.common import (
+    REQUEST_TABLE_NAME,
+    get_fully_qualified_table_name,
+    sql_to_string,
+)
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
+from featurebyte.query_graph.sql.materialisation import create_table_as
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import TileCache
@@ -26,42 +35,164 @@ from featurebyte.tile.tile_cache import TileCache
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
 
-def validate_historical_requests_point_in_time(training_events: pd.DataFrame) -> pd.DataFrame:
+class ObservationSet(ABC):
+    """
+    Observation set abstraction for historical features (used internally in this module)
+    """
+
+    @property
+    @abstractmethod
+    def columns(self) -> list[str]:
+        """
+        List of columns available in the observation set
+
+        Returns
+        -------
+        list[str]
+        """
+
+    @property
+    @abstractmethod
+    def most_recent_point_in_time(self) -> pd.Timestamp:
+        """
+        The most recent point in time in the observation set
+        """
+
+    @abstractmethod
+    async def register_as_request_table(
+        self, session: BaseSession, request_table_name: str
+    ) -> None:
+        """
+        Register the observation set as the request table in the session
+
+        Parameters
+        ----------
+        session : BaseSession
+            Session
+        request_table_name : str
+            Request table name
+        """
+
+
+class DataFrameObservationSet(ObservationSet):
+    """
+    Observation set based on an in memory pandas DataFrame
+    """
+
+    def __init__(self, dataframe: pd.DataFrame):
+        self.dataframe = convert_point_in_time_dtype_if_needed(dataframe)
+
+    @property
+    def columns(self) -> List[str]:
+        return cast(List[str], self.dataframe.columns.tolist())
+
+    @property
+    def most_recent_point_in_time(self) -> pd.Timestamp:
+        return self.dataframe[SpecialColumnName.POINT_IN_TIME].max()
+
+    async def register_as_request_table(
+        self, session: BaseSession, request_table_name: str
+    ) -> None:
+        await session.register_table(request_table_name, self.dataframe)
+
+
+class MaterializedTableObservationSet(ObservationSet):
+    """
+    Observation set based on a materialized table in data warehouse
+    """
+
+    def __init__(self, observation_table: ObservationTableModel):
+        self.observation_table = observation_table
+
+    @property
+    def columns(self) -> list[str]:
+        return self.observation_table.column_names
+
+    @property
+    def most_recent_point_in_time(self) -> pd.Timestamp:
+        return pd.to_datetime(self.observation_table.most_recent_point_in_time)
+
+    async def register_as_request_table(
+        self, session: BaseSession, request_table_name: str
+    ) -> None:
+        query = sql_to_string(
+            expressions.select("*").from_(
+                get_fully_qualified_table_name(self.observation_table.location.table_details.dict())
+            ),
+            source_type=session.source_type,
+        )
+        await session.register_table_with_query(request_table_name, query)
+
+
+def get_internal_observation_set(
+    observation_set: pd.DataFrame | ObservationTableModel,
+) -> ObservationSet:
+    """
+    Get the internal observation set representation
+
+    Parameters
+    ----------
+    observation_set : pd.DataFrame | ObservationTableModel
+        Observation set
+
+    Returns
+    -------
+    ObservationSet
+    """
+    if isinstance(observation_set, pd.DataFrame):
+        return DataFrameObservationSet(observation_set)
+    return MaterializedTableObservationSet(observation_set)
+
+
+def convert_point_in_time_dtype_if_needed(observation_set: pd.DataFrame) -> pd.DataFrame:
+    """
+    Check dtype of the point in time column and convert if necessary. The converted DataFrame will
+    later be used to create a temp table in the session.
+
+    Parameters
+    ----------
+    observation_set : pd.DataFrame
+        Observation set
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    if SpecialColumnName.POINT_IN_TIME not in observation_set.columns:
+        return observation_set
+
+    if not is_datetime64_any_dtype(observation_set[SpecialColumnName.POINT_IN_TIME]):
+        observation_set = observation_set.copy()
+        observation_set[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+            observation_set[SpecialColumnName.POINT_IN_TIME]
+        )
+
+    # convert point in time to tz-naive UTC timestamps
+    observation_set = observation_set.copy()
+    observation_set[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+        observation_set[SpecialColumnName.POINT_IN_TIME], utc=True
+    ).dt.tz_localize(None)
+
+    return observation_set
+
+
+def validate_historical_requests_point_in_time(observation_set: ObservationSet) -> None:
     """Validate the point in time column in the request input and perform type conversion if needed
 
     A copy will be made if the point in time column does not already have timestamp dtype.
 
     Parameters
     ----------
-    training_events : pd.DataFrame
-        Training events
-
-    Returns
-    -------
-    pd.DataFrame
+    observation_set: ObservationSet
+        Observation set
 
     Raises
     ------
     TooRecentPointInTimeError
         If any of the provided point in time values are too recent
     """
-
-    # Check dtype and convert if necessary. The converted DataFrame will later be used to create a
-    # temp table in the session.
-    if not is_datetime64_any_dtype(training_events[SpecialColumnName.POINT_IN_TIME]):
-        training_events = training_events.copy()
-        training_events[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
-            training_events[SpecialColumnName.POINT_IN_TIME]
-        )
-
-    # convert point in time to tz-naive UTC timestamps
-    training_events = training_events.copy()
-    training_events[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
-        training_events[SpecialColumnName.POINT_IN_TIME], utc=True
-    ).dt.tz_localize(None)
-
     # Latest point in time must be older than 48 hours
-    latest_point_in_time = training_events[SpecialColumnName.POINT_IN_TIME].max()
+    latest_point_in_time = observation_set.most_recent_point_in_time
     recency = datetime.datetime.now() - latest_point_in_time
     if recency <= pd.Timedelta(HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR, unit="h"):
         raise TooRecentPointInTimeError(
@@ -69,29 +200,25 @@ def validate_historical_requests_point_in_time(training_events: pd.DataFrame) ->
             f"{HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR} hours from now"
         )
 
-    return training_events
 
-
-def validate_request_schema(training_events: pd.DataFrame) -> None:
-    """Validate training events schema
+def validate_request_schema(observation_set: ObservationSet) -> None:
+    """Validate observation set schema
 
     Parameters
     ----------
-    training_events : DataFrame
-        Training events DataFrame
+    observation_set: ObservationSet
+        Observation set
 
     Raises
     ------
     MissingPointInTimeColumnError
         If point in time column is not provided
     """
-    # Currently this only checks the existence of point in time column. Later this should include
-    # other validation such as existence of required serving names based on Features' entities.
-    if SpecialColumnName.POINT_IN_TIME not in training_events:
+    if SpecialColumnName.POINT_IN_TIME not in observation_set.columns:
         raise MissingPointInTimeColumnError("POINT_IN_TIME column is required")
 
 
-def get_historical_features_sql(
+def get_historical_features_expr(
     request_table_name: str,
     graph: QueryGraph,
     nodes: list[Node],
@@ -99,7 +226,7 @@ def get_historical_features_sql(
     source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
-) -> str:
+) -> expressions.Select:
     """Construct the SQL code that extracts historical features
 
     Parameters
@@ -121,7 +248,7 @@ def get_historical_features_sql(
 
     Returns
     -------
-    str
+    expressions.Select
     """
     planner = FeatureExecutionPlanner(
         graph,
@@ -132,16 +259,11 @@ def get_historical_features_sql(
     )
     plan = planner.generate_plan(nodes)
 
-    sql = sql_to_string(
-        plan.construct_combined_sql(
-            request_table_name=request_table_name,
-            point_in_time_column=SpecialColumnName.POINT_IN_TIME,
-            request_table_columns=request_table_columns,
-        ),
-        source_type=source_type,
+    return plan.construct_combined_sql(
+        request_table_name=request_table_name,
+        point_in_time_column=SpecialColumnName.POINT_IN_TIME,
+        request_table_columns=request_table_columns,
     )
-
-    return sql
 
 
 async def compute_tiles_on_demand(
@@ -213,12 +335,13 @@ async def get_historical_features(
     session: BaseSession,
     graph: QueryGraph,
     nodes: list[Node],
-    observation_set: pd.DataFrame,
+    observation_set: Union[pd.DataFrame, ObservationTableModel],
     source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
     is_feature_list_deployed: bool = False,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
-) -> AsyncGenerator[bytes, None]:
+    output_table_details: Optional[TableDetails] = None,
+) -> Optional[AsyncGenerator[bytes, None]]:
     """Get historical features
 
     Parameters
@@ -229,8 +352,8 @@ async def get_historical_features(
         Query graph
     nodes : list[Node]
         List of query graph node
-    observation_set : pd.DataFrame
-        Observation set DataFrame
+    observation_set : Union[pd.DataFrame, ObservationTableModel]
+        Observation set
     source_type : SourceType
         Source type information
     serving_names_mapping : dict[str, str] | None
@@ -242,6 +365,10 @@ async def get_historical_features(
         on demand.
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    output_table_details: Optional[TableDetails]
+        Optional output table details to write the results to. If this parameter is provided, the
+        function will return None (intended to be used when handling asynchronous historical
+        requests).
 
     Returns
     -------
@@ -249,17 +376,19 @@ async def get_historical_features(
     """
     tic_ = time.time()
 
+    observation_set = get_internal_observation_set(observation_set)
+
     # Validate request
     validate_request_schema(observation_set)
-    training_events = validate_historical_requests_point_in_time(observation_set)
+    validate_historical_requests_point_in_time(observation_set)
 
     # use a unique request table name
     request_id = session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
 
     # Generate SQL code that computes the features
-    request_table_columns = training_events.columns.tolist()
-    sql = get_historical_features_sql(
+    request_table_columns = observation_set.columns
+    sql_expr = get_historical_features_expr(
         graph=graph,
         nodes=nodes,
         request_table_columns=request_table_columns,
@@ -270,7 +399,7 @@ async def get_historical_features(
     )
 
     # Execute feature SQL code
-    await session.register_table(request_table_name, training_events)
+    await observation_set.register_as_request_table(session, request_table_name)
 
     # Compute tiles on demand if required
     if not is_feature_list_deployed:
@@ -285,8 +414,17 @@ async def get_historical_features(
             parent_serving_preparation=parent_serving_preparation,
         )
 
-    # Execute feature query
-    result = session.get_async_query_stream(sql)
+    # Execute feature query and stream results back
+    if output_table_details is None:
+        sql = sql_to_string(sql_expr, source_type=session.source_type)
+        return session.get_async_query_stream(sql)
 
+    # Execute feature query but write results to a table
+    query = sql_to_string(
+        create_table_as(output_table_details, sql_expr),
+        source_type=session.source_type,
+    )
+    await session.execute_query(query)
     logger.debug(f"get_historical_features in total took {time.time() - tic_:.2f}s")
-    return result
+
+    return None

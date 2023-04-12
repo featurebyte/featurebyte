@@ -6,10 +6,14 @@ from __future__ import annotations
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 
@@ -36,13 +40,13 @@ def create_table_as(table_details: TableDetails, select_expr: Select) -> Express
     )
 
 
-def get_materialise_from_source_sql(
+def get_materialize_from_source_sql(
     source: TableDetails,
     destination: TableDetails,
     source_type: SourceType,
 ) -> str:
     """
-    Construct SQL query to materialise a table from a source table
+    Construct SQL query to materialize a table from a source table
 
     Parameters
     ----------
@@ -62,21 +66,21 @@ def get_materialise_from_source_sql(
     return sql_to_string(copy_table_expr, source_type=source_type)
 
 
-def get_materialise_from_view_sql(
+def get_materialize_from_view_sql(
     graph: QueryGraphModel,
     node_name: str,
     destination: TableDetails,
     source_type: SourceType,
 ) -> str:
     """
-    Construct SQL query to materialise a view given its query graph
+    Construct SQL query to materialize a view given its query graph
 
     Parameters
     ----------
     graph: QueryGraphModel
         Query graph
     node_name: str
-        Name of the node to materialise
+        Name of the node to materialize
     destination: TableDetails
         Destination table details
     source_type: SourceType
@@ -87,6 +91,30 @@ def get_materialise_from_view_sql(
     str
     """
     interpreter = GraphInterpreter(query_graph=graph, source_type=source_type)
-    table_expr = interpreter.construct_materialise_expr(node_name)
+    table_expr = interpreter.construct_materialize_expr(node_name)
     query = create_table_as(destination, table_expr)
+    return sql_to_string(query, source_type=source_type)
+
+
+def get_most_recent_point_in_time_sql(
+    destination: TableDetails,
+    source_type: SourceType,
+) -> str:
+    """
+    Construct SQL query to get the most recent point in time
+
+    Parameters
+    ----------
+    destination: TableDetails
+        Destination table details
+    source_type: SourceType
+        Source type information
+
+    Returns
+    -------
+    str
+    """
+    query = expressions.select(
+        expressions.Max(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME))
+    ).from_(get_fully_qualified_table_name(destination.dict()))
     return sql_to_string(query, source_type=source_type)

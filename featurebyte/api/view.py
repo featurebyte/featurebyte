@@ -758,7 +758,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         features_ab = view[columns].as_features(["a", "b"], ["FeatureA", "FeatureB"])
         features_c = view.as_features(["c"], ["FeatureC"])
 
-        When features_ab and features_c are materialised in the same feature list, they can be
+        When features_ab and features_c are materialized in the same feature list, they can be
         retrieved using the same join query.
 
         Returns

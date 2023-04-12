@@ -23,6 +23,7 @@ from featurebyte.query_graph.node.schema import ColumnSpec
 from tests.util.helper import (
     assert_preview_result_equal,
     fb_assert_frame_equal,
+    get_historical_features_async_dataframe_helper,
     get_lagged_series_pandas,
     iet_entropy,
 )
@@ -553,8 +554,12 @@ def run_test_conditional_assign_feature(feature_group):
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
 
+@pytest.mark.parametrize("use_async_workflow", [False, True])
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_get_historical_features(feature_group, feature_group_per_category):
+@pytest.mark.asyncio
+async def test_get_historical_features(
+    session, data_source, feature_group, feature_group_per_category, use_async_workflow
+):
     """
     Test getting historical features from FeatureList
     """
@@ -647,32 +652,53 @@ def test_get_historical_features(feature_group, feature_group_per_category):
             ],
         }
     )
-    df_historical_features = feature_list.get_historical_features(df_training_events)
+
+    if use_async_workflow:
+        df_historical_features = await get_historical_features_async_dataframe_helper(
+            feature_list=feature_list,
+            df_observation_set=df_training_events,
+            session=session,
+            data_source=data_source,
+        )
+    else:
+        df_historical_features = feature_list.get_historical_features(df_training_events)
+
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
     fb_assert_frame_equal(
         df_historical_features, df_historical_expected, dict_like_columns=["COUNT_BY_ACTION_24h"]
     )
 
-    # check that making multiple request calls produces the same result
-    max_batch_size = int((len(df_training_events) / 2.0) + 1)
-    df_historical_multi = feature_list.get_historical_features(
-        df_training_events, max_batch_size=max_batch_size
-    )
-    sort_cols = list(df_training_events.columns)
-    fb_assert_frame_equal(
-        df_historical_features.sort_values(sort_cols).reset_index(drop=True),
-        df_historical_multi.sort_values(sort_cols).reset_index(drop=True),
-        dict_like_columns=["COUNT_BY_ACTION_24h"],
-    )
+    if not use_async_workflow:
+        # check that making multiple request calls produces the same result
+        max_batch_size = int((len(df_training_events) / 2.0) + 1)
+        df_historical_multi = feature_list.get_historical_features(
+            df_training_events, max_batch_size=max_batch_size
+        )
+        sort_cols = list(df_training_events.columns)
+        fb_assert_frame_equal(
+            df_historical_features.sort_values(sort_cols).reset_index(drop=True),
+            df_historical_multi.sort_values(sort_cols).reset_index(drop=True),
+            dict_like_columns=["COUNT_BY_ACTION_24h"],
+        )
 
     # Test again using the same feature list and table but with serving names mapping
-    _test_get_historical_features_with_serving_names(
-        feature_list, df_training_events, df_historical_expected
+    await _test_get_historical_features_with_serving_names(
+        feature_list,
+        df_training_events,
+        df_historical_expected,
+        session,
+        data_source,
+        use_async_workflow,
     )
 
 
-def _test_get_historical_features_with_serving_names(
-    feature_list, df_training_events, df_historical_expected
+async def _test_get_historical_features_with_serving_names(
+    feature_list,
+    df_training_events,
+    df_historical_expected,
+    session,
+    data_source,
+    use_async_workflow,
 ):
     """Test getting historical features from FeatureList with alternative serving names"""
 
@@ -684,10 +710,19 @@ def _test_get_historical_features_with_serving_names(
     assert "new_user id" in df_training_events
     assert "new_user id" in df_historical_expected
 
-    df_historical_features = feature_list.get_historical_features(
-        df_training_events,
-        serving_names_mapping=mapping,
-    )
+    if use_async_workflow:
+        df_historical_features = await get_historical_features_async_dataframe_helper(
+            feature_list=feature_list,
+            df_observation_set=df_training_events,
+            session=session,
+            data_source=data_source,
+            serving_names_mapping=mapping,
+        )
+    else:
+        df_historical_features = feature_list.get_historical_features(
+            df_training_events,
+            serving_names_mapping=mapping,
+        )
     fb_assert_frame_equal(
         df_historical_features,
         df_historical_expected,
@@ -1109,7 +1144,7 @@ def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_fea
     expected_updated_column_names = [*original_column_names, "transaction_count", "User Status New"]
     assert new_columns == expected_updated_column_names
 
-    # check column materialised correctly
+    # check column materialized correctly
     pd.testing.assert_series_equal(
         event_view_preview["User Status New"],
         event_view_preview["User Status"] + "_suffix",

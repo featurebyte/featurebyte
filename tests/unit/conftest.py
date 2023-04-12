@@ -48,7 +48,9 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
+from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
+from featurebyte.schema.modeling_table import ModelingTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.task import TaskStatus
@@ -659,20 +661,58 @@ def snowflake_event_view_entity_feature_job_fixture(
     yield event_view
 
 
+@pytest.fixture(name="patched_observation_table_service")
+def patched_observation_table_service():
+    """
+    Patch ObservationTableService.get_additional_metadata
+    """
+
+    async def mocked_get_additional_metadata(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return {
+            "column_names": ["POINT_IN_TIME", "cust_id"],
+            "most_recent_point_in_time": "2023-01-15 10:00:00",
+        }
+
+    with patch(
+        "featurebyte.service.observation_table.ObservationTableService.get_additional_metadata",
+        Mock(side_effect=mocked_get_additional_metadata),
+    ):
+        yield
+
+
 @pytest.fixture(name="observation_table_from_source")
-def observation_table_from_source_fixture(snowflake_database_table):
+def observation_table_from_source_fixture(
+    snowflake_database_table, patched_observation_table_service
+):
     """
     Observation table created from SourceTable
     """
+    _ = patched_observation_table_service
     return snowflake_database_table.create_observation_table("observation_table_from_source_table")
 
 
 @pytest.fixture(name="observation_table_from_view")
-def observation_table_from_view_fixture(snowflake_event_view):
+def observation_table_from_view_fixture(snowflake_event_view, patched_observation_table_service):
     """
     Observation table created from EventView
     """
+    _ = patched_observation_table_service
     return snowflake_event_view.create_observation_table("observation_table_from_event_view")
+
+
+@pytest.fixture(name="modeling_table")
+def modeling_table_fixture(float_feature, observation_table_from_source):
+    """
+    Fixture for a ModelingTable
+    """
+    feature_list = FeatureList([float_feature], name="feature_list_for_modeling_table")
+    feature_list.save()
+    modeling_table = feature_list.get_historical_features_async(
+        observation_table_from_source, "my_modeling_table"
+    )
+    return modeling_table
 
 
 @pytest.fixture(name="grouped_event_view")
@@ -1170,6 +1210,15 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         ),
         context_id=context.id,
     )
+    modeling_table = ModelingTableCreate(
+        name="modeling_table",
+        feature_store_id=snowflake_feature_store.id,
+        feature_list_id=feature_list.id,
+        observation_table_id=observation_table.id,
+        featurelist_get_historical_features=FeatureListGetHistoricalFeatures(
+            feature_clusters=feature_list._get_feature_clusters(),
+        ),
+    )
 
     if update_fixtures:
         generated_comment = [
@@ -1210,6 +1259,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (context, "context"),
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
+            (modeling_table, "modeling_table"),
         ]
         for schema, name in schema_payload_name_pairs:
             filename = f"{base_path}/{name}.json"

@@ -790,6 +790,7 @@ def test_sdk_code_generation(saved_event_table, update_fixtures):
     )
 
 
+@pytest.mark.usefixtures("patched_observation_table_service")
 def test_create_observation_table_from_event_view(snowflake_event_table, snowflake_execute_query):
     """
     Test creating ObservationTable from an EventView

@@ -20,9 +20,9 @@ def check_location_valid(observation_table, session):
     }
 
 
-async def check_materialised_table_accessible(observation_table, session, source_type):
+async def check_materialized_table_accessible(observation_table, session, source_type):
     """
-    Check materialised table is available
+    Check materialized table is available
     """
     table_details = observation_table.location.table_details
     query = sql_to_string(
@@ -47,12 +47,12 @@ async def test_observation_table_from_source_table(
     source_table = data_source.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
-        table_name="TEST_TABLE",
+        table_name="ORIGINAL_OBSERVATION_TABLE",
     )
     observation_table = source_table.create_observation_table(f"MY_OBSERVATION_TABLE_{source_type}")
     assert observation_table.name == f"MY_OBSERVATION_TABLE_{source_type}"
     check_location_valid(observation_table, session)
-    await check_materialised_table_accessible(observation_table, session, source_type)
+    await check_materialized_table_accessible(observation_table, session, source_type)
 
 
 @pytest.mark.asyncio
@@ -67,4 +67,4 @@ async def test_observation_table_from_view(scd_table, session, source_type):
     )
     assert observation_table.name == f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}"
     check_location_valid(observation_table, session)
-    await check_materialised_table_accessible(observation_table, session, source_type)
+    await check_materialized_table_accessible(observation_table, session, source_type)

@@ -25,6 +25,7 @@ from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CredentialsError
 from featurebyte.logger import logger
 from featurebyte.models.credential import UsernamePasswordCredential
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
@@ -201,7 +202,7 @@ class SnowflakeSession(BaseSession):
             create_command = "CREATE OR REPLACE TABLE"
         await self.execute_query(
             f"""
-            {create_command} {table_name}(
+            {create_command} "{table_name}"(
                 {", ".join([f'"{colname}" {coltype}' for colname, coltype in schema])}
             )
             """
@@ -328,6 +329,12 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
         return f'"{self.session.database_name}"."{self.session.schema_name}"'
 
     def _fully_qualified(self, name: str) -> str:
+        if "(" in name:
+            # handle functions with arguments, e.g. MY_UDF(a INT, b INT)
+            parts = name.split("(", 1)
+            name = f"{quoted_identifier(parts[0])}({parts[1]}"
+        else:
+            name = f"{quoted_identifier(name)}"
         return f"{self._schema_qualifier}.{name}"
 
     async def _list_objects(self, object_type: str) -> pd.DataFrame:

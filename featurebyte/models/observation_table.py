@@ -7,46 +7,21 @@ from typing import List, Literal, Optional, Union
 from typing_extensions import Annotated
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
+from datetime import datetime  # pylint: disable=wrong-import-order
 
 import pymongo
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, validator
 
 from featurebyte.enum import SourceType, StrEnum
-from featurebyte.models.base import (
-    FeatureByteBaseModel,
-    FeatureByteCatalogBaseDocumentModel,
-    PydanticObjectId,
-    UniqueConstraintResolutionSignature,
-    UniqueValuesConstraint,
-)
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.materialized_table import MaterializedTable
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.materialisation import (
-    get_materialise_from_source_sql,
-    get_materialise_from_view_sql,
+    get_materialize_from_source_sql,
+    get_materialize_from_view_sql,
 )
-
-
-class MaterializedTable(FeatureByteCatalogBaseDocumentModel):
-    """
-    MaterializedTable represents a table that has been materialized and stored in feature store
-    database.
-
-    location: TabularSource
-        The table that stores the materialized data
-    """
-
-    location: TabularSource
-
-    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("location.feature_store_id"),
-        ]
 
 
 class ObservationInputType(StrEnum):
@@ -64,7 +39,7 @@ class BaseObservationInput(FeatureByteBaseModel):
     """
 
     @abstractmethod
-    def get_materialise_sql(self, destination: TableDetails, source_type: SourceType) -> str:
+    def get_materialize_sql(self, destination: TableDetails, source_type: SourceType) -> str:
         """
         Get the SQL statement that materializes the observation table
 
@@ -97,8 +72,8 @@ class ViewObservationInput(BaseObservationInput):
     node_name: StrictStr
     type: Literal[ObservationInputType.VIEW] = Field(ObservationInputType.VIEW, const=True)
 
-    def get_materialise_sql(self, destination: TableDetails, source_type: SourceType) -> str:
-        return get_materialise_from_view_sql(
+    def get_materialize_sql(self, destination: TableDetails, source_type: SourceType) -> str:
+        return get_materialize_from_view_sql(
             graph=self.graph,
             node_name=self.node_name,
             destination=destination,
@@ -121,8 +96,8 @@ class SourceTableObservationInput(BaseObservationInput):
         ObservationInputType.SOURCE_TABLE, const=True
     )
 
-    def get_materialise_sql(self, destination: TableDetails, source_type: SourceType) -> str:
-        return get_materialise_from_source_sql(
+    def get_materialize_sql(self, destination: TableDetails, source_type: SourceType) -> str:
+        return get_materialize_from_source_sql(
             source=self.source.table_details,
             destination=destination,
             source_type=source_type,
@@ -145,7 +120,16 @@ class ObservationTableModel(MaterializedTable):
     """
 
     observation_input: ObservationInput
+    column_names: List[StrictStr]
+    most_recent_point_in_time: StrictStr
     context_id: Optional[PydanticObjectId] = Field(default=None)
+
+    @validator("most_recent_point_in_time")
+    @classmethod
+    def _validate_most_recent_point_in_time(cls, value: str) -> str:
+        # Check that most_recent_point_in_time is a valid ISO 8601 datetime
+        _ = datetime.fromisoformat(value)
+        return value
 
     class Settings(MaterializedTable.Settings):
         """
@@ -153,18 +137,6 @@ class ObservationTableModel(MaterializedTable):
         """
 
         collection_name: str = "observation_table"
-        unique_constraints: List[UniqueValuesConstraint] = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-        ]
 
         indexes = MaterializedTable.Settings.indexes + [
             pymongo.operations.IndexModel("context_id"),
