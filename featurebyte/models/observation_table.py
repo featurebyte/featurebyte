@@ -7,9 +7,10 @@ from typing import List, Literal, Optional, Union
 from typing_extensions import Annotated
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
+from datetime import datetime
 
 import pymongo
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, validator
 
 from featurebyte.enum import SourceType, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -122,6 +123,14 @@ class ObservationTableModel(MaterializedTable):
     column_names: List[StrictStr]
     most_recent_point_in_time: StrictStr
     context_id: Optional[PydanticObjectId] = Field(default=None)
+
+    @validator("most_recent_point_in_time")
+    def _validate_most_recent_point_in_time(cls, v):
+        """
+        Validate that most_recent_point_in_time is a valid ISO 8601 datetime
+        """
+        _ = datetime.fromisoformat(v)
+        return v
 
     class Settings(MaterializedTable.Settings):
         """
