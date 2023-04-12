@@ -686,6 +686,9 @@ class BaseDocumentService(
                 if original_value == query_filter:
                     continue
 
+            if constraint.extra_query_params is not None:
+                query_filter.update(constraint.extra_query_params)
+
             conflict_signature = {
                 name: get_field_path_value(doc_dict, fields)
                 for name, fields in constraint.conflict_fields_signature.items()

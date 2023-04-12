@@ -188,6 +188,7 @@ class UniqueValuesConstraint(FeatureByteBaseModel):
     fields: List[str]
     conflict_fields_signature: Dict[str, Any]
     resolution_signature: Optional[UniqueConstraintResolutionSignature]
+    extra_query_params: Optional[Dict[str, Any]] = Field(default=None)
 
 
 class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
