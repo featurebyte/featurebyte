@@ -73,8 +73,11 @@ class ItemView(View, GroupByMixin):
         event_suffix: Optional[str] = None,
     ) -> None:
         """
-        Join additional attributes from the related EventTable. This operation add the columns to the ItemView.
-        This operation is done in-place and does not return a new ItemView.
+        Joins additional attributes from the related EventTable. This operation is done in-place and does not return a
+        new ItemView.
+
+        Note that the event timestamp and event attributes representing entities in the related Event table are
+        already automatically added to the ItemView.
 
         Parameters
         ----------

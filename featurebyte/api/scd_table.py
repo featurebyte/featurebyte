@@ -97,12 +97,22 @@ class SCDTable(TableApiObject):
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> SCDView:
         """
-        Get a SCDView from a catalog SCD table.
+        Gets an SCDView object from a SCDTable object that represents a Slowly Changing Dimension (SCD) table.
 
-        You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
-        constructed from the source table without any changes to the cleaning operations, or dropping column names.
-        In manual mode, you are able to specify some overrides. However, the manual mode should not be commonly used
-        as it might lead to unexpected behaviour if used wrongly.
+        SCD views are typically used to create Lookup features for the entity represented by the natural key of the
+        table or to create Aggregate As At features for other entities. They can also be used to enrich views of event
+        or item tables through joins.
+
+        You have the option to choose between two view construction modes: auto and manual, with auto being the
+        default mode.
+
+        When using the auto mode, the data accessed through the view is cleaned based on the default cleaning
+        operations specified in the catalog table and special columns such as the record creation timestamp, the
+        active flag and the experiation timestamp that are not intended for feature engineering are not included
+        in the view columns.
+
+        In manual mode, the default cleaning operations are not applied, and you have the flexibility to define
+        your own cleaning operations.
 
         Parameters
         ----------
@@ -192,12 +202,28 @@ class SCDTable(TableApiObject):
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> ChangeView:
         """
-        Get a ChangeView from a catalog SCD table.
+        Gets a ChangeView from a Slowly Changing Dimension (SCD) table. The view offers a method to examine alterations
+        that occur in a specific attribute within the natural key of the SCD table.
 
-        You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
-        constructed from the source table without any changes to the cleaning operations, or column names. In manual
-        mode, you are able to specify some overrides. However, the manual mode should not be commonly used as it
-        might lead to unexpected behaviour if used wrongly.
+        To create the `ChangeView`, you need to provide the name of the SCD column for which you want to track changes
+        through the track_changes_column parameter.
+
+        Optionally,
+
+        - you can define the default Feature Job Setting for the View. Default is once a day, at the time of the
+        creation of the view.
+        - you can provide a `prefix` parameter to control how the views columns are named.
+
+        The resulting view has 5 columns:
+
+        - the natural key of the SCDView
+        - past_<name_of_column_tracked>: value of the column before the change
+        - new_<name_of_column_tracked>: value of the column after the change
+        - past_valid_from_timestamp (equal to the effective timestamp of the SCD before the change)
+        - new_valid_from_timestamp (equal to the effective timestamp of the SCD after the change)
+
+        The ChangeView can be used to create Aggregates of Changes Over a Window features, similar to Aggregates Over
+        a Window features created from an Event View.
 
         Parameters
         ----------

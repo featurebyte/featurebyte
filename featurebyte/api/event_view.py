@@ -329,10 +329,13 @@ class EventView(View, GroupByMixin):
         self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None
     ) -> None:
         """
-        Features that are non-time based and are extracted from other table views can be added as a column to an event
-        view if one of its columns has been tagged with the same entity as the entity of the features.
+        Adds a simple aggregate feature obtained from an Item View to the corresponding Event View. Once the feature
+        is integrated in this manner, it can be aggregated as any other column over a time frame to create Aggregate
+        Over a Window features.
 
-        Time-based features will be supported in the future once we have support for offline stores.
+        For example, one can calculate a customer's average order size over the last three weeks by using the order
+        size feature extracted from the Order Items view and aggregating it over that time frame in the related
+        Order view.
 
         Parameters
         ----------

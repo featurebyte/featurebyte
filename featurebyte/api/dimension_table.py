@@ -78,12 +78,20 @@ class DimensionTable(TableApiObject):
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> DimensionView:
         """
-        Get a DimensionView from a catalog dimension table.
+        Gets a DimensionView object from a DimensionTable object.
 
-        You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
-        constructed from the source table without any changes to the cleaning operations, or dropping column names.
-        In manual mode, you are able to specify some overrides. However, the manual mode should not be commonly used
-        as it might lead to unexpected behaviour if used wrongly.
+        Dimension views are commonly used to create Lookup features, and they can also be used to enrich views of
+        other tables through joins.
+
+        You have the option to choose between two view construction modes: auto and manual, with auto being the
+        default mode.
+
+        When using the auto mode, the data accessed through the view is cleaned based on the default cleaning
+        operations specified in the catalog table and special columns such as the record creation timestamp that
+        are not intended for feature engineering are not included in the view columns.
+
+        In manual mode, the default cleaning operations are not applied, and you have the flexibility to define your
+        own cleaning operations.
 
         Parameters
         ----------
@@ -159,7 +167,7 @@ class DimensionTable(TableApiObject):
     @property
     def dimension_id_column(self) -> str:
         """
-        Dimension ID column name of the DimensionTable
+        Returns the name of the column representing the primary key of the Dimension view.
 
         Returns
         -------

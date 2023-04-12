@@ -169,7 +169,12 @@ class Relationship(ApiObject):
     @typechecked
     def enable(self, enable: bool) -> None:
         """
-        Update the relationship to enable or disable it.
+        Enables a Relationship object or disable it by setting the enable parameter to False. By default, a
+        Relationship object is enabled.
+
+        A Relationship object of parent-child is automatically created when the primary key (or natural key in the
+        context of a SCD table) identifies one entity. This entity is the child entity. Other entities that are
+        referenced in the table are identified as the parent entities.
 
         Parameters
         ----------

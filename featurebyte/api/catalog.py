@@ -665,7 +665,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def get_relationship(self, name: str) -> Relationship:
         """
-        Get relationship by name.
+        Gets a Relationship object by name.
 
         Parameters
         ----------

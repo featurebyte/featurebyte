@@ -93,12 +93,20 @@ class EventTable(TableApiObject):
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> EventView:
         """
-        Get an EventView from a catalog event table.
+        Gets an EventView object from an EventTable object.
 
-        You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
-        constructed from the source table without any changes to the cleaning operations, or dropping column names.
-        In manual mode, you are able to specify some overrides. However, the manual mode should not be commonly used
-        as it might lead to unexpected behaviour if used wrongly.
+        Event views are typically used to create Lookup features for the event entity, to create Aggregate Over a
+        Window features for other entities or enrich the item data by joining to the related Item view.
+
+        You have the option to choose between two view construction modes: auto and manual, with auto being the
+        default mode.
+
+        When using the auto mode, the data accessed through the view is cleaned based on the default cleaning
+        operations specified in the catalog table and special columns such as the record creation timestamp that
+        are not intended for feature engineering are not included in the view columns.
+
+        In manual mode, the default cleaning operations are not applied, and you have the flexibility to define your
+        own cleaning operations.
 
         Parameters
         ----------
