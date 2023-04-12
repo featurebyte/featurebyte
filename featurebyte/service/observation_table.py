@@ -8,8 +8,11 @@ from typing import Any, Dict, cast
 import pandas as pd
 from bson import ObjectId
 
-from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import MissingPointInTimeColumnError
+from featurebyte.enum import DBVarType, SpecialColumnName
+from featurebyte.exception import (
+    MissingPointInTimeColumnError,
+    UnsupportedPointInTimeColumnTypeError,
+)
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
@@ -141,6 +144,8 @@ class ObservationTableService(
         ------
         MissingPointInTimeColumnError
             If the point in time column is missing.
+        UnsupportedPointInTimeColumnTypeError
+            If the point in time column is not of timestamp type.
         """
         table_schema = await db_session.list_table_schema(
             table_name=destination.table_name,
@@ -152,6 +157,15 @@ class ObservationTableService(
         if SpecialColumnName.POINT_IN_TIME not in column_names:
             raise MissingPointInTimeColumnError(
                 f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
+            )
+
+        point_in_time_dtype = table_schema[SpecialColumnName.POINT_IN_TIME]
+        if table_schema[SpecialColumnName.POINT_IN_TIME] not in {
+            DBVarType.TIMESTAMP,
+            DBVarType.TIMESTAMP_TZ,
+        }:
+            raise UnsupportedPointInTimeColumnTypeError(
+                f"Point in time column should have timestamp type; got {point_in_time_dtype}"
             )
 
         most_recent_point_in_time = await ObservationTableService.get_most_recent_point_in_time(

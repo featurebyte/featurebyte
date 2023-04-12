@@ -106,6 +106,12 @@ class MissingPointInTimeColumnError(Exception):
     """
 
 
+class UnsupportedPointInTimeColumnTypeError(Exception):
+    """
+    Raised when point in time column type is not supported
+    """
+
+
 class TooRecentPointInTimeError(Exception):
     """
     Raised when the latest point in time value is too recent in historical requests
