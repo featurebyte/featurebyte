@@ -421,7 +421,7 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
 
         response = self.wait_for_results(test_api_client, response)
         response_dict = response.json()
-        assert response_dict["status"] == "SUCCESS", response_dict
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
 
         response = test_api_client.get(response_dict["output_path"])
         response_dict = response.json()
