@@ -616,11 +616,6 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, DeletableApiObject):
         """
         Delete feature list namespace.
 
-        Raises
-        ------
-        RecordDeletionException
-            If the feature list namespace cannot be deleted.
-
         Examples
         --------
         Delete a feature list namespace.
@@ -792,11 +787,6 @@ class FeatureList(
         Delete a FeatureList object from the persistent data store. A feature list can only be deleted if
         * the feature list status is DRAFT
         * the feature list is not a default feature list with manual version mode
-
-        Raises
-        ------
-        RecordDeletionException
-            If the feature list cannot be deleted.
 
         Examples
         --------

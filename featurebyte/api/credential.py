@@ -150,11 +150,6 @@ class Credential(DeletableApiObject, SavableApiObject):
         Delete a credential. Note that associated feature store will no longer be able to access the data warehouse
         until a new credential is created. Please use with caution.
 
-        Raises
-        ------
-        RecordDeletionException
-            If the credential cannot be deleted
-
         Examples
         --------
         Delete a credential.

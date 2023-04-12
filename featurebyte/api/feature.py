@@ -284,11 +284,6 @@ class Feature(
         * the feature is not used in any feature list
         * the feature is not a default feature with manual version mode
 
-        Raises
-        ------
-        RecordDeletionException
-            If the feature cannot be deleted.
-
         Examples
         --------
         Delete a feature.
