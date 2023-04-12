@@ -149,9 +149,9 @@ def table_columns_info_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="table_status_service")
-def table_status_service_fixture(user, persistent):
+def table_status_service_fixture(app_container):
     """TableStatusService fixture"""
-    return TableStatusService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.table_status_service
 
 
 @pytest.fixture(name="feature_readiness_service")

@@ -160,6 +160,14 @@ app_container_config.add_service_with_extra_deps(
         "version_service",
     ],
 )
+app_container_config.add_service_with_extra_deps(
+    "table_status_service",
+    TableStatusService,
+    [
+        "feature_service",
+        "feature_readiness_service",
+    ],
+)
 app_container_config.add_basic_service(
     "feature_job_setting_analysis_service", FeatureJobSettingAnalysisService
 )
@@ -168,7 +176,6 @@ app_container_config.add_basic_service(
 )
 app_container_config.add_basic_service("feature_namespace_service", FeatureNamespaceService)
 app_container_config.add_basic_service("table_columns_info_service", TableColumnsInfoService)
-app_container_config.add_basic_service("table_status_service", TableStatusService)
 app_container_config.add_service_with_extra_deps(
     "default_version_mode_service",
     DefaultVersionModeService,
