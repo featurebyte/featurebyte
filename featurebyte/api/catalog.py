@@ -342,7 +342,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         self, include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
-        List saved tables.
+        Returns a DataFrame that contains various attributes of the registered tables in the catalog, such as their
+        names, types, statuses, creation dates, and associated entities.
+
+        The returned DataFrame can be filtered by the name of the entities associated with the tables.
 
         Parameters
         ----------
@@ -642,7 +645,11 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def get_table(self, name: str) -> Any:
         """
-        Get table by name.
+        Gets a Table object from the catalog based on its name.
+
+        A Table object represents a source table within the data warehouse and provides metadata to support feature
+        engineering. There are four distinct types of Table objects: EventTable, ItemTable, DimensionTable,
+        and SCDTable.
 
         Parameters
         ----------

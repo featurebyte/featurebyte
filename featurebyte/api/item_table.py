@@ -29,17 +29,23 @@ if TYPE_CHECKING:
 
 class ItemTable(TableApiObject):
     """
-    An Item table is a type of FeatureByte table that represents a table in the data warehouse containing in-depth
-    details about a business event.
+    An ItemTable object represents a source table in the data warehouse containing in-depth details about a
+    business event.
+
+    Typically, an Item table has a 'one-to-many' relationship with an Event table. Despite not explicitly including
+    a timestamp, it is inherently linked to an event timestamp through its association with the Event table.
 
     For instance, an Item table can contain information about Product Items purchased in Customer Orders or Drug
     Prescriptions issued during Doctor Visits by Patients.
 
-    Typically, an Item table has a 'one-to-many' relationship with an Event table. Despite not explicitly including a
-    timestamp, it is inherently linked to an event timestamp through its association with the Event table.
+    ItemTable objects are created from a SourceTable object via the create_item_table method, and by identifying
+    the columns representing the columns representing the item key and the event key and determine which EventTable
+    object is associated with the Item table.
 
-    To create an Item table, it is necessary to identify the columns that represent the item key and the event key and
-    determine which Event table is associated with the Item table.
+    After creation, the table can optionally incorporate additional metadata at the column level to further aid
+    feature engineering. This can include identifying columns that identify or reference entities, providing
+    information about the semantics of the table columns, specifying default cleaning operations, or furnishing
+    descriptions of its columns.
 
     See Also
     --------

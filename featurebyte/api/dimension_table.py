@@ -26,15 +26,20 @@ if TYPE_CHECKING:
 
 class DimensionTable(TableApiObject):
     """
-    A Dimension table is a FeatureByte table that represents a table in the data warehouse that stores static
-    descriptive information such as a birth date.
+    A DimensionTable object represents a source table that holds static descriptive information.
 
-    Using a Dimension table requires special attention. If the data in the table changes slowly, it is not advisable to
-    use it because these changes can cause significant data leaks during model training and adversely affect the
-    inference performance. In such cases, it is recommended to use a Slowly Changing Dimension (SCD) table of Type
-    2 that maintains a history of changes.
+    DimensionTable objects are created from a SourceTable object via the create_dimension_table method, and by
+    identifying the column representing the primary key column of the source table (dimension_id_column).
 
-    To create a Dimension Table in FeatureByte, it is necessary to identify which column represents the primary key.
+    After creation, the table can optionally incorporate additional metadata at the column level to further aid
+    feature engineering. This can include identifying columns that identify or reference entities, providing
+    information about the semantics of the table columns, specifying default cleaning operations, or furnishing
+    descriptions of its columns.
+
+    Note that using a Dimension table requires special attention. If the data in the table changes slowly, it is
+    not advisable to use it because these changes can cause significant data leaks during model training and
+    adversely affect the inference performance. In such cases, it is recommended to use a Type 2 Slowly Changing
+    Dimension table that maintains a history of changes."
 
     See Also
     --------

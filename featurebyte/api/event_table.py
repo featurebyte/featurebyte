@@ -33,18 +33,22 @@ if TYPE_CHECKING:
 
 class EventTable(TableApiObject):
     """
-    An Event table is a type of FeatureByte table that represents a Transaction Fact Table in the data warehouse.
-    Each row in this table indicates a specific business event that was measured at a particular moment in time.
+    An EventTable object represents a source table where each row indicates a specific business event measured at a
+    particular moment.
 
     Event tables can take various forms, such as an Order table in E-commerce, Credit Card Transactions in Banking,
     Doctor Visits in Healthcare, and Clickstream on the Internet.
 
-    To create an Event table in FeatureByte, it is necessary to identify the columns that represent the event key
-    and the event timestamp.
+    EventTable objects are created from a SourceTable object via the create_event_table method, and by identifying
+    the columns representing the event key and timestamp. Additionally, the column that represents the record
+    creation timestamp may be identified to enable an automatic analysis of data availability and freshness of the
+    source table. This analysis can assist in selecting the default scheduling of the computation of features
+    associated with the Event table (default FeatureJob setting).
 
-    Additionally, the column that represents the record creation timestamp may be identified to enable an automatic
-    analysis of data availability and freshness of the source table. This analysis can assist in selecting the default
-    scheduling of the computation of features associated with the Event table.
+    After creation, the table can optionally incorporate additional metadata at the column level to further aid feature
+    engineering. This can include identifying columns that identify or reference entities, providing information about
+    the semantics of the table columns, specifying default cleaning operations, or furnishing descriptions of its
+    columns.
 
     See Also
     --------
@@ -288,7 +292,24 @@ class EventTable(TableApiObject):
         late_data_allowance: float = 5e-5,
     ) -> FeatureJobSettingAnalysis:
         """
-        Create new feature job setting analysis on the event table
+        Creates a new analysis of data availability and freshness of an event table in order to suggest an optimal
+        setting for scheduling Feature Jobs and associated Blind Spot information.
+
+        This analysis relies on the presence of record creation timestamps in the source table, typically added when
+        updating data in the warehouse. The analysis focuses on a recent time window, the past four weeks by default.
+
+        FeatureByte estimates the data update frequency based on the distribution of time intervals among the sequence
+        of record creation timestamps. It also assesses the timeliness of source table updates and identifies late
+        jobs using an outlier detection algorithm. By default, the recommended scheduling time takes late jobs into
+        account.
+
+        To accommodate data that may not arrive on time during warehouse updates, a blind spot is proposed for
+        determining the cutoff for feature aggregation windows, in addition to scheduling frequency and time of
+        the Feature Job. The suggested blind spot offers a percentage of late data closest to the user-defined
+        tolerance, with a default of 0.005%.
+
+        To validate the Feature Job schedule and blind spot recommendations, a backtest is conducted. You can also
+        backtest your own settings.
 
         Parameters
         ----------
@@ -350,7 +371,30 @@ class EventTable(TableApiObject):
     @typechecked
     def initialize_default_feature_job_setting(self) -> None:
         """
-        Initialize default feature job setting by performing an analysis on the table
+        Initializes default feature job setting by performing an analysis on the table to streamline the process of
+        setting Feature Job. This analysis relies on the presence of record creation timestamps in the source table,
+        typically added when updating data in the warehouse. The analysis focuses on a recent time window, the past
+        four weeks by default.
+
+        The Default Feature Job Setting establishes the default setting used by features that aggregate data in a
+        table, ensuring consistency of the Feature Job Setting across features created by different team members.
+        While it's possible to override the setting during feature declaration, using the Default Feature Job Setting
+        simplifies the process of setting up the Feature Job Setting for each feature.
+
+        The motivation for defining a Feature Job Setting early is to minimize inconsistencies between offline and
+        online feature values.
+
+        It is crucial to synchronize the frequency of batch feature computations with the frequency of source table
+        refreshes, and to compute features after the source table refresh is fully completed. In addition, for
+        historical serving to accurately replicate the production environment, it's essential to use data that was
+        available at the historical points-in-time, considering the present or future latency of data. Latency of data
+        refers to the time difference between the timestamp of an event and the timestamp at which the event data is
+        accessible for ingestion. Any period during which data may be missing is referred to as a "blind spot".
+
+        To address these challenges, the Feature Job setting in FeatureByte captures information about the frequency
+        of batch feature computations, the timing of the batch process, and the assumed blind spot for the data. This
+        helps ensure consistency between offline and online feature values, and accurate historical serving that
+        reflects the conditions present in the production environment.
 
         Raises
         ------
@@ -375,7 +419,7 @@ class EventTable(TableApiObject):
     @typechecked
     def list_feature_job_setting_analysis(self) -> Optional[pd.DataFrame]:
         """
-        List feature job setting analysis that has been performed
+        Lists feature job setting analyses that have been performed.
 
         Returns
         -------
