@@ -247,37 +247,37 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def create_entity(self, name: str, serving_names: List[str]) -> Entity:
         """
-                Registers a new Entity object in the catalog.
+        Registers a new Entity object in the catalog.
 
-                An Entity object defines an entity type represented in tables of the catalog, allowing for automatic table
-                joins, unit of analysis, and organization of features, feature lists, and use cases.
+        An Entity object defines an entity type represented in tables of the catalog, allowing for automatic table
+        joins, unit of analysis, and organization of features, feature lists, and use cases.
 
-                To create a new Entity object, you need to provide a name for the entity and its serving names.
+        To create a new Entity object, you need to provide a name for the entity and its serving names.
 
-                An entity's serving name is the name of the unique identifier that is used to identify the entity during a
-                preview or serving request. Typically, the serving name for an entity is the name of the primary key (or
-                natural key) of the table that represents the entity. For convenience, an entity can have multiple serving
-                names but the unique identifier should remain unique.
+        An entity's serving name is the name of the unique identifier that is used to identify the entity during a
+        preview or serving request. Typically, the serving name for an entity is the name of the primary key (or
+        natural key) of the table that represents the entity. For convenience, an entity can have multiple serving
+        names but the unique identifier should remain unique.
 
-        For example, the serving names of a Customer entity could be 'CustomerID' and 'CustID'."
+        For example, the serving names of a Customer entity could be 'CustomerID' and 'CustID'.
 
-                Parameters
-                ----------
-                name: str
-                    Entity name
-                serving_names: List[str]
-                    Names of the serving columns
+        Parameters
+        ----------
+        name: str
+            Entity name
+        serving_names: List[str]
+            Names of the serving columns
 
-                Returns
-                -------
-                Entity
-                    Newly created entity.
+        Returns
+        -------
+        Entity
+            Newly created entity.
 
-                Examples
-                --------
-                Create a new entity.
+        Examples
+        --------
+        Create a new entity.
 
-                >>> entity = catalog.create_entity("customer", ["customer_id"])
+        >>> entity = catalog.create_entity("customer", ["customer_id"])
         """
         return Entity.create(name=name, serving_names=serving_names)
 
