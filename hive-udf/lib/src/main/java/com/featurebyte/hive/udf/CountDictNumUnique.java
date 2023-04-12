@@ -10,7 +10,7 @@ import org.apache.hadoop.io.IntWritable;
 
 @Description(
     name = "F_COUNT_DICT_NUM_UNIQUE",
-    value = "_FUNC_(counts) " + "- compute number of unique keys in count dictionary")
+    value = "_FUNC_(counts) - compute number of unique keys in count dictionary")
 public class CountDictNumUnique extends CountDictUDF {
   private final IntWritable output = new IntWritable();
 

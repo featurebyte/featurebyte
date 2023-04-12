@@ -10,7 +10,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 
 @Description(
     name = "F_COUNT_DICT_ENTROPY",
-    value = "_FUNC_(counts) " + "- compute entropy value from count dictionary")
+    value = "_FUNC_(counts) - compute entropy value from count dictionary")
 public class CountDictEntropy extends CountDictUDF {
   private final DoubleWritable output = new DoubleWritable();
 

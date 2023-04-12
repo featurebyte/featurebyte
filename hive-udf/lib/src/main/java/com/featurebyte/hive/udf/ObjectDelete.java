@@ -6,9 +6,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 
-@Description(
-    name = "object_delete",
-    value = "_FUNC_(counts) " + "- remove a key from count dictionary")
+@Description(name = "object_delete", value = "_FUNC_(counts) - remove a key from count dictionary")
 public class ObjectDelete extends CountDictSingleStringArgumentUDF {
 
   @Override

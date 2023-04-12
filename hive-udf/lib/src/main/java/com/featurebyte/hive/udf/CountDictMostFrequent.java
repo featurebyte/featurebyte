@@ -10,7 +10,7 @@ import org.apache.hadoop.io.Text;
 
 @Description(
     name = "F_COUNT_DICT_MOST_FREQUENT",
-    value = "_FUNC_(counts) " + "- compute most frequent value from count dictionary")
+    value = "_FUNC_(counts) - compute most frequent value from count dictionary")
 public class CountDictMostFrequent extends CountDictUDF {
   private final Text output = new Text();
 

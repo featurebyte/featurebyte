@@ -12,7 +12,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 
 @Description(
     name = "F_COUNT_COSINE_SIMILARITY",
-    value = "_FUNC_(counts) " + "- compute cosine similarity between two count dictionaries")
+    value = "_FUNC_(counts) - compute cosine similarity between two count dictionaries")
 public class CountDictCosineSimilarity extends CountDictUDF {
   private final DoubleWritable output = new DoubleWritable();
 

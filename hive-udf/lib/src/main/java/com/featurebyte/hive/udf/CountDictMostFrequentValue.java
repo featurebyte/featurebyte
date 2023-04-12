@@ -8,7 +8,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 
 @Description(
     name = "F_COUNT_DICT_MOST_FREQUENT_VALUE",
-    value = "_FUNC_(counts) " + "- compute most frequent value from count dictionary")
+    value = "_FUNC_(counts) - compute most frequent value from count dictionary")
 public class CountDictMostFrequentValue extends CountDictUDF {
 
   @Override

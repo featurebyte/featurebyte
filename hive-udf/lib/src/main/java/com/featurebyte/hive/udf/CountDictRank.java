@@ -13,7 +13,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 
 @Description(
     name = "F_GET_RANK",
-    value = "_FUNC_(counts, key, isDescending) " + "- compute rank of a key in a dictionary")
+    value = "_FUNC_(counts, key, isDescending) - compute rank of a key in a dictionary")
 public class CountDictRank extends CountDictSingleStringArgumentUDF {
 
   private final DoubleWritable output = new DoubleWritable();

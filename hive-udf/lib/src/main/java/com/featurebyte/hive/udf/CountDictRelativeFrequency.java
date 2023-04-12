@@ -10,7 +10,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 
 @Description(
     name = "F_GET_RELATIVE_FREQUENCY",
-    value = "_FUNC_(counts, key) " + "- compute relative frequency of a key in a dictionary")
+    value = "_FUNC_(counts, key) - compute relative frequency of a key in a dictionary")
 public class CountDictRelativeFrequency extends CountDictSingleStringArgumentUDF {
 
   private final DoubleWritable output = new DoubleWritable();
