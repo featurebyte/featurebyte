@@ -23,12 +23,32 @@ from featurebyte.common.documentation.doc_types import (
     DocItems,
     MarkdownFileMetadata,
 )
-from featurebyte.common.documentation.documentation_layout import get_overall_layout
+from featurebyte.common.documentation.documentation_layout import DocLayoutItem, get_overall_layout
 from featurebyte.common.documentation.resource_extractor import get_resource_details
 from featurebyte.logger import logger
 
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
+PATH_TO_DOCS_REPO = os.environ.get("FB_DOCS_REPO_PATH", None)
 MISSING_DEBUG_MARKDOWN = "missing.md"
+
+
+def get_missing_core_object_file_template(object_name: str, content: str) -> str:
+    """
+    Returns the missing core object file template.
+
+    Parameters
+    ----------
+    object_name: str
+        The object name.
+    content: str
+        The content.
+
+    Returns
+    -------
+    str
+        The missing core object file template.
+    """
+    return f"Missing {object_name} markdown documentation file.\n\n{content}"
 
 
 @dataclass
@@ -479,44 +499,6 @@ def _get_accessor_metadata(doc_path: str) -> Optional[AccessorMetadata]:
     return None
 
 
-def populate_nav(nav: Nav, proxied_path_to_markdown_path: Dict[str, str]) -> Nav:
-    """
-    Populate the nav with the markdown paths.
-
-    Parameters
-    ----------
-    nav: Nav
-        The nav to populate.
-    proxied_path_to_markdown_path: Dict[str, str]
-        A dict mapping the proxied path to the markdown path.
-
-    Returns
-    -------
-    Nav
-        The populated nav.
-    """
-    rendered = set()
-    for item in get_overall_layout():
-        header = tuple(item.menu_header)
-        if item.get_doc_path_override():
-            nav[header] = item.get_doc_path_override()
-            rendered.add(item.get_doc_path_override())
-            continue
-
-        # Try to infer doc path from path provided
-        item_path = f"{item.get_api_path_override()}".lower()
-        markdown_path = MISSING_DEBUG_MARKDOWN
-        if item_path in proxied_path_to_markdown_path:
-            markdown_path = proxied_path_to_markdown_path[item_path]
-        elif DEBUG_MODE:
-            print("key not found", item_path)
-        if markdown_path == MISSING_DEBUG_MARKDOWN:
-            logger.warning("Unable to find markdown path for some paths", item_path=item_path)
-        nav[header] = markdown_path
-        rendered.add(markdown_path)
-    return nav
-
-
 def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
     """
     This returns a dictionary of doc groups.
@@ -658,6 +640,36 @@ def generate_documentation_for_docs(
     return reverse_lookup_map, doc_items
 
 
+def _get_markdown_file_path_for_doc_layout_item(
+    item: DocLayoutItem, proxied_path_to_markdown_path: Dict[str, str]
+) -> str:
+    """
+    This function gets the markdown file path for a doc layout item.
+
+    Parameters
+    ----------
+    item: DocLayoutItem
+        The doc layout item.
+    proxied_path_to_markdown_path: Dict[str, str]
+        A dictionary of proxied paths to markdown paths.
+
+    Returns
+    -------
+    str
+    """
+    if item.get_doc_path_override():
+        return item.get_doc_path_override()
+
+    # Try to infer doc path from path provided
+    item_path = f"{item.get_api_path_override()}".lower()
+    if item_path in proxied_path_to_markdown_path:
+        return proxied_path_to_markdown_path[item_path]
+    elif DEBUG_MODE:
+        print("key not found", item_path)
+    logger.warning("Unable to find markdown path for some paths", item_path=item_path)
+    return MISSING_DEBUG_MARKDOWN
+
+
 class DocsBuilder:
     """
     DocsBuilder is a class to build the API docs.
@@ -768,6 +780,63 @@ class DocsBuilder:
             value = doc_items.get(key)
             self._build_and_write_to_file(value.markdown_file_metadata)
 
+    def _populate_nav_for_core_objects(self, nav: Nav, core_objects: List[DocLayoutItem]) -> Nav:
+        for core_object in core_objects:
+            assert core_object.core_doc_path_override is not None
+            doc_path = core_object.core_doc_path_override
+            header = tuple(core_object.menu_header)
+            # Fallback to a template file
+            content_to_write = get_missing_core_object_file_template(
+                core_object.menu_header[0],
+                "Try providing the `FB_DOCS_REPO_PATH` environment variable to point to the "
+                "docs repo to populate this file if you're running locally.",
+            )
+            # Try to read from relative location (for docs repo)
+            full_doc_path = os.path.join("..", "core", doc_path)
+            if os.path.exists(full_doc_path):
+                with open(full_doc_path, "r") as f:
+                    content_to_write = f.read()
+            elif PATH_TO_DOCS_REPO:
+                # Retrieve file from docs repo if PATH_TO_DOCS_REPO is specified
+                full_doc_path = os.path.join(PATH_TO_DOCS_REPO, "core", doc_path)
+                with open(full_doc_path, "r") as f:
+                    content_to_write = f.read()
+            self.write_to_file(f"reference/{doc_path}", doc_path, content_to_write)
+            nav[header] = doc_path
+        return nav
+
+    def populate_nav(self, nav: Nav, proxied_path_to_markdown_path: Dict[str, str]) -> Nav:
+        """
+        Populate the nav with the markdown paths.
+
+        Parameters
+        ----------
+        nav: Nav
+            The nav to populate.
+        proxied_path_to_markdown_path: Dict[str, str]
+            A dict mapping the proxied path to the markdown path.
+
+        Returns
+        -------
+        Nav
+            The populated nav.
+        """
+        core_objects = []
+        for item in get_overall_layout():
+            # Handle core objects later
+            if item.is_core_object:
+                core_objects.append(item)
+                continue
+
+            markdown_path = _get_markdown_file_path_for_doc_layout_item(
+                item, proxied_path_to_markdown_path
+            )
+            header = tuple(item.menu_header)
+            nav[header] = markdown_path
+
+        # Handle core objects
+        return self._populate_nav_for_core_objects(nav, core_objects)
+
     def build_docs(self) -> Nav:
         """
         In order to generate the documentation, we perform the following steps:
@@ -799,7 +868,7 @@ class DocsBuilder:
             doc_groups_to_use
         )
         self._write_doc_items_to_markdown_files(doc_items)
-        updated_nav = populate_nav(nav_to_use, proxied_path_to_markdown_path)
+        updated_nav = self.populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)
 
         return updated_nav

@@ -38,6 +38,7 @@ from featurebyte.common.documentation.constants import (
     VERSION,
     VIEW,
     VIEW_COLUMN,
+    WAREHOUSE,
 )
 
 
@@ -59,7 +60,17 @@ class DocLayoutItem:
     # provide an exit hatch in case we are not able to easily infer the documentation from the API path.
     doc_path_override: Optional[str] = None
 
+    # A core object refers to an object that is used in the core of the SDK. This flag is used to determine whether
+    # we want to point users to a hand-written overview document. If this is true, you should also provide a
+    # core_doc_path_override. It is likely that doc_path_override will be unused if `is_core_object` is set to true.
+    is_core_object: Optional[bool] = False
+    # The path to the core object documentation. This should be a path to a markdown file found in the `core` folder in
+    # the documentation repo.
+    core_doc_path_override: Optional[str] = None
+
     def get_api_path_override(self) -> str:
+        if not self.menu_header:
+            return ""
         return "featurebyte." + self.menu_header[-1]
 
     def get_doc_path_override(self) -> Optional[str]:
@@ -230,7 +241,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         The layout for the feature documentation
     """
     return [
-        DocLayoutItem([FEATURE]),
+        DocLayoutItem([FEATURE], core_doc_path_override="core_feature.md", is_core_object=True),
         DocLayoutItem([FEATURE, GET, "Catalog.get_feature"]),
         DocLayoutItem([FEATURE, GET, "Feature.get_by_id"]),
         DocLayoutItem([FEATURE, LIST, "Catalog.list_features"]),
@@ -641,6 +652,9 @@ def _get_enum_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
+        DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),
+        DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SnowflakeDetails"]),
+        DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SparkDetails"]),
     ]
 
 
