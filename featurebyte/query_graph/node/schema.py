@@ -45,6 +45,8 @@ class DatabricksDetails(BaseDatabaseDetails):
     http_path: StrictStr
     featurebyte_catalog: StrictStr
     featurebyte_schema: StrictStr
+    storage_type: StorageType
+    storage_url: str
 
 
 class SparkDetails(BaseDatabaseDetails):

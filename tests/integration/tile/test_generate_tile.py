@@ -10,7 +10,7 @@ from featurebyte.sql.tile_generate import TileGenerate
 from tests.integration.tile.hepler import format_timestamp_expr
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tile(session, base_sql_model):
     """
@@ -58,7 +58,7 @@ async def test_generate_tile(session, base_sql_model):
     assert result["TILE_COUNT"].iloc[0] == 2
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tile_no_data(session, base_sql_model):
     """
@@ -104,7 +104,7 @@ async def test_generate_tile_no_data(session, base_sql_model):
     assert result["TILE_COUNT"].iloc[0] == 0
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tile_new_value_column(session, base_sql_model):
     """

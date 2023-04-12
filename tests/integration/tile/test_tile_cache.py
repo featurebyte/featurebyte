@@ -50,7 +50,7 @@ async def check_temp_tables_cleaned_up(session):
     if session.source_type == "snowflake":
         df_tables = await session.execute_query("SHOW TABLES")
         temp_table_names = df_tables[df_tables["kind"] == "TEMPORARY"]["name"].tolist()
-    elif session.source_type == "spark":
+    elif session.source_type in ["spark", "databricks"]:
         df_tables = await session.execute_query("SHOW VIEWS")
         temp_table_names = df_tables[df_tables["isTemporary"] == "true"]["viewName"].tolist()
     else:
@@ -74,7 +74,7 @@ async def invoke_tile_manager_and_check_tracker_table(session, tile_cache, reque
         assert (df_entity_tracker["üser id".upper()].value_counts(dropna=False) == 1).all()
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.parametrize("groupby_category", [None, "PRODUCT_ACTION"])
 @pytest.mark.asyncio
 async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_category):

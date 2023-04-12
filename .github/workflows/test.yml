@@ -32,11 +32,14 @@ env:
   SNOWFLAKE_SCHEMA: PUBLIC
   SNOWFLAKE_SCHEMA_FEATUREBYTE: FEATUREBYTE
   # Databricks
-  DATABRICKS_ACCESS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-  DATABRICKS_SERVER_HOSTNAME: 2085793316075774.4.gcp.databricks.com
-  DATABRICKS_HTTP_PATH: sql/protocolv1/o/2085793316075774/1010-041133-p07dh5j6
-  DATABRICKS_CATALOG: hive_metastore
-  DATABRICKS_SCHEMA_FEATUREBYTE: featurebyte_github
+  DATABRICKS_ACCESS_TOKEN: "dapic75843f6518fe8d4f98d7e7d29cbdd7e"
+  DATABRICKS_SERVER_HOSTNAME: "2085793316075774.4.gcp.databricks.com"
+  DATABRICKS_HTTP_PATH: "sql/protocolv1/o/2085793316075774/0319-021506-hzmupduq"
+  DATABRICKS_CATALOG: "hive_metastore"
+  DATABRICKS_SCHEMA_FEATUREBYTE: "FEATUREBYTE_GITHUB"
+  DATABRICKS_STORAGE_URL: "https://storage.googleapis.com/databricks-2085793316075774/2085793316075774/FileStore"
+  DATABRICKS_STORAGE_ACCESS_KEY_ID: "GOOG1EGI26DDNOGQ34T2RUMKJYOV3NL567KJURTRXD3XIATOWIM27XZF6ZHXY"
+  DATABRICKS_STORAGE_ACCESS_KEY_SECRET: "D6/w6Wmv6HuOcA9B1q1ntWUqG9VjsBKR3gY25Ym8"
   # Python
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi
@@ -221,6 +224,82 @@ jobs:
         run: |
           set +e
           task test-integration-spark
+          # capture the exit code from the test run before stashing logs
+          EXIT_CODE=$?
+          echo $EXIT_CODE > status.txt
+          docker logs spark-thrift 2>&1 > spark-thrift.log
+          # bail out now if the test run was a failure
+          if [ $EXIT_CODE -ne 0 ]; then
+            exit $EXIT_CODE
+          fi
+          task test-teardown
+          mv .coverage .coverage.2
+      - name: Upload spark-thrift log file
+        uses: actions/upload-artifact@v3
+        with:
+          name: spark-thrift-logs
+          path: spark-thrift.log
+          retention-days: 5
+      - name: Check test status
+        run: |
+          EXIT_CODE=$(cat status.txt)
+          if [ $EXIT_CODE -ne 0 ]; then
+            exit $EXIT_CODE
+          fi
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-pytest.xml.2
+          path: pytest.xml.2
+      - name: Upload integration coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-.coverage.2
+          path: .coverage.2
+  test-integration-databricks:
+    needs: ["build-jar"]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version: ["3.8.0"]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }} # Restore from `cache` job
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.3.1
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+      - name: Adding C headers
+        run: |
+          sudo apt-get install python-dev libsasl2-dev gcc
+          sudo apt-get install wkhtmltopdf
+      - name: Download hive-udf
+        uses: actions/download-artifact@v3
+        with:
+          name: hive-udf
+          path: featurebyte/sql/databricks/
+      - name: Run tests
+        continue-on-error: true
+        run: |
+          set +e
+          task test-integration-databricks
           # capture the exit code from the test run before stashing logs
           EXIT_CODE=$?
           echo $EXIT_CODE > status.txt

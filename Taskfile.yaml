@@ -58,7 +58,9 @@ tasks:
     cmds:
       - cd hive-udf && ./gradlew shadowJar
       - rm -f featurebyte/sql/spark/*.jar
+      - rm -f featurebyte/sql/databricks/*.jar
       - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
+      - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/databricks/
 
   build:
     desc: "Build the project"
@@ -196,6 +198,7 @@ tasks:
     cmds:
       - task: test-integration-snowflake
       - task: test-integration-spark
+      - task: test-integration-databricks
 
   test-integration-snowflake:
     desc: Runs integration tests against Snowflake
@@ -213,6 +216,15 @@ tasks:
     cmds:
       - task: test-setup
       - poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
+      - task: test-teardown
+
+  test-integration-databricks:
+    desc: Runs integration tests against Databricks
+    deps:
+      - task: install
+    cmds:
+      - task: test-setup
+      - poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types databricks --maxfail=1
       - task: test-teardown
 
   test-docs:

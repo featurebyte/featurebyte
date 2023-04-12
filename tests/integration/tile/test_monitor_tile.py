@@ -11,7 +11,7 @@ from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_monitor import TileMonitor
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_monitor_tile__missing_tile(session, base_sql_model):
     """
@@ -77,7 +77,7 @@ async def test_monitor_tile__missing_tile(session, base_sql_model):
     assert result["TILE_COUNT"].iloc[0] == 5
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_monitor_tile__updated_tile(session, base_sql_model):
     """
@@ -150,7 +150,7 @@ async def test_monitor_tile__updated_tile(session, base_sql_model):
     assert result["TILE_COUNT"].iloc[0] == 10
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
     """
@@ -226,7 +226,7 @@ async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
     assert result["TILE_COUNT"].iloc[0] == 10
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_monitor_tile__partial_columns(session, base_sql_model):
     """
