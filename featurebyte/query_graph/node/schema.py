@@ -41,12 +41,13 @@ class DatabricksDetails(BaseDatabaseDetails):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")
 
-    server_hostname: StrictStr
+    host: StrictStr
     http_path: StrictStr
     featurebyte_catalog: StrictStr
     featurebyte_schema: StrictStr
     storage_type: StorageType
     storage_url: str
+    storage_spark_url: str
 
 
 class SparkDetails(BaseDatabaseDetails):

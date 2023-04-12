@@ -329,12 +329,13 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
         storage_url = os.getenv("DATABRICKS_STORAGE_URL")
         return DatabricksDetails(
-            server_hostname=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
+            host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
             featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
             featurebyte_schema=temp_schema_name,
             storage_type=StorageType.S3,
             storage_url=f"{storage_url}/{temp_schema_name}",
+            storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "spark":

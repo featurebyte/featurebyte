@@ -19,7 +19,7 @@ def databricks_session_dict():
     DatabricksSession parameters
     """
     return {
-        "server_hostname": "some-databricks-hostname",
+        "host": "some-databricks-hostname",
         "http_path": "some-databricks-http-endpoint",
         "featurebyte_catalog": "hive_metastore",
         "featurebyte_schema": "featurebyte",
@@ -148,7 +148,7 @@ async def test_databricks_session(databricks_session_dict):
     with mock.patch("featurebyte.session.databricks.S3SimpleStorage", autospec=True) as _:
         session = DatabricksSession(**databricks_session_dict)
 
-    assert session.server_hostname == "some-databricks-hostname"
+    assert session.host == "some-databricks-hostname"
     assert session.http_path == "some-databricks-http-endpoint"
     assert session.database_credential.access_token == "some-databricks-access-token"
     assert await session.list_databases() == ["hive_metastore", "samples"]
