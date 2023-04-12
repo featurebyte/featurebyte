@@ -613,50 +613,24 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             ]
         return feature_lists
 
-    @classmethod
-    @typechecked
-    def delete(cls, name: str) -> None:
+    def delete(self) -> None:  # pylint: disable=redefined-builtin,invalid-name
         """
         Delete feature list namespace.
-
-        Parameters
-        ----------
-        name: str
-            Feature list namespace name
-
-        Examples
-        --------
-        Delete a feature list namespace by name
-
-        >>> fb.FeatureListNamespace.delete("invoice_feature_list")  # doctest: +SKIP
-        """
-        feature_list_namespace = cls.get(name)
-        cls.delete_by_id(feature_list_namespace.id)
-
-    @classmethod
-    def delete_by_id(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
-        """
-        Delete feature list namespace.
-
-        Parameters
-        ----------
-        id: ObjectId
-            Feature list namespace ID
 
         Raises
         ------
         RecordDeletionException
-            If the feature list namespace cannot be deleted
+            If the feature list namespace cannot be deleted.
 
         Examples
         --------
-        Delete a feature list namespace by ID
+        Delete a feature list namespace.
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> fb.FeatureListNamespace.delete_by_id(feature_list.feature_list_namespace_id)  # doctest: +SKIP
+        >>> feature_list.feature_list_namespace.delete()  # doctest: +SKIP
         """
         client = Configurations().get_client()
-        response = client.delete(url=f"{cls._route}/{id}")
+        response = client.delete(url=f"{self._route}/{self.id}")
         if response.status_code != HTTPStatus.NO_CONTENT:
             raise RecordDeletionException(
                 response, "Failed to delete the specified feature list namespace."
@@ -817,26 +791,28 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                 ) from exc
             raise exc
 
-    @classmethod
-    @typechecked
-    def delete(cls, name: str) -> None:
+    def delete(self) -> None:
         """
-        Delete a FeatureList object from the persistent data store. A feature list can only be deleted if the
-        feature list status is DRAFT.
+        Delete a FeatureList object from the persistent data store. A feature list can only be deleted if
+        * the feature list status is DRAFT
+        * the feature list is not a default feature list with manual version mode
 
-        Parameters
-        ----------
-        name: str
-            Name of the FeatureList to delete.
+        Raises
+        ------
+        RecordDeletionException
+            If the feature list cannot be deleted.
 
         Examples
         --------
         Delete a FeatureList.
 
-        >>> catalog.delete("invoice_feature_list")  # doctest: +SKIP
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.delete()  # doctest: +SKIP
         """
-        feature_list_namespace = FeatureListNamespace.get(name=name)
-        FeatureListNamespace.delete_by_id(id=feature_list_namespace.id)
+        client = Configurations().get_client()
+        response = client.delete(url=f"{self._route}/{self.id}")
+        if response.status_code != HTTPStatus.NO_CONTENT:
+            raise RecordDeletionException(response, "Failed to delete the specified feature list.")
 
     @root_validator(pre=True)
     @classmethod

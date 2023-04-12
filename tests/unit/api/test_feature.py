@@ -553,7 +553,7 @@ def test_create_new_version(saved_feature, snowflake_event_table):
     _ = Feature.get_by_id(new_version.id)
 
     # check feature deletion
-    Feature.delete_by_id(id=new_version.id)
+    new_version.delete()
 
     # check that feature is no longer retrievable
     with pytest.raises(RecordRetrievalException) as exc_info:
@@ -567,7 +567,7 @@ def test_create_new_version(saved_feature, snowflake_event_table):
 def test_delete_by_name_and_version(saved_feature):
     """Test deletion of feature by name and version"""
     assert saved_feature.readiness == FeatureReadiness.DRAFT
-    Feature.delete(name=saved_feature.name, version=saved_feature.version.to_str())
+    saved_feature.delete()
 
     with pytest.raises(RecordRetrievalException) as exc_info:
         Feature.get_by_id(saved_feature.id)
@@ -1037,7 +1037,7 @@ def test_feature_deletion_failure(saved_feature):
     feature_list = FeatureList([saved_feature], name="test_feature_list")
     feature_list.save()
     with pytest.raises(RecordDeletionException) as exc_info:
-        Feature.delete_by_id(id=saved_feature.id)
+        saved_feature.delete()
 
     version = feature_list.version.to_str()
     expected_msg = (

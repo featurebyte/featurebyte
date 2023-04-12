@@ -1,6 +1,7 @@
 """
 Tests for FeatureList route
 """
+# pylint: disable=too-many-lines
 import json
 import textwrap
 from collections import defaultdict
@@ -231,10 +232,9 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         return response
 
     def test_create_201__create_new_version(
-        self, test_api_client_persistent, create_success_response, new_feature_list_version_response
+        self, create_success_response, new_feature_list_version_response
     ):
         """Test create new version (success)"""
-        test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         response = new_feature_list_version_response
         response_dict = response.json()

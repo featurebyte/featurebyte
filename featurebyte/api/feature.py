@@ -280,64 +280,31 @@ class Feature(
         """
         return self._list(include_id=include_id, params={"name": self.name})
 
-    @classmethod
-    @typechecked
-    def delete(cls, name: str, version: str) -> None:
+    def delete(self) -> None:  # pylint: disable=redefined-builtin,invalid-name
         """
         Delete a feature. A feature can only be deleted if
         * the feature readiness is DRAFT
         * the feature is not used in any feature list
         * the feature is not a default feature with manual version mode
-
-        Parameters
-        ----------
-        name : str
-            Feature name
-        version : str
-            Feature version
-
-        Examples
-        --------
-        Delete a feature by name
-
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> fb.Feature.delete(name=feature.name, version=feature.version.to_str())  # doctest: +SKIP
-        """
-        feature = cls.get(name=name, version=version)
-        cls.delete_by_id(feature.id)
-
-    @classmethod
-    @typechecked
-    def delete_by_id(cls, id: ObjectId) -> None:  # pylint: disable=redefined-builtin,invalid-name
-        """
-        Delete a feature. A feature can only be deleted if
-        * the feature readiness is DRAFT
-        * the feature is not used in any feature list
-        * the feature is not a default feature with manual version mode
-
-        Parameters
-        ----------
-        id : ObjectId
-            Feature ID
 
         Raises
         ------
         RecordDeletionException
-            If the feature cannot be deleted
+            If the feature cannot be deleted.
 
         Examples
         --------
-        Delete a feature by ID
+        Delete a feature.
 
         >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> fb.Feature.delete_by_id(feature.id)  # doctest: +SKIP
+        >>> feature.delete()  # doctest: +SKIP
 
         See Also
         --------
         - [Feature.update_default_version_mode](/reference/featurebyte.api.feature.Feature.update_default_version_mode/)
         """
         client = Configurations().get_client()
-        response = client.delete(url=f"{cls._route}/{id}")
+        response = client.delete(url=f"{self._route}/{self.id}")
         if response.status_code != HTTPStatus.NO_CONTENT:
             raise RecordDeletionException(response, "Failed to delete the specified feature.")
 
