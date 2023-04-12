@@ -8,6 +8,7 @@ import pytest
 from featurebyte.api.base_table import TableColumn
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     MissingValueImputation,
@@ -123,3 +124,11 @@ class BaseTableTestSuite:
         """
         data_column_sql = data_under_test[self.col].preview_sql()
         assert data_column_sql == textwrap.dedent(self.expected_data_column_sql).strip()
+
+    def test_update_status(self, data_under_test):
+        """
+        Test update status
+        """
+        assert data_under_test.status == TableStatus.PUBLIC_DRAFT
+        data_under_test.update_status(TableStatus.PUBLISHED)
+        assert data_under_test.status == TableStatus.PUBLISHED

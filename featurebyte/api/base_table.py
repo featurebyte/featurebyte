@@ -595,6 +595,25 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
             add_internal_prefix=True,
         )
 
+    @typechecked
+    def update_status(self, status: Literal[tuple(TableStatus)]) -> None:  # type: ignore
+        """
+        Update table status
+
+        Parameters
+        ----------
+        status: Literal[tuple(TableStatus)]
+            Table status
+
+        Examples
+        --------
+        Update table status
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table.update_status(TableStatus.PUBLIC_DRAFT)
+        """
+        self.update(update_payload={"status": str(status)}, allow_update_local=False)
+
     @staticmethod
     def _validate_view_mode_params(
         view_mode: ViewMode,
