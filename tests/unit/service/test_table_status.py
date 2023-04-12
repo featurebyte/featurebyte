@@ -67,11 +67,11 @@ async def test_tabular_source_uniqueness_check_excludes_deprecated_tables(
     assert expected_msg in str(exc.value)
 
     # deprecate the existing event table
-    await event_table_service.update_document(
-        document_id=event_table.id, data=EventTableServiceUpdate(status=TableStatus.DEPRECATED)
+    await table_status_service.update_status(
+        service=event_table_service, document_id=event_table.id, status=TableStatus.DEPRECATED
     )
-    doc = await event_table_service.get_document(document_id=event_table.id)
-    assert doc.status == TableStatus.DEPRECATED
+    updated_event_table = await event_table_service.get_document(document_id=event_table.id)
+    assert updated_event_table.status == TableStatus.DEPRECATED
 
     # create a new table with the same tabular source
     new_event_table = await event_table_service.create_document(data=new_table_payload)

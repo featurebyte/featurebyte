@@ -41,7 +41,6 @@ from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableColumnsInfoService
-from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.version import VersionService
 
 
