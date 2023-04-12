@@ -3,6 +3,8 @@ Spark UDF test util
 """
 from typing import Any, Dict, Optional
 
+import numpy as np
+
 
 def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
     """
@@ -28,5 +30,10 @@ def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
     args = []
     for k, v in obj_dict.items():
         args.append(f"'{k}'")
-        args.append(str(v))
+        if v is None:
+            args.append("null")
+        elif np.isnan(v):
+            args.append("float('nan')")
+        else:
+            args.append(str(v))
     return f"MAP({', '.join(args)})"

@@ -23,13 +23,16 @@ $$
   var norm = 0.0;
   var norm_other = 0.0;
   for (const k in counts) {
+    var v = counts[k] || 0;
     if (k in counts_other) {
-      dot_product += counts[k] * counts_other[k];
+      var v_other = counts_other[k] || 0;
+      dot_product += v * v_other;
     }
-    norm += counts[k] * counts[k];
+    norm += v * v;
   }
   for (const k in counts_other) {
-    norm_other += counts_other[k] * counts_other[k] ;
+    var v = counts_other[k] || 0;
+    norm_other += v * v;
   }
   var cosine_sim = dot_product / (Math.sqrt(norm) * Math.sqrt(norm_other));
   return cosine_sim;

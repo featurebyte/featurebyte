@@ -69,16 +69,20 @@ public class CountDictCosineSimilarity extends CountDictUDF {
 
     for (Map.Entry<String, Object> set : counts.entrySet()) {
       DoubleWritable count = (DoubleWritable) converter.convert(set.getValue());
-      if (count == null) continue;
-      double value = count.get();
-      if (Double.isNaN(value)) continue;
+      double value = 0;
+      if (count != null) {
+        value = count.get();
+        if (Double.isNaN(value)) value = 0;
+      }
       Object objectOther = countsOther.getOrDefault(set.getKey(), null);
       if (objectOther != null) {
         DoubleWritable countOther = (DoubleWritable) converterOther.convert(objectOther);
-        if (countOther == null) continue;
-        double valueOther = countOther.get();
-        if (Double.isNaN(valueOther)) continue;
-        dotProduct = dotProduct + value * valueOther;
+        double valueOther = 0;
+        if (countOther != null) {
+          valueOther = countOther.get();
+          if (Double.isNaN(valueOther)) valueOther = 0;
+        }
+        dotProduct += value * valueOther;
         normOther += valueOther * valueOther;
       }
       norm += value * value;
@@ -88,8 +92,11 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     keySet.removeAll(counts.keySet());
     for (String k : keySet) {
       DoubleWritable count = (DoubleWritable) converterOther.convert(countsOther.get(k));
-      if (count == null) continue;
-      double value = count.get();
+      double value = 0;
+      if (count != null) {
+        value = count.get();
+        if (Double.isNaN(value)) value = 0;
+      }
       normOther += value * value;
     }
 

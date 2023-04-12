@@ -42,6 +42,7 @@ public class CountDictTransformsTest {
 
     countDictOther = new HashMap<String, DoubleWritable>();
     countDictOther.put("apple", new DoubleWritable(100));
+    countDictOther.put("orange", new DoubleWritable(110));
     countDictOther.put("watermelon", new DoubleWritable(Double.NaN));
     countDictOther.put("kiwi", null);
   }
@@ -110,7 +111,7 @@ public class CountDictTransformsTest {
       new GenericUDF.DeferredJavaObject(countDictOther),
     };
     DoubleWritable output = (DoubleWritable) udf.evaluate(args);
-    assertEquals(0.30127179180036756, output.get());
+    assertEquals(0.43672656326636466, output.get());
   }
 
   @Test
