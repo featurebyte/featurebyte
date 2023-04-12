@@ -302,10 +302,6 @@ class Configurations:
                 "profile:\n"
                 "  - name: local\n"
                 "    api_url: http://127.0.0.1:8088\n\n"
-                "logging:\n"
-                "  level: INFO\n"
-                "  telemetry: true\n"
-                "  telemetry_url: https://log.int.featurebyte.com\n"
             )
 
         self.storage: LocalStorageSettings = LocalStorageSettings()
