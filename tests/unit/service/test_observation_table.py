@@ -8,7 +8,10 @@ import pandas as pd
 import pytest
 
 from featurebyte.enum import SourceType
-from featurebyte.exception import MissingPointInTimeColumnError
+from featurebyte.exception import (
+    MissingPointInTimeColumnError,
+    UnsupportedPointInTimeColumnTypeError,
+)
 from featurebyte.models.observation_table import ObservationTableModel, SourceTableObservationInput
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -139,3 +142,27 @@ async def test_get_additional_metadata__most_recent_point_in_time(
         "column_names": ["POINT_IN_TIME", "cust_id"],
         "most_recent_point_in_time": "2023-01-15T02:00:00",
     }
+
+
+@pytest.mark.asyncio
+async def test_get_additional_metadata__supported_type_point_in_time(
+    observation_table_service, table_details
+):
+    """
+    Test get_additional_metadata validates the type of point in time column
+    """
+
+    async def mock_list_table_schema(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return {"POINT_IN_TIME": "STRING", "cust_id": "STRING"}
+
+    mock_db_session = Mock(
+        name="mock_session",
+        spec=BaseSession,
+        list_table_schema=Mock(side_effect=mock_list_table_schema),
+    )
+    with pytest.raises(UnsupportedPointInTimeColumnTypeError) as exc:
+        await observation_table_service.get_additional_metadata(mock_db_session, table_details)
+
+    assert str(exc.value) == "Point in time column should have timestamp type; got STRING"
