@@ -675,9 +675,15 @@ class DocsBuilder:
     DocsBuilder is a class to build the API docs.
     """
 
-    def __init__(self, gen_files_open: Any, set_edit_path: Any):
+    def __init__(
+        self,
+        gen_files_open: Any,
+        set_edit_path: Any,
+        doc_overrides: Optional[List[DocLayoutItem]] = None,
+    ):
         self.gen_files_open = gen_files_open
         self.set_edit_path = set_edit_path
+        self.doc_overrides = doc_overrides
 
     def initialize_missing_debug_doc(self) -> None:
         """
@@ -791,8 +797,8 @@ class DocsBuilder:
                 "Try providing the `FB_DOCS_REPO_PATH` environment variable to point to the "
                 "docs repo to populate this file if you're running locally.",
             )
-            # Try to read from relative location (for docs repo)
-            full_doc_path = os.path.join("..", "core", doc_path)
+            # Try to read from the doc_path provided
+            full_doc_path = os.path.join(doc_path)
             if os.path.exists(full_doc_path):
                 with open(full_doc_path, "r") as f:
                     content_to_write = f.read()
@@ -821,11 +827,11 @@ class DocsBuilder:
         Nav
             The populated nav.
         """
-        core_objects = []
+        core_objects_from_layout = []
         for item in get_overall_layout():
             # Handle core objects later
             if item.is_core_object:
-                core_objects.append(item)
+                core_objects_from_layout.append(item)
                 continue
 
             markdown_path = _get_markdown_file_path_for_doc_layout_item(
@@ -835,7 +841,10 @@ class DocsBuilder:
             nav[header] = markdown_path
 
         # Handle core objects
-        return self._populate_nav_for_core_objects(nav, core_objects)
+        core_objects_to_use = core_objects_from_layout
+        if self.doc_overrides is not None:
+            core_objects_to_use = self.doc_overrides
+        return self._populate_nav_for_core_objects(nav, core_objects_to_use)
 
     def build_docs(self) -> Nav:
         """
