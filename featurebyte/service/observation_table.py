@@ -144,6 +144,8 @@ class ObservationTableService(
         ------
         MissingPointInTimeColumnError
             If the point in time column is missing.
+        UnsupportedPointInTimeColumnTypeError
+            If the point in time column is not of timestamp type.
         """
         table_schema = await db_session.list_table_schema(
             table_name=destination.table_name,
