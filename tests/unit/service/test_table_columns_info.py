@@ -1,5 +1,5 @@
 """
-Test TableUpdateService
+Test TableColumnsInfoService
 """
 from unittest.mock import patch
 
@@ -11,7 +11,6 @@ from featurebyte import Relationship
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import ParentEntity
-from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.dimension_table import DimensionTableServiceUpdate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
@@ -19,53 +18,11 @@ from featurebyte.schema.event_table import EventTableServiceUpdate
 from featurebyte.schema.item_table import ItemTableServiceUpdate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_table import SCDTableServiceUpdate
-from featurebyte.schema.table import TableServiceUpdate
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "from_status,to_status,is_valid",
-    [
-        (TableStatus.PUBLIC_DRAFT, None, True),
-        (TableStatus.PUBLIC_DRAFT, TableStatus.PUBLIC_DRAFT, True),
-        (TableStatus.PUBLIC_DRAFT, TableStatus.PUBLISHED, True),
-        (TableStatus.PUBLISHED, TableStatus.DEPRECATED, True),
-        (TableStatus.PUBLIC_DRAFT, TableStatus.DEPRECATED, False),
-        (TableStatus.PUBLISHED, TableStatus.PUBLIC_DRAFT, False),
-        (TableStatus.DEPRECATED, TableStatus.PUBLIC_DRAFT, False),
-    ],
-)
-async def test_update_table_status(
-    table_update_service, event_table_service, event_table, from_status, to_status, is_valid
-):
-    """Test update_table_status"""
-    # setup event table status for testing
-    await event_table_service.update_document(
-        document_id=event_table.id, data=EventTableServiceUpdate(status=from_status)
-    )
-    doc = await event_table_service.get_document(document_id=event_table.id)
-    assert doc.status == from_status
-    if is_valid:
-        await table_update_service.update_table_status(
-            service=event_table_service,
-            document_id=event_table.id,
-            data=EventTableServiceUpdate(status=to_status),
-        )
-        doc = await event_table_service.get_document(document_id=event_table.id)
-        assert doc.status == (to_status or from_status)
-    else:
-        with pytest.raises(DocumentUpdateError) as exc:
-            await table_update_service.update_table_status(
-                service=event_table_service,
-                document_id=event_table.id,
-                data=EventTableServiceUpdate(status=to_status),
-            )
-        assert f"Invalid status transition from {from_status} to {to_status}" in str(exc.value)
 
 
 @pytest.mark.asyncio
 async def test_update_columns_info(
-    table_update_service,
+    table_columns_info_service,
     event_table_service,
     entity_service,
     semantic_service,
@@ -89,10 +46,10 @@ async def test_update_columns_info(
     columns_info[0]["semantic_id"] = new_semantic.id
 
     # update columns info
-    await table_update_service.update_columns_info(
+    await table_columns_info_service.update_columns_info(
         service=event_table_service,
         document_id=event_table.id,
-        data=EventTableServiceUpdate(columns_info=columns_info),
+        columns_info=EventTableServiceUpdate(columns_info=columns_info).columns_info,
     )
 
     # check the updated column info
@@ -108,10 +65,10 @@ async def test_update_columns_info(
     # move entity to non-primary key
     columns_info[0]["entity_id"] = None
     columns_info[1]["entity_id"] = new_entity.id
-    await table_update_service.update_columns_info(
+    await table_columns_info_service.update_columns_info(
         service=event_table_service,
         document_id=event_table.id,
-        data=EventTableServiceUpdate(columns_info=columns_info),
+        columns_info=EventTableServiceUpdate(columns_info=columns_info).columns_info,
     )
     new_entity = await entity_service.get_document(document_id=new_entity.id)
     assert new_entity.table_ids == [other_table_id, event_table.id]
@@ -119,10 +76,10 @@ async def test_update_columns_info(
 
     # remove entity
     columns_info[1]["entity_id"] = None
-    await table_update_service.update_columns_info(
+    await table_columns_info_service.update_columns_info(
         service=event_table_service,
         document_id=event_table.id,
-        data=EventTableServiceUpdate(columns_info=columns_info),
+        columns_info=EventTableServiceUpdate(columns_info=columns_info).columns_info,
     )
     new_entity = await entity_service.get_document(document_id=new_entity.id)
     assert new_entity.table_ids == [other_table_id]
@@ -132,10 +89,10 @@ async def test_update_columns_info(
     unknown_id = ObjectId()
     columns_info[0]["entity_id"] = unknown_id
     with pytest.raises(DocumentUpdateError) as exc:
-        await table_update_service.update_columns_info(
+        await table_columns_info_service.update_columns_info(
             service=event_table_service,
             document_id=event_table.id,
-            data=EventTableServiceUpdate(columns_info=columns_info),
+            columns_info=EventTableServiceUpdate(columns_info=columns_info).columns_info,
         )
 
     expected_msg = f"Entity IDs ['{unknown_id}'] not found for columns ['col_int']"
@@ -145,10 +102,10 @@ async def test_update_columns_info(
     columns_info[0]["entity_id"] = None
     columns_info[0]["semantic_id"] = unknown_id
     with pytest.raises(DocumentUpdateError) as exc:
-        await table_update_service.update_columns_info(
+        await table_columns_info_service.update_columns_info(
             service=event_table_service,
             document_id=event_table.id,
-            data=EventTableServiceUpdate(columns_info=columns_info),
+            columns_info=EventTableServiceUpdate(columns_info=columns_info).columns_info,
         )
 
     expected_msg = f"Semantic IDs ['{unknown_id}'] not found for columns ['col_int']"
@@ -157,7 +114,7 @@ async def test_update_columns_info(
 
 @pytest.mark.asyncio
 async def test_update_columns_info__critical_data_info(
-    table_update_service, event_table_service, event_table, entity, transaction_entity
+    table_columns_info_service, event_table_service, event_table, entity, transaction_entity
 ):
     """Test update_columns_info (critical data info)"""
     # prepare columns info by adding critical data info & removing all entity ids & semantic ids
@@ -170,10 +127,10 @@ async def test_update_columns_info__critical_data_info(
     columns_info = [{**col, "entity_id": None, "semantic_id": None} for col in columns_info]
 
     # update columns info
-    await table_update_service.update_columns_info(
+    await table_columns_info_service.update_columns_info(
         service=event_table_service,
         document_id=event_table.id,
-        data=EventTableServiceUpdate(columns_info=columns_info),
+        columns_info=EventTableServiceUpdate(columns_info=columns_info).columns_info,
     )
 
     # check the updated document
@@ -182,10 +139,10 @@ async def test_update_columns_info__critical_data_info(
 
     # test remove critical data info
     columns_info[0]["critical_data_info"] = {"cleaning_operations": []}
-    await table_update_service.update_columns_info(
+    await table_columns_info_service.update_columns_info(
         service=event_table_service,
         document_id=event_table.id,
-        data=EventTableServiceUpdate(columns_info=columns_info),
+        columns_info=EventTableServiceUpdate(columns_info=columns_info).columns_info,
     )
     # check the updated document
     updated_doc = await event_table_service.get_document(document_id=event_table.id)
@@ -203,7 +160,7 @@ async def test_update_columns_info__critical_data_info(
     ],
 )
 async def test_update_entity_table_references(
-    request, table_update_service, fixture_name, update_class, primary_key_column
+    request, table_columns_info_service, fixture_name, update_class, primary_key_column
 ):
     """Test update_entity_table_references"""
     table = request.getfixturevalue(fixture_name)
@@ -216,15 +173,17 @@ async def test_update_entity_table_references(
     ][0]
     columns_info[primary_index]["entity_id"] = ObjectId()
     data = update_class(columns_info=columns_info)
-    with patch.object(table_update_service.entity_service, "get_document") as mock_get_document:
+    with patch.object(
+        table_columns_info_service.entity_service, "get_document"
+    ) as mock_get_document:
         mock_get_document.return_value.table_ids = []
         mock_get_document.return_value.primary_table_ids = []
         with patch.object(
-            table_update_service.entity_service, "update_document"
+            table_columns_info_service.entity_service, "update_document"
         ) as mock_update_document:
-            with patch.object(table_update_service, "_update_entity_relationship"):
-                await table_update_service.update_entity_table_references(
-                    document=table_model, data=data
+            with patch.object(table_columns_info_service, "_update_entity_relationship"):
+                await table_columns_info_service.update_entity_table_references(
+                    document=table_model, columns_info=data.columns_info
                 )
                 update_payload = mock_update_document.call_args[1]["data"]
                 assert update_payload.table_ids == [table_model.id]
@@ -352,7 +311,7 @@ def event_table_entity_initializer_fixture(
     ],
 )
 async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
-    table_update_service,
+    table_columns_info_service,
     event_table_entity_initializer,
     event_table,
     entity_service,
@@ -375,7 +334,7 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
         await event_table_entity_initializer(entity_id, old_parent_entities)
 
     # call update entity relationship
-    await table_update_service._update_entity_relationship(
+    await table_columns_info_service._update_entity_relationship(
         document=event_table,
         old_primary_entities=old_primary_entities,
         old_parent_entities=old_parent_entities,
@@ -466,7 +425,7 @@ def assert_relationships_match(relationship_list_a, relationship_list_b):
     ],
 )
 async def test_update_entity_relationship__relationship_infos_added(  # pylint: disable=too-many-locals, too-many-arguments
-    table_update_service,
+    table_columns_info_service,
     event_table,
     event_table_entity_initializer,
     entity_docs,
@@ -502,7 +461,7 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
     assert_relationships_match(relationships, initial_relationships)
 
     # Call update entity relationship
-    await table_update_service._update_entity_relationship(
+    await table_columns_info_service._update_entity_relationship(
         document=event_table,
         old_primary_entities=old_primary_entity_ids,
         old_parent_entities=old_parent_entity_ids,
@@ -528,7 +487,7 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
 
 
 async def _update_table_columns_info(
-    table_update_service,
+    table_columns_info_service,
     table_service,
     entity_service,
     table,
@@ -552,10 +511,10 @@ async def _update_table_columns_info(
         columns_info.append(column_info)
 
     # update columns_info
-    await table_update_service.update_columns_info(
+    await table_columns_info_service.update_columns_info(
         service=table_service,
         document_id=table.id,
-        data=TableServiceUpdate(columns_info=columns_info),
+        columns_info=columns_info,
     )
 
     # check updated table columns info
@@ -574,7 +533,7 @@ async def _update_table_columns_info(
 
 @pytest.mark.asyncio
 async def test_event_table_update_columns_info__entity_relationship(
-    table_update_service,
+    table_columns_info_service,
     event_table_service,
     entity_service,
     event_table,
@@ -586,7 +545,7 @@ async def test_event_table_update_columns_info__entity_relationship(
     """Test update columns info with entities"""
     _ = entity, transaction_entity
     await _update_table_columns_info(
-        table_update_service=table_update_service,
+        table_columns_info_service=table_columns_info_service,
         table_service=event_table_service,
         entity_service=entity_service,
         table=event_table,
@@ -597,7 +556,7 @@ async def test_event_table_update_columns_info__entity_relationship(
 
 @pytest.mark.asyncio
 async def test_item_table_update_columns_info__entity_relationship(
-    table_update_service,
+    table_columns_info_service,
     item_table_service,
     entity_service,
     item_table,
@@ -609,7 +568,7 @@ async def test_item_table_update_columns_info__entity_relationship(
     """Test update columns info with entities"""
     _ = entity, entity_transaction
     await _update_table_columns_info(
-        table_update_service=table_update_service,
+        table_columns_info_service=table_columns_info_service,
         table_service=item_table_service,
         entity_service=entity_service,
         table=item_table,
@@ -620,7 +579,7 @@ async def test_item_table_update_columns_info__entity_relationship(
 
 @pytest.mark.asyncio
 async def test_dimension_table_update_columns_info__entity_relationship(
-    table_update_service,
+    table_columns_info_service,
     dimension_table_service,
     entity_service,
     dimension_table,
@@ -631,7 +590,7 @@ async def test_dimension_table_update_columns_info__entity_relationship(
     """Test update columns info with entities"""
     _ = entity
     await _update_table_columns_info(
-        table_update_service=table_update_service,
+        table_columns_info_service=table_columns_info_service,
         table_service=dimension_table_service,
         entity_service=entity_service,
         table=dimension_table,
@@ -642,7 +601,7 @@ async def test_dimension_table_update_columns_info__entity_relationship(
 
 @pytest.mark.asyncio
 async def test_scd_table_update_columns_info__entity_relationship(
-    table_update_service,
+    table_columns_info_service,
     scd_table_service,
     entity_service,
     scd_table,
@@ -653,7 +612,7 @@ async def test_scd_table_update_columns_info__entity_relationship(
     """Test update columns info with entities"""
     _ = entity
     await _update_table_columns_info(
-        table_update_service=table_update_service,
+        table_columns_info_service=table_columns_info_service,
         table_service=scd_table_service,
         entity_service=entity_service,
         table=scd_table,

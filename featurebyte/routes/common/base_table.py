@@ -22,7 +22,8 @@ from featurebyte.service.info import InfoService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
-from featurebyte.service.table_update import TableDocumentService, TableUpdateService
+from featurebyte.service.table_columns_info import TableColumnsInfoService, TableDocumentService
+from featurebyte.service.table_status import TableStatusService
 
 TableDocumentT = TypeVar(
     "TableDocumentT", EventTableModel, ItemTableModel, DimensionTableModel, SCDTableModel
@@ -48,12 +49,14 @@ class BaseTableDocumentController(
     def __init__(
         self,
         service: TableDocumentService,
-        table_update_service: TableUpdateService,
+        table_columns_info_service: TableColumnsInfoService,
+        table_status_service: TableStatusService,
         semantic_service: SemanticService,
         info_service: InfoService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
-        self.table_update_service = table_update_service
+        self.table_column_info_service = table_columns_info_service
+        self.table_status_service = table_status_service
         self.semantic_service = semantic_service
         self.info_service = info_service
 
@@ -135,17 +138,17 @@ class BaseTableDocumentController(
             Table object with updated attribute(s)
         """
         if data.columns_info:
-            await self.table_update_service.update_columns_info(
+            await self.table_column_info_service.update_columns_info(
                 service=self.service,
                 document_id=document_id,
-                data=self.document_update_schema_class(**data.dict()),  # type: ignore
+                columns_info=data.columns_info,
             )
 
         if data.status:
-            await self.table_update_service.update_table_status(
+            await self.table_status_service.update_status(
                 service=self.service,
                 document_id=document_id,
-                data=self.document_update_schema_class(**data.dict()),  # type: ignore
+                status=data.status,
             )
 
         # update other parameters

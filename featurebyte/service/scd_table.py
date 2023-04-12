@@ -16,6 +16,7 @@ class SCDTableService(
     """
 
     document_class = SCDTableModel
+    document_update_class = SCDTableServiceUpdate
 
     @property
     def class_name(self) -> str:

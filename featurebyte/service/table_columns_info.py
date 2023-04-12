@@ -1,5 +1,5 @@
 """
-DataStatusService
+TableColumnsInfoService
 """
 from __future__ import annotations
 
@@ -13,15 +13,12 @@ from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import ParentEntity
-from featurebyte.models.feature_store import TableModel, TableStatus
+from featurebyte.models.feature_store import TableModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.persistent import Persistent
-from featurebyte.schema.dimension_table import DimensionTableServiceUpdate
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityServiceUpdate
-from featurebyte.schema.event_table import EventTableServiceUpdate
-from featurebyte.schema.item_table import ItemTableServiceUpdate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
-from featurebyte.schema.scd_table import SCDTableServiceUpdate
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
@@ -36,17 +33,11 @@ from featurebyte.service.semantic import SemanticService
 TableDocumentService = Union[
     EventTableService, ItemTableService, DimensionTableService, SCDTableService
 ]
-TableServiceUpdateSchema = Union[
-    EventTableServiceUpdate,
-    ItemTableServiceUpdate,
-    DimensionTableServiceUpdate,
-    SCDTableServiceUpdate,
-]
 
 
-class TableUpdateService(BaseService):
+class TableColumnsInfoService(BaseService):
     """
-    TableUpdateService is responsible to orchestrate the update of the table attribute status.
+    TableColumnsInfoService is responsible to orchestrate the update of the table columns info.
     """
 
     def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
@@ -66,57 +57,15 @@ class TableUpdateService(BaseService):
         )
 
     @staticmethod
-    async def update_table_status(
-        service: TableDocumentService, document_id: ObjectId, data: TableServiceUpdateSchema
-    ) -> None:
-        """
-        Update table status
-
-        Parameters
-        ----------
-        service: TableDocumentService
-            Table service object
-        document_id: ObjectId
-            Document ID
-        data: TableServiceUpdateSchema
-            Table upload payload
-
-        Raises
-        ------
-        DocumentUpdateError
-            When the table status transition is invalid
-        """
-        document = await service.get_document(document_id=document_id)
-
-        current_status = document.status
-        if data.status is not None and current_status != data.status:
-            # check eligibility of status transition
-            eligible_transitions = {
-                TableStatus.PUBLIC_DRAFT: {TableStatus.PUBLISHED},
-                TableStatus.PUBLISHED: {TableStatus.DEPRECATED},
-                TableStatus.DEPRECATED: {},
-            }
-            if data.status not in eligible_transitions[current_status]:
-                raise DocumentUpdateError(
-                    f"Invalid status transition from {current_status} to {data.status}."
-                )
-            await service.update_document(
-                document_id=document_id,
-                data=type(data)(status=data.status),  # type: ignore
-                return_document=False,
-            )
-
-    @staticmethod
     async def _validate_column_info_id_field_values(
-        data: TableServiceUpdateSchema,
+        columns_info: List[ColumnInfo],
         field_name: str,
         service: Union[EntityService, SemanticService],
         field_class_name: str,
     ) -> None:
-        assert data.columns_info is not None
         id_values = [
             getattr(col_info, field_name)
-            for col_info in data.columns_info
+            for col_info in columns_info
             if getattr(col_info, field_name)
         ]
         found_id_values = [
@@ -130,7 +79,7 @@ class TableUpdateService(BaseService):
             column_name_id_pairs = sorted(
                 [
                     (col_info.name, getattr(col_info, field_name))
-                    for col_info in data.columns_info
+                    for col_info in columns_info
                     if getattr(col_info, field_name) in missing_id_values
                 ]
             )
@@ -141,7 +90,7 @@ class TableUpdateService(BaseService):
             )
 
     async def update_columns_info(
-        self, service: TableDocumentService, document_id: ObjectId, data: TableServiceUpdateSchema
+        self, service: TableDocumentService, document_id: ObjectId, columns_info: List[ColumnInfo]
     ) -> None:
         """
         Update table columns info
@@ -152,21 +101,21 @@ class TableUpdateService(BaseService):
             Table service object
         document_id: ObjectId
             Document ID
-        data: TableServiceUpdateSchema
-            Table upload payload
+        columns_info: List[ColumnInfo]
+            Columns info
         """
         document = await service.get_document(document_id=document_id)
 
-        if data.columns_info is not None and data.columns_info != document.columns_info:
+        if columns_info != document.columns_info:
             # check existence of the entities & semantics
             await self._validate_column_info_id_field_values(
-                data=data,
+                columns_info=columns_info,
                 field_name="entity_id",
                 service=self.entity_service,
                 field_class_name="Entity",
             )
             await self._validate_column_info_id_field_values(
-                data=data,
+                columns_info=columns_info,
                 field_name="semantic_id",
                 service=self.semantic_service,
                 field_class_name="Semantic",
@@ -177,11 +126,11 @@ class TableUpdateService(BaseService):
                 # update columns info
                 await service.update_document(
                     document_id=document_id,
-                    data=type(data)(columns_info=data.columns_info),  # type: ignore
+                    data=service.document_update_class(columns_info=columns_info),  # type: ignore
                 )
 
                 # update entity table reference
-                await self.update_entity_table_references(document, data)
+                await self.update_entity_table_references(document, columns_info)
 
     async def _update_entity_table_reference(
         self,
@@ -379,24 +328,20 @@ class TableUpdateService(BaseService):
                     await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
 
     async def update_entity_table_references(
-        self, document: TableModel, data: TableServiceUpdateSchema
+        self, document: TableModel, columns_info: List[ColumnInfo]
     ) -> None:
         """
-        Update table columns info
+        This method prepares table to:
+        - update table references in affected entities
+        - update entity relationship
 
         Parameters
         ----------
         document: TableModel
             TableModel object
-        data: TableServiceUpdateSchema
-            Table upload payload
+        columns_info: List[ColumnInfo]
+            Columns info
         """
-        if not data.columns_info:
-            return
-
-        # prepare table to:
-        # - update table references in affected entities
-        # - update entity relationship
         primary_keys = document.primary_key_columns
         entity_update: dict[ObjectId, int] = defaultdict(int)
         primary_entity_update: dict[ObjectId, int] = defaultdict(int)
@@ -414,7 +359,7 @@ class TableUpdateService(BaseService):
                 else:
                     old_parent_entities.add(column_info.entity_id)
 
-        for column_info in data.columns_info:
+        for column_info in columns_info:
             if column_info.entity_id:
                 # flag for addition to entity & track new entity relationship
                 entity_update[column_info.entity_id] += 1
