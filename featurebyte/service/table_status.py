@@ -73,12 +73,7 @@ class TableStatusService(BaseService):
         current_status = document.status
         if current_status != status:
             # check eligibility of status transition
-            eligible_transitions = {
-                TableStatus.PUBLIC_DRAFT: {TableStatus.PUBLISHED, TableStatus.DEPRECATED},
-                TableStatus.PUBLISHED: {TableStatus.DEPRECATED},
-                TableStatus.DEPRECATED: {},
-            }
-            if status not in eligible_transitions[current_status]:
+            if current_status == TableStatus.DEPRECATED:
                 raise DocumentUpdateError(
                     f"Invalid status transition from {current_status} to {status}."
                 )
