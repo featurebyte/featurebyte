@@ -176,7 +176,10 @@ async def test_observation_input_get_row_count(observation_table_from_source_tab
     db_session.execute_query = AsyncMock(return_value=pd.DataFrame({"row_count": [1000]}))
 
     row_count = await observation_table_from_source_table.observation_input.get_row_count(
-        db_session
+        db_session,
+        observation_table_from_source_table.observation_input.get_query_expr(
+            db_session.source_type
+        ),
     )
     assert row_count == 1000
 

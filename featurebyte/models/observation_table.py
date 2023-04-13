@@ -59,7 +59,8 @@ class BaseObservationInput(FeatureByteBaseModel):
         Select
         """
 
-    async def get_row_count(self, session: BaseSession) -> int:
+    @staticmethod
+    async def get_row_count(session: BaseSession, query_expr: Select) -> int:
         """
         Get the number of rows in the observation table
 
@@ -67,15 +68,14 @@ class BaseObservationInput(FeatureByteBaseModel):
         ----------
         session: BaseSession
             The session to use to get the row count
+        query_expr: Select
+            The query expression to get the row count for
 
         Returns
         -------
         int
         """
-        query = get_row_count_sql(
-            table_expr=self.get_query_expr(source_type=session.source_type),
-            source_type=session.source_type,
-        )
+        query = get_row_count_sql(table_expr=query_expr, source_type=session.source_type)
         result = await session.execute_query(query)
         return int(result.iloc[0]["row_count"])  # type: ignore[union-attr]
 
@@ -118,7 +118,7 @@ class BaseObservationInput(FeatureByteBaseModel):
         query_expr = self.get_query_expr(source_type=session.source_type)
 
         if sample_rows is not None:
-            num_rows = await self.get_row_count(session=session)
+            num_rows = await self.get_row_count(session=session, query_expr=query_expr)
             if num_rows > sample_rows:
                 num_percent = self.get_sample_percentage_from_row_count(num_rows, sample_rows)
                 adapter = get_sql_adapter(source_type=session.source_type)
