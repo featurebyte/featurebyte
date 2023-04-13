@@ -141,6 +141,9 @@ class BaseTableTestSuite:
         assert data_under_test.status == TableStatus.PUBLISHED
 
     def test_table_sample_payload(self, data_under_test):
+        """
+        Test table sample payload
+        """
         if self.expected_timestamp_column:
             sample_payload = data_under_test.frame._get_sample_payload(
                 from_timestamp="2020-01-01",
