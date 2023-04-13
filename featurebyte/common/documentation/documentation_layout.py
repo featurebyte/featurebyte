@@ -478,6 +478,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, CREATE, "EventTable.get_view"]),
         DocLayoutItem([VIEW, CREATE, "SCDTable.get_view"]),
         DocLayoutItem([VIEW, CREATE, "ItemTable.get_view"]),
+        DocLayoutItem([VIEW, CREATE, "View.raw"]),
         DocLayoutItem([VIEW, JOIN, "EventView.add_feature"]),
         DocLayoutItem([VIEW, JOIN, "ItemView.join_event_table_attributes"]),
         DocLayoutItem([VIEW, JOIN, "View.join"]),
