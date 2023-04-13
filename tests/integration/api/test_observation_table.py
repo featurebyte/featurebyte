@@ -20,7 +20,9 @@ def check_location_valid(observation_table, session):
     }
 
 
-async def check_materialized_table_accessible(observation_table, session, source_type):
+async def check_materialized_table_accessible(
+    observation_table, session, source_type, expected_num_rows
+):
     """
     Check materialized table is available
     """
@@ -34,7 +36,8 @@ async def check_materialized_table_accessible(observation_table, session, source
         source_type=source_type,
     )
     df = await session.execute_query(query)
-    assert df.iloc[0, 0] > 0
+    num_rows = df.iloc[0, 0]
+    assert num_rows == expected_num_rows
 
 
 @pytest.mark.asyncio
@@ -49,10 +52,13 @@ async def test_observation_table_from_source_table(
         schema_name=session.schema_name,
         table_name="ORIGINAL_OBSERVATION_TABLE",
     )
-    observation_table = source_table.create_observation_table(f"MY_OBSERVATION_TABLE_{source_type}")
+    sample_rows = 123
+    observation_table = source_table.create_observation_table(
+        f"MY_OBSERVATION_TABLE_{source_type}", sample_rows=sample_rows
+    )
     assert observation_table.name == f"MY_OBSERVATION_TABLE_{source_type}"
     check_location_valid(observation_table, session)
-    await check_materialized_table_accessible(observation_table, session, source_type)
+    await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)
 
 
 @pytest.mark.asyncio
@@ -62,9 +68,10 @@ async def test_observation_table_from_view(scd_table, session, source_type):
     """
     view = scd_table.get_view()
     view["POINT_IN_TIME"] = view["Effective Timestamp"]
+    sample_rows = 123
     observation_table = view.create_observation_table(
-        f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}"
+        f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}", sample_rows=sample_rows
     )
     assert observation_table.name == f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}"
     check_location_valid(observation_table, session)
-    await check_materialized_table_accessible(observation_table, session, source_type)
+    await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)

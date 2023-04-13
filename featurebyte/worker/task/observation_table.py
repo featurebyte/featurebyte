@@ -58,10 +58,11 @@ class ObservationTableTask(BaseTask):
             self.get_credential,
             payload.feature_store_id,
         )
-        query = payload.observation_input.get_materialize_sql(
-            destination=location.table_details, source_type=feature_store.type
+        await payload.observation_input.materialize(
+            session=db_session,
+            destination=location.table_details,
+            sample_rows=payload.sample_rows,
         )
-        await db_session.execute_query(query)
 
         additional_metadata = await observation_table_service.get_additional_metadata(
             db_session, location.table_details
