@@ -45,21 +45,10 @@ def draft_feature_fixture(feature_group):
     return feature
 
 
-@pytest.fixture(name="quarantine_feature")
-def quarantine_feature_fixture(feature_group):
-    """Fixture for a quarantined feature"""
-    feature = feature_group["draft_feature"] + 123
-    feature.name = "quarantine_feature"
-    feature.__dict__["readiness"] = FeatureReadiness.QUARANTINE
-    feature.__dict__["version"] = "V220403"
-    feature_group["quarantine_feature"] = feature
-    return feature
-
-
 @pytest.fixture(name="deprecated_feature")
 def deprecated_feature_fixture(feature_group):
     """Fixture for a deprecated feature"""
-    feature = feature_group["quarantine_feature"] + 123
+    feature = feature_group["production_ready_feature"] + 123
     feature.name = "deprecated_feature"
     feature.__dict__["readiness"] = FeatureReadiness.DEPRECATED
     feature.__dict__["version"] = "V220404"
@@ -231,24 +220,20 @@ def test_feature_list_creation__invalid_item():
     assert error_message in str(exc_info.value)
 
 
-def test_base_feature_group(
-    production_ready_feature, draft_feature, quarantine_feature, deprecated_feature
-):
+def test_base_feature_group(production_ready_feature, draft_feature, deprecated_feature):
     """
     Test BaseFeatureGroup
     """
     feature_group = BaseFeatureGroup([production_ready_feature, draft_feature])
-    new_feature_group = BaseFeatureGroup([feature_group, quarantine_feature, deprecated_feature])
+    new_feature_group = BaseFeatureGroup([feature_group, deprecated_feature])
     assert list(new_feature_group.feature_objects.keys()) == [
         "production_ready_feature",
         "draft_feature",
-        "quarantine_feature",
         "deprecated_feature",
     ]
     assert dict(new_feature_group.feature_objects) == {
         "production_ready_feature": production_ready_feature,
         "draft_feature": draft_feature,
-        "quarantine_feature": quarantine_feature,
         "deprecated_feature": deprecated_feature,
     }
 
@@ -386,19 +371,17 @@ def test_feature_group__preview_zero_feature():
     assert expected_msg in str(exc.value)
 
 
-def test_base_feature_group__drop(production_ready_feature, draft_feature, quarantine_feature):
+def test_base_feature_group__drop(production_ready_feature, draft_feature):
     """
     Test BaseFeatureGroup dropping columns
     """
-    feature_group = FeatureGroup([production_ready_feature, draft_feature, quarantine_feature])
-    feature_list = FeatureList(
-        [production_ready_feature, draft_feature, quarantine_feature], name="my_feature_list"
-    )
+    feature_group = FeatureGroup([production_ready_feature, draft_feature])
+    feature_list = FeatureList([production_ready_feature, draft_feature], name="my_feature_list")
     feat_group1 = feature_group.drop(["production_ready_feature"])
     feat_group2 = feature_list.drop(["production_ready_feature"])
     assert feat_group1 == feat_group2
     assert isinstance(feat_group1, FeatureGroup)
-    assert feat_group1.feature_names == ["draft_feature", "quarantine_feature"]
+    assert feat_group1.feature_names == ["draft_feature"]
 
 
 @freeze_time("2022-07-20")
@@ -446,12 +429,12 @@ def saved_feature_list_fixture(
     return feature_list
 
 
-def test_deserialization(production_ready_feature, draft_feature, quarantine_feature):
+def test_deserialization(production_ready_feature, draft_feature):
     """
     Test deserialization
     """
     feature_group = FeatureGroup([production_ready_feature, draft_feature])
-    feature_list = FeatureList([feature_group, quarantine_feature], name="my_feature_list")
+    feature_list = FeatureList([feature_group], name="my_feature_list")
     feature_list_dict = feature_list.dict(by_alias=True)
     expected_status = FeatureListStatus.TEMPLATE
     expected_version = {"name": "V220701", "suffix": None}
@@ -466,7 +449,6 @@ def test_deserialization(production_ready_feature, draft_feature, quarantine_fea
             mock_iterate.return_value = [
                 production_ready_feature.dict(by_alias=True),
                 draft_feature.dict(by_alias=True),
-                quarantine_feature.dict(by_alias=True),
             ]
             loaded_feature_list = FeatureList(**feature_list_dict, items=[])
 
@@ -673,11 +655,10 @@ def test_get_historical_feature_sql(saved_feature_list):
     assert 'WITH "REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id" AS' in sql
 
 
-def test_feature_list__feature_list_saving_in_bad_state(
+def test_feature_list__feature_list_saving_with_saved_feature(
     snowflake_event_table,
     production_ready_feature,
     draft_feature,
-    quarantine_feature,
     deprecated_feature,
 ):
     """Test feature list saving in bad state due to some feature has been saved (when the feature id is the same)"""
@@ -686,7 +667,6 @@ def test_feature_list__feature_list_saving_in_bad_state(
         [
             production_ready_feature,
             draft_feature,
-            quarantine_feature,
             deprecated_feature,
         ],
         name="feature_list_name",
@@ -697,22 +677,11 @@ def test_feature_list__feature_list_saving_in_bad_state(
     production_ready_feature.save()
     assert production_ready_feature.saved is True
 
-    # the feature inside the feature list saved status is still False
-    assert feature_list["production_ready_feature"].saved is False
+    # the feature inside the feature list saved status should be updated
+    assert feature_list["production_ready_feature"].saved is True
 
-    # save the feature list will cause error due to duplicated exception
-    with pytest.raises(DuplicatedRecordException) as exc:
-        feature_list.save()
-    id_val = production_ready_feature.id
-    expected_msg = (
-        f'Feature (id: "{id_val}") already exists. '
-        f'Get the existing object by `Feature.get_by_id(id="{id_val}")`. '
-        f'Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.'
-    )
-    assert expected_msg in str(exc.value)
-
-    # resolve the error by retrieving the feature with the same name
-    feature_list.save(conflict_resolution="retrieve")
+    # try to save the feature list
+    feature_list.save()
     assert feature_list.saved is True
 
 
@@ -721,7 +690,6 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
     feature_group,
     production_ready_feature,
     draft_feature,
-    quarantine_feature,
     deprecated_feature,
 ):
     """Test feature list saving in bad state due to some feature has been saved (when the feature id is different)"""
@@ -735,7 +703,6 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
         [
             feature,
             draft_feature,
-            quarantine_feature,
             deprecated_feature,
         ],
         name="feature_list_name",
@@ -757,7 +724,6 @@ def feature_list_fixture(
     snowflake_event_table,
     production_ready_feature,
     draft_feature,
-    quarantine_feature,
     deprecated_feature,
 ):
     # create a feature list
@@ -765,7 +731,6 @@ def feature_list_fixture(
         [
             production_ready_feature,
             draft_feature,
-            quarantine_feature,
             deprecated_feature,
         ],
         name="feature_list_name",
@@ -941,22 +906,10 @@ def test_get_sql(feature_list):
           ) AS "draft_feature",
           (
             (
-              (
-                "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
-              ) + 123
-            ) + 123
-          ) AS "quarantine_feature",
-          (
-            (
-              (
-                (
-                  "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
-                ) + 123
-              ) + 123
+              "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" + 123
             ) + 123
           ) AS "deprecated_feature"
         FROM _FB_AGGREGATED AS AGG
-
         """
     ).strip()
     assert feature_list.sql.endswith(expected)
@@ -1295,7 +1248,7 @@ def test_feature_list_properties_from_cached_model__before_save(feature_list):
     assert feature_list.saved is False
     assert feature_list.online_enabled_feature_ids == []
     assert feature_list.readiness_distribution.dict() == {
-        "__root__": [{"readiness": "DRAFT", "count": 4}]
+        "__root__": [{"readiness": "DRAFT", "count": 3}]
     }
     assert feature_list.production_ready_fraction == 0.0
     assert feature_list.deployed is False
@@ -1327,7 +1280,8 @@ def test_feature_list_properties_from_cached_model__after_save(saved_feature_lis
 def test_delete_feature_list_namespace__success(saved_feature_list):
     """Test delete feature list namespace (success)"""
     assert saved_feature_list.status == FeatureListStatus.DRAFT
-    saved_feature_list.feature_list_namespace.delete()
+    saved_feature_list.delete()
+    assert saved_feature_list.saved is False
 
     # check feature list namespace & feature list records are deleted
     with pytest.raises(RecordRetrievalException) as exc_info:
@@ -1353,6 +1307,7 @@ def test_delete_feature_list(saved_feature_list):
     """Test delete feature list"""
     assert saved_feature_list.status == FeatureListStatus.DRAFT
     saved_feature_list.delete()
+    assert saved_feature_list.saved is False
 
     with pytest.raises(RecordRetrievalException) as exc_info:
         FeatureList.get_by_id(saved_feature_list.id)
@@ -1361,15 +1316,15 @@ def test_delete_feature_list(saved_feature_list):
     assert expected_msg in str(exc_info.value)
 
 
-def test_delete_feature_list_namespace__failure(saved_feature_list):
-    """Test delete feature list namespace (failure)"""
+def test_delete_feature_list__failure(saved_feature_list):
+    """Test delete feature list (failure)"""
     saved_feature_list.update_status(FeatureListStatus.PUBLIC_DRAFT)
     assert saved_feature_list.status == FeatureListStatus.PUBLIC_DRAFT
 
     with pytest.raises(RecordDeletionException) as exc_info:
-        saved_feature_list.feature_list_namespace.delete()
+        saved_feature_list.delete()
 
-    expected_msg = "Cannot delete feature list namespace that is not in DRAFT status."
+    expected_msg = "Only feature list with DRAFT status can be deleted."
     assert expected_msg in str(exc_info.value)
 
 

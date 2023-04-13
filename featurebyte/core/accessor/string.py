@@ -60,9 +60,7 @@ class StringAccessor:
 
     def len(self) -> FrozenSeries:
         """
-        Compute length of each string element.
-
-        This operation can be used by both features and views.
+        Computes length of each string element.
 
         Returns
         -------
@@ -94,9 +92,7 @@ class StringAccessor:
 
     def lower(self) -> FrozenSeries:
         """
-        Convert each string element to lower case.
-
-        This operation can be used by both features and views.
+        Converts each string element to lower case.
 
         Returns
         -------
@@ -128,9 +124,7 @@ class StringAccessor:
 
     def upper(self) -> FrozenSeries:
         """
-        Convert each string element to upper case.
-
-        This operation can be used by both features and views.
+        Converts each string element to upper case.
 
         Returns
         -------
@@ -163,9 +157,7 @@ class StringAccessor:
     @typechecked
     def strip(self, to_strip: Optional[str] = None) -> FrozenSeries:
         """
-        Remove leading and trailing characters (whitespaces by default) from each string element.
-
-        This operation can be used by both features and views.
+        Removes leading and trailing characters (whitespaces by default) from each string element.
 
         Parameters
         ----------
@@ -203,9 +195,7 @@ class StringAccessor:
     @typechecked
     def lstrip(self, to_strip: Optional[str] = None) -> FrozenSeries:
         """
-        Remove leading characters (whitespaces by default) from each string element.
-
-        This operation can be used by both features and views.
+        Removes leading characters (whitespaces by default) from each string element.
 
         Parameters
         ----------
@@ -243,9 +233,7 @@ class StringAccessor:
     @typechecked
     def rstrip(self, to_strip: Optional[str] = None) -> FrozenSeries:
         """
-        Remove leading characters (whitespaces by default) from each string element.
-
-        This operation can be used by both features and views.
+        Removes leading characters (whitespaces by default) from each string element.
 
         Parameters
         ----------
@@ -283,9 +271,7 @@ class StringAccessor:
     @typechecked
     def replace(self, pat: str, repl: str) -> FrozenSeries:
         """
-        Replace the substring within each string element.
-
-        This operation can be used by both features and views.
+        Replaces the substring within each string element.
 
         Parameters
         ----------
@@ -325,9 +311,7 @@ class StringAccessor:
     @typechecked
     def pad(self, width: int, side: Side = "left", fillchar: str = " ") -> FrozenSeries:
         """
-        Pad each string element up to the specified width.
-
-        This operation can be used by both features and views.
+        Pads each string element up to the specified width.
 
         Parameters
         ----------
@@ -369,9 +353,7 @@ class StringAccessor:
     @typechecked
     def contains(self, pat: str, case: bool = True) -> FrozenSeries:
         """
-        Check whether each string element contains the provided substring pattern.
-
-        This operation can be used by both features and views.
+        Checks whether each string element contains the provided substring pattern.
 
         Parameters
         ----------
@@ -413,9 +395,7 @@ class StringAccessor:
         self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None
     ) -> FrozenSeries:
         """
-        Slice substring from each string element.
-
-        This operation can be used by both features and views.
+        Slices substring from each string element.
 
         Parameters
         ----------

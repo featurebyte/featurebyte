@@ -109,9 +109,7 @@ class DatetimeAccessor:
     @property
     def year(self) -> FrozenSeries:
         """
-        Return the year component of each element.
-
-        This operation can be used by both features and views.
+        Returns the year component of each element.
 
         Returns
         -------
@@ -137,9 +135,7 @@ class DatetimeAccessor:
     @property
     def quarter(self) -> FrozenSeries:
         """
-        Return the quarter component of each element.
-
-        This operation can be used by both features and views.
+        Returns the quarter component of each element.
 
         Returns
         -------
@@ -165,9 +161,7 @@ class DatetimeAccessor:
     @property
     def month(self) -> FrozenSeries:
         """
-        Return the month component of each element.
-
-        This operation can be used by both features and views.
+        Returns the month component of each element.
 
         Returns
         -------
@@ -193,9 +187,7 @@ class DatetimeAccessor:
     @property
     def week(self) -> FrozenSeries:
         """
-        Return the week component of each element.
-
-        This operation can be used by both features and views.
+        Returns the week component of each element.
 
         Returns
         -------
@@ -221,12 +213,10 @@ class DatetimeAccessor:
     @property
     def day(self) -> FrozenSeries:
         """
-        Return the day component of each element.
+        Returns the day component of each element.
 
         This is also available for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
-
-        This operation can be used by both features and views.
 
         Returns
         -------
@@ -266,11 +256,9 @@ class DatetimeAccessor:
     @property
     def day_of_week(self) -> FrozenSeries:
         """
-        Return the day-of-week component of each element.
+        Returns the day-of-week component of each element.
 
         The day of week is mapped to an integer value ranging from 0 (Monday) to 6 (Sunday).
-
-        This operation can be used by both features and views.
 
         Returns
         -------
@@ -294,12 +282,10 @@ class DatetimeAccessor:
     @property
     def hour(self) -> FrozenSeries:
         """
-        Return the hour component of each element.
+        Returns the hour component of each element.
 
         This is also available for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
-
-        This operation can be used by both features and views.
 
         Returns
         -------
@@ -325,12 +311,10 @@ class DatetimeAccessor:
     @property
     def minute(self) -> FrozenSeries:
         """
-        Return the minute component of each element.
+        Returns the minute component of each element.
 
         This is also available for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
-
-        This operation can be used by both features and views.
 
         Returns
         -------
@@ -356,12 +340,10 @@ class DatetimeAccessor:
     @property
     def second(self) -> FrozenSeries:
         """
-        Return the second component of each element.
+        Returns the second component of each element.
 
         This is also available for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
-
-        This operation can be used by both features and views.
 
         Returns
         -------
@@ -388,12 +370,10 @@ class DatetimeAccessor:
     @property
     def millisecond(self) -> FrozenSeries:
         """
-        Return the millisecond component of each element.
+        Returns the millisecond component of each element.
 
         This is available only for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
-
-        This operation can be used by both features and views.
 
         Returns
         -------
@@ -405,12 +385,10 @@ class DatetimeAccessor:
     @property
     def microsecond(self) -> FrozenSeries:
         """
-        Return the microsecond component of each element.
+        Returns the microsecond component of each element.
 
         This is available only for Series containing timedelta values, which is a result of taking
         the difference between two timestamp Series.
-
-        This operation can be used by both features and views.
 
         Returns
         -------

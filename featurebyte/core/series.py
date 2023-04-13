@@ -681,7 +681,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def abs(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Compute the absolute numeric value of each element.
+        Computes the absolute numeric value of each element.
 
         Returns
         -------
@@ -718,7 +718,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def sqrt(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Compute the square root of each element.
+        Computes the square root of each element.
 
         Returns
         -------
@@ -756,7 +756,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def pow(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         """
-        Compute the exponential power of each element.
+        Computes the exponential power of each element.
 
         Parameters
         ----------
@@ -797,7 +797,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def log(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Compute the natural logarithm of each element.
+        Computes the natural logarithm of each element.
 
         Returns
         -------
@@ -835,7 +835,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def exp(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Compute the exponential value of each element.
+        Computes the exponential value of each element.
 
         Returns
         -------
@@ -873,7 +873,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def floor(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Round each element to the nearest equal or smaller integer.
+        Rounds each element to the nearest equal or smaller integer.
 
         Returns
         -------
@@ -912,7 +912,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @numeric_only
     def ceil(self: FrozenSeriesT) -> FrozenSeriesT:
         """
-        Round each element to the nearest equal or larger integer.
+        Rounds each element to the nearest equal or larger integer.
 
         Returns
         -------
@@ -968,7 +968,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
     @typechecked
     def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
         """
-        Identify if each element is contained in a sequence of values represented by `other`.
+        Identifies if each element is contained in a sequence of values represented by the `other` parameter.
 
         Parameters
         ----------
@@ -1088,7 +1088,7 @@ class Series(FrozenSeries):
     @typechecked
     def fillna(self, other: Scalar) -> None:
         """
-        Replace missing value in each element with the provided value in-place
+        Replaces missing value in each element with the provided value in-place.
 
         Parameters
         ----------

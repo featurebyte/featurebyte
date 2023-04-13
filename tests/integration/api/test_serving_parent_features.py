@@ -149,10 +149,8 @@ def customer_num_city_change_feature_fixture(tables):
 
 
 @pytest.fixture(name="feature_list_with_child_entities", scope="module")
-def feature_list_with_child_entities_fixture(
-    country_feature, mock_task_manager, mock_post_async_task
-):
-    _ = mock_task_manager, mock_post_async_task
+def feature_list_with_child_entities_fixture(country_feature, mock_task_manager):
+    _ = mock_task_manager
 
     feature_list = FeatureList([country_feature], name=f"{table_prefix}_country_list")
     feature_list.save(conflict_resolution="retrieve")
@@ -165,9 +163,11 @@ def feature_list_with_child_entities_fixture(
 
 @pytest.fixture(name="feature_list_with_parent_child_features", scope="module")
 def feature_list_with_parent_child_features_fixture(
-    country_feature, city_feature, mock_task_manager, mock_post_async_task
+    country_feature,
+    city_feature,
+    mock_task_manager,
 ):
-    _ = mock_task_manager, mock_post_async_task
+    _ = mock_task_manager
 
     feature_list = FeatureList(
         [city_feature, country_feature], name=f"{table_prefix}_city_country_list"

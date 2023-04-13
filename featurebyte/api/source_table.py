@@ -434,7 +434,19 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> EventTable:
         """
-        Create event table from this source table.
+        Creates and adds to the catalog an EventTable object from a source table where each row indicates a specific
+        business event measured at a particular moment.
+
+        To create an EventTable, you need to identify the columns representing the event key and timestamp.
+
+        Additionally, the column that represents the record creation timestamp may be identified to enable an automatic
+        analysis of data availability and freshness of the source table. This analysis can assist in selecting the
+        default scheduling of the computation of features associated with the Event table (default FeatureJob setting).
+
+        After creation, the table can optionally incorporate additional metadata at the column level to further aid
+        feature engineering. This can include identifying columns that identify or reference entities, providing
+        information about the semantics of the table columns, specifying default cleaning operations, or furnishing
+        descriptions of its columns.
 
         Parameters
         ----------
@@ -490,7 +502,16 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> ItemTable:
         """
-        Create item table from this source table.
+        Creates and adds to the catalog an ItemTable object from a source table containing in-depth details about
+        a business event.
+
+        To create an Item Table, you need to identify the columns representing the item key and the event key and
+        determine which Event table is associated with the Item table.
+
+        After creation, the table can optionally incorporate additional metadata at the column level to further aid
+        feature engineering. This can include identifying columns that identify or reference entities, providing
+        information about the semantics of the table columns, specifying default cleaning operations, or furnishing
+        descriptions of its columns.
 
         Parameters
         ----------
@@ -549,7 +570,21 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> DimensionTable:
         """
-        Create dimension table from this source table.
+        Creates and adds to the catalog a DimensionTable object from a source table that holds static descriptive
+        information.
+
+        To create a Dimension Table, you need to identify the column representing the primary key of the source table
+        (dimension_id_column).
+
+        After creation, the table can optionally incorporate additional metadata at the column level to further
+        aid feature engineering. This can include identifying columns that identify or reference entities,
+        providing information about the semantics of the table columns, specifying default cleaning operations, or
+        furnishing descriptions of its columns.
+
+        Note that using a Dimension table requires special attention. If the data in the table changes slowly, it is
+        not advisable to use it because these changes can cause significant data leaks during model training and
+        adversely affect the inference performance. In such cases, it is recommended to use a Type 2 Slowly Changing
+        Dimension table that maintains a history of changes.
 
         Parameters
         ----------
@@ -602,7 +637,29 @@ class SourceTable(AbstractTableData):
         _id: Optional[ObjectId] = None,
     ) -> SCDTable:
         """
-        Create SCD table from this source table.
+        Creates and adds to the catalog a SCDTable object from a source table that contains data that changes slowly
+        and unpredictably over time, also known as a Slowly Changing Dimension (SCD) table.
+
+        Please note that there are two main types of SCD Tables:
+
+        - Type 1: Overwrites old data with new data
+        - Type 2: Maintains a history of changes by creating a new record for each change.
+
+        eatureByte only supports the use of Type 2 SCD Tables since Type 1 SCD Tables may cause data leaks during
+        model training and poor performance during inference.
+
+        To create an SCD Table, you need to identify columns for the natural key, effective timestamp, optionally
+        surrogate key, end timestamp, and active flag.
+
+        An SCD table of Type 2 utilizes the natural key to distinguish each active row and facilitate tracking of
+        changes over time. The SCD table employs the effective and end (or expiration) timestamp columns to determine
+        the active status of a row. In certain instances, an active flag column may replace the expiration timestamp
+        column to indicate if a row is currently active.
+
+        After creation, the table can optionally incorporate additional metadata at the column level to further aid
+        feature engineering. This can include identifying columns that identify or reference entities, providing
+        information about the semantics of the table columns, specifying default cleaning operations, or furnishing
+        descriptions of its columns.
 
         Parameters
         ----------
@@ -850,7 +907,11 @@ class SourceTable(AbstractTableData):
             current_flag_column=current_flag_column,
         )
 
-    def create_observation_table(self, name: str) -> ObservationTable:
+    def create_observation_table(
+        self,
+        name: str,
+        sample_rows: Optional[int] = None,
+    ) -> ObservationTable:
         """
         Create an observation table from this source table.
 
@@ -858,6 +919,9 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             Observation table name.
+        sample_rows: Optional[int]
+            Optionally sample the source table to this number of rows before creating the
+            observation table.
 
         Returns
         -------
@@ -870,6 +934,7 @@ class SourceTable(AbstractTableData):
             name=name,
             feature_store_id=self.feature_store.id,
             observation_input=SourceTableObservationInput(source=self.tabular_source),
+            sample_rows=sample_rows,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

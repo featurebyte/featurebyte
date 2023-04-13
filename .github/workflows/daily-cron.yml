@@ -46,6 +46,9 @@ jobs:
               "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/caches/{}"
       # Recreates the cache
       - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:

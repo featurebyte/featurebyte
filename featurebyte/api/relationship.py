@@ -61,14 +61,6 @@ class Relationship(ApiObject):
         ForeignKeyMapping("primary_table_id", TableApiObject, "primary_table_type", "type"),
     ]
 
-    # pydantic instance variable (public)
-    saved: bool = Field(
-        default=False,
-        allow_mutation=False,
-        exclude=True,
-        description="Flag to indicate whether the Relationship object is saved in the FeatureByte catalog.",
-    )
-
     # pydantic instance variable (internal use)
     internal_is_enabled: bool = Field(alias="is_enabled")
     internal_updated_by: PydanticObjectId = Field(alias="updated_by")
@@ -169,7 +161,12 @@ class Relationship(ApiObject):
     @typechecked
     def enable(self, enable: bool) -> None:
         """
-        Update the relationship to enable or disable it.
+        Enables a Relationship object or disable it by setting the enable parameter to False. By default, a
+        Relationship object is enabled.
+
+        A Relationship object of parent-child is automatically created when the primary key (or natural key in the
+        context of a SCD table) identifies one entity. This entity is the child entity. Other entities that are
+        referenced in the table are identified as the parent entities.
 
         Parameters
         ----------

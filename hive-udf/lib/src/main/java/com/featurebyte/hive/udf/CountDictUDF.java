@@ -1,30 +1,33 @@
 package com.featurebyte.hive.udf;
 
+import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.NUMERIC_GROUP;
+import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP;
+
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableVoidObjectInspector;
-import org.apache.hadoop.io.DoubleWritable;
-
-import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.NUMERIC_GROUP;
-import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP;
 
 public abstract class CountDictUDF extends GenericUDF {
 
   protected transient MapObjectInspector inputMapOI;
 
   // inputTypes[0] is for key, inputTypes[1] is for value
-  final protected transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[2];
+  protected final transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[2];
 
   // converters[0] is for key, converters[1] is for value
-  final protected transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[2];
+  protected final transient ObjectInspectorConverters.Converter[] converters =
+      new ObjectInspectorConverters.Converter[2];
 
-  protected static final WritableVoidObjectInspector nullOI = PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
+  protected static final WritableVoidObjectInspector nullOI =
+      PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
 
-  protected static void checkIsMap(ObjectInspector[] arguments, int i) throws UDFArgumentTypeException {
+  protected static void checkIsMap(ObjectInspector[] arguments, int i)
+      throws UDFArgumentTypeException {
     if (!(arguments[i] instanceof MapObjectInspector)) {
       throw new UDFArgumentTypeException(i, "Parameter must be a Map");
     }
@@ -40,15 +43,14 @@ public abstract class CountDictUDF extends GenericUDF {
   }
 
   protected MapObjectInspector checkTypesAndConstructMapOI(
-    ObjectInspector mapOI,
-    PrimitiveCategory[] inputTypes,
-    ObjectInspectorConverters.Converter[] converters
-  ) throws UDFArgumentTypeException {
+      ObjectInspector mapOI,
+      PrimitiveCategory[] inputTypes,
+      ObjectInspectorConverters.Converter[] converters)
+      throws UDFArgumentTypeException {
 
     MapObjectInspector inputMapOI = (MapObjectInspector) mapOI;
     ObjectInspector[] map_args = {
-      inputMapOI.getMapKeyObjectInspector(),
-      inputMapOI.getMapValueObjectInspector()
+      inputMapOI.getMapKeyObjectInspector(), inputMapOI.getMapValueObjectInspector()
     };
 
     try {
@@ -60,7 +62,7 @@ public abstract class CountDictUDF extends GenericUDF {
     }
 
     try {
-      checkArgPrimitive(map_args,1);
+      checkArgPrimitive(map_args, 1);
       checkArgGroups(map_args, 1, inputTypes, NUMERIC_GROUP);
       obtainDoubleConverter(map_args, 1, inputTypes, converters);
     } catch (UDFArgumentException e) {
@@ -71,7 +73,8 @@ public abstract class CountDictUDF extends GenericUDF {
   }
 
   protected double convertMapValueAsDouble(Object obj) {
-    return ((DoubleWritable) converters[1].convert(obj)).get();
+    DoubleWritable value = (DoubleWritable) converters[1].convert(obj);
+    if (value == null) return Double.NaN;
+    return value.get();
   }
-
 }

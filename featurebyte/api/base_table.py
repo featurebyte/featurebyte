@@ -130,7 +130,20 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     @typechecked
     def update_critical_data_info(self, cleaning_operations: List[CleaningOperation]) -> None:
         """
-        Update critical data info of the table column
+        Associates metadata with the column such as default cleaning operations.
+
+        The cleaning operations dictate how data in the column is cleaned before any feature engineering is performed.
+        The operations can be set as a default in the column's metadata, or they can be established when creating a
+        view in a manual mode.
+
+        The cleaning operations are designed to handle several scenarios, including missing values, disguised values,
+        values that are not in an anticipated list, and numeric values and dates that are out of boundaries. The
+        cleaning operations for a specific column may consist of a sequence of operations that must be executed in a
+        specific order. Values that have been imputed during previous operations should not be identified as values to
+        be cleaned in subsequent operations.
+
+        If changes occur in the data quality of the source table, new versions of the feature can be created with new
+        cleaning operations that address the new quality issues.
 
         Parameters
         ----------
@@ -272,12 +285,6 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         TableDataType.SCD_TABLE,
     ] = Field(
         description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table."
-    )
-    saved: bool = Field(
-        default=False,
-        allow_mutation=False,
-        exclude=True,
-        description="Flag to indicate whether the Table object is saved in the FeatureByte catalog.",
     )
 
     # pydantic instance variable (internal use)
@@ -575,7 +582,9 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         self, record_creation_timestamp_column: str
     ) -> None:
         """
-        Update record creation timestamp column used to perform feature job setting analysis
+        Determines the column in the table that represents the timestamp for record creation. This information is
+        utilized to analyze feature job settings, and the identified column is treated as a special column that is
+        not meant for feature engineering. By default, any view created from the table will exclude this column.
 
         Parameters
         ----------

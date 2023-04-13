@@ -31,7 +31,6 @@ class FeatureReadiness(OrderedStrEnum):
     """Feature readiness"""
 
     DEPRECATED = "DEPRECATED"
-    QUARANTINE = "QUARANTINE"
     DRAFT = "DRAFT"
     PUBLIC_DRAFT = "PUBLIC_DRAFT"
     PRODUCTION_READY = "PRODUCTION_READY"

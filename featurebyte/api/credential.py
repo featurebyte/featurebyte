@@ -55,12 +55,6 @@ class Credential(DeletableApiObject, SavableApiObject):
         allow_mutation=False,
         description="Id of the feature store that the credential is associated with.",
     )
-    saved: bool = Field(
-        default=False,
-        allow_mutation=False,
-        exclude=True,
-        description="Flag to indicate whether the Credential object is saved in the FeatureByte catalog.",
-    )
 
     def _get_create_payload(self) -> Dict[str, Any]:
         data = CredentialCreate(**self.json_dict())

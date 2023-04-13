@@ -182,7 +182,7 @@ def test_feature_readiness_distribution__equality_invalid_type():
             # left_prod_ready_frac == right_prod_ready_frac, left has higher number of worse readiness features
             [
                 {"readiness": "PRODUCTION_READY", "count": 3},
-                {"readiness": "QUARANTINE", "count": 2},
+                {"readiness": "DEPRECATED", "count": 2},
             ],
             [{"readiness": "PRODUCTION_READY", "count": 3}, {"readiness": "DRAFT", "count": 2}],
             True,
@@ -193,7 +193,7 @@ def test_feature_readiness_distribution__equality_invalid_type():
                 {"readiness": "PRODUCTION_READY", "count": 4},
                 {"readiness": "DEPRECATED", "count": 1},
             ],
-            [{"readiness": "QUARANTINE", "count": 5}],
+            [{"readiness": "DEPRECATED", "count": 5}],
             False,
         ),
         (
@@ -201,14 +201,12 @@ def test_feature_readiness_distribution__equality_invalid_type():
             [
                 {"readiness": "PRODUCTION_READY", "count": 3},
                 {"readiness": "DRAFT", "count": 2},
-                {"readiness": "QUARANTINE", "count": 2},
-                {"readiness": "DEPRECATED", "count": 1},
+                {"readiness": "DEPRECATED", "count": 3},
             ],
             [
                 {"readiness": "PRODUCTION_READY", "count": 3},
                 {"readiness": "DRAFT", "count": 1},
-                {"readiness": "QUARANTINE", "count": 3},
-                {"readiness": "DEPRECATED", "count": 1},
+                {"readiness": "DEPRECATED", "count": 4},
             ],
             False,
         ),

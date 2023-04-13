@@ -17,7 +17,6 @@ from bson.objectid import ObjectId
 from cachetools import TTLCache, cachedmethod
 from cachetools.keys import hashkey
 from pandas import DataFrame
-from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import PrettyDict, ProgressThread
@@ -106,9 +105,6 @@ class ApiObject(FeatureByteBaseDocumentModel):
     # global api object cache shared by all the ApiObject class & its child classes
     _cache: Any = TTLCache(maxsize=1024, ttl=1)
 
-    # other ApiObject attributes
-    saved: bool = Field(default=False, allow_mutation=False, exclude=True)
-
     def __repr__(self) -> str:
         info_repr = ""
         try:
@@ -132,6 +128,23 @@ class ApiObject(FeatureByteBaseDocumentModel):
         FeatureByteBaseDocumentModel
         """
         return self._get_schema(**self._get_object_dict_by_id(id_value=self.id))  # type: ignore
+
+    @property
+    def saved(self) -> bool:
+        """
+        Flag to indicate whether the object has been saved to persistent or not.
+
+        Returns
+        -------
+        bool
+        """
+        try:
+            # Do not use cached_model here as it may use the cached value.
+            # Explicitly call _get_object_dict_by_id to retrieve the latest value from persistent.
+            _ = self._get_object_dict_by_id(id_value=self.id)
+            return True
+        except RecordRetrievalException:
+            return False
 
     @classmethod
     def _update_cache(cls, object_dict: dict[str, Any]) -> None:

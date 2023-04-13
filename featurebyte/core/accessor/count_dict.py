@@ -97,8 +97,8 @@ class CountDictAccessor:
 
     def entropy(self) -> Feature:
         """
-        Compute the entropy of the dictionary over the keys. The values are normalized to sum to 1
-        and used as the probability of each key in the entropy calculation.
+        Computes the entropy of the Cross Aggregate feature over the feature keys. The values are normalized to sum to
+        1 and used as the probability of each key in the entropy calculation.
 
         Returns
         -------
@@ -136,9 +136,8 @@ class CountDictAccessor:
 
     def most_frequent(self) -> Feature:
         """
-        Retrieve the most frequent key in the dictionary feature.
-
-        When there are ties, the lexicographically smallest key is returned.
+        Retrieves the most frequent key in the Cross Aggregate feature. When there are ties, the
+        lexicographically smallest key is returned.
 
         Returns
         -------
@@ -177,7 +176,7 @@ class CountDictAccessor:
     @typechecked()
     def unique_count(self, include_missing: bool = True) -> Feature:
         """
-        Compute number of distinct keys in the dictionary feature.
+        Computes number of distinct keys in a Cross Aggregate feature.
 
         Parameters
         ----------
@@ -224,7 +223,7 @@ class CountDictAccessor:
 
     def cosine_similarity(self, other: Feature) -> Feature:
         """
-        Compute the cosine similarity with another dictionary Feature.
+        Computes the cosine similarity with another Cross Aggregate feature.
 
         Parameters
         ----------
@@ -277,13 +276,8 @@ class CountDictAccessor:
 
     def get_value(self, key: Union[Scalar, Feature]) -> Feature:
         """
-        Retrieve the value in a dictionary feature based on the key provided.
-
-        This key could be either
-
-        - a lookup feature, or
-
-        - a scalar value.
+        Retrieves the value of a specific key in the Cross Aggregate feature. The key may either be a
+        lookup feature or a scalar value.
 
         Parameters
         ----------
@@ -340,13 +334,9 @@ class CountDictAccessor:
 
     def get_rank(self, key: Union[Scalar, Feature], descending: bool = False) -> Feature:
         """
-        Compute the rank of a particular key in the dictionary feature. If multiple keys have the
-        same value, these keys will have the same rank which is equal to the smallest rank among
-        these keys.
-
-        - a lookup feature, or
-
-        - a scalar value.
+        Computes the rank of a specific key in the Cross Aggregate feature. If there are multiple keys with the same
+        value, those keys will have the same rank, which equals the smallest rank among those keys. The key that is
+        used for looking up the rank may either be a lookup feature or a scalar value.
 
         Parameters
         ----------
@@ -404,13 +394,8 @@ class CountDictAccessor:
 
     def get_relative_frequency(self, key: Union[Scalar, Feature]) -> Feature:
         """
-        Compute the relative frequency of a particular key in the dictionary feature.
-
-        This key could be either
-
-        - a lookup feature, or
-
-        - a scalar value.
+        Computes the relative frequency of a specific key in the Cross Aggregate feature. The key may either be a
+        lookup feature or a scalar value.
 
         Parameters
         ----------

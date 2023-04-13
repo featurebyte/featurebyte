@@ -4,7 +4,7 @@ Tests for FeatureJobSettingAnalysis routes
 import copy
 from datetime import datetime
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
 import pytest
@@ -103,6 +103,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         record = Mock(**kwargs, to_html=lambda: result["analysis_report"], dict=lambda: result)
         with patch(
             "featurebyte.worker.task.feature_job_setting_analysis.create_feature_job_settings_analysis",
+            new_callable=AsyncMock,
         ) as mock_create_feature_job_settings_analysis:
             mock_create_feature_job_settings_analysis.return_value = record
             yield mock_create_feature_job_settings_analysis

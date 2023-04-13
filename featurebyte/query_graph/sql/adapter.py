@@ -9,7 +9,7 @@ import re
 from abc import abstractmethod
 
 from sqlglot import expressions
-from sqlglot.expressions import Expression, alias_, select
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql import expression as fb_expressions
@@ -25,6 +25,8 @@ class BaseAdapter:
     """
     Helper class to generate engine specific SQL expressions
     """
+
+    TABLESAMPLE_PERCENT_KEY = "percent"
 
     @classmethod
     @abstractmethod
@@ -372,11 +374,45 @@ class BaseAdapter:
         str
         """
 
+    @classmethod
+    def tablesample(cls, select_expr: Select, sample_percent: float) -> Select:
+        """
+        Expression to get a sample of the table
+
+        Parameters
+        ----------
+        select_expr : Select
+            Select expression
+        sample_percent : float
+            Sample percentage. This is a number between 0 to 100.
+
+        Returns
+        -------
+        Select
+        """
+        select_expr = select_expr.copy()
+
+        # Need to perform syntax tree surgery this way since TABLESAMPLE needs to be attached to the
+        # FROM clause so that the result is still a SELECT expression. This way we can do things
+        # like limit(), subquery() etc on the result.
+        params = {cls.TABLESAMPLE_PERCENT_KEY: make_literal_value(sample_percent)}
+        tablesample_expr = expressions.TableSample(
+            this=select_expr.args["from"].expressions[0], **params
+        )
+        select_expr.args["from"].set("expressions", [tablesample_expr])
+
+        return select_expr
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
     Helper class to generate Snowflake specific SQL expressions
     """
+
+    # Snowflake does not support the PERCENT keyword. Setting the size parameter instead to
+    # prevent the generated SQL to have the PERCENT keyword. Ideally, this should be handled by
+    # sqlglot automatically but that is not the case yet.
+    TABLESAMPLE_PERCENT_KEY = "size"
 
     class SnowflakeDataType(StrEnum):
         """

@@ -975,4 +975,5 @@ class GraphInterpreter:
             flat_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
         )
         sql_node = sql_graph.build(flat_node)
+        assert isinstance(sql_node, TableNode)
         return cast(expressions.Select, sql_node.sql)

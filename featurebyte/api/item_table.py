@@ -29,17 +29,23 @@ if TYPE_CHECKING:
 
 class ItemTable(TableApiObject):
     """
-    An Item table is a type of FeatureByte table that represents a table in the data warehouse containing in-depth
-    details about a business event.
+    An ItemTable object represents a source table in the data warehouse containing in-depth details about a
+    business event.
+
+    Typically, an Item table has a 'one-to-many' relationship with an Event table. Despite not explicitly including
+    a timestamp, it is inherently linked to an event timestamp through its association with the Event table.
 
     For instance, an Item table can contain information about Product Items purchased in Customer Orders or Drug
     Prescriptions issued during Doctor Visits by Patients.
 
-    Typically, an Item table has a 'one-to-many' relationship with an Event table. Despite not explicitly including a
-    timestamp, it is inherently linked to an event timestamp through its association with the Event table.
+    ItemTable objects are created from a SourceTable object via the create_item_table method, and by identifying
+    the columns representing the columns representing the item key and the event key and determine which EventTable
+    object is associated with the Item table.
 
-    To create an Item table, it is necessary to identify the columns that represent the item key and the event key and
-    determine which Event table is associated with the Item table.
+    After creation, the table can optionally incorporate additional metadata at the column level to further aid
+    feature engineering. This can include identifying columns that identify or reference entities, providing
+    information about the semantics of the table columns, specifying default cleaning operations, or furnishing
+    descriptions of its columns.
 
     See Also
     --------
@@ -93,12 +99,23 @@ class ItemTable(TableApiObject):
         event_join_column_names: Optional[List[str]] = None,
     ) -> ItemView:
         """
-        Get an ItemView from a catalog item table.
+        Gets an ItemView object from an ItemTable object.
 
-        You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
-        constructed from the source table without any changes to the cleaning operations, or dropping column names.
-        In manual mode, you are able to specify some overrides. However, the manual mode should not be commonly used
-        as it might lead to unexpected behaviour if used wrongly.
+        Item views are typically used to create Lookup features for the item entity, to create Simple Aggregate
+        features for the event entity or to create Aggregate Over a Window features for other entities.
+
+        You have the option to choose between two view construction modes: auto and manual, with auto being
+        the default mode.
+
+        When using the auto mode, the data accessed through the view is cleaned based on the default cleaning
+        operations specified in the catalog table and special columns such as the record creation timestamp that
+        are not intended for feature engineering are not included in the view columns.
+
+        The event timestamp and event attributes representing entities in the related Event table are also
+        automatically added to the ItemView.
+
+        In manual mode, the default cleaning operations are not applied, and you have the flexibility to define your
+        own cleaning operations.
 
         Parameters
         ----------
@@ -244,7 +261,7 @@ class ItemTable(TableApiObject):
     @property
     def event_id_column(self) -> str:
         """
-        Event ID column name of the EventTable associated with the ItemTable
+        Returns the name of the column representing the event key of the Item view.
 
         Returns
         -------
@@ -258,7 +275,7 @@ class ItemTable(TableApiObject):
     @property
     def item_id_column(self) -> str:
         """
-        Item ID column name of the ItemTable
+        Returns the name of the column representing the item key of the Item view.
 
         Returns
         -------

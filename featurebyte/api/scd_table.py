@@ -28,20 +28,26 @@ if TYPE_CHECKING:
 
 class SCDTable(TableApiObject):
     """
-    An SCD (slowly changing dimension) table is a type of FeatureByte table that represents a table in a data warehouse
-    that contains data that changes slowly and unpredictably over time.
+    An SCDTable object represents a source table in the data warehouse that contains data that changes slowly and
+    unpredictably over time. This table is commonly referred as a Slowly Changing Dimension (SCD) table.
 
     There are two main types of SCDs: Type 1, which overwrites old data with new data, and Type 2, which maintains a
     history of changes by creating a new record for each change. FeatureByte only supports the use of Type 2 SCDs since
     SCDs of Type 1 may cause data leaks during model training and poor performance during inference.
 
     An SCD table of Type 2 utilizes a natural key to distinguish each active row and facilitate tracking of changes
-    over time. The SCD table employs effective and expiration date columns to determine the active status of a row.
-    In certain instances, an active flag column may replace the expiration date column to indicate if a row is
-    currently active.
+    over time. The SCD table employs effective and end (or expiration) timestamp columns to determine the active status
+    of a row. In certain instances, an active flag column may replace the expiration timestamp column to indicate if a
+    row is currently active.
 
-    To create an SCD table in FeatureByte, it is necessary to identify columns for the natural key, effective timestamp,
-    and optionally surrogate key, expiration timestamp, and active flag.
+    SCDTable objects are created from a SourceTable object via the create_scd_table method, and by identifying the
+    columns representing the columns representing the natural key, the effective timestamp, and optionally the surrogate
+    key, the end timestamp, and the active flag.
+
+    After creation, the table can optionally incorporate additional metadata at the column level to further aid
+    feature engineering. This can include identifying columns that identify or reference entities, providing
+    information about the semantics of the table columns, specifying default cleaning operations, or furnishing
+    descriptions of its columns.
 
     See Also
     --------
@@ -97,12 +103,22 @@ class SCDTable(TableApiObject):
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> SCDView:
         """
-        Get a SCDView from a catalog SCD table.
+        Gets an SCDView object from a SCDTable object that represents a Slowly Changing Dimension (SCD) table.
 
-        You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
-        constructed from the source table without any changes to the cleaning operations, or dropping column names.
-        In manual mode, you are able to specify some overrides. However, the manual mode should not be commonly used
-        as it might lead to unexpected behaviour if used wrongly.
+        SCD views are typically used to create Lookup features for the entity represented by the natural key of the
+        table or to create Aggregate As At features for other entities. They can also be used to enrich views of event
+        or item tables through joins.
+
+        You have the option to choose between two view construction modes: auto and manual, with auto being the
+        default mode.
+
+        When using the auto mode, the data accessed through the view is cleaned based on the default cleaning
+        operations specified in the catalog table and special columns such as the record creation timestamp, the
+        active flag and the experiation timestamp that are not intended for feature engineering are not included
+        in the view columns.
+
+        In manual mode, the default cleaning operations are not applied, and you have the flexibility to define
+        your own cleaning operations.
 
         Parameters
         ----------
@@ -192,12 +208,28 @@ class SCDTable(TableApiObject):
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> ChangeView:
         """
-        Get a ChangeView from a catalog SCD table.
+        Gets a ChangeView from a Slowly Changing Dimension (SCD) table. The view offers a method to examine alterations
+        that occur in a specific attribute within the natural key of the SCD table.
 
-        You are able to specify the view construction mode to be auto or manual. In auto mode, the view will be
-        constructed from the source table without any changes to the cleaning operations, or column names. In manual
-        mode, you are able to specify some overrides. However, the manual mode should not be commonly used as it
-        might lead to unexpected behaviour if used wrongly.
+        To create the ChangeView, you need to provide the name of the SCD column for which you want to track changes
+        through the track_changes_column parameter.
+
+        Optionally,
+
+        - you can define the default Feature Job Setting for the View. Default is once a day, at the time of the
+        creation of the view.
+        - you can provide a `prefix` parameter to control how the views columns are named.
+
+        The resulting view has 5 columns:
+
+        - the natural key of the SCDView
+        - past_<name_of_column_tracked>: value of the column before the change
+        - new_<name_of_column_tracked>: value of the column after the change
+        - past_valid_from_timestamp (equal to the effective timestamp of the SCD before the change)
+        - new_valid_from_timestamp (equal to the effective timestamp of the SCD after the change)
+
+        The ChangeView can be used to create Aggregates of Changes Over a Window features, similar to Aggregates Over
+        a Window features created from an Event View.
 
         Parameters
         ----------
@@ -305,7 +337,8 @@ class SCDTable(TableApiObject):
     @property
     def natural_key_column(self) -> str:
         """
-        Natural key column name of the SCDTable
+        Returns the name of the column representing the natural key of a Slowly Changing Dimension (SCD) table. This
+        column is used to distinguish each active row and facilitate tracking of changes over time.
 
         Returns
         -------
@@ -319,7 +352,8 @@ class SCDTable(TableApiObject):
     @property
     def effective_timestamp_column(self) -> str:
         """
-        Effective timestamp column name of the SCDTable
+        Returns the name of the column representing the effective timestamp of a Slowly Changing Dimension (SCD) table.
+        This column is used to indicate when a row started to be active.
 
         Returns
         -------
@@ -333,7 +367,10 @@ class SCDTable(TableApiObject):
     @property
     def surrogate_key_column(self) -> Optional[str]:
         """
-        Surrogate key column name of the SCDTable
+        Returns the name of the column representing the surrogate key of a Slowly Changing Dimension (SCD) table.
+        The column is an artificial key assigned by the system and is used as a unique identifier assigned to each
+        record of the SCD table. As the column is not intended to be used for feature engineering, the views created
+        from a SCD table do not contain this column by default.
 
         Returns
         -------
@@ -347,7 +384,9 @@ class SCDTable(TableApiObject):
     @property
     def end_timestamp_column(self) -> Optional[str]:
         """
-        End timestamp column name of the SCDTable
+        Returns the name of the column representing the end (or expiration) timestamp of a Slowly Changing Dimension
+        (SCD) table. This column is used to indicate when a row stopped to be active. As the column is not intended to
+        be used for feature engineering, the views created from a SCD table do not contain this column by default.
 
         Returns
         -------
@@ -361,7 +400,10 @@ class SCDTable(TableApiObject):
     @property
     def current_flag_column(self) -> Optional[str]:
         """
-        Current flag column name of the SCDTable
+        Returns the name of the column representing the current flag of a Slowly Changing Dimension (SCD) table.
+        This column is used to indicate if a row is currently active in the Data Warehouse. As the column is not
+        intended to be used for feature engineering, the views created from a SCD table do not contain this
+        column by default.
 
         Returns
         -------

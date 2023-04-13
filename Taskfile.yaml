@@ -27,12 +27,36 @@ tasks:
     cmds:
       - poetry install -n --sync --extras=server
 
+  lint-java:
+    desc: "Run linter for java"
+    sources:
+      - hive-udf/**/*
+    cmds:
+        - cd hive-udf && ./gradlew spotlessCheck
+
+  format-java:
+    desc: "Format the java code"
+    sources:
+      - hive-udf/**/*
+    cmds:
+      - cd hive-udf && ./gradlew spotlessApply
+
+  test-java:
+    desc: "Run the java tests"
+    sources:
+      - hive-udf/**/*
+    cmds:
+      - cd hive-udf && ./gradlew test
+
   build-jar:
     desc: "Compile the hive jar files"
     sources:
       - hive-udf/**/*
+    deps:
+      - task: lint-java
+      - task: test-java
     cmds:
-      - cd hive-udf && ./gradlew test && ./gradlew shadowJar
+      - cd hive-udf && ./gradlew shadowJar
       - rm -f featurebyte/sql/spark/*.jar
       - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
 

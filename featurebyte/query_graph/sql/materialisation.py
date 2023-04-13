@@ -40,11 +40,9 @@ def create_table_as(table_details: TableDetails, select_expr: Select) -> Express
     )
 
 
-def get_materialize_from_source_sql(
+def get_source_expr(
     source: TableDetails,
-    destination: TableDetails,
-    source_type: SourceType,
-) -> str:
+) -> Select:
     """
     Construct SQL query to materialize a table from a source table
 
@@ -52,26 +50,19 @@ def get_materialize_from_source_sql(
     ----------
     source: TableDetails
         Source table details
-    destination: TableDetails
-        Destination table details
-    source_type: SourceType
-        Source type information
 
     Returns
     -------
-    str
+    Select
     """
-    source_expr = expressions.select("*").from_(get_fully_qualified_table_name(source.dict()))
-    copy_table_expr = create_table_as(destination, source_expr)
-    return sql_to_string(copy_table_expr, source_type=source_type)
+    return expressions.select("*").from_(get_fully_qualified_table_name(source.dict()))
 
 
-def get_materialize_from_view_sql(
+def get_view_expr(
     graph: QueryGraphModel,
     node_name: str,
-    destination: TableDetails,
     source_type: SourceType,
-) -> str:
+) -> Select:
     """
     Construct SQL query to materialize a view given its query graph
 
@@ -81,19 +72,16 @@ def get_materialize_from_view_sql(
         Query graph
     node_name: str
         Name of the node to materialize
-    destination: TableDetails
-        Destination table details
     source_type: SourceType
         Source type information
 
     Returns
     -------
-    str
+    Select
     """
     interpreter = GraphInterpreter(query_graph=graph, source_type=source_type)
     table_expr = interpreter.construct_materialize_expr(node_name)
-    query = create_table_as(destination, table_expr)
-    return sql_to_string(query, source_type=source_type)
+    return table_expr
 
 
 def get_most_recent_point_in_time_sql(
@@ -118,3 +106,26 @@ def get_most_recent_point_in_time_sql(
         expressions.Max(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME))
     ).from_(get_fully_qualified_table_name(destination.dict()))
     return sql_to_string(query, source_type=source_type)
+
+
+def get_row_count_sql(table_expr: Select, source_type: SourceType) -> str:
+    """
+    Construct SQL query to get the row count of a table
+
+    Parameters
+    ----------
+    table_expr: Select
+        Table expression
+    source_type: SourceType
+        Source type information
+
+    Returns
+    -------
+    str
+    """
+    expr = expressions.select(
+        expressions.alias_(
+            expressions.Count(this=expressions.Star()), alias="row_count", quoted=True
+        )
+    ).from_(table_expr.subquery())
+    return sql_to_string(expr, source_type=source_type)
