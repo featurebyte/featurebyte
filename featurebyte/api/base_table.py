@@ -130,20 +130,22 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     @typechecked
     def update_critical_data_info(self, cleaning_operations: List[CleaningOperation]) -> None:
         """
-        Associates metadata with the column such as default cleaning operations.
+        Associates metadata with the column such as default cleaning operations that automatically apply when views
+        are created from a table. These operations help ensure data consistency and accuracy.
 
-        The cleaning operations dictate how data in the column is cleaned before any feature engineering is performed.
-        The operations can be set as a default in the column's metadata, or they can be established when creating a
-        view in a manual mode.
+        For a specific column, define a sequence of cleaning operations to be executed in order. Ensure that values
+        imputed in earlier steps are not marked for cleaning in subsequent operations.
 
-        The cleaning operations are designed to handle several scenarios, including missing values, disguised values,
-        values that are not in an anticipated list, and numeric values and dates that are out of boundaries. The
-        cleaning operations for a specific column may consist of a sequence of operations that must be executed in a
-        specific order. Values that have been imputed during previous operations should not be identified as values to
-        be cleaned in subsequent operations.
+        To set default cleaning operations for a column, use the following class objects in a list:
 
-        If changes occur in the data quality of the source table, new versions of the feature can be created with new
-        cleaning operations that address the new quality issues.
+        * `MissingValueImputation`: Imputes missing values.
+        * `DisguisedValueImputation`: Imputes disguised values from a list.
+        * `UnexpectedValueImputation`: Imputes unexpected values not found in a given list.
+        * `ValueBeyondEndpointImputation`: Imputes numeric or date values outside specified boundaries.
+        * `StringValueImputation`: Imputes string values.
+
+        If the `imputed_value` parameter is None, the values to impute are replaced with missing values and the
+        corresponding rows are ignored during aggregation operations.
 
         Parameters
         ----------

@@ -12,35 +12,37 @@ from featurebyte.models.base import FeatureByteBaseModel
 
 class FeatureJobSetting(FeatureByteBaseModel):
     """
-    Model for Feature Job Setting
+    FeatureJobSetting class is used to declare the Feature Job Setting.
 
-    The setting is defined by 3 main duration parameters:
+    The setting comprises three parameters:
 
-    - Frequency: how often we want the job to run
-    - Blind spot: the length of time that we deliberately want to from feature derivation. For example, if we
-      calculate features at 10am, a blind spot of 2h means we only use data up to 8am.
-      This is useful to account for data delay in the warehouse, as without this, the features can be noisy.
-    - Time modulo frequency: an offset to specify when feature jobs are run.
+    - The frequency parameter specifies how often the batch process should run.
+    - The time_modulo_frequency parameter defines the timing from the end of the frequency time period to when the
+      feature job commences. For example, a feature job with the following settings (frequency 60m,
+      time_modulo_frequency: 130s) will start 2 min and 10 seconds after the beginning of each hour:
+      00:02:10, 01:02:10, 02:02:10, …, 15:02:10, …, 23:02:10.
+    - The blind_spot parameter sets the time gap between feature computation and the latest event timestamp to be
+    processed.
 
-    Note that these duration parameters are the same duration type strings that pandas accepts in pd.Timedelta().
+    Note that these parameters are the same duration type strings that pandas accepts in pd.Timedelta().
 
     Examples
     --------
     Configure a feature job to run daily at 12am
 
     >>> feature_job_setting = FeatureJobSetting( # doctest: +SKIP
-      blind_spot="0"
-      frequency="24h"
-      time_modulo_frequency="0"
-    )
+    ...   blind_spot="0"
+    ...   frequency="24h"
+    ...   time_modulo_frequency="0"
+    ... )
 
     Configure a feature job to run daily at 8am
 
     >>> feature_job_setting = FeatureJobSetting( # doctest: +SKIP
-      blind_spot="0"
-      frequency="24h"
-      time_modulo_frequency="8h"
-    )
+    ...   blind_spot="0"
+    ...   frequency="24h"
+    ...   time_modulo_frequency="8h"
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureJobSetting")
