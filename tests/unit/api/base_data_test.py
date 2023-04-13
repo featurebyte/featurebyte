@@ -3,6 +3,7 @@ Base View test suite
 """
 import textwrap
 
+import pandas as pd
 import pytest
 
 from featurebyte.api.base_table import TableColumn
@@ -38,6 +39,7 @@ class BaseTableTestSuite:
     expected_data_column_sql = ""
     expected_clean_data_sql = ""
     expected_attr_name_value_pairs = []
+    expected_timestamp_column = ""
 
     @pytest.fixture(autouse=True)
     def immediately_expired_api_object_cache(self, mock_api_object_cache):
@@ -79,7 +81,12 @@ class BaseTableTestSuite:
         )
         return data_under_test
 
-    def test_data_column__not_exists(self, data_under_test):
+    def test_table_properties(self, data_under_test):
+        """Test table properties"""
+        assert data_under_test.timestamp_column == self.expected_timestamp_column
+        assert data_under_test.frame.timestamp_column == self.expected_timestamp_column
+
+    def test_table_column__not_exists(self, data_under_test):
         """
         Test non-exist column retrieval
         """
@@ -100,7 +107,7 @@ class BaseTableTestSuite:
         # when accessing the `columns` attribute, make sure we retrieve it properly
         assert set(data_under_test.columns) == self.expected_columns
 
-    def test_data_preview_sql(self, imputed_data_under_test):
+    def test_table_preview_sql(self, imputed_data_under_test):
         """
         Test preview table (make sure imputed table show only raw table sql)
         """
@@ -118,7 +125,7 @@ class BaseTableTestSuite:
         ]
         assert imputed_data_under_test.catalog_id == DEFAULT_CATALOG_ID
 
-    def test_data_column_preview_sql(self, data_under_test):
+    def test_table_column_preview_sql(self, data_under_test):
         """
         Test preview table column
         """
@@ -132,3 +139,21 @@ class BaseTableTestSuite:
         assert data_under_test.status == TableStatus.PUBLIC_DRAFT
         data_under_test.update_status(TableStatus.PUBLISHED)
         assert data_under_test.status == TableStatus.PUBLISHED
+
+    def test_table_sample_payload(self, data_under_test):
+        if self.expected_timestamp_column:
+            sample_payload = data_under_test.frame._get_sample_payload(
+                from_timestamp="2020-01-01",
+                to_timestamp="2020-01-02",
+            )
+            assert sample_payload.timestamp_column == self.expected_timestamp_column
+            assert sample_payload.from_timestamp == pd.Timestamp("2020-01-01")
+            assert sample_payload.to_timestamp == pd.Timestamp("2020-01-02")
+
+        else:
+            with pytest.raises(ValueError) as exc:
+                data_under_test.frame._get_sample_payload(
+                    from_timestamp="2020-01-01",
+                    to_timestamp="2020-01-02",
+                )
+            assert "timestamp_column must be specified." in str(exc.value)

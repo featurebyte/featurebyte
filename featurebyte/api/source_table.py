@@ -280,7 +280,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         - [Table.describe](/reference/featurebyte.api.base_table.TableApiObject.describe/):
           Retrieve a summary of a table.
         """
-        return self.frame.preview(limit=limit, after_cleaning=after_cleaning)
+        return self.frame.preview(limit=limit, after_cleaning=after_cleaning)  # type: ignore[misc]
 
     @typechecked
     def sample(
@@ -387,7 +387,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         - [Table.sample](/reference/featurebyte.api.base_table.TableApiObject.sample/):
           Retrieve a sample of a table.
         """
-        return self.frame.describe(
+        return self.frame.describe(  # type: ignore[misc]
             size=size,
             seed=seed,
             from_timestamp=from_timestamp,

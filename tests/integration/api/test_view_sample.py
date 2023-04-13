@@ -12,10 +12,19 @@ def test_event_table_sample(event_table):
     """
     Test event table sample & event table column sample
     """
-    event_table_df = event_table.sample()
+    sample_kwargs = {"from_timestamp": "2001-01-01", "to_timestamp": "2001-02-01"}
+    event_table_df = event_table.sample(**sample_kwargs)
     ts_col = "ËVENT_TIMESTAMP"
-    ev_ts = event_table[ts_col].sample()
+    ev_ts = event_table[ts_col].sample(**sample_kwargs)
     pd.testing.assert_frame_equal(event_table_df[[ts_col]], ev_ts)
+
+    # check the sample result
+    assert event_table_df[ts_col].min().tz_convert(None) >= pd.Timestamp(
+        sample_kwargs["from_timestamp"]
+    )
+    assert event_table_df[ts_col].max().tz_convert(None) <= pd.Timestamp(
+        sample_kwargs["to_timestamp"]
+    )
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

@@ -3,7 +3,7 @@ Unit test for ItemTable class
 """
 from __future__ import annotations
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -236,6 +236,7 @@ class TestItemTableTestSuite(BaseTableTestSuite):
     FROM "sf_database"."sf_schema"."items_table"
     LIMIT 10
     """
+    expected_timestamp_column = None
 
 
 def test_item_table_column__as_entity(snowflake_item_table, mock_api_object_cache):

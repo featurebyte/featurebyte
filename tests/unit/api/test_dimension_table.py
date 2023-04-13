@@ -64,6 +64,7 @@ class TestDimensionTableTestSuite(BaseTableTestSuite):
     FROM "sf_database"."sf_schema"."dimension_table"
     LIMIT 10
     """
+    expected_timestamp_column = None
 
 
 @pytest.fixture(name="dimension_table_dict")

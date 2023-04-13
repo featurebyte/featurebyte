@@ -276,6 +276,7 @@ class TestEventTableTestSuite(BaseTableTestSuite):
     FROM "sf_database"."sf_schema"."sf_table"
     LIMIT 10
     """
+    expected_timestamp_column = "event_timestamp"
 
 
 def test_info__event_table_without_record_creation_date(snowflake_database_table_dimension_table):

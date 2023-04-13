@@ -69,6 +69,7 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
     FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
     """
+    expected_timestamp_column = "effective_timestamp"
 
 
 @pytest.fixture(name="scd_table_dict")
