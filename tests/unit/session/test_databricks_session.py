@@ -25,6 +25,7 @@ def databricks_session_dict():
         "featurebyte_schema": "featurebyte",
         "storage_type": "s3",
         "storage_url": "http://some-url/bucket",
+        "storage_spark_url": "http://some-url/bucket",
         "database_credential": {
             "type": "ACCESS_TOKEN",
             "access_token": "some-databricks-access-token",
@@ -145,7 +146,7 @@ async def test_databricks_session(databricks_session_dict):
     """
     Test DatabricksSession
     """
-    with mock.patch("featurebyte.session.databricks.S3SimpleStorage", autospec=True) as _:
+    with mock.patch("featurebyte.session.spark_aware.S3SimpleStorage", autospec=True) as _:
         session = DatabricksSession(**databricks_session_dict)
 
     assert session.host == "some-databricks-hostname"
@@ -190,7 +191,7 @@ async def test_databricks_register_table(databricks_session_dict, databricks_con
     with mock.patch(
         "featurebyte.session.databricks.DatabricksSession.execute_query"
     ) as mock_execute_query:
-        with mock.patch("featurebyte.session.databricks.S3SimpleStorage", autospec=True) as _:
+        with mock.patch("featurebyte.session.spark_aware.S3SimpleStorage", autospec=True) as _:
             with mock.patch(
                 "featurebyte.session.databricks.pd.DataFrame.to_parquet", autospec=True
             ) as _:
