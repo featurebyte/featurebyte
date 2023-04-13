@@ -8,8 +8,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 
 public abstract class CountDictSingleStringArgumentUDF extends CountDictUDF {
 
-  final protected transient PrimitiveObjectInspector.PrimitiveCategory[] stringInputTypes = new PrimitiveObjectInspector.PrimitiveCategory[1];
-  final protected transient ObjectInspectorConverters.Converter[] stringConverters = new ObjectInspectorConverters.Converter[1];
+  protected final transient PrimitiveObjectInspector.PrimitiveCategory[] stringInputTypes =
+      new PrimitiveObjectInspector.PrimitiveCategory[1];
+  protected final transient ObjectInspectorConverters.Converter[] stringConverters =
+      new ObjectInspectorConverters.Converter[1];
 
   @Override
   protected void checkTypesAndInitialize(ObjectInspector[] arguments) throws UDFArgumentException {

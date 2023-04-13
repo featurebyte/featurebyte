@@ -1,20 +1,18 @@
 package com.featurebyte.hive.udf;
 
-import org.apache.hadoop.hive.serde2.objectinspector.*;
-import org.apache.hadoop.io.DoubleWritable;
+import java.util.Map;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-import java.util.Map;
-
-@Description(name = "F_COUNT_DICT_ENTROPY",
-    value = "_FUNC_(counts) "
-        + "- compute entropy value from count dictionary"
-)
+@Description(
+    name = "F_COUNT_DICT_ENTROPY",
+    value = "_FUNC_(counts) - compute entropy value from count dictionary")
 public class CountDictEntropy extends CountDictUDF {
-  final private DoubleWritable output = new DoubleWritable();
+  private final DoubleWritable output = new DoubleWritable();
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -38,13 +36,14 @@ public class CountDictEntropy extends CountDictUDF {
     for (Object value : counts.values()) {
       if (value != null) {
         double doubleValue = convertMapValueAsDouble(value);
+        if (Double.isNaN((doubleValue))) continue;
         total += doubleValue;
         values[index++] = doubleValue;
       }
     }
 
     double entropy = 0.0;
-    int count_length = values.length;
+    int count_length = index;
     for (index = 0; index < count_length; index++) {
       double p = values[index] / total;
       entropy += p * Math.log(p);
@@ -56,6 +55,6 @@ public class CountDictEntropy extends CountDictUDF {
 
   @Override
   public String getDisplayString(String[] children) {
-      return "F_COUNT_DICT_ENTROPY";
+    return "F_COUNT_DICT_ENTROPY";
   }
 }

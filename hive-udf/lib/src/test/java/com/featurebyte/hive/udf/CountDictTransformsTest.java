@@ -1,45 +1,52 @@
 package com.featurebyte.hive.udf;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class CountDictTransformsTest {
-  final private Map<String, IntWritable> countDict;
-  final private Map<String, IntWritable> countDictOther;
-  final private ObjectInspector mapValueOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-    PrimitiveObjectInspectorFactory.writableStringObjectInspector,
-    PrimitiveObjectInspectorFactory.writableIntObjectInspector
-  );
-  final private ObjectInspector stringValueOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-  final private ObjectInspector boolValueOI = PrimitiveObjectInspectorFactory.javaBooleanObjectInspector;
+  private final Map<String, DoubleWritable> countDict;
+  private final Map<String, DoubleWritable> countDictOther;
+  private final ObjectInspector mapValueOI =
+      ObjectInspectorFactory.getStandardMapObjectInspector(
+          PrimitiveObjectInspectorFactory.writableStringObjectInspector,
+          PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+  private final ObjectInspector stringValueOI =
+      PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+  private final ObjectInspector boolValueOI =
+      PrimitiveObjectInspectorFactory.javaBooleanObjectInspector;
 
   public CountDictTransformsTest() {
-    countDict = new HashMap<String, IntWritable>();
-    countDict.put("apple", new IntWritable(200));
-    countDict.put("orange", new IntWritable(210));
-    countDict.put("pear", new IntWritable(220));
-    countDict.put("grape", new IntWritable(230));
-    countDict.put("guava", new IntWritable(240));
-    countDict.put("banana", new IntWritable(250));
-    countDict.put("strawberry", new IntWritable(260));
-    countDict.put("dürian", new IntWritable(260));
+    countDict = new HashMap<String, DoubleWritable>();
+    countDict.put("apple", new DoubleWritable(200));
+    countDict.put("orange", new DoubleWritable(210));
+    countDict.put("pear", new DoubleWritable(220));
+    countDict.put("grape", new DoubleWritable(230));
+    countDict.put("guava", new DoubleWritable(240));
+    countDict.put("banana", new DoubleWritable(250));
+    countDict.put("strawberry", new DoubleWritable(260));
+    countDict.put("dürian", new DoubleWritable(260));
+    countDict.put("watermelon", new DoubleWritable(Double.NaN));
+    countDict.put("kiwi", null);
 
-    countDictOther = new HashMap<String, IntWritable>();
-    countDictOther.put("apple", new IntWritable(100));
+    countDictOther = new HashMap<String, DoubleWritable>();
+    countDictOther.put("apple", new DoubleWritable(100));
+    countDictOther.put("orange", new DoubleWritable(110));
+    countDictOther.put("watermelon", new DoubleWritable(Double.NaN));
+    countDictOther.put("kiwi", null);
   }
+
   @Test
   public void testCountDictEntropy() throws HiveException {
     CountDictEntropy udf = new CountDictEntropy();
@@ -66,7 +73,7 @@ public class CountDictTransformsTest {
     ObjectInspector[] arguments = {mapValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
-    IntWritable output = (IntWritable) udf.evaluate(args);
+    DoubleWritable output = (DoubleWritable) udf.evaluate(args);
     assertEquals(output.get(), 260);
   }
 
@@ -77,7 +84,7 @@ public class CountDictTransformsTest {
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
     IntWritable output = (IntWritable) udf.evaluate(args);
-    assertEquals(output.get(), 8);
+    assertEquals(output.get(), 10);
   }
 
   @Test
@@ -86,12 +93,11 @@ public class CountDictTransformsTest {
     ObjectInspector[] arguments = {mapValueOI, stringValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {
-      new GenericUDF.DeferredJavaObject(countDict),
-      new GenericUDF.DeferredJavaObject("apple"),
+      new GenericUDF.DeferredJavaObject(countDict), new GenericUDF.DeferredJavaObject("watermelon"),
     };
-    HashMap<String, IntWritable> expected = new HashMap<String, IntWritable>(countDict);
-    expected.remove("apple");
-    HashMap<String, IntWritable> output = (HashMap<String, IntWritable>) udf.evaluate(args);
+    HashMap<String, DoubleWritable> expected = new HashMap<String, DoubleWritable>(countDict);
+    expected.remove("watermelon");
+    HashMap<String, DoubleWritable> output = (HashMap<String, DoubleWritable>) udf.evaluate(args);
     assertEquals(expected, output);
   }
 
@@ -105,7 +111,7 @@ public class CountDictTransformsTest {
       new GenericUDF.DeferredJavaObject(countDictOther),
     };
     DoubleWritable output = (DoubleWritable) udf.evaluate(args);
-    assertEquals(0.30127179180036756, output.get());
+    assertEquals(0.43672656326636466, output.get());
   }
 
   @Test
@@ -114,8 +120,7 @@ public class CountDictTransformsTest {
     ObjectInspector[] arguments = {mapValueOI, stringValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {
-      new GenericUDF.DeferredJavaObject(countDict),
-      new GenericUDF.DeferredJavaObject("apple"),
+      new GenericUDF.DeferredJavaObject(countDict), new GenericUDF.DeferredJavaObject("apple"),
     };
     DoubleWritable output = (DoubleWritable) udf.evaluate(args);
     assertEquals(0.10695187165775401, output.get());

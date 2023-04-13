@@ -1,27 +1,25 @@
 package com.featurebyte.hive.udf;
 
-import org.apache.hadoop.hive.serde2.objectinspector.*;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import java.util.Map;
+import java.util.Set;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-import java.util.Map;
-import java.util.Set;
-
-
-@Description(name = "F_COUNT_COSINE_SIMILARITY",
-    value = "_FUNC_(counts) "
-        + "- compute cosine similarity between two count dictionaries"
-)
+@Description(
+    name = "F_COUNT_COSINE_SIMILARITY",
+    value = "_FUNC_(counts) - compute cosine similarity between two count dictionaries")
 public class CountDictCosineSimilarity extends CountDictUDF {
-  final private DoubleWritable output = new DoubleWritable();
+  private final DoubleWritable output = new DoubleWritable();
 
   private transient MapObjectInspector otherInputMapOI;
-  final private transient PrimitiveCategory[] otherInputTypes = new PrimitiveCategory[2];
-  final private transient ObjectInspectorConverters.Converter[] otherConverters = new ObjectInspectorConverters.Converter[2];
+  private final transient PrimitiveCategory[] otherInputTypes = new PrimitiveCategory[2];
+  private final transient ObjectInspectorConverters.Converter[] otherConverters =
+      new ObjectInspectorConverters.Converter[2];
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -45,7 +43,7 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     }
     Map<String, Object> counts1 = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
     Map<String, Object> counts2 = (Map<String, Object>) otherInputMapOI.getMap(arguments[1].get());
-    if (counts1.size() == 0 ||  counts2.size() == 0) {
+    if (counts1.size() == 0 || counts2.size() == 0) {
       output.set(0.0);
       return output;
     }
@@ -58,8 +56,7 @@ public class CountDictCosineSimilarity extends CountDictUDF {
       countsOther = counts2;
       converter = converters[1];
       converterOther = otherConverters[1];
-    }
-    else {
+    } else {
       counts = counts2;
       countsOther = counts1;
       converter = otherConverters[1];
@@ -71,11 +68,21 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     double normOther = 0.0;
 
     for (Map.Entry<String, Object> set : counts.entrySet()) {
-      double value = ((DoubleWritable) converter.convert(set.getValue())).get();
+      DoubleWritable count = (DoubleWritable) converter.convert(set.getValue());
+      double value = 0;
+      if (count != null) {
+        value = count.get();
+        if (Double.isNaN(value)) value = 0;
+      }
       Object objectOther = countsOther.getOrDefault(set.getKey(), null);
       if (objectOther != null) {
-        double valueOther = ((DoubleWritable) converterOther.convert(objectOther)).get();
-        dotProduct = dotProduct + value * valueOther;
+        DoubleWritable countOther = (DoubleWritable) converterOther.convert(objectOther);
+        double valueOther = 0;
+        if (countOther != null) {
+          valueOther = countOther.get();
+          if (Double.isNaN(valueOther)) valueOther = 0;
+        }
+        dotProduct += value * valueOther;
         normOther += valueOther * valueOther;
       }
       norm += value * value;
@@ -84,7 +91,12 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     Set<String> keySet = countsOther.keySet();
     keySet.removeAll(counts.keySet());
     for (String k : keySet) {
-      double value = ((DoubleWritable) converterOther.convert(countsOther.get(k))).get();
+      DoubleWritable count = (DoubleWritable) converterOther.convert(countsOther.get(k));
+      double value = 0;
+      if (count != null) {
+        value = count.get();
+        if (Double.isNaN(value)) value = 0;
+      }
       normOther += value * value;
     }
 
@@ -94,6 +106,6 @@ public class CountDictCosineSimilarity extends CountDictUDF {
 
   @Override
   public String getDisplayString(String[] children) {
-      return "F_COUNT_DICT_COSINE_SIMILARITY";
+    return "F_COUNT_DICT_COSINE_SIMILARITY";
   }
 }
