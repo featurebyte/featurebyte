@@ -9,33 +9,42 @@ from featurebyte.common.documentation.constants import (
     ACTIVATE,
     ADD_METADATA,
     CATALOG,
+    CLASS_METHODS,
+    CLEANING_OPERATION,
+    CONSTRUCTOR,
     CREATE,
+    CREATE_FEATURE,
+    CREATE_FEATURE_GROUP,
+    CREATE_TABLE,
     DATA_SOURCE,
+    DEPLOY,
     ENTITY,
     ENUMS,
     EXPLORE,
     FEATURE,
     FEATURE_GROUP,
-    FEATURE_JOB,
+    FEATURE_JOB_SETTING,
     FEATURE_LIST,
     FEATURE_STORE,
     GET,
-    IMPUTATION,
+    GET_VIEW,
+    GROUPBY,
     INFO,
     JOIN,
     LAGS,
     LINEAGE,
     LIST,
+    MANAGE,
     RELATIONSHIP,
+    SAVE,
     SERVE,
+    SET_FEATURE_JOB,
     SOURCE_TABLE,
     TABLE,
     TABLE_COLUMN,
     TRANSFORM,
     TYPE,
-    UPDATE,
     UTILITY_CLASSES,
-    VERSION,
     VIEW,
     VIEW_COLUMN,
     WAREHOUSE,
@@ -90,17 +99,14 @@ def _get_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([TABLE]),
-        DocLayoutItem([TABLE, GET, "Catalog.get_table"]),
-        DocLayoutItem([TABLE, GET, "Table.get_by_id"]),
-        DocLayoutItem([TABLE, LIST, "Catalog.list_tables"]),
-        DocLayoutItem([TABLE, CREATE, "SourceTable.create_dimension_table"]),
-        DocLayoutItem([TABLE, CREATE, "SourceTable.create_event_table"]),
-        DocLayoutItem([TABLE, CREATE, "SourceTable.create_item_table"]),
-        DocLayoutItem([TABLE, CREATE, "SourceTable.create_scd_table"]),
-        DocLayoutItem([TABLE, ADD_METADATA, "EventTable.create_new_feature_job_setting_analysis"]),
-        DocLayoutItem([TABLE, ADD_METADATA, "EventTable.initialize_default_feature_job_setting"]),
-        DocLayoutItem([TABLE, ADD_METADATA, "EventTable.list_feature_job_setting_analysis"]),
-        DocLayoutItem([TABLE, ADD_METADATA, "EventTable.update_default_feature_job_setting"]),
+        DocLayoutItem(
+            [TABLE, SET_FEATURE_JOB, "EventTable.create_new_feature_job_setting_analysis"]
+        ),
+        DocLayoutItem(
+            [TABLE, SET_FEATURE_JOB, "EventTable.initialize_default_feature_job_setting"]
+        ),
+        DocLayoutItem([TABLE, SET_FEATURE_JOB, "EventTable.list_feature_job_setting_analysis"]),
+        DocLayoutItem([TABLE, SET_FEATURE_JOB, "EventTable.update_default_feature_job_setting"]),
         DocLayoutItem(
             [TABLE, EXPLORE, "Table.describe"],
             doc_path_override="api.base_table.TableApiObject.describe.md",
@@ -113,6 +119,11 @@ def _get_table_layout() -> List[DocLayoutItem]:
             [TABLE, EXPLORE, "Table.sample"],
             doc_path_override="api.base_table.TableApiObject.sample.md",
         ),
+        DocLayoutItem([TABLE, GET_VIEW, "SCDTable.get_change_view"]),
+        DocLayoutItem([TABLE, GET_VIEW, "DimensionTable.get_view"]),
+        DocLayoutItem([TABLE, GET_VIEW, "EventTable.get_view"]),
+        DocLayoutItem([TABLE, GET_VIEW, "SCDTable.get_view"]),
+        DocLayoutItem([TABLE, GET_VIEW, "ItemTable.get_view"]),
         DocLayoutItem(
             [TABLE, INFO, "Table.column_cleaning_operations"],
             doc_path_override="api.base_table.TableApiObject.column_cleaning_operations.md",
@@ -176,7 +187,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, TYPE, "ItemTable"]),
         DocLayoutItem([TABLE, TYPE, "SCDTable"]),
         DocLayoutItem(
-            [TABLE, UPDATE, "Table.update_record_creation_timestamp_column"],
+            [TABLE, ADD_METADATA, "Table.update_record_creation_timestamp_column"],
             doc_path_override="api.base_table.TableApiObject.update_record_creation_timestamp_column.md",
         ),
     ]
@@ -214,11 +225,7 @@ def _get_entity_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([ENTITY]),
-        DocLayoutItem([ENTITY, GET, "Catalog.get_entity"]),
-        DocLayoutItem([ENTITY, GET, "Entity.get_by_id"]),
-        DocLayoutItem([ENTITY, LIST, "Catalog.list_entities"]),
-        DocLayoutItem([ENTITY, CREATE, "Catalog.create_entity"]),
-        DocLayoutItem([ENTITY, CREATE, "Entity.get_or_create"]),
+        DocLayoutItem([ENTITY, CLASS_METHODS, "Entity.get_or_create"]),
         DocLayoutItem([ENTITY, INFO, "Entity.created_at"]),
         DocLayoutItem([ENTITY, INFO, "Entity.info"]),
         DocLayoutItem([ENTITY, INFO, "Entity.name"]),
@@ -242,30 +249,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([FEATURE]),
-        DocLayoutItem([FEATURE, GET, "Catalog.get_feature"]),
-        DocLayoutItem([FEATURE, GET, "Feature.get_by_id"]),
-        DocLayoutItem([FEATURE, LIST, "Catalog.list_features"]),
-        DocLayoutItem([FEATURE, CREATE, "Feature.save"]),
-        DocLayoutItem([FEATURE, CREATE, "View.as_features"]),
-        DocLayoutItem(
-            [FEATURE, CREATE, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
-        ),
-        DocLayoutItem(
-            [FEATURE, CREATE, "view.groupby"], doc_path_override="api.view.GroupByMixin.groupby.md"
-        ),
-        DocLayoutItem(
-            [FEATURE, CREATE, "view.GroupBy.aggregate"],
-            doc_path_override="api.groupby.GroupBy.aggregate.md",
-        ),
-        DocLayoutItem(
-            [FEATURE, CREATE, "view.GroupBy.aggregate_asat"],
-            doc_path_override="api.groupby.GroupBy.aggregate_asat.md",
-        ),
-        DocLayoutItem(
-            [FEATURE, CREATE, "view.GroupBy.aggregate_over"],
-            doc_path_override="api.groupby.GroupBy.aggregate_over.md",
-        ),
-        DocLayoutItem([FEATURE, CREATE, "ViewColumn.as_feature"]),
+        DocLayoutItem([FEATURE, SAVE, "Feature.save"]),
         DocLayoutItem([FEATURE, EXPLORE, "Feature.preview"]),
         DocLayoutItem([FEATURE, INFO, "Feature.created_at"]),
         DocLayoutItem([FEATURE, INFO, "Feature.dtype"]),
@@ -286,7 +270,13 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, LINEAGE, "Feature.definition"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.preview_sql"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.catalog_id"]),
-        DocLayoutItem([FEATURE, SERVE, "Feature.get_feature_jobs_status"]),
+        DocLayoutItem([FEATURE, MANAGE, "Feature.get_feature_jobs_status"]),
+        DocLayoutItem([FEATURE, MANAGE, "Feature.as_default_version"]),
+        DocLayoutItem([FEATURE, MANAGE, "Feature.create_new_version"]),
+        DocLayoutItem([FEATURE, MANAGE, "Feature.list_versions"]),
+        DocLayoutItem([FEATURE, MANAGE, "Feature.update_default_version_mode"]),
+        DocLayoutItem([FEATURE, MANAGE, "Feature.update_readiness"]),
+        DocLayoutItem([FEATURE, MANAGE, "Feature.version"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.abs"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.astype"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.cosine_similarity"]),
@@ -317,12 +307,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.slice"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.strip"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.upper"]),
-        DocLayoutItem([FEATURE, VERSION, "Feature.as_default_version"]),
-        DocLayoutItem([FEATURE, VERSION, "Feature.create_new_version"]),
-        DocLayoutItem([FEATURE, VERSION, "Feature.list_versions"]),
-        DocLayoutItem([FEATURE, VERSION, "Feature.update_default_version_mode"]),
-        DocLayoutItem([FEATURE, VERSION, "Feature.update_readiness"]),
-        DocLayoutItem([FEATURE, VERSION, "Feature.version"]),
     ]
 
 
@@ -338,12 +322,11 @@ def _get_feature_group_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([FEATURE_GROUP], doc_path_override="api.feature_list.FeatureGroup.md"),
         DocLayoutItem(
-            [FEATURE_GROUP, CREATE, "FeatureGroup"],
+            [FEATURE_GROUP, CONSTRUCTOR, "FeatureGroup"],
             doc_path_override="api.feature_list.FeatureGroup.md",
         ),
-        DocLayoutItem([FEATURE_GROUP, CREATE, "FeatureGroup.drop"]),
-        DocLayoutItem([FEATURE_GROUP, CREATE, "FeatureGroup.save"]),
-        DocLayoutItem([FEATURE_GROUP, CREATE, "FeatureList.drop"]),
+        DocLayoutItem([FEATURE_GROUP, MANAGE, "FeatureGroup.drop"]),
+        DocLayoutItem([FEATURE_GROUP, SAVE, "FeatureGroup.save"]),
         DocLayoutItem([FEATURE_GROUP, INFO, "FeatureGroup.feature_names"]),
         DocLayoutItem([FEATURE_GROUP, LINEAGE, "FeatureGroup.sql"]),
         DocLayoutItem([FEATURE_GROUP, EXPLORE, "FeatureGroup.preview"]),
@@ -361,11 +344,10 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([FEATURE_LIST]),
-        DocLayoutItem([FEATURE_LIST, GET, "Catalog.get_feature_list"]),
-        DocLayoutItem([FEATURE_LIST, GET, "FeatureList.get_by_id"]),
-        DocLayoutItem([FEATURE_LIST, LIST, "Catalog.list_feature_lists"]),
-        DocLayoutItem([FEATURE_LIST, CREATE, "FeatureList"]),
-        DocLayoutItem([FEATURE_LIST, CREATE, "FeatureList.save"]),
+        DocLayoutItem([FEATURE_LIST, CONSTRUCTOR, "FeatureList"]),
+        DocLayoutItem([FEATURE_LIST, CREATE_FEATURE_GROUP, "FeatureList.drop"]),
+        DocLayoutItem([FEATURE_LIST, DEPLOY, "FeatureList.deploy"]),
+        DocLayoutItem([FEATURE_LIST, SAVE, "FeatureList.save"]),
         DocLayoutItem([FEATURE_LIST, EXPLORE, "FeatureList.preview"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.created_at"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.feature_names"]),
@@ -379,16 +361,15 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.id"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.sql"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.primary_entity"]),
-        DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.deploy"]),
-        DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_feature_jobs_status"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.get_feature_jobs_status"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.as_default_version"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.create_new_version"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.list_versions"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_default_version_mode"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_status"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.version"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_historical_features"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_online_serving_code"]),
-        DocLayoutItem([FEATURE_LIST, VERSION, "FeatureList.as_default_version"]),
-        DocLayoutItem([FEATURE_LIST, VERSION, "FeatureList.create_new_version"]),
-        DocLayoutItem([FEATURE_LIST, VERSION, "FeatureList.list_versions"]),
-        DocLayoutItem([FEATURE_LIST, VERSION, "FeatureList.update_default_version_mode"]),
-        DocLayoutItem([FEATURE_LIST, VERSION, "FeatureList.update_status"]),
-        DocLayoutItem([FEATURE_LIST, VERSION, "FeatureList.version"]),
     ]
 
 
@@ -403,11 +384,12 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([FEATURE_STORE]),
-        DocLayoutItem([FEATURE_STORE, GET, "FeatureStore.get"]),
-        DocLayoutItem([FEATURE_STORE, GET, "FeatureStore.get_by_id"]),
-        DocLayoutItem([FEATURE_STORE, LIST, "FeatureStore.list"]),
-        DocLayoutItem([FEATURE_STORE, CREATE, "FeatureStore.create"]),
+        DocLayoutItem([FEATURE_STORE, CLASS_METHODS, "FeatureStore.get"]),
+        DocLayoutItem([FEATURE_STORE, CLASS_METHODS, "FeatureStore.get_by_id"]),
+        DocLayoutItem([FEATURE_STORE, CLASS_METHODS, "FeatureStore.list"]),
+        DocLayoutItem([FEATURE_STORE, CLASS_METHODS, "FeatureStore.create"]),
         DocLayoutItem([FEATURE_STORE, CREATE, "FeatureStore.get_or_create"]),
+        DocLayoutItem([FEATURE_STORE, GET, "FeatureStore.get_data_source"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.created_at"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.details"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.info"]),
@@ -429,12 +411,10 @@ def _get_data_source_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([DATA_SOURCE]),
-        DocLayoutItem([DATA_SOURCE, GET, "Catalog.get_data_source"]),
-        DocLayoutItem([DATA_SOURCE, GET, "FeatureStore.get_data_source"]),
-        DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.get_table"]),
-        DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.list_databases"]),
-        DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.list_schemas"]),
-        DocLayoutItem([DATA_SOURCE, EXPLORE, "DataSource.list_tables"]),
+        DocLayoutItem([DATA_SOURCE, GET, "DataSource.get_table"]),
+        DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_databases"]),
+        DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_schemas"]),
+        DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_tables"]),
         DocLayoutItem([DATA_SOURCE, INFO, "DataSource.type"]),
     ]
 
@@ -450,15 +430,12 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([RELATIONSHIP]),
-        DocLayoutItem([RELATIONSHIP, GET, "Catalog.get_relationship"]),
-        DocLayoutItem([RELATIONSHIP, GET, "Relationship.get_by_id"]),
-        DocLayoutItem([RELATIONSHIP, LIST, "Catalog.list_relationships"]),
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.created_at"]),
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.info"]),
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.name"]),
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.updated_at"]),
         DocLayoutItem([RELATIONSHIP, LINEAGE, "Relationship.id"]),
-        DocLayoutItem([RELATIONSHIP, UPDATE, "Relationship.enable"]),
+        DocLayoutItem([RELATIONSHIP, MANAGE, "Relationship.enable"]),
     ]
 
 
@@ -473,12 +450,12 @@ def _get_view_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([VIEW]),
-        DocLayoutItem([VIEW, CREATE, "SCDTable.get_change_view"]),
-        DocLayoutItem([VIEW, CREATE, "DimensionTable.get_view"]),
-        DocLayoutItem([VIEW, CREATE, "EventTable.get_view"]),
-        DocLayoutItem([VIEW, CREATE, "SCDTable.get_view"]),
-        DocLayoutItem([VIEW, CREATE, "ItemTable.get_view"]),
         DocLayoutItem([VIEW, CREATE, "View.raw"]),
+        DocLayoutItem([VIEW, CREATE_FEATURE, "View.as_features"]),
+        DocLayoutItem(
+            [VIEW, CREATE_FEATURE, "view.groupby"],
+            doc_path_override="api.view.GroupByMixin.groupby.md",
+        ),
         DocLayoutItem([VIEW, JOIN, "EventView.add_feature"]),
         DocLayoutItem([VIEW, JOIN, "ItemView.join_event_table_attributes"]),
         DocLayoutItem([VIEW, JOIN, "View.join"]),
@@ -558,6 +535,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([VIEW_COLUMN]),
+        DocLayoutItem([VIEW_COLUMN, CREATE_FEATURE, "ViewColumn.as_feature"]),
         DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.describe"]),
         DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.preview"]),
         DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.sample"]),
@@ -618,19 +596,36 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([CATALOG]),
         DocLayoutItem([CATALOG, ACTIVATE, "Catalog.activate"]),
-        DocLayoutItem([CATALOG, GET, "Catalog.get"]),
-        DocLayoutItem([CATALOG, GET, "Catalog.get_active"]),
-        DocLayoutItem([CATALOG, GET, "Catalog.get_by_id"]),
+        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get"]),
+        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_active"]),
+        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_by_id"]),
+        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.create"]),
+        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_or_create"]),
+        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.created_at"]),
+        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_feature_by_id"]),
+        DocLayoutItem([CATALOG, CREATE, "Catalog.create_entity"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_view"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_table"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_table_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_feature"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_entity"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_entity_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_feature_list"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_feature_list_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_data_source"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_relationship"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_relationship_by_id"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_relationships"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_feature_lists"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_entities"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_features"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_tables"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list"]),
-        DocLayoutItem([CATALOG, CREATE, "Catalog.create"]),
-        DocLayoutItem([CATALOG, CREATE, "Catalog.get_or_create"]),
-        DocLayoutItem([CATALOG, INFO, "Catalog.created_at"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.info"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.name"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.updated_at"]),
         DocLayoutItem([CATALOG, LINEAGE, "Catalog.id"]),
-        DocLayoutItem([CATALOG, UPDATE, "Catalog.update_name"]),
+        DocLayoutItem([CATALOG, MANAGE, "Catalog.update_name"]),
     ]
 
 
@@ -644,16 +639,31 @@ def _get_enum_layout() -> List[DocLayoutItem]:
         The layout for the Enums used in featurebyte.
     """
     return [
-        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "MissingValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "DisguisedValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "UnexpectedValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "ValueBeyondEndpointImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "StringValueImputation"]),
-        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "ColumnCleaningOperation"]),
-        DocLayoutItem([UTILITY_CLASSES, IMPUTATION, "TableCleaningOperation"]),
+        DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "MissingValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "DisguisedValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "UnexpectedValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "ValueBeyondEndpointImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "StringValueImputation"]),
+        DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "ColumnCleaningOperation"]),
+        DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "TableCleaningOperation"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
+        DocLayoutItem(
+            [UTILITY_CLASSES, GROUPBY, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
+        ),
+        DocLayoutItem(
+            [UTILITY_CLASSES, GROUPBY, "view.GroupBy.aggregate"],
+            doc_path_override="api.groupby.GroupBy.aggregate.md",
+        ),
+        DocLayoutItem(
+            [UTILITY_CLASSES, GROUPBY, "view.GroupBy.aggregate_asat"],
+            doc_path_override="api.groupby.GroupBy.aggregate_asat.md",
+        ),
+        DocLayoutItem(
+            [UTILITY_CLASSES, GROUPBY, "view.GroupBy.aggregate_over"],
+            doc_path_override="api.groupby.GroupBy.aggregate_over.md",
+        ),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SnowflakeDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SparkDetails"]),
@@ -671,6 +681,10 @@ def _get_source_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([SOURCE_TABLE]),
+        DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_dimension_table"]),
+        DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_event_table"]),
+        DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_item_table"]),
+        DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_scd_table"]),
         DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.describe"]),
         DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.preview"]),
         DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.sample"]),
@@ -687,16 +701,24 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
         The layout for the FeatureJob module.
     """
     return [
-        DocLayoutItem([FEATURE_JOB, CREATE, "FeatureJobSetting"]),
-        DocLayoutItem([FEATURE_JOB, CREATE, "FeatureJobSettingAnalysis"]),
-        DocLayoutItem([FEATURE_JOB, CREATE, "TableFeatureJobSetting"]),
-        DocLayoutItem([FEATURE_JOB, INFO, "FeatureJobSettingAnalysis.info"]),
-        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.get"]),
-        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.get_by_id"]),
-        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.display_report"]),
-        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.download_report"]),
-        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.get_recommendation"]),
-        DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.backtest"]),
+        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSetting"]),
+        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis"]),
+        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "TableFeatureJobSetting"]),
+        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.info"]),
+        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.get"]),
+        DocLayoutItem(
+            [UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.get_by_id"]
+        ),
+        DocLayoutItem(
+            [UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.display_report"]
+        ),
+        DocLayoutItem(
+            [UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.download_report"]
+        ),
+        DocLayoutItem(
+            [UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.get_recommendation"]
+        ),
+        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.backtest"]),
     ]
 
 
