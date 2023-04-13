@@ -2,7 +2,9 @@
 This module contains utility functions used in tests
 """
 import json
+import re
 import sys
+import textwrap
 from contextlib import contextmanager
 from unittest.mock import Mock
 
@@ -366,3 +368,18 @@ async def get_historical_features_async_dataframe_helper(
     )
     df_historical_features = await get_dataframe_from_materialized_table(session, modeling_table)
     return df_historical_features
+
+
+def check_observation_table_creation_query(query, expected):
+    """
+    Helper function to check that the query to create an observation table is correct
+    """
+    # Check that the correct query was executed (the table name should be prefixed by
+    # OBSERVATION_TABLE followed by an ObjectId)
+    observation_table_name_pattern = r"OBSERVATION_TABLE_\w{24}"
+    assert re.search(observation_table_name_pattern, query)
+
+    # Remove the dynamic component before comparing
+    query = re.sub(r"OBSERVATION_TABLE_\w{24}", "OBSERVATION_TABLE", query)
+    expected = textwrap.dedent(expected).strip()
+    assert query == expected

@@ -885,14 +885,19 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         return FeatureGroup(features)
 
-    def create_observation_table(self, name: str) -> ObservationTable:
+    def create_observation_table(
+        self, name: str, sample_rows: Optional[int] = None
+    ) -> ObservationTable:
         """
-        Create an ObservationTable from the View
+        Create an ObservationTable from the View.
 
         Parameters
         ----------
         name: str
-            Name of the ObservationTable
+            Name of the ObservationTable.
+        sample_rows: Optional[int]
+            Optionally sample the source table to this number of rows before creating the
+            observation table.
 
         Returns
         -------
@@ -904,6 +909,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             name=name,
             feature_store_id=self.feature_store.id,
             observation_input=ViewObservationInput(graph=pruned_graph, node_name=mapped_node.name),
+            sample_rows=sample_rows,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

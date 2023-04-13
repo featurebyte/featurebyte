@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, conint, root_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -31,6 +31,7 @@ class ObservationTableCreate(FeatureByteBaseModel):
     feature_store_id: PydanticObjectId
     context_id: Optional[PydanticObjectId]
     observation_input: ObservationInput
+    sample_rows: Optional[conint(ge=0)]  # type: ignore[valid-type]
 
 
 class ObservationTableList(PaginationMixin):

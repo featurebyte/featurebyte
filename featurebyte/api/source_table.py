@@ -907,7 +907,11 @@ class SourceTable(AbstractTableData):
             current_flag_column=current_flag_column,
         )
 
-    def create_observation_table(self, name: str) -> ObservationTable:
+    def create_observation_table(
+        self,
+        name: str,
+        sample_rows: Optional[int] = None,
+    ) -> ObservationTable:
         """
         Create an observation table from this source table.
 
@@ -915,6 +919,9 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             Observation table name.
+        sample_rows: Optional[int]
+            Optionally sample the source table to this number of rows before creating the
+            observation table.
 
         Returns
         -------
@@ -927,6 +934,7 @@ class SourceTable(AbstractTableData):
             name=name,
             feature_store_id=self.feature_store.id,
             observation_input=SourceTableObservationInput(source=self.tabular_source),
+            sample_rows=sample_rows,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

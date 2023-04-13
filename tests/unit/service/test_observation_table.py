@@ -2,7 +2,7 @@
 Test for ObservationTableService
 """
 import textwrap
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pandas as pd
 import pytest
@@ -166,3 +166,33 @@ async def test_get_additional_metadata__supported_type_point_in_time(
         await observation_table_service.get_additional_metadata(mock_db_session, table_details)
 
     assert str(exc.value) == "Point in time column should have timestamp type; got STRING"
+
+
+@pytest.mark.asyncio
+async def test_observation_input_get_row_count(observation_table_from_source_table, db_session):
+    """
+    Test get_row_count triggers expected query
+    """
+    db_session.execute_query = AsyncMock(return_value=pd.DataFrame({"row_count": [1000]}))
+
+    row_count = await observation_table_from_source_table.observation_input.get_row_count(
+        db_session,
+        observation_table_from_source_table.observation_input.get_query_expr(
+            db_session.source_type
+        ),
+    )
+    assert row_count == 1000
+
+    expected_query = textwrap.dedent(
+        """
+        SELECT
+          COUNT(*) AS "row_count"
+        FROM (
+          SELECT
+            *
+          FROM "sf_database"."sf_schema"."sf_event_table"
+        )
+        """
+    ).strip()
+    query = db_session.execute_query.call_args[0][0]
+    assert query == expected_query
