@@ -30,24 +30,6 @@ class TableStatusService(BaseService):
         self.feature_service = feature_service
         self.feature_readiness_service = feature_readiness_service
 
-    async def quarantine_affected_features(self, table_id: ObjectId) -> None:
-        """
-        Quarantine features affected by deprecation of a table
-
-        Parameters
-        ----------
-        table_id: ObjectId
-            Deprecated table ID
-        """
-        async for feature_doc in self.feature_service.list_documents_iterator(
-            query_filter={"table_ids": {"$in": [table_id]}}
-        ):
-            await self.feature_readiness_service.update_feature(
-                feature_id=feature_doc["_id"],
-                readiness=FeatureReadiness.QUARANTINE,
-                return_document=False,
-            )
-
     async def update_status(
         self, service: TableDocumentService, document_id: ObjectId, status: TableStatus
     ) -> None:
@@ -85,7 +67,3 @@ class TableStatusService(BaseService):
                     data=service.document_update_class(status=status),  # type: ignore
                     return_document=False,
                 )
-
-                if status == TableStatus.DEPRECATED:
-                    # quarantine features affected by deprecation of a table
-                    await self.quarantine_affected_features(table_id=document_id)
