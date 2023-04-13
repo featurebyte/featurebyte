@@ -615,6 +615,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, GET, "Catalog.get_data_source"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_relationship"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_relationship_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_feature_job_setting_analysis_by_id"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_relationships"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_feature_lists"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_entities"]),
@@ -706,9 +707,6 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "TableFeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.info"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.get"]),
-        DocLayoutItem(
-            [UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.get_by_id"]
-        ),
         DocLayoutItem(
             [UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.display_report"]
         ),
