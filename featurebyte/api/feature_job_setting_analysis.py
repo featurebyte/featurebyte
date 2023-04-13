@@ -96,14 +96,14 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     @typechecked
     def display_report(self) -> None:
         """
-        Display analysis report
+        Displays analysis report.
         """
         display_html_in_notebook(self.analysis_report)
 
     @typechecked
     def download_report(self, output_path: Optional[Union[str, Path]] = None) -> Path:
         """
-        Downlaod analysis report
+        Downloads analysis report.
 
         Parameters
         ----------
@@ -135,7 +135,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     @typechecked
     def get_recommendation(self) -> FeatureJobSetting:
         """
-        Retrieve recommended feature job setting from the analysis
+        Retrieves recommended feature job setting from the analysis.
 
         Returns
         -------
@@ -148,7 +148,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     @typechecked
     def backtest(self, feature_job_setting: FeatureJobSetting) -> pd.DataFrame:
         """
-        Backtest using specified feature job setting
+        Backtest using specified feature job setting.
 
         Parameters
         ----------

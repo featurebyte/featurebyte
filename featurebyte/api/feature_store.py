@@ -161,7 +161,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
     def get_data_source(self) -> DataSource:
         """
-        Get the data source associated with the feature store.
+        Gets the data source associated with the feature store.
 
         Returns
         -------

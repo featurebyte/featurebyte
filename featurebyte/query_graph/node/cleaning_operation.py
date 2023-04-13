@@ -39,7 +39,7 @@ class ConditionOperationField(StrEnum):
 class BaseCleaningOperation(FeatureByteBaseModel):
     """BaseCleaningOperation class"""
 
-    imputed_value: OptionalScalar
+    imputed_value: OptionalScalar = Field(description="Value to replace existing value")
 
     def __str__(self) -> str:
         class_name = self.__class__.__name__
@@ -127,10 +127,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
 
 class MissingValueImputation(BaseCleaningOperation):
     """
-    MissingValueImputation class is used to impute the missing value of a table column.
-
-    imputed_value: OptionalScalar
-        Value to replace missing value
+    MissingValueImputation class is used to declare the operation to impute the missing value of a table column.
 
     Examples
     --------
@@ -162,12 +159,10 @@ class MissingValueImputation(BaseCleaningOperation):
 
 class DisguisedValueImputation(BaseCleaningOperation):
     """
-    DisguisedValueImputation class is used to impute the disguised value of a table column.
+    DisguisedValueImputation class is used to declare the operation to impute the disguised value of a table column.
 
-    disguised_values: List[OptionalScalar]
-        List of disguised values
-    imputed_value: OptionalScalar
-        Value to replace disguised value
+    If the imputed_value parameter is None, the values to impute are replaced by missing values and the corresponding
+    rows are ignored during aggregation operations.
 
     Examples
     --------
@@ -181,7 +176,7 @@ class DisguisedValueImputation(BaseCleaningOperation):
     type: Literal[ConditionOperationField.DISGUISED] = Field(
         ConditionOperationField.DISGUISED, const=True
     )
-    disguised_values: Sequence[OptionalScalar]
+    disguised_values: Sequence[OptionalScalar] = Field(description="List of disguised values")
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.DISGUISED_VALUE_IMPUTATION(
@@ -202,13 +197,11 @@ class DisguisedValueImputation(BaseCleaningOperation):
 
 class UnexpectedValueImputation(BaseCleaningOperation):
     """
-    UnexpectedValueImputation class is used to impute the unexpected value of a table column.
+    UnexpectedValueImputation class is used to decalre the operation to impute the unexpected value of a table column.
     Note that this imputation operation will not impute missing value.
 
-    expected_values: List[OptionalScalar]
-        List of expected values, values not in expected value will be imputed
-    imputed_value: OptionalScalar
-        Value to replace unexpected value
+    If the imputed_value parameter is None, the values to impute are replaced by missing values and the corresponding
+    rows are ignored during aggregation operations.
 
     Examples
     --------
@@ -222,7 +215,9 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     type: Literal[ConditionOperationField.NOT_IN] = Field(
         ConditionOperationField.NOT_IN, const=True
     )
-    expected_values: Sequence[OptionalScalar]
+    expected_values: Sequence[OptionalScalar] = Field(
+        description="List of expected values, values not in expected " "value will be imputed"
+    )
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.UNEXPECTED_VALUE_IMPUTATION(
@@ -249,14 +244,11 @@ class UnexpectedValueImputation(BaseCleaningOperation):
 
 class ValueBeyondEndpointImputation(BaseCleaningOperation):
     """
-    ValueBeyondEndpointImputation class is used to impute the value exceed a specified endpoint
+    ValueBeyondEndpointImputation class is used to declare the operation to impute the value when the value in the
+    column exceeds a specified endpoint type.
 
-    type: Literal["less_than", "less_than_or_equal", "greater_than", "greater_than_or_equal"]
-        Boundary type
-    end_point: Union[int, float]
-        End point
-    imputed_value: OptionalScalar
-        Value to replace value outside the end point boundary
+    If the imputed_value parameter is None, the values to impute are replaced by missing values and the corresponding
+    rows are ignored during aggregation operations.
 
     Examples
     --------
@@ -272,8 +264,8 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
         ConditionOperationField.LESS_THAN_OR_EQUAL,
         ConditionOperationField.GREATER_THAN,
         ConditionOperationField.GREATER_THAN_OR_EQUAL,
-    ] = Field(allow_mutation=False)
-    end_point: Numeric
+    ] = Field(allow_mutation=False, description="Boundary type")
+    end_point: Numeric = Field(description="End point")
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.VALUE_BEYOND_ENDPOINT_IMPUTATION(
@@ -310,10 +302,11 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
 
 class StringValueImputation(BaseCleaningOperation):
     """
-    StringValueImputation class is used to impute those value which is string type
+    StringValueImputation class is used to declare the operation to impute the value when the value in the column is
+    of astring type.
 
-    imputed_value: OptionalScalar
-        Value to replace string value
+    If the imputed_value parameter is None, the values to impute are replaced by missing values and the corresponding
+    rows are ignored during aggregation operations.
 
     Examples
     --------

@@ -58,7 +58,7 @@ class DataSource:
     @typechecked
     def list_databases(self) -> List[str]:
         """
-        List databases in the data source.
+        Lists the databases in the data source.
 
         Returns
         -------
@@ -85,7 +85,7 @@ class DataSource:
     @typechecked
     def list_schemas(self, database_name: Optional[str] = None) -> List[str]:
         """
-        List schemas in a database.
+        Lists the schemas present in a particular database of the data source.
 
         Parameters
         ----------
@@ -124,7 +124,7 @@ class DataSource:
         schema_name: Optional[str] = None,
     ) -> List[str]:
         """
-        List tables in a database schema.
+        Lists the tables present in a particular database schema of the data source.
 
         Parameters
         ----------
@@ -169,7 +169,8 @@ class DataSource:
         schema_name: Optional[str] = None,
     ) -> SourceTable:
         """
-        Get a table in a database schema.
+        Gets a SourceTable object by specifying the table name, along with details about the database and database
+        schema to which the table belongs.
 
         Parameters
         ----------

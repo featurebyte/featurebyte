@@ -227,7 +227,8 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @typechecked
     def preview_clean_data_sql(self, limit: int = 10) -> str:
         """
-        Generate SQL query to preview the table after applying list of cleaning operations.
+        Returns an SQL query for previewing the table after applying the set of cleaning operations defined at the
+        column level.
 
         Parameters
         ----------

@@ -579,7 +579,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def get_data_source(self, feature_store_name: str) -> DataSource:
         """
-        Get data source by a given feature store name.
+        Gets a data source based on the name of the feature store that the data source is associated with.
 
         Parameters
         ----------
@@ -603,7 +603,17 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def get_view(self, table_name: str) -> View:
         """
-        Get view for a given table name.
+        Gets a View object from the catalog based on the name of the table the view should be derived from.
+
+        You have the option to choose between two view construction modes: auto and manual, with auto being the
+        default mode.
+
+        When using the auto mode, the data accessed through the view is cleaned based on the default cleaning
+        operations specified in the catalog table and special columns such as the record creation timestamp that
+        are not intended for feature engineering are not included in the view columns.
+
+        In manual mode, the default cleaning operations are not applied, and you have the flexibility to define your
+        own cleaning operations.
 
         Parameters
         ----------

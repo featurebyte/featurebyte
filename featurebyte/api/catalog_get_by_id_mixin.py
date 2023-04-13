@@ -82,7 +82,7 @@ class CatalogGetByIdMixin:
         self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> Feature:
         """
-        Get a feature by id.
+        Returns a Feature object by its unique identifier (ID).
 
         Parameters
         ----------
@@ -107,7 +107,7 @@ class CatalogGetByIdMixin:
         self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> FeatureList:
         """
-        Get feature list by id.
+        Gets a FeatureList object by its unique identifier (ID).
 
         Parameters
         ----------
@@ -132,7 +132,7 @@ class CatalogGetByIdMixin:
         self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> Any:
         """
-        Get table by id.
+        Returns a Table object by its unique identifier (ID).
 
         Parameters
         ----------
@@ -157,7 +157,7 @@ class CatalogGetByIdMixin:
         self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> Relationship:
         """
-        Get relationship by id.
+        Returns a Relationship object by its unique identifier (ID).
 
         Parameters
         ----------
@@ -232,7 +232,7 @@ class CatalogGetByIdMixin:
         self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> Entity:
         """
-        Get entity by id.
+        Returns an Entity object by its unique identifier (ID).
 
         Parameters
         ----------
