@@ -256,8 +256,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         An entity's serving name is the name of the unique identifier that is used to identify the entity during a
         preview or serving request. Typically, the serving name for an entity is the name of the primary key (or
-        natural key) of the table that represents the entity. For convenience, an entity can have multiple serving
-        names but the unique identifier should remain unique.
+        natural key) of the table that represents the entity.
 
         For example, the serving names of a Customer entity could be 'CustomerID' and 'CustID'.
 
