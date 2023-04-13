@@ -63,8 +63,10 @@ class ObservationTableTask(BaseTask):
         )
         await db_session.execute_query(query)
 
-        additional_metadata = await observation_table_service.get_additional_metadata(
-            db_session, location.table_details
+        additional_metadata = (
+            await observation_table_service.validate_materialized_table_and_get_metadata(
+                db_session, location.table_details
+            )
         )
 
         logger.debug("Creating a new ObservationTable", extras=location.table_details.dict())

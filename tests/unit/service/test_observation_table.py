@@ -116,7 +116,9 @@ async def test_get_additional_metadata__missing_point_in_time(
         list_table_schema=Mock(side_effect=mock_list_table_schema),
     )
     with pytest.raises(MissingPointInTimeColumnError):
-        await observation_table_service.get_additional_metadata(mock_db_session, table_details)
+        await observation_table_service.validate_materialized_table_and_get_metadata(
+            mock_db_session, table_details
+        )
 
 
 @pytest.mark.asyncio
@@ -124,9 +126,11 @@ async def test_get_additional_metadata__most_recent_point_in_time(
     observation_table_service, db_session, table_details
 ):
     """
-    Test get_additional_metadata triggers expected query
+    Test validate_materialized_table_and_get_metadata triggers expected query
     """
-    metadata = await observation_table_service.get_additional_metadata(db_session, table_details)
+    metadata = await observation_table_service.validate_materialized_table_and_get_metadata(
+        db_session, table_details
+    )
 
     expected_query = textwrap.dedent(
         """
@@ -149,7 +153,7 @@ async def test_get_additional_metadata__supported_type_point_in_time(
     observation_table_service, table_details
 ):
     """
-    Test get_additional_metadata validates the type of point in time column
+    Test validate_materialized_table_and_get_metadata validates the type of point in time column
     """
 
     async def mock_list_table_schema(*args, **kwargs):
@@ -163,6 +167,8 @@ async def test_get_additional_metadata__supported_type_point_in_time(
         list_table_schema=Mock(side_effect=mock_list_table_schema),
     )
     with pytest.raises(UnsupportedPointInTimeColumnTypeError) as exc:
-        await observation_table_service.get_additional_metadata(mock_db_session, table_details)
+        await observation_table_service.validate_materialized_table_and_get_metadata(
+            mock_db_session, table_details
+        )
 
     assert str(exc.value) == "Point in time column should have timestamp type; got STRING"
