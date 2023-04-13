@@ -384,7 +384,7 @@ class BaseAdapter:
         select_expr : Select
             Select expression
         sample_percent : float
-            Sample percentage
+            Sample percentage. This is a number between 0 to 100.
 
         Returns
         -------

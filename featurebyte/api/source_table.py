@@ -864,7 +864,7 @@ class SourceTable(AbstractTableData):
             Observation table name.
         sample_rows: Optional[float]
             Optionally sample the source table to this number of rows before creating the
-            observation table. This is a number between 0 and 100.
+            observation table.
 
         Returns
         -------

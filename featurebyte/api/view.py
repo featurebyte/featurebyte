@@ -873,7 +873,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Name of the ObservationTable.
         sample_rows: Optional[int]
             Optionally sample the source table to this number of rows before creating the
-            observation table. This is a number between 0 and 100.
+            observation table.
 
         Returns
         -------
