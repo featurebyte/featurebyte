@@ -98,9 +98,7 @@ async def test_create_observation_table_from_source_table(
 
 
 @pytest.mark.asyncio
-async def test_get_additional_metadata__missing_point_in_time(
-    observation_table_service, table_details
-):
+async def test_validate__missing_point_in_time(observation_table_service, table_details):
     """
     Test validation of missing point in time
     """
@@ -122,7 +120,7 @@ async def test_get_additional_metadata__missing_point_in_time(
 
 
 @pytest.mark.asyncio
-async def test_get_additional_metadata__most_recent_point_in_time(
+async def test_validate__most_recent_point_in_time(
     observation_table_service, db_session, table_details
 ):
     """
@@ -149,9 +147,7 @@ async def test_get_additional_metadata__most_recent_point_in_time(
 
 
 @pytest.mark.asyncio
-async def test_get_additional_metadata__supported_type_point_in_time(
-    observation_table_service, table_details
-):
+async def test_validate__supported_type_point_in_time(observation_table_service, table_details):
     """
     Test validate_materialized_table_and_get_metadata validates the type of point in time column
     """

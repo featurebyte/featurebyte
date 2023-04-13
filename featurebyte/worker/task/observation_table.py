@@ -63,22 +63,32 @@ class ObservationTableTask(BaseTask):
         )
         await db_session.execute_query(query)
 
-        additional_metadata = (
-            await observation_table_service.validate_materialized_table_and_get_metadata(
-                db_session, location.table_details
+        try:
+            additional_metadata = (
+                await observation_table_service.validate_materialized_table_and_get_metadata(
+                    db_session, location.table_details
+                )
             )
-        )
-
-        logger.debug("Creating a new ObservationTable", extras=location.table_details.dict())
-        observation_table = ObservationTableModel(
-            _id=self.payload.output_document_id,
-            user_id=payload.user_id,
-            name=payload.name,
-            location=location,
-            context_id=payload.context_id,
-            observation_input=payload.observation_input,
-            **additional_metadata,
-        )
-
-        created_doc = await observation_table_service.create_document(observation_table)
-        assert created_doc.id == payload.output_document_id
+            logger.debug("Creating a new ObservationTable", extras=location.table_details.dict())
+            observation_table = ObservationTableModel(
+                _id=self.payload.output_document_id,
+                user_id=payload.user_id,
+                name=payload.name,
+                location=location,
+                context_id=payload.context_id,
+                observation_input=payload.observation_input,
+                **additional_metadata,
+            )
+            created_doc = await observation_table_service.create_document(observation_table)
+            assert created_doc.id == payload.output_document_id
+        except Exception as e:
+            logger.error(
+                "Failed to create ObservationTable",
+                extras={"error": str(e), "task_payload": self.payload.dict()},
+            )
+            await db_session.drop_table(
+                table_name=location.table_details.table_name,
+                schema_name=location.table_details.schema_name,
+                database_name=location.table_details.database_name,
+            )
+            raise e
