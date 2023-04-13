@@ -80,7 +80,7 @@ class BaseObservationInput(FeatureByteBaseModel):
         return int(result.iloc[0]["row_count"])  # type: ignore[union-attr]
 
     @staticmethod
-    def get_sample_percentage_from_row_count(total_row_count, desired_row_count):
+    def get_sample_percentage_from_row_count(total_row_count: int, desired_row_count: int) -> float:
         """
         Get the sample percentage required to get the desired number of rows
 
