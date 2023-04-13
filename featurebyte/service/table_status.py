@@ -6,7 +6,6 @@ from typing import Any
 from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService

@@ -4,7 +4,6 @@ Test TableStatusService
 import pytest
 
 from featurebyte.exception import DocumentConflictError, DocumentUpdateError
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.schema.event_table import EventTableCreate, EventTableServiceUpdate
 
