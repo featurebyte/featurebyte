@@ -867,7 +867,14 @@ class Feature(
         self, default_version_mode: Literal[tuple(DefaultVersionMode)]  # type: ignore[misc]
     ) -> None:
         """
-        Update feature default version mode.
+        Sets the default version mode of a feature.
+
+        By default, the feature default version mode is auto and the feature's version with the highest level of
+        readiness is considered as the default version. In cases where multiple versions share the highest level of
+        readiness, the most recent version is automatically chosen as the default.
+
+        If the default version mode is set as manual, you can choose to manually set any version as the default version
+        for the feature.
 
         Parameters
         ----------
