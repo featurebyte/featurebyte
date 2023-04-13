@@ -286,12 +286,6 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     ] = Field(
         description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table."
     )
-    saved: bool = Field(
-        default=False,
-        allow_mutation=False,
-        exclude=True,
-        description="Flag to indicate whether the Table object is saved in the FeatureByte catalog.",
-    )
 
     # pydantic instance variable (internal use)
     internal_record_creation_timestamp_column: Optional[str] = Field(

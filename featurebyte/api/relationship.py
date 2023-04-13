@@ -61,14 +61,6 @@ class Relationship(ApiObject):
         ForeignKeyMapping("primary_table_id", TableApiObject, "primary_table_type", "type"),
     ]
 
-    # pydantic instance variable (public)
-    saved: bool = Field(
-        default=False,
-        allow_mutation=False,
-        exclude=True,
-        description="Flag to indicate whether the Relationship object is saved in the FeatureByte catalog.",
-    )
-
     # pydantic instance variable (internal use)
     internal_is_enabled: bool = Field(alias="is_enabled")
     internal_updated_by: PydanticObjectId = Field(alias="updated_by")

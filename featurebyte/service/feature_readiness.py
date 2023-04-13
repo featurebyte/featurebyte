@@ -73,19 +73,21 @@ class FeatureReadinessService(BaseService):
         FeatureListModel
         """
         assert len(feature_list_ids) > 0, "feature_list_ids should not be empty"
-        default_feature_list_id = feature_list_ids[0]
-        default_feature_list = await self.feature_list_service.get_document(
-            document_id=default_feature_list_id
-        )
-        for feature_list_id in feature_list_ids[1:]:
-            feature_list = await self.feature_list_service.get_document(document_id=feature_list_id)
-            if feature_list.readiness_distribution > default_feature_list.readiness_distribution:
+        default_feature_list: Optional[FeatureListModel] = None
+        async for feature_list_doc in self.feature_list_service.list_documents_iterator(
+            query_filter={"_id": {"$in": feature_list_ids}}
+        ):
+            feature_list = FeatureListModel(**feature_list_doc)
+            if default_feature_list is None:
+                default_feature_list = feature_list
+            elif feature_list.readiness_distribution > default_feature_list.readiness_distribution:
                 default_feature_list = feature_list
             elif (
                 feature_list.readiness_distribution == default_feature_list.readiness_distribution
                 and feature_list.created_at > default_feature_list.created_at  # type: ignore[operator]
             ):
                 default_feature_list = feature_list
+        assert default_feature_list is not None, "default_feature_list should not be None"
         return default_feature_list
 
     async def update_feature_list_namespace(
@@ -202,17 +204,21 @@ class FeatureReadinessService(BaseService):
         FeatureModel
         """
         assert len(feature_ids) > 0, "feature_ids should not be empty"
-        default_feature_id = feature_ids[0]
-        default_feature = await self.feature_service.get_document(document_id=default_feature_id)
-        for feature_id in feature_ids[1:]:
-            feature = await self.feature_service.get_document(document_id=feature_id)
-            if feature.readiness > default_feature.readiness:
+        default_feature: Optional[FeatureModel] = None
+        async for feature_doc in self.feature_service.list_documents_iterator(
+            query_filter={"_id": {"$in": feature_ids}}
+        ):
+            feature = FeatureModel(**feature_doc)
+            if default_feature is None:
+                default_feature = feature
+            elif feature.readiness > default_feature.readiness:
                 default_feature = feature
             elif (
                 feature.readiness == default_feature.readiness
                 and feature.created_at > default_feature.created_at  # type: ignore[operator]
             ):
                 default_feature = feature
+        assert default_feature is not None, "default_feature should not be None"
         return default_feature
 
     async def update_feature_namespace(
