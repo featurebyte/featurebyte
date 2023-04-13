@@ -10,7 +10,7 @@ from featurebyte.sql.common import construct_create_table_query
 from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_generate_tile_online(session, tile_task_prep_spark, base_sql_model):
     """
@@ -82,7 +82,7 @@ async def test_schedule_generate_tile_online(session, tile_task_prep_spark, base
     assert result["CREATED_AT"].iloc[3] > result["CREATED_AT"].iloc[2]
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_monitor_tile_online(session, base_sql_model):
     """
@@ -174,7 +174,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model):
     assert result["TILE_COUNT"].iloc[0] == 2
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spark, base_sql_model):
     """

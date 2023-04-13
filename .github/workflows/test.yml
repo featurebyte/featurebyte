@@ -32,14 +32,14 @@ env:
   SNOWFLAKE_SCHEMA: PUBLIC
   SNOWFLAKE_SCHEMA_FEATUREBYTE: FEATUREBYTE
   # Databricks
-  DATABRICKS_ACCESS_TOKEN: "dapic75843f6518fe8d4f98d7e7d29cbdd7e"
+  DATABRICKS_ACCESS_TOKEN: ${{ secrets.DATABRICKS_ACCESS_TOKEN }}
   DATABRICKS_SERVER_HOSTNAME: "2085793316075774.4.gcp.databricks.com"
   DATABRICKS_HTTP_PATH: "sql/protocolv1/o/2085793316075774/0319-021506-hzmupduq"
   DATABRICKS_CATALOG: "hive_metastore"
   DATABRICKS_SCHEMA_FEATUREBYTE: "FEATUREBYTE_GITHUB"
   DATABRICKS_STORAGE_URL: "https://storage.googleapis.com/databricks-2085793316075774/2085793316075774/FileStore"
   DATABRICKS_STORAGE_ACCESS_KEY_ID: "GOOG1EGI26DDNOGQ34T2RUMKJYOV3NL567KJURTRXD3XIATOWIM27XZF6ZHXY"
-  DATABRICKS_STORAGE_ACCESS_KEY_SECRET: "D6/w6Wmv6HuOcA9B1q1ntWUqG9VjsBKR3gY25Ym8"
+  DATABRICKS_STORAGE_ACCESS_KEY_SECRET: ${{ secrets.DATABRICKS_STORAGE_ACCESS_KEY_SECRET }}
   # Python
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi
@@ -461,7 +461,7 @@ jobs:
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}
-    needs: ["build-jar", "test-unit", "test-integration-snowflake", "test-integration-spark", "test-docs", "validate"]
+    needs: ["build-jar", "test-unit", "test-integration-snowflake", "test-integration-spark", "test-integration-databricks", "test-docs", "validate"]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -480,7 +480,7 @@ jobs:
         run: |
           echo "BUILD_JAR_RESULT=${{ needs.build-jar.result }}" >> $GITHUB_ENV
           echo "TEST_UNIT_RESULT=${{ needs.test-unit.result }}" >> $GITHUB_ENV
-          echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }}" >> $GITHUB_ENV
+          echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }}",${{ needs.test-integration-databricks.result }}" >> $GITHUB_ENV
           echo "TEST_DOCS_RESULT=${{ needs.test-docs.result }}" >> $GITHUB_ENV
           echo "VALIDATE_RESULT=${{ needs.validate.result }}" >> $GITHUB_ENV
           echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV

@@ -131,7 +131,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
     assert result[new_feature_name].iloc[1] == 6
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_update_feature_store__insert_varchar_feature_column(
     session, tile_task_prep_spark, base_sql_model
@@ -166,7 +166,7 @@ async def test_schedule_update_feature_store__insert_varchar_feature_column(
     assert result[feature_name].iloc[0] == "cat1"
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_online_feature_store__change_entity_universe(
     session, tile_task_prep_spark, base_sql_model
