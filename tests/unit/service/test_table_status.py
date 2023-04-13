@@ -4,7 +4,6 @@ Test TableStatusService
 import pytest
 
 from featurebyte.exception import DocumentConflictError, DocumentUpdateError
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.schema.event_table import EventTableCreate, EventTableServiceUpdate
 
@@ -79,40 +78,3 @@ async def test_tabular_source_uniqueness_check_excludes_deprecated_tables(
     assert new_event_table.name == "new_table"
     assert new_event_table.status == TableStatus.PUBLIC_DRAFT
     assert new_event_table.id != event_table.id
-
-
-@pytest.mark.asyncio
-async def test_quarantine_features_affected_by_deprecated_table(
-    feature_item_event,
-    feature_non_time_based,
-    production_ready_feature,
-    item_table,
-    item_table_service,
-    feature_service,
-    table_status_service,
-):
-    """Test quarantine features affected by deprecated_table"""
-    assert item_table.id in feature_item_event.table_ids
-    assert item_table.id in feature_non_time_based.table_ids
-    assert item_table.id not in production_ready_feature.table_ids
-
-    # deprecated the item table
-    await table_status_service.update_status(
-        service=item_table_service,
-        document_id=item_table.id,
-        status=TableStatus.DEPRECATED,
-    )
-    updated_item_table = await item_table_service.get_document(document_id=item_table.id)
-    assert updated_item_table.status == TableStatus.DEPRECATED
-
-    # check that the affected features are quarantined
-    expected_quarantined_features = [feature_item_event, feature_non_time_based]
-    for feature in expected_quarantined_features:
-        doc = await feature_service.get_document(document_id=feature.id)
-        assert doc.readiness == FeatureReadiness.QUARANTINE
-
-    # check that the non-affected feature is not quarantined
-    non_affected_feature = await feature_service.get_document(
-        document_id=production_ready_feature.id
-    )
-    assert non_affected_feature.readiness == FeatureReadiness.PRODUCTION_READY

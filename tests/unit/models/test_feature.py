@@ -106,8 +106,8 @@ def test_feature_readiness_ordering():
     """Test to cover feature readiness ordering"""
     assert (
         FeatureReadiness.PRODUCTION_READY
+        > FeatureReadiness.PUBLIC_DRAFT
         > FeatureReadiness.DRAFT
-        > FeatureReadiness.QUARANTINE
         > FeatureReadiness.DEPRECATED
     )
     assert FeatureReadiness.min() == FeatureReadiness.DEPRECATED
