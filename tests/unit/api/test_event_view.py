@@ -853,7 +853,7 @@ def test_create_observation_table_from_event_view(snowflake_event_table, snowfla
           "event_timestamp" AS "event_timestamp",
           "cust_id" AS "cust_id",
           "event_timestamp" AS "POINT_IN_TIME"
-        FROM "sf_database"."sf_schema"."sf_table" TABLESAMPLE(11.0)
+        FROM "sf_database"."sf_schema"."sf_table" TABLESAMPLE(12.0)
         LIMIT 100
         """,
     )

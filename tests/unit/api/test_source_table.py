@@ -235,7 +235,7 @@ def test_create_observation_table_with_sample_rows(
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
           *
-        FROM "sf_database"."sf_schema"."sf_table" TABLESAMPLE(11.0)
+        FROM "sf_database"."sf_schema"."sf_table" TABLESAMPLE(12.0)
         LIMIT 100
         """,
     )

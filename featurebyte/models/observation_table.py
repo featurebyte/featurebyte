@@ -97,7 +97,7 @@ class BaseObservationInput(FeatureByteBaseModel):
         """
         # Sample a bit above the theoretical sample percentage since bernoulli sampling doesn't
         # guarantee an exact number of rows.
-        return min(100.0, 100 * float(desired_row_count / total_row_count) * 1.1)
+        return min(100.0, 100 * float(desired_row_count / total_row_count) * 1.2)
 
     async def materialize(
         self, session: BaseSession, destination: TableDetails, sample_rows: Optional[int]
