@@ -79,6 +79,26 @@ class BaseObservationInput(FeatureByteBaseModel):
         result = await session.execute_query(query)
         return int(result.iloc[0]["row_count"])  # type: ignore[union-attr]
 
+    @staticmethod
+    def get_sample_percentage_from_row_count(total_row_count, desired_row_count):
+        """
+        Get the sample percentage required to get the desired number of rows
+
+        Parameters
+        ----------
+        total_row_count: int
+            The total number of rows
+        desired_row_count: int
+            The desired number of rows
+
+        Returns
+        -------
+        float
+        """
+        # Sample a bit above the theoretical sample percentage since bernoulli sampling doesn't
+        # guarantee an exact number of rows.
+        return min(100.0, 100 * float(desired_row_count / total_row_count) * 1.1)
+
     async def materialize(
         self, session: BaseSession, destination: TableDetails, sample_rows: Optional[int]
     ) -> None:
@@ -100,11 +120,7 @@ class BaseObservationInput(FeatureByteBaseModel):
         if sample_rows is not None:
             num_rows = await self.get_row_count(session=session)
             if num_rows > sample_rows:
-                # Sample a bit above the theoretical sample percentage since bernoulli sampling
-                # doesn't guarantee an exact number of rows.
-                # buffer_rows = 100
-                # num_percent = 100 * float((sample_rows + buffer_rows) / num_rows)
-                num_percent = 100 * float(sample_rows / num_rows) * 1.1
+                num_percent = self.get_sample_percentage_from_row_count(num_rows, sample_rows)
                 adapter = get_sql_adapter(source_type=session.source_type)
                 query_expr = adapter.tablesample(query_expr, num_percent).limit(sample_rows)
 
