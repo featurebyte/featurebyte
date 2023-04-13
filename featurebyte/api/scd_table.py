@@ -211,7 +211,7 @@ class SCDTable(TableApiObject):
         Gets a ChangeView from a Slowly Changing Dimension (SCD) table. The view offers a method to examine alterations
         that occur in a specific attribute within the natural key of the SCD table.
 
-        To create the `ChangeView`, you need to provide the name of the SCD column for which you want to track changes
+        To create the ChangeView, you need to provide the name of the SCD column for which you want to track changes
         through the track_changes_column parameter.
 
         Optionally,

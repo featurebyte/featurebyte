@@ -30,8 +30,8 @@ class ChangeViewColumn(LaggableViewColumn):
 
 class ChangeView(View, GroupByMixin):
     """
-    A `ChangeView` object is used to capture changes in SCDTable object in an easy manner. This is useful as
-    changes in `SCDTable` may constitute powerful features such as:
+    A ChangeView object is used to capture changes in SCDTable object in an easy manner. This is useful as
+    changes in SCDTable may constitute powerful features such as:
 
     - how many times has a customer moved in the past 6 months?
     - if they moved the past 6 months, where did they use to live?
