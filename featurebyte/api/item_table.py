@@ -285,3 +285,7 @@ class ItemTable(TableApiObject):
             return self.cached_model.item_id_column
         except RecordRetrievalException:
             return self.internal_item_id_column
+
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        return None

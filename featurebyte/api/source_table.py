@@ -53,6 +53,11 @@ class TableDataFrame(BaseFrame):
     """
 
     table_data: BaseTableData
+    int_timestamp_column: Optional[str] = Field(alias="timestamp_column")
+
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        return self.int_timestamp_column
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         node = self.node
@@ -172,6 +177,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
             columns_info=self.columns_info,
             graph=graph,
             node_name=node.name,
+            timestamp_column=self.timestamp_column,
         )
 
     @property
@@ -391,6 +397,17 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
 
     @property
     @abstractmethod
+    def timestamp_column(self) -> Optional[str]:
+        """
+        Name of the timestamp column.
+
+        Returns
+        -------
+        Optional[str]
+        """
+
+    @property
+    @abstractmethod
     def columns_info(self) -> List[ColumnInfo]:
         """
         List of column information of the dataset. Each column contains column name, column type, entity ID
@@ -410,6 +427,10 @@ class SourceTable(AbstractTableData):
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SourceTable")
 
     _table_data_class: ClassVar[Type[AllTableDataT]] = SouceTableData
+
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        return None
 
     @property
     def columns_info(self) -> List[ColumnInfo]:
