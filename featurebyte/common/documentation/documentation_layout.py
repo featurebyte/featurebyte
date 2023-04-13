@@ -696,7 +696,6 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.download_report"]),
         DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.get_recommendation"]),
         DocLayoutItem([FEATURE_JOB, GET, "FeatureJobSettingAnalysis.backtest"]),
-        DocLayoutItem([FEATURE_JOB, LIST, "FeatureJobSettingAnalysis.list"]),
     ]
 
 
