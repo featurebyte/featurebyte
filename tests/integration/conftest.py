@@ -1359,19 +1359,3 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred):
 
                 mock_celery.AsyncResult.side_effect = get_task
                 yield
-
-
-@pytest.fixture(scope="module")
-def mock_post_async_task():
-    """Mock post_async_task"""
-
-    def post_async_task(route, payload):
-        """Mock post_async_task"""
-        client = Configurations().get_client()
-        return client.post(url=route, json=payload)
-
-    with mock.patch(
-        "featurebyte.api.feature_list.FeatureList.post_async_task"
-    ) as mock_post_async_task:
-        mock_post_async_task.side_effect = post_async_task
-        yield mock_post_async_task
