@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentDeletionError, DocumentUpdateError
+from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import DefaultVersionMode
-from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
+from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceList,

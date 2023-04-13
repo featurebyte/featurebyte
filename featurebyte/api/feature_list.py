@@ -450,7 +450,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
             self[feature_name].save(conflict_resolution=conflict_resolution)
 
 
-class FeatureListNamespace(ApiObject, FrozenFeatureListNamespaceModel):
+class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     """
     FeatureListNamespace represents all the versions of the FeatureList that have the same FeatureList name.
 
