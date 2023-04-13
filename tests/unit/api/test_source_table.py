@@ -1,15 +1,14 @@
 """
 Unit test for SourceTable
 """
-import re
-import textwrap
+from unittest.mock import AsyncMock, patch
 
 import pandas as pd
 import pytest
 
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, TableDataType
-from tests.util.helper import check_sdk_code_generation
+from tests.util.helper import check_observation_table_creation_query, check_sdk_code_generation
 
 
 def test_database_table(snowflake_database_table, expected_snowflake_table_preview_query):
@@ -197,17 +196,46 @@ def test_create_observation_table(snowflake_database_table, snowflake_execute_qu
 
     # Check that the correct query was executed
     query = snowflake_execute_query.call_args[0][0]
-    observation_table_name_pattern = r"OBSERVATION_TABLE_\w{24}"
-    assert re.search(observation_table_name_pattern, query)
-
-    # Remove the dynamic component before comparing
-    query = re.sub(r"OBSERVATION_TABLE_\w{24}", "OBSERVATION_TABLE", query)
-    expected = textwrap.dedent(
+    check_observation_table_creation_query(
+        query,
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
           *
         FROM "sf_database"."sf_schema"."sf_table"
+        """,
+    )
+
+
+@pytest.mark.usefixtures("patched_observation_table_service")
+def test_create_observation_table_with_sample_rows(
+    snowflake_database_table, snowflake_execute_query
+):
+    """
+    Test creating ObservationTable from SourceTable with sampling
+    """
+    with patch(
+        "featurebyte.models.observation_table.BaseObservationInput.get_row_count",
+        AsyncMock(return_value=1000),
+    ):
+        observation_table = snowflake_database_table.create_observation_table(
+            "my_observation_table",
+            sample_rows=100,
+        )
+
+    # Check return type
+    assert isinstance(observation_table, ObservationTable)
+    assert observation_table.name == "my_observation_table"
+
+    # Check that the correct query was executed
+    query = snowflake_execute_query.call_args[0][0]
+    check_observation_table_creation_query(
+        query,
         """
-    ).strip()
-    assert query == expected
+        CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
+        SELECT
+          *
+        FROM "sf_database"."sf_schema"."sf_table" TABLESAMPLE(11.0)
+        LIMIT 100
+        """,
+    )

@@ -3,10 +3,8 @@ Unit test for EventView class
 """
 
 import copy
-import re
-import textwrap
 from unittest import mock
-from unittest.mock import PropertyMock
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 import pytest
 from bson import ObjectId
@@ -27,7 +25,11 @@ from featurebyte.query_graph.node.cleaning_operation import (
     MissingValueImputation,
 )
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import check_sdk_code_generation, get_node
+from tests.util.helper import (
+    check_observation_table_creation_query,
+    check_sdk_code_generation,
+    get_node,
+)
 
 
 class TestEventView(BaseViewTestSuite):
@@ -806,12 +808,8 @@ def test_create_observation_table_from_event_view(snowflake_event_table, snowfla
 
     # Check that the correct query was executed
     query = snowflake_execute_query.call_args[0][0]
-    observation_table_name_pattern = r"OBSERVATION_TABLE_\w{24}"
-    assert re.search(observation_table_name_pattern, query)
-
-    # Remove the dynamic component before comparing
-    query = re.sub(r"OBSERVATION_TABLE_\w{24}", "OBSERVATION_TABLE", query)
-    expected = textwrap.dedent(
+    check_observation_table_creation_query(
+        query,
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
@@ -820,6 +818,42 @@ def test_create_observation_table_from_event_view(snowflake_event_table, snowfla
           "cust_id" AS "cust_id",
           "event_timestamp" AS "POINT_IN_TIME"
         FROM "sf_database"."sf_schema"."sf_table"
+        """,
+    )
+
+
+@pytest.mark.usefixtures("patched_observation_table_service")
+def test_create_observation_table_from_event_view(snowflake_event_table, snowflake_execute_query):
+    """
+    Test creating ObservationTable from an EventView
+    """
+    view = snowflake_event_table.get_view()
+    view["POINT_IN_TIME"] = view["event_timestamp"]
+    view = view[["POINT_IN_TIME", "cust_id"]]
+
+    with patch(
+        "featurebyte.models.observation_table.BaseObservationInput.get_row_count",
+        AsyncMock(return_value=1000),
+    ):
+        observation_table = view.create_observation_table(
+            "my_observation_table_from_event_view", sample_rows=100
+        )
+
+    assert isinstance(observation_table, ObservationTable)
+    assert observation_table.name == "my_observation_table_from_event_view"
+
+    # Check that the correct query was executed
+    query = snowflake_execute_query.call_args[0][0]
+    check_observation_table_creation_query(
+        query,
         """
-    ).strip()
-    assert query == expected
+        CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
+        SELECT
+          "col_int" AS "col_int",
+          "event_timestamp" AS "event_timestamp",
+          "cust_id" AS "cust_id",
+          "event_timestamp" AS "POINT_IN_TIME"
+        FROM "sf_database"."sf_schema"."sf_table" TABLESAMPLE(11.0)
+        LIMIT 100
+        """,
+    )
