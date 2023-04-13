@@ -1143,13 +1143,31 @@ class FeatureList(
         max_batch_size: int = 5000,
     ) -> Optional[pd.DataFrame]:
         """
-        Materialize feature list using an observation set.
+        Returns a DataFrame with feature values for analysis, model training, or evaluation. The historical features
+        request data consists of an observation set that combines historical points-in-time and key values of the
+        primary entity from the feature list.
 
-        This method will store partial aggregations (tiles) to speed up future computation, and may take a
-        longer time to complete the first time it is called. Subsequent calls will be faster.
+        Associated serving entities can also be utilized.
 
-        Tiles are a method of storing partial aggregations in the feature store,
-        which helps to minimize the resources required to fulfill historical, batch and online requests.
+        Initial computation might take more time, but following calls will be faster due to pre-computed and saved
+        partially aggregated data (tiles).
+
+        If the provided feature list includes On Demand features, the request data should contain the required
+        information to calculate these On Demand features.
+
+        A training data observation set should typically meet the following criteria:
+
+        - be collected from a time period that does not start until after the earliest data availability timestamp
+        plus longest time window in the features
+        - be collected from a time period that ends before the latest data timestamp less the time window of the
+        target value
+        - uses points in time that align with the anticipated timing of the use case inference, whether it's based on a
+        regular schedule, triggered by an event, or any other timing mechanism.
+        - does not have duplicate rows
+        - has a column containing the primary entity of the use case, using its serving name
+        - has a column, named ""POINT_IN_TIME"", containing the points in time
+        - has for the same entity key points in time that have time intervals greater than the horizon of the target
+        to avoid leakage
 
         Parameters
         ----------
@@ -1288,8 +1306,9 @@ class FeatureList(
         self, features: Optional[List[FeatureVersionInfo]] = None
     ) -> FeatureList:
         """
-        Create new feature list version. Upon creation of a new feature list version, the latest default versions
-        of features are employed, unless particular feature versions are specified.
+        Creates a new feature version from a FeatureList object. The current default version of the features within the
+        feature list is employed to create the new version, except when specific versions are indicated by the
+        feature's parameter.
 
         Parameters
         ----------
@@ -1431,7 +1450,16 @@ class FeatureList(
 
     def as_default_version(self) -> None:
         """
-        Set the feature list as the default version.
+        When a feature list has its default version mode set to manual, this method designates the FeatureList
+        object as the default version for that specific feature list.
+
+        Each feature list is recognized by its name and can possess numerous versions, though only a single default
+        version is allowed.
+
+        The default version streamlines feature list reuse by supplying the most suitable version when none is
+        explicitly indicated. By default, the feature list's default version mode is automatic, selecting the version
+        with the highest percentage of production ready features. If several versions share the same readiness level,
+        the most recent one becomes the default."
 
         Examples
         --------
@@ -1491,7 +1519,7 @@ class FeatureList(
 
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
         """
-        Retrive either Python or shell script template for serving online features from a deployed featurelist,
+        Retrieves either Python or shell script template for serving online features from a deployed featurelist,
         defaulted to python.
 
         Parameters

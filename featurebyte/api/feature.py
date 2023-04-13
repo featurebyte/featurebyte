@@ -496,7 +496,17 @@ class Feature(
     @property
     def definition(self) -> str:
         """
-        Display feature definition string of this feature.
+        Displays the feature definition file of the feature.
+
+        The file is the single source of truth for a feature version. The file is generated automatically after a
+        feature is declared in the SDK and is stored in the FeatureByte Service.
+
+        This file uses the same SDK syntax as the feature declaration and provides an explicit outline of the intended
+        operations of the feature declaration, including those that are inherited but not explicitly declared by the
+        user. These operations may include feature job settings and cleaning operations inherited from tables metadata.
+
+        The feature definition file serves as the basis for generating the final logical execution graph, which is
+        then transpiled into platform-specific SQL (e.g. SnowSQL, SparkSQL) for feature materialization."
 
         Returns
         -------
@@ -651,7 +661,7 @@ class Feature(
         table_cleaning_operations: Optional[List[TableCleaningOperation]] = None,
     ) -> Feature:
         """
-        Create a new feature version from the current one. The new version is created by replacing the current
+        Creates a new feature version from a Feature object. The new version is created by replacing the current
         feature's feature job settings (if provided) and the table cleaning operations (if provided).
 
         Parameters
@@ -815,7 +825,24 @@ class Feature(
         ignore_guardrails: bool = False,
     ) -> None:
         """
-        Update feature readiness
+        Updates readiness of a feature version.
+
+        A Feature version can have one of five readiness levels:
+
+        1. PRODUCTION_READY: Assigned to Feature versions that are ready for deployment in production environments.
+        2. PUBLIC_DRAFT: For Feature versions shared for feedback purposes.
+        3. DRAFT: For Feature versions in the prototype stage.
+        4. QUARANTINE: For Feature versions that had recently encountered issues and should be utilized cautiously.
+        5. DEPRECATED: For feature versions not advised for use in either training or online serving.
+
+        When a new feature version is created, its status is DRAFT.
+        Only a Draft feature version can be deleted. Feature versions with other status cannot be reverted to DRAFT.
+        Only one version of a feature can be labeled as PRODUCTION_READY.
+
+        Once a feature version is promoted as PRODUCTION_READY, guardrails are automatically applied to ensure that
+        the cleaning operations and FeatureJob settings are consistent with the defaults defined at the table level.
+        These guardrails can be disregarded by setting the ignore_guardrails as True if the user is confident that
+        the settings of the promoted feature version adhere to equally robust practices.
 
         Parameters
         ----------
@@ -862,7 +889,16 @@ class Feature(
 
     def as_default_version(self) -> None:
         """
-        Set the feature as default version.
+        When a feature has its default version mode set to manual, this method designates the Feature object as the
+        default version for that specific feature.
+
+        Each feature is recognized by its name and can possess numerous versions, though only a single default
+        version is allowed.
+
+        The default version streamlines feature reuse by supplying the most suitable version when none is explicitly
+        indicated. By default, the feature's default version mode is automatic, selecting the version with the highest
+        readiness level as the default. If several versions share the same readiness level, the most recent one
+        becomes the default.
 
         Examples
         --------

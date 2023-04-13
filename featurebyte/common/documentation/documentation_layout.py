@@ -241,7 +241,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         The layout for the feature documentation
     """
     return [
-        DocLayoutItem([FEATURE], core_doc_path_override="core_feature.md", is_core_object=True),
+        DocLayoutItem([FEATURE]),
         DocLayoutItem([FEATURE, GET, "Catalog.get_feature"]),
         DocLayoutItem([FEATURE, GET, "Feature.get_by_id"]),
         DocLayoutItem([FEATURE, LIST, "Catalog.list_features"]),
