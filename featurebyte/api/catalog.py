@@ -588,7 +588,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def get_data_source(self, feature_store_name: str) -> DataSource:
         """
-        Get data source by a given feature store name.
+        Gets a data source based on the name of the feature store that the data source is associated with.
 
         Parameters
         ----------

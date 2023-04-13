@@ -180,7 +180,27 @@ class ChangeView(View, GroupByMixin):
     @typechecked
     def update_default_feature_job_setting(self, feature_job_setting: FeatureJobSetting) -> None:
         """
-        Update default feature job setting
+        This updates the default feature job setting, which ensures consistency across features created by different
+        team members.
+
+        The Default Feature Job Setting establishes the default setting used by features that aggregate data in a table.
+        While it's possible to override the setting during feature declaration, using the Default Feature Job Setting
+        simplifies the process of setting up the Feature Job Setting for each feature.
+
+        The Feature Job Setting captures details about batch feature computations for the online feature store,
+        including frequency, timing, and blind spot for the data.
+
+        For example, if a data warehouse refreshes every hour starting 10 seconds after the hour, is usually finished
+        within 2 minutes and missing the latest data up to the last 30 seconds before the hour, the feature job
+        settings could be:
+
+        - frequency: 60m
+        - time_modulo_frequency: 10s + 2m + 5s (a safety buffer) = 135s
+        - blind_spot: 30s + 10s + 2m + 5s = 165s
+
+        FeatureByte offers automated analysis of event table record creation to suggest appropriate setting values. If
+        the source table contains record creation timestamps, you can run a new analysis via the method 'create_new_
+        feature_job_setting_analysis'."
 
         Parameters
         ----------

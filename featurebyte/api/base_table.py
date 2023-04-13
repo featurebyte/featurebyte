@@ -100,7 +100,8 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     @typechecked
     def as_entity(self, entity_name: Optional[str]) -> None:
         """
-        Set the column as the specified entity
+        Tags an entity to a column that represents the entity in the table, providing further context and organization
+        to facilitate feature engineering.
 
         Parameters
         ----------

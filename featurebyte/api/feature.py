@@ -522,9 +522,7 @@ class Feature(
     @property
     def primary_entity(self) -> List[Entity]:
         """
-        Primary entity of this feature
-
-        The primary entity of a feature defines the level of analysis for that feature.
+        Returns the primary entity of the Feature object.
 
         Returns
         -------

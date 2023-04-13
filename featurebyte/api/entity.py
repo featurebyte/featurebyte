@@ -57,9 +57,14 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
     @property
     def serving_names(self) -> List[str]:
         """
-        An entity's serving names is the name of the unique identifier that is used to identify the entity
-        during a preview or serving request. Typically, the serving name for an entity is the name of the
-        primary key (or natural key) of the table that represents the entity.
+        Lists the serving names of an Entity object.
+
+        An entity's serving name is the name of the unique identifier that is used to identify the entity during a
+        preview or serving request. Typically, the serving name for an entity is the name of the primary key (or
+        natural key) of the table that represents the entity. For convenience, an entity can have multiple serving
+        names but the unique identifier should remain unique.
+
+        For example, the serving names of a Customer entity could be 'CustomerID' and 'CustID'.
 
         Returns
         -------
@@ -144,7 +149,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
     @typechecked
     def update_name(self, name: str) -> None:
         """
-        Update entity name. Entity name is used to associate a table column with the entity.
+        Updates the name of the Entity object.
 
         Parameters
         ----------

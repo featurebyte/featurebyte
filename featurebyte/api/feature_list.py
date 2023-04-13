@@ -168,10 +168,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     @property
     def primary_entity(self) -> List[Entity]:
         """
-        Return the primary entity of the feature list or feature group.
-
-        The main focus of a feature list is determined by its primary entity, which typically
-        corresponds to the primary entity of the Use Case that the feature list was created for.
+        Returns the primary entity of the FeatureList object.
 
         Returns
         -------
@@ -694,7 +691,15 @@ class FeatureList(
     @property
     def feature_names(self) -> list[str]:
         """
-        List of feature names in the FeatureList object.
+        Returns a report on the recent activity of scheduled feature jobs associated with a FeatureList object.
+
+        The report includes recent runs for these jobs, whether they were successful, and the duration of the jobs.
+        This provides a summary of the health of the features of the feature list, and whether online features are
+        updated in a timely manner.
+
+        Failed and late jobs can occur due to various reasons, including insufficient compute capacity. Check your
+        data warehouse logs for more details on the errors. If the errors are due to insufficient compute capacity,
+        you can consider upsizing your instances.
 
         Returns
         -------
@@ -1426,7 +1431,14 @@ class FeatureList(
         self, default_version_mode: Literal[tuple(DefaultVersionMode)]  # type: ignore[misc]
     ) -> None:
         """
-        Update feature list default version mode
+        Sets the default version mode of a feature list.
+
+        By default, the feature list's default version mode is automatic, selecting the version with the highest
+        percentage of production ready features. If several versions share the same readiness level, the most recent
+        one becomes the default.
+
+        If the default version mode is set as manual, you can choose to manually set any version as the default
+        version for the feature list.
 
         Parameters
         ----------
