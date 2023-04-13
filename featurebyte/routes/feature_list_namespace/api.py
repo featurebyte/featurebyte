@@ -67,19 +67,6 @@ async def update_feature_list_namespace(
     return feature_list_namespace
 
 
-@router.delete("/{feature_list_namespace_id}", status_code=HTTPStatus.NO_CONTENT)
-async def delete_feature_list_namespace(
-    request: Request, feature_list_namespace_id: PydanticObjectId
-) -> None:
-    """
-    Delete FeatureListNamespace
-    """
-    controller = request.state.app_container.feature_list_namespace_controller
-    await controller.delete_feature_list_namespace(
-        feature_list_namespace_id=feature_list_namespace_id
-    )
-
-
 @router.get("", response_model=FeatureListNamespaceList)
 async def list_feature_list_namespace(
     request: Request,

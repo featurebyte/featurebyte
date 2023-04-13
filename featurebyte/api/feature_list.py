@@ -34,6 +34,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import (
     PAGINATED_CALL_PAGE_SIZE,
+    ApiObject,
     ConflictResolution,
     DeletableApiObject,
     ForeignKeyMapping,
@@ -449,7 +450,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
             self[feature_name].save(conflict_resolution=conflict_resolution)
 
 
-class FeatureListNamespace(FrozenFeatureListNamespaceModel, DeletableApiObject):
+class FeatureListNamespace(ApiObject, FrozenFeatureListNamespaceModel):
     """
     FeatureListNamespace represents all the versions of the FeatureList that have the same FeatureList name.
 
@@ -611,19 +612,6 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, DeletableApiObject):
                 feature_lists.tables.apply(lambda table_list: table in table_list)
             ]
         return feature_lists
-
-    def delete(self) -> None:
-        """
-        Delete feature list namespace.
-
-        Examples
-        --------
-        Delete a feature list namespace.
-
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.feature_list_namespace.delete()  # doctest: +SKIP
-        """
-        self._delete()
 
 
 # pylint: disable=too-many-public-methods

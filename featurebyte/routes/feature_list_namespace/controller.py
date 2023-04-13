@@ -110,37 +110,6 @@ class FeatureListNamespaceController(
 
         return await self.get(document_id=feature_list_namespace_id)
 
-    async def delete_feature_list_namespace(self, feature_list_namespace_id: ObjectId) -> None:
-        """
-        Delete feature list namespace
-
-        Parameters
-        ----------
-        feature_list_namespace_id: ObjectId
-            Feature list namespace ID
-
-        Raises
-        ------
-        DocumentDeletionError
-            When the feature list namespace is not in DRAFT status
-        """
-        feature_list_namespace = await self.service.get_document(
-            document_id=feature_list_namespace_id
-        )
-        if feature_list_namespace.status != FeatureListStatus.DRAFT:
-            raise DocumentDeletionError(
-                "Cannot delete feature list namespace that is not in DRAFT status."
-            )
-
-        # use transaction to ensure atomicity
-        async with self.service.persistent.start_transaction():
-            # delete feature lists within feature list namespace
-            for feature_list_id in feature_list_namespace.feature_list_ids:
-                await self.feature_list_service.delete_document(document_id=feature_list_id)
-
-            # delete feature list namespace
-            await self.service.delete_document(document_id=feature_list_namespace_id)
-
     async def get_info(
         self,
         document_id: ObjectId,
