@@ -25,6 +25,11 @@ class ObservationTableTask(BaseTask):
     async def execute(self) -> Any:
         """
         Execute ObservationTable task
+
+        Raises
+        ------
+        Exception
+            If the validation on the materialized table fails.
         """
         payload = cast(ObservationTableTaskPayload, self.payload)
         persistent = self.get_persistent()
@@ -81,14 +86,14 @@ class ObservationTableTask(BaseTask):
             )
             created_doc = await observation_table_service.create_document(observation_table)
             assert created_doc.id == payload.output_document_id
-        except Exception as e:
+        except Exception as exc:
             logger.error(
                 "Failed to create ObservationTable",
-                extras={"error": str(e), "task_payload": self.payload.dict()},
+                extras={"error": str(exc), "task_payload": self.payload.dict()},
             )
             await db_session.drop_table(
                 table_name=location.table_details.table_name,
                 schema_name=location.table_details.schema_name,
                 database_name=location.table_details.database_name,
             )
-            raise e
+            raise exc

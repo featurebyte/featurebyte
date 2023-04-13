@@ -419,8 +419,8 @@ class BaseSession(BaseModel):
     async def drop_table(
         self,
         table_name: str,
-        schema_name: Optional[str],
-        database_name: Optional[str],
+        schema_name: Optional[str] = None,
+        database_name: Optional[str] = None,
     ) -> None:
         """
         Drop a table
@@ -429,9 +429,9 @@ class BaseSession(BaseModel):
         ----------
         table_name : str
             Table name
-        schema_name : str
+        schema_name : Optional[str]
             Schema name
-        database_name : str
+        database_name : Optional[str]
             Database name
         """
         table_name = get_fully_qualified_table_name(
