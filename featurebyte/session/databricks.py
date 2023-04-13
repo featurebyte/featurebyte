@@ -135,8 +135,21 @@ class DatabricksSession(SparkAwareSession):
         return mapping.get(databricks_type, DBVarType.UNKNOWN)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
-        arrow_table = cursor.fetchall_arrow()
-        return arrow_table.to_pandas()
+        schema = []
+        if cursor.description:
+            schema = {row[0]: row[1] for row in cursor.description}
+
+        if schema:
+            arrow_table = cursor.fetchall_arrow()
+            dataframe = arrow_table.to_pandas()
+            for col_name in schema:
+                if schema[col_name].upper() == "MAP":
+                    dataframe[col_name] = dataframe[col_name].apply(
+                        lambda x: dict(x) if x is not None else None
+                    )
+            return dataframe
+
+        return None
 
 
 class DatabricksMetadataSchemaInitializer(MetadataSchemaInitializer):

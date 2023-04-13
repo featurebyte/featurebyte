@@ -309,7 +309,7 @@ jobs:
             exit $EXIT_CODE
           fi
           task test-teardown
-          mv .coverage .coverage.2
+          mv .coverage .coverage.3
       - name: Upload spark-thrift log file
         uses: actions/upload-artifact@v3
         with:
@@ -325,13 +325,13 @@ jobs:
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:
-          name: python-${{ matrix.python-version }}-pytest.xml.2
-          path: pytest.xml.2
+          name: python-${{ matrix.python-version }}-pytest.xml.3
+          path: pytest.xml.3
       - name: Upload integration coverage results
         uses: actions/upload-artifact@v3
         with:
-          name: python-${{ matrix.python-version }}-.coverage.2
-          path: .coverage.2
+          name: python-${{ matrix.python-version }}-.coverage.3
+          path: .coverage.3
   test-docs:
     needs: ["build-jar"]
     runs-on: ubuntu-20.04
@@ -376,7 +376,7 @@ jobs:
           export FEATUREBYTE_NP_PASSWORD=${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
           task test-docs
   validate:
-    needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark"]
+    needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark", "test-integration-databricks"]
     runs-on: ubuntu-20.04
     timeout-minutes: 45
     strategy:
@@ -422,6 +422,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.2
+      - name: Download integration test results (databricks)
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-pytest.xml.3
       - name: Download unit coverage results
         uses: actions/download-artifact@v3
         with:
@@ -434,6 +438,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: python-${{ matrix.python-version }}-.coverage.2
+      - name: Download integration coverage results (databricks)
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-.coverage.3
       - name: Merge test results
         run: |
           task test-merge
