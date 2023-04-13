@@ -230,11 +230,6 @@ class SparkAwareSchemaInitializer(BaseSchemaInitializer):
         )
         await super().register_missing_objects()
 
-        # remove jar file from storage after registering functions
-        # self.session._storage.delete_object(  # pylint: disable=protected-access
-        #     path=udf_jar_file_name
-        # )
-
     async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
         await super().register_missing_functions(functions)
         # Note that Spark does not seem to be able to reload the same class until the spark app is restarted.

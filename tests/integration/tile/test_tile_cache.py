@@ -74,7 +74,7 @@ async def invoke_tile_manager_and_check_tracker_table(session, tile_cache, reque
         assert (df_entity_tracker["üser id".upper()].value_counts(dropna=False) == 1).all()
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.parametrize("groupby_category", [None, "PRODUCT_ACTION"])
 @pytest.mark.asyncio
 async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_category):

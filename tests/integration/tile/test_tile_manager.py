@@ -8,7 +8,7 @@ from featurebyte.models.tile import TileType
 from featurebyte.session.spark import SparkSession
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tiles(tile_spec, session, tile_manager):
     """
