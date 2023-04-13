@@ -91,6 +91,8 @@ class ObservationTableTask(BaseTask):
                 "Failed to create ObservationTable",
                 extras={"error": str(exc), "task_payload": self.payload.dict()},
             )
+            assert location.table_details.schema_name is not None
+            assert location.table_details.database_name is not None
             await db_session.drop_table(
                 table_name=location.table_details.table_name,
                 schema_name=location.table_details.schema_name,
