@@ -3,10 +3,12 @@ DataColumn class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Optional, Tuple, Type, TypeVar, cast
+from typing import Any, ClassVar, List, Literal, Optional, Tuple, Type, TypeVar, Union, cast
 
+from datetime import datetime
 from http import HTTPStatus
 
+import pandas as pd
 from bson.objectid import ObjectId
 from pandas import DataFrame
 from pydantic import Field
@@ -17,7 +19,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.source_table import AbstractTableData, SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
-from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
+from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.enum import TableDataType, ViewMode
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -39,7 +41,7 @@ SourceTableApiObjectT = TypeVar("SourceTableApiObjectT", bound="TableApiObject")
 TableDataT = TypeVar("TableDataT", bound=BaseTableData)
 
 
-class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
+class TableColumn(FeatureByteBaseModel, ParentMixin):
     """
     TableColumn class that is used to set metadata such as Entity column. It holds a reference to its
     parent, which is a table object (e.g. EventTable)
@@ -192,20 +194,21 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
             add_internal_prefix=True,
         )
 
-    def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
+    def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
         Extract pruned graph & node from the global query graph
+
+        Parameters
+        ----------
+        **kwargs: Any
+            Additional keyword parameters
 
         Returns
         -------
         tuple[QueryGraphModel, Node]
             QueryGraph & mapped Node object (within the pruned graph)
         """
-        target_node = self.parent.frame.node
-        pruned_graph, node_name_map = self.parent.frame.graph.prune(
-            target_node=target_node, aggressive=True
-        )
-        mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
+        pruned_graph, mapped_node = self.parent.frame.extract_pruned_graph_and_node(**kwargs)
         project_node = pruned_graph.add_operation(
             node_type=NodeType.PROJECT,
             node_params={"columns": [self.info.name]},
@@ -232,6 +235,121 @@ class TableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         return GraphInterpreter(
             pruned_graph, source_type=self.feature_store.type
         ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
+
+    @typechecked
+    def preview_clean_data_sql(self, limit: int = 10) -> str:
+        """
+        Generate SQL query to preview the table after applying list of cleaning operations.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+
+        Returns
+        -------
+        str
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(after_cleaning=True)
+        return GraphInterpreter(
+            pruned_graph, source_type=self.feature_store.type
+        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
+
+    @typechecked
+    def preview(self, limit: int = 10, after_cleaning: bool = False) -> pd.DataFrame:
+        """
+        Retrieve a preview of the table column.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+        after_cleaning: bool
+            Whether to apply cleaning operations.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preview rows of the table column.
+        """
+        return self.parent.preview(limit=limit, after_cleaning=after_cleaning)[[self.info.name]]
+
+    @typechecked
+    def sample(
+        self,
+        size: int = 10,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        after_cleaning: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Retrieve a random sample of the table column.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        after_cleaning: bool
+            Whether to apply cleaning operations.
+
+        Returns
+        -------
+        pd.DataFrame
+            Sampled rows from the table column.
+        """
+        return self.parent.sample(
+            size=size,
+            seed=seed,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            after_cleaning=after_cleaning,
+        )[[self.info.name]]
+
+    @typechecked
+    def describe(
+        self,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        after_cleaning: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Retrieve a summary of the contents in the table column.
+        This includes columns names, column types, missing and unique counts, and other statistics.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample. If 0, all rows will be used.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        after_cleaning: bool
+            Whether to apply cleaning operations.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary of the table.
+        """
+        return self.parent.describe(
+            size=size,
+            seed=seed,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            after_cleaning=after_cleaning,
+        )[[self.info.name]]
 
 
 class TableListMixin(ApiObject):

@@ -242,7 +242,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         return self.frame.preview_sql(limit=limit, after_cleaning=True)
 
     @typechecked
-    def preview(self, limit: int = 10, after_cleaning: bool = False, **kwargs: Any) -> pd.DataFrame:
+    def preview(self, limit: int = 10, after_cleaning: bool = False) -> pd.DataFrame:
         """
         Retrieve a preview of the table.
 
@@ -252,8 +252,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
             Maximum number of return rows.
         after_cleaning: bool
             Whether to apply cleaning operations.
-        **kwargs: Any
-            Additional keyword parameters.
 
         Returns
         -------
@@ -276,7 +274,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         - [Table.describe](/reference/featurebyte.api.base_table.TableApiObject.describe/):
           Retrieve a summary of a table.
         """
-        return self.frame.preview(limit=limit, after_cleaning=after_cleaning, **kwargs)  # type: ignore[misc]
+        return self.frame.preview(limit=limit, after_cleaning=after_cleaning)
 
     @typechecked
     def sample(
@@ -286,7 +284,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
         after_cleaning: bool = False,
-        **kwargs: Any,
     ) -> pd.DataFrame:
         """
         Retrieve a random sample of the table.
@@ -303,8 +300,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
             End of date range to sample from.
         after_cleaning: bool
             Whether to apply cleaning operations.
-        **kwargs: Any
-            Additional keyword parameters.
 
         Returns
         -------
@@ -327,13 +322,12 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         - [Table.describe](/reference/featurebyte.api.base_table.TableApiObject.describe/):
           Retrieve a summary of a table.
         """
-        return self.frame.sample(  # type: ignore[misc]
+        return self.frame.sample(
             size=size,
             seed=seed,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             after_cleaning=after_cleaning,
-            **kwargs,
         )
 
     @typechecked
@@ -344,7 +338,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
         after_cleaning: bool = False,
-        **kwargs: Any,
     ) -> pd.DataFrame:
         """
         Retrieve a summary of the contents in the table.
@@ -362,8 +355,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
             End of date range to sample from.
         after_cleaning: bool
             Whether to apply cleaning operations.
-        **kwargs: Any
-            Additional keyword parameters.
 
         Returns
         -------
@@ -390,13 +381,12 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         - [Table.sample](/reference/featurebyte.api.base_table.TableApiObject.sample/):
           Retrieve a sample of a table.
         """
-        return self.frame.describe(  # type: ignore[misc]
+        return self.frame.describe(
             size=size,
             seed=seed,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             after_cleaning=after_cleaning,
-            **kwargs,
         )
 
     @property
