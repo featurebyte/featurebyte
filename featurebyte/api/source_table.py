@@ -853,7 +853,7 @@ class SourceTable(AbstractTableData):
     def create_observation_table(
         self,
         name: str,
-        sample_rows: Optional[float] = None,
+        sample_rows: Optional[int] = None,
     ) -> ObservationTable:
         """
         Create an observation table from this source table.
@@ -862,7 +862,7 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             Observation table name.
-        sample_rows: Optional[float]
+        sample_rows: Optional[int]
             Optionally sample the source table to this number of rows before creating the
             observation table.
 
