@@ -488,7 +488,9 @@ def test_unary_op_inherits_event_table_id(float_feature):
     assert new_feature.table_ids == float_feature.table_ids
 
 
-def test_feature__default_version_info_retrieval(saved_feature, mock_api_object_cache):
+def test_feature__default_version_info_retrieval(
+    saved_feature, snowflake_event_table, mock_api_object_cache
+):
     """
     Test get feature using feature name
     """
@@ -499,10 +501,16 @@ def test_feature__default_version_info_retrieval(saved_feature, mock_api_object_
     assert feature.default_readiness == FeatureReadiness.DRAFT
     assert feature.saved is True
 
-    new_feature = feature.copy()
-    new_feature.__dict__["_id"] = ObjectId()
-    new_feature.__dict__["saved"] = False
-    new_feature.save()
+    new_feature = feature.create_new_version(
+        table_feature_job_settings=[
+            TableFeatureJobSetting(
+                table_name=snowflake_event_table.name,
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+                ),
+            )
+        ],
+    )
     assert new_feature.is_default is True
     assert new_feature.default_version_mode == DefaultVersionMode.AUTO
     assert new_feature.default_readiness == FeatureReadiness.DRAFT
@@ -554,6 +562,7 @@ def test_create_new_version(saved_feature, snowflake_event_table):
 
     # check feature deletion
     new_version.delete()
+    assert new_version.saved is False
 
     # check that feature is no longer retrievable
     with pytest.raises(RecordRetrievalException) as exc_info:
@@ -568,6 +577,7 @@ def test_delete_feature(saved_feature):
     """Test deletion of feature"""
     assert saved_feature.readiness == FeatureReadiness.DRAFT
     saved_feature.delete()
+    assert saved_feature.saved is False
 
     with pytest.raises(RecordRetrievalException) as exc_info:
         Feature.get_by_id(saved_feature.id)

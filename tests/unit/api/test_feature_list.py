@@ -655,7 +655,7 @@ def test_get_historical_feature_sql(saved_feature_list):
     assert 'WITH "REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id" AS' in sql
 
 
-def test_feature_list__feature_list_saving_in_bad_state(
+def test_feature_list__feature_list_saving_with_saved_feature(
     snowflake_event_table,
     production_ready_feature,
     draft_feature,
@@ -677,22 +677,11 @@ def test_feature_list__feature_list_saving_in_bad_state(
     production_ready_feature.save()
     assert production_ready_feature.saved is True
 
-    # the feature inside the feature list saved status is still False
-    assert feature_list["production_ready_feature"].saved is False
+    # the feature inside the feature list saved status should be updated
+    assert feature_list["production_ready_feature"].saved is True
 
-    # save the feature list will cause error due to duplicated exception
-    with pytest.raises(DuplicatedRecordException) as exc:
-        feature_list.save()
-    id_val = production_ready_feature.id
-    expected_msg = (
-        f'Feature (id: "{id_val}") already exists. '
-        f'Get the existing object by `Feature.get_by_id(id="{id_val}")`. '
-        f'Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.'
-    )
-    assert expected_msg in str(exc.value)
-
-    # resolve the error by retrieving the feature with the same name
-    feature_list.save(conflict_resolution="retrieve")
+    # try to save the feature list
+    feature_list.save()
     assert feature_list.saved is True
 
 
@@ -1292,6 +1281,7 @@ def test_delete_feature_list_namespace__success(saved_feature_list):
     """Test delete feature list namespace (success)"""
     assert saved_feature_list.status == FeatureListStatus.DRAFT
     saved_feature_list.delete()
+    assert saved_feature_list.saved is False
 
     # check feature list namespace & feature list records are deleted
     with pytest.raises(RecordRetrievalException) as exc_info:
@@ -1317,6 +1307,7 @@ def test_delete_feature_list(saved_feature_list):
     """Test delete feature list"""
     assert saved_feature_list.status == FeatureListStatus.DRAFT
     saved_feature_list.delete()
+    assert saved_feature_list.saved is False
 
     with pytest.raises(RecordRetrievalException) as exc_info:
         FeatureList.get_by_id(saved_feature_list.id)

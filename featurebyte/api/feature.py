@@ -91,12 +91,6 @@ class Feature(
 
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
-    saved: bool = Field(
-        default=False,
-        allow_mutation=False,
-        exclude=True,
-        description="Flag to indicate whether the Feature object is saved in the FeatureByte catalog.",
-    )
 
     # class variables
     _route = "/feature"

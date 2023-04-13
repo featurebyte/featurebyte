@@ -647,12 +647,6 @@ class FeatureList(
     version: VersionIdentifier = Field(
         allow_mutation=False, default=None, description="Feature list version"
     )
-    saved: bool = Field(
-        default=False,
-        allow_mutation=False,
-        exclude=True,
-        description="Flag to indicate whether the FeatureList object is saved in the FeatureByte catalog.",
-    )
 
     # class variables
     _route = "/feature_list"
