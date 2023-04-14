@@ -3,11 +3,10 @@ Production ready validator
 """
 from typing import Any, Dict, List, cast
 
-from bson import ObjectId
-
 from featurebyte import ColumnCleaningOperation, FeatureJobSetting
 from featurebyte.exception import NoChangesInFeatureVersionError
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature import FeatureModel, FeatureReadiness
+from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -15,6 +14,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.nested import BaseViewGraphNodeParameters
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.table import TableService
 from featurebyte.service.version import VersionService
 
 
@@ -25,17 +25,17 @@ class ProductionReadyValidator:
 
     def __init__(
         self,
-        version_service: VersionService,
+        table_service: TableService,
         feature_service: FeatureService,
+        version_service: VersionService,
     ):
-        self.version_service = version_service
+        self.table_service = table_service
         self.feature_service = feature_service
+        self.version_service = version_service
 
     async def validate(
         self,
-        promoted_feature_name: str,
-        promoted_feature_id: ObjectId,
-        promoted_feature_graph: QueryGraphModel,
+        promoted_feature: FeatureModel,
         ignore_guardrails: bool = False,
     ) -> None:
         """
@@ -43,38 +43,35 @@ class ProductionReadyValidator:
 
         Parameters
         ----------
-        promoted_feature_name: str
-            feature name of the feature being promoted to PRODUCTION_READY
-        promoted_feature_id: ObjectId
-            feature id of the feature being promoted to PRODUCTION_READY
-        promoted_feature_graph: QueryGraphModel
-            feature graph of the feature being promoted to PRODUCTION_READY
+        promoted_feature: FeatureModel
+            Feature being promoted to PRODUCTION_READY
         ignore_guardrails: bool
-            parameter to determine whether to ignore guardrails
+            Parameter to determine whether to ignore guardrails
         """
-        await self._assert_no_other_production_ready_feature(
-            promoted_feature_id, promoted_feature_name
-        )
+        assert promoted_feature.name is not None
+        await self._assert_no_other_production_ready_feature(promoted_feature=promoted_feature)
+        await self._assert_no_deprecated_table(promoted_feature=promoted_feature)
         # We will skip these additional checks if the user explicit states that they want to ignore these
         # guardrails.
         if not ignore_guardrails:
             try:
                 source_feature = (
                     await self.version_service.create_new_feature_version_using_source_settings(
-                        promoted_feature_id
+                        promoted_feature.id
                     )
                 )
             except NoChangesInFeatureVersionError:
                 # We can return here since there are no changes in the feature version.
                 return
+
             feature_job_setting_diff = (
                 await self._get_feature_job_setting_diffs_table_source_vs_promoted_feature(
-                    source_feature.node, source_feature.graph, promoted_feature_graph
+                    source_feature.node, source_feature.graph, promoted_feature.graph
                 )
             )
             cleaning_ops_diff = (
                 await self._get_cleaning_operations_diff_table_source_vs_promoted_feature(
-                    source_feature.graph, promoted_feature_graph
+                    source_feature.graph, promoted_feature.graph
                 )
             )
             ProductionReadyValidator._raise_error_if_diffs_present(
@@ -115,36 +112,62 @@ class ProductionReadyValidator:
         )
 
     async def _assert_no_other_production_ready_feature(
-        self, promoted_feature_id: ObjectId, feature_name: str
+        self, promoted_feature: FeatureModel
     ) -> None:
         """
         Check to see if there are any other production ready features.
 
         Parameters
         ----------
-        promoted_feature_id: ObjectId
-            feature id of the feature being promoted to PRODUCTION_READY
-        feature_name: str
-            the name of the feature we are checking
+        promoted_feature: FeatureModel
+            Feature being promoted to PRODUCTION_READY
 
         Raises
         ------
         ValueError
             raised when there is another feature version with the same name that is production ready
         """
-        results = await self.feature_service.list_documents(query_filter={"name": feature_name})
-        for feature in results["data"]:
-            if feature["readiness"] == FeatureReadiness.PRODUCTION_READY:
-                feature_id = feature["_id"]
-                # If the version we are promoting is already production ready, we can return and skip this validation.
-                if promoted_feature_id == feature_id:
-                    return
+        query_filter = {
+            "name": promoted_feature.name,
+            "readiness": FeatureReadiness.PRODUCTION_READY.value,
+        }
+        async for feature_doc in self.feature_service.list_documents_iterator(
+            query_filter=query_filter
+        ):
+            if feature_doc["_id"] != promoted_feature.id:
                 raise ValueError(
                     f"Found another feature version that is already PRODUCTION_READY. Please deprecate the feature "
-                    f"{feature_name} with ID {feature_id} first before promoting the promoted version as there can "
-                    "only be one feature version that is production ready at any point in time. We are unable to "
-                    f"promote the feature with ID {promoted_feature_id} right now."
+                    f"\"{promoted_feature.name}\" with ID {feature_doc['_id']} first before promoting the promoted "
+                    "version as there can only be one feature version that is production ready at any point in time. "
+                    f"We are unable to promote the feature with ID {promoted_feature.id} right now."
                 )
+
+    async def _assert_no_deprecated_table(self, promoted_feature: FeatureModel) -> None:
+        """
+        Check to see if there are any deprecated tables.
+
+        Parameters
+        ----------
+        promoted_feature: FeatureModel
+            Feature being promoted to PRODUCTION_READY
+
+        Raises
+        ------
+        ValueError
+            raised when there is another feature version with the same name that is production ready
+        """
+        query_filter = {
+            "_id": {"$in": promoted_feature.table_ids},
+            "status": TableStatus.DEPRECATED.value,
+        }
+        async for table_doc in self.table_service.list_documents_iterator(
+            query_filter=query_filter
+        ):
+            table_name = table_doc["name"]
+            raise ValueError(
+                f'Found a deprecated table "{table_name}" that is used by the feature "{promoted_feature.name}". '
+                "We are unable to promote the feature to PRODUCTION_READY right now."
+            )
 
     @staticmethod
     def _get_feature_job_setting_from_groupby_node(node: Node) -> FeatureJobSetting:

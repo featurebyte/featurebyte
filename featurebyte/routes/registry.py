@@ -153,6 +153,7 @@ app_container_config.add_service_with_extra_deps(
     "feature_readiness_service",
     FeatureReadinessService,
     [
+        "table_service",
         "feature_service",
         "feature_namespace_service",
         "feature_list_service",
