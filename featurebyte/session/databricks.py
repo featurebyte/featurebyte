@@ -14,7 +14,7 @@ from pydantic import Field
 from featurebyte import AccessTokenCredential
 from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.session.base import BaseSchemaInitializer, MetadataSchemaInitializer
-from featurebyte.session.spark_aware import SparkAwareSchemaInitializer, SparkAwareSession
+from featurebyte.session.spark_aware import BaseSparkSchemaInitializer, BaseSparkSession
 
 try:
     from databricks import sql as databricks_sql
@@ -25,14 +25,13 @@ except ImportError:
     HAS_DATABRICKS_SQL_CONNECTOR = False
 
 
-class DatabricksSession(SparkAwareSession):
+class DatabricksSession(BaseSparkSession):
     """
     Databricks session class
     """
 
     _no_schema_error = ServerOperationError
 
-    # server_hostname: str
     source_type: SourceType = Field(SourceType.DATABRICKS, const=True)
     database_credential: AccessTokenCredential
 
@@ -161,7 +160,7 @@ class DatabricksMetadataSchemaInitializer(MetadataSchemaInitializer):
         ]
 
 
-class DatabricksSchemaInitializer(SparkAwareSchemaInitializer):
+class DatabricksSchemaInitializer(BaseSparkSchemaInitializer):
     """Databricks schema initializer class"""
 
     def __init__(self, session: DatabricksSession):

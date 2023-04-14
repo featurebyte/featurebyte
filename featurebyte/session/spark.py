@@ -21,10 +21,10 @@ from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSchemaInitializer, MetadataSchemaInitializer
 from featurebyte.session.hive import AuthType, HiveConnection
-from featurebyte.session.spark_aware import SparkAwareSchemaInitializer, SparkAwareSession
+from featurebyte.session.spark_aware import BaseSparkSchemaInitializer, BaseSparkSession
 
 
-class SparkSession(SparkAwareSession):
+class SparkSession(BaseSparkSession):
     """
     Spark session class
     """
@@ -310,7 +310,7 @@ class SparkMetadataSchemaInitializer(MetadataSchemaInitializer):
         ]
 
 
-class SparkSchemaInitializer(SparkAwareSchemaInitializer):
+class SparkSchemaInitializer(BaseSparkSchemaInitializer):
     """Spark schema initializer class"""
 
     def __init__(self, session: SparkSession):

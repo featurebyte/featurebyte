@@ -33,11 +33,11 @@ env:
   SNOWFLAKE_SCHEMA_FEATUREBYTE: FEATUREBYTE
   # Databricks
   DATABRICKS_ACCESS_TOKEN: ${{ secrets.DATABRICKS_ACCESS_TOKEN }}
-  DATABRICKS_SERVER_HOSTNAME: "2085793316075774.4.gcp.databricks.com"
+  DATABRICKS_SERVER_HOSTNAME: ${{ secrets.DATABRICKS_SERVER_HOSTNAME }}
   DATABRICKS_HTTP_PATH: "sql/protocolv1/o/2085793316075774/0319-021506-hzmupduq"
   DATABRICKS_CATALOG: "hive_metastore"
   DATABRICKS_SCHEMA_FEATUREBYTE: "FEATUREBYTE_GITHUB"
-  DATABRICKS_STORAGE_URL: "https://storage.googleapis.com/databricks-2085793316075774/2085793316075774/FileStore"
+  DATABRICKS_STORAGE_URL: ${{ secrets.DATABRICKS_STORAGE_URL }}
   DATABRICKS_STORAGE_ACCESS_KEY_ID: "GOOG1EGI26DDNOGQ34T2RUMKJYOV3NL567KJURTRXD3XIATOWIM27XZF6ZHXY"
   DATABRICKS_STORAGE_ACCESS_KEY_SECRET: ${{ secrets.DATABRICKS_STORAGE_ACCESS_KEY_SECRET }}
   # Python
@@ -296,32 +296,9 @@ jobs:
           name: hive-udf
           path: featurebyte/sql/databricks/
       - name: Run tests
-        continue-on-error: true
         run: |
-          set +e
           task test-integration-databricks
-          # capture the exit code from the test run before stashing logs
-          EXIT_CODE=$?
-          echo $EXIT_CODE > status.txt
-          docker logs spark-thrift 2>&1 > spark-thrift.log
-          # bail out now if the test run was a failure
-          if [ $EXIT_CODE -ne 0 ]; then
-            exit $EXIT_CODE
-          fi
-          task test-teardown
           mv .coverage .coverage.3
-      - name: Upload spark-thrift log file
-        uses: actions/upload-artifact@v3
-        with:
-          name: spark-thrift-logs
-          path: spark-thrift.log
-          retention-days: 5
-      - name: Check test status
-        run: |
-          EXIT_CODE=$(cat status.txt)
-          if [ $EXIT_CODE -ne 0 ]; then
-            exit $EXIT_CODE
-          fi
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:

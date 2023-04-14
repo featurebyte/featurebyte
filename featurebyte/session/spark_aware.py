@@ -26,7 +26,7 @@ from featurebyte.session.simple_storage import (
 )
 
 
-class SparkAwareSession(BaseSession, ABC):
+class BaseSparkSession(BaseSession, ABC):
     """
     SparkAware session class
     """
@@ -192,7 +192,7 @@ class SparkAwareSession(BaseSession, ABC):
                 logger.error(f"Exception while deleting temp file {temp_filename}: {exc}")
 
 
-class SparkAwareSchemaInitializer(BaseSchemaInitializer):
+class BaseSparkSchemaInitializer(BaseSchemaInitializer):
     """SparkAware schema initializer class"""
 
     async def drop_all_objects_in_working_schema(self) -> None:
