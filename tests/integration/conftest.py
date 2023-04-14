@@ -1059,7 +1059,7 @@ def create_transactions_event_table_from_data_source(
     """
     Helper function to create an EventTable with the given feature store
     """
-    available_tables = data_source.list_tables(
+    available_tables = data_source.list_source_tables(
         database_name=database_name,
         schema_name=schema_name,
     )

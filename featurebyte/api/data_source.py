@@ -118,7 +118,7 @@ class DataSource:
         raise RecordRetrievalException(response)
 
     @typechecked
-    def list_tables(
+    def list_source_tables(
         self,
         database_name: Optional[str] = None,
         schema_name: Optional[str] = None,
@@ -146,7 +146,7 @@ class DataSource:
         Examples
         --------
         >>> data_source = fb.FeatureStore.get("playground").get_data_source()
-        >>> data_source.list_tables(
+        >>> data_source.list_source_tables(
         ...     database_name="spark_catalog",
         ...     schema_name="doctest_grocery",
         ... )[:3]
