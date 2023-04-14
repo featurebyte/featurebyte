@@ -85,8 +85,7 @@ class ObservationTableTask(BaseTask):
                 observation_input=payload.observation_input,
                 **additional_metadata,
             )
-            created_doc = await observation_table_service.create_document(observation_table)
-            assert created_doc.id == payload.output_document_id
+            await observation_table_service.create_document(observation_table)
         except Exception as exc:
             logger.error(
                 "Failed to create ObservationTable",
