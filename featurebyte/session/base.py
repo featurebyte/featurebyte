@@ -24,6 +24,7 @@ import aiofiles
 import pandas as pd
 import pyarrow as pa
 from pydantic import BaseModel, PrivateAttr
+from sqlglot import expressions
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import (
@@ -34,6 +35,7 @@ from featurebyte.common.utils import (
 from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logger import logger
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 
 
 class RunThread(threading.Thread):
@@ -413,6 +415,33 @@ class BaseSession(BaseModel):
         else:
             create_command = "CREATE OR REPLACE TABLE"
         await self.execute_query(f"{create_command} {table_name} AS {query}")
+
+    async def drop_table(
+        self,
+        table_name: str,
+        schema_name: str,
+        database_name: str,
+    ) -> None:
+        """
+        Drop a table
+
+        Parameters
+        ----------
+        table_name : str
+            Table name
+        schema_name : str
+            Schema name
+        database_name : str
+            Database name
+        """
+        fully_qualified_table_name = get_fully_qualified_table_name(
+            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
+        )
+        query = sql_to_string(
+            expressions.Drop(this=expressions.Table(this=fully_qualified_table_name), kind="TABLE"),
+            source_type=self.source_type,
+        )
+        await self.execute_query(query)
 
     @property
     @abstractmethod

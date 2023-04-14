@@ -78,7 +78,7 @@ class TestModelingTableApi(BaseAsyncApiTestSuite):
     @pytest.fixture(autouse=True)
     def always_patched_observation_table_service(self, patched_observation_table_service):
         """
-        Patch ObservationTableService so get_additional_metadata always passes
+        Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
         """
         _ = patched_observation_table_service
 

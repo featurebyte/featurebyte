@@ -664,7 +664,7 @@ def snowflake_event_view_entity_feature_job_fixture(
 @pytest.fixture(name="patched_observation_table_service")
 def patched_observation_table_service():
     """
-    Patch ObservationTableService.get_additional_metadata
+    Patch ObservationTableService.validate_materialized_table_and_get_metadata
     """
 
     async def mocked_get_additional_metadata(*args, **kwargs):
@@ -676,7 +676,7 @@ def patched_observation_table_service():
         }
 
     with patch(
-        "featurebyte.service.observation_table.ObservationTableService.get_additional_metadata",
+        "featurebyte.service.observation_table.ObservationTableService.validate_materialized_table_and_get_metadata",
         Mock(side_effect=mocked_get_additional_metadata),
     ):
         yield

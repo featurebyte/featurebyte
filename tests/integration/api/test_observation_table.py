@@ -4,6 +4,7 @@ Integration tests for ObservationTable
 import pytest
 from sqlglot import parse_one
 
+from featurebyte.exception import RecordCreationException
 from featurebyte.query_graph.sql.common import sql_to_string
 
 
@@ -75,3 +76,33 @@ async def test_observation_table_from_view(scd_table, session, source_type):
     assert observation_table.name == f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}"
     check_location_valid(observation_table, session)
     await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)
+
+
+@pytest.mark.asyncio
+async def test_observation_table_cleanup(scd_table, session, source_type):
+    """
+    Test that invalid observation tables are cleaned up
+    """
+
+    async def _get_num_observation_tables():
+        tables = await session.list_tables(
+            database_name=session.database_name, schema_name=session.schema_name
+        )
+        observation_table_names = [
+            table for table in tables if table.startswith("OBSERVATION_TABLE")
+        ]
+        return len(observation_table_names)
+
+    view = scd_table.get_view()
+    view["POINT_IN_TIME"] = 123
+
+    num_observation_tables_before = await _get_num_observation_tables()
+
+    with pytest.raises(RecordCreationException) as exc:
+        view.create_observation_table(f"BAD_OBSERVATION_TABLE_FROM_VIEW_{source_type}")
+
+    expected_msg = "Point in time column should have timestamp type; got INT"
+    assert expected_msg in str(exc.value)
+
+    num_observation_tables_after = await _get_num_observation_tables()
+    assert num_observation_tables_before == num_observation_tables_after

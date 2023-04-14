@@ -123,11 +123,11 @@ class ObservationTableService(
         return cast(str, most_recent_point_in_time)
 
     @staticmethod
-    async def get_additional_metadata(
+    async def validate_materialized_table_and_get_metadata(
         db_session: BaseSession, destination: TableDetails
     ) -> Dict[str, Any]:
         """
-        Get additional metadata for the materialized observation table.
+        Validate and get additional metadata for the materialized observation table.
 
         Parameters
         ----------

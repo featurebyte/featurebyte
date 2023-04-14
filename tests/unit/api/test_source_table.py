@@ -1,13 +1,14 @@
 """
 Unit test for SourceTable
 """
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
 import pytest
 
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.exception import RecordCreationException
 from tests.util.helper import check_observation_table_creation_query, check_sdk_code_generation
 
 
@@ -238,4 +239,24 @@ def test_create_observation_table_with_sample_rows(
         FROM "sf_database"."sf_schema"."sf_table" TABLESAMPLE(12.0)
         LIMIT 100
         """,
+    )
+
+
+def test_bad_materialized_tables_cleaned_up(
+    snowflake_database_table,
+    snowflake_execute_query,
+):
+    """
+    Test that bad materialized tables are cleaned up on any validation errors
+    """
+    with patch(
+        "featurebyte.service.observation_table.ObservationTableService.validate_materialized_table_and_get_metadata",
+        Mock(side_effect=RuntimeError("Something went wrong")),
+    ):
+        with pytest.raises(RecordCreationException) as exc:
+            snowflake_database_table.create_observation_table("my_observation_table")
+
+    assert "RuntimeError: Something went wrong" in str(exc.value)
+    assert snowflake_execute_query.call_args[0][0].startswith(
+        'DROP TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE_'
     )
