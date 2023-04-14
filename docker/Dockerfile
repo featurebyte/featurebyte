@@ -13,17 +13,33 @@ RUN apt-get update && \
     apt-get clean
 
 WORKDIR /app
-COPY pyproject.toml /app/
+COPY pyproject.toml poetry.lock /app/
+
+# Installing featurebyte dependencies
+RUN pip install poetry==1.3.1 && \
+    python -m venv /opt/venv && \
+    poetry config virtualenvs.create false && \
+    poetry config http-basic.featurebyte_np ${FEATUREBYTE_NP_USERNAME} ${FEATUREBYTE_NP_PASSWORD} && \
+    . /opt/venv/bin/activate && \
+    poetry install -n --sync --extras=server
+
+# Moving featurebyte source code
 COPY ./featurebyte /app/featurebyte
 COPY ./README.md /app/README.md
 COPY ./LICENSE /app/LICENSE
 
-RUN python -m venv /opt/venv
-RUN . /opt/venv/bin/activate && pip install --extra-index-url "https://${FEATUREBYTE_NP_USERNAME}:${FEATUREBYTE_NP_PASSWORD}@${FEATUREBYTE_REPOSITORY}/simple" .[server]
+RUN . /opt/venv/bin/activate && \
+    poetry build && \
+    pip install dist/*.whl
+
 
 FROM python:3.8-slim AS runner
 
 ARG USER_HOME=/app
+
+# Add runtime user and group and set permissions appropriately
+RUN groupadd -g 1000 runnergroup -o
+RUN useradd -g 1000 -u 1000 -o -M -d /app -r runner
 
 RUN apt-get update && \
     apt-get install -y libsasl2-dev wkhtmltopdf gosu curl && \
@@ -36,10 +52,6 @@ ENV PATH="/opt/venv/bin:${PATH}"
 ## Copy script
 COPY ./docker/entrypoint.sh             /scripts/entrypoint.sh
 RUN chmod +x /scripts/entrypoint.sh
-
-# Add runtime user and group and set permissions appropriately
-RUN groupadd -g 1000 runnergroup -o
-RUN useradd -g 1000 -u 1000 -o -M -d /app -r runner
 RUN chown -R 1000:1000 /app
 
 CMD ["/bin/bash", "/scripts/entrypoint.sh"]
