@@ -83,7 +83,7 @@ def test__getitem__retrieve_database_table(
     """
     _ = snowflake_connector, snowflake_execute_query
     data_source = snowflake_feature_store.get_data_source()
-    database_table = data_source.get_table(
+    database_table = data_source.get_source_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",

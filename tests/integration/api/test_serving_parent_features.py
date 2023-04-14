@@ -68,7 +68,7 @@ async def tables_fixture(session, data_source):
     country_entity = Entity(name=f"{table_prefix}_country", serving_names=["country_id"])
     country_entity.save()
 
-    event_source_table = data_source.get_table(
+    event_source_table = data_source.get_source_table(
         table_name=f"{table_prefix}_EVENT",
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -81,7 +81,7 @@ async def tables_fixture(session, data_source):
     event_table["event_id"].as_entity(event_entity.name)
     event_table["cust_id"].as_entity(customer_entity.name)
 
-    scd_source_table_1 = data_source.get_table(
+    scd_source_table_1 = data_source.get_source_table(
         table_name=f"{table_prefix}_SCD_1",
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -95,7 +95,7 @@ async def tables_fixture(session, data_source):
     scd_table_1["scd_cust_id"].as_entity(customer_entity.name)
     scd_table_1["scd_city"].as_entity(city_entity.name)
 
-    scd_source_table_2 = data_source.get_table(
+    scd_source_table_2 = data_source.get_source_table(
         table_name=f"{table_prefix}_SCD_2",
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -109,7 +109,7 @@ async def tables_fixture(session, data_source):
     scd_table_2["city"].as_entity(city_entity.name)
     scd_table_2["state"].as_entity(state_entity.name)
 
-    dimension_source_table_1 = data_source.get_table(
+    dimension_source_table_1 = data_source.get_source_table(
         table_name=f"{table_prefix}_DIMENSION_1",
         database_name=session.database_name,
         schema_name=session.schema_name,

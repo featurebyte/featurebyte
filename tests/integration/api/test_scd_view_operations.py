@@ -120,7 +120,7 @@ async def test_scd_join_small(session, data_source, source_type):
     table_prefix = "TEST_SCD_JOIN_SMALL"
     await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
     await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
-    event_source_table = data_source.get_table(
+    event_source_table = data_source.get_source_table(
         table_name=f"{table_prefix}_EVENT",
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -131,7 +131,7 @@ async def test_scd_join_small(session, data_source, source_type):
         event_timestamp_column="ts",
     )
     event_view = event_table.get_view()
-    scd_source_table = data_source.get_table(
+    scd_source_table = data_source.get_source_table(
         table_name=f"{table_prefix}_SCD",
         database_name=session.database_name,
         schema_name=session.schema_name,

@@ -332,7 +332,7 @@ async def create_observation_table_from_dataframe(session, df, data_source):
     unique_id = ObjectId()
     db_table_name = f"df_{unique_id}"
     await session.register_table(db_table_name, df, temporary=False)
-    return data_source.get_table(
+    return data_source.get_source_table(
         db_table_name,
         database_name=session.database_name,
         schema_name=session.schema_name,

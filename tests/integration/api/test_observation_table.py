@@ -47,7 +47,7 @@ async def test_observation_table_from_source_table(
     """
     Test creating an observation table from a source table
     """
-    source_table = data_source.get_table(
+    source_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="ORIGINAL_OBSERVATION_TABLE",

@@ -20,7 +20,7 @@ def setup() -> None:
 
     # EventTable: GROCERYINVOICE
     if "GROCERYINVOICE" not in fb.Table.list()["name"].tolist():
-        event_source_table = data_source.get_table(
+        event_source_table = data_source.get_source_table(
             database_name="spark_catalog",
             schema_name="doctest_grocery",
             table_name="GROCERYINVOICE",
@@ -37,7 +37,7 @@ def setup() -> None:
 
     # ItemTable: INVOICEITEMS
     if "INVOICEITEMS" not in fb.Table.list()["name"].tolist():
-        item_source_table = data_source.get_table(
+        item_source_table = data_source.get_source_table(
             database_name="spark_catalog", schema_name="doctest_grocery", table_name="INVOICEITEMS"
         )
         grocery_items_table = item_source_table.create_item_table(
@@ -52,7 +52,7 @@ def setup() -> None:
 
     # SCDTable: GROCERYCUSTOMER
     if "GROCERYCUSTOMER" not in fb.Table.list()["name"].tolist():
-        scd_source_table = data_source.get_table(
+        scd_source_table = data_source.get_source_table(
             database_name="spark_catalog",
             schema_name="doctest_grocery",
             table_name="GROCERYCUSTOMER",
@@ -71,7 +71,7 @@ def setup() -> None:
 
     # DimensionTable: GROCERYPRODUCT
     if "GROCERYPRODUCT" not in fb.Table.list()["name"].tolist():
-        dimension_source_table = data_source.get_table(
+        dimension_source_table = data_source.get_source_table(
             database_name="spark_catalog",
             schema_name="doctest_grocery",
             table_name="GROCERYPRODUCT",

@@ -162,7 +162,7 @@ class DataSource:
         raise RecordRetrievalException(response)
 
     @typechecked
-    def get_table(
+    def get_source_table(
         self,
         table_name: str,
         database_name: Optional[str] = None,
@@ -189,7 +189,7 @@ class DataSource:
         Examples
         --------
         >>> data_source = fb.FeatureStore.get("playground").get_data_source()
-        >>> source_table = data_source.get_table(
+        >>> source_table = data_source.get_source_table(
         ...     table_name="groceryinvoice",
         ...     database_name="spark_catalog",
         ...     schema_name="doctest_grocery",
