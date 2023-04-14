@@ -135,7 +135,7 @@ class DatabricksSession(SparkAwareSession):
         return mapping.get(databricks_type, DBVarType.UNKNOWN)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
-        schema = []
+        schema = None
         if cursor.description:
             schema = {row[0]: row[1] for row in cursor.description}
 

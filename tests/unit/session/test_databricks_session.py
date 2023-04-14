@@ -55,7 +55,7 @@ class MockDatabricksConnection:
         return self
 
     def schemas(self, *args, **kwargs):
-        self.description = [["TABLE_SCHEM"], ["TABLE_CATALOG"]]
+        self.description = [["TABLE_SCHEM", "STRING"], ["TABLE_CATALOG", "STRING"]]
         self.result_rows = [
             ["default", "hive_metastore"],
             ["demo", "hive_metastore"],
@@ -105,7 +105,7 @@ class MockDatabricksConnection:
         return mock_arrow_table
 
     def execute(self, *args, **kwargs):
-        self.description = [["a"], ["b"], ["c"]]
+        self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
         self.result_rows = [
             [1, 2, 3],
             [100, 200, 300],

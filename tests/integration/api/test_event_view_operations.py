@@ -1115,11 +1115,11 @@ def test_add_feature(event_view, non_time_based_feature, scd_table):
     )
     assert df_feature_preview.shape[0] == 1
 
-    date_format = "%Y-%m-%d %H:%M:%S"
-    preview_dict = df_feature_preview.iloc[0].to_dict()
-    preview_dict["POINT_IN_TIME"] = preview_dict["POINT_IN_TIME"].strftime(date_format)
-    assert preview_dict == {
-        "POINT_IN_TIME": pd.Timestamp(timestamp_str).strftime(date_format),
+    df_feature_preview["POINT_IN_TIME"] = pd.to_datetime(
+        df_feature_preview["POINT_IN_TIME"]
+    ).dt.tz_localize(None)
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp(timestamp_str),
         "PRODUCT_ACTION": "purchase",
         "transaction_count_sum_24h": 56,
     }
@@ -1230,14 +1230,9 @@ def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     if source_type == "spark":
         expected_feature_value = expected_feature_value.tz_convert(None)
 
-    date_format = "%Y-%m-%d %H:%M:%S"
-    data_dict = df.iloc[0].to_dict()
-    data_dict["POINT_IN_TIME"] = data_dict["POINT_IN_TIME"].strftime(date_format)
-    data_dict["LATEST_EVENT_TIMESTAMP_BY_USER"] = data_dict[
-        "LATEST_EVENT_TIMESTAMP_BY_USER"
-    ].strftime(date_format)
-    assert data_dict == {
-        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00").strftime(date_format),
+    df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
+    assert df.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "üser id": 1,
-        "LATEST_EVENT_TIMESTAMP_BY_USER": expected_feature_value.strftime(date_format),
+        "LATEST_EVENT_TIMESTAMP_BY_USER": expected_feature_value,
     }

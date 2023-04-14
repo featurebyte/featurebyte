@@ -488,7 +488,7 @@ jobs:
         run: |
           echo "BUILD_JAR_RESULT=${{ needs.build-jar.result }}" >> $GITHUB_ENV
           echo "TEST_UNIT_RESULT=${{ needs.test-unit.result }}" >> $GITHUB_ENV
-          echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }}",${{ needs.test-integration-databricks.result }}" >> $GITHUB_ENV
+          echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }},${{ needs.test-integration-databricks.result }}" >> $GITHUB_ENV
           echo "TEST_DOCS_RESULT=${{ needs.test-docs.result }}" >> $GITHUB_ENV
           echo "VALIDATE_RESULT=${{ needs.validate.result }}" >> $GITHUB_ENV
           echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
