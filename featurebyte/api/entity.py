@@ -3,7 +3,7 @@ Entity class
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, Dict, List
 
 from http import HTTPStatus
 
@@ -327,3 +327,32 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
         )
         if post_response.status_code != HTTPStatus.OK:
             raise RecordUpdateException(post_response)
+
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of an Entity object. The dictionary contains
+        the following keys:
+
+        - `name`: The name of the Entity object.
+        - `created_at`: The timestamp indicating when the Entity object was created.
+        - `updated_at`: The timestamp indicating when the Entity object was last updated.
+        - `serving_names`: The list of approved labels used to identify the unique identifier for the
+            Entity during preview or serving requests.
+        - `catalog_name`: The name of the catalog that the Entity belongs to.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+
+        Raises
+        ------
+        RecordRetrievalException
+            When the object cannot be found, or we have received an unexpected response status code.
+        """
+        return super().info(verbose)

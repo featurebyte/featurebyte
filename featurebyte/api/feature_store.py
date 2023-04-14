@@ -3,7 +3,7 @@ FeatureStore class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.data_source import DataSource
@@ -41,6 +41,34 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     def _get_create_payload(self) -> dict[str, Any]:
         data = FeatureStoreCreate(**self.json_dict())
         return data.json_dict()
+
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of the feature store represented by the
+        FeatureStore object. The dictionary contains the following keys:
+
+        - `name`: The name of the feature store.
+        - `created_at`: The timestamp indicating when the feature store owas created.
+        - `updated_at`: The timestamp indicating when the FeatureStore object was last updated.
+        - `source`: The type of the feature store (Spark, Snowflake, DataBricks,...).
+        - `database_details`: details of the database used by the feature store."
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+
+        Raises
+        ------
+        RecordRetrievalException
+            When the object cannot be found, or we have received an unexpected response status code.
+        """
+        return super().info(verbose)
 
     @classmethod
     def create(
