@@ -265,9 +265,29 @@ class SampleMixin:
         """
         return None
 
+    def _get_sample_payload(
+        self: HasExtractPrunedGraphAndNode,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
+    ) -> FeatureStoreSample:
+        # construct sample payload
+        from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
+        to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
+
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        return FeatureStoreSample(
+            feature_store_name=self.feature_store.name,
+            graph=pruned_graph,
+            node_name=mapped_node.name,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            timestamp_column=self.timestamp_column,
+        )
+
     @typechecked
     def sample(
-        self: HasExtractPrunedGraphAndNode,
+        self,
         size: int = 10,
         seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
@@ -323,18 +343,7 @@ class SampleMixin:
         - [View.sample](/reference/featurebyte.api.view.View.sample/):
           Retrieve a sample of a view.
         """
-        from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
-        to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
-
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
-        payload = FeatureStoreSample(
-            feature_store_name=self.feature_store.name,
-            graph=pruned_graph,
-            node_name=mapped_node.name,
-            from_timestamp=from_timestamp,
-            to_timestamp=to_timestamp,
-            timestamp_column=self.timestamp_column,
-        )
+        payload = self._get_sample_payload(from_timestamp, to_timestamp, **kwargs)  # type: ignore[misc]
         client = Configurations().get_client()
         response = client.post(
             url=f"/feature_store/sample?size={size}&seed={seed}", json=payload.json_dict()

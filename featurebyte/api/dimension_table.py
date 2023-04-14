@@ -182,3 +182,7 @@ class DimensionTable(TableApiObject):
             return self.cached_model.dimension_id_column
         except RecordRetrievalException:
             return self.internal_dimension_id_column
+
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        return None

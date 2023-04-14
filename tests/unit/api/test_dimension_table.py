@@ -9,11 +9,12 @@ from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models import DimensionTableModel
-from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
+from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
 
 class TestDimensionTableTestSuite(BaseTableTestSuite):
+    """Test DimensionTable"""
 
     data_type = DataType.DIMENSION_DATA
     col = "col_int"
@@ -28,7 +29,7 @@ class TestDimensionTableTestSuite(BaseTableTestSuite):
         "col_int",
         "cust_id",
     }
-    expected_data_sql = """
+    expected_table_sql = """
     SELECT
       "col_int" AS "col_int",
       "col_float" AS "col_float",
@@ -42,13 +43,13 @@ class TestDimensionTableTestSuite(BaseTableTestSuite):
     FROM "sf_database"."sf_schema"."dimension_table"
     LIMIT 10
     """
-    expected_data_column_sql = """
+    expected_table_column_sql = """
     SELECT
       "col_int" AS "col_int"
     FROM "sf_database"."sf_schema"."dimension_table"
     LIMIT 10
     """
-    expected_clean_data_sql = """
+    expected_clean_table_sql = """
     SELECT
       CAST(CASE WHEN (
         "col_int" IS NULL
@@ -64,6 +65,15 @@ class TestDimensionTableTestSuite(BaseTableTestSuite):
     FROM "sf_database"."sf_schema"."dimension_table"
     LIMIT 10
     """
+    expected_clean_table_column_sql = """
+    SELECT
+      CAST(CASE WHEN (
+        "col_int" IS NULL
+      ) THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int"
+    FROM "sf_database"."sf_schema"."dimension_table"
+    LIMIT 10
+    """
+    expected_timestamp_column = None
 
 
 @pytest.fixture(name="dimension_table_dict")

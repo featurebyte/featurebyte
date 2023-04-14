@@ -174,10 +174,6 @@ def _get_table_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem([TABLE, LINEAGE, "Table.id"]),
         DocLayoutItem(
-            [TABLE, LINEAGE, "Table.preview_clean_data_sql"],
-            doc_path_override="api.base_table.TableApiObject.preview_clean_data_sql.md",
-        ),
-        DocLayoutItem(
             [TABLE, LINEAGE, "Table.preview_sql"],
             doc_path_override="api.base_table.TableApiObject.preview_sql.md",
         ),
