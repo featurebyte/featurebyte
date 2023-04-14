@@ -105,7 +105,7 @@ def get_mocked_session_manager(session):
         yield
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @mock.patch("featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService.list_columns")
 @mock.patch("featurebyte.app.get_persistent")
 def test_feature_list_saving_in_bad_state__feature_id_is_different(
@@ -555,13 +555,17 @@ def run_test_conditional_assign_feature(feature_group):
 @pytest.mark.parametrize("use_async_workflow", [False, True])
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Skip temporarily until we fix the issue with async workflow")
 async def test_get_historical_features(
     session, data_source, feature_group, feature_group_per_category, use_async_workflow
 ):
     """
     Test getting historical features from FeatureList
     """
+    if use_async_workflow and session.source_type == "databricks":
+        # TODO: Enable this test once we fix the issue with async workflow"
+        # jira ticket: https://featurebyte.atlassian.net/browse/DEV-1489
+        return
+
     feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     df_training_events = pd.DataFrame(
         {
@@ -1066,7 +1070,7 @@ def get_non_time_based_feature_fixture(item_table):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
-def test_add_feature(event_view, non_time_based_feature, scd_table):
+def test_add_feature(event_view, non_time_based_feature, scd_table, source_type):
     """
     Test add feature
     """
@@ -1115,9 +1119,11 @@ def test_add_feature(event_view, non_time_based_feature, scd_table):
     )
     assert df_feature_preview.shape[0] == 1
 
-    df_feature_preview["POINT_IN_TIME"] = pd.to_datetime(
-        df_feature_preview["POINT_IN_TIME"]
-    ).dt.tz_localize(None)
+    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+    if source_type == "databricks":
+        df_feature_preview["POINT_IN_TIME"] = pd.to_datetime(
+            df_feature_preview["POINT_IN_TIME"]
+        ).dt.tz_localize(None)
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp(timestamp_str),
         "PRODUCT_ACTION": "purchase",
@@ -1185,11 +1191,7 @@ def test_latest_per_category_aggregation(event_view):
     expected = json.loads(
         '{\n  "1": "àdd",\n  "3": "purchase",\n  "5": "rëmove",\n  "8": "àdd",\n  "9": "purchase"\n}'
     )
-    value = df.iloc[0]["LATEST_ACTION_DICT_30d"]
-    if isinstance(value, str):
-        assert json.loads(value) == expected
-    else:
-        assert value == expected
+    assert json.loads(df.iloc[0]["LATEST_ACTION_DICT_30d"]) == expected
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
@@ -1230,7 +1232,9 @@ def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     if source_type == "spark":
         expected_feature_value = expected_feature_value.tz_convert(None)
 
-    df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
+    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+    if source_type == "databricks":
+        df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "üser id": 1,

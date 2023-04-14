@@ -1,9 +1,9 @@
 """
-SparkAwareSession class
+BaseSparkSession class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, List, Optional, cast
 
 import os
 from abc import ABC
@@ -14,10 +14,10 @@ from pydantic import PrivateAttr
 
 from featurebyte import StorageType
 from featurebyte.common.path_util import get_package_root
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logger import logger
 from featurebyte.models.credential import StorageCredential
-from featurebyte.session.base import BaseSchemaInitializer, BaseSession
+from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 from featurebyte.session.simple_storage import (
     FileMode,
     FileSimpleStorage,
@@ -28,7 +28,7 @@ from featurebyte.session.simple_storage import (
 
 class BaseSparkSession(BaseSession, ABC):
     """
-    SparkAware session class
+    BaseSpark session class
     """
 
     _storage: SimpleStorage = PrivateAttr()
@@ -43,6 +43,10 @@ class BaseSparkSession(BaseSession, ABC):
 
     region_name: Optional[str]
     storage_credential: Optional[StorageCredential]
+
+    def __init__(self, **data: Any) -> None:
+        super().__init__(**data)
+        self._initialize_storage()
 
     @property
     def schema_name(self) -> str:
@@ -192,8 +196,47 @@ class BaseSparkSession(BaseSession, ABC):
                 logger.error(f"Exception while deleting temp file {temp_filename}: {exc}")
 
 
+class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
+    """Spark metadata initializer class"""
+
+    def create_metadata_table_queries(self, current_migration_version: int) -> List[str]:
+        """Query to create metadata table
+
+        Parameters
+        ----------
+        current_migration_version: int
+            Current migration version
+
+        Returns
+        -------
+        List[str]
+        """
+        return [
+            (
+                f"""
+                CREATE TABLE IF NOT EXISTS METADATA_SCHEMA (
+                    WORKING_SCHEMA_VERSION INT,
+                    {InternalName.MIGRATION_VERSION} INT,
+                    FEATURE_STORE_ID STRING,
+                    CREATED_AT TIMESTAMP
+                )  USING DELTA
+                """
+            ),
+            (
+                f"""
+                INSERT INTO METADATA_SCHEMA
+                SELECT
+                    0 AS WORKING_SCHEMA_VERSION,
+                    {current_migration_version} AS {InternalName.MIGRATION_VERSION},
+                    NULL AS FEATURE_STORE_ID,
+                    CURRENT_TIMESTAMP() AS CREATED_AT
+                """
+            ),
+        ]
+
+
 class BaseSparkSchemaInitializer(BaseSchemaInitializer):
-    """SparkAware schema initializer class"""
+    """BaseSpark schema initializer class"""
 
     async def drop_all_objects_in_working_schema(self) -> None:
         raise NotImplementedError()

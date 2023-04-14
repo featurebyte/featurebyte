@@ -4,7 +4,7 @@ SparkSession class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, List, Optional, OrderedDict, cast
+from typing import Any, Optional, OrderedDict, cast
 
 import collections
 
@@ -17,11 +17,15 @@ from pyhive.exc import OperationalError
 from pyhive.hive import Cursor
 
 from featurebyte.common.utils import create_new_arrow_stream_writer
-from featurebyte.enum import DBVarType, InternalName, SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.logger import logger
-from featurebyte.session.base import BaseSchemaInitializer, MetadataSchemaInitializer
+from featurebyte.session.base import BaseSchemaInitializer
+from featurebyte.session.base_spark import (
+    BaseSparkMetadataSchemaInitializer,
+    BaseSparkSchemaInitializer,
+    BaseSparkSession,
+)
 from featurebyte.session.hive import AuthType, HiveConnection
-from featurebyte.session.spark_aware import BaseSparkSchemaInitializer, BaseSparkSession
 
 
 class SparkSession(BaseSparkSession):
@@ -39,7 +43,6 @@ class SparkSession(BaseSparkSession):
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
-        self._initialize_storage()
 
         auth = None
         scheme = None
@@ -271,52 +274,13 @@ class SparkSession(BaseSparkSession):
         writer.close()
 
 
-class SparkMetadataSchemaInitializer(MetadataSchemaInitializer):
-    """Spark metadata initializer class"""
-
-    def create_metadata_table_queries(self, current_migration_version: int) -> List[str]:
-        """Query to create metadata table
-
-        Parameters
-        ----------
-        current_migration_version: int
-            Current migration version
-
-        Returns
-        -------
-        List[str]
-        """
-        return [
-            (
-                f"""
-                CREATE TABLE IF NOT EXISTS METADATA_SCHEMA (
-                    WORKING_SCHEMA_VERSION INT,
-                    {InternalName.MIGRATION_VERSION} INT,
-                    FEATURE_STORE_ID STRING,
-                    CREATED_AT TIMESTAMP
-                )  USING DELTA
-                """
-            ),
-            (
-                f"""
-                INSERT INTO METADATA_SCHEMA
-                SELECT
-                    0 AS WORKING_SCHEMA_VERSION,
-                    {current_migration_version} AS {InternalName.MIGRATION_VERSION},
-                    NULL AS FEATURE_STORE_ID,
-                    CURRENT_TIMESTAMP() AS CREATED_AT
-                """
-            ),
-        ]
-
-
 class SparkSchemaInitializer(BaseSparkSchemaInitializer):
     """Spark schema initializer class"""
 
     def __init__(self, session: SparkSession):
         super().__init__(session=session)
         self.session = cast(SparkSession, self.session)
-        self.metadata_schema_initializer = SparkMetadataSchemaInitializer(session)
+        self.metadata_schema_initializer = BaseSparkMetadataSchemaInitializer(session)
 
     @property
     def sql_directory_name(self) -> str:

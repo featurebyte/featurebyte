@@ -197,7 +197,6 @@ class TileGenerateSchedule(TileCommon):
                 ex_insert_sql = audit_insert_sql.replace("<STATUS>", fail_code).replace(
                     "<MESSAGE>", message
                 )
-                logger.error(f"fail_insert_sql: {ex_insert_sql}")
                 logger.error(f"fail_insert_sql exception: {exception}")
                 await retry_sql(self._session, ex_insert_sql)
                 raise exception

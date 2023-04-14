@@ -4,17 +4,22 @@ DatabricksSession class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, List, OrderedDict, cast
+from typing import Any, OrderedDict, cast
 
 import collections
+import json
 
 import pandas as pd
 from pydantic import Field
 
 from featurebyte import AccessTokenCredential
-from featurebyte.enum import DBVarType, InternalName, SourceType
-from featurebyte.session.base import BaseSchemaInitializer, MetadataSchemaInitializer
-from featurebyte.session.spark_aware import BaseSparkSchemaInitializer, BaseSparkSession
+from featurebyte.enum import DBVarType, SourceType
+from featurebyte.session.base import BaseSchemaInitializer
+from featurebyte.session.base_spark import (
+    BaseSparkMetadataSchemaInitializer,
+    BaseSparkSchemaInitializer,
+    BaseSparkSession,
+)
 
 try:
     from databricks import sql as databricks_sql
@@ -40,8 +45,6 @@ class DatabricksSession(BaseSparkSession):
 
         if not HAS_DATABRICKS_SQL_CONNECTOR:
             raise RuntimeError("databricks-sql-connector is not available")
-
-        self._initialize_storage()
 
         self._connection = databricks_sql.connect(
             server_hostname=data["host"],
@@ -119,45 +122,14 @@ class DatabricksSession(BaseSparkSession):
             for col_name in schema:
                 # handle map type. Databricks returns map as list of tuples
                 # https://docs.databricks.com/sql/language-manual/sql-ref-datatypes.html#map
-                # which is not supported by pyarrow
+                # which is not supported by pyarrow. Below converts the tuple list to json string
                 if schema[col_name].upper() == "MAP":
                     dataframe[col_name] = dataframe[col_name].apply(
-                        lambda x: dict(x) if x is not None else None
+                        lambda x: json.dumps(dict(x)) if x is not None else None
                     )
             return dataframe
 
         return None
-
-
-class DatabricksMetadataSchemaInitializer(MetadataSchemaInitializer):
-    """Databricks metadata initializer class"""
-
-    def create_metadata_table_queries(self, current_migration_version: int) -> List[str]:
-        """Queries to create metadata table
-
-        Parameters
-        ----------
-        current_migration_version: int
-            Current migration version
-
-        Returns
-        -------
-        List[str]
-        """
-        return [
-            (
-                "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
-                "WORKING_SCHEMA_VERSION INT, "
-                f"{InternalName.MIGRATION_VERSION} INT, "
-                "FEATURE_STORE_ID STRING, "
-                "CREATED_AT TIMESTAMP "
-                ");"
-            ),
-            (
-                "INSERT INTO METADATA_SCHEMA "
-                f"SELECT 0, {current_migration_version}, NULL, CURRENT_TIMESTAMP();"
-            ),
-        ]
 
 
 class DatabricksSchemaInitializer(BaseSparkSchemaInitializer):
@@ -166,7 +138,7 @@ class DatabricksSchemaInitializer(BaseSparkSchemaInitializer):
     def __init__(self, session: DatabricksSession):
         super().__init__(session=session)
         self.session = cast(DatabricksSession, self.session)
-        self.metadata_schema_initializer = DatabricksMetadataSchemaInitializer(session)
+        self.metadata_schema_initializer = BaseSparkMetadataSchemaInitializer(session)
 
     @property
     def sql_directory_name(self) -> str:

@@ -27,6 +27,7 @@ import pymongo
 import pytest
 import pytest_asyncio
 import yaml
+from botocore.exceptions import ClientError
 from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -758,7 +759,10 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
         databricks_initializer = DatabricksSchemaInitializer(session)
         udf_jar_file_name = os.path.basename(databricks_initializer.udf_jar_local_path)
-        session._storage.delete_object(udf_jar_file_name)
+        try:
+            session._storage.delete_object(udf_jar_file_name)
+        except ClientError as exc:
+            logger.warning(f"Failed to delete UDF jar file: {exc}")
 
     if source_type == "spark":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
