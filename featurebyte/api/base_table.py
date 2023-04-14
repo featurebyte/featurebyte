@@ -225,9 +225,9 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         Parameters
         ----------
         limit: int
-            maximum number of return rows
+            Maximum number of return rows
         after_cleaning: bool
-            whether to preview the table after cleaning
+            Whether to preview the table after cleaning
 
         Returns
         -------
@@ -250,7 +250,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         limit: int
             Maximum number of return rows.
         after_cleaning: bool
-            Whether to apply cleaning operations.
+            Whether to preview the table after cleaning
 
         Returns
         -------
@@ -282,7 +282,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         to_timestamp: Optional[datetime]
             End of date range to sample from.
         after_cleaning: bool
-            Whether to apply cleaning operations.
+            Whether to sample the table after cleaning
 
         Returns
         -------
@@ -321,7 +321,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         to_timestamp: Optional[datetime]
             End of date range to sample from.
         after_cleaning: bool
-            Whether to apply cleaning operations.
+            Whether to compute description statistics after cleaning.
 
         Returns
         -------
