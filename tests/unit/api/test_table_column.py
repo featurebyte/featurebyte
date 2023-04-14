@@ -155,7 +155,7 @@ def _check_event_table_with_critical_data_info(event_table):
         LIMIT 10
     """
     ).strip()
-    assert event_table.preview_clean_data_sql() == expected_clean_data_query
+    assert event_table.preview_clean_sql() == expected_clean_data_query
 
     expected_view_query = textwrap.dedent(
         """

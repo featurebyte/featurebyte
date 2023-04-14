@@ -112,10 +112,10 @@ class BaseTableTestSuite:
         """
         Test preview table (make sure imputed table show only raw table sql)
         """
-        data_sql = imputed_table_under_test.preview_sql()
-        clean_data_sql = imputed_table_under_test.preview_clean_data_sql()
-        assert data_sql == textwrap.dedent(self.expected_table_sql).strip()
-        assert clean_data_sql == textwrap.dedent(self.expected_clean_table_sql).strip()
+        table_sql = imputed_table_under_test.preview_sql()
+        clean_table_sql = imputed_table_under_test.preview_sql(after_cleaning=True)
+        assert table_sql == textwrap.dedent(self.expected_table_sql).strip()
+        assert clean_table_sql == textwrap.dedent(self.expected_clean_table_sql).strip()
 
         # check table properties
         assert imputed_table_under_test.column_cleaning_operations == [
@@ -130,16 +130,16 @@ class BaseTableTestSuite:
         """
         Test preview table column
         """
-        data_column_sql = table_under_test[self.col].preview_sql()
-        assert data_column_sql == textwrap.dedent(self.expected_table_column_sql).strip()
+        table_column_sql = table_under_test[self.col].preview_sql()
+        assert table_column_sql == textwrap.dedent(self.expected_table_column_sql).strip()
 
-    def test_table_column_preview_clean_data_sql(self, imputed_table_under_test):
+    def test_table_column_preview_clean_table_sql(self, imputed_table_under_test):
         """
         Test preview table column
         """
-        clean_data_column_sql = imputed_table_under_test[self.col].preview_clean_data_sql()
+        clean_table_column_sql = imputed_table_under_test[self.col].preview_sql(after_cleaning=True)
         assert (
-            clean_data_column_sql == textwrap.dedent(self.expected_clean_table_column_sql).strip()
+            clean_table_column_sql == textwrap.dedent(self.expected_clean_table_column_sql).strip()
         )
 
     def test_update_status(self, table_under_test):

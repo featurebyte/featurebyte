@@ -218,7 +218,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         return pruned_graph, project_node
 
     @typechecked
-    def preview_sql(self, limit: int = 10) -> str:
+    def preview_sql(self, limit: int = 10, after_cleaning: bool = False) -> str:
         """
         Generate SQL query to preview the transformation output
 
@@ -226,31 +226,16 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         ----------
         limit: int
             maximum number of return rows
+        after_cleaning: bool
+            whether to preview the table after cleaning
 
         Returns
         -------
         str
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
-        return GraphInterpreter(
-            pruned_graph, source_type=self.feature_store.type
-        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
-
-    @typechecked
-    def preview_clean_data_sql(self, limit: int = 10) -> str:
-        """
-        Generate SQL query to preview the table after applying list of cleaning operations.
-
-        Parameters
-        ----------
-        limit: int
-            Maximum number of return rows.
-
-        Returns
-        -------
-        str
-        """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(after_cleaning=True)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(
+            after_cleaning=after_cleaning
+        )
         return GraphInterpreter(
             pruned_graph, source_type=self.feature_store.type
         ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]

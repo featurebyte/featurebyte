@@ -215,23 +215,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         return list(self.column_var_type_map)
 
     @typechecked
-    def preview_sql(self, limit: int = 10) -> str:
-        """
-        Generate SQL query to preview the transformation output.
-
-        Parameters
-        ----------
-        limit: int
-            Maximum number of return rows.
-
-        Returns
-        -------
-        str
-        """
-        return self.frame.preview_sql(limit=limit)
-
-    @typechecked
-    def preview_clean_data_sql(self, limit: int = 10) -> str:
+    def preview_sql(self, limit: int = 10, after_cleaning: bool = False) -> str:
         """
         Returns an SQL query for previewing the table after applying the set of cleaning operations defined at the
         column level.
@@ -240,12 +224,14 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         ----------
         limit: int
             Maximum number of return rows.
+        after_cleaning: bool
+            Whether to apply cleaning operations.
 
         Returns
         -------
         str
         """
-        return self.frame.preview_sql(limit=limit, after_cleaning=True)
+        return self.frame.preview_sql(limit=limit, after_cleaning=after_cleaning)
 
     @typechecked
     def preview(self, limit: int = 10, after_cleaning: bool = False) -> pd.DataFrame:
