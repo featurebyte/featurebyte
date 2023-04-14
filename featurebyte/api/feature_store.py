@@ -42,9 +42,9 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         data = FeatureStoreCreate(**self.json_dict())
         return data.json_dict()
 
-    def info(
+    def info(  # pylint: disable=useless-parent-delegation
         self, verbose: bool = False
-    ) -> Dict[str, Any]:  # pylint: disable=useless-parent-delegation
+    ) -> Dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of the feature store represented by the
         FeatureStore object. The dictionary contains the following keys:

@@ -328,9 +328,9 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
         if post_response.status_code != HTTPStatus.OK:
             raise RecordUpdateException(post_response)
 
-    def info(
+    def info(  # pylint: disable=useless-parent-delegation
         self, verbose: bool = False
-    ) -> Dict[str, Any]:  # pylint: disable=useless-parent-delegation
+    ) -> Dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of an Entity object. The dictionary contains
         the following keys:

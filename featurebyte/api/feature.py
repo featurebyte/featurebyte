@@ -125,9 +125,9 @@ class Feature(
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
 
-    def info(
+    def info(  # pylint: disable=useless-parent-delegation
         self, verbose: bool = False
-    ) -> Dict[str, Any]:  # pylint: disable=useless-parent-delegation
+    ) -> Dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of an Feature object. The dictionary contains
         the following keys:
