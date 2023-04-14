@@ -124,18 +124,21 @@ async def test_change_view_correctness(session, data_source):
                 "past_effective_ts": np.nan,
                 "new_column": "a",
                 "past_column": np.nan,
+                "past_column_lag": np.nan,
             },
             {
                 "new_effective_ts": "2022-01-03 00:00:00",
                 "past_effective_ts": "2022-01-01 00:00:00",
                 "new_column": "b",
                 "past_column": "a",
+                "past_column_lag": np.nan,
             },
             {
                 "new_effective_ts": "2022-01-06 00:00:00",
                 "past_effective_ts": "2022-01-03 00:00:00",
                 "new_column": "c",
                 "past_column": "b",
+                "past_column_lag": "a",
             },
         ]
     )
@@ -157,6 +160,7 @@ async def test_change_view_correctness(session, data_source):
         effective_timestamp_column="effective_ts",
     )
     change_view = scd_table.get_change_view(track_changes_column="column")
+    change_view["past_column_lag"] = change_view["past_column"].lag("cust_id")
     df = change_view.preview()
 
     pd.testing.assert_frame_equal(df, df_expected)
