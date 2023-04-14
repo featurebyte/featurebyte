@@ -35,9 +35,9 @@ class BaseTableTestSuite:
     data_type: DataType = ""
     expected_columns = None
     col = ""
-    expected_data_sql = ""
-    expected_data_column_sql = ""
-    expected_clean_data_sql = ""
+    expected_table_sql = ""
+    expected_table_column_sql = ""
+    expected_clean_table_sql = ""
     expected_attr_name_value_pairs = []
     expected_timestamp_column = ""
 
@@ -45,8 +45,8 @@ class BaseTableTestSuite:
     def immediately_expired_api_object_cache(self, mock_api_object_cache):
         yield
 
-    @pytest.fixture(name="data_under_test")
-    def get_data_under_test_fixture(
+    @pytest.fixture(name="table_under_test")
+    def get_table_under_test_fixture(
         self,
         snowflake_item_table,
         snowflake_event_table,
@@ -68,84 +68,84 @@ class BaseTableTestSuite:
             )
         return data_map[self.data_type]
 
-    @pytest.fixture(name="imputed_data_under_test")
-    def imputed_data_under_test_fixture(self, data_under_test):
+    @pytest.fixture(name="imputed_table_under_test")
+    def imputed_table_under_test_fixture(self, table_under_test):
         """
         Retrieves fixture for table under test
         """
         # check column_cleaning_operations is empty
-        assert data_under_test.column_cleaning_operations == []
+        assert table_under_test.column_cleaning_operations == []
 
-        data_under_test[self.col].update_critical_data_info(
+        table_under_test[self.col].update_critical_data_info(
             cleaning_operations=[MissingValueImputation(imputed_value=0)]
         )
-        return data_under_test
+        return table_under_test
 
-    def test_table_properties(self, data_under_test):
+    def test_table_properties(self, table_under_test):
         """Test table properties"""
-        assert data_under_test.timestamp_column == self.expected_timestamp_column
-        assert data_under_test.frame.timestamp_column == self.expected_timestamp_column
+        assert table_under_test.timestamp_column == self.expected_timestamp_column
+        assert table_under_test.frame.timestamp_column == self.expected_timestamp_column
 
-    def test_table_column__not_exists(self, data_under_test):
+    def test_table_column__not_exists(self, table_under_test):
         """
         Test non-exist column retrieval
         """
         with pytest.raises(KeyError) as exc:
-            _ = data_under_test["non_exist_column"]
+            _ = table_under_test["non_exist_column"]
         assert 'Column "non_exist_column" does not exist!' in str(exc.value)
 
         with pytest.raises(AttributeError) as exc:
-            _ = data_under_test.non_exist_column
+            _ = table_under_test.non_exist_column
         assert (
-            f"'{data_under_test.__class__.__name__}' object has no attribute 'non_exist_column'"
+            f"'{table_under_test.__class__.__name__}' object has no attribute 'non_exist_column'"
             in str(exc.value)
         )
 
         # check __getattr__ is working properly
-        assert isinstance(data_under_test[self.col], TableColumn)
+        assert isinstance(table_under_test[self.col], TableColumn)
 
         # when accessing the `columns` attribute, make sure we retrieve it properly
-        assert set(data_under_test.columns) == self.expected_columns
+        assert set(table_under_test.columns) == self.expected_columns
 
-    def test_table_preview_sql(self, imputed_data_under_test):
+    def test_table_preview_sql(self, imputed_table_under_test):
         """
         Test preview table (make sure imputed table show only raw table sql)
         """
-        data_sql = imputed_data_under_test.preview_sql()
-        clean_data_sql = imputed_data_under_test.preview_clean_data_sql()
-        assert data_sql == textwrap.dedent(self.expected_data_sql).strip()
-        assert clean_data_sql == textwrap.dedent(self.expected_clean_data_sql).strip()
+        data_sql = imputed_table_under_test.preview_sql()
+        clean_data_sql = imputed_table_under_test.preview_clean_data_sql()
+        assert data_sql == textwrap.dedent(self.expected_table_sql).strip()
+        assert clean_data_sql == textwrap.dedent(self.expected_clean_table_sql).strip()
 
         # check table properties
-        assert imputed_data_under_test.column_cleaning_operations == [
+        assert imputed_table_under_test.column_cleaning_operations == [
             ColumnCleaningOperation(
                 column_name=self.col,
                 cleaning_operations=[MissingValueImputation(imputed_value=0)],
             )
         ]
-        assert imputed_data_under_test.catalog_id == DEFAULT_CATALOG_ID
+        assert imputed_table_under_test.catalog_id == DEFAULT_CATALOG_ID
 
-    def test_table_column_preview_sql(self, data_under_test):
+    def test_table_column_preview_sql(self, table_under_test):
         """
         Test preview table column
         """
-        data_column_sql = data_under_test[self.col].preview_sql()
-        assert data_column_sql == textwrap.dedent(self.expected_data_column_sql).strip()
+        data_column_sql = table_under_test[self.col].preview_sql()
+        assert data_column_sql == textwrap.dedent(self.expected_table_column_sql).strip()
 
-    def test_update_status(self, data_under_test):
+    def test_update_status(self, table_under_test):
         """
         Test update status
         """
-        assert data_under_test.status == TableStatus.PUBLIC_DRAFT
-        data_under_test.update_status(TableStatus.PUBLISHED)
-        assert data_under_test.status == TableStatus.PUBLISHED
+        assert table_under_test.status == TableStatus.PUBLIC_DRAFT
+        table_under_test.update_status(TableStatus.PUBLISHED)
+        assert table_under_test.status == TableStatus.PUBLISHED
 
-    def test_table_sample_payload(self, data_under_test):
+    def test_table_sample_payload(self, table_under_test):
         """
         Test table sample payload
         """
         if self.expected_timestamp_column:
-            sample_payload = data_under_test.frame._get_sample_payload(
+            sample_payload = table_under_test.frame._get_sample_payload(
                 from_timestamp="2020-01-01",
                 to_timestamp="2020-01-02",
             )
@@ -155,7 +155,7 @@ class BaseTableTestSuite:
 
         else:
             with pytest.raises(ValueError) as exc:
-                data_under_test.frame._get_sample_payload(
+                table_under_test.frame._get_sample_payload(
                     from_timestamp="2020-01-01",
                     to_timestamp="2020-01-02",
                 )

@@ -10,7 +10,7 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.scd_table import SCDTableModel
-from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
+from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -31,7 +31,7 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
         "col_int",
         "cust_id",
     }
-    expected_data_sql = """
+    expected_table_sql = """
     SELECT
       "col_int" AS "col_int",
       "col_float" AS "col_float",
@@ -46,13 +46,13 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
     FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
     """
-    expected_data_column_sql = """
+    expected_table_column_sql = """
     SELECT
       "col_int" AS "col_int"
     FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
     """
-    expected_clean_data_sql = """
+    expected_clean_table_sql = """
     SELECT
       CAST(CASE WHEN (
         "col_int" IS NULL

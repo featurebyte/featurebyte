@@ -21,7 +21,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
+from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -206,7 +206,7 @@ class TestItemTableTestSuite(BaseTableTestSuite):
         "created_at",
         "event_timestamp",
     }
-    expected_data_sql = """
+    expected_table_sql = """
     SELECT
       "event_id_col" AS "event_id_col",
       "item_id_col" AS "item_id_col",
@@ -217,13 +217,13 @@ class TestItemTableTestSuite(BaseTableTestSuite):
     FROM "sf_database"."sf_schema"."items_table"
     LIMIT 10
     """
-    expected_data_column_sql = """
+    expected_table_column_sql = """
     SELECT
       "event_id_col" AS "event_id_col"
     FROM "sf_database"."sf_schema"."items_table"
     LIMIT 10
     """
-    expected_clean_data_sql = """
+    expected_clean_table_sql = """
     SELECT
       CAST(CASE WHEN (
         "event_id_col" IS NULL

@@ -26,7 +26,7 @@ from featurebyte.models.event_table import EventTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 from featurebyte.schema.task import Task, TaskStatus
-from tests.unit.api.base_data_test import BaseTableTestSuite, DataType
+from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -240,7 +240,7 @@ class TestEventTableTestSuite(BaseTableTestSuite):
         "col_int",
         "cust_id",
     }
-    expected_data_sql = """
+    expected_table_sql = """
     SELECT
       "col_int" AS "col_int",
       "col_float" AS "col_float",
@@ -254,13 +254,13 @@ class TestEventTableTestSuite(BaseTableTestSuite):
     FROM "sf_database"."sf_schema"."sf_table"
     LIMIT 10
     """
-    expected_data_column_sql = """
+    expected_table_column_sql = """
     SELECT
       "col_int" AS "col_int"
     FROM "sf_database"."sf_schema"."sf_table"
     LIMIT 10
     """
-    expected_clean_data_sql = """
+    expected_clean_table_sql = """
     SELECT
       CAST(CASE WHEN (
         "col_int" IS NULL
