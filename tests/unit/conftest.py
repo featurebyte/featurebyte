@@ -167,7 +167,8 @@ def mock_snowflake_execute_query(snowflake_connector):
     """
     _ = snowflake_connector
 
-    def side_effect(query):
+    def side_effect(query, timeout=600):
+        _ = timeout
         query_map = {
             "SHOW DATABASES": [{"name": "sf_database"}],
             'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],
