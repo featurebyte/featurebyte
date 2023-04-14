@@ -1,6 +1,7 @@
 """
 View class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import (
@@ -83,7 +84,7 @@ class ViewColumn(Series, SampleMixin):
             return None
         return self._parent.timestamp_column
 
-    def sample(
+    def sample(  # pylint: disable=useless-parent-delegation
         self,
         size: int = 10,
         seed: int = 1234,
@@ -300,7 +301,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     def __str__(self) -> str:
         return repr(self)
 
-    def sample(
+    def sample(  # pylint: disable=useless-parent-delegation
         self,
         size: int = 10,
         seed: int = 1234,

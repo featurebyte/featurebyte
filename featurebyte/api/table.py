@@ -3,7 +3,7 @@ Table class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict
 
 from bson import ObjectId
 
@@ -92,7 +92,9 @@ class Table(TableListMixin):
         data_class = cls._data_type_to_cls_mapping[data.cached_model.type]
         return data_class.get_by_id(id)
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(
+        self, verbose: bool = False
+    ) -> Dict[str, Any]:  # pylint: disable=useless-parent-delegation
         """
         Returns a dictionary that summarizes the essential information of a Table object, depending on its type.
         The dictionary contains the following common keys:

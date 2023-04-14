@@ -65,7 +65,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         data = CatalogCreate(**self.json_dict())
         return data.json_dict()
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(
+        self, verbose: bool = False
+    ) -> Dict[str, Any]:  # pylint: disable=useless-parent-delegation
         """
         Returns a dictionary that summarizes the essential information of a Catalog object. The dictionary includes
         the following keys:

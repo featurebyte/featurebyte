@@ -670,7 +670,9 @@ class FeatureList(
                 feature_tile_specs.append((str(feature.name), tile_specs))
         return feature_tile_specs
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(
+        self, verbose: bool = False
+    ) -> Dict[str, Any]:  # pylint: disable=useless-parent-delegation
         """
         Returns a dictionary that summarizes the essential information of an FeatureList object. The dictionary
         contains the following keys:
