@@ -94,7 +94,7 @@ async def retry_sql(
 
     for i in range(retry_num):
         try:
-            return await session.execute_query(sql)
+            return await session.execute_query_long_running(sql)
         except Exception as err:  # pylint: disable=broad-exception-caught
             logger.warning(f"Problem with sql run {i} with sql: {sql}")
             if i == retry_num - 1:
@@ -138,7 +138,7 @@ async def retry_sql_with_cache(
         new_sql = sql.replace(CACHE_TABLE_PLACEHOLDER, f"SELECT * FROM {cache_table_name}")
 
         try:
-            await session.execute_query(cache_table_sql)
+            await session.execute_query_long_running(cache_table_sql)
             await retry_sql(session, new_sql, retry_num, sleep_interval)
         finally:
             await session.execute_query(f"UNCACHE TABLE IF EXISTS {cache_table_name}")

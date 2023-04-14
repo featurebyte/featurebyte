@@ -37,8 +37,10 @@ from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logger import logger
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 
-HOUR_IN_SECONDS = 3600
-DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
+MINUTES_IN_SECONDS = 60
+HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
+DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 10 * MINUTES_IN_SECONDS
+LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
 
 
 class RunThread(threading.Thread):
@@ -81,6 +83,8 @@ class BaseSession(BaseModel):
     """
     Abstract session class to extract data warehouse table metadata & execute query
     """
+
+    # pylint: disable=too-many-public-methods
 
     source_type: SourceType
     _connection: Any = PrivateAttr(default=None)
@@ -214,7 +218,7 @@ class BaseSession(BaseModel):
             writer.write_batch(batch)
 
     async def get_async_query_stream(
-        self, query: str, timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
+        self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
     ) -> AsyncGenerator[bytes, None]:
         """
         Stream results from asynchronous query as compressed arrow bytestream
@@ -338,6 +342,26 @@ class BaseSession(BaseModel):
             return None
         return dataframe_from_arrow_stream(data)
 
+    async def execute_query_long_running(
+        self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
+    ) -> pd.DataFrame | None:
+        """
+        Execute SQL query that is expected to run for a long time
+
+        Parameters
+        ----------
+        query: str
+            sql query to execute
+        timeout: float
+            timeout in seconds
+
+        Returns
+        -------
+        pd.DataFrame | None
+            Query result as a pandas DataFrame if the query expects result
+        """
+        return await self.execute_query(query=query, timeout=timeout)
+
     def execute_query_blocking(self, query: str) -> pd.DataFrame | None:
         """
         Execute SQL query without await
@@ -419,7 +443,7 @@ class BaseSession(BaseModel):
             create_command = "CREATE OR REPLACE TEMPORARY TABLE"
         else:
             create_command = "CREATE OR REPLACE TABLE"
-        await self.execute_query(f"{create_command} {table_name} AS {query}")
+        await self.execute_query_long_running(f"{create_command} {table_name} AS {query}")
 
     async def drop_table(
         self,

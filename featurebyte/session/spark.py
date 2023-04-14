@@ -428,7 +428,7 @@ class SparkSession(BaseSession):
             create_command = "CREATE OR REPLACE TEMPORARY VIEW"
         else:
             create_command = "CREATE OR REPLACE VIEW"
-        await self.execute_query(f"{create_command} `{table_name}` AS {query}")
+        await self.execute_query_long_running(f"{create_command} `{table_name}` AS {query}")
 
 
 class SparkMetadataSchemaInitializer(MetadataSchemaInitializer):
