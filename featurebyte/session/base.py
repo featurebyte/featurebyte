@@ -37,6 +37,9 @@ from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logger import logger
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 
+HOUR_IN_SECONDS = 3600
+DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
+
 
 class RunThread(threading.Thread):
     """
@@ -211,7 +214,7 @@ class BaseSession(BaseModel):
             writer.write_batch(batch)
 
     async def get_async_query_stream(
-        self, query: str, timeout: float = 600
+        self, query: str, timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
     ) -> AsyncGenerator[bytes, None]:
         """
         Stream results from asynchronous query as compressed arrow bytestream
@@ -309,7 +312,9 @@ class BaseSession(BaseModel):
             "feature_store_id": results["FEATURE_STORE_ID"][0],
         }
 
-    async def execute_query(self, query: str, timeout: float = 600) -> pd.DataFrame | None:
+    async def execute_query(
+        self, query: str, timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
+    ) -> pd.DataFrame | None:
         """
         Execute SQL query
 
