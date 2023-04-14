@@ -195,6 +195,7 @@ def test_deserialization__column_name_not_found(
 
 
 class TestItemTableTestSuite(BaseTableTestSuite):
+    """Test ItemTable"""
 
     data_type = DataType.ITEM_DATA
     col = "event_id_col"
@@ -233,6 +234,14 @@ class TestItemTableTestSuite(BaseTableTestSuite):
       "item_amount" AS "item_amount",
       CAST("created_at" AS STRING) AS "created_at",
       CAST("event_timestamp" AS STRING) AS "event_timestamp"
+    FROM "sf_database"."sf_schema"."items_table"
+    LIMIT 10
+    """
+    expected_clean_table_column_sql = """
+    SELECT
+      CAST(CASE WHEN (
+        "event_id_col" IS NULL
+      ) THEN 0 ELSE "event_id_col" END AS BIGINT) AS "event_id_col"
     FROM "sf_database"."sf_schema"."items_table"
     LIMIT 10
     """

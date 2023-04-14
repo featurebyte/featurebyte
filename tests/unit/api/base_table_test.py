@@ -38,6 +38,7 @@ class BaseTableTestSuite:
     expected_table_sql = ""
     expected_table_column_sql = ""
     expected_clean_table_sql = ""
+    expected_clean_table_column_sql = ""
     expected_attr_name_value_pairs = []
     expected_timestamp_column = ""
 
@@ -131,6 +132,15 @@ class BaseTableTestSuite:
         """
         data_column_sql = table_under_test[self.col].preview_sql()
         assert data_column_sql == textwrap.dedent(self.expected_table_column_sql).strip()
+
+    def test_table_column_preview_clean_data_sql(self, imputed_table_under_test):
+        """
+        Test preview table column
+        """
+        clean_data_column_sql = imputed_table_under_test[self.col].preview_clean_data_sql()
+        assert (
+            clean_data_column_sql == textwrap.dedent(self.expected_clean_table_column_sql).strip()
+        )
 
     def test_update_status(self, table_under_test):
         """

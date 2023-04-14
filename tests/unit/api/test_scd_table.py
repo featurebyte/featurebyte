@@ -15,7 +15,7 @@ from tests.util.helper import check_sdk_code_generation
 
 
 class TestSCDTableTestSuite(BaseTableTestSuite):
-    """Test SCDTableTestSuite"""
+    """Test SCDTable"""
 
     data_type = DataType.SCD_DATA
     col = "col_int"
@@ -66,6 +66,14 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
       CAST("end_timestamp" AS STRING) AS "end_timestamp",
       CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
+    FROM "sf_database"."sf_schema"."scd_table"
+    LIMIT 10
+    """
+    expected_clean_table_column_sql = """
+    SELECT
+      CAST(CASE WHEN (
+        "col_int" IS NULL
+      ) THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int"
     FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
     """
