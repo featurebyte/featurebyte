@@ -146,7 +146,7 @@ async def test_databricks_session(databricks_session_dict):
     """
     Test DatabricksSession
     """
-    with mock.patch("featurebyte.session.spark_aware.S3SimpleStorage", autospec=True) as _:
+    with mock.patch("featurebyte.session.base_spark.S3SimpleStorage", autospec=True) as _:
         session = DatabricksSession(**databricks_session_dict)
 
     assert session.host == "some-databricks-hostname"
@@ -191,7 +191,7 @@ async def test_databricks_register_table(databricks_session_dict, databricks_con
     with mock.patch(
         "featurebyte.session.databricks.DatabricksSession.execute_query"
     ) as mock_execute_query:
-        with mock.patch("featurebyte.session.spark_aware.S3SimpleStorage", autospec=True) as _:
+        with mock.patch("featurebyte.session.base_spark.S3SimpleStorage", autospec=True) as _:
             with mock.patch(
                 "featurebyte.session.databricks.pd.DataFrame.to_parquet", autospec=True
             ) as _:
@@ -218,10 +218,11 @@ def test_databricks_sql_connector_not_available(databricks_session_dict):
     """
     Simulate missing databricks-sql-connector dependency
     """
-    with mock.patch("featurebyte.session.databricks.HAS_DATABRICKS_SQL_CONNECTOR", False):
-        with pytest.raises(RuntimeError) as exc:
-            _ = DatabricksSession(**databricks_session_dict)
-        assert str(exc.value) == "databricks-sql-connector is not available"
+    with mock.patch("featurebyte.session.base_spark.S3SimpleStorage", autospec=True) as _:
+        with mock.patch("featurebyte.session.databricks.HAS_DATABRICKS_SQL_CONNECTOR", False):
+            with pytest.raises(RuntimeError) as exc:
+                _ = DatabricksSession(**databricks_session_dict)
+            assert str(exc.value) == "databricks-sql-connector is not available"
 
 
 def test_databricks_schema_initializer__sql_objects(patched_databricks_session_cls):

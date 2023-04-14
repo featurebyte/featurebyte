@@ -197,7 +197,7 @@ class BaseSparkSession(BaseSession, ABC):
 
 
 class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
-    """Spark metadata initializer class"""
+    """BaseSpark metadata initializer class"""
 
     def create_metadata_table_queries(self, current_migration_version: int) -> List[str]:
         """Query to create metadata table
