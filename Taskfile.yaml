@@ -60,19 +60,6 @@ tasks:
       - rm -f featurebyte/sql/spark/*.jar
       - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
 
-  build:
-    desc: "Build the project"
-    sources:
-      - featurebyte/**/*
-      - pyproject.toml
-      - poetry.lock
-      - LICENSE
-      - README.md
-    deps:
-      - task: install
-    cmds:
-      - poetry build
-
   format:
     desc: "Format the code"
     sources:
@@ -309,14 +296,14 @@ tasks:
       - sh: printenv FEATUREBYTE_NP_PASSWORD
         msg: "FEATUREBYTE_NP_PASSWORD is not set."
     deps:
-      - task: build
+      - task: install
     cmds:
       - docker buildx build . -f docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="${FEATUREBYTE_NP_PASSWORD}" -t featurebyte-server:latest
 
   docker-dev:
     desc: "Starts featurebyte-server in development mode"
     deps:
-      - task: build
+      - task: install
     cmds:
       - task: docker-build
       - poetry run featurebyte start --local
