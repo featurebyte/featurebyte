@@ -37,32 +37,32 @@ tasks.named('test') {
 }
 
 java {
-    sourceCompatibility = "1.8"
-    targetCompatibility = "1.8"
+    sourceCompatibility = "1.11"
+    targetCompatibility = "1.11"
 }
 
 shadowJar {
-archivesBaseName = 'featurebyte-hive-udf'
-zip64 = true
+    archivesBaseName = 'featurebyte-hive-udf'
+    zip64 = true
 }
 
 spotless {
-format 'misc', {
-    // define the files to apply `misc` to
-    target '*.gradle', '*.md', '.gitignore'
+    format 'misc', {
+        // define the files to apply `misc` to
+        target '*.gradle', '*.md', '.gitignore'
 
-    // define the steps to apply to those files
-    trimTrailingWhitespace()
-    indentWithSpaces()
-    endWithNewline()
-}
-java {
-    removeUnusedImports()
-    // apply a specific flavor of google-java-format
-    googleJavaFormat('1.16.0')
-    // fix formatting of type annotations
-    formatAnnotations()
-}
+        // define the steps to apply to those files
+        trimTrailingWhitespace()
+        indentWithSpaces()
+        endWithNewline()
+    }
+    java {
+        removeUnusedImports()
+        // apply a specific flavor of google-java-format
+        googleJavaFormat('1.16.0')
+        // fix formatting of type annotations
+        formatAnnotations()
+    }
 }
 
 group = 'com.featurebyte.hive.udf'
