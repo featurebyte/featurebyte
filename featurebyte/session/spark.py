@@ -123,34 +123,6 @@ class SparkSession(SparkAwareSession):
         return column_name_type_map
 
     @staticmethod
-    def _convert_to_internal_variable_type(spark_type: str) -> DBVarType:
-        if spark_type.endswith("INT"):
-            # BIGINT, INT, SMALLINT, TINYINT
-            return DBVarType.INT
-        if spark_type.startswith("DECIMAL"):
-            # DECIMAL(10, 2)
-            return DBVarType.FLOAT
-
-        mapping = {
-            "BINARY": DBVarType.BINARY,
-            "BOOLEAN": DBVarType.BOOL,
-            "DATE": DBVarType.DATE,
-            "DECIMAL": DBVarType.FLOAT,
-            "DOUBLE": DBVarType.FLOAT,
-            "FLOAT": DBVarType.FLOAT,
-            "INTERVAL": DBVarType.TIMEDELTA,
-            "VOID": DBVarType.VOID,
-            "TIMESTAMP": DBVarType.TIMESTAMP,
-            "ARRAY": DBVarType.ARRAY,
-            "MAP": DBVarType.MAP,
-            "STRUCT": DBVarType.STRUCT,
-            "STRING": DBVarType.VARCHAR,
-        }
-        if spark_type not in mapping:
-            logger.warning(f"Spark: Not supported data type '{spark_type}'")
-        return mapping.get(spark_type, DBVarType.UNKNOWN)
-
-    @staticmethod
     def _get_pyarrow_type(datatype: str) -> pa.types:
         """
         Get pyarrow type from Spark data type

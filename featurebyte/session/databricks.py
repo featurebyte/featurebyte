@@ -13,7 +13,6 @@ from pydantic import Field
 
 from featurebyte import AccessTokenCredential
 from featurebyte.enum import DBVarType, InternalName, SourceType
-from featurebyte.logger import logger
 from featurebyte.session.base import BaseSchemaInitializer, MetadataSchemaInitializer
 from featurebyte.session.spark_aware import SparkAwareSchemaInitializer, SparkAwareSession
 
@@ -110,30 +109,6 @@ class DatabricksSession(SparkAwareSession):
                 )
         return column_name_type_map
 
-    @staticmethod
-    def _convert_to_internal_variable_type(databricks_type: str) -> DBVarType:
-        if databricks_type.endswith("INT"):
-            # BIGINT, INT, SMALLINT, TINYINT
-            return DBVarType.INT
-        mapping = {
-            "BINARY": DBVarType.BINARY,
-            "BOOLEAN": DBVarType.BOOL,
-            "DATE": DBVarType.DATE,
-            "DECIMAL": DBVarType.FLOAT,
-            "DOUBLE": DBVarType.FLOAT,
-            "FLOAT": DBVarType.FLOAT,
-            "INTERVAL": DBVarType.TIMEDELTA,
-            "VOID": DBVarType.VOID,
-            "TIMESTAMP": DBVarType.TIMESTAMP,
-            "ARRAY": DBVarType.ARRAY,
-            "MAP": DBVarType.MAP,
-            "STRUCT": DBVarType.STRUCT,
-            "STRING": DBVarType.VARCHAR,
-        }
-        if databricks_type not in mapping:
-            logger.warning(f"Databricks: Not supported data type '{databricks_type}'")
-        return mapping.get(databricks_type, DBVarType.UNKNOWN)
-
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         schema = None
         if cursor.description:
@@ -143,6 +118,9 @@ class DatabricksSession(SparkAwareSession):
             arrow_table = cursor.fetchall_arrow()
             dataframe = arrow_table.to_pandas()
             for col_name in schema:
+                # handle map type. Databricks returns map as list of tuples
+                # https://docs.databricks.com/sql/language-manual/sql-ref-datatypes.html#map
+                # which is not supported by pyarrow
                 if schema[col_name].upper() == "MAP":
                     dataframe[col_name] = dataframe[col_name].apply(
                         lambda x: dict(x) if x is not None else None

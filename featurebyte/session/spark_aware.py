@@ -14,6 +14,7 @@ from pydantic import PrivateAttr
 
 from featurebyte import StorageType
 from featurebyte.common.path_util import get_package_root
+from featurebyte.enum import DBVarType
 from featurebyte.logger import logger
 from featurebyte.models.credential import StorageCredential
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
@@ -105,6 +106,34 @@ class SparkAwareSession(BaseSession, ABC):
                 mode=write_mode,
             ) as out_file_obj:
                 out_file_obj.write(in_file_obj.read())
+
+    @staticmethod
+    def _convert_to_internal_variable_type(spark_type: str) -> DBVarType:
+        if spark_type.endswith("INT"):
+            # BIGINT, INT, SMALLINT, TINYINT
+            return DBVarType.INT
+        if spark_type.startswith("DECIMAL"):
+            # DECIMAL(10, 2)
+            return DBVarType.FLOAT
+
+        mapping = {
+            "BINARY": DBVarType.BINARY,
+            "BOOLEAN": DBVarType.BOOL,
+            "DATE": DBVarType.DATE,
+            "DECIMAL": DBVarType.FLOAT,
+            "DOUBLE": DBVarType.FLOAT,
+            "FLOAT": DBVarType.FLOAT,
+            "INTERVAL": DBVarType.TIMEDELTA,
+            "VOID": DBVarType.VOID,
+            "TIMESTAMP": DBVarType.TIMESTAMP,
+            "ARRAY": DBVarType.ARRAY,
+            "MAP": DBVarType.MAP,
+            "STRUCT": DBVarType.STRUCT,
+            "STRING": DBVarType.VARCHAR,
+        }
+        if spark_type not in mapping:
+            logger.warning(f"Spark: Not supported data type '{spark_type}'")
+        return mapping.get(spark_type, DBVarType.UNKNOWN)
 
     async def register_table_with_query(
         self, table_name: str, query: str, temporary: bool = True
