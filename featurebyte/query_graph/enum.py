@@ -49,6 +49,7 @@ class NodeType(StrEnum):
     LOOKUP = "lookup"
     JOIN = "join"
     JOIN_FEATURE = "join_feature"
+    TRACK_CHANGES = "track_changes"
 
     # other operations
     ASSIGN = "assign"

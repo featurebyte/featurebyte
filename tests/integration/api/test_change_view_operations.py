@@ -105,7 +105,7 @@ async def test_change_view_correctness(session, data_source):
     """
     df = pd.DataFrame(
         [
-            {"effective_ts": "2022-01-01 00:00:00", "column": "a"},
+            {"effective_ts": "2022-01-01 00:00:00", "column": "a"},  # first entry
             {"effective_ts": "2022-01-02 00:00:00", "column": "a"},
             {"effective_ts": "2022-01-03 00:00:00", "column": "b"},  # changed: a -> b
             {"effective_ts": "2022-01-04 00:00:00", "column": "b"},
@@ -132,7 +132,7 @@ async def test_change_view_correctness(session, data_source):
                 "past_column": "a",
             },
             {
-                "new_effective_ts": "2022-01-07 00:00:00",
+                "new_effective_ts": "2022-01-06 00:00:00",
                 "past_effective_ts": "2022-01-03 00:00:00",
                 "new_column": "c",
                 "past_column": "b",

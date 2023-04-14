@@ -507,82 +507,17 @@ class SCDTableData(BaseTableData):
         proxy_input_nodes: List[Node],
         column_names: ChangeViewColumnNames,
     ) -> GraphNode:
-        # subset the columns we need
-        col_name_to_proj_node: Dict[str, Node] = {}
-        assert self.effective_timestamp_column is not None
-        proj_names = [
-            self.effective_timestamp_column,
-            self.natural_key_column,
-            self.effective_timestamp_column,
-            track_changes_column,
-        ]
-        cleaned_data_node = view_graph_node.output_node
-        for col_name in proj_names:
-            col_name_to_proj_node[col_name] = view_graph_node.add_operation(
-                node_type=NodeType.PROJECT,
-                node_params={"columns": [col_name]},
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[cleaned_data_node],
-            )
-
-        new_past_col_name_triples = [
-            (
-                column_names.new_valid_from_column_name,
-                column_names.previous_valid_from_column_name,
-                self.effective_timestamp_column,
-            ),
-            (
-                column_names.new_tracked_column_name,
-                column_names.previous_tracked_column_name,
-                track_changes_column,
-            ),
-        ]
         frame_node = proxy_input_nodes[0]
-        for new_col_name, past_col_name, col_name in new_past_col_name_triples:
-            proj_node = col_name_to_proj_node[col_name]
-            # change_view[new_ts_col] = change_view[effective_timestamp_column]
-            # change_view[new_col_name] = change_view[track_changes_column]
-            frame_node = view_graph_node.add_operation(
-                node_type=NodeType.ASSIGN,
-                node_params={"name": new_col_name},
-                node_output_type=NodeOutputType.FRAME,
-                input_nodes=[frame_node, proj_node],
-            )
-
-            # change_view[past_ts_col] = change_view[effective_timestamp_column].lag(natural_key_column)
-            # change_view[past_col_name] = change_view[track_changes_column].lag(natural_key_column)
-            lag_node = view_graph_node.add_operation(
-                node_type=NodeType.LAG,
-                node_params={
-                    "entity_columns": [self.natural_key_column],
-                    "timestamp_column": self.effective_timestamp_column,
-                    "offset": 1,
-                },
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[
-                    proj_node,
-                    col_name_to_proj_node[self.natural_key_column],
-                    col_name_to_proj_node[self.effective_timestamp_column],
-                ],
-            )
-            frame_node = view_graph_node.add_operation(
-                node_type=NodeType.ASSIGN,
-                node_params={"name": past_col_name},
-                node_output_type=NodeOutputType.FRAME,
-                input_nodes=[frame_node, lag_node],
-            )
-
-        # select the 5 cols we want to present
         view_graph_node.add_operation(
-            node_type=NodeType.PROJECT,
+            node_type=NodeType.TRACK_CHANGES,
             node_params={
-                "columns": [
-                    self.natural_key_column,
-                    column_names.new_valid_from_column_name,
-                    column_names.new_tracked_column_name,
-                    column_names.previous_valid_from_column_name,
-                    column_names.previous_tracked_column_name,
-                ]
+                "natural_key_column": self.natural_key_column,
+                "effective_timestamp_column": self.effective_timestamp_column,
+                "tracked_column": track_changes_column,
+                "previous_tracked_column_name": column_names.previous_tracked_column_name,
+                "new_tracked_column_name": column_names.new_tracked_column_name,
+                "previous_valid_from_column_name": column_names.previous_valid_from_column_name,
+                "new_valid_from_column_name": column_names.new_valid_from_column_name,
             },
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[frame_node],
