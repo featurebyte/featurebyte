@@ -118,11 +118,6 @@ class ViewColumn(Series, SampleMixin):
         pd.DataFrame
             Sampled rows of the data.
 
-        Raises
-        ------
-        RecordRetrievalException
-            Sample request failed.
-
         Examples
         --------
         Sample 3 rows of a column.

@@ -86,11 +86,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Dict[str, Any]
             Key-value mapping of properties of the object.
 
-        Raises
-        ------
-        RecordRetrievalException
-            When the object cannot be found, or we have received an unexpected response status code.
-
         Examples
         --------
         Get info of a catalog object

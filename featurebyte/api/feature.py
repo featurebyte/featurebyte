@@ -167,11 +167,6 @@ class Feature(
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the object cannot be found, or we have received an unexpected response status code.
         """
         return super().info(verbose)
 
