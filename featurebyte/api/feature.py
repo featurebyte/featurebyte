@@ -1,6 +1,7 @@
 """
 Feature and FeatureList classes
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
