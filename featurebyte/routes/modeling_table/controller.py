@@ -15,7 +15,7 @@ class ModelingTableController(
     BaseDocumentController[ModelingTableModel, ModelingTableService, ModelingTableList],
 ):
     """
-    ObservationTable Controller
+    ModelingTable Controller
     """
 
     paginated_document_class = ModelingTableList

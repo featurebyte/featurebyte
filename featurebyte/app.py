@@ -24,6 +24,7 @@ import featurebyte.routes.item_table.api as item_table_api
 import featurebyte.routes.modeling_table.api as modeling_table_api
 import featurebyte.routes.observation_table.api as observation_table_api
 import featurebyte.routes.periodic_tasks.api as periodic_tasks_api
+import featurebyte.routes.prediction_table.api as prediction_table_api
 import featurebyte.routes.relationship_info.api as relationship_info_api
 import featurebyte.routes.scd_table.api as scd_table_api
 import featurebyte.routes.semantic.api as semantic_api
@@ -127,6 +128,7 @@ def get_app() -> FastAPI:
         observation_table_api,
         credential_api,
         modeling_table_api,
+        prediction_table_api,
     ]
     dependencies = _get_api_deps()
     for resource_api in resource_apis:

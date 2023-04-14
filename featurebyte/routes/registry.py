@@ -22,6 +22,7 @@ from featurebyte.routes.item_table.controller import ItemTableController
 from featurebyte.routes.modeling_table.controller import ModelingTableController
 from featurebyte.routes.observation_table.controller import ObservationTableController
 from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
+from featurebyte.routes.prediction_table.controller import PredictionTableController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.routes.scd_table.controller import SCDTableController
 from featurebyte.routes.semantic.controller import SemanticController
@@ -52,6 +53,7 @@ from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.service.periodic_task import PeriodicTaskService
+from featurebyte.service.prediction_table import PredictionTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
@@ -136,6 +138,13 @@ app_container_config.add_service_with_extra_deps(
 app_container_config.add_service_with_extra_deps(
     "modeling_table_service",
     ModelingTableService,
+    [
+        "feature_store_service",
+    ],
+)
+app_container_config.add_service_with_extra_deps(
+    "prediction_table_service",
+    PredictionTableService,
     [
         "feature_store_service",
     ],
@@ -353,4 +362,9 @@ app_container_config.add_controller(
     "modeling_table_controller",
     ModelingTableController,
     ["modeling_table_service", "task_controller"],
+)
+app_container_config.add_controller(
+    "prediction_table_controller",
+    PredictionTableController,
+    ["prediction_table_service", "task_controller"],
 )

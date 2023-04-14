@@ -1,5 +1,5 @@
 """
-ModelingTable API routes
+PredictionTable API routes
 """
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ from http import HTTPStatus
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.modeling_table import ModelingTableModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.models.prediction_table import PredictionTableModel
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -21,41 +21,41 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.modeling_table import ModelingTableCreate, ModelingTableList
+from featurebyte.schema.prediction_table import PredictionTableCreate, PredictionTableList
 from featurebyte.schema.task import Task
 
-router = APIRouter(prefix="/modeling_table")
+router = APIRouter(prefix="/prediction_table")
 
 
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)
-async def create_modeling_table(
+async def create_prediction_table(
     request: Request,
-    data: ModelingTableCreate,
+    data: PredictionTableCreate,
 ) -> Task:
     """
-    Create ModelingTable by submitting a materialization task
+    Create PredictionTable by submitting a materialization task
     """
-    controller = request.state.app_container.modeling_table_controller
-    task_submit: Task = await controller.create_modeling_table(
+    controller = request.state.app_container.prediction_table_controller
+    task_submit: Task = await controller.create_prediction_table(
         data=data,
     )
     return task_submit
 
 
-@router.get("/{modeling_table_id}", response_model=ModelingTableModel)
-async def get_modeling_table(
-    request: Request, modeling_table_id: PydanticObjectId
-) -> ModelingTableModel:
+@router.get("/{prediction_table_id}", response_model=PredictionTableModel)
+async def get_prediction_table(
+    request: Request, prediction_table_id: PydanticObjectId
+) -> PredictionTableModel:
     """
-    Get ModelingTable
+    Get PredictionTable
     """
-    controller = request.state.app_container.modeling_table_controller
-    modeling_table: ModelingTableModel = await controller.get(document_id=modeling_table_id)
-    return modeling_table
+    controller = request.state.app_container.prediction_table_controller
+    prediction_table: PredictionTableModel = await controller.get(document_id=prediction_table_id)
+    return prediction_table
 
 
-@router.get("", response_model=ModelingTableList)
-async def list_modeling_tables(
+@router.get("", response_model=PredictionTableList)
+async def list_prediction_tables(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
@@ -63,12 +63,12 @@ async def list_modeling_tables(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
-) -> ModelingTableList:
+) -> PredictionTableList:
     """
-    List ModelingTables
+    List PredictionTables
     """
-    controller = request.state.app_container.modeling_table_controller
-    modeling_table_list: ModelingTableList = await controller.list(
+    controller = request.state.app_container.prediction_table_controller
+    prediction_table_list: PredictionTableList = await controller.list(
         page=page,
         page_size=page_size,
         sort_by=sort_by,
@@ -76,13 +76,13 @@ async def list_modeling_tables(
         search=search,
         name=name,
     )
-    return modeling_table_list
+    return prediction_table_list
 
 
-@router.get("/audit/{modeling_table_id}", response_model=AuditDocumentList)
-async def list_modeling_table_audit_logs(
+@router.get("/audit/{prediction_table_id}", response_model=AuditDocumentList)
+async def list_prediction_table_audit_logs(
     request: Request,
-    modeling_table_id: PydanticObjectId,
+    prediction_table_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -90,11 +90,11 @@ async def list_modeling_table_audit_logs(
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
-    List ModelingTable audit logs
+    List PredictionTable audit logs
     """
-    controller = request.state.app_container.modeling_table_controller
+    controller = request.state.app_container.prediction_table_controller
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        document_id=modeling_table_id,
+        document_id=prediction_table_id,
         page=page,
         page_size=page_size,
         sort_by=sort_by,

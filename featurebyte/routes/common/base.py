@@ -28,6 +28,7 @@ from featurebyte.service.mixin import Document
 from featurebyte.service.modeling_table import ModelingTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.periodic_task import PeriodicTaskService
+from featurebyte.service.prediction_table import PredictionTableService
 from featurebyte.service.relationship import ParentT, RelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
@@ -57,6 +58,7 @@ DocumentServiceT = TypeVar(
     ObservationTableService,
     CredentialService,
     ModelingTableService,
+    PredictionTableService,
 )
 
 

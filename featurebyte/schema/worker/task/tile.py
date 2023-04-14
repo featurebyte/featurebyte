@@ -11,7 +11,7 @@ class TileTaskPayload(BaseTaskPayload):
     Tile Task Payload
     """
 
-    command = WorkerCommand.TILE
+    command = WorkerCommand.TILE_COMPUTE
 
     feature_store_id: PydanticObjectId
     module_path: str
