@@ -330,11 +330,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         pd.DataFrame
             Sampled rows of the data.
 
-        Raises
-        ------
-        RecordRetrievalException
-            Sample request failed.
-
         Examples
         --------
         Sample rows of a view.
