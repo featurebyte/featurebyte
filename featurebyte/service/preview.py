@@ -93,6 +93,36 @@ class PreviewService(BaseService):
         )
         return feature_store, session
 
+    async def shape(self, preview: FeatureStorePreview, get_credential: Any) -> Tuple[int, int]:
+        """
+        Get the shape of a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
+
+        Parameters
+        ----------
+        preview: FeatureStorePreview
+            FeatureStorePreview object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        Tuple[int, int]
+            Row and column counts
+        """
+        feature_store, session = await self._get_feature_store_session(
+            graph=preview.graph,
+            node_name=preview.node_name,
+            feature_store_name=preview.feature_store_name,
+            get_credential=get_credential,
+        )
+        shape_sql, num_cols = GraphInterpreter(
+            preview.graph, source_type=feature_store.type
+        ).construct_shape_sql(node_name=preview.node_name)
+        logger.debug("Execute shape SQL", extra={"shape_sql": shape_sql})
+        result = await session.execute_query(shape_sql)
+        assert result is not None
+        return (result["count"].iloc[0], num_cols)
+
     async def preview(
         self, preview: FeatureStorePreview, limit: int, get_credential: Any
     ) -> dict[str, Any]:

@@ -3,7 +3,7 @@ Mixin classes used by core objects
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Protocol, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Protocol, Tuple, Union, cast
 
 import time
 from abc import abstractmethod
@@ -290,6 +290,36 @@ class SampleMixin:
             to_timestamp=to_timestamp,
             timestamp_column=self.timestamp_column,
         )
+
+    @typechecked
+    def shape(self: HasExtractPrunedGraphAndNode, **kwargs: Any) -> Tuple[int, int]:
+        """
+        Return the shape of the view / column.
+
+        Parameters
+        ----------
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        Tuple[int, int]
+        """
+        tic = time.time()
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        payload = FeatureStorePreview(
+            feature_store_name=self.feature_store.name,
+            graph=pruned_graph,
+            node_name=mapped_node.name,
+        )
+        client = Configurations().get_client()
+        response = client.post(url="/feature_store/shape", json=payload.json_dict())
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+
+        elapsed = time.time() - tic
+        logger.debug(f"Shape took {elapsed:.2f}s")
+        return cast(Tuple[int, int], tuple(response.json()))
 
     @typechecked
     def sample(

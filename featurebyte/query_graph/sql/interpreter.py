@@ -957,6 +957,35 @@ class GraphInterpreter:
             columns,
         )
 
+    def construct_shape_sql(self, node_name: str) -> Tuple[str, int]:
+        """Construct SQL to get row count from a given node
+
+        Parameters
+        ----------
+        node_name : str
+            Query graph node name
+
+        Returns
+        -------
+        Tuple[str, int]
+            SQL code to execute, and column count
+        """
+        operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
+            self.query_graph.get_node_by_name(node_name)
+        )
+
+        sql_tree, _ = self._construct_sample_sql(node_name=node_name, num_rows=0)
+        sql_tree = (
+            construct_cte_sql([("data", sql_tree)])
+            .select(expressions.alias_(expressions.Count(this="*"), "count", quoted=True))
+            .from_("data")
+        )
+
+        return (
+            sql_to_string(sql_tree, source_type=self.source_type),
+            len(operation_structure.columns),
+        )
+
     def construct_materialize_expr(self, node_name: str) -> expressions.Select:
         """
         Construct SQL to materialize a given node representing a View object

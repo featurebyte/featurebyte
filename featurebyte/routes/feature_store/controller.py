@@ -3,7 +3,7 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List, Tuple
 
 from bson.objectid import ObjectId
 
@@ -278,6 +278,24 @@ class FeatureStoreController(
             table_name=table_name,
             get_credential=get_credential,
         )
+
+    async def shape(self, preview: FeatureStorePreview, get_credential: Any) -> Tuple[int, int]:
+        """
+        Retrieve shape for query graph node
+
+        Parameters
+        ----------
+        preview: FeatureStorePreview
+            FeatureStorePreview object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        return await self.preview_service.shape(preview=preview, get_credential=get_credential)
 
     async def preview(
         self, preview: FeatureStorePreview, limit: int, get_credential: Any
