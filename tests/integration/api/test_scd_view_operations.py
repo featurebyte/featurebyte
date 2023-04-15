@@ -60,7 +60,7 @@ def expected_dataframe_scd_join(transaction_data_upper_case, scd_dataframe):
     return df
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_scd_view_preview(scd_table):
     """
     Test preview of SCDView
@@ -76,7 +76,7 @@ def test_scd_view_preview(scd_table):
     _check_result_exclude_current_flag_column(view.describe())
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_scd_join_small(session, data_source, source_type):
     """
@@ -149,7 +149,7 @@ async def test_scd_join_small(session, data_source, source_type):
     pd.testing.assert_frame_equal(df_actual, df_expected, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_event_view_join_scd_view__preview_view(
     event_table, scd_table, expected_dataframe_scd_join
 ):
@@ -176,7 +176,7 @@ def test_event_view_join_scd_view__preview_view(
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
     """
     Test joining an EventView with and SCDView
@@ -193,7 +193,6 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
     )["count_7d"]
 
     df = feature.preview(pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}]))
-
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
@@ -202,7 +201,7 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
     assert_preview_result_equal(df, expected, dict_like_columns=["count_7d"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd_dataframe):
     """
     Test creating lookup feature from a SCDView
@@ -278,7 +277,7 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
         feature_list.deploy(enable=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
     """
     Test creating lookup feature from a SCDView with offset
@@ -324,8 +323,8 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
         feature_list.deploy(enable=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_aggregate_asat(scd_table, scd_dataframe):
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
+def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     """
     Test aggregate_asat aggregation on SCDView
     """
@@ -345,6 +344,9 @@ def test_aggregate_asat(scd_table, scd_dataframe):
             ]
         )
     )
+    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+    if source_type == "databricks":
+        df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
         "üser id": 1,
@@ -363,6 +365,9 @@ def test_aggregate_asat(scd_table, scd_dataframe):
             ]
         )
     )
+    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+    if source_type == "databricks":
+        df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
         "user_status": "STÀTUS_CODE_42",
@@ -381,12 +386,14 @@ def test_aggregate_asat(scd_table, scd_dataframe):
     expected = observations_set.copy()
     expected["Current Number of Users With This Status"] = [0, 1, 2, 2, 1, 1, 0, 0, 0, 0]
     df = feature_list.get_historical_features(observations_set)
-    df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
+    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+    if source_type == "databricks":
+        df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
     pd.testing.assert_frame_equal(df, expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
+def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type):
     """
     Test aggregate_asat aggregation on SCDView without entity
     """
@@ -405,6 +412,9 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
             ]
         )
     )
+    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+    if source_type == "databricks":
+        df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
         "Current Number of Users": 9,
@@ -422,6 +432,9 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
     expected["Current Number of Users"] = [8, 8, 9, 9, 9, 9, 9, 9, 9, 9]
     df = feature_list.get_historical_features(observations_set)
     df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
+    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+    if source_type == "databricks":
+        df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
     pd.testing.assert_frame_equal(df, expected)
 
     # check online serving
@@ -437,8 +450,8 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config):
     assert res.json() == {"features": [{"row_number": 1, "Current Number of Users": 9}]}
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table):
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
+def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table, source_type):
     """
     Test aggregate_over using a key column joined from another view
     """
@@ -459,16 +472,23 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table):
         "POINT_IN_TIME": "2002-01-01 10:00:00",
         "user_status": "STÀTUS_CODE_47",
     }
+
+    df = feature_list.preview(pd.DataFrame([preview_param]))
+    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+    if source_type == "databricks":
+        df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2002-01-01 10:00:00"),
         "user_status": "STÀTUS_CODE_47",
         "count_30d": 7,
     }
-    df = feature_list.preview(pd.DataFrame([preview_param]))
     assert df.iloc[0].to_dict() == expected
 
     # check historical features
     observations_set = pd.DataFrame([preview_param])
     df = feature_list.get_historical_features(observations_set)
     df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
+    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+    if source_type == "databricks":
+        df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
     assert df.iloc[0].to_dict() == expected

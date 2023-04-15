@@ -7,6 +7,7 @@ from typing import Any, List
 
 from bson.objectid import ObjectId
 
+from featurebyte.logger import logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import ColumnSpec
@@ -90,49 +91,54 @@ class FeatureStoreController(
         #
         # Validate that feature store ID isn't claimed by the working schema.
         # If the feature store ID is already in use, this will throw an error.
+        # Create the new feature store. If one already exists, we'll throw an error here.
+        logger.debug("Start create_feature_store")
+
+        document = await self.service.create_document(data)
+        # Check credentials
+        credential = CredentialModel(
+            name=document.name,
+            feature_store_id=document.id,
+            database_credential=data.database_credential,
+            storage_credential=data.storage_credential,
+        )
+
+        async def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
+            """
+            Updated get_credential will try to look up the credentials from config.
+
+            If there are credentials in the config, we will ignore whatever is passed in here.
+            If not, we will use the params that are passed in.
+
+            Parameters
+            ----------
+            user_id: str
+                user id
+            feature_store_name: str
+                feature store name
+
+            Returns
+            -------
+            Any
+                credentials
+            """
+            cred = await get_credential(user_id, feature_store_name)
+            if cred is not None:
+                return cred
+            return credential
+
+        get_credential_to_use = _updated_get_credential
+        await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
+            feature_store_name=data.name,
+            session_type=data.type,
+            details=data.details,
+            get_credential=get_credential_to_use,
+            users_feature_store_id=document.id,
+        )
+        logger.debug("End validate_feature_store_id_not_used_in_warehouse")
+
         async with self.service.persistent.start_transaction():
-            # Create the new feature store. If one already exists, we'll throw an error here.
-            document = await self.service.create_document(data)
-            # Check credentials
-            credential = CredentialModel(
-                name=document.name,
-                feature_store_id=document.id,
-                database_credential=data.database_credential,
-                storage_credential=data.storage_credential,
-            )
-
-            async def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
-                """
-                Updated get_credential will try to look up the credentials from config.
-
-                If there are credentials in the config, we will ignore whatever is passed in here.
-                If not, we will use the params that are passed in.
-
-                Parameters
-                ----------
-                user_id: str
-                    user id
-                feature_store_name: str
-                    feature store name
-
-                Returns
-                -------
-                Any
-                    credentials
-                """
-                cred = await get_credential(user_id, feature_store_name)
-                if cred is not None:
-                    return cred
-                return credential
-
-            get_credential_to_use = _updated_get_credential
-            await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
-                feature_store_name=data.name,
-                session_type=data.type,
-                details=data.details,
-                get_credential=get_credential_to_use,
-                users_feature_store_id=document.id,
-            )
+            logger.debug("Start transaction")
             # Retrieve a session for initializing
             session = await self.session_manager_service.get_feature_store_session(
                 feature_store=FeatureStoreModel(

@@ -4,7 +4,7 @@ Unit test for DatabricksSession
 import os
 import textwrap
 from unittest import mock
-from unittest.mock import call
+from unittest.mock import MagicMock, call
 
 import pandas as pd
 import pytest
@@ -19,13 +19,20 @@ def databricks_session_dict():
     DatabricksSession parameters
     """
     return {
-        "server_hostname": "some-databricks-hostname",
+        "host": "some-databricks-hostname",
         "http_path": "some-databricks-http-endpoint",
         "featurebyte_catalog": "hive_metastore",
         "featurebyte_schema": "featurebyte",
+        "storage_type": "s3",
+        "storage_url": "http://some-url/bucket",
+        "storage_spark_url": "http://some-url/bucket",
         "database_credential": {
             "type": "ACCESS_TOKEN",
             "access_token": "some-databricks-access-token",
+        },
+        "storage_credential": {
+            "s3_access_key_id": "some-key-id",
+            "s3_secret_access_key": "some-key-secret",
         },
     }
 
@@ -48,7 +55,7 @@ class MockDatabricksConnection:
         return self
 
     def schemas(self, *args, **kwargs):
-        self.description = [["TABLE_SCHEM"], ["TABLE_CATALOG"]]
+        self.description = [["TABLE_SCHEM", "STRING"], ["TABLE_CATALOG", "STRING"]]
         self.result_rows = [
             ["default", "hive_metastore"],
             ["demo", "hive_metastore"],
@@ -98,7 +105,7 @@ class MockDatabricksConnection:
         return mock_arrow_table
 
     def execute(self, *args, **kwargs):
-        self.description = [["a"], ["b"], ["c"]]
+        self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
         self.result_rows = [
             [1, 2, 3],
             [100, 200, 300],
@@ -139,8 +146,10 @@ async def test_databricks_session(databricks_session_dict):
     """
     Test DatabricksSession
     """
-    session = DatabricksSession(**databricks_session_dict)
-    assert session.server_hostname == "some-databricks-hostname"
+    with mock.patch("featurebyte.session.base_spark.S3SimpleStorage", autospec=True) as _:
+        session = DatabricksSession(**databricks_session_dict)
+
+    assert session.host == "some-databricks-hostname"
     assert session.http_path == "some-databricks-http-endpoint"
     assert session.database_credential.access_token == "some-databricks-access-token"
     assert await session.list_databases() == ["hive_metastore", "samples"]
@@ -182,44 +191,38 @@ async def test_databricks_register_table(databricks_session_dict, databricks_con
     with mock.patch(
         "featurebyte.session.databricks.DatabricksSession.execute_query"
     ) as mock_execute_query:
-        session = DatabricksSession(**databricks_session_dict)
-        df = pd.DataFrame(
-            {
-                "point_in_time": pd.to_datetime(["2022-01-01", "2022-01-02", "2022-01-03"]),
-                "cust_id": [1, 2, 3],
-            },
-        )
-        if temporary:
-            expected = "CREATE OR REPLACE TEMPORARY VIEW"
-        else:
-            expected = "CREATE OR REPLACE VIEW"
-        await session.register_table("my_view", df, temporary)
-        expected_query = textwrap.dedent(
-            f"""
-            {expected} my_view AS SELECT
-              CAST('2022-01-01 00:00:00' AS TIMESTAMP) AS `point_in_time`,
-              1 AS `cust_id`
-            UNION ALL
-            SELECT
-              CAST('2022-01-02 00:00:00' AS TIMESTAMP) AS `point_in_time`,
-              2 AS `cust_id`
-            UNION ALL
-            SELECT
-              CAST('2022-01-03 00:00:00' AS TIMESTAMP) AS `point_in_time`,
-              3 AS `cust_id`
-            """
-        ).strip()
-        assert mock_execute_query.call_args == mock.call(expected_query)
+        with mock.patch("featurebyte.session.base_spark.S3SimpleStorage", autospec=True) as _:
+            with mock.patch(
+                "featurebyte.session.databricks.pd.DataFrame.to_parquet", autospec=True
+            ) as _:
+                session = DatabricksSession(**databricks_session_dict)
+                df = pd.DataFrame(
+                    {
+                        "point_in_time": pd.to_datetime(["2022-01-01", "2022-01-02", "2022-01-03"]),
+                        "cust_id": [1, 2, 3],
+                    },
+                )
+                if temporary:
+                    expected = "CREATE OR REPLACE TEMPORARY VIEW"
+                else:
+                    expected = "CREATE TABLE"
+                await session.register_table("my_view", df, temporary)
+
+                if temporary:
+                    assert mock_execute_query.call_args_list[0][0][0].startswith(expected)
+                else:
+                    assert mock_execute_query.call_args_list[-1][0][0].startswith(expected)
 
 
 def test_databricks_sql_connector_not_available(databricks_session_dict):
     """
     Simulate missing databricks-sql-connector dependency
     """
-    with mock.patch("featurebyte.session.databricks.HAS_DATABRICKS_SQL_CONNECTOR", False):
-        with pytest.raises(RuntimeError) as exc:
-            _ = DatabricksSession(**databricks_session_dict)
-        assert str(exc.value) == "databricks-sql-connector is not available"
+    with mock.patch("featurebyte.session.base_spark.S3SimpleStorage", autospec=True) as _:
+        with mock.patch("featurebyte.session.databricks.HAS_DATABRICKS_SQL_CONNECTOR", False):
+            with pytest.raises(RuntimeError) as exc:
+                _ = DatabricksSession(**databricks_session_dict)
+            assert str(exc.value) == "databricks-sql-connector is not available"
 
 
 def test_databricks_schema_initializer__sql_objects(patched_databricks_session_cls):
@@ -230,10 +233,22 @@ def test_databricks_schema_initializer__sql_objects(patched_databricks_session_c
         item["type"] = item["type"].value
     expected = [
         {
-            "filename": "F_TIMESTAMP_TO_INDEX.sql",
-            "identifier": "F_TIMESTAMP_TO_INDEX",
-            "type": "function",
+            "type": "table",
+            "filename": "T_ONLINE_STORE_MAPPING.sql",
+            "identifier": "ONLINE_STORE_MAPPING",
         },
+        {
+            "type": "table",
+            "filename": "T_TILE_FEATURE_MAPPING.sql",
+            "identifier": "TILE_FEATURE_MAPPING",
+        },
+        {"type": "table", "filename": "T_TILE_JOB_MONITOR.sql", "identifier": "TILE_JOB_MONITOR"},
+        {
+            "type": "table",
+            "filename": "T_TILE_MONITOR_SUMMARY.sql",
+            "identifier": "TILE_MONITOR_SUMMARY",
+        },
+        {"type": "table", "filename": "T_TILE_REGISTRY.sql", "identifier": "TILE_REGISTRY"},
     ]
 
     def _sorted_result(lst):

@@ -32,11 +32,14 @@ env:
   SNOWFLAKE_SCHEMA: PUBLIC
   SNOWFLAKE_SCHEMA_FEATUREBYTE: FEATUREBYTE
   # Databricks
-  DATABRICKS_ACCESS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-  DATABRICKS_SERVER_HOSTNAME: 2085793316075774.4.gcp.databricks.com
-  DATABRICKS_HTTP_PATH: sql/protocolv1/o/2085793316075774/1010-041133-p07dh5j6
-  DATABRICKS_CATALOG: hive_metastore
-  DATABRICKS_SCHEMA_FEATUREBYTE: featurebyte_github
+  DATABRICKS_ACCESS_TOKEN: ${{ secrets.DATABRICKS_ACCESS_TOKEN }}
+  DATABRICKS_SERVER_HOSTNAME: ${{ secrets.DATABRICKS_SERVER_HOSTNAME }}
+  DATABRICKS_HTTP_PATH: "sql/protocolv1/o/2085793316075774/0319-021506-hzmupduq"
+  DATABRICKS_CATALOG: "hive_metastore"
+  DATABRICKS_SCHEMA_FEATUREBYTE: "FEATUREBYTE_GITHUB"
+  DATABRICKS_STORAGE_URL: ${{ secrets.DATABRICKS_STORAGE_URL }}
+  DATABRICKS_STORAGE_ACCESS_KEY_ID: "GOOG1EGI26DDNOGQ34T2RUMKJYOV3NL567KJURTRXD3XIATOWIM27XZF6ZHXY"
+  DATABRICKS_STORAGE_ACCESS_KEY_SECRET: ${{ secrets.DATABRICKS_STORAGE_ACCESS_KEY_SECRET }}
   # Python
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi
@@ -253,6 +256,59 @@ jobs:
         with:
           name: python-${{ matrix.python-version }}-.coverage.2
           path: .coverage.2
+  test-integration-databricks:
+    needs: ["build-jar"]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version: ["3.8.0"]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }} # Restore from `cache` job
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.3.1
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+      - name: Adding C headers
+        run: |
+          sudo apt-get install python-dev libsasl2-dev gcc
+          sudo apt-get install wkhtmltopdf
+      - name: Download hive-udf
+        uses: actions/download-artifact@v3
+        with:
+          name: hive-udf
+          path: featurebyte/sql/databricks/
+      - name: Run tests
+        run: |
+          task test-integration-databricks
+          mv .coverage .coverage.3
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-pytest.xml.3
+          path: pytest.xml.3
+      - name: Upload integration coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-.coverage.3
+          path: .coverage.3
   test-docs:
     needs: ["build-jar"]
     runs-on: ubuntu-20.04
@@ -297,7 +353,7 @@ jobs:
           export FEATUREBYTE_NP_PASSWORD=${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
           task test-docs
   validate:
-    needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark"]
+    needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark", "test-integration-databricks"]
     runs-on: ubuntu-20.04
     timeout-minutes: 45
     strategy:
@@ -343,6 +399,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.2
+      - name: Download integration test results (databricks)
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-pytest.xml.3
       - name: Download unit coverage results
         uses: actions/download-artifact@v3
         with:
@@ -355,6 +415,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: python-${{ matrix.python-version }}-.coverage.2
+      - name: Download integration coverage results (databricks)
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-.coverage.3
       - name: Merge test results
         run: |
           task test-merge
@@ -382,7 +446,7 @@ jobs:
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}
-    needs: ["build-jar", "test-unit", "test-integration-snowflake", "test-integration-spark", "test-docs", "validate"]
+    needs: ["build-jar", "test-unit", "test-integration-snowflake", "test-integration-spark", "test-integration-databricks", "test-docs", "validate"]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -401,7 +465,7 @@ jobs:
         run: |
           echo "BUILD_JAR_RESULT=${{ needs.build-jar.result }}" >> $GITHUB_ENV
           echo "TEST_UNIT_RESULT=${{ needs.test-unit.result }}" >> $GITHUB_ENV
-          echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }}" >> $GITHUB_ENV
+          echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }},${{ needs.test-integration-databricks.result }}" >> $GITHUB_ENV
           echo "TEST_DOCS_RESULT=${{ needs.test-docs.result }}" >> $GITHUB_ENV
           echo "VALIDATE_RESULT=${{ needs.validate.result }}" >> $GITHUB_ENV
           echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV

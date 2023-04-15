@@ -159,4 +159,5 @@ class S3SimpleStorage(SimpleStorage):
 
     def delete_object(self, path: str) -> None:
         path = path.rstrip("/")
-        self.client.delete_object(Bucket=self.bucket, Key=f"{self.key_prefix}/{path}")
+        key = f"{self.key_prefix}/{path}" if self.key_prefix else path
+        self.client.delete_object(Bucket=self.bucket, Key=key)
