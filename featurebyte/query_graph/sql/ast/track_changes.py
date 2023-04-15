@@ -98,7 +98,7 @@ class TrackChanges(TableNode):
             .subquery()
         )
         columns_map = {
-            column_name: quoted_identifier(column_name)
+            str(column_name): quoted_identifier(column_name)
             for column_name in [
                 parameters.natural_key_column,
                 parameters.new_valid_from_column_name,
