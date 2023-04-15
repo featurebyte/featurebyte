@@ -390,18 +390,20 @@ class BaseAdapter:
         -------
         Select
         """
-        select_expr = select_expr.copy()
+        # Nesting the query is required to handle the case when select_expr is a complex view
+        # involving operations like joins
+        nested_select_expr = select("*").from_(select_expr.subquery())
 
         # Need to perform syntax tree surgery this way since TABLESAMPLE needs to be attached to the
         # FROM clause so that the result is still a SELECT expression. This way we can do things
         # like limit(), subquery() etc on the result.
         params = {cls.TABLESAMPLE_PERCENT_KEY: make_literal_value(sample_percent)}
         tablesample_expr = expressions.TableSample(
-            this=select_expr.args["from"].expressions[0], **params
+            this=nested_select_expr.args["from"].expressions[0], **params
         )
-        select_expr.args["from"].set("expressions", [tablesample_expr])
+        nested_select_expr.args["from"].set("expressions", [tablesample_expr])
 
-        return select_expr
+        return nested_select_expr
 
 
 class SnowflakeAdapter(BaseAdapter):

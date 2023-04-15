@@ -157,8 +157,8 @@ def test_event_view_join_scd_view__preview_view(
     Test joining an EventView with and SCDView
     """
     event_view = event_table.get_view()
-    scd_table = scd_table.get_view()
-    event_view.join(scd_table, on="ÜSER ID")
+    scd_view = scd_table.get_view()
+    event_view.join(scd_view, on="ÜSER ID")
     df = event_view.preview(1000)
     df_expected = expected_dataframe_scd_join
 

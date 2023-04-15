@@ -63,12 +63,14 @@ async def test_observation_table_from_source_table(
 
 
 @pytest.mark.asyncio
-async def test_observation_table_from_view(scd_table, session, source_type):
+async def test_observation_table_from_view(event_table, scd_table, session, source_type):
     """
     Test creating an observation table from a view
     """
-    view = scd_table.get_view()
-    view["POINT_IN_TIME"] = view["Effective Timestamp"]
+    view = event_table.get_view()
+    scd_view = scd_table.get_view()
+    view.join(scd_view, on="ÜSER ID")
+    view["POINT_IN_TIME"] = view[view.timestamp_column]
     sample_rows = 123
     observation_table = view.create_observation_table(
         f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}", sample_rows=sample_rows
