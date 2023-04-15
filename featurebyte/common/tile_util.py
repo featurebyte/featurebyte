@@ -34,7 +34,7 @@ def tile_manager_from_session(
     ValueError
         if TileManager for session source type is not implemented yet
     """
-    if session.source_type in [SourceType.SPARK, SourceType.SNOWFLAKE]:
+    if session.source_type in [SourceType.SPARK, SourceType.SNOWFLAKE, SourceType.DATABRICKS]:
         return TileManager(session=session, task_manager=task_manager)
 
     raise ValueError(f"Tile Manager for {session.source_type} has not been implemented")
