@@ -847,6 +847,7 @@ def test_create_observation_table_from_event_view(snowflake_event_table, snowfla
     check_observation_table_creation_query(
         query,
         """
+        CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
           *
         FROM (
