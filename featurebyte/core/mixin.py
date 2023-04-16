@@ -313,7 +313,7 @@ class SampleMixin:
         Examples
         --------
         Get the shape of a view.
-        >>> catalog.get_view("GROCERYPRODUCT").shape()
+        >>> catalog.get_view("INVOICEITEMS").shape()
         (300450, 10)
         """
         tic = time.time()
