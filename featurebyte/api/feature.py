@@ -864,13 +864,12 @@ class Feature(
         """
         Updates readiness of a feature version.
 
-        A Feature version can have one of five readiness levels:
+        A Feature version can have one of four readiness levels:
 
         1. PRODUCTION_READY: Assigned to Feature versions that are ready for deployment in production environments.
         2. PUBLIC_DRAFT: For Feature versions shared for feedback purposes.
         3. DRAFT: For Feature versions in the prototype stage.
-        4. QUARANTINE: For Feature versions that had recently encountered issues and should be utilized cautiously.
-        5. DEPRECATED: For feature versions not advised for use in either training or online serving.
+        4. DEPRECATED: For feature versions not advised for use in either training or online serving.
 
         When a new feature version is created, its status is DRAFT.
         Only a Draft feature version can be deleted. Feature versions with other status cannot be reverted to DRAFT.
