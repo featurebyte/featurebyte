@@ -18,6 +18,7 @@ from typing import (
 )
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 import pandas as pd
 from pydantic import PrivateAttr
@@ -37,7 +38,6 @@ from featurebyte.common.join_utils import (
     is_column_name_in_columns,
 )
 from featurebyte.common.model_util import validate_offset_string
-from featurebyte.core.accessor import datetime
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
