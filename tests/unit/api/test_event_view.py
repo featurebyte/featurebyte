@@ -889,7 +889,7 @@ def test_shape(snowflake_event_table):
                     "col_text" AS "col_text",
                     "col_binary" AS "col_binary",
                     "col_boolean" AS "col_boolean",
-                    CAST("event_timestamp" AS STRING) AS "event_timestamp",
+                    "event_timestamp" AS "event_timestamp",
                     "cust_id" AS "cust_id"
                   FROM "sf_database"."sf_schema"."sf_table"
                 )

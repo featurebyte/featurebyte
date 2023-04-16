@@ -304,6 +304,17 @@ class SampleMixin:
         Returns
         -------
         Tuple[int, int]
+
+        Raises
+        ------
+        RecordRetrievalException
+            Shape request failed.
+
+        Examples
+        --------
+        Get the shape of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").shape()
+        (300450, 10)
         """
         tic = time.time()
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
