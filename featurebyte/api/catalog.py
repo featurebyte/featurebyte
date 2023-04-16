@@ -91,7 +91,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Get info of a catalog object
 
         >>> catalog = fb.Catalog.get_or_create("grocery")  # doctest: +SKIP
-        >>> catalog.info()
+        >>> catalog.info()  # doctest: +SKIP
         """
         return super().info(verbose)
 
