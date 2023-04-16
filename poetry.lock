@@ -4,7 +4,7 @@
 server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "featurebyte-databricks-sql-connector", "featurebyte-freeware"]
 
 [metadata]
-content-hash = "256581e74d761fa834c875f72da59920ae372fbcfa157a0649a4a06a8b4d9ade"
+content-hash = "09c9453fcaa2709af439fb49107e7989dac53ae84d47790a78f90cda01fc5751"
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
 
@@ -1034,35 +1034,35 @@ url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featureby
 category = "main"
 description = "Free utilities from FeatureByte"
 files = [
-    {file = "featurebyte_freeware-0.2.10-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:fa6232a8a10f1d590e3005deac4fd465402e92f9bbbe377472a641171c13369b"},
-    {file = "featurebyte_freeware-0.2.10-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:80979f9f10f730167f502d79de96cc4d4c4e9cd3bb7d56e0f5899d429dc64168"},
-    {file = "featurebyte_freeware-0.2.10-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:2da92ffe8444bcee70c6d2390b9b00ddc9130b56ccb0e093a3327e024aeb52c0"},
-    {file = "featurebyte_freeware-0.2.10-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0b3acb381c72180658331cc037cb10ecac91fae95c4346d50ed2f8d8043ee1d3"},
-    {file = "featurebyte_freeware-0.2.10-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:6f507401e7b5b4acd5760f8e8574c0095f0e398eaa7d0c51fac07c0f3578bfc7"},
-    {file = "featurebyte_freeware-0.2.10-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:b4c2895d2b660fd74063386d0124118fa4380a289f53883d80b543879a68a373"},
-    {file = "featurebyte_freeware-0.2.10-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:eb80ac12fe3674cb5e42b292024dd2ae935759df0ceb614bbe94de805e7ec42e"},
-    {file = "featurebyte_freeware-0.2.10-cp310-cp310-win_amd64.whl", hash = "sha256:d269cb1b76bc9aab87d0ec767e76d936624cec0c001283c2fdd6ba06b40a8f42"},
-    {file = "featurebyte_freeware-0.2.10-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:695a42453a07788acb8cb5e0bf443af95ba3eb8ee7e94bd322d015de366ce708"},
-    {file = "featurebyte_freeware-0.2.10-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:cba16e10c8d1e7b71a89a6e01f351c9e5ffac748c47c69b21623fa2be7be8989"},
-    {file = "featurebyte_freeware-0.2.10-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:ec88da045930e9fe3be05ead96cd94deeaceb678e19622a3977648b475ca7483"},
-    {file = "featurebyte_freeware-0.2.10-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d47eec19c379fb047f43d28a7328d1ff6a740f307e1270d6809bdc87e9b8d35f"},
-    {file = "featurebyte_freeware-0.2.10-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:466dec53cad219ba869345584066f9ec8f28a4bdf0a5b79af8eaddc1bcf6f796"},
-    {file = "featurebyte_freeware-0.2.10-cp38-cp38-musllinux_1_1_i686.whl", hash = "sha256:e2cc2d79c09649c8089d1d67b4acffd376ddcd7c8a1a2be8029a57e3996de660"},
-    {file = "featurebyte_freeware-0.2.10-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:64de4cff24d090343d65f3a86e0b7a3f28702565cd636d1d4faf77b703ee4879"},
-    {file = "featurebyte_freeware-0.2.10-cp38-cp38-win_amd64.whl", hash = "sha256:ef31cbd24b07c42d436375da06faf1f221c519e7da0bb819e6ce5829b3b0dc59"},
-    {file = "featurebyte_freeware-0.2.10-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:ce4cf6434e9fc964c40175b89496294fc277077498fb40b1c9c27ef8641dc1a2"},
-    {file = "featurebyte_freeware-0.2.10-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:9897ee31faa408cf2ded56eb33c0f879d20db88b224cbadd7c0ed943453f500e"},
-    {file = "featurebyte_freeware-0.2.10-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:d738b4e4927a66dcd7ea1ac541147c60cc623b56c4c4a945203a662a3732b99a"},
-    {file = "featurebyte_freeware-0.2.10-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6efde2e6ed688b36f9e947b1c0ecda56168a16599ea653cdafc06eea3413f55a"},
-    {file = "featurebyte_freeware-0.2.10-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:277f3f41245e4afb2392e87b30bc125860152a20c8917aaf1601c99e2a2c6766"},
-    {file = "featurebyte_freeware-0.2.10-cp39-cp39-musllinux_1_1_i686.whl", hash = "sha256:f9fa59043e22e1439f5437b8efe587f3a223aa4f0086b9e4aba0e73685045455"},
-    {file = "featurebyte_freeware-0.2.10-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:5153df35e2151b6a08bd5852cfa3cb7bac2f35dfd63c08ccc64a3cc61995934b"},
-    {file = "featurebyte_freeware-0.2.10-cp39-cp39-win_amd64.whl", hash = "sha256:a881dd6bac3207ebd16b4e3f63580d4a8de5d31cf5f2b8246b5eb1792e485104"},
+    {file = "featurebyte_freeware-0.2.11-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:24064a7967f6f9c7f8ea68833fdbe26f13f8619baec315c446aa674f3a877b5c"},
+    {file = "featurebyte_freeware-0.2.11-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:89bac490d63a1af48c670ddd9af9490b609bc98fe12591b6a95e2eb75172e970"},
+    {file = "featurebyte_freeware-0.2.11-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:b4bc19d89d5b82bf19d59862ecbaf3bcf78988e75e40e659395a17c6b6323816"},
+    {file = "featurebyte_freeware-0.2.11-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:95d2cd7de67a504376b2c4b98e67f2bb384a5b57aaeae4047747ffec959246d7"},
+    {file = "featurebyte_freeware-0.2.11-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:380aa8429cdc98866f5a76a23993ecc775ae5697cec5c25419ee0f2f2708490c"},
+    {file = "featurebyte_freeware-0.2.11-cp310-cp310-musllinux_1_1_aarch64.whl", hash = "sha256:388816f903f09f164b2f1d2885e28658d05ae4d6038033a35dbcaa5881d8aa93"},
+    {file = "featurebyte_freeware-0.2.11-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:fc09eb9ce747ce37f78b0164c425b8493321594feebef565f741285fcc9bfdd0"},
+    {file = "featurebyte_freeware-0.2.11-cp310-cp310-win_amd64.whl", hash = "sha256:b70599178be1253b932ea39215376c914d4d55d4e7636ffa9ad15e5119d36b85"},
+    {file = "featurebyte_freeware-0.2.11-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:cf6ef12d1baf8248c3c2fed2e7376a57aa74051311982f102c0b8121517a6810"},
+    {file = "featurebyte_freeware-0.2.11-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:22803e87ce09055f3b65f838bb0368cfc6e09e71f3525333611ba51d122f3435"},
+    {file = "featurebyte_freeware-0.2.11-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:db86cc790ea9ab6096a0c262bf058901a0319c9fa5cb24a126cf4350a6e41b2b"},
+    {file = "featurebyte_freeware-0.2.11-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:30c9b50f51ad382c565d7c05bc097a636231d6e890063022930c09cb7c88d22a"},
+    {file = "featurebyte_freeware-0.2.11-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:05334c52187e861401530b9ebde9e76d7ffa703be3b8fa39d17d8da78fe07805"},
+    {file = "featurebyte_freeware-0.2.11-cp38-cp38-musllinux_1_1_aarch64.whl", hash = "sha256:661837458e7b7184f04249227afe0a79539ab7e7eebbc9bbfbba9601673bb475"},
+    {file = "featurebyte_freeware-0.2.11-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:965538f25d1369371e4cf9ca2753a744cebd9a6720a603504bdc58f093983262"},
+    {file = "featurebyte_freeware-0.2.11-cp38-cp38-win_amd64.whl", hash = "sha256:4d814a3b32604485adf9fb284d996e81afd68be7608a85546dcf46fe5a2e79c8"},
+    {file = "featurebyte_freeware-0.2.11-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:4adc080769d3c834f29caf7a54259b0a6118584c77b4a9f821ca4bb153a11327"},
+    {file = "featurebyte_freeware-0.2.11-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:297de7a6dad1c3c18129eb60ee681b3e840eb8f2bd24f42ee4f8b848a8f9abca"},
+    {file = "featurebyte_freeware-0.2.11-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:b8b369b594c32e109d8a93f89619f7cdb44961da37bf666620fa96f38eb2c7b0"},
+    {file = "featurebyte_freeware-0.2.11-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:70af4a695ba55ca9c46588ec172dc822deb9e99927654369b1f16d06d33bcd83"},
+    {file = "featurebyte_freeware-0.2.11-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a9a3925c7f149215a043e2e3d035881501475091ae8290526f9eee0628fdea69"},
+    {file = "featurebyte_freeware-0.2.11-cp39-cp39-musllinux_1_1_aarch64.whl", hash = "sha256:c13f973df39d949412e9324a97a087c5320d950251c95b42572c7d8b36da663b"},
+    {file = "featurebyte_freeware-0.2.11-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:e4b76087c647db208c641c14eaa9004de12fb0713c02a24f08bd8ec4d7675eec"},
+    {file = "featurebyte_freeware-0.2.11-cp39-cp39-win_amd64.whl", hash = "sha256:88dc45e80d0e00bebc2cd2f99b6f86ec82001c9bbf69af99d9d6d9ba1cb35e92"},
 ]
 name = "featurebyte-freeware"
 optional = true
 python-versions = "<3.11,>=3.8"
-version = "0.2.10"
+version = "0.2.11"
 
 [package.dependencies]
 Jinja2 = ">=3.1.2"
@@ -1924,13 +1924,13 @@ min-versions = ["babel (==2.9.0)", "click (==7.0)", "colorama (==0.4)", "ghp-imp
 category = "dev"
 description = "An MkDocs plugin that simplifies configuring page titles and their order"
 files = [
-    {file = "mkdocs-awesome-pages-plugin-2.8.0.tar.gz", hash = "sha256:af7e327e14b2eea3b2735c37428e33a528ecd2d9ae2296dc0f1632f0f3bc28f7"},
-    {file = "mkdocs_awesome_pages_plugin-2.8.0-py3-none-any.whl", hash = "sha256:6b21ad4f41aecbe89e3a9a51f8837892cc7ce8ca0f9f4e0a355d56159ace3d68"},
+    {file = "mkdocs_awesome_pages_plugin-2.9.0-py3-none-any.whl", hash = "sha256:783dddf7d42aba632324a2e5267ff13ca5a42ba9f4f37996d963f1b518f9009f"},
+    {file = "mkdocs_awesome_pages_plugin-2.9.0.tar.gz", hash = "sha256:845a90b6ee0b00e641ff21a1599ad92805cfd12982c855686a79ef1c63454cc9"},
 ]
 name = "mkdocs-awesome-pages-plugin"
 optional = false
-python-versions = ">=3.6.2"
-version = "2.8.0"
+python-versions = ">=3.7"
+version = "2.9.0"
 
 [package.dependencies]
 mkdocs = ">=1"
@@ -2500,13 +2500,13 @@ test = ["pytest"]
 category = "main"
 description = "Core utilities for Python packages"
 files = [
-    {file = "packaging-23.0-py3-none-any.whl", hash = "sha256:714ac14496c3e68c99c29b00845f7a2b85f3bb6f1078fd9f72fd20f0570002b2"},
-    {file = "packaging-23.0.tar.gz", hash = "sha256:b6ad297f8907de0fa2fe1ccbd26fdaf387f5f47c7275fedf8cce89f99446cf97"},
+    {file = "packaging-23.1-py3-none-any.whl", hash = "sha256:994793af429502c4ea2ebf6bf664629d07c1a9fe974af92966e4b8d2df7edc61"},
+    {file = "packaging-23.1.tar.gz", hash = "sha256:a392980d2b6cffa644431898be54b0045151319d1e7ec34f0cfed48767dd334f"},
 ]
 name = "packaging"
 optional = false
 python-versions = ">=3.7"
-version = "23.0"
+version = "23.1"
 
 [[package]]
 category = "main"
@@ -2677,13 +2677,13 @@ tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "pa
 category = "dev"
 description = "The PyPA recommended tool for installing Python packages."
 files = [
-    {file = "pip-23.0.1-py3-none-any.whl", hash = "sha256:236bcb61156d76c4b8a05821b988c7b8c35bf0da28a4b614e8d6ab5212c25c6f"},
-    {file = "pip-23.0.1.tar.gz", hash = "sha256:cd015ea1bfb0fcef59d8a286c1f8bebcb983f6317719d415dc5351efb7cd7024"},
+    {file = "pip-23.1-py3-none-any.whl", hash = "sha256:64b1d4528e491aa835ec6ece0c1ac40ce6ab6d886e60740f6519db44b2e9634d"},
+    {file = "pip-23.1.tar.gz", hash = "sha256:408539897ee535dbfb83a153f7bc4d620f990d8bd44a52a986efc0b4d330d34a"},
 ]
 name = "pip"
 optional = false
 python-versions = ">=3.7"
-version = "23.0.1"
+version = "23.1"
 
 [[package]]
 category = "dev"
@@ -3240,13 +3240,13 @@ diagrams = ["jinja2", "railroad-diagrams"]
 category = "dev"
 description = "pytest: simple powerful testing with Python"
 files = [
-    {file = "pytest-7.3.0-py3-none-any.whl", hash = "sha256:933051fa1bfbd38a21e73c3960cebdad4cf59483ddba7696c48509727e17f201"},
-    {file = "pytest-7.3.0.tar.gz", hash = "sha256:58ecc27ebf0ea643ebfdf7fb1249335da761a00c9f955bcd922349bcb68ee57d"},
+    {file = "pytest-7.3.1-py3-none-any.whl", hash = "sha256:3799fa815351fea3a5e96ac7e503a96fa51cc9942c3753cda7651b93c1cfa362"},
+    {file = "pytest-7.3.1.tar.gz", hash = "sha256:434afafd78b1d78ed0addf160ad2b77a30d35d4bdf8af234fe621919d9ed15e3"},
 ]
 name = "pytest"
 optional = false
 python-versions = ">=3.7"
-version = "7.3.0"
+version = "7.3.1"
 
 [package.dependencies]
 colorama = {version = "*", markers = "sys_platform == \"win32\""}
@@ -4173,13 +4173,13 @@ version = "63.4.1"
 category = "dev"
 description = "Typing stubs for simplejson"
 files = [
-    {file = "types-simplejson-3.18.0.3.tar.gz", hash = "sha256:c05a81a80c5b78567cd374b23d3e2151fec7398513295b656ddb57cb8e99f2fb"},
-    {file = "types_simplejson-3.18.0.3-py3-none-any.whl", hash = "sha256:69b949674af0aec90b0eef7f1a76bcbd7582a74329911ec668824e76e70bd3f2"},
+    {file = "types-simplejson-3.19.0.0.tar.gz", hash = "sha256:64aff3d151104e0458bfc9d64ffb78efd0157ff740a9f00904a30a5465f7c013"},
+    {file = "types_simplejson-3.19.0.0-py3-none-any.whl", hash = "sha256:38982991785db84c78f9012f5b9a03069ec3be020f468fb8fcd950b23e3a3341"},
 ]
 name = "types-simplejson"
 optional = false
 python-versions = "*"
-version = "3.18.0.3"
+version = "3.19.0.0"
 
 [[package]]
 category = "dev"
@@ -4224,13 +4224,13 @@ types-pytz = "*"
 category = "dev"
 description = "Typing stubs for ujson"
 files = [
-    {file = "types-ujson-5.7.0.1.tar.gz", hash = "sha256:54351a62ec1b6550efb17af63ef7f0c00d0efa9c099de7da5c627e1efa280553"},
-    {file = "types_ujson-5.7.0.1-py3-none-any.whl", hash = "sha256:67cdedbab6ea905f21e236497e9e97d8f7f0845d72b47a7404974dcb88adeb22"},
+    {file = "types-ujson-5.7.0.3.tar.gz", hash = "sha256:416cd9e6414ce9c2a113361f2b333345011968592cf56a15b0abd95b673859c5"},
+    {file = "types_ujson-5.7.0.3-py3-none-any.whl", hash = "sha256:68b55eb26d7687519062739c2ccc13d85d29bcc194cb6c8162daeebae3b77702"},
 ]
 name = "types-ujson"
 optional = false
 python-versions = "*"
-version = "5.7.0.1"
+version = "5.7.0.3"
 
 [[package]]
 category = "dev"
