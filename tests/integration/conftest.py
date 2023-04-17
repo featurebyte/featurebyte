@@ -166,8 +166,8 @@ def credentials_mapping_fixture():
                 access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
             ),
             storage_credential=S3StorageCredential(
-                s3_access_key_id=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_ID"),
-                s3_secret_access_key=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_SECRET"),
+                s3_access_key_id=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_ID", ""),
+                s3_secret_access_key=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_SECRET", ""),
             ),
         ),
         "spark_featurestore": CredentialModel(
