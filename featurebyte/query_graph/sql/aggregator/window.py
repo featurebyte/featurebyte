@@ -35,6 +35,8 @@ IsOrderDependent = bool
 AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs, IsOrderDependent]
 
 ROW_NUMBER = "__FB_ROW_NUMBER"
+LAST_TILE_INDEX_DIV_NUM_TILES = "__FB_LAST_TILE_INDEX_DIV_NUM_TILES"
+TILE_INDEX_DIV_NUM_TILES = "__FB_TILE_INDEX_DIV_NUM_TILES"
 
 
 class TileBasedRequestTablePlan:
@@ -397,9 +399,20 @@ class WindowAggregator(TileBasedAggregator):
         """
         # pylint: disable=too-many-locals
         last_index_name = InternalName.LAST_TILE_INDEX.value
+
+        # Precompute expressions required by range join
+        req_table = select(
+            "*",
+            alias_(f"FLOOR({last_index_name} / {num_tiles})", alias=LAST_TILE_INDEX_DIV_NUM_TILES),
+        ).from_(quoted_identifier(expanded_request_table_name))
+        tile_table = select(
+            "*",
+            alias_(f"FLOOR(INDEX / {num_tiles})", alias=TILE_INDEX_DIV_NUM_TILES),
+        ).from_(tile_table_id)
+
         range_join_condition = expressions.or_(
-            f"FLOOR(REQ.{last_index_name} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
-            f"FLOOR(REQ.{last_index_name} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
+            f"REQ.{LAST_TILE_INDEX_DIV_NUM_TILES} = {TILE_INDEX_DIV_NUM_TILES}",
+            f"REQ.{LAST_TILE_INDEX_DIV_NUM_TILES} - 1 = {TILE_INDEX_DIV_NUM_TILES}",
         )
         join_conditions_lst: Any = [range_join_condition]
         for serving_name, key in zip(serving_names, keys):
@@ -432,9 +445,9 @@ class WindowAggregator(TileBasedAggregator):
         # Join expanded request table with tile table using range join
         req_joined_with_tiles = (
             select()
-            .from_(f"{quoted_identifier(expanded_request_table_name).sql()} AS REQ")
+            .from_(req_table.subquery(alias="REQ"))
             .join(
-                tile_table_id,
+                tile_table.subquery(alias="TILE"),
                 join_alias="TILE",
                 join_type="inner",
                 on=join_conditions,
