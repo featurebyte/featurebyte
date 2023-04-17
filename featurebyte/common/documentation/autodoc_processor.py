@@ -60,7 +60,8 @@ def _render_list_item_with_multiple_paragraphs(
     str
         Rendered list item
     """
-    title = title or ""
+    if not title:
+        return ""
     list_item_str = f"- **{title}**"
     for other_para in other_paragraphs:
         list_item_str += f"<br>\t{other_para}"
