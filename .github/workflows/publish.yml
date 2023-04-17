@@ -74,7 +74,7 @@ jobs:
             grep -oP "\d+$"
           )
           export DEV_VERSION=${DEV_VERSION:-0}  # Set .dev to 0 if not exist
-          echo "DEV_VERSION=$(poetry version -s).dev${DEV_VERSION}" >> $GITHUB_ENV
+          echo "DEV_VERSION=$(poetry version -s).dev$((DEV_VERSION+=1))" >> $GITHUB_ENV
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Update Version in pyproject.toml
