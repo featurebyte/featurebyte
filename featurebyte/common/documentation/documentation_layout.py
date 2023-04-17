@@ -221,7 +221,6 @@ def _get_entity_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([ENTITY]),
-        DocLayoutItem([ENTITY, CLASS_METHODS, "Entity.get_or_create"]),
         DocLayoutItem([ENTITY, INFO, "Entity.created_at"]),
         DocLayoutItem([ENTITY, INFO, "Entity.info"]),
         DocLayoutItem([ENTITY, INFO, "Entity.name"]),
