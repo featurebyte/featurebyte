@@ -1033,7 +1033,7 @@ def create_transactions_event_table_from_data_source(
     """
     Helper function to create an EventTable with the given feature store
     """
-    available_tables = data_source.list_tables(
+    available_tables = data_source.list_source_tables(
         database_name=database_name,
         schema_name=schema_name,
     )
@@ -1041,7 +1041,7 @@ def create_transactions_event_table_from_data_source(
     available_tables = [x.upper() for x in available_tables]
     assert table_name.upper() in available_tables
 
-    database_table = data_source.get_table(
+    database_table = data_source.get_source_table(
         database_name=database_name,
         schema_name=schema_name,
         table_name=table_name,
@@ -1133,7 +1133,7 @@ def item_table_fixture(
     """
     Fixture for an ItemTable in integration tests
     """
-    database_table = data_source.get_table(
+    database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="ITEM_DATA_TABLE",
@@ -1168,7 +1168,7 @@ def dimension_table_fixture(
     """
     Fixture for a DimensionTable in integration tests
     """
-    database_table = data_source.get_table(
+    database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name=dimension_data_table_name,
@@ -1190,7 +1190,7 @@ def scd_data_tabular_source_fixture(
     """
     Fixture for scd table tabular source
     """
-    database_table = data_source.get_table(
+    database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name=scd_data_table_name,

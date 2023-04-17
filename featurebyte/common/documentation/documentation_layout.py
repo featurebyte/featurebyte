@@ -407,10 +407,10 @@ def _get_data_source_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([DATA_SOURCE]),
-        DocLayoutItem([DATA_SOURCE, GET, "DataSource.get_table"]),
+        DocLayoutItem([DATA_SOURCE, GET, "DataSource.get_source_table"]),
         DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_databases"]),
         DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_schemas"]),
-        DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_tables"]),
+        DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_source_tables"]),
         DocLayoutItem([DATA_SOURCE, INFO, "DataSource.type"]),
     ]
 

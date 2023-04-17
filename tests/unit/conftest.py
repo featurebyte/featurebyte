@@ -356,7 +356,7 @@ def snowflake_database_table_fixture(
     """
     SourceTable object fixture
     """
-    snowflake_table = snowflake_data_source.get_table(
+    snowflake_table = snowflake_data_source.get_source_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",
@@ -370,7 +370,7 @@ def snowflake_database_table_item_table_fixture(snowflake_data_source):
     """
     SourceTable object fixture for ItemTable
     """
-    yield snowflake_data_source.get_table(
+    yield snowflake_data_source.get_source_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="items_table",
@@ -382,7 +382,7 @@ def snowflake_database_table_scd_table_fixture(snowflake_data_source):
     """
     SourceTable object fixture for SCDTable
     """
-    yield snowflake_data_source.get_table(
+    yield snowflake_data_source.get_source_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="scd_table",
@@ -394,7 +394,7 @@ def snowflake_database_table_dimension_table_fixture(snowflake_data_source):
     """
     SourceTable object fixture for DimensionTable
     """
-    yield snowflake_data_source.get_table(
+    yield snowflake_data_source.get_source_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="dimension_table",
@@ -406,7 +406,7 @@ def snowflake_database_table_item_table_same_event_id_fixture(snowflake_data_sou
     """
     SourceTable object fixture for ItemTable (same event_id_column with EventTable)
     """
-    yield snowflake_data_source.get_table(
+    yield snowflake_data_source.get_source_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="items_table_same_event_id",

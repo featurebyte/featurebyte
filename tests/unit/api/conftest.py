@@ -66,7 +66,7 @@ def snowflake_database_table_fixture(snowflake_data_source):
     """
     SourceTable object fixture (using config object)
     """
-    yield snowflake_data_source.get_table(
+    yield snowflake_data_source.get_source_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",
