@@ -154,7 +154,7 @@ class ProductionReadyValidator:
         Raises
         ------
         ValueError
-            raised when there is another feature version with the same name that is production ready
+            raise when deprecated tables are found
         """
         query_filter = {
             "_id": {"$in": promoted_feature.table_ids},

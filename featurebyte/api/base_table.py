@@ -308,7 +308,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
     ) -> pd.DataFrame:
         """
         Retrieve a summary of the contents in the table column.
-        This includes columns names, column types, missing and unique counts, and other statistics.
+        This includes column name, column type, missing and unique count, and other statistics.
 
         Parameters
         ----------
@@ -326,7 +326,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         Returns
         -------
         pd.DataFrame
-            Summary of the table.
+            Summary of the table column.
         """
         return self.parent.describe(
             size=size,
