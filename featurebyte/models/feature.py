@@ -158,7 +158,9 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
     version: VersionIdentifier = Field(
-        allow_mutation=False, default=None, description="Feature Version"
+        allow_mutation=False,
+        default=None,
+        description="Returns the version identifier of a Feature object.",
     )
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)

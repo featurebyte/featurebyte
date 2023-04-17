@@ -248,18 +248,25 @@ class FeatureList(
     BaseFeatureGroup, FrozenFeatureListModel, DeletableApiObject, SavableApiObject, FeatureJobMixin
 ):
     """
-    A Feature List is a set of features that is typically crafted to address a specific Use Case, and is typically how
-    a user interacts with their collection of features.
+    The FeatureList class is used as a constructor to create a FeatureList Object.
 
-    The primary entity of the Feature List, which determines its main focus, is determined by analyzing the relationship
-    between the primary entities of the individual features listed. Usually, the primary entity of the Feature List
-    aligns with that of the Use Case. Nevertheless, if there is a mismatch, the serving entities of the Feature List
-    are utilized to evaluate its compatibility with the Use Case.
+    A FeatureList object is added to the catalog only when explicitly saved.
 
-    In order to obtain EDA, training or test data for a Use Case, the Feature List is first used to gather historical
-    feature values, which are then employed to analyze features and train and test models. Once a model has been
-    trained and validated, the Feature List is deployed, and the feature values can be accessed through online serving
-    to generate predictions.
+    A Feature List is a collection of Feature Objects specifically designed to address a particular Use Case. The
+    Feature List is initially used to gather historical feature values for EDA, training, or testing data for a Use
+    Case. These values are then utilized to analyze features, train, and test models. Once a model is trained and
+    validated, the Feature List can be deployed, and the feature values can be accessed through online serving for
+    generating predictions.
+
+    Before serving a feature list, you can verify its primary entity using the primary_entity attribute. If the
+    features within the list relate to different primary entities, the feature list's primary entity is determined
+    based on the relationships between the entities, with the lowest-level entity chosen as the primary entity. If
+    there are no relationships between entities, the primary entity may become a tuple comprising those entities.
+
+    For example, imagine a feature list that includes features related to a card, customer, and customer city. In
+    this scenario, the primary entity is the card entity because it is a child of both the customer and customer
+    city entities. However, if the feature list also contains features for a merchant and merchant city, the primary
+    entity becomes a tuple of card and merchant.
     """
 
     # documentation metadata
@@ -271,10 +278,12 @@ class FeatureList(
     feature_ids: List[PydanticObjectId] = Field(
         default_factory=list,
         allow_mutation=False,
-        description="List of feature IDs in the FeatureList object.",
+        description="Returns the unique identifier (ID) of the Feature objects associated with the FeatureList object.",
     )
     version: VersionIdentifier = Field(
-        allow_mutation=False, default=None, description="Feature list version"
+        allow_mutation=False,
+        default=None,
+        description="Returns the version identifier of a FeatureList object.",
     )
 
     # class variables
@@ -626,7 +635,10 @@ class FeatureList(
     @classmethod
     def _list_versions(cls, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
-        List saved feature list versions.
+        Returns a DataFrame that presents a summary of the feature list versions belonging to the namespace of the
+        FeatureList object. The DataFrame contains multiple attributes of the feature list versions, such as their
+        versions names, deployment states, creation dates and the percentage of their features that are
+        production_ready.
 
         Parameters
         ----------
@@ -714,7 +726,9 @@ class FeatureList(
         primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
-        List features in the feature list.
+        Returns a DataFrame that contains various attributes of the features in a Feature List object, such as their
+        names, versions, types, corresponding tables, related entities, creation dates, states of readiness and
+        online availability.
 
         Parameters
         ----------
@@ -1066,7 +1080,23 @@ class FeatureList(
         self, status: Literal[tuple(FeatureListStatus)]  # type: ignore[misc]
     ) -> None:
         """
-        Update feature list status
+        A FeatureList can have one of five statuses:
+
+        "DEPLOYED": Assigned to FeatureLists with at least one active version online.
+        "TEMPLATE": For FeatureLists serving as reference templates or safe starting points.
+        "PUBLIC DRAFT": For FeatureLists shared for feedback purposes.
+        "DRAFT": For FeatureLists in the prototype stage.
+        "DEPRECATED": For outdated or unneeded FeatureLists.
+
+        Automatic status changes:
+        - New FeatureLists are assigned the "DRAFT" status.
+        - The "DEPLOYED" status is applied when at least one version is deployed.
+        - If deployment is disabled for all versions, the FeatureList becomes a "PUBLIC DRAFT".
+
+        Additional guidelines:
+        - Before making a FeatureList a "TEMPLATE", add a description and ensure all features are "production ready".
+        - Only "DRAFT" FeatureLists can be deleted;
+        - A FeatureList cannot be reverted to a "DRAFT" status.
 
         Parameters
         ----------
@@ -1150,7 +1180,14 @@ class FeatureList(
         self, enable: bool, make_production_ready: bool = False, ignore_guardrails: bool = False
     ) -> None:
         """
-        Deploy all the Features in the Feature List to the Feature Store and update its deployment status
+        Deploys a FeatureList object to support online and batch serving of the feature list in production.
+
+        This triggers the orchestration of the feature materialization into the online feature store. A feature list
+        is deployed without creating separate pipelines or using different tools.
+
+        Deployment can be disabled at any time if the serving of the feature list is not needed anymore. Unlike the
+        log and wait approach adopted by some feature stores, disabling the deployment of a feature list doesn’t
+        affect the serving of its historical requests.
 
         Parameters
         ----------

@@ -54,6 +54,10 @@ pydantic_field_doc_overrides = {
     "Feature": {
         CATALOG_ID: "Returns the unique identifier (ID) of the Catalog that is associated with the Feature object.",
         CREATED_AT: _get_created_at_docstring_override("Feature"),
+        "entity_ids": "Returns a list of entity IDs that are linked to the feature.",
+        "feature_list_ids": "Returns a list of IDs of feature lists that include the specified feature version.",
+        "feature_namespace_id": "Returns the unique identifier (ID) of the feature namespace of the specified feature. "
+        "All feature versions of a feature have the same feature namespace ID.",
         ID: _get_id_docstring_override("Feature"),
         NAME: "The 'name' property of a Feature object serves to identify the feature namespace and can be used to "
         "retrieve or set its name. To save a Feature object derived from other Feature objects to a catalog, a "
@@ -77,6 +81,8 @@ pydantic_field_doc_overrides = {
     "TableApiObject": {
         NAME: _get_name_docstring_override("Table"),
         UPDATED_AT: _get_updated_at_docstring_override("Table"),
+        "type": "Returns the Table object's type, which may be one of the following: Event Table, Item Table, Slowly "
+        "Changing Dimension Table (SCD), or Dimension Table.",
     },
     "TableColumn": {
         NAME: _get_name_docstring_override("TableColumn"),

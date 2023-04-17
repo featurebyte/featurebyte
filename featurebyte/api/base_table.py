@@ -220,7 +220,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
     @typechecked
     def preview_sql(self, limit: int = 10, after_cleaning: bool = False) -> str:
         """
-        Generate SQL query to preview the transformation output
+        Returns an SQL query for previewing the column raw data.
 
         Parameters
         ----------
@@ -454,9 +454,9 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def columns_info(self) -> List[ColumnInfo]:
         """
-        List of column information of the table. Each column contains column name, column type, entity ID
-        associated with the column, semantic ID associated with the column, and the critical data information
-        associated with the column.
+        Provides information about the columns in the table such as column name, column type, entity ID associated
+        with the column, semantic ID associated with the column, and the critical data information associated with
+        the column.
 
         Returns
         -------
@@ -504,7 +504,10 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def status(self) -> TableStatus:
         """
-        Table status. Either "DRAFT", "PUBLISHED", or "DEPRECATED".
+        Returns the status of the Table object. A table can be categorized into 3 status: PUBLIC DRAFT, PUBLISHED, and
+        DEPRECATED.
+
+        Once a table status is DEPRECATED, you can create a new table using the same source table.
 
         Returns
         -------
@@ -519,7 +522,10 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def record_creation_timestamp_column(self) -> Optional[str]:
         """
-        Record creation timestamp column name of this table.
+        Returns the name of the column in the table that represents the timestamp for record creation. This
+        information is utilized to analyze feature job settings, and the identified column is treated as a special
+        column that is not meant for feature engineering. By default, any view created from the table will exclude
+        this column.
 
         Returns
         -------

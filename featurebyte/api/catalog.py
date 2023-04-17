@@ -351,7 +351,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         table: Optional[str] = None,
     ) -> pd.DataFrame:
         """
-        List saved feature lists.
+        Returns a DataFrame that contains various attributes of the registered feature lists. These attributes
+        include the names of the feature lists, the number of features in each list, their status, whether they have
+        been deployed in production, the percentage of production ready features of their default version, the tables
+        used by the features, their related entities, and creation dates.
+
+        The resulting DataFrame can be filtered based on the primary entity of the feature lists or the tables
+        utilized by the feature lists.
 
         Parameters
         ----------
@@ -696,7 +702,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def get_feature_list(self, name: str, version: Optional[str] = None) -> FeatureList:
         """
-        Get feature list by name.
+        Gets a FeatureList object from the catalog by specifying the feature list's name and, optionally,
+        its version name. If the version name is not provided, the default version of the feature list will
+        be returned.
 
         Parameters
         ----------

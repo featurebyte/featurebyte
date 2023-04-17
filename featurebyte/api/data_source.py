@@ -36,8 +36,7 @@ class DataSource:
     @property
     def type(self) -> SourceType:
         """
-        Get the data source type, which indicates how the data is stored and computed.
-        e.g. `SourceType.SPARK`
+        Returns the data source type, which indicates how the data is stored and computed. e.g. `SourceType.SPARK`
 
         Returns
         -------

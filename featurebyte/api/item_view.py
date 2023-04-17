@@ -60,9 +60,21 @@ class ItemView(View, GroupByMixin):
     # pydantic instance variables
     event_id_column: str = Field(allow_mutation=False)
     item_id_column: str = Field(allow_mutation=False)
-    event_table_id: PydanticObjectId = Field(allow_mutation=False)
+    event_table_id: PydanticObjectId = Field(
+        allow_mutation=False,
+        description="Returns the unique identifier (ID) "
+        "of the Event Table related to the Item "
+        "view.",
+    )
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        allow_mutation=False, description="Default feature job setting for this view"
+        allow_mutation=False,
+        description="Returns the default feature job setting for the view.\n\n"
+        "The Default Feature Job Setting establishes the default setting used "
+        "by features that aggregate data in the view, ensuring consistency of "
+        "the Feature Job Setting across features created by different team members. "
+        "While it's possible to override the setting during feature declaration, "
+        "using the Default Feature Job Setting simplifies the process of setting "
+        "up the Feature Job Setting for each feature.",
     )
     event_view: EventView = Field(allow_mutation=False)
     timestamp_column_name: str = Field(allow_mutation=False)

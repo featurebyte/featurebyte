@@ -48,7 +48,11 @@ class DimensionView(View):
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.DIMENSION_VIEW
 
     # pydantic instance variables
-    dimension_id_column: str = Field(allow_mutation=False)
+    dimension_id_column: str = Field(
+        allow_mutation=False,
+        description="Returns the name of the column representing "
+        "the primary key of the Dimension view.",
+    )
 
     @property
     def protected_attributes(self) -> list[str]:
