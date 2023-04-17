@@ -670,6 +670,48 @@ class FeatureList(
                 feature_tile_specs.append((str(feature.name), tile_specs))
         return feature_tile_specs
 
+    def info(  # pylint: disable=useless-parent-delegation
+        self, verbose: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of an FeatureList object. The dictionary
+        contains the following keys:
+
+        - `name`: The name of the FeatureList object.
+        - `created_at`: The timestamp indicating when the FeatureList object was created.
+        - `updated_at`: The timestamp indicating when the FeatureList object was last updated.
+        - `primary_entity`: Details about the primary entity of the FeatureList object.
+        - `entities`: List of entities involved in the computation of the features contained in the FeatureList object.
+        - `tables`: List of tables involved in the computation of the features contained in the FeatureList object.
+        - `default_version_mode`: Indicates whether the default version mode is 'auto' or 'manual'.
+        - `version_count`: The number of versions with the same feature list namespace.
+        - `catalog_name`: The catalog name of the FeatureList object.
+        - `status`: The status of the FeatureList object.
+        - `feature_count`: The number of features contained in the FeatureList object.
+        - `dtype_distribution`: The number of features per data type.
+        - `deployed`: Indicates whether the FeatureList object is deployed
+        - `serving_endpoint`: The URL for a deployed FeatureList for online serving of features.
+
+        Some information is provided for both the FeatureList object and the default version with the same feature
+        list namespace:
+
+        - `version`: The version name.
+        - `production_ready_fraction`: The percentage of features that are production-ready.
+
+        This method is only available for FeatureList objects that are saved in the catalog.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+        """
+        return super().info(verbose)
+
     @property
     def feature_names(self) -> list[str]:
         """
