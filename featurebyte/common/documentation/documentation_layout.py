@@ -228,9 +228,9 @@ def _get_entity_layout() -> List[DocLayoutItem]:
         DocLayoutItem([ENTITY, INFO, "Entity.name_history"]),
         DocLayoutItem([ENTITY, INFO, "Entity.parents"]),
         DocLayoutItem([ENTITY, INFO, "Entity.serving_names"]),
-        DocLayoutItem([ENTITY, INFO, "Entity.update_name"]),
         DocLayoutItem([ENTITY, INFO, "Entity.updated_at"]),
         DocLayoutItem([ENTITY, LINEAGE, "Entity.id"]),
+        DocLayoutItem([ENTITY, MANAGE, "Entity.update_name"]),
     ]
 
 
