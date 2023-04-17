@@ -1,7 +1,7 @@
 """
 Test view class
 """
-from typing import Any, List
+from typing import Any, Dict, List
 
 import pytest
 from bson import ObjectId
@@ -50,7 +50,7 @@ class SimpleTestView(View):
     def get_join_column(self) -> str:
         return self.join_col
 
-    def json_dict(self, **kwargs: Any) -> dict[str, Any]:
+    def json_dict(self, **kwargs: Any) -> Dict[str, Any]:
         return {}
 
     def set_join_col_override(self, join_col_override: str):
