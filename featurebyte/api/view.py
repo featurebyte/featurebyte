@@ -512,7 +512,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         **kwargs: Any,
     ) -> ViewT:
         """
-        Updates the metadata for the new join
+        Create a new joined view with the given node name and columns info.
 
         Parameters
         ----------
@@ -808,6 +808,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             self.columns_info, append_rsuffix_to_column_info(filtered_column_infos, rsuffix)
         )
 
+        # create a new view and return it
         return self._create_joined_view(
             new_node_name=node.name, joined_columns_info=joined_columns_info
         )

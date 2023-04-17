@@ -389,6 +389,7 @@ class EventView(View, GroupByMixin):
             )
         )
 
+        # create a new view and return it
         return self._create_joined_view(
             new_node_name=node.name, joined_columns_info=updated_columns_info
         )

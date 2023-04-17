@@ -119,7 +119,7 @@ class ItemView(View, GroupByMixin):
             if right_in_col == self.event_view.timestamp_column:
                 metadata_kwargs["timestamp_column_name"] = right_out_col
 
-        # Update metadata only after validation is done & join node is inserted
+        # create a new view and return it
         return self._create_joined_view(node.name, joined_columns_info, **metadata_kwargs)
 
     @property
