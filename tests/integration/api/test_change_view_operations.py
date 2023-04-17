@@ -88,3 +88,8 @@ def test_change_view__feature_no_entity(scd_table):
     observations_set = pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00"}])
     df = FeatureList([count_1w_feature], name="mylist").get_historical_features(observations_set)
     assert df.iloc[0].to_dict() == expected
+
+    # run again with different time to trigger entity tracker update and it should work
+    observations_set = pd.DataFrame([{"POINT_IN_TIME": "2001-12-15 10:00:00"}])
+    df = FeatureList([count_1w_feature], name="mylist").get_historical_features(observations_set)
+    assert df.iloc[0].to_dict() == expected
