@@ -7,15 +7,18 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import Feature, FeatureJobSetting, MissingValueImputation
+from featurebyte.models import FeatureModel
+from featurebyte.models.feature_store import TableStatus
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
 @pytest.fixture(name="production_ready_validator")
-def production_ready_validator_fixture(version_service, feature_service):
+def production_ready_validator_fixture(version_service, feature_service, table_service):
     """
     Get production ready validator
     """
     return ProductionReadyValidator(
+        table_service=table_service,
         version_service=version_service,
         feature_service=feature_service,
     )
@@ -94,16 +97,14 @@ async def test_validate(
         ]
     )
 
-    pruned_feature_graph, _ = feature.extract_pruned_graph_and_node()
-
     # Verify that validate does not throw an error if ignore_guardrails is True
     await production_ready_validator.validate(
-        feature.name, feature.id, pruned_feature_graph, ignore_guardrails=True
+        promoted_feature=feature.cached_model, ignore_guardrails=True
     )
 
     # Verify that validates throws an error without ignore_guardrails
     with pytest.raises(ValueError) as exc:
-        await production_ready_validator.validate("sum_90m", feature.id, pruned_feature_graph)
+        await production_ready_validator.validate(promoted_feature=feature.cached_model)
     exception_str = format_exception_string_for_comparison(str(exc.value))
     expected_exception_str = format_exception_string_for_comparison(
         """
@@ -130,18 +131,6 @@ async def test_validate(
 
 
 @pytest.mark.asyncio
-async def test_assert_no_other_production_ready_feature__does_not_exist(production_ready_validator):
-    """
-    Test that there are no other production ready features.
-
-    sum_30m is the name of the production_ready_feature used in the next test.
-    """
-    await production_ready_validator._assert_no_other_production_ready_feature(
-        ObjectId(), "sum_30m"
-    )
-
-
-@pytest.mark.asyncio
 async def test_assert_no_other_production_ready_feature__exists(
     production_ready_validator, production_ready_feature
 ):
@@ -150,10 +139,16 @@ async def test_assert_no_other_production_ready_feature__exists(
 
     """
     with pytest.raises(ValueError) as exc:
-        await production_ready_validator._assert_no_other_production_ready_feature(
-            ObjectId(), production_ready_feature.name
-        )
-    assert "Found another feature version that is already" in str(exc)
+        another_feature = FeatureModel(**{**production_ready_feature.dict(), "_id": ObjectId()})
+        await production_ready_validator._assert_no_other_production_ready_feature(another_feature)
+
+    expected_msg = (
+        'Found another feature version that is already PRODUCTION_READY. Please deprecate the feature "sum_30m" '
+        f"with ID {production_ready_feature.id} first before promoting the promoted version as there can only be "
+        f"one feature version that is production ready at any point in time. We are unable to promote the feature "
+        f"with ID {another_feature.id} right now."
+    )
+    assert expected_msg in str(exc.value)
 
 
 @pytest.mark.asyncio
@@ -165,8 +160,38 @@ async def test_assert_no_other_production_ready_feature__no_error_if_promoted_fe
     feature that is _being_ promoted to production ready.
     """
     await production_ready_validator._assert_no_other_production_ready_feature(
-        production_ready_feature.id, production_ready_feature.name
+        production_ready_feature
     )
+
+
+@pytest.mark.asyncio
+async def test_assert_no_deprecated_tables(
+    production_ready_validator, event_table_service, table_status_service, feature
+):
+    """Test assert_no_deprecated_tables throws an error if there are deprecated tables."""
+    # check table status & check that the assertion passes
+    table_id = feature.table_ids[0]
+    table = await event_table_service.get_document(document_id=table_id)
+    assert table.status == TableStatus.PUBLIC_DRAFT
+    await production_ready_validator._assert_no_deprecated_table(promoted_feature=feature)
+
+    # update table status to deprecated & check that the assertion fails
+    await table_status_service.update_status(
+        service=event_table_service,
+        document_id=table_id,
+        status=TableStatus.DEPRECATED,
+    )
+    table = await event_table_service.get_document(document_id=table_id)
+    assert table.status == TableStatus.DEPRECATED
+
+    with pytest.raises(ValueError) as exc:
+        await production_ready_validator._assert_no_deprecated_table(promoted_feature=feature)
+
+    expected_msg = (
+        'Found a deprecated table "sf_event_table" that is used by the feature "sum_30m". '
+        "We are unable to promote the feature to PRODUCTION_READY right now."
+    )
+    assert expected_msg in str(exc.value)
 
 
 @pytest.mark.asyncio
@@ -248,7 +273,7 @@ async def test_validate__no_diff_in_feature_should_return_none(
     feature.save()
 
     # Validate
-    response = await production_ready_validator.validate(feature.name, feature.id, feature.graph)
+    response = await production_ready_validator.validate(feature.cached_model)
     assert response is None
 
 
