@@ -26,6 +26,10 @@ def _get_updated_at_docstring_override(class_name: str) -> str:
     return f"Returns the timestamp indicating when the {class_name} object was last updated."
 
 
+def _get_catalog_id_docstring_override(class_name: str) -> str:
+    return f"Returns the unique identifier (ID) of the Catalog that is associated with the {class_name} object."
+
+
 def _get_doc_overrides(class_name: str) -> Dict[str, str]:
     """
     Get the docstring overrides for a class.
@@ -52,7 +56,7 @@ pydantic_field_doc_overrides = {
     "Catalog": _get_doc_overrides("Catalog"),
     "Entity": _get_doc_overrides("Entity"),
     "Feature": {
-        CATALOG_ID: "Returns the unique identifier (ID) of the Catalog that is associated with the Feature object.",
+        CATALOG_ID: _get_catalog_id_docstring_override("Feature"),
         CREATED_AT: _get_created_at_docstring_override("Feature"),
         "entity_ids": "Returns a list of entity IDs that are linked to the feature.",
         "feature_list_ids": "Returns a list of IDs of feature lists that include the specified feature version.",
@@ -69,7 +73,7 @@ pydantic_field_doc_overrides = {
     },
     "FeatureList": {
         **_get_doc_overrides("FeatureList"),
-        CATALOG_ID: "Returns the unique identifier (ID) of the Catalog that is associated with the FeatureList object.",
+        CATALOG_ID: _get_catalog_id_docstring_override("FeatureList"),
     },
     "FeatureStore": _get_doc_overrides("FeatureStore"),
     "Relationship": _get_doc_overrides("Relationship"),
