@@ -403,11 +403,15 @@ class WindowAggregator(TileBasedAggregator):
         # Precompute expressions required by range join
         req_table = select(
             "*",
-            alias_(f"FLOOR({last_index_name} / {num_tiles})", alias=LAST_TILE_INDEX_DIV_NUM_TILES),
+            alias_(
+                f"FLOOR({last_index_name} / {num_tiles})",
+                alias=LAST_TILE_INDEX_DIV_NUM_TILES,
+                quoted=False,
+            ),
         ).from_(quoted_identifier(expanded_request_table_name))
         tile_table = select(
             "*",
-            alias_(f"FLOOR(INDEX / {num_tiles})", alias=TILE_INDEX_DIV_NUM_TILES),
+            alias_(f"FLOOR(INDEX / {num_tiles})", alias=TILE_INDEX_DIV_NUM_TILES, quoted=False),
         ).from_(tile_table_id)
 
         range_join_condition = expressions.or_(
