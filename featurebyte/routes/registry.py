@@ -7,6 +7,7 @@ from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.credential.controller import CredentialController
+from featurebyte.routes.deployment.controller import DeploymentController
 from featurebyte.routes.dimension_table.controller import DimensionTableController
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_table.controller import EventTableController
@@ -353,4 +354,9 @@ app_container_config.add_controller(
     "modeling_table_controller",
     ModelingTableController,
     ["modeling_table_service", "task_controller"],
+)
+app_container_config.add_controller(
+    "deployment_controller",
+    DeploymentController,
+    ["feature_list_service"],
 )

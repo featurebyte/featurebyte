@@ -567,6 +567,9 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             on="default_feature_list_id",
         )
 
+        # replace id with default_feature_list_id
+        feature_lists["id"] = feature_lists["default_feature_list_id"]
+
         feature_lists["num_features"] = feature_lists.feature_namespace_ids.apply(len)
         feature_lists["readiness_frac"] = feature_lists.readiness_distribution.apply(
             lambda readiness_distribution: FeatureReadinessDistribution(

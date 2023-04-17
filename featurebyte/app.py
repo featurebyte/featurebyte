@@ -11,6 +11,7 @@ from starlette.websockets import WebSocket
 import featurebyte.routes.catalog.api as catalog_api
 import featurebyte.routes.context.api as context_api
 import featurebyte.routes.credential.api as credential_api
+import featurebyte.routes.deployment.api as deployment_api
 import featurebyte.routes.dimension_table.api as dimension_table_api
 import featurebyte.routes.entity.api as entity_api
 import featurebyte.routes.event_table.api as event_table_api
@@ -106,6 +107,7 @@ def get_app() -> FastAPI:
     # add routers into the app
     resource_apis = [
         context_api,
+        deployment_api,
         dimension_table_api,
         event_table_api,
         item_table_api,

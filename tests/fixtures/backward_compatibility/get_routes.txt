@@ -1,6 +1,8 @@
 /catalog
 /context
 /credential
+/deployment
+/deployment/summary
 /dimension_table
 /entity
 /event_table
