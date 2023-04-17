@@ -163,6 +163,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
             [TABLE, INFO, "Table.catalog_id"],
             doc_path_override="api.base_table.TableApiObject.catalog_id.md",
         ),
+        DocLayoutItem([TABLE, INFO, "EventTable.default_feature_job_setting"]),
         DocLayoutItem([TABLE, INFO, "ItemTable.default_feature_job_setting"]),
         DocLayoutItem(
             [TABLE, LINEAGE, "Table.entity_ids"],
