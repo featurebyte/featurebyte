@@ -19,13 +19,41 @@ jobs:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'breaking') }}
     steps:
       - uses: actions/checkout@v3
+
+      - run: echo '${{ toJSON(github.event.pull_request) }}'
+
+      - run: |
+          export LINE_DESCRIPTION=$(grep -m1 -oP 'Description' <<< '${{ github.event.pull_request.body }}' | cut -d : -f 1)
+          export LINE_RELATED_ISSUE=$(grep -m1 -oP 'Related Issue' <<< '${{ github.event.pull_request.body }}' | cut -d : -f 1)
+          # Extract
+          export BODY=$(echo '${{ github.event.pull_request.body }}' | awk "(NR > ${LINE_DESCRIPTION} && NR < ${LINE_RELATED_ISSUE}) { print \$0 }" | awk NF)
+          echo $BODY
+          export FMT_BODY=$(echo $BODY | tr '\n' '\\n')
+          echo $FMT_BODY
+          echo "FMT_BODY=$FMT_BODY" >> $GITHUB_ENV
+
+      - name: Send Slack notification to user-experience channel
+        uses: slackapi/slack-github-action@v1.23.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
         with:
-          fetch-depth: 0
-      - name: Get Title
-        run: echo '${{ github.event.pull_request.title }}'
-
-      - name: Get json
-        run: echo '${{ toJSON(github) }}'
-
-      - name: Get Filtered body
-        run: jq '.body' <<< '${{ toJSON(github.event.pull_request) }}'
+          channel-id: C0474850N1Y
+          payload: |
+            {
+              "text": "${{ github.event.repository.name }} Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "`${{ github.event.repository.name }}` Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]"
+                  }
+                }, {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Actor: ${{ github.actor }}\nPull Request: ${{ github.event.pull_request._links.html.href }}\nDiff: ${{ github.event.pull_request._links.html.href }}/files\n```${{ env.FMT_BODY }}```"
+                  }
+                }
+              ]
+            }
