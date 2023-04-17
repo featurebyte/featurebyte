@@ -71,7 +71,7 @@ class ItemView(View, GroupByMixin):
         self,
         columns: list[str],
         event_suffix: Optional[str] = None,
-    ) -> None:
+    ) -> ItemView:
         """
         Joins additional attributes from the related EventTable. This operation is done in-place and does not return a
         new ItemView.
@@ -108,7 +108,7 @@ class ItemView(View, GroupByMixin):
         )
 
         # Update timestamp_column_name if event view's timestamp column is joined
-        metadata_kwargs = {}
+        metadata_kwargs: dict[str, Any] = {"event_view": self.event_view}
         for right_in_col, right_out_col in zip(
             join_parameters.right_input_columns, join_parameters.right_output_columns
         ):
@@ -116,7 +116,7 @@ class ItemView(View, GroupByMixin):
                 metadata_kwargs["timestamp_column_name"] = right_out_col
 
         # Update metadata only after validation is done & join node is inserted
-        self._update_metadata(node.name, joined_columns_info, **metadata_kwargs)
+        return self._create_joined_view(node.name, joined_columns_info, **metadata_kwargs)
 
     @property
     def timestamp_column(self) -> str:

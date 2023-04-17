@@ -32,7 +32,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     ExpressionStr,
     RightHandSide,
-    StatementStr,
     StatementT,
     ValueStr,
     VariableNameGenerator,
@@ -1012,20 +1011,26 @@ class JoinNode(BasePrunableNode):
         assert self.parameters.metadata is not None, "Join node metadata is not set."
         if isinstance(self.parameters.metadata, JoinMetadata):
             other_var_name = right_var_name
-            statement = StatementStr(
+            expression = ExpressionStr(
                 f"{var_name}.join({other_var_name}, "
                 f"on={ValueStr.create(self.parameters.metadata.on)}, "
                 f"how={ValueStr.create(self.parameters.join_type)}, "
                 f"rsuffix={ValueStr.create(self.parameters.metadata.rsuffix)})"
             )
         else:
-            statement = StatementStr(
+            expression = ExpressionStr(
                 f"{var_name}.join_event_table_attributes("
                 f"columns={ValueStr.create(self.parameters.metadata.columns)}, "
                 f"event_suffix={ValueStr.create(self.parameters.metadata.event_suffix)})"
             )
 
-        statements.append(statement)
+        additional_statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=expression,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        statements.extend(additional_statements)
         return statements, var_name
 
 
@@ -1127,11 +1132,17 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             node_output_type=NodeOutputType.FRAME,
             node_output_category=NodeOutputCategory.VIEW,
         )
-        statement = StatementStr(
+        expression = ExpressionStr(
             f"{var_name}.add_feature(new_column_name={new_column_name}, "
             f"feature={feature}, entity_column={entity_column})"
         )
-        statements.append(statement)
+        additional_statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=expression,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        statements.extend(additional_statements)
         return statements, var_name
 
 

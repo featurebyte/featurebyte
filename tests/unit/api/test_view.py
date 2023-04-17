@@ -1,7 +1,7 @@
 """
 Test view class
 """
-from typing import List
+from typing import Any, List
 
 import pytest
 from bson import ObjectId
@@ -50,6 +50,9 @@ class SimpleTestView(View):
     def get_join_column(self) -> str:
         return self.join_col
 
+    def json_dict(self, **kwargs: Any) -> dict[str, Any]:
+        return {}
+
     def set_join_col_override(self, join_col_override: str):
         """
         Test helper to set the join column override.
@@ -65,7 +68,7 @@ def get_test_view_fixture():
     return SimpleTestView()
 
 
-def test_update_metadata(simple_test_view):
+def test_create_joined_view(simple_test_view):
     """
     Test update metadata
     """
@@ -78,11 +81,11 @@ def test_update_metadata(simple_test_view):
     assert simple_test_view.columns_info != new_cols_info
 
     # update state
-    simple_test_view._update_metadata(new_node_name, new_cols_info)
+    joined_view = simple_test_view._create_joined_view(new_node_name, new_cols_info)
 
     # verify that state is updated
-    assert simple_test_view.node_name == new_node_name
-    assert simple_test_view.columns_info == new_cols_info
+    assert joined_view.node_name == new_node_name
+    assert joined_view.columns_info == new_cols_info
 
 
 def get_random_pydantic_object_id() -> PydanticObjectId:

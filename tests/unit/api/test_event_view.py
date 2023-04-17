@@ -615,10 +615,10 @@ def test_add_feature(
     original_column_info = copy.deepcopy(snowflake_event_view.columns_info)
 
     # Add feature
-    snowflake_event_view.add_feature("new_col", non_time_based_feature, "cust_id")
+    new_view = snowflake_event_view.add_feature("new_col", non_time_based_feature, "cust_id")
 
     # assert updated view params
-    assert snowflake_event_view.columns_info == [
+    assert new_view.columns_info == [
         *original_column_info,
         ColumnInfo(
             name="new_col",
@@ -627,12 +627,12 @@ def test_add_feature(
         ),
     ]
 
-    join_feature_node_name = snowflake_event_view.node.name
+    join_feature_node_name = new_view.node.name
     assert join_feature_node_name.startswith("join_feature")
-    assert snowflake_event_view.row_index_lineage == (snowflake_event_table.frame.node_name,)
+    assert new_view.row_index_lineage == (snowflake_event_table.frame.node_name,)
 
     # assert graph node (excluding name since that can changed by graph pruning)
-    view_dict = snowflake_event_view.dict()
+    view_dict = new_view.dict()
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict["output_type"] == "frame"
     assert node_dict["type"] == "join_feature"
@@ -656,7 +656,7 @@ def test_add_feature(
     event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
     item_table_columns_info = snowflake_item_table.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
-        snowflake_event_view,
+        new_view,
         to_use_saved_data=False,
         table_id_to_info={
             snowflake_event_table.id: {

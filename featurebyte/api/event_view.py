@@ -327,7 +327,7 @@ class EventView(View, GroupByMixin):
 
     def add_feature(
         self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None
-    ) -> None:
+    ) -> EventView:
         """
         Adds a simple aggregate feature obtained from an Item View to the corresponding Event View. Once the feature
         is integrated in this manner, it can be aggregated as any other column over a time frame to create Aggregate
@@ -384,5 +384,6 @@ class EventView(View, GroupByMixin):
             )
         )
 
-        # Update metadata
-        self._update_metadata(node.name, updated_columns_info)
+        return self._create_joined_view(
+            new_node_name=node.name, joined_columns_info=updated_columns_info
+        )

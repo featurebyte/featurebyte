@@ -56,23 +56,23 @@ event_view = event_table.get_view(
         ),
     ],
 )
-item_view.join_event_table_attributes(
+view = item_view.join_event_table_attributes(
     columns=["col_float", "col_char", "col_boolean"],
     event_suffix="_event_table",
 )
-col = item_view["col_float_event_table"]
-col_1 = item_view["item_amount"]
-item_view["percent"] = col_1 / col
-col_2 = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
+col = view["col_float_event_table"]
+col_1 = view["item_amount"]
+view["percent"] = col_1 / col
+col_2 = view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     value_column="percent",
     method="max",
     feature_name="max_percent",
     skip_fill_na=True,
 )
-event_view.add_feature(
+view_1 = event_view.add_feature(
     new_column_name="max_percent", feature=col_2, entity_column="cust_id"
 )
-grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
+grouped = view_1.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     value_column="max_percent",
     method="max",
     windows=["30d"],

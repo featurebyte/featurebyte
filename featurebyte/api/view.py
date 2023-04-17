@@ -505,12 +505,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             logger.warning("offset parameter is provided but has no effect")
         return {}
 
-    def _update_metadata(
-        self,
+    def _create_joined_view(
+        self: ViewT,
         new_node_name: str,
         joined_columns_info: List[ColumnInfo],
         **kwargs: Any,
-    ) -> None:
+    ) -> ViewT:
         """
         Updates the metadata for the new join
 
@@ -522,10 +522,21 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             joined columns info
         kwargs: Any
             Additional keyword arguments used to override the underlying metadata
+
+        Returns
+        -------
+        ViewT
         """
-        self.node_name = new_node_name
-        self.columns_info = joined_columns_info
-        self.__dict__.update(kwargs)
+        return type(self)(
+            feature_store=self.feature_store,
+            **{
+                **self.json_dict(exclude={"feature_store": True}),
+                "graph": self.graph,
+                "node_name": new_node_name,
+                "columns_info": joined_columns_info,
+                **kwargs,
+            },
+        )
 
     def _get_key_if_entity(self, other_view: View) -> Optional[tuple[str, str]]:
         """
@@ -797,14 +808,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             self.columns_info, append_rsuffix_to_column_info(filtered_column_infos, rsuffix)
         )
 
-        return type(self)(
-            feature_store=self.feature_store,
-            **{
-                **self.json_dict(exclude={"feature_store": True}),
-                "graph": self.graph,
-                "node_name": node.name,
-                "columns_info": joined_columns_info,
-            },
+        return self._create_joined_view(
+            new_node_name=node.name, joined_columns_info=joined_columns_info
         )
 
     @staticmethod
