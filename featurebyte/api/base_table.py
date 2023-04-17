@@ -428,7 +428,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def entity_ids(self) -> List[PydanticObjectId]:
         """
-        List of entity IDs in the table model list.
+        Returns the list of entity IDs that are represented in the table.
 
         Returns
         -------
@@ -476,7 +476,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def catalog_id(self) -> ObjectId:
         """
-        Catalog ID of the table. A FeatureByte Catalog serves as a centralized repository for storing metadata.
+        Returns the unique identifier (ID) of the Catalog that is associated with the Table object.
 
         Returns
         -------
