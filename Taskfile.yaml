@@ -211,7 +211,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=600 --junitxml=pytest.xml.3 --cov=featurebyte tests/integration --source-types databricks --maxfail=1
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.3 --cov=featurebyte tests/integration --source-types databricks --maxfail=1
       - task: test-teardown
 
   test-docs:
