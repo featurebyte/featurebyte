@@ -19,7 +19,7 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.modeling_table import ModelingTable
+from featurebyte.api.modeling_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
@@ -604,7 +604,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> modeling_tables = catalog.list_modeling_tables()
         """
-        return ModelingTable.list(include_id=include_id)
+        return HistoricalFeatureTable.list(include_id=include_id)
 
     @update_and_reset_catalog
     def get_data_source(self, feature_store_name: str) -> DataSource:
@@ -887,7 +887,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return ObservationTable.get(name=name)
 
     @update_and_reset_catalog
-    def get_modeling_table(self, name: str) -> ModelingTable:
+    def get_modeling_table(self, name: str) -> HistoricalFeatureTable:
         """
         Get modeling table by name.
 
@@ -898,7 +898,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Returns
         -------
-        ModelingTable
+        HistoricalFeatureTable
             Modeling table object.
 
         Examples
@@ -907,4 +907,4 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> modeling_table = catalog.get_modeling_table("modeling_table_name")  # doctest: +SKIP
         """
-        return ModelingTable.get(name=name)
+        return HistoricalFeatureTable.get(name=name)

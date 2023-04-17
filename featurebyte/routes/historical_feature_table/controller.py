@@ -3,38 +3,38 @@ ModelingTable API route controller
 """
 from __future__ import annotations
 
-from featurebyte.models.modeling_table import ModelingTableModel
+from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
-from featurebyte.schema.modeling_table import ModelingTableCreate, ModelingTableList
+from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate, HistoricalFeatureTableList
 from featurebyte.schema.task import Task
-from featurebyte.service.modeling_table import ModelingTableService
+from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 
 
 class ModelingTableController(
-    BaseDocumentController[ModelingTableModel, ModelingTableService, ModelingTableList],
+    BaseDocumentController[HistoricalFeatureTableModel, HistoricalFeatureTableService, HistoricalFeatureTableList],
 ):
     """
     ObservationTable Controller
     """
 
-    paginated_document_class = ModelingTableList
+    paginated_document_class = HistoricalFeatureTableList
 
-    def __init__(self, service: ModelingTableService, task_controller: TaskController):
+    def __init__(self, service: HistoricalFeatureTableService, task_controller: TaskController):
         super().__init__(service)
         self.task_controller = task_controller
 
     async def create_modeling_table(
         self,
-        data: ModelingTableCreate,
+        data: HistoricalFeatureTableCreate,
     ) -> Task:
         """
         Create ModelingTable by submitting an async historical feature request task
 
         Parameters
         ----------
-        data: ModelingTableCreate
-            ModelingTable creation payload
+        data: HistoricalFeatureTableCreate
+            HistoricalFeatureTable creation payload
 
         Returns
         -------

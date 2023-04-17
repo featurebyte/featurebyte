@@ -3,14 +3,14 @@ Unit tests for ModelingTable class
 """
 import pytest
 
-from featurebyte.api.modeling_table import ModelingTable
+from featurebyte.api.modeling_table import HistoricalFeatureTable
 
 
 def test_get(modeling_table):
     """
     Test retrieving an ModelingTable object by name
     """
-    retrieved_modeling_table = ModelingTable.get(modeling_table.name)
+    retrieved_modeling_table = HistoricalFeatureTable.get(modeling_table.name)
     assert retrieved_modeling_table.name == modeling_table.name
 
 
@@ -19,7 +19,7 @@ def test_list():
     """
     Test listing ModelingTable objects
     """
-    df = ModelingTable.list()
+    df = HistoricalFeatureTable.list()
     assert df.columns.tolist() == [
         "name",
         "feature_store_name",

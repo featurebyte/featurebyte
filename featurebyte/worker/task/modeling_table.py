@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from featurebyte.models.modeling_table import ModelingTableModel
-from featurebyte.schema.worker.task.modeling_table import ModelingTableTaskPayload
+from featurebyte.models.modeling_table import HistoricalFeatureTableModel
+from featurebyte.schema.worker.task.modeling_table import HistoricalFeatureTableTaskPayload
 from featurebyte.service.modeling_table import ModelingTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
@@ -18,13 +18,13 @@ class ModelingTableTask(BaseTask):
     ModelingTableTask creates a ModelingTable by computing historical features
     """
 
-    payload_class = ModelingTableTaskPayload
+    payload_class = HistoricalFeatureTableTaskPayload
 
     async def execute(self) -> Any:
         """
         Execute ModelingTableTask
         """
-        payload = cast(ModelingTableTaskPayload, self.payload)
+        payload = cast(HistoricalFeatureTableTaskPayload, self.payload)
 
         app_container = self.app_container
 
@@ -47,7 +47,7 @@ class ModelingTableTask(BaseTask):
             output_table_details=location.table_details,
         )
 
-        modeling_table_model = ModelingTableModel(
+        modeling_table_model = HistoricalFeatureTableModel(
             _id=payload.output_document_id,
             user_id=self.payload.user_id,
             name=payload.name,

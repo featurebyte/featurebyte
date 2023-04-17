@@ -6,18 +6,18 @@ from __future__ import annotations
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.models.modeling_table import ModelingTableModel
+from featurebyte.models.modeling_table import HistoricalFeatureTableModel
 from featurebyte.schema.modeling_table import ModelingTableListRecord
 
 
-class ModelingTable(ModelingTableModel, ApiObject):
+class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject):
     """
     ModelingTable class
     """
 
     _route = "/modeling_table"
     _list_schema = ModelingTableListRecord
-    _get_schema = ModelingTableModel
+    _get_schema = HistoricalFeatureTableModel
     _list_fields = [
         "name",
         "feature_store_name",

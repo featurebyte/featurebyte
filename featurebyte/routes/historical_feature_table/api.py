@@ -10,7 +10,7 @@ from http import HTTPStatus
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.modeling_table import ModelingTableModel
+from featurebyte.models.modeling_table import HistoricalFeatureTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -42,15 +42,15 @@ async def create_modeling_table(
     return task_submit
 
 
-@router.get("/{modeling_table_id}", response_model=ModelingTableModel)
+@router.get("/{modeling_table_id}", response_model=HistoricalFeatureTableModel)
 async def get_modeling_table(
     request: Request, modeling_table_id: PydanticObjectId
-) -> ModelingTableModel:
+) -> HistoricalFeatureTableModel:
     """
     Get ModelingTable
     """
     controller = request.state.app_container.modeling_table_controller
-    modeling_table: ModelingTableModel = await controller.get(document_id=modeling_table_id)
+    modeling_table: HistoricalFeatureTableModel = await controller.get(document_id=modeling_table_id)
     return modeling_table
 
 

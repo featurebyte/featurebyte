@@ -33,7 +33,7 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.modeling_table import ModelingTable
+from featurebyte.api.modeling_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
@@ -927,7 +927,7 @@ class FeatureList(
         observation_table: ObservationTable,
         modeling_table_name: str,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-    ) -> ModelingTable:
+    ) -> HistoricalFeatureTable:
         """
         Materialize feature list using an observation table asynchronously. The historical features
         will be materialized into a modeling table.
@@ -943,7 +943,7 @@ class FeatureList(
 
         Returns
         -------
-        ModelingTable
+        HistoricalFeatureTable
         """
         featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
             feature_list_id=self.id,
@@ -960,7 +960,7 @@ class FeatureList(
         modeling_table_doc = self.post_async_task(
             route="/modeling_table", payload=payload.json_dict()
         )
-        return ModelingTable.get_by_id(modeling_table_doc["_id"])
+        return HistoricalFeatureTable.get_by_id(modeling_table_doc["_id"])
 
     @typechecked
     def create_new_version(
