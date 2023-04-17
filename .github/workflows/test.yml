@@ -9,11 +9,11 @@ name: test
 ## DATABRICKS_TOKEN              | Databricks access token         | [Databricks                     ] password
 on:
   workflow_dispatch:
-  pull_request:
-    types: [opened, synchronize, reopened]
-  push:
-    branches:
-      - main
+#  pull_request:
+#    types: [opened, synchronize, reopened]
+#  push:
+#    branches:
+#      - main
 permissions:
   contents: write
   repository-projects: read

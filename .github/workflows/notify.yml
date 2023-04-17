@@ -4,7 +4,7 @@ name: notify
 
 on:
   pull_request:
-    types: [ opened, labeled ]
+    types: [ labeled ]
   workflow_dispatch: {}
 
 concurrency:
@@ -26,3 +26,6 @@ jobs:
 
       - name: Get json
         run: echo '${{ toJSON(github) }}'
+
+      - name: Get Filtered body
+        run: jq '.body' <<< '${{ toJSON(github.event.pull_request) }}'
