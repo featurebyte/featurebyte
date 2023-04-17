@@ -391,17 +391,17 @@ class WindowAggregator(TileBasedAggregator):
             Feature window size in terms of number of tiles (function of frequency)
         is_order_dependent : bool
             Whether the aggregation depends on the ordering of data
+        tile_value_columns : list[str]
+            List of column names referenced in the tile table
 
         Returns
         -------
         expressions.Select
         """
-        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-locals, too-many-branches
         last_index_name = InternalName.LAST_TILE_INDEX.value
-        # range_join_condition = expressions.or_(
-        #     f"FLOOR(REQ.{last_index_name} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
-        #     f"FLOOR(REQ.{last_index_name} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
-        # )
+
+        # Join expanded request table with tile table using range join
         range_join_conditions = [
             f"FLOOR(REQ.{last_index_name} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
             f"FLOOR(REQ.{last_index_name} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
@@ -453,7 +453,7 @@ class WindowAggregator(TileBasedAggregator):
             if req_joined_with_tiles is None:
                 req_joined_with_tiles = joined_expr
             else:
-                req_joined_with_tiles = expressions.Union(
+                req_joined_with_tiles = expressions.Union(  # type: ignore[unreachable]
                     this=req_joined_with_tiles,
                     distinct=False,
                     expression=joined_expr,
@@ -473,34 +473,6 @@ class WindowAggregator(TileBasedAggregator):
                 f"inner_{agg_result_name}" for agg_result_name in agg_result_names
             ]
             inner_group_by_keys = group_by_keys + [quoted_identifier(value_by)]
-
-        # group_by_keys = [get_qualified_column_identifier(point_in_time_column, "REQ")]
-        # for serving_name in serving_names:
-        #     group_by_keys.append(get_qualified_column_identifier(serving_name, "REQ"))
-
-        # if value_by is None:
-        #     inner_agg_result_names = agg_result_names
-        #     inner_group_by_keys = group_by_keys
-        # else:
-        #     inner_agg_result_names = [
-        #         f"inner_{agg_result_name}" for agg_result_name in agg_result_names
-        #     ]
-        #     inner_group_by_keys = group_by_keys + [
-        #         get_qualified_column_identifier(value_by, "TILE")
-        #     ]
-
-        # Join expanded request table with tile table using range join
-        # req_joined_with_tiles = (
-        #     select()
-        #     .from_(f"{quoted_identifier(expanded_request_table_name).sql()} AS REQ")
-        #     .join(
-        #         tile_table_id,
-        #         join_alias="TILE",
-        #         join_type="inner",
-        #         on=join_conditions,
-        #     )
-        #     .where(*range_join_where_conditions)
-        # )
 
         if is_order_dependent:
             inner_agg_expr = self.merge_tiles_order_dependent(
@@ -654,10 +626,9 @@ class WindowAggregator(TileBasedAggregator):
             )
             merge_exprs = [agg_spec.merge_expr for agg_spec in agg_specs]
             agg_result_names = [agg_spec.agg_result_name for agg_spec in agg_specs]
-            tile_value_columns = set()
+            tile_value_columns_set = set()
             for agg_spec in agg_specs:
-                tile_value_columns.update(agg_spec.tile_value_columns)
-            tile_value_columns = sorted(tile_value_columns)
+                tile_value_columns_set.update(agg_spec.tile_value_columns)
 
             assert agg_spec.window is not None
             agg_expr = self.construct_aggregation_sql(
@@ -671,7 +642,7 @@ class WindowAggregator(TileBasedAggregator):
                 agg_result_names=agg_result_names,
                 num_tiles=agg_spec.window // agg_spec.frequency,
                 is_order_dependent=is_order_dependent,
-                tile_value_columns=tile_value_columns,
+                tile_value_columns=sorted(tile_value_columns_set),
             )
             agg_result = LeftJoinableSubquery(
                 expr=agg_expr,
