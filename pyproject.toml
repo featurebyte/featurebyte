@@ -206,10 +206,9 @@ types-urllib3 = "^1.26.16"
 featurebyte = "featurebyte.__main__:app"
 
 [[tool.poetry.source]]
-default = false
 name = "featurebyte_np"
-secondary = false
-url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi/simple"
+secondary = true
+url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi/simple/"
 
 [tool.pylint.classes]  # https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml
 max-args = 10
