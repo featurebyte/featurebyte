@@ -20,18 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - run: echo '${{ toJSON(github.event.pull_request) }}'
-
-      - run: |
-          export LINE_DESCRIPTION=$(grep -m1 -oP 'Description' <<< '${{ github.event.pull_request.body }}' | cut -d : -f 1)
-          export LINE_RELATED_ISSUE=$(grep -m1 -oP 'Related Issue' <<< '${{ github.event.pull_request.body }}' | cut -d : -f 1)
-          # Extract
-          export BODY=$(echo '${{ github.event.pull_request.body }}' | awk "(NR > ${LINE_DESCRIPTION} && NR < ${LINE_RELATED_ISSUE}) { print \$0 }" | awk NF)
-          echo $BODY
-          export FMT_BODY=$(echo $BODY | tr '\n' '\\n')
-          echo $FMT_BODY
-          echo "FMT_BODY=$FMT_BODY" >> $GITHUB_ENV
-
       - name: Send Slack notification to user-experience channel
         uses: slackapi/slack-github-action@v1.23.0
         env:
@@ -52,7 +40,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Actor: ${{ github.actor }}\nPull Request: ${{ github.event.pull_request._links.html.href }}\nDiff: ${{ github.event.pull_request._links.html.href }}/files\n```${{ env.FMT_BODY }}```"
+                    "text": "Actor: ${{ github.actor }}\nPull Request: ${{ github.event.pull_request._links.html.href }}\nDiff: ${{ github.event.pull_request._links.html.href }}/files"
                   }
                 }
               ]
