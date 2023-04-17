@@ -452,7 +452,6 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table, source_type):
-
     """
     Test aggregate_over using a key column joined from another view
     """

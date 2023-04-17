@@ -112,7 +112,7 @@ class ItemView(View, GroupByMixin):
         )
 
         # Update timestamp_column_name if event view's timestamp column is joined
-        metadata_kwargs: dict[str, Any] = {"event_view": self.event_view}
+        metadata_kwargs = {}
         for right_in_col, right_out_col in zip(
             join_parameters.right_input_columns, join_parameters.right_output_columns
         ):
@@ -168,6 +168,9 @@ class ItemView(View, GroupByMixin):
             }
         )
         return params
+
+    def _get_create_joined_view_parameters(self) -> dict[str, Any]:
+        return {"event_view": self.event_view}
 
     def validate_aggregate_over_parameters(
         self, keys: list[str], value_column: Optional[str]

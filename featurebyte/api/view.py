@@ -505,6 +505,16 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             logger.warning("offset parameter is provided but has no effect")
         return {}
 
+    def _get_create_joined_view_parameters(self) -> dict[str, Any]:
+        """
+        Returns additional view type specific parameters for _create_joined_view operation
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {}
+
     def _create_joined_view(
         self: ViewT,
         new_node_name: str,
@@ -534,6 +544,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 "graph": self.graph,
                 "node_name": new_node_name,
                 "columns_info": joined_columns_info,
+                **self._get_create_joined_view_parameters(),
                 **kwargs,
             },
         )
