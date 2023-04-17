@@ -232,7 +232,9 @@ class FBAutoDocProcessor(AutoDocProcessor):
             # list for future processing.
             blocks.insert(0, theRest)
 
-    def _render_parameters(self, elem: etree.Element, parameters: List[ParameterDetails]) -> None:
+    def _render_parameters(
+        self, elem: etree.Element, title: str, parameters: List[ParameterDetails]
+    ) -> None:
         content = ""
         for param in parameters:
             items_to_render = []
@@ -258,7 +260,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 f"{param_name}{param_type}", items_to_render
             )
             content += "\n"
-        self._render(elem, "Parameters", content)
+        self._render(elem, title, content)
 
     def _render(self, elem: etree.Element, title: str, content: str) -> None:
         """
@@ -297,7 +299,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
         # Render parameters
         if resource_details.parameters:
-            self._render_parameters(elem, resource_details.parameters)
+            self._render_parameters(elem, "Parameters", resource_details.parameters)
+
+        if resource_details.enum_values:
+            self._render_parameters(elem, "Possible Values", resource_details.enum_values)
 
         # Render returns:
         if resource_details.returns:
