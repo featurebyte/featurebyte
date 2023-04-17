@@ -50,8 +50,7 @@ class DimensionView(View):
     # pydantic instance variables
     dimension_id_column: str = Field(
         allow_mutation=False,
-        description="Returns the name of the column representing "
-        "the primary key of the Dimension view.",
+        description="Returns the name of the column representing the primary key of the Dimension view.",
     )
 
     @property

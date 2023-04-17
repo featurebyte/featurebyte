@@ -68,9 +68,7 @@ class EventView(View, GroupByMixin):
     )
     event_id_column: Optional[str] = Field(
         allow_mutation=False,
-        description="Returns the name of the column "
-        "representing the event key of the "
-        "Event view.",
+        description="Returns the name of the column representing the event key of the Event view.",
     )
 
     @property
