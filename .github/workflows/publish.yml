@@ -78,7 +78,7 @@ jobs:
 
       - name: Update Version in pyproject.toml
         run: |
-          sed -i -E "s|^version = \"[^\"]+\"|version = \"${{ env.PUBLISH_VERSION }}\"|g" pyproject.toml
+          sed -i -E "s|^version = \"[^\"]+\"|version = \"${{ env.DEV_VERSION }}\"|g" pyproject.toml
 
       - name: Tagging Version in git
         run: |
