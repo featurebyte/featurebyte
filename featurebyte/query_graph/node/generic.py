@@ -1024,13 +1024,8 @@ class JoinNode(BasePrunableNode):
                 f"event_suffix={ValueStr.create(self.parameters.metadata.event_suffix)})"
             )
 
-        additional_statements, var_name = self._convert_expression_to_variable(
-            var_name_expression=expression,
-            var_name_generator=var_name_generator,
-            node_output_type=NodeOutputType.FRAME,
-            node_output_category=NodeOutputCategory.VIEW,
-        )
-        statements.extend(additional_statements)
+        var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="joined_view")
+        statements.append((var_name, expression))
         return statements, var_name
 
 
@@ -1136,13 +1131,8 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             f"{var_name}.add_feature(new_column_name={new_column_name}, "
             f"feature={feature}, entity_column={entity_column})"
         )
-        additional_statements, var_name = self._convert_expression_to_variable(
-            var_name_expression=expression,
-            var_name_generator=var_name_generator,
-            node_output_type=NodeOutputType.FRAME,
-            node_output_category=NodeOutputCategory.VIEW,
-        )
-        statements.extend(additional_statements)
+        var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="joined_view")
+        statements.append((var_name, expression))
         return statements, var_name
 
 
