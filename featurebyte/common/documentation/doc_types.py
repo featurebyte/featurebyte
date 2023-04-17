@@ -158,6 +158,7 @@ class ResourceDetails(BaseModel):
     raises: Optional[List[ExceptionDetails]]
     examples: Optional[List[str]]
     see_also: Optional[str]
+    enum_values: Optional[List[ParameterDetails]]
 
     @property
     def resource(self) -> Any:

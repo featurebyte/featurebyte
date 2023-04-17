@@ -315,15 +315,18 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         else {}
     )
 
+    enum_desc = {}
+    enum_possible_values = []
     if issubclass(resource_class, Enum):
+        # Set to empty list to avoid showing parameters in the docs
         parameters_desc = {}
         parameters = []
         for item in resource_class:
             enum_name = item.value.upper()
             # param_name, param_type, param_default
             # TODO: make this a dataclass
-            parameters.append((enum_name, "", None))
-            parameters_desc[enum_name] = item.__doc__.strip()
+            enum_possible_values.append((enum_name, "", None))
+            enum_desc[enum_name] = item.__doc__.strip()
 
     return ResourceDetails(
         name=resource_name,
@@ -340,4 +343,5 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         raises=_get_raises_from_docstring(docstring.raises),
         examples=[_format_example(example) for example in docstring.examples],
         see_also=docstring.see_also.description if docstring.see_also else None,
+        enum_values=_get_param_details(enum_possible_values, enum_desc),
     )

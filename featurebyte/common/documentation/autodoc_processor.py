@@ -42,6 +42,32 @@ class ExceptionDetails(BaseModel):
     description: Optional[str]
 
 
+def _render_list_item_with_multiple_paragraphs(
+    title: Optional[str], other_paragraphs: List[str]
+) -> str:
+    """
+    Helper method to render a list item with multiple paragraphs.
+
+    Parameters
+    ----------
+    title: str
+        Title of the list item
+    other_paragraphs: List[str]
+        Other paragraphs to be rendered as part of the list item
+
+    Returns
+    -------
+    str
+        Rendered list item
+    """
+    title = title or ""
+    list_item_str = f"- **{title}**"
+    for other_para in other_paragraphs:
+        list_item_str += f"<br>\t{other_para}"
+    list_item_str += "<br><br>"
+    return list_item_str
+
+
 class FBAutoDocProcessor(AutoDocProcessor):
     """
     Customized markdown processing autodoc processor
@@ -206,6 +232,52 @@ class FBAutoDocProcessor(AutoDocProcessor):
             # list for future processing.
             blocks.insert(0, theRest)
 
+    def _render_parameters(self, elem: etree.Element, parameters: List[ParameterDetails]) -> None:
+        content = ""
+        for param in parameters:
+            items_to_render = []
+            if not param.name:
+                continue
+            param_name = param.name.replace("*", "\\*")
+            param_type = f": *{param.type}*" if param.type else ""
+            param_default = (
+                f"**default**: *{param.default}*\n"
+                if param.default and param.default != "None"
+                else ""
+            )
+            if param_default:
+                items_to_render.append(param_default)
+            formatted_description = ""
+            if param.description:
+                # ignore line breaks added to keep within line limits
+                formatted_description = re.sub(r"\n\b", " ", param.description)
+                formatted_description = formatted_description.replace("\n", "<br/>")
+            if formatted_description:
+                items_to_render.append(formatted_description)
+            content += _render_list_item_with_multiple_paragraphs(
+                f"{param_name}{param_type}", items_to_render
+            )
+            content += "\n"
+        self._render(elem, "Parameters", content)
+
+    def _render(self, elem: etree.Element, title: str, content: str) -> None:
+        """
+        Render section
+
+        Parameters
+        ----------
+        title: str
+            Section title
+        content: str
+            Section content
+        """
+        headers_ref = etree.SubElement(elem, "h2")
+        headers_ref.set("class", "autodoc-section-header")
+        headers_ref.text = title
+        content_elem = etree.SubElement(elem, "div")
+        content_elem.set("class", "autodoc-content")
+        content_elem.text = self._md.convert(content)
+
     def render_docstring(self, elem: etree.Element, resource_details: ResourceDetails) -> None:
         """
         Render docstring for an item
@@ -218,82 +290,14 @@ class FBAutoDocProcessor(AutoDocProcessor):
             Resource details
         """
 
-        def _render(title: str, content: str) -> None:
-            """
-            Render section
-
-            Parameters
-            ----------
-            title: str
-                Section title
-            content: str
-                Section content
-            """
-            headers_ref = etree.SubElement(elem, "h2")
-            headers_ref.set("class", "autodoc-section-header")
-            headers_ref.text = title
-            content_elem = etree.SubElement(elem, "div")
-            content_elem.set("class", "autodoc-content")
-            content_elem.text = self._md.convert(content)
-
-        def _render_list_item_with_multiple_paragraphs(
-            title: Optional[str], other_paragraphs: List[str]
-        ) -> str:
-            """
-            Helper method to render a list item with multiple paragraphs.
-
-            Parameters
-            ----------
-            title: str
-                Title of the list item
-            other_paragraphs: List[str]
-                Other paragraphs to be rendered as part of the list item
-
-            Returns
-            -------
-            str
-                Rendered list item
-            """
-            title = title or ""
-            list_item_str = f"- **{title}**"
-            for other_para in other_paragraphs:
-                list_item_str += f"<br>\t{other_para}"
-            list_item_str += "<br><br>"
-            return list_item_str
-
         # Render description
         content = resource_details.description_string
         if content.strip():
-            _render("Description", content)
+            self._render(elem, "Description", content)
 
         # Render parameters
         if resource_details.parameters:
-            content = ""
-            for param in resource_details.parameters:
-                items_to_render = []
-                if not param.name:
-                    continue
-                param_name = param.name.replace("*", "\\*")
-                param_type = f": *{param.type}*" if param.type else ""
-                param_default = (
-                    f"**default**: *{param.default}*\n"
-                    if param.default and param.default != "None"
-                    else ""
-                )
-                if param_default:
-                    items_to_render.append(param_default)
-                formatted_description = ""
-                if param.description:
-                    # ignore line breaks added to keep within line limits
-                    formatted_description = re.sub(r"\n\b", " ", param.description)
-                    formatted_description = formatted_description.replace("\n", "<br/>")
-                if formatted_description:
-                    items_to_render.append(formatted_description)
-                content += _render_list_item_with_multiple_paragraphs(
-                    f"{param_name}{param_type}", items_to_render
-                )
-                content += "\n"
-            _render("Parameters", content)
+            self._render_parameters(elem, resource_details.parameters)
 
         # Render returns:
         if resource_details.returns:
@@ -303,7 +307,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 bullet_point = [returns.description] if returns.description else []
                 assert return_type is not None
                 content = _render_list_item_with_multiple_paragraphs(return_type, bullet_point)
-                _render("Returns", content)
+                self._render(elem, "Returns", content)
 
         # Render raises
         if resource_details.raises:
@@ -316,16 +320,16 @@ class FBAutoDocProcessor(AutoDocProcessor):
                     for exc_type in resource_details.raises
                 ]
             )
-            _render("Raises", content)
+            self._render(elem, "Raises", content)
 
         # populate examples
         if resource_details.examples:
             content = "\n".join(resource_details.examples)
-            _render("Examples", content)
+            self._render(elem, "Examples", content)
 
         # populate see_also
         if resource_details.see_also:
-            _render("See Also", resource_details.see_also)
+            self._render(elem, "See Also", resource_details.see_also)
 
     def render_members(
         self,
