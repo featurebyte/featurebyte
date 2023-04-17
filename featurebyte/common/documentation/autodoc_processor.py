@@ -279,6 +279,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
         Parameters
         ----------
+        elem: etree.Element
+            Element to render to
         title: str
             Section title
         content: str
