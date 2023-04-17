@@ -2,15 +2,15 @@
 Unit test for DatabricksSession
 """
 import os
-import textwrap
 from unittest import mock
-from unittest.mock import MagicMock, call
+from unittest.mock import call
 
 import pandas as pd
 import pytest
 
 from featurebyte.enum import DBVarType
-from featurebyte.session.databricks import DatabricksSchemaInitializer, DatabricksSession
+from featurebyte.session.base_spark import BaseSparkSchemaInitializer
+from featurebyte.session.databricks import DatabricksSession
 
 
 @pytest.fixture
@@ -227,7 +227,7 @@ def test_databricks_sql_connector_not_available(databricks_session_dict):
 
 def test_databricks_schema_initializer__sql_objects(patched_databricks_session_cls):
     session = patched_databricks_session_cls()
-    sql_objects = DatabricksSchemaInitializer(session).get_sql_objects()
+    sql_objects = BaseSparkSchemaInitializer(session).get_sql_objects()
     for item in sql_objects:
         item["filename"] = os.path.basename(item["filename"])
         item["type"] = item["type"].value
@@ -261,7 +261,7 @@ def test_databricks_schema_initializer__sql_objects(patched_databricks_session_c
 async def test_databricks_schema_initializer__commands(patched_databricks_session_cls):
     """Test Databricks schema initializer dispatches the correct queries"""
     session = patched_databricks_session_cls()
-    initializer = DatabricksSchemaInitializer(session)
+    initializer = BaseSparkSchemaInitializer(session)
 
     await initializer.list_functions()
     assert session.execute_query.call_args_list == [call("SHOW USER FUNCTIONS IN featurebyte")]
