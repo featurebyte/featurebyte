@@ -1,0 +1,28 @@
+# Sends message to
+name: notify
+
+
+on:
+  pull_request:
+    types: [ opened, labeled ]
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+env: {}
+
+jobs:
+  slack:
+    runs-on: ubuntu-latest
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'breaking') }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Get Title
+        run: echo '${{ github.event.pull_request.title }}'
+
+      - name: Get json
+        run: echo '${{ toJSON(github) }}'

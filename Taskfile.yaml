@@ -54,9 +54,9 @@ tasks:
       - hive-udf/**/*
     deps:
       - task: lint-java
-      - task: test-java
     cmds:
       - cd hive-udf && ./gradlew shadowJar
+      - task: test-java
       - rm -f featurebyte/sql/spark/*.jar
       - rm -f featurebyte/sql/databricks/*.jar
       - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
