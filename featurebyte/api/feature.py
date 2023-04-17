@@ -1,9 +1,10 @@
 """
 Feature and FeatureList classes
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 import time
 from http import HTTPStatus
@@ -124,6 +125,50 @@ class Feature(
                 feature_store_id = TabularSource(**tabular_source).feature_store_id
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
+
+    def info(  # pylint: disable=useless-parent-delegation
+        self, verbose: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of an Feature object. The dictionary contains
+        the following keys:
+
+        - `created_at`: The timestamp indicating when the Feature object was created.
+        - `name`: The name of the Feature object.
+        - `updated_at`: The timestamp indicating when the Feature object was last updated.
+        - `catalog_name`: The catalog name of the Feature object.
+        - `primary_entity`: Details about the primary entity of the Feature object.
+        - `entities`: List of entities involved in the computation of the Feature object.
+        - `primary_table`: Details about the primary table of the Feature object.
+        - `tables`: List of tables involved in the computation of the Feature object.
+        - `default_version_mode`: Indicates whether the default version mode is 'auto' or 'manual'.
+        - `version_count`: The number of versions with the same feature namespace.
+        - `dtype`: the data type of the Feature object.
+        - `default_feature_id`: The unique identifier of the default version with the same feature namespace.
+            This is the version returned by the catalog when only the object's feature namespace is used.
+        - `metadata`: Summary of key operations.
+
+        Some information is provided for both the Feature object and the default version with the same
+        feature namespace:
+
+        - `version`: The version name.
+        - `readiness`: The readiness state.
+        - `table_feature_job_setting`: Details of the Feature Job setting of tables used by the feature.
+        - `table_cleaning_operation`: Details of cleaning operations of table columns used by the feature.
+
+        This method is only available for Feature objects that are saved in the catalog.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+        """
+        return super().info(verbose)
 
     @classmethod
     def get(cls, name: str, version: Optional[str] = None) -> Feature:
@@ -819,13 +864,12 @@ class Feature(
         """
         Updates readiness of a feature version.
 
-        A Feature version can have one of five readiness levels:
+        A Feature version can have one of four readiness levels:
 
         1. PRODUCTION_READY: Assigned to Feature versions that are ready for deployment in production environments.
         2. PUBLIC_DRAFT: For Feature versions shared for feedback purposes.
         3. DRAFT: For Feature versions in the prototype stage.
-        4. QUARANTINE: For Feature versions that had recently encountered issues and should be utilized cautiously.
-        5. DEPRECATED: For feature versions not advised for use in either training or online serving.
+        4. DEPRECATED: For feature versions not advised for use in either training or online serving.
 
         When a new feature version is created, its status is DRAFT.
         Only a Draft feature version can be deleted. Feature versions with other status cannot be reverted to DRAFT.

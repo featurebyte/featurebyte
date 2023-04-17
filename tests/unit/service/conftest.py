@@ -40,6 +40,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.table import TableService
 from featurebyte.service.table_columns_info import TableColumnsInfoService
 from featurebyte.service.version import VersionService
 
@@ -89,6 +90,12 @@ def semantic_service_fixture(user, persistent):
 def context_service_fixture(user, persistent):
     """Context service"""
     return ContextService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+
+
+@pytest.fixture(name="table_service")
+def table_service_fixture(user, persistent):
+    """Table service"""
+    return TableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="event_table_service")

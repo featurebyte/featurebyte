@@ -163,6 +163,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
             [TABLE, INFO, "Table.catalog_id"],
             doc_path_override="api.base_table.TableApiObject.catalog_id.md",
         ),
+        DocLayoutItem([TABLE, INFO, "EventTable.default_feature_job_setting"]),
         DocLayoutItem([TABLE, INFO, "ItemTable.default_feature_job_setting"]),
         DocLayoutItem(
             [TABLE, LINEAGE, "Table.entity_ids"],
@@ -221,16 +222,15 @@ def _get_entity_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([ENTITY]),
-        DocLayoutItem([ENTITY, CLASS_METHODS, "Entity.get_or_create"]),
         DocLayoutItem([ENTITY, INFO, "Entity.created_at"]),
         DocLayoutItem([ENTITY, INFO, "Entity.info"]),
         DocLayoutItem([ENTITY, INFO, "Entity.name"]),
         DocLayoutItem([ENTITY, INFO, "Entity.name_history"]),
         DocLayoutItem([ENTITY, INFO, "Entity.parents"]),
         DocLayoutItem([ENTITY, INFO, "Entity.serving_names"]),
-        DocLayoutItem([ENTITY, INFO, "Entity.update_name"]),
         DocLayoutItem([ENTITY, INFO, "Entity.updated_at"]),
         DocLayoutItem([ENTITY, LINEAGE, "Entity.id"]),
+        DocLayoutItem([ENTITY, MANAGE, "Entity.update_name"]),
     ]
 
 
@@ -256,6 +256,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, INFO, "Feature.updated_at"]),
         DocLayoutItem([FEATURE, INFO, "Feature.is_datetime"]),
         DocLayoutItem([FEATURE, INFO, "Feature.is_numeric"]),
+        DocLayoutItem([FEATURE, INFO, "Feature.is_default"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.entity_ids"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.primary_entity"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_list_ids"]),
@@ -352,6 +353,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.name"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.saved"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.updated_at"]),
+        DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.is_default"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.catalog_id"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.feature_ids"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.id"]),
@@ -407,10 +409,10 @@ def _get_data_source_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([DATA_SOURCE]),
-        DocLayoutItem([DATA_SOURCE, GET, "DataSource.get_table"]),
+        DocLayoutItem([DATA_SOURCE, GET, "DataSource.get_source_table"]),
         DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_databases"]),
         DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_schemas"]),
-        DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_tables"]),
+        DocLayoutItem([DATA_SOURCE, LIST, "DataSource.list_source_tables"]),
         DocLayoutItem([DATA_SOURCE, INFO, "DataSource.type"]),
     ]
 
@@ -597,9 +599,9 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_by_id"]),
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.create"]),
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_or_create"]),
-        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.created_at"]),
-        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_feature_by_id"]),
+        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.list"]),
         DocLayoutItem([CATALOG, CREATE, "Catalog.create_entity"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_feature_by_id"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_view"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_table"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_table_by_id"]),
@@ -617,7 +619,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, LIST, "Catalog.list_entities"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_features"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_tables"]),
-        DocLayoutItem([CATALOG, LIST, "Catalog.list"]),
+        DocLayoutItem([CATALOG, INFO, "Catalog.created_at"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.info"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.name"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.updated_at"]),
@@ -702,7 +704,6 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "TableFeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.info"]),
-        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.get"]),
         DocLayoutItem(
             [UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.display_report"]
         ),

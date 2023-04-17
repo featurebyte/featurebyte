@@ -70,7 +70,7 @@ def input_details_fixture(request):
             "feature_store_details": {
                 "type": "databricks",
                 "details": {
-                    "server_hostname": "databricks-hostname",
+                    "host": "databricks-hostname",
                     "http_path": "databricks-http-path",
                     "featurebyte_schema": "public",
                     "featurebyte_catalog": "hive_metastore",

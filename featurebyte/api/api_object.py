@@ -693,51 +693,6 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ------
         RecordRetrievalException
             When the object cannot be found, or we have received an unexpected response status code.
-
-        Examples
-        --------
-        Most objects can have their info accessed in a similar manner. The example below is not exhaustive.
-
-        Get info of a Table object.
-
-        >>> catalog = fb.Catalog.get_or_create("grocery")  # doctest: +SKIP
-        >>> table = catalog.get_table("INVOICEITEMS")  # doctest: +SKIP
-        >>> table.info()  # doctest: +SKIP
-        {
-          'name': 'INVOICEITEMS',
-          'status': 'DRAFT',
-          'catalog_name': 'grocery',
-          'record_creation_timestamp_column': None,
-          'table_details': {
-            'database_name': 'spark_catalog',
-            'schema_name': 'GROCERY',
-            'table_name': 'INVOICEITEMS'
-          },
-          'entities': [
-            {
-              'name': 'groceryproduct',
-              'serving_names': [
-                'GROCERYPRODUCTGUID'
-              ],
-              'catalog_name': 'grocery'
-            },
-            {
-              'name': 'groceryinvoice',
-              'serving_names': [
-                'GROCERYINVOICEGUID'
-              ],
-              'catalog_name': 'grocery'
-            }
-          ],
-          'semantics': [
-            'item_id'
-          ],
-          'column_count': 8,
-          'columns_info': None,
-          'event_id_column': 'GroceryInvoiceGuid',
-          'item_id_column': 'GroceryInvoiceItemGuid',
-          'event_table_name': 'GROCERYINVOICE'
-        }
         """
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})

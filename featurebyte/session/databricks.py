@@ -4,12 +4,22 @@ DatabricksSession class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, OrderedDict
+from typing import Any, OrderedDict, cast
 
 import collections
+import json
 
 import pandas as pd
 from pydantic import Field
+
+from featurebyte import AccessTokenCredential
+from featurebyte.enum import DBVarType, SourceType
+from featurebyte.session.base import BaseSchemaInitializer
+from featurebyte.session.base_spark import (
+    BaseSparkMetadataSchemaInitializer,
+    BaseSparkSchemaInitializer,
+    BaseSparkSession,
+)
 
 try:
     from databricks import sql as databricks_sql
@@ -19,24 +29,14 @@ try:
 except ImportError:
     HAS_DATABRICKS_SQL_CONNECTOR = False
 
-from featurebyte import AccessTokenCredential
-from featurebyte.enum import DBVarType, SourceType
-from featurebyte.logger import logger
-from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
-from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 
-
-class DatabricksSession(BaseSession):
+class DatabricksSession(BaseSparkSession):
     """
     Databricks session class
     """
 
     _no_schema_error = ServerOperationError
 
-    server_hostname: str
-    http_path: str
-    featurebyte_catalog: str
-    featurebyte_schema: str
     source_type: SourceType = Field(SourceType.DATABRICKS, const=True)
     database_credential: AccessTokenCredential
 
@@ -47,7 +47,7 @@ class DatabricksSession(BaseSession):
             raise RuntimeError("databricks-sql-connector is not available")
 
         self._connection = databricks_sql.connect(
-            server_hostname=data["server_hostname"],
+            server_hostname=data["host"],
             http_path=data["http_path"],
             access_token=self.database_credential.access_token,
             catalog=self.featurebyte_catalog,
@@ -56,14 +56,6 @@ class DatabricksSession(BaseSession):
 
     def initializer(self) -> BaseSchemaInitializer:
         return DatabricksSchemaInitializer(self)
-
-    @property
-    def schema_name(self) -> str:
-        return self.featurebyte_schema
-
-    @property
-    def database_name(self) -> str:
-        return self.featurebyte_catalog
 
     @classmethod
     def is_threadsafe(cls) -> bool:
@@ -119,54 +111,34 @@ class DatabricksSession(BaseSession):
                 )
         return column_name_type_map
 
-    @staticmethod
-    def _convert_to_internal_variable_type(databricks_type: str) -> DBVarType:
-        if databricks_type.endswith("INT"):
-            # BIGINT, INT, SMALLINT, TINYINT
-            return DBVarType.INT
-        mapping = {
-            "BINARY": DBVarType.BINARY,
-            "BOOLEAN": DBVarType.BOOL,
-            "DATE": DBVarType.DATE,
-            "DECIMAL": DBVarType.FLOAT,
-            "DOUBLE": DBVarType.FLOAT,
-            "FLOAT": DBVarType.FLOAT,
-            "INTERVAL": DBVarType.TIMEDELTA,
-            "VOID": DBVarType.VOID,
-            "TIMESTAMP": DBVarType.TIMESTAMP,
-            "ARRAY": DBVarType.ARRAY,
-            "MAP": DBVarType.MAP,
-            "STRUCT": DBVarType.STRUCT,
-            "STRING": DBVarType.VARCHAR,
-        }
-        if databricks_type not in mapping:
-            logger.warning(f"Databricks: Not supported data type '{databricks_type}'")
-        return mapping.get(databricks_type, DBVarType.UNKNOWN)
-
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
-        arrow_table = cursor.fetchall_arrow()
-        return arrow_table.to_pandas()
+        schema = None
+        if cursor.description:
+            schema = {row[0]: row[1] for row in cursor.description}
 
-    async def register_table(
-        self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
-    ) -> None:
-        date_cols = dataframe.select_dtypes(include=["datetime64"]).columns.tolist()
-        table_expr = construct_dataframe_sql_expr(dataframe, date_cols).sql(
-            pretty=True, dialect="spark"
-        )
-        if temporary:
-            create_command = "CREATE OR REPLACE TEMPORARY VIEW"
-        else:
-            create_command = "CREATE OR REPLACE VIEW"
-        query = f"{create_command} {table_name} AS {table_expr}"
-        await self.execute_query(query)
+        if schema:
+            arrow_table = cursor.fetchall_arrow()
+            dataframe = arrow_table.to_pandas()
+            for col_name in schema:
+                # handle map type. Databricks returns map as list of tuples
+                # https://docs.databricks.com/sql/language-manual/sql-ref-datatypes.html#map
+                # which is not supported by pyarrow. Below converts the tuple list to json string
+                if schema[col_name].upper() == "MAP":
+                    dataframe[col_name] = dataframe[col_name].apply(
+                        lambda x: json.dumps(dict(x)) if x is not None else None
+                    )
+            return dataframe
+
+        return None
 
 
-class DatabricksSchemaInitializer(BaseSchemaInitializer):
+class DatabricksSchemaInitializer(BaseSparkSchemaInitializer):
     """Databricks schema initializer class"""
 
-    async def drop_all_objects_in_working_schema(self) -> None:
-        raise NotImplementedError()
+    def __init__(self, session: DatabricksSession):
+        super().__init__(session=session)
+        self.session = cast(DatabricksSession, self.session)
+        self.metadata_schema_initializer = BaseSparkMetadataSchemaInitializer(session)
 
     @property
     def sql_directory_name(self) -> str:
@@ -175,24 +147,3 @@ class DatabricksSchemaInitializer(BaseSchemaInitializer):
     @property
     def current_working_schema_version(self) -> int:
         return 1
-
-    async def create_schema(self) -> None:
-        create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
-        await self.session.execute_query(create_schema_query)
-
-    async def list_functions(self) -> list[str]:
-        def _function_name_to_identifier(function_name: str) -> str:
-            # function names returned from SHOW FUNCTIONS are three part fully qualified, but
-            # identifiers are based on function names only
-            return function_name.rsplit(".", 1)[1]
-
-        df_result = await self.session.execute_query(
-            f"SHOW USER FUNCTIONS IN {self.session.schema_name}"
-        )
-        out = []
-        if df_result is not None:
-            out.extend(df_result["function"].apply(_function_name_to_identifier))
-        return out
-
-    async def list_procedures(self) -> list[str]:
-        return []

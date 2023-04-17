@@ -29,6 +29,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.table import TableService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 from featurebyte.service.version import VersionService
 
@@ -44,6 +45,7 @@ class FeatureReadinessService(BaseService):
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
+        table_service: TableService,
         feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,
         feature_list_service: FeatureListService,
@@ -51,11 +53,16 @@ class FeatureReadinessService(BaseService):
         version_service: VersionService,
     ):
         super().__init__(user, persistent, catalog_id)
+        self.table_service = table_service
         self.feature_service = feature_service
         self.feature_namespace_service = feature_namespace_service
         self.feature_list_service = feature_list_service
         self.feature_list_namespace_service = feature_list_namespace_service
-        self.production_ready_validator = ProductionReadyValidator(version_service, feature_service)
+        self.production_ready_validator = ProductionReadyValidator(
+            table_service=table_service,
+            feature_service=feature_service,
+            version_service=version_service,
+        )
 
     async def _get_default_feature_list(
         self, feature_list_ids: Sequence[ObjectId]
@@ -290,9 +297,7 @@ class FeatureReadinessService(BaseService):
         if target_readiness == FeatureReadiness.PRODUCTION_READY:
             assert document.name is not None
             await self.production_ready_validator.validate(
-                promoted_feature_name=document.name,
-                promoted_feature_id=document.id,
-                promoted_feature_graph=document.graph,
+                promoted_feature=document,
                 ignore_guardrails=ignore_guardrails,
             )
 

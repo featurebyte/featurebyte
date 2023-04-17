@@ -27,6 +27,7 @@ import pymongo
 import pytest
 import pytest_asyncio
 import yaml
+from botocore.exceptions import ClientError
 from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -44,6 +45,7 @@ from featurebyte.models.base import User
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
+    S3StorageCredential,
     UsernamePasswordCredential,
 )
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
@@ -54,6 +56,7 @@ from featurebyte.persistent.mongo import MongoDB
 from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.session.databricks import DatabricksSchemaInitializer
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
 from featurebyte.worker.task.base import TASK_MAP
@@ -157,10 +160,14 @@ def credentials_mapping_fixture():
             feature_store_id=ObjectId(),
         ),
         "databricks_featurestore": CredentialModel(
-            name="snowflake_featurestore",
+            name="databricks_featurestore",
             feature_store_id=ObjectId(),
             database_credential=AccessTokenCredential(
                 access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
+            ),
+            storage_credential=S3StorageCredential(
+                s3_access_key_id=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_ID", ""),
+                s3_secret_access_key=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_SECRET", ""),
             ),
         ),
         "spark_featurestore": CredentialModel(
@@ -322,11 +329,15 @@ def feature_store_details_fixture(source_type, sqlite_filename):
     if source_type == "databricks":
         schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
         temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+        storage_url = os.getenv("DATABRICKS_STORAGE_URL")
         return DatabricksDetails(
-            server_hostname=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
+            host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
             featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
             featurebyte_schema=temp_schema_name,
+            storage_type=StorageType.S3,
+            storage_url=f"{storage_url}/{temp_schema_name}",
+            storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "spark":
@@ -739,16 +750,6 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
 
     await dataset_registration_helper.register_datasets(session)
 
-    if source_type == "databricks":
-        await session.execute_query(
-            """
-            CREATE TABLE TEST_TABLE
-            USING CSV
-            OPTIONS (header "true", inferSchema "true")
-            LOCATION 'dbfs:/FileStore/tables/transactions_data_upper_case_2022_10_17.csv';
-            """
-        )
-
     yield session
 
     if source_type == "snowflake":
@@ -756,6 +757,12 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
 
     if source_type == "databricks":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
+        databricks_initializer = DatabricksSchemaInitializer(session)
+        udf_jar_file_name = os.path.basename(databricks_initializer.udf_jar_local_path)
+        try:
+            session._storage.delete_object(udf_jar_file_name)
+        except ClientError as exc:
+            logger.warning(f"Failed to delete UDF jar file: {exc}")
 
     if source_type == "spark":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
@@ -825,39 +832,6 @@ async def create_spark_tile_specs(session):
     yield create_generic_tile_spec()
 
 
-@asynccontextmanager
-async def create_databricks_tile_spec(session):
-    """
-    Pytest Fixture for TileSnowflake instance
-    """
-    assert session.source_type == "databricks"
-    col_names_list = [InternalName.TILE_START_DATE, "PRODUCT_ACTION", "CUST_ID", "VALUE"]
-    col_names = ",".join(col_names_list)
-    table_name = "default.TEST_TILE_TABLE_2"
-    start = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
-    end = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
-
-    tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
-    tile_id = "tile_id1"
-
-    tile_spec = TileSpec(
-        time_modulo_frequency_second=183,
-        blind_spot_second=3,
-        frequency_minute=5,
-        tile_sql=tile_sql,
-        column_names=col_names_list,
-        entity_column_names=["PRODUCT_ACTION", "CUST_ID"],
-        value_column_names=["VALUE"],
-        tile_id="tile_id1",
-        aggregation_id="agg_id1",
-    )
-
-    try:
-        yield tile_spec
-    finally:
-        await session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
-
-
 @pytest_asyncio.fixture(name="tile_spec")
 async def tile_spec_fixture(session):
     """
@@ -869,7 +843,7 @@ async def tile_spec_fixture(session):
     if session.source_type == "spark":
         creator = create_spark_tile_specs
     elif session.source_type == "databricks":
-        creator = create_databricks_tile_spec
+        creator = create_spark_tile_specs
 
     assert creator is not None, f"tile_spec fixture does not support {session.source_type}"
 
@@ -1059,7 +1033,7 @@ def create_transactions_event_table_from_data_source(
     """
     Helper function to create an EventTable with the given feature store
     """
-    available_tables = data_source.list_tables(
+    available_tables = data_source.list_source_tables(
         database_name=database_name,
         schema_name=schema_name,
     )
@@ -1067,7 +1041,7 @@ def create_transactions_event_table_from_data_source(
     available_tables = [x.upper() for x in available_tables]
     assert table_name.upper() in available_tables
 
-    database_table = data_source.get_table(
+    database_table = data_source.get_source_table(
         database_name=database_name,
         schema_name=schema_name,
         table_name=table_name,
@@ -1159,7 +1133,7 @@ def item_table_fixture(
     """
     Fixture for an ItemTable in integration tests
     """
-    database_table = data_source.get_table(
+    database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="ITEM_DATA_TABLE",
@@ -1194,7 +1168,7 @@ def dimension_table_fixture(
     """
     Fixture for a DimensionTable in integration tests
     """
-    database_table = data_source.get_table(
+    database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name=dimension_data_table_name,
@@ -1216,7 +1190,7 @@ def scd_data_tabular_source_fixture(
     """
     Fixture for scd table tabular source
     """
-    database_table = data_source.get_table(
+    database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name=scd_data_table_name,

@@ -1,6 +1,7 @@
 """
 View class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import (
@@ -17,7 +18,9 @@ from typing import (
 )
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 
+import pandas as pd
 from pydantic import PrivateAttr
 from typeguard import typechecked
 
@@ -80,6 +83,58 @@ class ViewColumn(Series, SampleMixin):
         if not self._parent:
             return None
         return self._parent.timestamp_column
+
+    def sample(  # pylint: disable=useless-parent-delegation
+        self,
+        size: int = 10,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Returns a Series that contains a random selection of rows of the view column based on a specified time range,
+        size, and seed for sampling control. The materialization process occurs after any cleaning operations that
+        were defined either at the table level or during the view's creation.
+
+        It's important to keep in mind that views originating from tables in a Snowflake data warehouse do not allow
+        the use of a seed.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Sampled rows of the data.
+
+        Examples
+        --------
+        Sample 3 rows of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].sample(3)
+          ProductGroup
+        0       Épices
+        1         Chat
+        2        Pains
+
+        See Also
+        --------
+        - [ViewColumn.preview](/reference/featurebyte.api.view.ViewColumn.preview/):
+          Retrieve a preview of a ViewColumn.
+        - [ViewColumn.sample](/reference/featurebyte.api.view.ViewColumn.sample/):
+          Retrieve a sample of a ViewColumn.
+        """
+        return super().sample(size, seed, from_timestamp, to_timestamp, **kwargs)
 
     @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
@@ -240,6 +295,58 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     def __str__(self) -> str:
         return repr(self)
+
+    def sample(  # pylint: disable=useless-parent-delegation
+        self,
+        size: int = 10,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains a random selection of rows of the view based on a specified time range,
+        size, and seed for sampling control. The materialization process occurs after any cleaning operations that
+        were defined either at the table level or during the view's creation.
+
+        It's important to keep in mind that views originating from tables in a Snowflake data warehouse do not allow
+        the use of a seed.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Sampled rows of the data.
+
+        Examples
+        --------
+        Sample rows of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").sample(3)
+                             GroceryProductGuid ProductGroup
+        0  e890c5cb-689b-4caf-8e49-6b97bb9420c0       Épices
+        1  5720e4df-2996-4443-a1bc-3d896bf98140         Chat
+        2  96fc4d80-8cb0-4f1b-af01-e71ad7e7104a        Pains
+
+        See Also
+        --------
+        - [View.preview](/reference/featurebyte.api.view.View.preview/):
+          Retrieve a preview of a view.
+        - [View.sample](/reference/featurebyte.api.view.View.sample/):
+          Retrieve a sample of a view.
+        """
+        return super().sample(size, seed, from_timestamp, to_timestamp, **kwargs)
 
     @property
     def raw(self) -> FrozenFrame:

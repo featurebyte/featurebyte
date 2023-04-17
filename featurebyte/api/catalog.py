@@ -65,6 +65,36 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         data = CatalogCreate(**self.json_dict())
         return data.json_dict()
 
+    def info(  # pylint: disable=useless-parent-delegation
+        self, verbose: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of a Catalog object. The dictionary includes
+        the following keys:
+
+        - `name`: The name of the Catalog object.
+        - `created_at`: The timestamp indicating when the Catalog object was created.
+        - `updated_at`: The timestamp indicating when the Catalog object was last updated.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        Get info of a catalog object
+
+        >>> catalog = fb.Catalog.get_or_create("grocery")  # doctest: +SKIP
+        >>> catalog.info()  # doctest: +SKIP
+        """
+        return super().info(verbose)
+
     @classmethod
     def activate(cls, name: str) -> Catalog:
         """
