@@ -73,8 +73,7 @@ class ItemView(View, GroupByMixin):
         event_suffix: Optional[str] = None,
     ) -> ItemView:
         """
-        Joins additional attributes from the related EventTable. This operation is done in-place and does not return a
-        new ItemView.
+        Joins additional attributes from the related EventTable. This operation returns a new ItemView object.
 
         Note that the event timestamp and event attributes representing entities in the related Event table are
         already automatically added to the ItemView.
