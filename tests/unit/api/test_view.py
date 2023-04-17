@@ -338,19 +338,21 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     assert other_view.columns_info == [col_info_c, col_info_d, col_info_e]
 
     # do the join
-    current_view.join(other_view, on=col_info_a.name, how=join_type_param, rsuffix="suffix")
+    joined_view = current_view.join(
+        other_view, on=col_info_a.name, how=join_type_param, rsuffix="suffix"
+    )
 
     # assert updated view params
-    assert current_view.columns_info == [
+    assert joined_view.columns_info == [
         col_info_a,
         col_info_b,
         ColumnInfo(name="colDsuffix", dtype=DBVarType.INT),
         ColumnInfo(name="colEsuffix", dtype=DBVarType.INT),
     ]
-    assert current_view.node_name == "join_1"
+    assert joined_view.node_name == "join_1"
 
     # assert graph node
-    view_dict = current_view.dict()
+    view_dict = joined_view.dict()
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict == {
         "name": "join_1",

@@ -701,12 +701,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     @typechecked
     def join(  # pylint: disable=too-many-locals
-        self,
+        self: ViewT,
         other_view: View,
         on: Optional[str] = None,  # pylint: disable=invalid-name
         how: Literal["left", "inner"] = "left",
         rsuffix: str = "",
-    ) -> None:
+    ) -> ViewT:
         """
         Joins the current view with another view. The calling View can be of any type with the exception that columns
         from a SCDView can’t be added to a DimensionView or a SCDView.
@@ -741,6 +741,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         rsuffix: str
             Argument is used if the two views have overlapping column names and disambiguates such column names after
             join. The default rsuffix is an empty string - ''.
+
+        Returns
+        -------
+        ViewT
+            The joined view which has the same type as this view.
 
         Examples
         --------
@@ -792,8 +797,15 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             self.columns_info, append_rsuffix_to_column_info(filtered_column_infos, rsuffix)
         )
 
-        # Update metadata
-        self._update_metadata(node.name, joined_columns_info)
+        return type(self)(
+            feature_store=self.feature_store,
+            **{
+                **self.json_dict(exclude={"feature_store": True}),
+                "graph": self.graph,
+                "node_name": node.name,
+                "columns_info": joined_columns_info,
+            },
+        )
 
     @staticmethod
     def _validate_offset(offset: Optional[str]) -> None:
