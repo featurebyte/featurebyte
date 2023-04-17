@@ -69,6 +69,46 @@ def _render_list_item_with_multiple_paragraphs(
     return list_item_str
 
 
+def _get_parameters_content(parameters: List[ParameterDetails]) -> str:
+    """
+    Helper method to get the content for parameters.
+
+    Parameters
+    ----------
+    parameters: List[ParameterDetails]
+        List of parameter details
+
+    Returns
+    -------
+    str
+        Content for parameters
+    """
+    content = ""
+    for param in parameters:
+        items_to_render = []
+        if not param.name:
+            continue
+        param_name = param.name.replace("*", "\\*")
+        param_type = f": *{param.type}*" if param.type else ""
+        param_default = (
+            f"**default**: *{param.default}*\n" if param.default and param.default != "None" else ""
+        )
+        if param_default:
+            items_to_render.append(param_default)
+        formatted_description = ""
+        if param.description:
+            # ignore line breaks added to keep within line limits
+            formatted_description = re.sub(r"\n\b", " ", param.description)
+            formatted_description = formatted_description.replace("\n", "<br/>")
+        if formatted_description:
+            items_to_render.append(formatted_description)
+        content += _render_list_item_with_multiple_paragraphs(
+            f"{param_name}{param_type}", items_to_render
+        )
+        content += "\n"
+    return content
+
+
 class FBAutoDocProcessor(AutoDocProcessor):
     """
     Customized markdown processing autodoc processor
@@ -233,36 +273,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
             # list for future processing.
             blocks.insert(0, theRest)
 
-    def _render_parameters(
-        self, elem: etree.Element, title: str, parameters: List[ParameterDetails]
-    ) -> None:
-        content = ""
-        for param in parameters:
-            items_to_render = []
-            if not param.name:
-                continue
-            param_name = param.name.replace("*", "\\*")
-            param_type = f": *{param.type}*" if param.type else ""
-            param_default = (
-                f"**default**: *{param.default}*\n"
-                if param.default and param.default != "None"
-                else ""
-            )
-            if param_default:
-                items_to_render.append(param_default)
-            formatted_description = ""
-            if param.description:
-                # ignore line breaks added to keep within line limits
-                formatted_description = re.sub(r"\n\b", " ", param.description)
-                formatted_description = formatted_description.replace("\n", "<br/>")
-            if formatted_description:
-                items_to_render.append(formatted_description)
-            content += _render_list_item_with_multiple_paragraphs(
-                f"{param_name}{param_type}", items_to_render
-            )
-            content += "\n"
-        self._render(elem, title, content)
-
     def _render(self, elem: etree.Element, title: str, content: str) -> None:
         """
         Render section
@@ -300,10 +310,12 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
         # Render parameters
         if resource_details.parameters:
-            self._render_parameters(elem, "Parameters", resource_details.parameters)
+            self._render(elem, "Parameters", _get_parameters_content(resource_details.parameters))
 
         if resource_details.enum_values:
-            self._render_parameters(elem, "Possible Values", resource_details.enum_values)
+            self._render(
+                elem, "Possible Values", _get_parameters_content(resource_details.enum_values)
+            )
 
         # Render returns:
         if resource_details.returns:
