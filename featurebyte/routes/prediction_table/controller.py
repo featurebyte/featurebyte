@@ -31,6 +31,11 @@ class PredictionTableController(
         """
         Create PredictionTable by submitting an async prediction request task
 
+        Parameters
+        ----------
+        data: PredictionTableCreate
+            PredictionTable creation request parameters
+
         Returns
         -------
         Task
