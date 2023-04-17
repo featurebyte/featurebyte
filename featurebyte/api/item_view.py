@@ -86,6 +86,11 @@ class ItemView(View, GroupByMixin):
         event_suffix : Optional[str]
             A suffix to append on to the columns from the EventTable.
 
+        Returns
+        -------
+        ItemView
+            The ItemView object with the joined columns from the EventTable.
+
         Examples
         --------
         Join columns into an ItemView.
