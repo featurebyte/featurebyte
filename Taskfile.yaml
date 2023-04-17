@@ -58,9 +58,7 @@ tasks:
       - cd hive-udf && ./gradlew shadowJar
       - task: test-java
       - rm -f featurebyte/sql/spark/*.jar
-      - rm -f featurebyte/sql/databricks/*.jar
       - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
-      - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/databricks/
 
   format:
     desc: "Format the code"

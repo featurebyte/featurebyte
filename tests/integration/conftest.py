@@ -56,7 +56,7 @@ from featurebyte.persistent.mongo import MongoDB
 from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.session.databricks import DatabricksSchemaInitializer
+from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
 from featurebyte.worker.task.base import TASK_MAP
@@ -757,7 +757,7 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
 
     if source_type == "databricks":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
-        databricks_initializer = DatabricksSchemaInitializer(session)
+        databricks_initializer = BaseSparkSchemaInitializer(session)
         udf_jar_file_name = os.path.basename(databricks_initializer.udf_jar_local_path)
         try:
             session._storage.delete_object(udf_jar_file_name)
