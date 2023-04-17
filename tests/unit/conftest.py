@@ -56,6 +56,7 @@ from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
@@ -167,7 +168,8 @@ def mock_snowflake_execute_query(snowflake_connector):
     """
     _ = snowflake_connector
 
-    def side_effect(query):
+    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
+        _ = timeout
         query_map = {
             "SHOW DATABASES": [{"name": "sf_database"}],
             'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],

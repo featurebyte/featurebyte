@@ -146,7 +146,7 @@ class BaseSparkSession(BaseSession, ABC):
             create_command = "CREATE OR REPLACE TEMPORARY VIEW"
         else:
             create_command = "CREATE OR REPLACE VIEW"
-        await self.execute_query(f"{create_command} `{table_name}` AS {query}")
+        await self.execute_query_long_running(f"{create_command} `{table_name}` AS {query}")
 
     async def register_table(
         self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True

@@ -424,7 +424,7 @@ async def get_historical_features(
         create_table_as(output_table_details, sql_expr),
         source_type=session.source_type,
     )
-    await session.execute_query(query)
+    await session.execute_query_long_running(query)
     logger.debug(f"get_historical_features in total took {time.time() - tic_:.2f}s")
 
     return None

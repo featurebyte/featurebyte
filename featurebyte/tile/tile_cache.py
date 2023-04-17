@@ -427,7 +427,7 @@ class TileCache:
         tile_cache_validity_sql = (
             select(*validity_exprs).from_(tile_cache_working_table_name)
         ).sql(pretty=True)
-        df_validity = await self.session.execute_query(tile_cache_validity_sql)
+        df_validity = await self.session.execute_query_long_running(tile_cache_validity_sql)
 
         # Result should only have one row
         assert df_validity is not None
