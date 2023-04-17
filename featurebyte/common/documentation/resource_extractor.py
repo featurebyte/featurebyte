@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, get_type_hints
 
 import inspect
 import re
+from dataclasses import dataclass
 from enum import Enum
 
 from docstring_parser import parse
@@ -26,9 +27,17 @@ from featurebyte.common.documentation.formatters import format_literal, format_p
 from featurebyte.common.documentation.resource_util import import_resource
 
 
+@dataclass
+class RawParameterDetails:
+
+    name: str
+    param_type: Any
+    param_default: Any
+
+
 def get_params(
     signature: inspect.Signature, type_hints: dict[str, Any]
-) -> List[tuple[str, Any, Any]]:
+) -> List[RawParameterDetails]:
     """
     Extract parameter details from signature and type hints
 
@@ -44,7 +53,7 @@ def get_params(
     List[tuple[str, Any, Any]]
         List of parameter name, type and default value
     """
-    params = []
+    params: List[RawParameterDetails] = []
     render_pos_only_separator = True
     render_kw_only_separator = True
 
@@ -71,16 +80,18 @@ def get_params(
         elif parameter.kind is parameter.POSITIONAL_ONLY:
             if render_pos_only_separator:
                 render_pos_only_separator = False
-                params.append(("/", None, None))
+                params.append(RawParameterDetails("/", None, None))
         elif parameter.kind is parameter.KEYWORD_ONLY:
             if render_kw_only_separator:
                 render_kw_only_separator = False
-                params.append(("*", None, None))
-        params.append((value, type_hints.get(parameter.name, Undefined), default))
+                params.append(RawParameterDetails("*", None, None))
+        params.append(
+            RawParameterDetails(value, type_hints.get(parameter.name, Undefined), default)
+        )
     return params
 
 
-def get_params_from_signature(resource: Any) -> tuple[List[Any], Any]:
+def get_params_from_signature(resource: Any) -> tuple[List[RawParameterDetails], Any]:
     """
     Get parameters from function signature
 
@@ -202,7 +213,7 @@ def _get_raises_from_docstring(docstring_raises: List[DocstringRaises]) -> List[
 
 
 def _get_param_details(
-    parameters: List[Any], parameters_desc: Dict[str, str]
+    parameters: List[RawParameterDetails], parameters_desc: Dict[str, str]
 ) -> List[ParameterDetails]:
     """
     Helper function to get parameter details from docstring.
@@ -219,13 +230,17 @@ def _get_param_details(
     List[ParameterDetails]
     """
     details = []
-    for param_name, param_type, param_default in parameters:
+    for raw_parameter_detail in parameters:
+        param_name, param_type = (
+            raw_parameter_detail.name,
+            raw_parameter_detail.param_type,
+        )
         param_type_string = format_param_type(param_type) if param_type else None
         details.append(
             ParameterDetails(
                 name=param_name,
                 type=param_type_string,
-                default=format_literal(param_default),
+                default=format_literal(raw_parameter_detail.param_default),
                 description=parameters_desc.get(param_name),
             )
         )
@@ -316,16 +331,20 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
     )
 
     enum_desc = {}
-    enum_possible_values = []
+    enum_possible_values: List[RawParameterDetails] = []
     if issubclass(resource_class, Enum):
         # Set to empty list to avoid showing parameters in the docs
         parameters_desc = {}
         parameters = []
         for item in resource_class:
             enum_name = item.value.upper()
-            # param_name, param_type, param_default
-            # TODO: make this a dataclass
-            enum_possible_values.append((enum_name, "", None))
+            enum_possible_values.append(
+                RawParameterDetails(
+                    name=enum_name,
+                    param_type="",
+                    param_default=None,
+                )
+            )
             enum_desc[enum_name] = item.__doc__.strip()
 
     return ResourceDetails(
