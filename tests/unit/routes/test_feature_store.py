@@ -606,7 +606,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         data_preview = FeatureStorePreview(**data_sample_payload)
         response = test_api_client.post("/feature_store/shape", json=data_preview.json_dict())
         assert response.status_code == HTTPStatus.OK
-        assert response.json() == [100, 9]
+        assert response.json() == {"num_rows": 100, "num_cols": 9}
         assert (
             mock_session.execute_query.call_args[0][0]
             == textwrap.dedent(

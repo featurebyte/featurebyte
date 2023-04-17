@@ -30,7 +30,11 @@ from featurebyte.schema.feature_list import (
     FeatureListPreview,
     FeatureListSQL,
 )
-from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
+from featurebyte.schema.feature_store import (
+    FeatureStorePreview,
+    FeatureStoreSample,
+    FeatureStoreShape,
+)
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
@@ -93,7 +97,7 @@ class PreviewService(BaseService):
         )
         return feature_store, session
 
-    async def shape(self, preview: FeatureStorePreview, get_credential: Any) -> Tuple[int, int]:
+    async def shape(self, preview: FeatureStorePreview, get_credential: Any) -> FeatureStoreShape:
         """
         Get the shape of a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -106,7 +110,7 @@ class PreviewService(BaseService):
 
         Returns
         -------
-        Tuple[int, int]
+        FeatureStoreShape
             Row and column counts
         """
         feature_store, session = await self._get_feature_store_session(
@@ -121,7 +125,10 @@ class PreviewService(BaseService):
         logger.debug("Execute shape SQL", extra={"shape_sql": shape_sql})
         result = await session.execute_query(shape_sql)
         assert result is not None
-        return (result["count"].iloc[0], num_cols)
+        return FeatureStoreShape(
+            num_rows=result["count"].iloc[0],
+            num_cols=num_cols,
+        )
 
     async def preview(
         self, preview: FeatureStorePreview, limit: int, get_credential: Any

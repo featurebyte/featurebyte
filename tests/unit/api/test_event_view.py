@@ -874,8 +874,7 @@ def test_shape(snowflake_event_table):
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
     ) as mock_execute_query:
         mock_execute_query.return_value = pd.DataFrame({"count": [1000]})
-        shape = view.shape()
-        assert shape == (1000, 8)
+        assert view.shape() == (1000, 8)
         # Check that the correct query was executed
         assert (
             mock_execute_query.call_args[0][0]
@@ -899,3 +898,5 @@ def test_shape(snowflake_event_table):
                 """
             ).strip()
         )
+        # test view colum shape
+        assert view["col_int"].shape() == (1000, 1)

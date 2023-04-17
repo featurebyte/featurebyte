@@ -3,7 +3,7 @@ FeatureStore API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, cast
 
 from http import HTTPStatus
 
@@ -28,6 +28,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreList,
     FeatureStorePreview,
     FeatureStoreSample,
+    FeatureStoreShape,
 )
 from featurebyte.schema.info import FeatureStoreInfo
 
@@ -203,17 +204,17 @@ async def list_columns_in_database_table(
     return result
 
 
-@router.post("/shape", response_model=Tuple[int, int])
+@router.post("/shape", response_model=FeatureStoreShape)
 async def get_data_shape(
     request: Request,
     preview: FeatureStorePreview,
-) -> Tuple[int, int]:
+) -> FeatureStoreShape:
     """
     Retrieve shape for query graph node
     """
     controller = request.state.app_container.feature_store_controller
     return cast(
-        Tuple[int, int],
+        FeatureStoreShape,
         await controller.shape(preview=preview, get_credential=request.state.get_credential),
     )
 

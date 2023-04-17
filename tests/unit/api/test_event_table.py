@@ -3,7 +3,9 @@ Unit test for EventTable class
 """
 from __future__ import annotations
 
+import textwrap
 from datetime import datetime
+from unittest import mock
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
@@ -993,3 +995,40 @@ def test_sdk_code_generation_on_saved_data(saved_event_table, update_fixtures):
         update_fixtures=update_fixtures,
         table_id=saved_event_table.id,
     )
+
+
+def test_shape(snowflake_event_table):
+    """
+    Test creating ObservationTable from an EventView
+    """
+    with mock.patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
+        mock_execute_query.return_value = pd.DataFrame({"count": [1000]})
+        assert snowflake_event_table.shape() == (1000, 9)
+        # Check that the correct query was executed
+        assert (
+            mock_execute_query.call_args[0][0]
+            == textwrap.dedent(
+                """
+                WITH data AS (
+                  SELECT
+                    "col_int" AS "col_int",
+                    "col_float" AS "col_float",
+                    "col_char" AS "col_char",
+                    "col_text" AS "col_text",
+                    "col_binary" AS "col_binary",
+                    "col_boolean" AS "col_boolean",
+                    "event_timestamp" AS "event_timestamp",
+                    "created_at" AS "created_at",
+                    "cust_id" AS "cust_id"
+                  FROM "sf_database"."sf_schema"."sf_table"
+                )
+                SELECT
+                  COUNT(*) AS "count"
+                FROM data
+                """
+            ).strip()
+        )
+        # test table colum shape
+        assert snowflake_event_table["col_int"].shape() == (1000, 1)
