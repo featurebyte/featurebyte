@@ -311,19 +311,12 @@ class BaseFeatureGroup(FeatureByteBaseModel):
 
 class FeatureGroup(BaseFeatureGroup, ParentMixin):
     """
-    FeatureGroup represents a collection of Feature's.
+    FeatureGroup class is the constructor class to create a FeatureGroup object. A FeatureGroup is a temporary
+    collection of Feature objects that enables the easy management of features and creation of a feature list.
 
-    These Features are typically not production ready, and are mostly used as an in-memory representation while
-    users are still building up their features in the SDK. Note that while this object has a `save` function, it is
-    actually the individual features within this feature group that get persisted. Similarly, the object that
-    gets constructed on the read path does not become a FeatureGroup. The persisted version that users interact with
-    is called a FeatureList.
-
-    Note that the following operations result in a new FeatureGroup object as the output could contain more than
-    one Feature object:
-
-    - [GroupBy.aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/)
-    - [View.as_features](/reference/featurebyte.api.view.View.as_features/)
+    Note that while FeatureGroup has a `save` function, it is actually the individual Feature objects within this
+    feature group that get added to the catalog. To add a FeatureGroup to the catalog, you need first to convert
+    it into a FeatureList object.
     """
 
     # documentation metadata

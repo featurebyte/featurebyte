@@ -57,9 +57,19 @@ class EventView(View, GroupByMixin):
 
     # pydantic instance variables
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        allow_mutation=False, description="default job setting for the view"
+        allow_mutation=False,
+        description="Returns the default feature job setting for the view.\n\n"
+        "The Default Feature Job Setting establishes the default setting used by "
+        "features that aggregate data in the view, ensuring consistency of the "
+        "Feature Job Setting across features created by different team members. "
+        "While it's possible to override the setting during feature declaration, "
+        "using the Default Feature Job Setting simplifies the process of setting "
+        "up the Feature Job Setting for each feature.",
     )
-    event_id_column: Optional[str] = Field(allow_mutation=False)
+    event_id_column: Optional[str] = Field(
+        allow_mutation=False,
+        description="Returns the name of the column representing the event key of the Event view.",
+    )
 
     @property
     def timestamp_column(self) -> str:

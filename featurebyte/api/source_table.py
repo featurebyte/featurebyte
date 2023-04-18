@@ -205,7 +205,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def columns(self) -> list[str]:
         """
-        List of column names of this table.
+        Returns the list of column names of this table.
 
         Returns
         -------
@@ -217,8 +217,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @typechecked
     def preview_sql(self, limit: int = 10, after_cleaning: bool = False) -> str:
         """
-        Returns an SQL query for previewing the table after applying the set of cleaning operations defined at the
-        column level.
+        Returns an SQL query for previewing the table raw data.
 
         Parameters
         ----------

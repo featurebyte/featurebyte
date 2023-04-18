@@ -99,13 +99,8 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
     @property
     def parents(self) -> List[ParentEntity]:
         """
-        Get the list of parent entities. A parent-child relationship is a hierarchical connection that links one
-        entity (the child) to another entity (the parent). Each child entity key value can have only one parent
-        entity key value, but a parent entity key value can have multiple child entity key values.
-
-        The parent-child relationship is automatically established when the primary key (or natural key in the
-        context of a SCD table) identifies one entity. This entity is the child entity. Other entities that are
-        referenced in the table are identified as the parent entities.
+        Displays a list of the entity parents along with their corresponding IDs and the table ID of the relation
+        table that establishes the parent-child relationship.
 
         Returns
         -------

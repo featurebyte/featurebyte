@@ -79,8 +79,13 @@ DatabaseDetails = Union[
 class FeatureStoreDetails(FeatureByteBaseModel):
     """FeatureStoreDetail"""
 
-    type: SourceType = Field(description="Type of the feature store")
-    details: DatabaseDetails
+    type: SourceType = Field(
+        description="Returns the type of the feature store (Spark, Snowflake, DataBricks,...) "
+        "represented by the FeatureStore object."
+    )
+    details: DatabaseDetails = Field(
+        description="Returns the details of the database used for the FeatureStore " "object."
+    )
 
 
 class TableDetails(FeatureByteBaseModel):

@@ -24,6 +24,7 @@ from featurebyte.common.documentation.doc_types import (
     ResourceDetails,
 )
 from featurebyte.common.documentation.formatters import format_literal, format_param_type
+from featurebyte.common.documentation.pydantic_field_docs import pydantic_field_doc_overrides
 from featurebyte.common.documentation.resource_util import import_resource
 
 
@@ -323,6 +324,10 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
     short_description = docstring.short_description
     if getattr(resource, "field_info", None):
         short_description = resource.field_info.description
+        if resource_class.__name__ in pydantic_field_doc_overrides:
+            override = pydantic_field_doc_overrides[resource_class.__name__]
+            if resource.name in override:
+                short_description = override[resource.name]
 
     parameters_desc = (
         {param.arg_name: param.description for param in docstring.params if param.description}
