@@ -79,10 +79,13 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         storage_credential: Optional[StorageCredential] = None,
     ) -> FeatureStore:
         """
-        Create and return an instance of a feature store.
+        Creates and saves a Feature Store object to enable FeatureByte to work with a data warehouse. FeatureByte
+        leverages a data warehouse as both a data source and a feature store.
 
-        Database details and credentials provided are validated.
-        Note that only one feature store can be created for a specific set of database details.
+        To create a feature store, you need to specify the connection details and credentials to use.
+
+        Note that featurestore is one-off task. Only one feature store can be created for a specific set of
+        database details.
 
         Parameters
         ----------
