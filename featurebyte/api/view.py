@@ -224,6 +224,27 @@ class ViewColumn(Series, SampleMixin):
         """
         return super().is_numeric
 
+    @typechecked
+    def preview_sql(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> str:
+        """
+        Returns an SQL query for previewing the column data after applying the set of cleaning operations defined
+        at the column level.
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        str
+        """
+        return super().preview_sql(limit=limit, **kwargs)
+
 
 class GroupByMixin:
     """
@@ -376,6 +397,27 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         >>> event_view["Amount"] = event_view["Amount"].astype(int)
         """
         return super().astype(new_type=new_type)
+
+    @typechecked
+    def preview_sql(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> str:
+        """
+        Returns an SQL query for previewing the view raw data after applying the set of cleaning operations defined
+        at the column level.
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        str
+        """
+        return super().preview_sql(limit=limit, **kwargs)
 
     def sample(  # pylint: disable=useless-parent-delegation
         self,
