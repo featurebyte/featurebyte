@@ -12,8 +12,9 @@ import pymongo
 from pydantic import Field, StrictStr, validator
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.materialized_table import MaterializedTable
+from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.models.request_input import SourceTableRequestInput, ViewRequestInput
+from featurebyte.query_graph.node.schema import ColumnSpec
 
 
 class ViewObservationInput(ViewRequestInput):
@@ -33,18 +34,18 @@ ObservationInput = Annotated[
 ]
 
 
-class ObservationTableModel(MaterializedTable):
+class ObservationTableModel(MaterializedTableModel):
     """
     ObservationTableModel is a table that can be used to request historical features
 
-    observation_input: ObservationInput
+    request_input: ObservationInput
         The input that defines how the observation table is created
     context_id: Optional[PydanticObjectId]
         The id of the context that the observation table is associated with
     """
 
     request_input: ObservationInput
-    column_names: List[StrictStr]
+    columns_info: List[ColumnSpec]
     most_recent_point_in_time: StrictStr
     context_id: Optional[PydanticObjectId] = Field(default=None)
 
@@ -55,14 +56,14 @@ class ObservationTableModel(MaterializedTable):
         _ = datetime.fromisoformat(value)
         return value
 
-    class Settings(MaterializedTable.Settings):
+    class Settings(MaterializedTableModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "observation_table"
 
-        indexes = MaterializedTable.Settings.indexes + [
+        indexes = MaterializedTableModel.Settings.indexes + [
             pymongo.operations.IndexModel("context_id"),
             [
                 ("name", pymongo.TEXT),

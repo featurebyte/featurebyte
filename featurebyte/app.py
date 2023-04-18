@@ -8,6 +8,7 @@ import uvicorn
 from fastapi import Depends, FastAPI, Header, Request
 from starlette.websockets import WebSocket
 
+import featurebyte.routes.batch_request_table.api as batch_request_table_api
 import featurebyte.routes.catalog.api as catalog_api
 import featurebyte.routes.context.api as context_api
 import featurebyte.routes.credential.api as credential_api
@@ -127,6 +128,7 @@ def get_app() -> FastAPI:
         catalog_api,
         periodic_tasks_api,
         observation_table_api,
+        batch_request_table_api,
         credential_api,
         historical_feature_table_api,
     ]

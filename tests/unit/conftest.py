@@ -47,6 +47,7 @@ from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.routes.app_container import AppContainer
+from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
@@ -674,7 +675,10 @@ def patched_observation_table_service():
         _ = args
         _ = kwargs
         return {
-            "column_names": ["POINT_IN_TIME", "cust_id"],
+            "columns_info": [
+                {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
+                {"name": "cust_id", "dtype": "INT"},
+            ],
             "most_recent_point_in_time": "2023-01-15 10:00:00",
         }
 
@@ -1208,8 +1212,16 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     observation_table = ObservationTableCreate(
         name="observation_table",
         feature_store_id=snowflake_feature_store.id,
-        observation_input=SourceTableRequestInput(
+        request_input=SourceTableRequestInput(
             source=snowflake_event_table.tabular_source,
+        ),
+        context_id=context.id,
+    )
+    batch_request_table = BatchRequestTableCreate(
+        name="batch_request_table",
+        feature_store_id=snowflake_feature_store.id,
+        request_input=SourceTableRequestInput(
+            source=snowflake_dimension_table.tabular_source,
         ),
         context_id=context.id,
     )
@@ -1262,6 +1274,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (context, "context"),
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
+            (batch_request_table, "batch_request_table"),
             (historical_feature_table, "historical_feature_table"),
         ]
         for schema, name in schema_payload_name_pairs:

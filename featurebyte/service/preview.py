@@ -470,7 +470,7 @@ class PreviewService(BaseService):
         if isinstance(observation_set, pd.DataFrame):
             request_column_names = set(observation_set.columns)
         else:
-            request_column_names = set(observation_set.column_names)
+            request_column_names = {col.name for col in observation_set.columns_info}
 
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(

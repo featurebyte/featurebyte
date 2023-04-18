@@ -106,7 +106,7 @@ class MaterializedTableObservationSet(ObservationSet):
 
     @property
     def columns(self) -> list[str]:
-        return self.observation_table.column_names
+        return [col.name for col in self.observation_table.columns_info]
 
     @property
     def most_recent_point_in_time(self) -> pd.Timestamp:
