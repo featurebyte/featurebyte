@@ -266,6 +266,29 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         """
         return self._get_audit_history(field_name="name")
 
+    @classmethod
+    def get(cls, name: str) -> Catalog:  # pylint: disable=useless-parent-delegation
+        """
+        Gets a Catalog object by its name.
+
+        Parameters
+        ----------
+        name: str
+            Name of the object to retrieve.
+
+        Returns
+        -------
+        Catalog
+            Catalog object.
+
+        Examples
+        --------
+        Get a Catalog object that is already saved.
+
+        >>> catalog = fb.Catalog.get("catalog_name")  # doctest: +SKIP
+        """
+        return super().get(name)
+
     @update_and_reset_catalog
     def create_entity(self, name: str, serving_names: List[str]) -> Entity:
         """
