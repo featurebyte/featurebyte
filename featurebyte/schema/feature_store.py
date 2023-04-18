@@ -107,3 +107,12 @@ class FeatureStoreSample(FeatureStorePreview):
             ), "from_timestamp must be smaller than to_timestamp."
 
         return values
+
+
+class FeatureStoreShape(FeatureByteBaseModel):
+    """
+    Table / View / Column shape response schema
+    """
+
+    num_rows: int
+    num_cols: int

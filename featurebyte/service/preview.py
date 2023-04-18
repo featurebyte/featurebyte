@@ -30,7 +30,11 @@ from featurebyte.schema.feature_list import (
     FeatureListPreview,
     FeatureListSQL,
 )
-from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
+from featurebyte.schema.feature_store import (
+    FeatureStorePreview,
+    FeatureStoreSample,
+    FeatureStoreShape,
+)
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
@@ -92,6 +96,39 @@ class PreviewService(BaseService):
             get_credential=get_credential,
         )
         return feature_store, session
+
+    async def shape(self, preview: FeatureStorePreview, get_credential: Any) -> FeatureStoreShape:
+        """
+        Get the shape of a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
+
+        Parameters
+        ----------
+        preview: FeatureStorePreview
+            FeatureStorePreview object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        FeatureStoreShape
+            Row and column counts
+        """
+        feature_store, session = await self._get_feature_store_session(
+            graph=preview.graph,
+            node_name=preview.node_name,
+            feature_store_name=preview.feature_store_name,
+            get_credential=get_credential,
+        )
+        shape_sql, num_cols = GraphInterpreter(
+            preview.graph, source_type=feature_store.type
+        ).construct_shape_sql(node_name=preview.node_name)
+        logger.debug("Execute shape SQL", extra={"shape_sql": shape_sql})
+        result = await session.execute_query(shape_sql)
+        assert result is not None
+        return FeatureStoreShape(
+            num_rows=result["count"].iloc[0],
+            num_cols=num_cols,
+        )
 
     async def preview(
         self, preview: FeatureStorePreview, limit: int, get_credential: Any

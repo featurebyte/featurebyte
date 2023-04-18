@@ -260,6 +260,28 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         return self.parent.preview(limit=limit, after_cleaning=after_cleaning)[[self.info.name]]
 
     @typechecked
+    def shape(self, after_cleaning: bool = False) -> Tuple[int, int]:
+        """
+        Return the shape of the table column.
+
+        Parameters
+        ----------
+        after_cleaning: bool
+            Whether to get the shape of the column after cleaning
+
+        Returns
+        -------
+        Tuple[int, int]
+
+        Examples
+        --------
+        Get the shape of a column.
+        >>> catalog.get_table("INVOICEITEMS")["Quantity"].shape()
+        (300450, 1)
+        """
+        return self.parent.shape(after_cleaning=after_cleaning)[0], 1
+
+    @typechecked
     def sample(
         self,
         size: int = 10,

@@ -18,6 +18,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreList,
     FeatureStorePreview,
     FeatureStoreSample,
+    FeatureStoreShape,
 )
 from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.service.credential import CredentialService
@@ -278,6 +279,24 @@ class FeatureStoreController(
             table_name=table_name,
             get_credential=get_credential,
         )
+
+    async def shape(self, preview: FeatureStorePreview, get_credential: Any) -> FeatureStoreShape:
+        """
+        Retrieve shape for query graph node
+
+        Parameters
+        ----------
+        preview: FeatureStorePreview
+            FeatureStorePreview object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        FeatureStoreShape
+            FeatureStoreShape object
+        """
+        return await self.preview_service.shape(preview=preview, get_credential=get_credential)
 
     async def preview(
         self, preview: FeatureStorePreview, limit: int, get_credential: Any

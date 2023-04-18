@@ -3,7 +3,7 @@ SourceTable class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, cast
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -266,7 +266,29 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         - [Table.describe](/reference/featurebyte.api.base_table.TableApiObject.describe/):
           Retrieve a summary of a table.
         """
-        return self.frame.preview(limit=limit, after_cleaning=after_cleaning)  # type: ignore[misc]
+        return self.frame.preview(limit=limit, after_cleaning=after_cleaning)
+
+    @typechecked
+    def shape(self, after_cleaning: bool = False) -> Tuple[int, int]:
+        """
+        Return the shape of the view / column.
+
+        Parameters
+        ----------
+        after_cleaning: bool
+            Whether to get the shape of the table after cleaning
+
+        Returns
+        -------
+        Tuple[int, int]
+
+        Examples
+        --------
+        Get the shape of a table.
+        >>> catalog.get_table("INVOICEITEMS").shape()
+        (300450, 8)
+        """
+        return cast(Tuple[int, int], self.frame.shape(after_cleaning=after_cleaning))
 
     @typechecked
     def sample(
@@ -378,7 +400,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         - [Table.sample](/reference/featurebyte.api.base_table.TableApiObject.sample/):
           Retrieve a sample of a table.
         """
-        return self.frame.describe(  # type: ignore[misc]
+        return self.frame.describe(
             size=size,
             seed=seed,
             from_timestamp=from_timestamp,
