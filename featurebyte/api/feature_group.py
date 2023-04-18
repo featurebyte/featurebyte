@@ -4,7 +4,7 @@ Feature list namespace
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, List, Optional, OrderedDict, Sequence, Tuple, Union, cast
 
 import collections
 import time
@@ -47,7 +47,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     """
 
     items: Sequence[Union[Feature, BaseFeatureGroup]] = Field(exclude=True)
-    feature_objects: collections.OrderedDict[str, Feature] = Field(
+    feature_objects: OrderedDict[str, Feature] = Field(
         exclude=True, default_factory=collections.OrderedDict
     )
 
