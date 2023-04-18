@@ -41,8 +41,8 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, VersionIdentifier
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
-from featurebyte.models.observation_table import SourceTableObservationInput
 from featurebyte.models.relationship import RelationshipType
+from featurebyte.models.request_input import SourceTableRequestInput
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -1208,7 +1208,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     observation_table = ObservationTableCreate(
         name="observation_table",
         feature_store_id=snowflake_feature_store.id,
-        observation_input=SourceTableObservationInput(
+        observation_input=SourceTableRequestInput(
             source=snowflake_event_table.tabular_source,
         ),
         context_id=context.id,

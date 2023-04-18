@@ -838,7 +838,7 @@ def test_create_observation_table_from_event_view(snowflake_event_table, snowfla
     view = view[["POINT_IN_TIME", "cust_id"]]
 
     with patch(
-        "featurebyte.models.observation_table.BaseObservationInput.get_row_count",
+        "featurebyte.models.request_input.BaseRequestInput.get_row_count",
         AsyncMock(return_value=1000),
     ):
         observation_table = view.create_observation_table(

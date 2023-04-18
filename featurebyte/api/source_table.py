@@ -22,7 +22,7 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
-from featurebyte.models.observation_table import SourceTableObservationInput
+from featurebyte.models.request_input import SourceTableRequestInput
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -957,7 +957,7 @@ class SourceTable(AbstractTableData):
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            observation_input=SourceTableObservationInput(source=self.tabular_source),
+            request_input=SourceTableRequestInput(source=self.tabular_source),
             sample_rows=sample_rows,
         )
         observation_table_doc = ObservationTable.post_async_task(

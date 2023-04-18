@@ -8,7 +8,7 @@
     "context_id": "642db61f28e1dffe39df3562",
     "feature_store_id": "642db61d28e1dffe39df3521",
     "name": "observation_table",
-    "observation_input": {
+    "request_input": {
         "source": {
             "feature_store_id": "642db61d28e1dffe39df3521",
             "table_details": {

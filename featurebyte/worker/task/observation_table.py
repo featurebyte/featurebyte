@@ -63,7 +63,7 @@ class ObservationTableTask(BaseTask):
             self.get_credential,
             payload.feature_store_id,
         )
-        await payload.observation_input.materialize(
+        await payload.request_input.materialize(
             session=db_session,
             destination=location.table_details,
             sample_rows=payload.sample_rows,
@@ -82,7 +82,7 @@ class ObservationTableTask(BaseTask):
                 name=payload.name,
                 location=location,
                 context_id=payload.context_id,
-                observation_input=payload.observation_input,
+                request_input=payload.request_input,
                 **additional_metadata,
             )
             await observation_table_service.create_document(observation_table)

@@ -13,11 +13,8 @@ from featurebyte.models.base import (
     FeatureByteBaseModel,
     PydanticObjectId,
 )
-from featurebyte.models.observation_table import (
-    ObservationInput,
-    ObservationInputType,
-    ObservationTableModel,
-)
+from featurebyte.models.observation_table import ObservationInput, ObservationTableModel
+from featurebyte.models.request_input import RequestInputType
 from featurebyte.schema.common.base import PaginationMixin
 
 
@@ -30,7 +27,7 @@ class ObservationTableCreate(FeatureByteBaseModel):
     name: StrictStr
     feature_store_id: PydanticObjectId
     context_id: Optional[PydanticObjectId]
-    observation_input: ObservationInput
+    request_input: ObservationInput
     sample_rows: Optional[conint(ge=0)]  # type: ignore[valid-type]
 
 
@@ -48,11 +45,11 @@ class ObservationTableListRecord(FeatureByteBaseDocumentModel):
     """
 
     feature_store_id: PydanticObjectId
-    type: ObservationInputType
+    type: RequestInputType
 
     @root_validator(pre=True)
     @classmethod
     def _extract_location(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["type"] = values["observation_input"]["type"]
+        values["type"] = values["request_input"]["type"]
         values["feature_store_id"] = values["location"]["feature_store_id"]
         return values

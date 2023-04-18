@@ -12,7 +12,8 @@ from featurebyte.exception import (
     MissingPointInTimeColumnError,
     UnsupportedPointInTimeColumnTypeError,
 )
-from featurebyte.models.observation_table import ObservationTableModel, SourceTableObservationInput
+from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.models.request_input import SourceTableRequestInput
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.base import BaseSession
@@ -23,7 +24,7 @@ def observation_table_from_source_table_fixture(event_table):
     """
     Fixture for an ObservationTable from a source table
     """
-    observation_input = SourceTableObservationInput(source=event_table.tabular_source)
+    observation_input = SourceTableRequestInput(source=event_table.tabular_source)
     location = TabularSource(
         **{
             "feature_store_id": event_table.tabular_source.feature_store_id,
@@ -37,7 +38,7 @@ def observation_table_from_source_table_fixture(event_table):
     return ObservationTableModel(
         name="observation_table_from_source_table",
         location=location,
-        observation_input=observation_input,
+        request_input=observation_input,
         column_names=["a", "b", "c"],
         most_recent_point_in_time="2023-01-15T10:00:00",
     )
@@ -177,11 +178,9 @@ async def test_observation_input_get_row_count(observation_table_from_source_tab
     """
     db_session.execute_query = AsyncMock(return_value=pd.DataFrame({"row_count": [1000]}))
 
-    row_count = await observation_table_from_source_table.observation_input.get_row_count(
+    row_count = await observation_table_from_source_table.request_input.get_row_count(
         db_session,
-        observation_table_from_source_table.observation_input.get_query_expr(
-            db_session.source_type
-        ),
+        observation_table_from_source_table.request_input.get_query_expr(db_session.source_type),
     )
     assert row_count == 1000
 
