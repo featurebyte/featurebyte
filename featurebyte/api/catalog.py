@@ -274,7 +274,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         name: str
-            Name of the object to retrieve.
+            Name of the catalog to retrieve.
 
         Returns
         -------
@@ -288,6 +288,31 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> catalog = fb.Catalog.get("catalog_name")  # doctest: +SKIP
         """
         return super().get(name)
+
+    @classmethod
+    def get_by_id(  # pylint: disable=useless-parent-delegation
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> Catalog:
+        """
+        Returns a Catalog object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            Catalog unique identified (ID).
+
+        Returns
+        -------
+        Catalog
+            Catalog object.
+
+        Examples
+        --------
+        Get a Catalog object that is already saved.
+
+        >>> fb.Catalog.get_by_id(<catalog_id>)  # doctest: +SKIP
+        """
+        return super().get_by_id(id=id)
 
     @update_and_reset_catalog
     def create_entity(self, name: str, serving_names: List[str]) -> Entity:
