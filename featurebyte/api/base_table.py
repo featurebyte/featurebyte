@@ -689,6 +689,39 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         return {"feature_store": self.feature_store}
 
     @typechecked
+    def describe(
+        self,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        after_cleaning: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Returns descriptive statistics of the table. By default, the statistics are computed before any cleaning
+        operations that were defined at the table level.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample. If 0, all rows will be used.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        after_cleaning: bool
+            Whether to apply cleaning operations.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary of the table.
+        """
+        return super().describe(size, seed, from_timestamp, to_timestamp, after_cleaning)
+
+    @typechecked
     def preview(  # pylint: disable=useless-parent-delegation
         self, limit: int = 10, after_cleaning: bool = False
     ) -> pd.DataFrame:

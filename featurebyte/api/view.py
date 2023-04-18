@@ -169,6 +169,52 @@ class ViewColumn(Series, SampleMixin):
         return super().preview(limit=limit, **kwargs)
 
     @typechecked
+    def describe(  # pylint: disable=useless-parent-delegation
+        self,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Returns descriptive statistics of the view column. The statistics are computed after any cleaning operations
+        that were defined either at the table level or during the view's creation have been applied.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary of the view.
+
+        Examples
+        --------
+        Get summary of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].describe()
+                        ProductGroup
+        dtype                VARCHAR
+        unique                    87
+        %missing                 0.0
+        %empty                     0
+        entropy              4.13031
+        top       Chips et Tortillas
+        freq                    1319
+        """
+        return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
+
+    @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
         """
         Creates a lookup feature directly from the column in the View. The entity associated with the feature is
@@ -449,6 +495,52 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         str
         """
         return super().preview_sql(limit=limit, **kwargs)
+
+    @typechecked
+    def describe(  # pylint: disable=useless-parent-delegation
+        self,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Returns descriptive statistics of the view. The statistics are computed after any cleaning operations
+        that were defined either at the table level or during the view's creation have been applied.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary of the view.
+
+        Examples
+        --------
+        Get summary of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").describe()
+                                    GroceryProductGuid        ProductGroup
+        dtype                                  VARCHAR             VARCHAR
+        unique                                   29099                  87
+        %missing                                   0.0                 0.0
+        %empty                                       0                   0
+        entropy                               6.214608             4.13031
+        top       017fe5ed-80a2-4e70-ae48-78aabfdee856  Chips et Tortillas
+        freq                                         1                1319
+        """
+        return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
 
     @typechecked
     def preview(  # pylint: disable=useless-parent-delegation

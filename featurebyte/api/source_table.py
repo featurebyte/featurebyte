@@ -358,8 +358,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
         """
-        Retrieve a summary of the contents in the table.
-        This includes columns names, column types, missing and unique counts, and other statistics.
+        Returns descriptive statistics of the table columns.
 
         Parameters
         ----------
