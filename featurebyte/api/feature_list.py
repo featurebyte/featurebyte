@@ -925,7 +925,7 @@ class FeatureList(
     def get_historical_features_async(
         self,
         observation_table: ObservationTable,
-        modeling_table_name: str,
+        historical_feature_table_name: str,
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> HistoricalFeatureTable:
         """
@@ -936,7 +936,7 @@ class FeatureList(
         ----------
         observation_table: ObservationTable
             Observation table with `POINT_IN_TIME` and serving names columns
-        modeling_table_name: str
+        historical_feature_table_name: str
             Name of the modeling table to be created
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events table has different serving name
@@ -951,16 +951,16 @@ class FeatureList(
             serving_names_mapping=serving_names_mapping,
         )
         feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id
-        payload = HistoricalFeatureTable(
-            name=modeling_table_name,
+        payload = HistoricalFeatureTableCreate(
+            name=historical_feature_table_name,
             observation_table_id=observation_table.id,
             feature_store_id=feature_store_id,
             featurelist_get_historical_features=featurelist_get_historical_features,
         )
-        modeling_table_doc = self.post_async_task(
-            route="/modeling_table", payload=payload.json_dict()
+        historical_feature_table_doc = self.post_async_task(
+            route="/historical_feature_table", payload=payload.json_dict()
         )
-        return HistoricalFeatureTable.get_by_id(modeling_table_doc["_id"])
+        return HistoricalFeatureTable.get_by_id(historical_feature_table_doc["_id"])
 
     @typechecked
     def create_new_version(

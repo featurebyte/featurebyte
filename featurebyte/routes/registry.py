@@ -19,8 +19,8 @@ from featurebyte.routes.feature_list.controller import FeatureListController
 from featurebyte.routes.feature_list_namespace.controller import FeatureListNamespaceController
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
-from featurebyte.routes.item_table.controller import ItemTableController
 from featurebyte.routes.historical_feature_table.controller import HistoricalFeatureTableController
+from featurebyte.routes.item_table.controller import ItemTableController
 from featurebyte.routes.observation_table.controller import ObservationTableController
 from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
@@ -45,9 +45,9 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.info import InfoService
 from featurebyte.service.item_table import ItemTableService
-from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService

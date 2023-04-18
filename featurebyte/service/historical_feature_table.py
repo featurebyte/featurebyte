@@ -1,5 +1,5 @@
 """
-ModelingTableService class
+HistoricalFeatureTableService class
 """
 from __future__ import annotations
 
@@ -8,11 +8,15 @@ from bson import ObjectId
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
-from featurebyte.schema.worker.task.historical_feature_table import HistoricalFeatureTableTaskPayload
+from featurebyte.schema.worker.task.historical_feature_table import (
+    HistoricalFeatureTableTaskPayload,
+)
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 
 
-class HistoricalFeatureTableService(BaseMaterializedTableService[HistoricalFeatureTableModel, HistoricalFeatureTableModel]):
+class HistoricalFeatureTableService(
+    BaseMaterializedTableService[HistoricalFeatureTableModel, HistoricalFeatureTableModel]
+):
     """
     HistoricalFeatureTableService class
     """

@@ -1,5 +1,5 @@
 """
-ModelingTable API payload schema
+HistoricalFeatureTable API payload schema
 """
 from __future__ import annotations
 

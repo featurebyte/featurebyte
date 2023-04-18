@@ -13,7 +13,7 @@
 /feature_namespace
 /feature_store
 /item_table
-/modeling_table
+/historical_feature_table
 /observation_table
 /periodic_task
 /relationship_info

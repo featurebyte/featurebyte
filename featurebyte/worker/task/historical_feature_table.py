@@ -6,7 +6,9 @@ from __future__ import annotations
 from typing import Any, cast
 
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
-from featurebyte.schema.worker.task.historical_feature_table import HistoricalFeatureTableTaskPayload
+from featurebyte.schema.worker.task.historical_feature_table import (
+    HistoricalFeatureTableTaskPayload,
+)
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
@@ -33,7 +35,9 @@ class HistoricalFeatureTableTask(BaseTask):
             payload.observation_table_id
         )
 
-        historical_feature_table_service: HistoricalFeatureTableService = app_container.history_feature_table_service
+        historical_feature_table_service: HistoricalFeatureTableService = (
+            app_container.historical_feature_table_service
+        )
         location = await historical_feature_table_service.generate_materialized_table_location(
             self.get_credential, payload.feature_store_id
         )
@@ -55,5 +59,7 @@ class HistoricalFeatureTableTask(BaseTask):
             observation_table_id=payload.observation_table_id,
             feature_list_id=payload.featurelist_get_historical_features.feature_list_id,
         )
-        created_doc = await historical_feature_table_service.create_document(historical_feature_table_model)
+        created_doc = await historical_feature_table_service.create_document(
+            historical_feature_table_model
+        )
         assert created_doc.id == payload.output_document_id

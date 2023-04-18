@@ -602,7 +602,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         List saved historical feature tables.
 
-        >>> modeling_tables = catalog.list_historical_feature_tables()
+        >>> historical_feature_tables = catalog.list_historical_feature_tables()
         """
         return HistoricalFeatureTable.list(include_id=include_id)
 
@@ -905,6 +905,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved historical feature table.
 
-        >>> modeling_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
         """
         return HistoricalFeatureTable.get(name=name)

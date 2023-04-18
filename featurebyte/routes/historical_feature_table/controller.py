@@ -6,13 +6,18 @@ from __future__ import annotations
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
-from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate, HistoricalFeatureTableList
+from featurebyte.schema.historical_feature_table import (
+    HistoricalFeatureTableCreate,
+    HistoricalFeatureTableList,
+)
 from featurebyte.schema.task import Task
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 
 
 class HistoricalFeatureTableController(
-    BaseDocumentController[HistoricalFeatureTableModel, HistoricalFeatureTableService, HistoricalFeatureTableList],
+    BaseDocumentController[
+        HistoricalFeatureTableModel, HistoricalFeatureTableService, HistoricalFeatureTableList
+    ],
 ):
     """
     HistoricalFeatureTable Controller

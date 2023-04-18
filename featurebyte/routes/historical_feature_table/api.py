@@ -1,5 +1,5 @@
 """
-ModelingTable API routes
+HistoricalFeatureTable API routes
 """
 from __future__ import annotations
 
@@ -21,7 +21,10 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate, HistoricalFeatureTableList
+from featurebyte.schema.historical_feature_table import (
+    HistoricalFeatureTableCreate,
+    HistoricalFeatureTableList,
+)
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/historical_feature_table")
