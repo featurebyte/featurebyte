@@ -5,6 +5,8 @@ from typing import Dict
 
 CATALOG_ID = "catalog_id"
 CREATED_AT = "created_at"
+DTYPE = "dtype"
+FEATURE_STORE = "feature_store"
 ID = "id"
 NAME = "name"
 UPDATED_AT = "updated_at"
@@ -58,6 +60,7 @@ pydantic_field_doc_overrides = {
     "Feature": {
         CATALOG_ID: _get_catalog_id_docstring_override("Feature"),
         CREATED_AT: _get_created_at_docstring_override("Feature"),
+        DTYPE: "Returns the data type of the Feature.",
         "entity_ids": "Returns a list of entity IDs that are linked to the feature.",
         "feature_list_ids": "Returns a list of IDs of feature lists that include the specified feature version.",
         "feature_namespace_id": "Returns the unique identifier (ID) of the feature namespace of the specified feature. "
@@ -83,7 +86,7 @@ pydantic_field_doc_overrides = {
         UPDATED_AT: _get_updated_at_docstring_override("Table"),
     },
     "TableApiObject": {
-        "feature_store": "Provides information about the feature store that the table is connected to.",
+        FEATURE_STORE: "Provides information about the feature store that the table is connected to.",
         NAME: _get_name_docstring_override("Table"),
         UPDATED_AT: _get_updated_at_docstring_override("Table"),
         "type": "Returns the Table object's type, which may be one of the following: Event Table, Item Table, Slowly "
@@ -96,7 +99,8 @@ pydantic_field_doc_overrides = {
         "feature_store": "Provides information about the feature store that the view is connected to.",
     },
     "ViewColumn": {
-        "feature_store": "Provides information about the feature store that the view column is connected to.",
+        DTYPE: "Returns the data type of the view column.",
+        FEATURE_STORE: "Provides information about the feature store that the view column is connected to.",
         NAME: _get_name_docstring_override("ViewColumn"),
     },
 }

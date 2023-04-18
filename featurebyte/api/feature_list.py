@@ -484,6 +484,17 @@ class FeatureList(
         """
         return super().drop(items=items)
 
+    @property
+    def saved(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the FeatureList object is saved and added to the catalog.
+
+        Returns
+        -------
+        bool
+        """
+        return super().saved
+
     @enforce_observation_set_row_order
     @typechecked
     def preview(  # pylint: disable=useless-parent-delegation

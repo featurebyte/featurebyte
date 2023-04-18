@@ -561,6 +561,17 @@ class Feature(
         return super().is_numeric
 
     @property
+    def saved(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the Feature object is saved and part of the catalog.
+
+        Returns
+        -------
+        bool
+        """
+        return super().saved
+
+    @property
     def definition(self) -> str:
         """
         Displays the feature definition file of the feature.
