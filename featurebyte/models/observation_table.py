@@ -124,8 +124,10 @@ class BaseObservationInput(FeatureByteBaseModel):
                 adapter = get_sql_adapter(source_type=session.source_type)
                 query_expr = adapter.tablesample(query_expr, num_percent).limit(sample_rows)
 
+        expression = create_table_as(table_details=destination, select_expr=query_expr)
+        expression = get_sql_adapter(session.source_type).create_table_expression(expression)
         query = sql_to_string(
-            create_table_as(table_details=destination, select_expr=query_expr),
+            expression,
             source_type=session.source_type,
         )
 

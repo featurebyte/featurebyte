@@ -1,7 +1,8 @@
 import pytest
+from sqlglot import parse_one
 
-from featurebyte.enum import DBVarType
-from featurebyte.query_graph.sql.adapter import SnowflakeAdapter, SparkAdapter
+from featurebyte.enum import DBVarType, SourceType
+from featurebyte.query_graph.sql.adapter import SnowflakeAdapter, SparkAdapter, get_sql_adapter
 
 
 @pytest.mark.parametrize(
@@ -49,3 +50,32 @@ def test_escape_quote_char__spark(query, expected):
     Test escape_quote_char for SparkAdapter
     """
     assert SparkAdapter.escape_quote_char(query) == expected
+
+
+@pytest.mark.parametrize(
+    "source_type, query, expected",
+    [
+        (
+            SourceType.SNOWFLAKE,
+            "CREATE TABLE abc AS SELECT * FROM A",
+            "CREATE TABLE abc AS SELECT * FROM A",
+        ),
+        (
+            SourceType.SPARK,
+            "CREATE TABLE abc AS SELECT * FROM A",
+            "CREATE TABLE abc USING DELTA TBLPROPERTIES ('delta.columnMapping.mode'='name', 'delta.minReaderVersion'='2', 'delta.minWriterVersion'='5') AS SELECT * FROM A",
+        ),
+        (
+            SourceType.DATABRICKS,
+            "CREATE TABLE abc AS SELECT * FROM A",
+            "CREATE TABLE abc USING DELTA TBLPROPERTIES ('delta.columnMapping.mode'='name', 'delta.minReaderVersion'='2', 'delta.minWriterVersion'='5') AS SELECT * FROM A",
+        ),
+    ],
+)
+def test_create_table_expression(source_type, query, expected):
+    """
+    Test escape_quote_char for SparkAdapter
+    """
+    expr = parse_one(query)
+    new_expr = get_sql_adapter(source_type).create_table_expression(expr)
+    assert new_expr.sql(dialect=source_type).strip() == expected

@@ -405,6 +405,22 @@ class BaseAdapter:
 
         return nested_select_expr
 
+    @classmethod
+    @abstractmethod
+    def create_table_expression(cls, create_table_expr: Expression) -> Expression:
+        """
+        Add additional clauses to create table expression
+
+        Parameters
+        ----------
+        create_table_expr : Expression
+            create table expression
+
+        Returns
+        -------
+        Expression
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -533,6 +549,10 @@ class SnowflakeAdapter(BaseAdapter):
         # Snowflake sql escapes ' with ''. Use regex to make it safe to call this more than once.
         return re.sub("(?<!')'(?!')", "''", query)
 
+    @classmethod
+    def create_table_expression(cls, create_table_expr: Expression) -> Expression:
+        return create_table_expr
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -660,6 +680,23 @@ class DatabricksAdapter(BaseAdapter):
     def escape_quote_char(cls, query: str) -> str:
         # Databricks sql escapes ' with \'. Use regex to make it safe to call this more than once.
         return re.sub(r"(?<!\\)'", "\\'", query)
+
+    @classmethod
+    def create_table_expression(cls, create_table_expr: Expression) -> Expression:
+        table_properties = [
+            expressions.TableFormatProperty(this=expressions.Var(this="DELTA")),
+            expressions.Property(
+                this=expressions.Literal(this="delta.columnMapping.mode"), value="'name'"
+            ),
+            expressions.Property(
+                this=expressions.Literal(this="delta.minReaderVersion"), value="'2'"
+            ),
+            expressions.Property(
+                this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"
+            ),
+        ]
+        create_table_expr.args["properties"] = expressions.Properties(expressions=table_properties)
+        return create_table_expr
 
 
 class SparkAdapter(DatabricksAdapter):
