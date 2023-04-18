@@ -73,7 +73,7 @@ def test_escape_quote_char__spark(query, expected):
         ),
     ],
 )
-def test_create_table_as(source_type, table_details, expected):
+def test_create_table_as(source_type, expected):
     """
     Test create_table_as for Adapter
     """
