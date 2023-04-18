@@ -71,10 +71,9 @@ class ItemView(View, GroupByMixin):
         self,
         columns: list[str],
         event_suffix: Optional[str] = None,
-    ) -> None:
+    ) -> ItemView:
         """
-        Joins additional attributes from the related EventTable. This operation is done in-place and does not return a
-        new ItemView.
+        Joins additional attributes from the related EventTable. This operation returns a new ItemView object.
 
         Note that the event timestamp and event attributes representing entities in the related Event table are
         already automatically added to the ItemView.
@@ -86,12 +85,17 @@ class ItemView(View, GroupByMixin):
         event_suffix : Optional[str]
             A suffix to append on to the columns from the EventTable.
 
+        Returns
+        -------
+        ItemView
+            The ItemView object with the joined columns from the EventTable.
+
         Examples
         --------
         Join columns into an ItemView.
 
         >>> item_view = catalog.get_view("INVOICEITEMS")
-        >>> item_view.join_event_table_attributes(columns=["Timestamp"], event_suffix="_event")
+        >>> item_view = item_view.join_event_table_attributes(columns=["Timestamp"], event_suffix="_event")
 
         """
         assert self.event_view.event_id_column, "event_id_column is not set"
@@ -115,8 +119,8 @@ class ItemView(View, GroupByMixin):
             if right_in_col == self.event_view.timestamp_column:
                 metadata_kwargs["timestamp_column_name"] = right_out_col
 
-        # Update metadata only after validation is done & join node is inserted
-        self._update_metadata(node.name, joined_columns_info, **metadata_kwargs)
+        # create a new view and return it
+        return self._create_joined_view(node.name, joined_columns_info, **metadata_kwargs)
 
     @property
     def timestamp_column(self) -> str:
@@ -164,6 +168,9 @@ class ItemView(View, GroupByMixin):
             }
         )
         return params
+
+    def _get_create_joined_view_parameters(self) -> dict[str, Any]:
+        return {"event_view": self.event_view}
 
     def validate_aggregate_over_parameters(
         self, keys: list[str], value_column: Optional[str]

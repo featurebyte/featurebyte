@@ -82,7 +82,7 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
 
     # check add_feature (note added feature value is the same as the preview above)
     event_view = event_table.get_view()
-    event_view.add_feature(
+    event_view = event_view.add_feature(
         "most_frequent_item_type",
         item_aggregate_with_category_features["most_frequent_item_type"],
         "TRANSACTION_ID",
@@ -111,7 +111,7 @@ def test_item_view_ops(item_table, expected_joined_event_item_dataframe):
     assert (df.iloc[:, 0] == "TYPE_42_ABC").all()
 
     # Join additional columns from EventTable
-    item_view_filtered.join_event_table_attributes(["SESSION_ID"])
+    item_view_filtered = item_view_filtered.join_event_table_attributes(["SESSION_ID"])
     df = item_view_filtered.preview(500)
     assert df["SESSION_ID"].notnull().all()
     assert (df["item_type_upper"] == "TYPE_42").all()
@@ -198,7 +198,7 @@ def test_item_view_joined_with_dimension_view(
 
     # perform the join
     suffix = "_dimension"
-    item_view.join(dimension_view, rsuffix=suffix)
+    item_view = item_view.join(dimension_view, rsuffix=suffix)
 
     # assert columns are updated after the join
     filtered_dimension_columns = [

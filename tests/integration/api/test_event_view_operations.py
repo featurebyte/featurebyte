@@ -1077,8 +1077,12 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
     original_column_names = [col.name for col in event_view.columns_info]
 
     # add feature
-    event_view.add_feature("transaction_count", non_time_based_feature, "TRANSACTION_ID")
-    event_view.add_feature("transaction_count_2", non_time_based_feature, "TRANSACTION_ID")
+    event_view = event_view.add_feature(
+        "transaction_count", non_time_based_feature, "TRANSACTION_ID"
+    )
+    event_view = event_view.add_feature(
+        "transaction_count_2", non_time_based_feature, "TRANSACTION_ID"
+    )
 
     # test columns are updated as expected
     event_view_preview = event_view.preview(5000)
@@ -1138,11 +1142,13 @@ def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_fea
     """
     # update the view with a join first
     scd_view = scd_table.get_view()
-    event_view.join(scd_view)
+    event_view = event_view.join(scd_view)
     original_column_names = [col.name for col in event_view.columns_info]
 
     # add feature
-    event_view.add_feature("transaction_count", non_time_based_feature, "TRANSACTION_ID")
+    event_view = event_view.add_feature(
+        "transaction_count", non_time_based_feature, "TRANSACTION_ID"
+    )
 
     # ensure the updated view continues to work as expected
     event_view["User Status New"] = event_view["User Status"] + "_suffix"

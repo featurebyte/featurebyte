@@ -143,7 +143,7 @@ def setup() -> None:
     grocery_items_table = fb.Table.get("INVOICEITEMS")
     grocery_item_view = grocery_items_table.get_view()
     grocery_product_view = grocery_product_table.get_view()
-    grocery_item_view.join(grocery_product_view)
+    grocery_item_view = grocery_item_view.join(grocery_product_view)
     feature_group = grocery_item_view.groupby(
         "GroceryCustomerGuid", category="ProductGroup"
     ).aggregate_over(

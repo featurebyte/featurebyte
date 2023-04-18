@@ -318,8 +318,8 @@ def test_join_event_table_attributes__more_columns(
     Test joining more columns from EventTable after creating ItemView
     """
     view = snowflake_item_view
-    view.join_event_table_attributes(["col_float"])
-    view_dict = view.dict()
+    joined_view = view.join_event_table_attributes(["col_float"])
+    view_dict = joined_view.dict()
 
     # Check node
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
@@ -363,7 +363,7 @@ def test_join_event_table_attributes__more_columns(
     }
 
     # Check Frame attributes
-    assert view.columns == [
+    assert joined_view.columns == [
         "event_id_col",
         "item_id_col",
         "item_type",
@@ -374,7 +374,7 @@ def test_join_event_table_attributes__more_columns(
         "cust_id_event_table",
         "col_float",
     ]
-    assert view.dtypes.to_dict() == {
+    assert joined_view.dtypes.to_dict() == {
         "event_id_col": "INT",
         "item_id_col": "VARCHAR",
         "item_type": "VARCHAR",
@@ -387,7 +387,7 @@ def test_join_event_table_attributes__more_columns(
     }
 
     # Check preview SQL
-    preview_sql = snowflake_item_view.preview_sql()
+    preview_sql = joined_view.preview_sql()
     expected_sql = textwrap.dedent(
         """
         SELECT
@@ -612,9 +612,9 @@ def test_item_view_groupby__event_table_column(snowflake_item_view, groupby_feat
     """
     Test aggregating an EventTable column using EventTable entity is not allowed
     """
-    snowflake_item_view.join_event_table_attributes(["col_float"])
+    joined_view = snowflake_item_view.join_event_table_attributes(["col_float"])
     with pytest.raises(ValueError) as exc:
-        _ = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
+        _ = joined_view.groupby("cust_id_event_table").aggregate_over(
             "col_float",
             method="sum",
             windows=["24h"],
@@ -632,7 +632,7 @@ def test_item_view_groupby__event_table_column_derived(
     """
     Test aggregating a column derived from EventTable column using EventTable entity is not allowed
     """
-    snowflake_item_view.join_event_table_attributes(["col_float"])
+    snowflake_item_view = snowflake_item_view.join_event_table_attributes(["col_float"])
     snowflake_item_view["col_float_v2"] = (snowflake_item_view["col_float"] + 123) - 45
     snowflake_item_view["col_float_v3"] = (snowflake_item_view["col_float_v2"] * 678) / 90
     with pytest.raises(ValueError) as exc:
@@ -654,7 +654,7 @@ def test_item_view_groupby__event_table_column_derived_mixed(
     """
     Test aggregating a column derived from both EventTable and ItemTable is allowed
     """
-    snowflake_item_view.join_event_table_attributes(["col_float"])
+    snowflake_item_view = snowflake_item_view.join_event_table_attributes(["col_float"])
     snowflake_item_view["new_col"] = (
         snowflake_item_view["col_float"] + snowflake_item_view["item_amount"]
     )
@@ -1080,7 +1080,9 @@ def test_join_event_table_attributes__with_multiple_assignments(snowflake_item_v
     view["new_col"] = "new_column"
     view["new_col"][mask] = "some_value"
     view["new_col"][~mask] = "another_value"
-    view.join_event_table_attributes(["col_float"])
+    node_name_before = view.node_name
+    joined_view = view.join_event_table_attributes(["col_float"])
+    assert view.node_name == node_name_before
 
     expected_columns = [
         "event_id_col",
@@ -1094,4 +1096,4 @@ def test_join_event_table_attributes__with_multiple_assignments(snowflake_item_v
         "new_col",
         "col_float",
     ]
-    assert view.columns == expected_columns
+    assert joined_view.columns == expected_columns

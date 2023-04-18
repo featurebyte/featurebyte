@@ -134,13 +134,13 @@ def test_sdk_code_generation__complex_feature(
     item_view = saved_item_table.get_view(event_suffix="_event_view")
 
     # construct an item view feature referencing an event view column and join back to event view
-    item_view.join_event_table_attributes(["col_float"])
+    item_view = item_view.join_event_table_attributes(["col_float"])
     feat_item_sum = item_view.groupby("event_id_col").aggregate(
         value_column="col_float",
         method=AggFunc.SUM,
         feature_name="non_time_sum_feature",
     )
-    event_view.add_feature(feat_item_sum.name, feat_item_sum, "cust_id")
+    event_view = event_view.add_feature(feat_item_sum.name, feat_item_sum, "cust_id")
 
     # use the newly created column to construct a new time-aware feature
     feat_event_sum = event_view.groupby("cust_id").aggregate_over(
@@ -214,7 +214,7 @@ def test_sdk_code_generation__multi_table_feature(
     item_view = saved_item_table.get_view(event_suffix=event_suffix)
 
     # create feature
-    item_view.join_event_table_attributes(
+    item_view = item_view.join_event_table_attributes(
         ["col_float", "col_char", "col_boolean"], event_suffix=event_suffix
     )
     item_view["percent"] = item_view["item_amount"] / item_view[f"col_float{event_suffix}"]
@@ -224,7 +224,7 @@ def test_sdk_code_generation__multi_table_feature(
         feature_name="max_percent",
     )
 
-    event_view.add_feature(max_percent.name, max_percent, "cust_id")
+    event_view = event_view.add_feature(max_percent.name, max_percent, "cust_id")
     output = event_view.groupby("cust_id").aggregate_over(
         value_column=max_percent.name,
         method=AggFunc.MAX,
