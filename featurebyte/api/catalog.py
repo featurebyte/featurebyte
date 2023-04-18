@@ -19,7 +19,7 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.modeling_table import ModelingTable
+from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
@@ -584,9 +584,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return ObservationTable.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_modeling_tables(self, include_id: Optional[bool] = False) -> pd.DataFrame:
+    def list_historical_feature_tables(self, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
-        List saved modeling tables.
+        List saved historical feature tables.
 
         Parameters
         ----------
@@ -596,15 +596,15 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Returns
         -------
         pd.DataFrame
-            Table of modeling tables.
+            Table of historical feature tables.
 
         Examples
         --------
-        List saved modeling tables.
+        List saved historical feature tables.
 
-        >>> modeling_tables = catalog.list_modeling_tables()
+        >>> historical_feature_tables = catalog.list_historical_feature_tables()
         """
-        return ModelingTable.list(include_id=include_id)
+        return HistoricalFeatureTable.list(include_id=include_id)
 
     @update_and_reset_catalog
     def get_data_source(self, feature_store_name: str) -> DataSource:
@@ -887,24 +887,24 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return ObservationTable.get(name=name)
 
     @update_and_reset_catalog
-    def get_modeling_table(self, name: str) -> ModelingTable:
+    def get_historical_feature_table(self, name: str) -> HistoricalFeatureTable:
         """
-        Get modeling table by name.
+        Get historical feature table by name.
 
         Parameters
         ----------
         name: str
-            Modeling table name.
+            Historical feature table name.
 
         Returns
         -------
-        ModelingTable
-            Modeling table object.
+        HistoricalFeatureTable
+            Historical feature table object.
 
         Examples
         --------
-        Get a saved modeling table.
+        Get a saved historical feature table.
 
-        >>> modeling_table = catalog.get_modeling_table("modeling_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
         """
-        return ModelingTable.get(name=name)
+        return HistoricalFeatureTable.get(name=name)

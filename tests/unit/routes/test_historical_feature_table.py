@@ -1,5 +1,5 @@
 """
-Tests for ModelingTable routes
+Tests for HistoricalFeatureTable routes
 """
 from http import HTTPStatus
 from unittest.mock import patch
@@ -12,22 +12,22 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseAsyncApiTestSuite
 
 
-class TestModelingTableApi(BaseAsyncApiTestSuite):
+class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
     """
-    Tests for ModelingTable route
+    Tests for HistoricalFeatureTable route
     """
 
-    class_name = "ModelingTable"
-    base_route = "/modeling_table"
+    class_name = "HistoricalFeatureTable"
+    base_route = "/historical_feature_table"
     payload = BaseAsyncApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/modeling_table.json"
+        "tests/fixtures/request_payloads/historical_feature_table.json"
     )
 
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
-            f'ModelingTable (id: "{payload["_id"]}") already exists. '
-            f'Get the existing object by `ModelingTable.get(name="{payload["name"]}")`.',
+            f'HistoricalFeatureTable (id: "{payload["_id"]}") already exists. '
+            f'Get the existing object by `HistoricalFeatureTable.get(name="{payload["name"]}")`.',
         ),
     ]
 

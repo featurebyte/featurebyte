@@ -192,6 +192,6 @@
         "feature_list_id": "642db61f28e1dffe39df355c",
         "serving_names_mapping": null
     },
-    "name": "modeling_table",
+    "name": "historical_feature_table",
     "observation_table_id": "642db61f28e1dffe39df3563"
 }

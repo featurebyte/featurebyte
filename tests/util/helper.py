@@ -362,11 +362,13 @@ async def get_historical_features_async_dataframe_helper(
     observation_table = await create_observation_table_from_dataframe(
         session, df_observation_set, data_source
     )
-    modeling_table_name = f"modeling_table_{ObjectId()}"
-    modeling_table = feature_list.get_historical_features_async(
-        observation_table, modeling_table_name, **kwargs
+    historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
+    historical_feature_table = feature_list.get_historical_features_async(
+        observation_table, historical_feature_table_name, **kwargs
     )
-    df_historical_features = await get_dataframe_from_materialized_table(session, modeling_table)
+    df_historical_features = await get_dataframe_from_materialized_table(
+        session, historical_feature_table
+    )
     return df_historical_features
 
 

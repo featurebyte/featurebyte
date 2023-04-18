@@ -21,8 +21,8 @@ import featurebyte.routes.feature_list.api as feature_list_api
 import featurebyte.routes.feature_list_namespace.api as feature_list_namespace_api
 import featurebyte.routes.feature_namespace.api as feature_namespace_api
 import featurebyte.routes.feature_store.api as feature_store_api
+import featurebyte.routes.historical_feature_table.api as historical_feature_table_api
 import featurebyte.routes.item_table.api as item_table_api
-import featurebyte.routes.modeling_table.api as modeling_table_api
 import featurebyte.routes.observation_table.api as observation_table_api
 import featurebyte.routes.periodic_tasks.api as periodic_tasks_api
 import featurebyte.routes.relationship_info.api as relationship_info_api
@@ -128,7 +128,7 @@ def get_app() -> FastAPI:
         periodic_tasks_api,
         observation_table_api,
         credential_api,
-        modeling_table_api,
+        historical_feature_table_api,
     ]
     dependencies = _get_api_deps()
     for resource_api in resource_apis:
