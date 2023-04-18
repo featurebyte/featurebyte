@@ -95,7 +95,7 @@ class ItemView(View, GroupByMixin):
         Join columns into an ItemView.
 
         >>> item_view = catalog.get_view("INVOICEITEMS")
-        >>> item_view.join_event_table_attributes(columns=["Timestamp"], event_suffix="_event")
+        >>> item_view = item_view.join_event_table_attributes(columns=["Timestamp"], event_suffix="_event")
 
         """
         assert self.event_view.event_id_column, "event_id_column is not set"

@@ -357,7 +357,7 @@ class EventView(View, GroupByMixin):
 
         >>> event_view = catalog.get_view("GROCERYINVOICE")
         >>> feature = catalog.get_feature("InvoiceCount")
-        >>> event_view.add_feature("invoice_count", feature)
+        >>> event_view = event_view.add_feature("invoice_count", feature)
 
         """
         validate_type_is_feature(feature, "feature")

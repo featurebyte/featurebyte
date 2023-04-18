@@ -775,7 +775,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         >>> event_view = catalog.get_view("GROCERYINVOICE")
         >>> dimension_view = catalog.get_view("GROCERYPRODUCT")
-        >>> event_view.join(dimension_view, on="GroceryCustomerGuid", how="inner", rsuffix="_dimension")
+        >>> event_view = event_view.join(dimension_view, on="GroceryCustomerGuid", how="inner", rsuffix="_dimension")
         """
         self._validate_join(other_view, rsuffix, on=on)
 
