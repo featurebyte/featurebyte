@@ -41,7 +41,7 @@ from featurebyte.common.join_utils import (
 from featurebyte.common.model_util import validate_offset_string
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
-from featurebyte.core.mixin import SampleMixin
+from featurebyte.core.mixin import HasExtractPrunedGraphAndNode, SampleMixin
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
@@ -136,6 +136,37 @@ class ViewColumn(Series, SampleMixin):
           Retrieve a sample of a ViewColumn.
         """
         return super().sample(size, seed, from_timestamp, to_timestamp, **kwargs)
+
+    @typechecked
+    def preview(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains a selection of rows of the view column. The materialization process occurs
+        after any cleaning operations that were defined either at the table level or during the view's creation.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preview rows of the data.
+
+        Examples
+        --------
+        Preview 3 rows of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["GroceryProductGuid"].preview(3)
+                             GroceryProductGuid
+        0  10355516-5582-4358-b5f9-6e1ea7d5dc9f
+        1  116c9284-2c41-446e-8eee-33901e0acdef
+        2  3a45a5e8-1b71-42e8-b84e-43ddaf692375
+        """
+        return super().preview(limit=limit, **kwargs)
 
     @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
@@ -418,6 +449,37 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         str
         """
         return super().preview_sql(limit=limit, **kwargs)
+
+    @typechecked
+    def preview(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains a selection of rows of the view. The materialization process occurs after
+        any cleaning operations that were defined either at the table level or during the view's creation.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preview rows of the data.
+
+        Examples
+        --------
+        Preview 3 rows of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").preview(3)
+                             GroceryProductGuid ProductGroup
+        0  10355516-5582-4358-b5f9-6e1ea7d5dc9f      Glaçons
+        1  116c9284-2c41-446e-8eee-33901e0acdef      Glaçons
+        2  3a45a5e8-1b71-42e8-b84e-43ddaf692375      Glaçons
+        """
+        return super().preview(limit=limit, **kwargs)
 
     def sample(  # pylint: disable=useless-parent-delegation
         self,

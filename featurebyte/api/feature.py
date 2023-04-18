@@ -698,14 +698,13 @@ class Feature(
         observation_set: pd.DataFrame,
     ) -> pd.DataFrame:
         """
-        Materialize feature using a small observation set of up to 50 rows.
+        Materializes a Feature object using a small observation set of up to 50 rows. Unlike get_historical_features,
+        this method does not store partial aggregations (tiles) to speed up future computation. Instead, it computes
+        the feature values on the fly, and should be used only for small observation sets for debugging or prototyping
+        unsaved features.
 
-        Unlike get_historical_features, this method does not store partial aggregations (tiles) to
-        speed up future computation. Instead, it computes the feature on the fly, and should be used
-        only for small observation sets for debugging or prototyping unsaved features.
-
-        Tiles are a method of storing partial aggregations in the feature store,
-        which helps to minimize the resources required to fulfill historical, batch and online requests.
+        The small observation set should combine historical points-in-time and key values of the primary entity from
+        the feature. Associated serving entities can also be utilized.
 
         Parameters
         ----------

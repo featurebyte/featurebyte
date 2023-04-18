@@ -235,7 +235,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @typechecked
     def preview(self, limit: int = 10, after_cleaning: bool = False) -> pd.DataFrame:
         """
-        Retrieve a preview of the table.
+        Returns a DataFrame that contains a selection of rows of the table.
 
         Parameters
         ----------
