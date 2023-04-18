@@ -17,8 +17,9 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
+from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
-from featurebyte.api.feature_list import FeatureGroup, FeatureList
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.item_view import ItemView

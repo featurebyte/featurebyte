@@ -317,10 +317,10 @@ def _get_feature_group_layout() -> List[DocLayoutItem]:
         The layout for the FeatureGroup class.
     """
     return [
-        DocLayoutItem([FEATURE_GROUP], doc_path_override="api.feature_list.FeatureGroup.md"),
+        DocLayoutItem([FEATURE_GROUP], doc_path_override="api.feature_group.FeatureGroup.md"),
         DocLayoutItem(
             [FEATURE_GROUP, CONSTRUCTOR, "FeatureGroup"],
-            doc_path_override="api.feature_list.FeatureGroup.md",
+            doc_path_override="api.feature_group.FeatureGroup.md",
         ),
         DocLayoutItem([FEATURE_GROUP, MANAGE, "FeatureGroup.drop"]),
         DocLayoutItem([FEATURE_GROUP, SAVE, "FeatureGroup.save"]),

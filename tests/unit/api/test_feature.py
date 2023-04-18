@@ -14,7 +14,8 @@ from pandas.testing import assert_frame_equal
 from featurebyte import MissingValueImputation, get_version
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature, FeatureNamespace
-from featurebyte.api.feature_list import FeatureGroup, FeatureList
+from featurebyte.api.feature_group import FeatureGroup
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.table import Table
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
