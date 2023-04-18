@@ -930,14 +930,14 @@ class FeatureList(
     ) -> HistoricalFeatureTable:
         """
         Materialize feature list using an observation table asynchronously. The historical features
-        will be materialized into a modeling table.
+        will be materialized into a historical feature table.
 
         Parameters
         ----------
         observation_table: ObservationTable
             Observation table with `POINT_IN_TIME` and serving names columns
         historical_feature_table_name: str
-            Name of the modeling table to be created
+            Name of the historical feature table to be created
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events table has different serving name
 

@@ -40,7 +40,7 @@ class HistoricalFeatureTableList(PaginationMixin):
 
 class HistoricalFeatureTableListRecord(FeatureByteBaseDocumentModel):
     """
-    Schema for listing modeling tables as a DataFrame
+    Schema for listing historical feature tables as a DataFrame
     """
 
     feature_store_id: PydanticObjectId
