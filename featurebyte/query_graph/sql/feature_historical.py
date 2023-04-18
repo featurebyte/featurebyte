@@ -28,7 +28,6 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.sql.materialisation import create_table_as
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import TileCache
@@ -421,9 +420,9 @@ async def get_historical_features(
         return session.get_async_query_stream(sql)
 
     # Execute feature query but write results to a table
-    expression = create_table_as(table_details=output_table_details, select_expr=sql_expr)
-    expression = get_sql_adapter(session.source_type).create_table_expression(expression)
-
+    expression = get_sql_adapter(session.source_type).create_table_as(
+        table_details=output_table_details, select_expr=sql_expr
+    )
     query = sql_to_string(
         expression,
         source_type=session.source_type,

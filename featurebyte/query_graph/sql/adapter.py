@@ -12,10 +12,12 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, SourceType, StrEnum
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     MISSING_VALUE_REPLACEMENT,
+    get_fully_qualified_table_name,
     get_qualified_column_identifier,
     quoted_identifier,
 )
@@ -407,14 +409,16 @@ class BaseAdapter:
 
     @classmethod
     @abstractmethod
-    def create_table_expression(cls, create_table_expr: Expression) -> Expression:
+    def create_table_as(cls, table_details: TableDetails, select_expr: Select) -> Expression:
         """
-        Add additional clauses to create table expression
+        Construct query to create a table using a select statement
 
         Parameters
         ----------
-        create_table_expr : Expression
-            create table expression
+        table_details: TableDetails
+            TableDetails of the table to be created
+        select_expr: Select
+            Select expression
 
         Returns
         -------
@@ -550,8 +554,27 @@ class SnowflakeAdapter(BaseAdapter):
         return re.sub("(?<!')'(?!')", "''", query)
 
     @classmethod
-    def create_table_expression(cls, create_table_expr: Expression) -> Expression:
-        return create_table_expr
+    def create_table_as(cls, table_details: TableDetails, select_expr: Select) -> Expression:
+        """
+        Construct query to create a table using a select statement
+
+        Parameters
+        ----------
+        table_details: TableDetails
+            TableDetails of the table to be created
+        select_expr: Select
+            Select expression
+
+        Returns
+        -------
+        Expression
+        """
+        destination_expr = get_fully_qualified_table_name(table_details.dict())
+        return expressions.Create(
+            this=expressions.Table(this=destination_expr),
+            kind="TABLE",
+            expression=select_expr,
+        )
 
 
 class DatabricksAdapter(BaseAdapter):
@@ -682,7 +705,22 @@ class DatabricksAdapter(BaseAdapter):
         return re.sub(r"(?<!\\)'", "\\'", query)
 
     @classmethod
-    def create_table_expression(cls, create_table_expr: Expression) -> Expression:
+    def create_table_as(cls, table_details: TableDetails, select_expr: Select) -> Expression:
+        """
+        Construct query to create a table using a select statement
+
+        Parameters
+        ----------
+        table_details: TableDetails
+            TableDetails of the table to be created
+        select_expr: Select
+            Select expression
+
+        Returns
+        -------
+        Expression
+        """
+        destination_expr = get_fully_qualified_table_name(table_details.dict())
         table_properties = [
             expressions.TableFormatProperty(this=expressions.Var(this="DELTA")),
             expressions.Property(
@@ -695,8 +733,13 @@ class DatabricksAdapter(BaseAdapter):
                 this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"
             ),
         ]
-        create_table_expr.args["properties"] = expressions.Properties(expressions=table_properties)
-        return create_table_expr
+
+        return expressions.Create(
+            this=expressions.Table(this=destination_expr),
+            kind="TABLE",
+            expression=select_expr,
+            properties=expressions.Properties(expressions=table_properties),
+        )
 
 
 class SparkAdapter(DatabricksAdapter):
