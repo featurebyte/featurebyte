@@ -14,12 +14,14 @@ import pandas as pd
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
-from featurebyte import Configurations, Entity, Feature, RecordRetrievalException, Series, logger
+from featurebyte import Configurations, Entity, Feature, Series
 from featurebyte.api.api_object import ConflictResolution
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.core.mixin import ParentMixin
+from featurebyte.exception import RecordRetrievalException
+from featurebyte.logger import logger
 from featurebyte.models import FeatureModel
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
