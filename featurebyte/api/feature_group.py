@@ -96,7 +96,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
 
         See Also
         --------
-        - [FeatureGroup](/reference/featurebyte.api.feature_list.FeatureGroup/)
+        - [FeatureGroup](/reference/featurebyte.api.feature_group.FeatureGroup/)
         - [FeatureList.feature_names](/reference/featurebyte.api.feature_list.FeatureList.feature_names/)
         """
         return list(self.feature_objects)
