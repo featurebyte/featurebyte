@@ -1,5 +1,5 @@
 """
-Feature list namespace
+Feature group module.
 """
 
 from __future__ import annotations
