@@ -336,6 +336,30 @@ class WindowAggregator(TileBasedAggregator):
         tile_value_columns: list[str],
     ) -> Select:
 
+        # Join two tables with range join: REQ (processed request table) and TILE (tile table). For
+        # each row in the REQ table, we want to join with rows in the TILE table with tile index
+        # between REQ.FIRST_TILE_INDEX and REQ.LAST_TILE_INDEX.
+        range_join_where_conditions = [
+            f"TILE.INDEX >= REQ.{InternalName.FIRST_TILE_INDEX}",
+            f"TILE.INDEX < REQ.{InternalName.LAST_TILE_INDEX}",
+        ]
+
+        # Required columns from the request table
+        selected_from_request_table = [get_qualified_column_identifier(point_in_time_column, "REQ")]
+        for serving_name in serving_names:
+            selected_from_request_table.append(get_qualified_column_identifier(serving_name, "REQ"))
+
+        # Required columns from the tile table
+        selected_from_tile_table = [
+            get_qualified_column_identifier("INDEX", "TILE", quote_column=False)
+        ] + [
+            get_qualified_column_identifier(tile_value_column, "TILE", quote_column=False)
+            for tile_value_column in tile_value_columns
+        ]
+        if value_by is not None:
+            selected_from_tile_table.append(get_qualified_column_identifier(value_by, "TILE"))
+
+        # Narrow down matches using these conditions before filtering by range_join_where_conditions
         range_join_conditions = [
             f"FLOOR(REQ.{InternalName.LAST_TILE_INDEX} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
             f"FLOOR(REQ.{InternalName.LAST_TILE_INDEX} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
@@ -347,27 +371,6 @@ class WindowAggregator(TileBasedAggregator):
                 join_conditions_lst.append(
                     f"REQ.{quoted_identifier(serving_name).sql()} = TILE.{quoted_identifier(key).sql()}"
                 )
-
-            range_join_where_conditions = [
-                f"TILE.INDEX >= REQ.{InternalName.FIRST_TILE_INDEX}",
-                f"TILE.INDEX < REQ.{InternalName.LAST_TILE_INDEX}",
-            ]
-            selected_from_request_table = [
-                get_qualified_column_identifier(point_in_time_column, "REQ")
-            ]
-            for serving_name in serving_names:
-                selected_from_request_table.append(
-                    get_qualified_column_identifier(serving_name, "REQ")
-                )
-            selected_from_tile_table = [
-                get_qualified_column_identifier("INDEX", "TILE", quote_column=False)
-            ] + [
-                get_qualified_column_identifier(tile_value_column, "TILE", quote_column=False)
-                for tile_value_column in tile_value_columns
-            ]
-            if value_by is not None:
-                selected_from_tile_table.append(get_qualified_column_identifier(value_by, "TILE"))
-
             joined_expr = (
                 select(
                     *selected_from_request_table,
@@ -382,6 +385,8 @@ class WindowAggregator(TileBasedAggregator):
                 )
                 .where(*range_join_where_conditions)
             )
+            # Use UNION ALL with two separate joins to avoid non-exact join condition with OR which
+            # has significant performance impact.
             if req_joined_with_tiles is None:
                 req_joined_with_tiles = joined_expr
             else:
