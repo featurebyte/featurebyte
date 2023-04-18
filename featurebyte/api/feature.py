@@ -91,7 +91,11 @@ class Feature(
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Feature")
 
     # pydantic instance variable (public)
-    feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
+    feature_store: FeatureStoreModel = Field(
+        exclude=True,
+        allow_mutation=False,
+        description="Provides information about the feature store that the feature is connected to.",
+    )
 
     # class variables
     _route = "/feature"

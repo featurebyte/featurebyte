@@ -83,6 +83,7 @@ pydantic_field_doc_overrides = {
         UPDATED_AT: _get_updated_at_docstring_override("Table"),
     },
     "TableApiObject": {
+        "feature_store": "Provides information about the feature store that the table is connected to.",
         NAME: _get_name_docstring_override("Table"),
         UPDATED_AT: _get_updated_at_docstring_override("Table"),
         "type": "Returns the Table object's type, which may be one of the following: Event Table, Item Table, Slowly "
@@ -91,7 +92,11 @@ pydantic_field_doc_overrides = {
     "TableColumn": {
         NAME: _get_name_docstring_override("TableColumn"),
     },
+    "View": {
+        "feature_store": "Provides information about the feature store that the view is connected to.",
+    },
     "ViewColumn": {
+        "feature_store": "Provides information about the feature store that the view column is connected to.",
         NAME: _get_name_docstring_override("ViewColumn"),
     },
 }
