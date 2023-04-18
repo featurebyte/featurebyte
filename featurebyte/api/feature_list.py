@@ -1091,7 +1091,7 @@ class FeatureList(
         Automatic status changes:
         - New FeatureLists are assigned the "DRAFT" status.
         - The "DEPLOYED" status is applied when at least one version is deployed.
-        - If deployment is disabled for all versions, the FeatureList becomes a "PUBLIC DRAFT".
+        - If deployment is disabled for all versions, the FeatureList becomes a "PUBLIC_DRAFT".
 
         Additional guidelines:
         - Before making a FeatureList a "TEMPLATE", add a description and ensure all features are "production ready".

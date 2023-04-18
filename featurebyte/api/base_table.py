@@ -220,7 +220,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
     @typechecked
     def preview_sql(self, limit: int = 10, after_cleaning: bool = False) -> str:
         """
-        Returns an SQL query for previewing the column raw data.
+        Returns an SQL query for previewing the column data.
 
         Parameters
         ----------
