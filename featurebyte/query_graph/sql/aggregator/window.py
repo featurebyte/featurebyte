@@ -324,6 +324,75 @@ class WindowAggregator(TileBasedAggregator):
         self.window_aggregation_spec_set.add_aggregation_spec(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
 
+    @staticmethod
+    def _range_join_request_table_and_tile_table(
+        expanded_request_table_name: str,
+        tile_table_id: str,
+        point_in_time_column: str,
+        keys: list[str],
+        serving_names: list[str],
+        value_by: str | None,
+        num_tiles: int,
+        tile_value_columns: list[str],
+    ) -> Select:
+
+        range_join_conditions = [
+            f"FLOOR(REQ.{InternalName.LAST_TILE_INDEX} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
+            f"FLOOR(REQ.{InternalName.LAST_TILE_INDEX} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
+        ]
+        req_joined_with_tiles = None
+        for range_join_condition in range_join_conditions:
+            join_conditions_lst: Any = [range_join_condition]
+            for serving_name, key in zip(serving_names, keys):
+                join_conditions_lst.append(
+                    f"REQ.{quoted_identifier(serving_name).sql()} = TILE.{quoted_identifier(key).sql()}"
+                )
+
+            range_join_where_conditions = [
+                f"TILE.INDEX >= REQ.{InternalName.FIRST_TILE_INDEX}",
+                f"TILE.INDEX < REQ.{InternalName.LAST_TILE_INDEX}",
+            ]
+            selected_from_request_table = [
+                get_qualified_column_identifier(point_in_time_column, "REQ")
+            ]
+            for serving_name in serving_names:
+                selected_from_request_table.append(
+                    get_qualified_column_identifier(serving_name, "REQ")
+                )
+            selected_from_tile_table = [
+                get_qualified_column_identifier("INDEX", "TILE", quote_column=False)
+            ] + [
+                get_qualified_column_identifier(tile_value_column, "TILE", quote_column=False)
+                for tile_value_column in tile_value_columns
+            ]
+            if value_by is not None:
+                selected_from_tile_table.append(get_qualified_column_identifier(value_by, "TILE"))
+
+            joined_expr = (
+                select(
+                    *selected_from_request_table,
+                    *selected_from_tile_table,
+                )
+                .from_(f"{quoted_identifier(expanded_request_table_name).sql()} AS REQ")
+                .join(
+                    tile_table_id,
+                    join_alias="TILE",
+                    join_type="inner",
+                    on=expressions.and_(*join_conditions_lst),
+                )
+                .where(*range_join_where_conditions)
+            )
+            if req_joined_with_tiles is None:
+                req_joined_with_tiles = joined_expr
+            else:
+                req_joined_with_tiles = expressions.Union(  # type: ignore[unreachable]
+                    this=req_joined_with_tiles,
+                    distinct=False,
+                    expression=joined_expr,
+                )
+        assert req_joined_with_tiles is not None
+        return select().from_(req_joined_with_tiles.subquery())
+
     def construct_aggregation_sql(  # pylint: disable=too-many-arguments
         self,
         expanded_request_table_name: str,
@@ -398,68 +467,17 @@ class WindowAggregator(TileBasedAggregator):
         -------
         expressions.Select
         """
-        # pylint: disable=too-many-locals, too-many-branches
-        last_index_name = InternalName.LAST_TILE_INDEX.value
-
         # Join expanded request table with tile table using range join
-        range_join_conditions = [
-            f"FLOOR(REQ.{last_index_name} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
-            f"FLOOR(REQ.{last_index_name} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
-        ]
-        req_joined_with_tiles = None
-        for range_join_condition in range_join_conditions:
-            join_conditions_lst: Any = [range_join_condition]
-            for serving_name, key in zip(serving_names, keys):
-                join_conditions_lst.append(
-                    f"REQ.{quoted_identifier(serving_name).sql()} = TILE.{quoted_identifier(key).sql()}"
-                )
-            join_conditions = expressions.and_(*join_conditions_lst)
-
-            first_index_name = InternalName.FIRST_TILE_INDEX.value
-            range_join_where_conditions = [
-                f"TILE.INDEX >= REQ.{first_index_name}",
-                f"TILE.INDEX < REQ.{last_index_name}",
-            ]
-            selected_from_request_table = [
-                get_qualified_column_identifier(point_in_time_column, "REQ")
-            ]
-            for serving_name in serving_names:
-                selected_from_request_table.append(
-                    get_qualified_column_identifier(serving_name, "REQ")
-                )
-            selected_from_tile_table = [
-                get_qualified_column_identifier("INDEX", "TILE", quote_column=False)
-            ] + [
-                get_qualified_column_identifier(tile_value_column, "TILE", quote_column=False)
-                for tile_value_column in tile_value_columns
-            ]
-            if value_by is not None:
-                selected_from_tile_table.append(get_qualified_column_identifier(value_by, "TILE"))
-
-            joined_expr = (
-                select(
-                    *selected_from_request_table,
-                    *selected_from_tile_table,
-                )
-                .from_(f"{quoted_identifier(expanded_request_table_name).sql()} AS REQ")
-                .join(
-                    tile_table_id,
-                    join_alias="TILE",
-                    join_type="inner",
-                    on=join_conditions,
-                )
-                .where(*range_join_where_conditions)
-            )
-            if req_joined_with_tiles is None:
-                req_joined_with_tiles = joined_expr
-            else:
-                req_joined_with_tiles = expressions.Union(  # type: ignore[unreachable]
-                    this=req_joined_with_tiles,
-                    distinct=False,
-                    expression=joined_expr,
-                )
-        assert req_joined_with_tiles is not None
-        req_joined_with_tiles = select().from_(req_joined_with_tiles.subquery())
+        req_joined_with_tiles = self._range_join_request_table_and_tile_table(
+            expanded_request_table_name=expanded_request_table_name,
+            tile_table_id=tile_table_id,
+            point_in_time_column=point_in_time_column,
+            keys=keys,
+            serving_names=serving_names,
+            value_by=value_by,
+            num_tiles=num_tiles,
+            tile_value_columns=tile_value_columns,
+        )
 
         group_by_keys = [quoted_identifier(point_in_time_column)]
         for serving_name in serving_names:
