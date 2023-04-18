@@ -54,28 +54,35 @@ class TileGenerateEntityTracking(BaselSqlModel):
 
         escaped_entity_column_names_str = ",".join(escaped_entity_column_names)
 
-        entity_insert_cols_str = ", ".join(entity_insert_cols)
-        entity_filter_cols_str = " AND ".join(entity_filter_cols)
-        logger.debug(f"entity_insert_cols_str: {entity_insert_cols_str}")
-        logger.debug(f"entity_filter_cols_str: {entity_filter_cols_str}")
-
         # create table or insert new records or update existing records
         if not tracking_table_exist_flag:
             create_sql = construct_create_table_query(
                 tracking_table_name, self.entity_table, session=self._session
             )
-            logger.debug(f"create_sql: {create_sql}")
             await retry_sql(self._session, create_sql)
         else:
-            merge_sql = f"""
-                merge into {tracking_table_name} a using ({self.entity_table}) b
-                    on {entity_filter_cols_str}
-                    when matched then
-                        update set a.{self.tile_last_start_date_column} = b.{self.tile_last_start_date_column}
-                    when not matched then
-                        insert ({escaped_entity_column_names_str}, {self.tile_last_start_date_column})
-                            values ({entity_insert_cols_str}, b.{self.tile_last_start_date_column})
-            """
+            if self.entity_column_names:
+                entity_insert_cols_str = ", ".join(entity_insert_cols)
+                entity_filter_cols_str = " AND ".join(entity_filter_cols)
+                merge_sql = f"""
+                    merge into {tracking_table_name} a using ({self.entity_table}) b
+                        on {entity_filter_cols_str}
+                        when matched then
+                            update set a.{self.tile_last_start_date_column} = b.{self.tile_last_start_date_column}
+                        when not matched then
+                            insert ({escaped_entity_column_names_str}, {self.tile_last_start_date_column})
+                                values ({entity_insert_cols_str}, b.{self.tile_last_start_date_column})
+                """
+            else:
+                merge_sql = f"""
+                    merge into {tracking_table_name} a using ({self.entity_table}) b
+                        on true
+                        when matched then
+                            update set a.{self.tile_last_start_date_column} = b.{self.tile_last_start_date_column}
+                        when not matched then
+                            insert ({self.tile_last_start_date_column})
+                                values (b.{self.tile_last_start_date_column})
+                """
             await retry_sql_with_cache(
                 session=self._session, sql=merge_sql, cached_select_sql=self.entity_table
             )
