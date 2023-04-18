@@ -12,7 +12,7 @@ from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.simple_aggregator import SimpleAggregator

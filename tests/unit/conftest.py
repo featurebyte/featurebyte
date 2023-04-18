@@ -27,7 +27,8 @@ from featurebyte import (
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import DefaultVersionMode, Feature
-from featurebyte.api.feature_list import FeatureGroup, FeatureList
+from featurebyte.api.feature_group import FeatureGroup
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable

@@ -26,7 +26,7 @@ from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import (
