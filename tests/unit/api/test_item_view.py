@@ -1080,7 +1080,9 @@ def test_join_event_table_attributes__with_multiple_assignments(snowflake_item_v
     view["new_col"] = "new_column"
     view["new_col"][mask] = "some_value"
     view["new_col"][~mask] = "another_value"
+    node_name_before = view.node_name
     joined_view = view.join_event_table_attributes(["col_float"])
+    assert view.node_name == node_name_before
 
     expected_columns = [
         "event_id_col",

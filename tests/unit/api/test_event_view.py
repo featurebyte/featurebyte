@@ -615,7 +615,11 @@ def test_add_feature(
     original_column_info = copy.deepcopy(snowflake_event_view.columns_info)
 
     # Add feature
+    node_name_before = snowflake_event_view.node.name
     new_view = snowflake_event_view.add_feature("new_col", non_time_based_feature, "cust_id")
+    assert (
+        snowflake_event_view.node.name == node_name_before
+    )  # check that original view is not modified
 
     # assert updated view params
     assert new_view.columns_info == [
