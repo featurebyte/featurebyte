@@ -184,6 +184,8 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
         default=None
     )  # DEV-556: this should be compulsory
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
+    event_timestamp_timezone_offset: Optional[str] = Field(default=None)
+    event_timestamp_timezone_offset_column: Optional[InColumnStr] = Field(default=None)
 
     @root_validator(pre=True)
     @classmethod

@@ -904,3 +904,88 @@ def test_shape(snowflake_event_table):
         )
         # test view colum shape
         assert view["col_int"].shape() == (1000, 1)
+
+
+def test_datetime_property_extraction__event_timestamp(
+    snowflake_event_table_with_tz_offset_constant,
+):
+    """
+    Test extracting datetime property from event timestamp lookup feature
+    """
+    view = snowflake_event_table_with_tz_offset_constant.get_view()
+    timestamp_hour = view["event_timestamp"].dt.hour
+    view["event_timestamp_hour"] = timestamp_hour
+
+    # Check DT_EXTRACT node set up correctly
+    assert timestamp_hour.node.parameters.dict() == {
+        "property": "hour",
+        "timezone_offset": "-05:30",
+    }
+    dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
+    assert len(dt_extract_input_nodes) == 1
+
+    # TODO: update expected sql when timezone offset has effect
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "event_timestamp" AS "event_timestamp",
+          "col_int" AS "col_int",
+          "cust_id" AS "cust_id",
+          "tz_offset" AS "tz_offset",
+          EXTRACT(hour FROM "event_timestamp") AS "event_timestamp_hour"
+        FROM "sf_database"."sf_schema"."sf_table_no_tz"
+        LIMIT 10
+        """
+    ).strip()
+    assert view.preview_sql() == expected
+
+
+def test_datetime_property_extraction__event_timestamp_joined_view(
+    snowflake_event_table_with_tz_offset_column, snowflake_dimension_view
+):
+    """
+    Test extracting datetime property from event timestamp lookup feature
+    """
+    view = snowflake_event_table_with_tz_offset_column.get_view()
+    view = view.join(snowflake_dimension_view[["col_int", "col_text"]])
+    timestamp_hour = view["event_timestamp"].dt.hour
+    view["event_timestamp_hour"] = timestamp_hour
+
+    # Check DT_EXTRACT node set up correctly
+    assert timestamp_hour.node.parameters.dict() == {"property": "hour", "timezone_offset": None}
+    dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
+    assert len(dt_extract_input_nodes) == 2
+    _, tz_offset_node = dt_extract_input_nodes
+    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+        "columns": ["tz_offset"]
+    }
+
+    # TODO: update expected sql when timezone offset has effect
+    expected = textwrap.dedent(
+        """
+        SELECT
+          L."event_timestamp" AS "event_timestamp",
+          L."col_int" AS "col_int",
+          L."cust_id" AS "cust_id",
+          L."tz_offset" AS "tz_offset",
+          R."col_text" AS "col_text",
+          EXTRACT(hour FROM L."event_timestamp") AS "event_timestamp_hour"
+        FROM (
+          SELECT
+            "event_timestamp" AS "event_timestamp",
+            "col_int" AS "col_int",
+            "cust_id" AS "cust_id",
+            "tz_offset" AS "tz_offset"
+          FROM "sf_database"."sf_schema"."sf_table_no_tz"
+        ) AS L
+        LEFT JOIN (
+          SELECT
+            "col_int" AS "col_int",
+            "col_text" AS "col_text"
+          FROM "sf_database"."sf_schema"."dimension_table"
+        ) AS R
+          ON L."col_int" = R."col_int"
+        LIMIT 10
+        """
+    ).strip()
+    assert view.preview_sql() == expected

@@ -1097,3 +1097,58 @@ def test_join_event_table_attributes__with_multiple_assignments(snowflake_item_v
         "col_float",
     ]
     assert joined_view.columns == expected_columns
+
+
+def test_datetime_property_extraction__event_timestamp_in_item_view(
+    snowflake_item_table_with_timezone_offset_column,
+):
+    view = snowflake_item_table_with_timezone_offset_column.get_view(event_suffix="_event_table")
+    timestamp_hour = view["event_timestamp_event_table"].dt.hour
+    view["timestamp_hour"] = timestamp_hour
+
+    # Check DT_EXTRACT node set up correctly
+    assert timestamp_hour.node.parameters.dict() == {"property": "hour", "timezone_offset": None}
+    dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
+    assert len(dt_extract_input_nodes) == 2
+    _, tz_offset_node = dt_extract_input_nodes
+    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+        "columns": ["tz_offset_event_table"]
+    }
+
+    # TODO: update expected sql when timezone offset has effect
+    expected = textwrap.dedent(
+        """
+        SELECT
+          L."event_id_col" AS "event_id_col",
+          L."item_id_col" AS "item_id_col",
+          L."item_type" AS "item_type",
+          L."item_amount" AS "item_amount",
+          CAST(L."created_at" AS STRING) AS "created_at",
+          CAST(L."event_timestamp" AS STRING) AS "event_timestamp",
+          R."event_timestamp" AS "event_timestamp_event_table",
+          R."cust_id" AS "cust_id_event_table",
+          R."tz_offset" AS "tz_offset_event_table",
+          EXTRACT(hour FROM R."event_timestamp") AS "timestamp_hour"
+        FROM (
+          SELECT
+            "event_id_col" AS "event_id_col",
+            "item_id_col" AS "item_id_col",
+            "item_type" AS "item_type",
+            "item_amount" AS "item_amount",
+            "created_at" AS "created_at",
+            "event_timestamp" AS "event_timestamp"
+          FROM "sf_database"."sf_schema"."items_table"
+        ) AS L
+        LEFT JOIN (
+          SELECT
+            "event_timestamp" AS "event_timestamp",
+            "col_int" AS "col_int",
+            "cust_id" AS "cust_id",
+            "tz_offset" AS "tz_offset"
+          FROM "sf_database"."sf_schema"."sf_table_no_tz"
+        ) AS R
+          ON L."event_id_col" = R."col_int"
+        LIMIT 10
+        """
+    ).strip()
+    assert view.preview_sql() == expected

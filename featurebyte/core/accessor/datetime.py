@@ -3,14 +3,24 @@ This module contains datetime accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Union
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.core.util import series_unary_operation
-from featurebyte.enum import DBVarType
+from featurebyte.core.util import series_binary_operation, series_unary_operation
+from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node.input import EventTableInputNodeParameters
+from featurebyte.query_graph.node.metadata.operation import (
+    DerivedDataColumn,
+    NodeOutputCategory,
+    OperationStructure,
+    SourceDataColumn,
+)
 
 if TYPE_CHECKING:
+    from featurebyte.core.frame import Frame
     from featurebyte.core.series import FrozenSeries
 
 
@@ -398,6 +408,10 @@ class DatetimeAccessor:
         return self._make_operation("microsecond")
 
     def _make_operation(self, field_name: str) -> FrozenSeries:
+
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.core.series import FrozenSeries
+
         var_type = (
             DBVarType.FLOAT if self._node_type == NodeType.TIMEDELTA_EXTRACT else DBVarType.INT
         )
@@ -407,10 +421,190 @@ class DatetimeAccessor:
                 f" {self._obj.dtype} type. Available attributes:"
                 f" {', '.join(self._property_node_params_map.keys())}."
             )
+        node_params = {"property": self._property_node_params_map[field_name]}
+        timezone_offset = self._infer_timezone_offset(self._obj)
+
+        if isinstance(timezone_offset, FrozenSeries):
+            return series_binary_operation(
+                input_series=self._obj,
+                other=timezone_offset,
+                node_type=self._node_type,
+                output_var_type=var_type,
+                additional_node_params=node_params,
+                **self._obj.binary_op_series_params(timezone_offset),
+            )
+
+        if isinstance(timezone_offset, str):
+            node_params["timezone_offset"] = timezone_offset
+
         return series_unary_operation(
             input_series=self._obj,
             node_type=self._node_type,
             output_var_type=var_type,
-            node_params={"property": self._property_node_params_map[field_name]},
+            node_params=node_params,
             **self._obj.unary_op_series_params(),
         )
+
+    @staticmethod
+    def _infer_timezone_offset(series: FrozenSeries) -> Optional[Union[FrozenSeries, str]]:
+        """
+        Infer the timezone offset for the given series.
+
+        This will check whether the series is the event timestamp column of an EventTable where a
+        timezone offset is specified. If this is the case, the timezone offset will be returned,
+        either as a str (when the offset is a fixed value) or as a series (when the offset is a
+        column in the EventTable). If no timezone offset can be inferred, None will be returned.
+
+        Parameters
+        ----------
+        series: FrozenSeries
+            The series to check for timezone offset
+
+        Returns
+        -------
+        Optional[Union[FrozenSeries, str]]
+        """
+
+        # Only proceed if the series is a timestamp column and without TZ info
+        if series.dtype != DBVarType.TIMESTAMP:
+            return None
+
+        operation_structure = series.graph.extract_operation_structure(
+            series.node, keep_all_source_columns=True
+        )
+        if operation_structure.output_category != NodeOutputCategory.VIEW:
+            return None
+
+        # Check whether the series is a simple timestamp column (derived only from a timestamp
+        # column from a source table)
+        source_timestamp_column = DatetimeAccessor._get_source_timestamp_column(operation_structure)
+        if source_timestamp_column is None or source_timestamp_column.table_id is None:
+            return None
+
+        # Check whether the series is the event timestamp column of an EventTable
+        input_node_parameters = DatetimeAccessor._get_input_node_parameters_by_id(
+            series.graph, source_timestamp_column.node_name, source_timestamp_column.table_id
+        )
+        if input_node_parameters.get("type") == TableDataType.EVENT_TABLE:
+            params = EventTableInputNodeParameters(**input_node_parameters)
+            if params.timestamp_column == source_timestamp_column.name:
+                # The series is an event timestamp column. Retrieve timezone offset if available.
+                result: Optional[Union[FrozenSeries, str]] = None
+                if params.event_timestamp_timezone_offset_column is not None:
+                    result = DatetimeAccessor._get_offset_series_from_frame(
+                        series.parent,
+                        params.event_timestamp_timezone_offset_column,
+                        params.id,
+                    )
+                elif params.event_timestamp_timezone_offset is not None:
+                    result = params.event_timestamp_timezone_offset
+                return result
+
+        return None
+
+    @staticmethod
+    def _get_source_timestamp_column(
+        operation_structure: OperationStructure,
+    ) -> Optional[SourceDataColumn]:
+        """
+        Get a SourceDataColumn corresponding to timestamp column of interest
+
+        Parameters
+        ----------
+        operation_structure: OperationStructure
+            The operation structure to check for a timestamp column
+
+        Returns
+        -------
+        Optional[SourceDataColumn]
+        """
+        source_columns_of_timestamp_type = []
+        for item in operation_structure.iterate_source_columns_or_aggregations():
+            if isinstance(item, SourceDataColumn):
+                if item.dtype == DBVarType.TIMESTAMP:
+                    source_columns_of_timestamp_type.append(item)
+
+        # The timestamp offset will only be applied if the timestamp column is directly derived from
+        # the event timestamp column. If there are more than one SourceDataColumn of timestamp type,
+        # that is not the case, and this will return None to abort the timezone offset inference.
+        if len(source_columns_of_timestamp_type) == 1:
+            return source_columns_of_timestamp_type[0]
+
+        return None
+
+    @staticmethod
+    def _get_input_node_parameters_by_id(
+        graph: QueryGraph,
+        target_node_name: str,
+        table_id: PydanticObjectId,
+    ) -> Dict[str, Any]:
+        """
+        Get the parameters of an input node by its table_id
+
+        Parameters
+        ----------
+        graph: QueryGraph
+            QueryGraph to search for the input node
+        target_node_name: str
+            Target node to initiate the search
+        table_id: PydanticObjectId
+            Table identifier
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        target_node = graph.get_node_by_name(target_node_name)
+        for input_node in graph.iterate_nodes(target_node=target_node, node_type=NodeType.INPUT):
+            parameters_dict = input_node.parameters.dict()
+            if parameters_dict.get("id") == table_id:
+                return parameters_dict
+        assert False, "Input node not found"
+
+    @staticmethod
+    def _get_offset_series_from_frame(
+        frame: Frame, offset_column_name: str, table_id: Optional[PydanticObjectId]
+    ) -> Optional[FrozenSeries]:
+        """
+        Get a series from a frame that corresponds to the timezone offset column
+
+        Parameters
+        ----------
+        frame: Frame
+            Frame to search for the offset column
+        offset_column_name: str
+            Name of the offset column as defined in the EventTable. The column might not necessarily
+            have the same name in the frame (e.g. due to join suffix).
+        table_id: Optional[PydanticObjectId]
+            Table identifier
+
+        Returns
+        -------
+        Optional[FrozenSeries]
+        """
+
+        operation_structure = frame.graph.extract_operation_structure(
+            frame.node, keep_all_source_columns=True
+        )
+        offset_column_name_in_frame = None
+
+        for opstruct_column in operation_structure.columns:
+
+            if isinstance(opstruct_column, SourceDataColumn):
+                if (
+                    opstruct_column.table_id == table_id
+                    and opstruct_column.name == offset_column_name
+                ):
+                    offset_column_name_in_frame = opstruct_column.name
+                    break
+
+            elif isinstance(opstruct_column, DerivedDataColumn):
+                for column in opstruct_column.columns:
+                    if column.table_id == table_id and column.name == offset_column_name:
+                        offset_column_name_in_frame = opstruct_column.name
+                        break
+
+        if offset_column_name_in_frame is not None:
+            return frame[offset_column_name_in_frame]  # type: ignore
+
+        return None

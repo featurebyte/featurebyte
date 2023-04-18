@@ -31,6 +31,7 @@ class DatetimeExtractNode(BaseSeriesOutputWithSingleOperandNode):
         """Parameters"""
 
         property: DatetimeSupportedPropertyType
+        timezone_offset: Optional[str]
 
     type: Literal[NodeType.DT_EXTRACT] = Field(NodeType.DT_EXTRACT, const=True)
     parameters: Parameters

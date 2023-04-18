@@ -64,6 +64,8 @@ class EventTableData(BaseTableData):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     event_timestamp_column: StrictStr
     event_id_column: StrictStr
+    event_timestamp_timezone_offset: Optional[str] = Field(default=None)
+    event_timestamp_timezone_offset_column: Optional[str] = Field(default=None)
 
     @property
     def primary_key_columns(self) -> List[str]:
@@ -79,6 +81,8 @@ class EventTableData(BaseTableData):
                 "timestamp_column": self.event_timestamp_column,
                 "id_column": self.event_id_column,
                 "feature_store_details": feature_store_details,
+                "event_timestamp_timezone_offset": self.event_timestamp_timezone_offset,
+                "event_timestamp_timezone_offset_column": self.event_timestamp_timezone_offset_column,
                 **self._get_common_input_node_parameters(),
             },
         )

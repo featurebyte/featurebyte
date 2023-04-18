@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
+from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -967,6 +968,59 @@ def test_accessing_saved_event_table_attributes(saved_event_table):
     saved_event_table.update_default_feature_job_setting(feature_job_setting=feature_job_setting)
     assert saved_event_table.default_feature_job_setting == feature_job_setting
     assert cloned.default_feature_job_setting == feature_job_setting
+
+
+def test_timezone_offset__valid_constant(snowflake_database_table_dimension_table):
+    """Test specifying a constant timezone offset"""
+    event_table = snowflake_database_table_dimension_table.create_event_table(
+        name="sf_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        event_timestamp_timezone_offset="+08:00",
+    )
+    assert event_table.event_timestamp_timezone_offset == "+08:00"
+
+    input_node_params = event_table.frame.node.parameters
+    assert input_node_params.event_timestamp_timezone_offset == "+08:00"
+
+
+def test_timezone_offset__invalid_constant(snowflake_database_table_dimension_table):
+    """Test specifying a constant timezone offset"""
+    with pytest.raises(ValidationError) as exc:
+        snowflake_database_table_dimension_table.create_event_table(
+            name="sf_event_table",
+            event_id_column="col_int",
+            event_timestamp_column="event_timestamp",
+            event_timestamp_timezone_offset="8 hours ahead",
+        )
+    assert "Invalid timezone_offset: 8 hours ahead" in str(exc.value)
+
+
+def test_timezone_offset__valid_column(snowflake_database_table_dimension_table):
+    """Test specifying a constant timezone offset using a column"""
+    event_table = snowflake_database_table_dimension_table.create_event_table(
+        name="sf_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        event_timestamp_timezone_offset_column="col_text",
+    )
+    assert event_table.event_timestamp_timezone_offset_column == "col_text"
+
+    input_node_params = event_table.frame.node.parameters
+    assert input_node_params.event_timestamp_timezone_offset_column == "col_text"
+
+
+def test_timezone_offset__invalid_column(snowflake_database_table_dimension_table):
+    """Test specifying a constant timezone offset using a column"""
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_database_table_dimension_table.create_event_table(
+            name="sf_event_table",
+            event_id_column="col_int",
+            event_timestamp_column="event_timestamp",
+            event_timestamp_timezone_offset_column="col_float",
+        )
+    expected = "Column \"col_float\" is expected to have type(s): ['VARCHAR'] (type=value_error)"
+    assert expected in str(exc.value)
 
 
 def test_sdk_code_generation(snowflake_database_table, update_fixtures):

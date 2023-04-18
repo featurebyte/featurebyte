@@ -74,6 +74,12 @@ class EventTable(TableApiObject):
     )
     internal_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
     internal_event_id_column: Optional[StrictStr] = Field(alias="event_id_column")  # DEV-556
+    internal_event_timestamp_timezone_offset: Optional[StrictStr] = Field(
+        alias="event_timestamp_timezone_offset"
+    )
+    internal_event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(
+        alias="event_timestamp_timezone_offset_column"
+    )
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
@@ -223,6 +229,34 @@ class EventTable(TableApiObject):
             return self.cached_model.event_id_column
         except RecordRetrievalException:
             return self.internal_event_id_column
+
+    @property
+    def event_timestamp_timezone_offset(self) -> Optional[str]:
+        """
+        Timezone offset of the event timestamp column
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.cached_model.event_timestamp_timezone_offset
+        except RecordRetrievalException:
+            return self.internal_event_timestamp_timezone_offset
+
+    @property
+    def event_timestamp_timezone_offset_column(self) -> Optional[str]:
+        """
+        A column in the EventTable that contains the timezone offset of the event timestamp column
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.cached_model.event_timestamp_timezone_offset_column
+        except RecordRetrievalException:
+            return self.internal_event_timestamp_timezone_offset_column
 
     @property
     def timestamp_column(self) -> Optional[str]:
