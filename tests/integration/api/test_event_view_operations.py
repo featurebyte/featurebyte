@@ -561,11 +561,6 @@ async def test_get_historical_features(
     """
     Test getting historical features from FeatureList
     """
-    if use_async_workflow and session.source_type == "databricks":
-        # TODO: Enable this test once we fix the issue with async workflow"
-        # jira ticket: https://featurebyte.atlassian.net/browse/DEV-1489
-        return
-
     feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     df_training_events = pd.DataFrame(
         {

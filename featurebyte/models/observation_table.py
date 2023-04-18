@@ -22,7 +22,6 @@ from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.materialisation import (
-    create_table_as,
     get_row_count_sql,
     get_source_expr,
     get_view_expr,
@@ -124,8 +123,11 @@ class BaseObservationInput(FeatureByteBaseModel):
                 adapter = get_sql_adapter(source_type=session.source_type)
                 query_expr = adapter.tablesample(query_expr, num_percent).limit(sample_rows)
 
+        expression = get_sql_adapter(session.source_type).create_table_as(
+            table_details=destination, select_expr=query_expr
+        )
         query = sql_to_string(
-            create_table_as(table_details=destination, select_expr=query_expr),
+            expression,
             source_type=session.source_type,
         )
 
