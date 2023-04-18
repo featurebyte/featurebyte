@@ -194,7 +194,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def dtypes(self) -> pd.Series:
         """
-        Retrieve column table type info.
+        Returns a Series with the data type of each column in the table.
 
         Returns
         -------
