@@ -160,7 +160,7 @@ class GroupBy:
 
         See Also
         --------
-        - [FeatureGroup](/reference/featurebyte.api.feature_list.FeatureGroup/): FeatureGroup object
+        - [FeatureGroup](/reference/featurebyte.api.feature_group.FeatureGroup/): FeatureGroup object
         - [Feature](/reference/featurebyte.api.feature.Feature/): Feature object
         """
         return WindowAggregator(
