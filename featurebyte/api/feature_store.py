@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from bson import ObjectId
+
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.data_source import DataSource
 from featurebyte.common.doc_util import FBAutoDoc
@@ -183,6 +185,54 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
                 database_credential=database_credential,
                 storage_credential=storage_credential,
             )
+
+    @classmethod
+    def get(cls, name: str) -> FeatureStore:  # pylint: disable=useless-parent-delegation
+        """
+        Gets a FeatureStore object by its name.
+
+        Parameters
+        ----------
+        name: str
+            Name of the feature store to retrieve.
+
+        Returns
+        -------
+        FeatureStore
+            FeatureStore object.
+
+        Examples
+        --------
+        Get a FeatureStore object that is already saved.
+
+        >>> feature_store = fb.FeatureStore.get("feature_store_name")  # doctest: +SKIP
+        """
+        return super().get(name)
+
+    @classmethod
+    def get_by_id(  # pylint: disable=useless-parent-delegation
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> FeatureStore:
+        """
+        Returns a FeatureStore object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            Feature store unique identifier (ID).
+
+        Returns
+        -------
+        FeatureStore
+            FeatureStore object.
+
+        Examples
+        --------
+        Get a FeatureStore object that is already saved.
+
+        >>> fb.FeatureStore.get_by_id(<catalog_id>)  # doctest: +SKIP
+        """
+        return super().get_by_id(id=id)
 
     def get_data_source(self) -> DataSource:
         """

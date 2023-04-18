@@ -535,6 +535,28 @@ class Feature(
         return operation_structure.is_time_based
 
     @property
+    def is_datetime(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the feature has a datetime data type.
+
+        Returns
+        -------
+        bool
+        """
+        return super().is_datetime
+
+    @property
+    def is_numeric(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the feature has a numeric data type.
+
+        Returns
+        -------
+        bool
+        """
+        return super().is_numeric
+
+    @property
     def definition(self) -> str:
         """
         Displays the feature definition file of the feature.

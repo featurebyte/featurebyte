@@ -141,7 +141,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         name: str,
     ) -> Catalog:
         """
-        Create and return an instance of a catalog. The catalog will be activated.
+        Creates a Catalog object that allows team members to easily add, search, retrieve, and reuse tables,
+        entities, features, and feature lists. The Catalog provides detailed information about the properties of
+        these elements, including their type, creation date, related versions, readiness, status, and other
+        descriptive details.
+
+        When dealing with data warehouses that cover multiple domains, creating several catalogs can aid in
+        maintaining organization and simplifying management of data and features for different domains.
 
         Parameters
         ----------
@@ -299,7 +305,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         id: ObjectId
-            Catalog unique identified (ID).
+            Catalog unique identifier (ID).
 
         Returns
         -------
@@ -313,6 +319,31 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> fb.Catalog.get_by_id(<catalog_id>)  # doctest: +SKIP
         """
         return super().get_by_id(id=id)
+
+    @classmethod
+    def list(
+        cls, include_id: Optional[bool] = False
+    ) -> pd.DataFrame:  # pylint: disable=useless-parent-delegation
+        """
+        Returns a DataFrame containing information on catalogs such as their names, creation dates, and active status.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        DataFrame
+            Table of objects.
+
+        Examples
+        --------
+        List all Catalogs.
+
+        >>> catalogs = fb.Catalog.list()
+        """
+        return super().list(include_id=include_id)
 
     @update_and_reset_catalog
     def create_entity(self, name: str, serving_names: List[str]) -> Entity:

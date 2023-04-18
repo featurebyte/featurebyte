@@ -183,6 +183,46 @@ class ViewColumn(Series, SampleMixin):
         )[feature_name]
         return cast(Feature, feature)
 
+    @property
+    def is_datetime(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the view column has a datetime data type.
+
+        Returns
+        -------
+        bool
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+
+        >>> print(view["Timestamp"].is_datetime)
+        True
+        >>> print(view["Amount"].is_datetime)
+        False
+        """
+        return super().is_datetime
+
+    @property
+    def is_numeric(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the view column has a numeric data type.
+
+        Returns
+        -------
+        bool
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+
+        >>> print(view["Amount"].is_numeric)
+        True
+        >>> print(view["Timestamp"].is_numeric)
+        False
+        """
+        return super().is_numeric
+
 
 class GroupByMixin:
     """
