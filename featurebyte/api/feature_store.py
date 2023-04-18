@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from bson import ObjectId
+from pandas import DataFrame
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.data_source import DataSource
@@ -236,6 +237,31 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         >>> fb.FeatureStore.get_by_id(<catalog_id>)  # doctest: +SKIP
         """
         return super().get_by_id(id=id)
+
+    @classmethod
+    def list(  # pylint: disable=useless-parent-delegation
+        cls, include_id: Optional[bool] = False
+    ) -> DataFrame:
+        """
+        Returns a DataFrame that lists the feature stores by their names, types and creation dates.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        DataFrame
+            Table of objects.
+
+        Examples
+        --------
+        List all feature stores.
+
+        >>> feature_stores = fb.FeatureStore.list()
+        """
+        return super().list(include_id=include_id)
 
     def get_data_source(self) -> DataSource:
         """

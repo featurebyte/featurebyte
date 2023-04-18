@@ -442,6 +442,13 @@ class FeatureList(
                 progress_bar()  # pylint: disable=not-callable
 
     def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
+        """
+        Adds a FeatureList object to the catalog.
+
+        A conflict could be triggered when the object being saved has violated a uniqueness check at the catalog.
+        If uniqueness is violated, you can either raise an error or retrieve the object with the same name, depending
+        on the conflict resolution parameter passed in. The default behavior is to raise an error.
+        """
         try:
             super().save(conflict_resolution=conflict_resolution)
         except DuplicatedRecordException as exc:

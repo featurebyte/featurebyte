@@ -96,6 +96,8 @@ pydantic_field_doc_overrides = {
         NAME: _get_name_docstring_override("TableColumn"),
     },
     "View": {
+        "columns_info": "Returns a list of columns specifications. This includes the id of the Entity objects tagged "
+        "in the table and the default cleaning operations set for each column in the table.",
         "feature_store": "Provides information about the feature store that the view is connected to.",
     },
     "ViewColumn": {

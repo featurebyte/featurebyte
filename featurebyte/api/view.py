@@ -12,6 +12,7 @@ from typing import (
     Literal,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -41,7 +42,7 @@ from featurebyte.common.model_util import validate_offset_string
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
-from featurebyte.core.series import FrozenSeries, Series
+from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     ChangeViewNoJoinColumnError,
@@ -335,6 +336,46 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     def __str__(self) -> str:
         return repr(self)
+
+    @property
+    def columns(self) -> list[str]:  # pylint: disable=useless-parent-delegation
+        """
+        List the names of the columns in the view.
+
+        Returns
+        -------
+        list[str]
+        """
+        return super().columns
+
+    @typechecked
+    def astype(  # pylint: disable=useless-parent-delegation
+        self: FrozenSeriesT,
+        new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
+    ) -> FrozenSeriesT:
+        """
+        Converts the data type of a column. It is useful when you need to convert column values between numerical and
+        string formats, or the other way around.
+
+        Parameters
+        ----------
+        new_type : Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]])
+            Desired type after conversion. Type can be provided directly, or as a string.
+
+        Returns
+        -------
+        FrozenSeriesT
+            A new Series with converted variable type.
+
+        Examples
+        --------
+        Convert a numerical series to a string series, and back to an int series.
+
+        >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> event_view["Amount"] = event_view["Amount"].astype(str)
+        >>> event_view["Amount"] = event_view["Amount"].astype(int)
+        """
+        return super().astype(new_type=new_type)
 
     def sample(  # pylint: disable=useless-parent-delegation
         self,
