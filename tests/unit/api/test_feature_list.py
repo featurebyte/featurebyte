@@ -13,12 +13,8 @@ from pandas.testing import assert_frame_equal
 from featurebyte import list_deployments
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import (
-    BaseFeatureGroup,
-    FeatureGroup,
-    FeatureList,
-    FeatureListNamespace,
-)
+from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
+from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import InternalName
 from featurebyte.exception import (
