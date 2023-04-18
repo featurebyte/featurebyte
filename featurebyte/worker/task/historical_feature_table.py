@@ -1,28 +1,28 @@
 """
-ModelingTable creation task
+HistoricalFeatureTable creation task
 """
 from __future__ import annotations
 
 from typing import Any, cast
 
-from featurebyte.models.modeling_table import HistoricalFeatureTableModel
-from featurebyte.schema.worker.task.modeling_table import HistoricalFeatureTableTaskPayload
-from featurebyte.service.modeling_table import ModelingTableService
+from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
+from featurebyte.schema.worker.task.historical_feature_table import HistoricalFeatureTableTaskPayload
+from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.worker.task.base import BaseTask
 
 
-class ModelingTableTask(BaseTask):
+class HistoricalFeatureTableTask(BaseTask):
     """
-    ModelingTableTask creates a ModelingTable by computing historical features
+    HistoricalFeatureTableTask creates a HistoricalFeatureTable by computing historical features
     """
 
     payload_class = HistoricalFeatureTableTaskPayload
 
     async def execute(self) -> Any:
         """
-        Execute ModelingTableTask
+        Execute HistoricalFeatureTableTask
         """
         payload = cast(HistoricalFeatureTableTaskPayload, self.payload)
 
@@ -33,8 +33,8 @@ class ModelingTableTask(BaseTask):
             payload.observation_table_id
         )
 
-        modeling_table_service: ModelingTableService = app_container.modeling_table_service
-        location = await modeling_table_service.generate_materialized_table_location(
+        historical_feature_table_service: HistoricalFeatureTableService = app_container.history_feature_table_service
+        location = await historical_feature_table_service.generate_materialized_table_location(
             self.get_credential, payload.feature_store_id
         )
 
@@ -47,7 +47,7 @@ class ModelingTableTask(BaseTask):
             output_table_details=location.table_details,
         )
 
-        modeling_table_model = HistoricalFeatureTableModel(
+        historical_feature_table_model = HistoricalFeatureTableModel(
             _id=payload.output_document_id,
             user_id=self.payload.user_id,
             name=payload.name,
@@ -55,5 +55,5 @@ class ModelingTableTask(BaseTask):
             observation_table_id=payload.observation_table_id,
             feature_list_id=payload.featurelist_get_historical_features.feature_list_id,
         )
-        created_doc = await modeling_table_service.create_document(modeling_table_model)
+        created_doc = await historical_feature_table_service.create_document(historical_feature_table_model)
         assert created_doc.id == payload.output_document_id

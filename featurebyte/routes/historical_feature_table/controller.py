@@ -1,5 +1,5 @@
 """
-ModelingTable API route controller
+HistoricalTable API route controller
 """
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ from featurebyte.schema.task import Task
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 
 
-class ModelingTableController(
+class HistoricalFeatureTableController(
     BaseDocumentController[HistoricalFeatureTableModel, HistoricalFeatureTableService, HistoricalFeatureTableList],
 ):
     """
-    ObservationTable Controller
+    HistoricalFeatureTable Controller
     """
 
     paginated_document_class = HistoricalFeatureTableList
@@ -24,12 +24,12 @@ class ModelingTableController(
         super().__init__(service)
         self.task_controller = task_controller
 
-    async def create_modeling_table(
+    async def create_historical_feature_table(
         self,
         data: HistoricalFeatureTableCreate,
     ) -> Task:
         """
-        Create ModelingTable by submitting an async historical feature request task
+        Create HistoricalFeatureTable by submitting an async historical feature request task
 
         Parameters
         ----------
@@ -40,6 +40,6 @@ class ModelingTableController(
         -------
         Task
         """
-        payload = await self.service.get_modeling_table_task_payload(data=data)
+        payload = await self.service.get_historical_feature_table_task_payload(data=data)
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))

@@ -24,7 +24,7 @@ class HistoricalFeatureTableService(BaseMaterializedTableService[HistoricalFeatu
     def class_name(self) -> str:
         return "HistoricalFeatureTable"
 
-    async def get_modeling_table_task_payload(
+    async def get_historical_feature_table_task_payload(
         self, data: HistoricalFeatureTableCreate
     ) -> HistoricalFeatureTableTaskPayload:
         """

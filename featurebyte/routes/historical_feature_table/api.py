@@ -10,7 +10,7 @@ from http import HTTPStatus
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.modeling_table import HistoricalFeatureTableModel
+from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -21,41 +21,43 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.modeling_table import ModelingTableCreate, ModelingTableList
+from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate, HistoricalFeatureTableList
 from featurebyte.schema.task import Task
 
-router = APIRouter(prefix="/modeling_table")
+router = APIRouter(prefix="/historical_feature_table")
 
 
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)
-async def create_modeling_table(
+async def create_historical_feature_table(
     request: Request,
-    data: ModelingTableCreate,
+    data: HistoricalFeatureTableCreate,
 ) -> Task:
     """
-    Create ModelingTable by submitting a materialization task
+    Create HistoricalFeatureTable by submitting a materialization task
     """
-    controller = request.state.app_container.modeling_table_controller
-    task_submit: Task = await controller.create_modeling_table(
+    controller = request.state.app_container.historical_feature_table_controller
+    task_submit: Task = await controller.create_historical_feature_table(
         data=data,
     )
     return task_submit
 
 
-@router.get("/{modeling_table_id}", response_model=HistoricalFeatureTableModel)
-async def get_modeling_table(
-    request: Request, modeling_table_id: PydanticObjectId
+@router.get("/{historical_feature_table_id}", response_model=HistoricalFeatureTableModel)
+async def get_historical_feature_table(
+    request: Request, historical_feature_table_id: PydanticObjectId
 ) -> HistoricalFeatureTableModel:
     """
-    Get ModelingTable
+    Get HistoricalFeatureTable
     """
-    controller = request.state.app_container.modeling_table_controller
-    modeling_table: HistoricalFeatureTableModel = await controller.get(document_id=modeling_table_id)
-    return modeling_table
+    controller = request.state.app_container.historical_feature_table_controller
+    historical_feature_table: HistoricalFeatureTableModel = await controller.get(
+        document_id=historical_feature_table_id
+    )
+    return historical_feature_table
 
 
-@router.get("", response_model=ModelingTableList)
-async def list_modeling_tables(
+@router.get("", response_model=HistoricalFeatureTableList)
+async def list_historical_feature_tables(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
@@ -63,12 +65,12 @@ async def list_modeling_tables(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
-) -> ModelingTableList:
+) -> HistoricalFeatureTableList:
     """
-    List ModelingTables
+    List HistoricalFeatureTables
     """
-    controller = request.state.app_container.modeling_table_controller
-    periodic_task_list: ModelingTableList = await controller.list(
+    controller = request.state.app_container.historical_feature_table_controller
+    historical_feature_table_list: HistoricalFeatureTableList = await controller.list(
         page=page,
         page_size=page_size,
         sort_by=sort_by,
@@ -76,13 +78,13 @@ async def list_modeling_tables(
         search=search,
         name=name,
     )
-    return periodic_task_list
+    return historical_feature_table_list
 
 
-@router.get("/audit/{modeling_table_id}", response_model=AuditDocumentList)
-async def list_modeling_table_audit_logs(
+@router.get("/audit/{historical_feature_table_id}", response_model=AuditDocumentList)
+async def list_historical_feature_table_audit_logs(
     request: Request,
-    modeling_table_id: PydanticObjectId,
+    historical_feature_table_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -90,11 +92,11 @@ async def list_modeling_table_audit_logs(
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
-    List ModelingTable audit logs
+    List HistoricalFeatureTable audit logs
     """
-    controller = request.state.app_container.modeling_table_controller
+    controller = request.state.app_container.historical_feature_table_controller
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        document_id=modeling_table_id,
+        document_id=historical_feature_table_id,
         page=page,
         page_size=page_size,
         sort_by=sort_by,

@@ -33,7 +33,7 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.modeling_table import HistoricalFeatureTable
+from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
@@ -73,7 +73,7 @@ from featurebyte.schema.feature_list import (
     FeatureVersionInfo,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
-from featurebyte.schema.modeling_table import ModelingTableCreate
+from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 
 
 class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
@@ -951,7 +951,7 @@ class FeatureList(
             serving_names_mapping=serving_names_mapping,
         )
         feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id
-        payload = ModelingTableCreate(
+        payload = HistoricalFeatureTable(
             name=modeling_table_name,
             observation_table_id=observation_table.id,
             feature_store_id=feature_store_id,

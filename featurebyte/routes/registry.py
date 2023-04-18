@@ -20,7 +20,7 @@ from featurebyte.routes.feature_list_namespace.controller import FeatureListName
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.item_table.controller import ItemTableController
-from featurebyte.routes.historical_feature_table.controller import ModelingTableController
+from featurebyte.routes.historical_feature_table.controller import HistoricalFeatureTableController
 from featurebyte.routes.observation_table.controller import ObservationTableController
 from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
@@ -351,8 +351,8 @@ app_container_config.add_controller(
     "credential_controller", CredentialController, ["credential_service", "info_service"]
 )
 app_container_config.add_controller(
-    "modeling_table_controller",
-    ModelingTableController,
+    "historical_feature_table_controller",
+    HistoricalFeatureTableController,
     ["historical_feature_table_service", "task_controller"],
 )
 app_container_config.add_controller(
