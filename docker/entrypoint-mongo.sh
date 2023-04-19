@@ -3,6 +3,9 @@
 # Exit on any command failure
 set -e
 
+export MONGO_HOSTNAME=${MONGO_HOSTNAME:-localhost}
+echo "MONGO_HOSTNAME: ${MONGO_HOSTNAME}"
+
 # start mongo service
 mkdir -p /data/db1 /data/db2
 echo "Starting mongo servers"
@@ -22,11 +25,11 @@ if ! mongosh --quiet --port=27021 --eval "rs.status()" 1>/dev/null 2>&1; then
             "members": [
                 {
                     "_id": 1,
-                    "host": "localhost:27021",
+                    "host": "${MONGO_HOSTNAME}:27021",
                     "priority": 1
                 }, {
                     "_id": 2,
-                    "host": "localhost:27022",
+                    "host": "${MONGO_HOSTNAME}:27022",
                     "priority": 2
                 },
             ]
@@ -42,7 +45,7 @@ while ! mongosh --quiet --port=27021 --eval "rs.status()" 1>/dev/null 2>&1; do s
 while [[ 1 -ne "$(mongosh --quiet --port=27021 --eval "rs.status().ok")" ]]; do
   sleep 1;
 done
-echo "mongo-rs is established"
+echo "\nmongo-rs is established"
 
 # Sleep
 sleep inf

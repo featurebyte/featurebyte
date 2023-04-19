@@ -7,11 +7,11 @@ services:
     hostname: mongo-rs
     restart: unless-stopped
     container_name: mongo-rs
-    image: "mongo:6.0.3"
-    entrypoint: ["/bin/bash", "./scripts/entrypoint.sh"]
+    image: "featurebyte/mongo:6"
+    environment:
+      - MONGO_HOSTNAME=mongo-rs
     volumes:
-      - ./entrypoint-mongo.sh:/scripts/entrypoint.sh
-      - ~/.featurebyte/data/mongodb:/data/
+      - mongodb:/data/
     healthcheck:
       test: ["CMD", "mongosh", "--port=27022", "--eval", "rs.status()"]
     logging:
@@ -159,5 +159,6 @@ networks:
     external: true
 
 volumes:
+  mongodb:
   spark-warehouse:
   file-store:
