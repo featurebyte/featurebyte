@@ -362,7 +362,17 @@ class GroupByMixin:
     @typechecked
     def groupby(self, by_keys: Union[str, List[str]], category: Optional[str] = None) -> GroupBy:
         """
-        Group a view using one or more columns.
+        The groupby method of a view returns a GroupBy class that can be used to group data based on one or more
+        columns representing entities (specified in the key parameter). Within each entity or group of entities,
+        the GroupBy class applies aggregation function(s) to the data.
+
+        The grouping keys determine the primary entity for the declared features in the aggregation function.
+
+        Moreover, the groupby method's category parameter allows you to define a categorical column, which can be
+        used to generate Cross Aggregate Features. These features involve aggregating data across categories of the
+        categorical column, enabling the extraction of patterns in an entity across these categories. For instance,
+        you can calculate the amount spent by a customer on each product category during a specific time period using
+        this approach.
 
         Parameters
         ----------
