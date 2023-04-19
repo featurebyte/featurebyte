@@ -50,8 +50,9 @@ COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
 
 ## Copy script
-COPY ./docker/entrypoint.sh             /scripts/entrypoint.sh
-RUN chmod +x /scripts/entrypoint.sh
+COPY ./docker/entrypoint.sh /docker-entrypoint.sh
+COPY ./docker/migration.py /scripts/migration.py
+RUN chmod +x /docker-entrypoint.sh
 RUN chown -R 1000:1000 /app
 
-CMD ["/bin/bash", "/scripts/entrypoint.sh"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

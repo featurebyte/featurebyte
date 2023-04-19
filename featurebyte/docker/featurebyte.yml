@@ -54,6 +54,8 @@ services:
         condition: service_healthy
     ports:
       - "0.0.0.0:8088:8088"
+    command:
+      - "server"
     environment:
       - "FEATUREBYTE_HOME=/app/.featurebyte"
       - "MPLCONFIGDIR=/app/matplotlib"
@@ -61,7 +63,6 @@ services:
       - "MONGODB_URI=mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0"
       - "API_HOST=0.0.0.0"
       - "API_PORT=8088"
-      - "WORKERS=3"
       - "LOG_LEVEL=info"
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
@@ -71,7 +72,6 @@ services:
       interval: 10s
       start_period: 30s
     volumes:
-      - ./migration.py:/scripts/migration.py
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
       - ~/.featurebyte/data/files:/app/.featurebyte/data/files
@@ -98,10 +98,9 @@ services:
       - "MONGODB_URI=mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0"
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
-    entrypoint: |
-      /bin/bash /scripts/entrypoint-worker.sh
+    command:
+      - "worker"
     volumes:
-      - ./entrypoint-worker.sh:/scripts/entrypoint-worker.sh
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
       - ~/.featurebyte/data/files:/app/.featurebyte/data/files
