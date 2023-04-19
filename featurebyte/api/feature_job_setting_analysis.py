@@ -27,7 +27,10 @@ from featurebyte.schema.feature_job_setting_analysis import (
 
 class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     """
-    FeatureJobSettingAnalysis class
+    The FeatureJobSettingAnalysis object contains the result of the analysis of the data availability and freshness of
+    a table. The metadata held by the object includes a report and recommendation for the configuration of the feature
+    job setting of features associated with the table. Additionally, you can perform a backtest of a manually
+    configured feature job setting.
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureJobSettingAnalysis")
