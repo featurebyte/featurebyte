@@ -624,9 +624,9 @@ class Feature(
         try:
             definition = self.cached_model.definition
             assert definition is not None, "Saved feature's definition should not be None."
-            return definition
         except RecordRetrievalException:
-            return CodeStr(self._generate_code(to_format=True, to_use_saved_data=True))
+            definition = self._generate_code(to_format=True, to_use_saved_data=True)
+        return CodeStr(definition)
 
     @property
     def primary_entity(self) -> List[Entity]:

@@ -16,6 +16,9 @@ $$
       most_frequent_key = k;
     }
   }
+  if (most_frequent_key === null) {
+    return [null, null];
+  }
   return [most_frequent_key, most_frequent_count];
 $$
 ;
