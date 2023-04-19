@@ -3,7 +3,7 @@ FeatureJobSettingAnalysis class
 """
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from io import BytesIO
 from pathlib import Path
@@ -182,3 +182,47 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         # download and return table
         response = client.get(f"{output_url}.parquet")
         return pd.read_parquet(path=BytesIO(response.content))
+
+    def info(  # pylint: disable=useless-parent-delegation
+        self, verbose: bool = False
+    ) -> Dict[str, Any]:
+        """
+        The info method provides comprehensive details about a FeatureJobSettingAnalysis object, which encompasses:
+
+        - the creation time of the analysis,
+        - the table analyzed,
+        - the analysis configuration,
+        - recommended feature job setting, and
+        - the catalog where the analysis is stored.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+        """
+        return super().info(verbose)
+
+    @classmethod
+    def get_by_id(  # pylint: disable=useless-parent-delegation
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> FeatureJobSettingAnalysis:
+        """
+        Retrieves an analysis of the data availability and freshness of a table. This returns a
+        FeatureJobSettingAnalysis object that allows to access the result of the analysis.
+
+        Parameters
+        ----------
+        id: ObjectId
+            FeatureJobSettingAnalysis unique identifier (ID).
+
+        Returns
+        -------
+        FeatureJobSettingAnalysis
+            FeatureJobSettingAnalysis object.
+        """
+        return super().get_by_id(id=id)
