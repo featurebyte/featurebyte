@@ -651,7 +651,7 @@ class Feature(
         FrozenSeriesT
             A new Series with converted variable type.
         """
-        return super().astype(new_type=new_type)  # type: ignore[no-any-return]
+        return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
 
     def binary_op_series_params(
         self, other: Scalar | FrozenSeries | ScalarSequence

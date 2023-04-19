@@ -349,7 +349,7 @@ class ViewColumn(Series, SampleMixin):
         >>> event_view["Amount"] = event_view["Amount"].astype(str)
         >>> event_view["Amount"] = event_view["Amount"].astype(int)
         """
-        return super().astype(new_type=new_type)  # type: ignore[no-any-return]
+        return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
 
 
 class GroupByMixin:
