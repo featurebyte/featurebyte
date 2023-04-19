@@ -448,6 +448,17 @@ class FeatureList(
         A conflict could be triggered when the object being saved has violated a uniqueness check at the catalog.
         If uniqueness is violated, you can either raise an error or retrieve the object with the same name, depending
         on the conflict resolution parameter passed in. The default behavior is to raise an error.
+
+        Parameters
+        ----------
+        conflict_resolution: ConflictResolution
+            "raise" will raise an error when we encounter a conflict error.
+            "retrieve" will handle the conflict error by retrieving the object with the same name.
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When a record with the same key exists at the persistent data store.
         """
         try:
             super().save(conflict_resolution=conflict_resolution)
