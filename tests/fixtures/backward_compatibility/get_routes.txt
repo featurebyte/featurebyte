@@ -1,6 +1,8 @@
 /catalog
 /context
 /credential
+/deployment
+/deployment/summary
 /dimension_table
 /entity
 /event_table
@@ -11,7 +13,7 @@
 /feature_namespace
 /feature_store
 /item_table
-/modeling_table
+/historical_feature_table
 /prediction_table
 /observation_table
 /periodic_task

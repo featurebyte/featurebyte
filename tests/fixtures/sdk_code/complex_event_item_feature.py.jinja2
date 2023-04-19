@@ -19,17 +19,21 @@ event_view = event_table.get_view(
     drop_column_names=["created_at"],
     column_cleaning_operations=[],
 )
-item_view.join_event_table_attributes(columns=["col_float"], event_suffix=None)
-col = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
+joined_view = item_view.join_event_table_attributes(
+    columns=["col_float"], event_suffix=None
+)
+col = joined_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     value_column="col_float",
     method="sum",
     feature_name="non_time_sum_feature",
     skip_fill_na=True,
 )
-event_view.add_feature(
+joined_view_1 = event_view.add_feature(
     new_column_name="non_time_sum_feature", feature=col, entity_column="cust_id"
 )
-grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
+grouped = joined_view_1.groupby(
+    by_keys=["cust_id"], category=None
+).aggregate_over(
     value_column="non_time_sum_feature",
     method="sum",
     windows=["24h"],
@@ -42,7 +46,7 @@ grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     skip_fill_na=True,
 )
 feat = grouped["sum_a_24h"]
-grouped_1 = event_view.groupby(
+grouped_1 = joined_view_1.groupby(
     by_keys=["cust_id"], category="col_int"
 ).aggregate_over(
     value_column=None,

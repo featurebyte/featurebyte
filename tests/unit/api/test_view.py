@@ -1,7 +1,7 @@
 """
 Test view class
 """
-from typing import List
+from typing import Any, Dict, List
 
 import pytest
 from bson import ObjectId
@@ -50,6 +50,9 @@ class SimpleTestView(View):
     def get_join_column(self) -> str:
         return self.join_col
 
+    def json_dict(self, **kwargs: Any) -> Dict[str, Any]:
+        return {}
+
     def set_join_col_override(self, join_col_override: str):
         """
         Test helper to set the join column override.
@@ -65,7 +68,7 @@ def get_test_view_fixture():
     return SimpleTestView()
 
 
-def test_update_metadata(simple_test_view):
+def test_create_joined_view(simple_test_view):
     """
     Test update metadata
     """
@@ -78,11 +81,11 @@ def test_update_metadata(simple_test_view):
     assert simple_test_view.columns_info != new_cols_info
 
     # update state
-    simple_test_view._update_metadata(new_node_name, new_cols_info)
+    joined_view = simple_test_view._create_joined_view(new_node_name, new_cols_info)
 
     # verify that state is updated
-    assert simple_test_view.node_name == new_node_name
-    assert simple_test_view.columns_info == new_cols_info
+    assert joined_view.node_name == new_node_name
+    assert joined_view.columns_info == new_cols_info
 
 
 def get_random_pydantic_object_id() -> PydanticObjectId:
@@ -338,19 +341,21 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     assert other_view.columns_info == [col_info_c, col_info_d, col_info_e]
 
     # do the join
-    current_view.join(other_view, on=col_info_a.name, how=join_type_param, rsuffix="suffix")
+    joined_view = current_view.join(
+        other_view, on=col_info_a.name, how=join_type_param, rsuffix="suffix"
+    )
 
     # assert updated view params
-    assert current_view.columns_info == [
+    assert joined_view.columns_info == [
         col_info_a,
         col_info_b,
         ColumnInfo(name="colDsuffix", dtype=DBVarType.INT),
         ColumnInfo(name="colEsuffix", dtype=DBVarType.INT),
     ]
-    assert current_view.node_name == "join_1"
+    assert joined_view.node_name == "join_1"
 
     # assert graph node
-    view_dict = current_view.dict()
+    view_dict = joined_view.dict()
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict == {
         "name": "join_1",

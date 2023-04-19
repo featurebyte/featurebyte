@@ -57,9 +57,19 @@ class EventView(View, GroupByMixin):
 
     # pydantic instance variables
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        allow_mutation=False, description="default job setting for the view"
+        allow_mutation=False,
+        description="Returns the default feature job setting for the view.\n\n"
+        "The Default Feature Job Setting establishes the default setting used by "
+        "features that aggregate data in the view, ensuring consistency of the "
+        "Feature Job Setting across features created by different team members. "
+        "While it's possible to override the setting during feature declaration, "
+        "using the Default Feature Job Setting simplifies the process of setting "
+        "up the Feature Job Setting for each feature.",
     )
-    event_id_column: Optional[str] = Field(allow_mutation=False)
+    event_id_column: Optional[str] = Field(
+        allow_mutation=False,
+        description="Returns the name of the column representing the event key of the Event view.",
+    )
 
     @property
     def timestamp_column(self) -> str:
@@ -327,7 +337,7 @@ class EventView(View, GroupByMixin):
 
     def add_feature(
         self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None
-    ) -> None:
+    ) -> EventView:
         """
         Adds a simple aggregate feature obtained from an Item View to the corresponding Event View. Once the feature
         is integrated in this manner, it can be aggregated as any other column over a time frame to create Aggregate
@@ -346,13 +356,18 @@ class EventView(View, GroupByMixin):
         entity_column: Optional[str]
             The entity column to use in the EventView. The type of this entity should match the entity of the feature.
 
+        Returns
+        -------
+        EventView
+            The EventView with the new feature added.
+
         Examples
         --------
         Add feature to an EventView.
 
         >>> event_view = catalog.get_view("GROCERYINVOICE")
         >>> feature = catalog.get_feature("InvoiceCount")
-        >>> event_view.add_feature("invoice_count", feature)
+        >>> event_view = event_view.add_feature("invoice_count", feature)
 
         """
         validate_type_is_feature(feature, "feature")
@@ -384,5 +399,7 @@ class EventView(View, GroupByMixin):
             )
         )
 
-        # Update metadata
-        self._update_metadata(node.name, updated_columns_info)
+        # create a new view and return it
+        return self._create_joined_view(
+            new_node_name=node.name, joined_columns_info=updated_columns_info
+        )

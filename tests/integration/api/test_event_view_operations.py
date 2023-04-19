@@ -561,11 +561,6 @@ async def test_get_historical_features(
     """
     Test getting historical features from FeatureList
     """
-    if use_async_workflow and session.source_type == "databricks":
-        # TODO: Enable this test once we fix the issue with async workflow"
-        # jira ticket: https://featurebyte.atlassian.net/browse/DEV-1489
-        return
-
     feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     df_training_events = pd.DataFrame(
         {
@@ -668,7 +663,10 @@ async def test_get_historical_features(
 
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
     fb_assert_frame_equal(
-        df_historical_features, df_historical_expected, dict_like_columns=["COUNT_BY_ACTION_24h"]
+        df_historical_features,
+        df_historical_expected,
+        dict_like_columns=["COUNT_BY_ACTION_24h"],
+        sort_by_columns=["POINT_IN_TIME", "üser id"] if use_async_workflow else None,
     )
 
     if not use_async_workflow:
@@ -730,6 +728,7 @@ async def _test_get_historical_features_with_serving_names(
         df_historical_features,
         df_historical_expected,
         dict_like_columns=["COUNT_BY_ACTION_24h"],
+        sort_by_columns=["POINT_IN_TIME", "new_user id"] if use_async_workflow else None,
     )
 
 
@@ -1077,8 +1076,12 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
     original_column_names = [col.name for col in event_view.columns_info]
 
     # add feature
-    event_view.add_feature("transaction_count", non_time_based_feature, "TRANSACTION_ID")
-    event_view.add_feature("transaction_count_2", non_time_based_feature, "TRANSACTION_ID")
+    event_view = event_view.add_feature(
+        "transaction_count", non_time_based_feature, "TRANSACTION_ID"
+    )
+    event_view = event_view.add_feature(
+        "transaction_count_2", non_time_based_feature, "TRANSACTION_ID"
+    )
 
     # test columns are updated as expected
     event_view_preview = event_view.preview(5000)
@@ -1138,11 +1141,13 @@ def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_fea
     """
     # update the view with a join first
     scd_view = scd_table.get_view()
-    event_view.join(scd_view)
+    event_view = event_view.join(scd_view)
     original_column_names = [col.name for col in event_view.columns_info]
 
     # add feature
-    event_view.add_feature("transaction_count", non_time_based_feature, "TRANSACTION_ID")
+    event_view = event_view.add_feature(
+        "transaction_count", non_time_based_feature, "TRANSACTION_ID"
+    )
 
     # ensure the updated view continues to work as expected
     event_view["User Status New"] = event_view["User Status"] + "_suffix"

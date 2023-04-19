@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Type, cast
 from featurebyte.api.base_aggregator import BaseAggregator
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window

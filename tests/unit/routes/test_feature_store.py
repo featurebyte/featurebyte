@@ -20,7 +20,7 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.schema.feature_store import FeatureStoreSample
+from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from tests.unit.routes.base import BaseApiTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -593,6 +593,43 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         response = test_api_client.post("/feature_store/sample", json=data_sample_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+
+    def test_shape_200(self, test_api_client_persistent, data_sample_payload, mock_get_session):
+        """Test table shape (success)"""
+        test_api_client, _ = test_api_client_persistent
+
+        expected_df = pd.DataFrame({"count": [100]})
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        data_preview = FeatureStorePreview(**data_sample_payload)
+        response = test_api_client.post("/feature_store/shape", json=data_preview.json_dict())
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == {"num_rows": 100, "num_cols": 9}
+        assert (
+            mock_session.execute_query.call_args[0][0]
+            == textwrap.dedent(
+                """
+                WITH data AS (
+                  SELECT
+                    "col_int" AS "col_int",
+                    "col_float" AS "col_float",
+                    "col_char" AS "col_char",
+                    "col_text" AS "col_text",
+                    "col_binary" AS "col_binary",
+                    "col_boolean" AS "col_boolean",
+                    "event_timestamp" AS "event_timestamp",
+                    "created_at" AS "created_at",
+                    "cust_id" AS "cust_id"
+                  FROM "sf_database"."sf_schema"."sf_table"
+                )
+                SELECT
+                  COUNT(*) AS "count"
+                FROM data
+                """
+            ).strip()
+        )
 
     @pytest.mark.asyncio
     async def test_credentials_stored(self, test_api_client_persistent):

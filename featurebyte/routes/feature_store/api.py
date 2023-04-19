@@ -28,6 +28,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreList,
     FeatureStorePreview,
     FeatureStoreSample,
+    FeatureStoreShape,
 )
 from featurebyte.schema.info import FeatureStoreInfo
 
@@ -201,6 +202,21 @@ async def list_columns_in_database_table(
         get_credential=request.state.get_credential,
     )
     return result
+
+
+@router.post("/shape", response_model=FeatureStoreShape)
+async def get_data_shape(
+    request: Request,
+    preview: FeatureStorePreview,
+) -> FeatureStoreShape:
+    """
+    Retrieve shape for query graph node
+    """
+    controller = request.state.app_container.feature_store_controller
+    return cast(
+        FeatureStoreShape,
+        await controller.shape(preview=preview, get_credential=request.state.get_credential),
+    )
 
 
 @router.post("/preview", response_model=Dict[str, Any])

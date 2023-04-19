@@ -4,24 +4,11 @@ FeatureListVersion class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    OrderedDict,
-    Sequence,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 import collections
 import json
 import os.path
-import time
 from http import HTTPStatus
 
 import numpy as np
@@ -29,7 +16,7 @@ import pandas as pd
 from alive_progress import alive_bar
 from bson.objectid import ObjectId
 from jinja2 import Template
-from pydantic import Field, parse_obj_as, root_validator
+from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import (
@@ -43,26 +30,23 @@ from featurebyte.api.api_object import (
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
+from featurebyte.api.feature_group import BaseFeatureGroup
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.modeling_table import ModelingTable
+from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
-from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import (
     CodeStr,
     dataframe_from_arrow_stream,
-    dataframe_from_json,
     dataframe_to_arrow_bytes,
     enforce_observation_set_row_order,
 )
 from featurebyte.config import Configurations
-from featurebyte.core.mixin import ParentMixin
-from featurebyte.core.series import Series
 from featurebyte.exception import (
     DuplicatedRecordException,
     FeatureListNotOnlineEnabledError,
@@ -70,11 +54,9 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.logger import logger
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
-from featurebyte.models.feature import DefaultVersionMode, FeatureModel
+from featurebyte.models.base import PydanticObjectId, VersionIdentifier
+from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
-    FeatureCluster,
     FeatureListModel,
     FeatureListNamespaceModel,
     FeatureListStatus,
@@ -82,369 +64,16 @@ from featurebyte.models.feature_list import (
     FrozenFeatureListModel,
     FrozenFeatureListNamespaceModel,
 )
-from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
-    FeatureListPreview,
-    FeatureListSQL,
     FeatureListUpdate,
     FeatureVersionInfo,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
-from featurebyte.schema.modeling_table import ModelingTableCreate
-
-
-class BaseFeatureGroup(FeatureByteBaseModel):
-    """
-    BaseFeatureGroup class
-
-    This class represents a collection of Feature's that users create.
-
-    Parameters
-    ----------
-    items: Sequence[Union[Feature, BaseFeatureGroup]]
-        List of feature like objects to be used to create the FeatureList
-    feature_objects: OrderedDict[str, Feature]
-        Dictionary of feature name to feature object
-    """
-
-    items: Sequence[Union[Feature, BaseFeatureGroup]] = Field(exclude=True)
-    feature_objects: OrderedDict[str, Feature] = Field(
-        exclude=True, default_factory=collections.OrderedDict
-    )
-
-    @property
-    def _features(self) -> list[Feature]:
-        """
-        Retrieve list of features in the FeatureGroup object
-
-        Returns
-        -------
-        List[Feature]
-
-
-        Raises
-        ------
-        ValueError
-            When the FeatureGroup object is empty
-        """
-        features: list[Feature] = list(self.feature_objects.values())
-        if features:
-            return features
-        raise ValueError("There is no feature in the FeatureGroup object.")
-
-    @property
-    def feature_names(self) -> list[str]:
-        """
-        List of feature names in the FeatureGroup object.
-
-        Returns
-        -------
-        list[str]
-            List of feature names
-
-        Examples
-        --------
-        >>> table = catalog.get_table("GROCERYINVOICE")
-        >>> view = table.get_view()
-        >>> feature_group = view.groupby("GroceryCustomerGuid").aggregate_over(
-        ...     value_column=None,
-        ...     method="count",
-        ...     feature_names=["count_60days", "count_90days"],
-        ...     windows=["60d", "90d"],
-        ... )
-        >>> feature_group.feature_names
-        ['count_60days', 'count_90days']
-
-        See Also
-        --------
-        - [FeatureGroup](/reference/featurebyte.api.feature_list.FeatureGroup/)
-        - [FeatureList.feature_names](/reference/featurebyte.api.feature_list.FeatureList.feature_names/)
-        """
-        return list(self.feature_objects)
-
-    @property
-    def primary_entity(self) -> List[Entity]:
-        """
-        Returns the primary entity of the FeatureList object.
-
-        Returns
-        -------
-        List[Entity]
-            Primary entity
-        """
-        entity_ids = set()
-        for feature in self._features:
-            entity_ids.update(feature.entity_ids)
-        primary_entity = derive_primary_entity(  # type: ignore
-            [Entity.get_by_id(entity_id) for entity_id in entity_ids]
-        )
-        return primary_entity
-
-    @root_validator
-    @classmethod
-    def _set_feature_objects(cls, values: dict[str, Any]) -> dict[str, Any]:
-        feature_objects = collections.OrderedDict()
-        feature_ids = set()
-        items = values.get("items", [])
-        for item in items:
-            if isinstance(item, Feature):
-                if item.name is None:
-                    raise ValueError(f'Feature (feature.id: "{item.id}") name must not be None!')
-                if item.name in feature_objects:
-                    raise ValueError(f'Duplicated feature name (feature.name: "{item.name}")!')
-                if item.id in feature_ids:
-                    raise ValueError(f'Duplicated feature id (feature.id: "{item.id}")!')
-                feature_objects[item.name] = item
-                feature_ids.add(item.id)
-            else:
-                for name, feature in item.feature_objects.items():
-                    if feature.name in feature_objects:
-                        raise ValueError(
-                            f'Duplicated feature name (feature.name: "{feature.name}")!'
-                        )
-                    if feature.id in feature_ids:
-                        raise ValueError(f'Duplicated feature id (feature.id: "{feature.id}")!')
-                    feature_objects[name] = feature
-        values["feature_objects"] = feature_objects
-        return values
-
-    @typechecked
-    def __init__(self, items: Sequence[Union[Feature, BaseFeatureGroup]], **kwargs: Any):
-        super().__init__(items=items, **kwargs)
-        # sanity check: make sure we don't make a copy on global query graph
-        for item_origin, item in zip(items, self.items):
-            if isinstance(item_origin, Feature) and isinstance(item, Feature):
-                assert id(item_origin.graph.nodes) == id(item.graph.nodes)
-
-    def _subset_single_column(self, column: str) -> Feature:
-        return self.feature_objects[column]
-
-    def _subset_list_of_columns(self, columns: list[str]) -> FeatureGroup:
-        return FeatureGroup([self.feature_objects[elem] for elem in columns])
-
-    @typechecked
-    def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
-        if isinstance(item, str):
-            return self._subset_single_column(item)
-        return self._subset_list_of_columns(item)
-
-    @typechecked
-    def drop(self, items: List[str]) -> FeatureGroup:
-        """
-        Drop feature(s) from the FeatureGroup/FeatureList
-
-        Parameters
-        ----------
-        items: List[str]
-            List of feature names to be dropped
-
-        Returns
-        -------
-        FeatureGroup
-            FeatureGroup object contains remaining feature(s)
-        """
-        selected_feat_names = [
-            feat_name for feat_name in self.feature_objects if feat_name not in items
-        ]
-        return self._subset_list_of_columns(selected_feat_names)
-
-    def _get_feature_clusters(self) -> List[FeatureCluster]:
-        """
-        Get groups of features in the feature lists that belong to the same feature store
-
-        Returns
-        -------
-        List[FeatureCluster]
-        """
-        return cast(
-            List[FeatureCluster],
-            FeatureList.derive_feature_clusters(cast(List[FeatureModel], self._features)),
-        )
-
-    @enforce_observation_set_row_order
-    @typechecked
-    def preview(
-        self,
-        observation_set: pd.DataFrame,
-    ) -> Optional[pd.DataFrame]:
-        """
-        Materialize feature group using a small observation set of up to 50 rows.
-
-        Unlike get_historical_features, this method does not store partial aggregations (tiles) to
-        speed up future computation. Instead, it computes the features on the fly, and should be used
-        only for small observation sets for debugging or prototyping unsaved features.
-
-        Tiles are a method of storing partial aggregations in the feature store,
-        which helps to minimize the resources required to fulfill historical, batch and online requests.
-
-        Parameters
-        ----------
-        observation_set : pd.DataFrame
-            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
-            as well as columns with serving names for all entities used by features in the feature group.
-
-        Returns
-        -------
-        pd.DataFrame
-            Materialized feature values.
-            The returned DataFrame will have the same number of rows, and include all columns from the observation set.
-
-            **Note**: `POINT_IN_TIME` values will be converted to UTC time.
-
-        Raises
-        ------
-        RecordRetrievalException
-            Preview request failed
-
-        Examples
-        --------
-        Create a feature group with two features.
-        >>> features = fb.FeatureGroup([
-        ...     catalog.get_feature("InvoiceCount_60days"),
-        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
-        ... ])
-
-        Prepare observation set with POINT_IN_TIME and serving names columns.
-        >>> observation_set = pd.DataFrame({
-        ...     "POINT_IN_TIME": ["2022-06-01 00:00:00", "2022-06-02 00:00:00"],
-        ...     "GROCERYCUSTOMERGUID": [
-        ...         "a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3",
-        ...         "ac479f28-e0ff-41a4-8e60-8678e670e80b",
-        ...     ],
-        ... })
-
-        Preview the feature group with a small observation set.
-        >>> features.preview(observation_set)
-          POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days  InvoiceAmountAvg_60days
-        0    2022-06-01  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                    7.938
-        1    2022-06-02  ac479f28-e0ff-41a4-8e60-8678e670e80b                  6.0                    9.870
-
-        See Also
-        --------
-        - [Feature.preview](/reference/featurebyte.api.feature.Feature.preview/):
-          Preview feature group.
-        - [FeatureList.get_historical_features](/reference/featurebyte.api.feature_list.FeatureList.get_historical_features/):
-          Get historical features from a feature list.
-        """
-        tic = time.time()
-
-        payload = FeatureListPreview(
-            feature_clusters=self._get_feature_clusters(),
-            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
-        )
-
-        client = Configurations().get_client()
-        response = client.post("/feature_list/preview", json=payload.json_dict())
-        if response.status_code != HTTPStatus.OK:
-            raise RecordRetrievalException(response)
-        result = response.json()
-
-        elapsed = time.time() - tic
-        logger.debug(f"Preview took {elapsed:.2f}s")
-        return dataframe_from_json(result)  # pylint: disable=no-member
-
-    @property
-    def sql(self) -> str:
-        """
-        Get FeatureGroup SQL.
-
-        Returns
-        -------
-        str
-            FeatureGroup SQL string.
-
-        Raises
-        ------
-        RecordRetrievalException
-            Failed to get feature list SQL.
-        """
-        payload = FeatureListSQL(
-            feature_clusters=self._get_feature_clusters(),
-        )
-
-        client = Configurations().get_client()
-        response = client.post("/feature_list/sql", json=payload.json_dict())
-        if response.status_code != HTTPStatus.OK:
-            raise RecordRetrievalException(response)
-
-        return cast(
-            str,
-            response.json(),
-        )
-
-
-class FeatureGroup(BaseFeatureGroup, ParentMixin):
-    """
-    FeatureGroup represents a collection of Feature's.
-
-    These Features are typically not production ready, and are mostly used as an in-memory representation while
-    users are still building up their features in the SDK. Note that while this object has a `save` function, it is
-    actually the individual features within this feature group that get persisted. Similarly, the object that
-    gets constructed on the read path does not become a FeatureGroup. The persisted version that users interact with
-    is called a FeatureList.
-
-    Note that the following operations result in a new FeatureGroup object as the output could contain more than
-    one Feature object:
-
-    - [GroupBy.aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/)
-    - [View.as_features](/reference/featurebyte.api.view.View.as_features/)
-    """
-
-    # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureGroup")
-
-    @typechecked
-    def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
-        # Note: Feature can only modify FeatureGroup parent but not FeatureList parent.
-        output = super().__getitem__(item)
-        if isinstance(output, Feature):
-            output.set_parent(self)
-        return output
-
-    @typechecked
-    def __setitem__(
-        self, key: Union[str, Tuple[Feature, str]], value: Union[Feature, Union[Scalar, Series]]
-    ) -> None:
-        if isinstance(key, tuple):
-            if len(key) != 2:
-                raise ValueError(f"{len(key)} elements found, when we only expect 2.")
-            mask = key[0]
-            if not isinstance(mask, Feature):
-                raise ValueError("The mask provided should be a Feature.")
-            column: str = key[1]
-            feature = self[column]
-            assert isinstance(feature, Series)
-            feature[mask] = value
-            return
-
-        # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
-        # Feature object
-        value = parse_obj_as(Feature, value)
-        # Name setting performs validation to ensure the specified name is valid
-        value.name = key
-        self.feature_objects[key] = value
-        # sanity check: make sure we don't copy global query graph
-        assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
-
-    @typechecked
-    def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
-        """
-        Save features within a FeatureGroup object to the persistent. Conflict could be triggered when the feature
-        being saved has violated uniqueness check at the persistent (for example, same ID has been used by another
-        record stored at the persistent).
-
-        Parameters
-        ----------
-        conflict_resolution: ConflictResolution
-            "raise" raises error when then counters conflict error (default)
-            "retrieve" handle conflict error by retrieving the object with the same name
-        """
-        for feature_name in self.feature_names:
-            self[feature_name].save(conflict_resolution=conflict_resolution)
+from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 
 
 class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
@@ -567,6 +196,9 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             on="default_feature_list_id",
         )
 
+        # replace id with default_feature_list_id
+        feature_lists["id"] = feature_lists["default_feature_list_id"]
+
         feature_lists["num_features"] = feature_lists.feature_namespace_ids.apply(len)
         feature_lists["readiness_frac"] = feature_lists.readiness_distribution.apply(
             lambda readiness_distribution: FeatureReadinessDistribution(
@@ -616,18 +248,25 @@ class FeatureList(
     BaseFeatureGroup, FrozenFeatureListModel, DeletableApiObject, SavableApiObject, FeatureJobMixin
 ):
     """
-    A Feature List is a set of features that is typically crafted to address a specific Use Case, and is typically how
-    a user interacts with their collection of features.
+    The FeatureList class is used as a constructor to create a FeatureList Object.
 
-    The primary entity of the Feature List, which determines its main focus, is determined by analyzing the relationship
-    between the primary entities of the individual features listed. Usually, the primary entity of the Feature List
-    aligns with that of the Use Case. Nevertheless, if there is a mismatch, the serving entities of the Feature List
-    are utilized to evaluate its compatibility with the Use Case.
+    A FeatureList object is added to the catalog only when explicitly saved.
 
-    In order to obtain EDA, training or test data for a Use Case, the Feature List is first used to gather historical
-    feature values, which are then employed to analyze features and train and test models. Once a model has been
-    trained and validated, the Feature List is deployed, and the feature values can be accessed through online serving
-    to generate predictions.
+    A Feature List is a collection of Feature Objects specifically designed to address a particular Use Case. The
+    Feature List is initially used to gather historical feature values for EDA, training, or testing data for a Use
+    Case. These values are then utilized to analyze features, train, and test models. Once a model is trained and
+    validated, the Feature List can be deployed, and the feature values can be accessed through online serving for
+    generating predictions.
+
+    Before serving a feature list, you can verify its primary entity using the primary_entity attribute. If the
+    features within the list relate to different primary entities, the feature list's primary entity is determined
+    based on the relationships between the entities, with the lowest-level entity chosen as the primary entity. If
+    there are no relationships between entities, the primary entity may become a tuple comprising those entities.
+
+    For example, imagine a feature list that includes features related to a card, customer, and customer city. In
+    this scenario, the primary entity is the card entity because it is a child of both the customer and customer
+    city entities. However, if the feature list also contains features for a merchant and merchant city, the primary
+    entity becomes a tuple of card and merchant.
     """
 
     # documentation metadata
@@ -639,10 +278,12 @@ class FeatureList(
     feature_ids: List[PydanticObjectId] = Field(
         default_factory=list,
         allow_mutation=False,
-        description="List of feature IDs in the FeatureList object.",
+        description="Returns the unique identifier (ID) of the Feature objects associated with the FeatureList object.",
     )
     version: VersionIdentifier = Field(
-        allow_mutation=False, default=None, description="Feature list version"
+        allow_mutation=False,
+        default=None,
+        description="Returns the version identifier of a FeatureList object.",
     )
 
     # class variables
@@ -738,7 +379,7 @@ class FeatureList(
 
         See Also
         --------
-        - [FeatureGroup.feature_names](/reference/featurebyte.api.feature_list.FeatureGroup.feature_names/)
+        - [FeatureGroup.feature_names](/reference/featurebyte.api.feature_group.FeatureGroup.feature_names/)
         """
         return super().feature_names
 
@@ -994,7 +635,10 @@ class FeatureList(
     @classmethod
     def _list_versions(cls, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
-        List saved feature list versions.
+        Returns a DataFrame that presents a summary of the feature list versions belonging to the namespace of the
+        FeatureList object. The DataFrame contains multiple attributes of the feature list versions, such as their
+        versions names, deployment states, creation dates and the percentage of their features that are
+        production_ready.
 
         Parameters
         ----------
@@ -1082,7 +726,9 @@ class FeatureList(
         primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
-        List features in the feature list.
+        Returns a DataFrame that contains various attributes of the features in a Feature List object, such as their
+        names, versions, types, corresponding tables, related entities, creation dates, states of readiness and
+        online availability.
 
         Parameters
         ----------
@@ -1250,7 +896,7 @@ class FeatureList(
 
         See Also
         --------
-        - [FeatureGroup.preview](/reference/featurebyte.api.feature_list.FeatureGroup.preview/):
+        - [FeatureGroup.preview](/reference/featurebyte.api.feature_group.FeatureGroup.preview/):
           Preview feature group.
         - [Feature.preview](/reference/featurebyte.api.feature.Feature.preview/):
           Preview feature group.
@@ -1293,25 +939,25 @@ class FeatureList(
     def get_historical_features_async(
         self,
         observation_table: ObservationTable,
-        modeling_table_name: str,
+        historical_feature_table_name: str,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-    ) -> ModelingTable:
+    ) -> HistoricalFeatureTable:
         """
         Materialize feature list using an observation table asynchronously. The historical features
-        will be materialized into a modeling table.
+        will be materialized into a historical feature table.
 
         Parameters
         ----------
         observation_table: ObservationTable
             Observation table with `POINT_IN_TIME` and serving names columns
-        modeling_table_name: str
-            Name of the modeling table to be created
+        historical_feature_table_name: str
+            Name of the historical feature table to be created
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events table has different serving name
 
         Returns
         -------
-        ModelingTable
+        HistoricalFeatureTable
         """
         featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
             feature_list_id=self.id,
@@ -1319,16 +965,16 @@ class FeatureList(
             serving_names_mapping=serving_names_mapping,
         )
         feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id
-        payload = ModelingTableCreate(
-            name=modeling_table_name,
+        payload = HistoricalFeatureTableCreate(
+            name=historical_feature_table_name,
             observation_table_id=observation_table.id,
             feature_store_id=feature_store_id,
             featurelist_get_historical_features=featurelist_get_historical_features,
         )
-        modeling_table_doc = self.post_async_task(
-            route="/modeling_table", payload=payload.json_dict()
+        historical_feature_table_doc = self.post_async_task(
+            route="/historical_feature_table", payload=payload.json_dict()
         )
-        return ModelingTable.get_by_id(modeling_table_doc["_id"])
+        return HistoricalFeatureTable.get_by_id(historical_feature_table_doc["_id"])
 
     @typechecked
     def create_new_version(
@@ -1434,7 +1080,23 @@ class FeatureList(
         self, status: Literal[tuple(FeatureListStatus)]  # type: ignore[misc]
     ) -> None:
         """
-        Update feature list status
+        A FeatureList can have one of five statuses:
+
+        "DEPLOYED": Assigned to FeatureLists with at least one active version online.
+        "TEMPLATE": For FeatureLists serving as reference templates or safe starting points.
+        "PUBLIC DRAFT": For FeatureLists shared for feedback purposes.
+        "DRAFT": For FeatureLists in the prototype stage.
+        "DEPRECATED": For outdated or unneeded FeatureLists.
+
+        Automatic status changes:
+        - New FeatureLists are assigned the "DRAFT" status.
+        - The "DEPLOYED" status is applied when at least one version is deployed.
+        - If deployment is disabled for all versions, the FeatureList becomes a "PUBLIC_DRAFT".
+
+        Additional guidelines:
+        - Before making a FeatureList a "TEMPLATE", add a description and ensure all features are "production ready".
+        - Only "DRAFT" FeatureLists can be deleted;
+        - A FeatureList cannot be reverted to a "DRAFT" status.
 
         Parameters
         ----------
@@ -1518,7 +1180,14 @@ class FeatureList(
         self, enable: bool, make_production_ready: bool = False, ignore_guardrails: bool = False
     ) -> None:
         """
-        Deploy all the Features in the Feature List to the Feature Store and update its deployment status
+        Deploys a FeatureList object to support online and batch serving of the feature list in production.
+
+        This triggers the orchestration of the feature materialization into the online feature store. A feature list
+        is deployed without creating separate pipelines or using different tools.
+
+        Deployment can be disabled at any time if the serving of the feature list is not needed anymore. Unlike the
+        log and wait approach adopted by some feature stores, disabling the deployment of a feature list doesn’t
+        affect the serving of its historical requests.
 
         Parameters
         ----------

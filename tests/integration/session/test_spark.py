@@ -8,8 +8,9 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
+from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
-from featurebyte.session.spark import SparkSchemaInitializer, SparkSession
+from featurebyte.session.spark import SparkSession
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
@@ -21,7 +22,7 @@ async def test_schema_initializer(config, feature_store, credentials_mapping):
     session_manager = SessionManager(credentials=credentials_mapping)
     session = await session_manager.get_session(feature_store)
     assert isinstance(session, SparkSession)
-    initializer = SparkSchemaInitializer(session)
+    initializer = BaseSparkSchemaInitializer(session)
 
     assert await session.list_databases() == ["spark_catalog"]
     assert session.schema_name in await session.list_schemas(database_name="spark_catalog")

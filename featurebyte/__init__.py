@@ -1,5 +1,8 @@
 """Python Library for FeatureOps"""
-from typing import Dict, List, Optional
+from typing import Any, List, Optional
+
+import sys
+from http import HTTPStatus
 
 import pandas as pd
 
@@ -7,14 +10,16 @@ from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.credential import Credential
 from featurebyte.api.data_source import DataSource
+from featurebyte.api.deployment import Deployment
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
+from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
-from featurebyte.api.feature_list import FeatureGroup, FeatureList
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.item_view import ItemView
@@ -24,8 +29,9 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.source_table import SourceTable
 from featurebyte.api.table import Table
+from featurebyte.common.env_util import is_notebook
 from featurebyte.common.utils import get_version
-from featurebyte.config import Configurations
+from featurebyte.config import Configurations, Profile
 from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.datasets.app import import_dataset
@@ -34,6 +40,12 @@ from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import AggFunc, SourceType, StorageType
+from featurebyte.exception import (
+    FeatureByteException,
+    InvalidSettingsError,
+    RecordRetrievalException,
+)
+from featurebyte.logger import logger
 from featurebyte.models.credential import (
     AccessTokenCredential,
     S3StorageCredential,
@@ -54,6 +66,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ValueBeyondEndpointImputation,
 )
 from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails, SparkDetails
+from featurebyte.schema.deployment import DeploymentSummary
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
@@ -78,26 +91,61 @@ def list_profiles() -> pd.DataFrame:
     return pd.DataFrame([profile.dict() for profile in profiles] if profiles else [])
 
 
-def use_profile(profile: str) -> Dict[str, str]:
+def get_active_profile() -> Profile:
     """
-    Use service profile specified in configuration file
+    Get active profile from configuration file.
+
+    Returns
+    -------
+    Profile
+
+    Raises
+    ------
+    InvalidSettingsError
+        If no profile is found in configuration file
+    """
+    conf = Configurations()
+    if not conf.profile:
+        logger.error(
+            f"No profile found. Please update your configuration file at {conf.config_file_path}"
+        )
+        raise InvalidSettingsError("No profile found")
+
+    logger.info(f"Active profile: {conf.profile.name} ({conf.profile.api_url})")
+    versions = Configurations().check_sdk_versions()
+    if versions["remote sdk"] != versions["local sdk"]:
+        logger.warning(
+            f"Remote SDK version ({versions['remote sdk']}) is different from local ({versions['local sdk']}). "
+            "Update local SDK to avoid unexpected behavior."
+        )
+    else:
+        logger.info(f"SDK version: {versions['local sdk']}")
+    return conf.profile
+
+
+def use_profile(profile: str) -> None:
+    """
+    Use service profile specified in configuration file.
 
     Parameters
     ----------
     profile: str
         Profile name
 
-    Returns
-    -------
-    Dict[str, str]
-        Remote and local SDK versions
-
     Examples
     --------
-    >>> fb.use_profile("local")  # doctest: +SKIP
-    {'remote sdk': '0.1.1', 'local sdk': '0.1.1'}
+    Use the local profile
+    >>> fb.use_profile("local")
     """
-    return Configurations().use_profile(profile)
+    try:
+        logger.info(f"Using profile: {profile}")
+        Configurations().use_profile(profile)
+    finally:
+        # report active profile
+        try:
+            get_active_profile()
+        except InvalidSettingsError:
+            pass
 
 
 def list_credentials(
@@ -275,6 +323,39 @@ def playground(
     )
 
 
+def list_deployments(
+    include_id: Optional[bool] = False,
+) -> pd.DataFrame:
+    """
+    List all deployments across all catalogs.
+    Deployed features are updated regularly based on their job settings and consume recurring compute resources
+    in the data warehouse.
+    It is recommended to delete deployments when they are no longer needed to avoid unnecessary costs.
+
+    Parameters
+    ----------
+    include_id: Optional[bool]
+        Whether to include id in the list
+
+    Returns
+    -------
+    pd.DataFrame
+        List of deployments
+
+    Examples
+    --------
+    >>> fb.list_deployments()
+    Empty DataFrame
+    Columns: [catalog, name, feature_list_version, num_feature]
+    Index: []
+
+    See Also
+    --------
+    - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/) Deploy / Undeploy a feature list
+    """
+    return Deployment.list(include_id=include_id)
+
+
 __all__ = [
     "Catalog",
     "ChangeView",
@@ -331,3 +412,73 @@ __all__ = [
     "stop",
     "playground",
 ]
+
+
+def log_env_summary() -> None:
+    """
+    Print environment summary.
+
+    Raises
+    ------
+    RecordRetrievalException
+        Failed to fetch deployment summary.
+    """
+
+    # configuration informaton
+    conf = Configurations()
+    logger.info(f"Using configuration file at: {conf.config_file_path}")
+
+    # report active profile
+    get_active_profile()
+
+    # catalog informaton
+    current_catalog = Catalog.get_active()
+    logger.info(f"Active catalog: {current_catalog.name}")
+
+    # list deployments
+    client = conf.get_client()
+    response = client.get("/deployment/summary")
+    if response.status_code != HTTPStatus.OK:
+        raise RecordRetrievalException(response, "Failed to fetch deployment summary")
+    summary = DeploymentSummary(**response.json())
+    logger.info(
+        f"{summary.num_feature_list} feature list{'s' if summary.num_feature_list else ''}, "
+        f"{summary.num_feature} feature{'s' if summary.num_feature else ''} deployed"
+    )
+
+
+if is_notebook():
+    # Custom exception handler for notebook environment to make error messages more readable.
+    # Overrides the default IPython exception handler to repackage featurebyte exceptions
+    # to keeps only the last stack frame (the one that invoked the featurebyte api).
+    #
+    # This keeps two key pieces of information in the stack trace:
+    # 1. The exception class and message
+    # 2. The line number of the code that invoked the featurebyte api
+
+    # pylint: disable=import-outside-toplevel
+    import IPython  # pylint: disable=import-error
+
+    shell = IPython.core.interactiveshell.InteractiveShell
+    default_showtraceback = shell.showtraceback
+
+    def _showtraceback(cls: Any, *args: Any, **kwargs: Any) -> None:
+        exc_cls, exc_obj, tb_obj = sys.exc_info()
+        if isinstance(exc_obj, FeatureByteException) and not exc_obj.repackaged:
+            logger.error(exc_obj)
+            assert exc_cls
+            assert issubclass(exc_cls, FeatureByteException)
+            if tb_obj and tb_obj.tb_next:
+                invoke_frame = tb_obj.tb_next
+                invoke_frame.tb_next = None
+                raise exc_cls(exc_obj, repackaged=True).with_traceback(invoke_frame) from None
+        default_showtraceback(cls, *args, **kwargs)
+
+    IPython.core.interactiveshell.InteractiveShell.showtraceback = _showtraceback
+
+    # log environment summary
+    try:
+        log_env_summary()
+    except InvalidSettingsError as exc:
+        # import should not fail - warn and continue
+        logger.warning(exc)

@@ -3,9 +3,11 @@ Unit test for EventView class
 """
 
 import copy
+import textwrap
 from unittest import mock
 from unittest.mock import AsyncMock, PropertyMock, patch
 
+import pandas as pd
 import pytest
 from bson import ObjectId
 
@@ -615,10 +617,14 @@ def test_add_feature(
     original_column_info = copy.deepcopy(snowflake_event_view.columns_info)
 
     # Add feature
-    snowflake_event_view.add_feature("new_col", non_time_based_feature, "cust_id")
+    node_name_before = snowflake_event_view.node.name
+    new_view = snowflake_event_view.add_feature("new_col", non_time_based_feature, "cust_id")
+    assert (
+        snowflake_event_view.node.name == node_name_before
+    )  # check that original view is not modified
 
     # assert updated view params
-    assert snowflake_event_view.columns_info == [
+    assert new_view.columns_info == [
         *original_column_info,
         ColumnInfo(
             name="new_col",
@@ -627,12 +633,12 @@ def test_add_feature(
         ),
     ]
 
-    join_feature_node_name = snowflake_event_view.node.name
+    join_feature_node_name = new_view.node.name
     assert join_feature_node_name.startswith("join_feature")
-    assert snowflake_event_view.row_index_lineage == (snowflake_event_table.frame.node_name,)
+    assert new_view.row_index_lineage == (snowflake_event_table.frame.node_name,)
 
     # assert graph node (excluding name since that can changed by graph pruning)
-    view_dict = snowflake_event_view.dict()
+    view_dict = new_view.dict()
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict["output_type"] == "frame"
     assert node_dict["type"] == "join_feature"
@@ -656,7 +662,7 @@ def test_add_feature(
     event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
     item_table_columns_info = snowflake_item_table.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
-        snowflake_event_view,
+        new_view,
         to_use_saved_data=False,
         table_id_to_info={
             snowflake_event_table.id: {
@@ -857,7 +863,44 @@ def test_create_observation_table_from_event_view(snowflake_event_table, snowfla
             "cust_id" AS "cust_id",
             "event_timestamp" AS "POINT_IN_TIME"
           FROM "sf_database"."sf_schema"."sf_table"
-        ) TABLESAMPLE(12.0)
+        ) TABLESAMPLE(14.0)
         LIMIT 100
         """,
     )
+
+
+def test_shape(snowflake_event_table):
+    """
+    Test creating ObservationTable from an EventView
+    """
+    view = snowflake_event_table.get_view()
+    with mock.patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
+        mock_execute_query.return_value = pd.DataFrame({"count": [1000]})
+        assert view.shape() == (1000, 8)
+        # Check that the correct query was executed
+        assert (
+            mock_execute_query.call_args[0][0]
+            == textwrap.dedent(
+                """
+                WITH data AS (
+                  SELECT
+                    "col_int" AS "col_int",
+                    "col_float" AS "col_float",
+                    "col_char" AS "col_char",
+                    "col_text" AS "col_text",
+                    "col_binary" AS "col_binary",
+                    "col_boolean" AS "col_boolean",
+                    "event_timestamp" AS "event_timestamp",
+                    "cust_id" AS "cust_id"
+                  FROM "sf_database"."sf_schema"."sf_table"
+                )
+                SELECT
+                  COUNT(*) AS "count"
+                FROM data
+                """
+            ).strip()
+        )
+        # test view colum shape
+        assert view["col_int"].shape() == (1000, 1)

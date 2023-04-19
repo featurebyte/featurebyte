@@ -15,6 +15,7 @@ env:
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi
   GCR_PYPI_LOCATION: us-central1
+  GCR_DOCKER_LOCATION: us-central1
   SERVER_IMAGE_REPO: "us-central1-docker.pkg.dev/vpc-host-nonprod-xa739-xz970/docker/featurebyte-server"
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64 # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
@@ -24,7 +25,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-20.04
-    timeout-minutes: 20
+    timeout-minutes: 60
     strategy:
       matrix:
         python-version: ["3.8.0"]
@@ -73,7 +74,7 @@ jobs:
             grep -oP "\d+$"
           )
           export DEV_VERSION=${DEV_VERSION:-0}  # Set .dev to 0 if not exist
-          echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_ENV
+          echo "DEV_VERSION=$(poetry version -s).dev$((DEV_VERSION+=1))" >> $GITHUB_ENV
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Update Version in pyproject.toml

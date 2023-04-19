@@ -14,7 +14,8 @@ from pandas.testing import assert_frame_equal
 from featurebyte import MissingValueImputation, get_version
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature, FeatureNamespace
-from featurebyte.api.feature_list import FeatureGroup, FeatureList
+from featurebyte.api.feature_group import FeatureGroup
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.table import Table
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
@@ -277,28 +278,34 @@ def saved_feature_fixture(
     )
     assert groupby_node.parameters.aggregation_id == "sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
 
-    # test list features
     assert float_feature.name == "sum_1d"
-    float_feature_namespace = FeatureNamespace.get(float_feature.name)
-    feature_list = Feature.list()
+    return float_feature
+
+
+def test_list(saved_feature):
+    """
+    Test list features
+    """
+    # test list features
+    saved_feature_namespace = FeatureNamespace.get(saved_feature.name)
+    feature_list = Feature.list(include_id=True)
     assert_frame_equal(
         feature_list,
         pd.DataFrame(
             {
-                "name": [float_feature_namespace.name],
-                "dtype": [float_feature_namespace.dtype],
-                "readiness": [float_feature_namespace.readiness],
-                "online_enabled": [float_feature.online_enabled],
+                "id": [saved_feature.id],
+                "name": [saved_feature_namespace.name],
+                "dtype": [saved_feature_namespace.dtype],
+                "readiness": [saved_feature_namespace.readiness],
+                "online_enabled": [saved_feature.online_enabled],
                 "tables": [["sf_event_table"]],
                 "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
-                "created_at": [float_feature_namespace.created_at],
+                "created_at": [saved_feature_namespace.created_at],
             }
         ),
     )
-
-    return float_feature
 
 
 def test_info(saved_feature):

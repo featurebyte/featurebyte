@@ -220,7 +220,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
     @typechecked
     def preview_sql(self, limit: int = 10, after_cleaning: bool = False) -> str:
         """
-        Generate SQL query to preview the transformation output
+        Returns an SQL query for previewing the column data.
 
         Parameters
         ----------
@@ -258,6 +258,28 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
             Preview rows of the table column.
         """
         return self.parent.preview(limit=limit, after_cleaning=after_cleaning)[[self.info.name]]
+
+    @typechecked
+    def shape(self, after_cleaning: bool = False) -> Tuple[int, int]:
+        """
+        Return the shape of the table column.
+
+        Parameters
+        ----------
+        after_cleaning: bool
+            Whether to get the shape of the column after cleaning
+
+        Returns
+        -------
+        Tuple[int, int]
+
+        Examples
+        --------
+        Get the shape of a column.
+        >>> catalog.get_table("INVOICEITEMS")["Quantity"].shape()
+        (300450, 1)
+        """
+        return self.parent.shape(after_cleaning=after_cleaning)[0], 1
 
     @typechecked
     def sample(
@@ -406,7 +428,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def entity_ids(self) -> List[PydanticObjectId]:
         """
-        List of entity IDs in the table model list.
+        Returns the list of entity IDs that are represented in the table.
 
         Returns
         -------
@@ -432,9 +454,9 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def columns_info(self) -> List[ColumnInfo]:
         """
-        List of column information of the table. Each column contains column name, column type, entity ID
-        associated with the column, semantic ID associated with the column, and the critical data information
-        associated with the column.
+        Provides information about the columns in the table such as column name, column type, entity ID associated
+        with the column, semantic ID associated with the column, and the critical data information associated with
+        the column.
 
         Returns
         -------
@@ -454,7 +476,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def catalog_id(self) -> ObjectId:
         """
-        Catalog ID of the table. A FeatureByte Catalog serves as a centralized repository for storing metadata.
+        Returns the unique identifier (ID) of the Catalog that is associated with the Table object.
 
         Returns
         -------
@@ -482,7 +504,10 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def status(self) -> TableStatus:
         """
-        Table status. Either "DRAFT", "PUBLISHED", or "DEPRECATED".
+        Returns the status of the Table object. A table can be categorized into 3 status: PUBLIC DRAFT, PUBLISHED, and
+        DEPRECATED.
+
+        Once a table status is DEPRECATED, you can create a new table using the same source table.
 
         Returns
         -------
@@ -497,7 +522,10 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
     @property
     def record_creation_timestamp_column(self) -> Optional[str]:
         """
-        Record creation timestamp column name of this table.
+        Returns the name of the column in the table that represents the timestamp for record creation. This
+        information is utilized to analyze feature job settings, and the identified column is treated as a special
+        column that is not meant for feature engineering. By default, any view created from the table will exclude
+        this column.
 
         Returns
         -------

@@ -65,15 +65,17 @@ def test_join_same_rsuffix_multiple_times(snowflake_dimension_view, snowflake_di
     original_columns = snowflake_dimension_view.columns[:]
     other_view = snowflake_dimension_view[["col_text"]]
 
-    snowflake_dimension_view.join(other_view, rsuffix="_y")
-    assert snowflake_dimension_view.columns == original_columns + ["col_text_y"]
+    node_name_before = snowflake_dimension_view.node_name
+    joined_view = snowflake_dimension_view.join(other_view, rsuffix="_y")
+    assert snowflake_dimension_view.node_name == node_name_before
+    assert joined_view.columns == original_columns + ["col_text_y"]
 
     with pytest.raises(RepeatedColumnNamesError) as exc:
-        snowflake_dimension_view.join(other_view, rsuffix="_y")
+        joined_view.join(other_view, rsuffix="_y")
     assert "Duplicate column names ['col_text_y'] found" in str(exc.value)
 
-    snowflake_dimension_view.join(other_view, rsuffix="_z")
-    assert snowflake_dimension_view.columns == original_columns + ["col_text_y", "col_text_z"]
+    joined_again_view = joined_view.join(other_view, rsuffix="_z")
+    assert joined_again_view.columns == original_columns + ["col_text_y", "col_text_z"]
 
     # check SDK code generation
     check_sdk_code_generation(

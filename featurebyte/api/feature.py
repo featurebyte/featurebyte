@@ -249,7 +249,9 @@ class Feature(
         primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
-        List saved features versions
+        Returns a DataFrame that presents a summary of the feature versions belonging to the namespace of the
+        Feature object. The DataFrame contains multiple attributes of the feature versions, such as their version
+        names, readiness states, online availability, and creation dates.
 
         Parameters
         ----------
@@ -444,7 +446,7 @@ class Feature(
     @property
     def readiness(self) -> FeatureReadiness:
         """
-        Feature readiness of this feature
+        Returns the readiness level of the feature object.
 
         Returns
         -------
@@ -666,7 +668,7 @@ class Feature(
 
         See Also
         --------
-        - [FeatureGroup.preview](/reference/featurebyte.api.feature_list.FeatureGroup.preview/):
+        - [FeatureGroup.preview](/reference/featurebyte.api.feature_group.FeatureGroup.preview/):
           Preview feature group.
         - [FeatureList.get_historical_features](/reference/featurebyte.api.feature_list.FeatureList.get_historical_features/):
           Get historical features from a feature list.

@@ -8,8 +8,10 @@ from ssl import CERT_NONE, create_default_context
 from pyhive import hive
 from pyhive.exc import OperationalError
 from pyhive.hive import Connection
+from pyhive.hive import Cursor as BaseCursor
+from thrift.protocol.TProtocol import TProtocolException
 from thrift.transport.THttpClient import THttpClient
-from thrift.transport.TTransport import TTransportBase
+from thrift.transport.TTransport import TTransportBase, TTransportException
 from typeguard import typechecked
 
 from featurebyte.enum import StrEnum
@@ -26,6 +28,21 @@ class AuthType(StrEnum):
     NOSASL = "NOSASL"
     KERBEROS = "KERBEROS"
     TOKEN = "TOKEN"
+
+
+class Cursor(BaseCursor):
+    """
+    Customized Hive Cursor class to support additional functionality
+    """
+
+    def close(self) -> None:
+        """
+        Close the cursor
+        """
+        try:
+            super().close()
+        except TProtocolException:
+            logger.error("Failed to close cursor", exc_info=True)
 
 
 class HiveConnection(Connection):
@@ -102,3 +119,29 @@ class HiveConnection(Connection):
             cursor.execute(f"CREATE SCHEMA `{catalog}`.`{database}`")
             cursor.execute(f"USE `{catalog}`.`{database}`")
             cursor.close()
+
+    def close(self) -> None:
+        """
+        Close the connection
+        """
+        try:
+            super().close()
+        except TTransportException:
+            logger.error("Failed to close connection", exc_info=True)
+
+    def cursor(self, *args: Any, **kwargs: Any) -> Cursor:
+        """
+        Create a cursor
+
+        Parameters
+        ----------
+        args: Any
+            Arguments
+        kwargs: Any
+            Keyword arguments
+
+        Returns
+        -------
+        Cursor
+        """
+        return Cursor(self, *args, **kwargs)

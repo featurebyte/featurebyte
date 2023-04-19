@@ -21,13 +21,13 @@ from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     get_fully_qualified_table_name,
     sql_to_string,
 )
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.sql.materialisation import create_table_as
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import TileCache
@@ -420,8 +420,11 @@ async def get_historical_features(
         return session.get_async_query_stream(sql)
 
     # Execute feature query but write results to a table
+    expression = get_sql_adapter(session.source_type).create_table_as(
+        table_details=output_table_details, select_expr=sql_expr
+    )
     query = sql_to_string(
-        create_table_as(output_table_details, sql_expr),
+        expression,
         source_type=session.source_type,
     )
     await session.execute_query_long_running(query)

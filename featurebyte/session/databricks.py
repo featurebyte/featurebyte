@@ -4,7 +4,7 @@ DatabricksSession class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, OrderedDict, cast
+from typing import Any, OrderedDict
 
 import collections
 import json
@@ -14,12 +14,7 @@ from pydantic import Field
 
 from featurebyte import AccessTokenCredential
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.session.base import BaseSchemaInitializer
-from featurebyte.session.base_spark import (
-    BaseSparkMetadataSchemaInitializer,
-    BaseSparkSchemaInitializer,
-    BaseSparkSession,
-)
+from featurebyte.session.base_spark import BaseSparkSession
 
 try:
     from databricks import sql as databricks_sql
@@ -53,9 +48,6 @@ class DatabricksSession(BaseSparkSession):
             catalog=self.featurebyte_catalog,
             schema=self.featurebyte_schema,
         )
-
-    def initializer(self) -> BaseSchemaInitializer:
-        return DatabricksSchemaInitializer(self)
 
     @classmethod
     def is_threadsafe(cls) -> bool:
@@ -130,20 +122,3 @@ class DatabricksSession(BaseSparkSession):
             return dataframe
 
         return None
-
-
-class DatabricksSchemaInitializer(BaseSparkSchemaInitializer):
-    """Databricks schema initializer class"""
-
-    def __init__(self, session: DatabricksSession):
-        super().__init__(session=session)
-        self.session = cast(DatabricksSession, self.session)
-        self.metadata_schema_initializer = BaseSparkMetadataSchemaInitializer(session)
-
-    @property
-    def sql_directory_name(self) -> str:
-        return "databricks"
-
-    @property
-    def current_working_schema_version(self) -> int:
-        return 1

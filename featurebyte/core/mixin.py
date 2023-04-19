@@ -3,10 +3,12 @@ Mixin classes used by core objects
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Protocol, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Protocol, Tuple, Union
 
+import time
 from abc import abstractmethod
 from datetime import datetime
+from functools import wraps
 from http import HTTPStatus
 
 import pandas as pd
@@ -17,15 +19,45 @@ from featurebyte.common.utils import dataframe_from_json, validate_datetime_inpu
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
+from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
+from featurebyte.schema.feature_store import (
+    FeatureStorePreview,
+    FeatureStoreSample,
+    FeatureStoreShape,
+)
 
 if TYPE_CHECKING:
     from featurebyte.core.frame import FrozenFrame
     from featurebyte.core.series import FrozenSeries
+
+
+def perf_logging(func: Any) -> Any:
+    """
+    Decorator to log function execution time.
+
+    Parameters
+    ----------
+    func: Any
+        Function to decorate
+
+    Returns
+    -------
+    Any
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        start = time.time()
+        result = func(*args, **kwargs)
+        elapsed = time.time() - start
+        logger.debug(f"Function {func.__name__} took {elapsed} seconds")
+        return result
+
+    return wrapper
 
 
 class OpsMixin:
@@ -195,6 +227,7 @@ class SampleMixin:
     Supports preview and sample functions
     """
 
+    @perf_logging
     @typechecked
     def preview(self: HasExtractPrunedGraphAndNode, limit: int = 10, **kwargs: Any) -> pd.DataFrame:
         """
@@ -285,6 +318,46 @@ class SampleMixin:
             timestamp_column=self.timestamp_column,
         )
 
+    @perf_logging
+    @typechecked
+    def shape(self: HasExtractPrunedGraphAndNode, **kwargs: Any) -> Tuple[int, int]:
+        """
+        Return the shape of the view / column.
+
+        Parameters
+        ----------
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        Tuple[int, int]
+
+        Raises
+        ------
+        RecordRetrievalException
+            Shape request failed.
+
+        Examples
+        --------
+        Get the shape of a view.
+        >>> catalog.get_view("INVOICEITEMS").shape()
+        (300450, 10)
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        payload = FeatureStorePreview(
+            feature_store_name=self.feature_store.name,
+            graph=pruned_graph,
+            node_name=mapped_node.name,
+        )
+        client = Configurations().get_client()
+        response = client.post(url="/feature_store/shape", json=payload.json_dict())
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        shape = FeatureStoreShape(**response.json())
+        return shape.num_rows, shape.num_cols
+
+    @perf_logging
     @typechecked
     def sample(
         self,
@@ -352,6 +425,7 @@ class SampleMixin:
             raise RecordRetrievalException(response)
         return dataframe_from_json(response.json())
 
+    @perf_logging
     @typechecked
     def describe(
         self: HasExtractPrunedGraphAndNode,

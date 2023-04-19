@@ -1,5 +1,5 @@
 """
-ModelingTable API payload schema
+HistoricalFeatureTable API payload schema
 """
 from __future__ import annotations
 
@@ -13,14 +13,14 @@ from featurebyte.models.base import (
     FeatureByteBaseModel,
     PydanticObjectId,
 )
-from featurebyte.models.modeling_table import ModelingTableModel
+from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 
 
-class ModelingTableCreate(FeatureByteBaseModel):
+class HistoricalFeatureTableCreate(FeatureByteBaseModel):
     """
-    ModelingTable creation payload
+    HistoricalFeatureTable creation payload
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
@@ -30,17 +30,17 @@ class ModelingTableCreate(FeatureByteBaseModel):
     featurelist_get_historical_features: FeatureListGetHistoricalFeatures
 
 
-class ModelingTableList(PaginationMixin):
+class HistoricalFeatureTableList(PaginationMixin):
     """
-    Schema for listing modeling tables
+    Schema for listing historical feature tables
     """
 
-    data: List[ModelingTableModel]
+    data: List[HistoricalFeatureTableModel]
 
 
-class ModelingTableListRecord(FeatureByteBaseDocumentModel):
+class HistoricalFeatureTableListRecord(FeatureByteBaseDocumentModel):
     """
-    Schema for listing modeling tables as a DataFrame
+    Schema for listing historical feature tables as a DataFrame
     """
 
     feature_store_id: PydanticObjectId

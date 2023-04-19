@@ -233,7 +233,7 @@ def assert_dict_equal(s1, s2):
     pd.testing.assert_series_equal(s1, s2)
 
 
-def fb_assert_frame_equal(df, df_expected, dict_like_columns=None):
+def fb_assert_frame_equal(df, df_expected, dict_like_columns=None, sort_by_columns=None):
     """
     Check that two DataFrames are equal
 
@@ -245,8 +245,14 @@ def fb_assert_frame_equal(df, df_expected, dict_like_columns=None):
         Reference DataFrame
     dict_like_columns : list | None
         List of dict like columns which will be compared accordingly, not just exact match
+    sort_by_columns : list | None
+        List of columns to sort by before comparing
     """
     assert df.columns.tolist() == df_expected.columns.tolist()
+
+    if sort_by_columns is not None:
+        df = df.sort_values(by=sort_by_columns).reset_index(drop=True)
+        df_expected = df_expected.sort_values(by=sort_by_columns).reset_index(drop=True)
 
     regular_columns = df.columns.tolist()
     if dict_like_columns is not None:
@@ -362,11 +368,13 @@ async def get_historical_features_async_dataframe_helper(
     observation_table = await create_observation_table_from_dataframe(
         session, df_observation_set, data_source
     )
-    modeling_table_name = f"modeling_table_{ObjectId()}"
-    modeling_table = feature_list.get_historical_features_async(
-        observation_table, modeling_table_name, **kwargs
+    historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
+    historical_feature_table = feature_list.get_historical_features_async(
+        observation_table, historical_feature_table_name, **kwargs
     )
-    df_historical_features = await get_dataframe_from_materialized_table(session, modeling_table)
+    df_historical_features = await get_dataframe_from_materialized_table(
+        session, historical_feature_table
+    )
     return df_historical_features
 
 

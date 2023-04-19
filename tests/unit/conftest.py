@@ -27,7 +27,8 @@ from featurebyte import (
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import DefaultVersionMode, Feature
-from featurebyte.api.feature_list import FeatureGroup, FeatureList
+from featurebyte.api.feature_group import FeatureGroup
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
@@ -50,7 +51,7 @@ from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
-from featurebyte.schema.modeling_table import ModelingTableCreate
+from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.prediction_table import PredictionTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
@@ -705,17 +706,17 @@ def observation_table_from_view_fixture(snowflake_event_view, patched_observatio
     return snowflake_event_view.create_observation_table("observation_table_from_event_view")
 
 
-@pytest.fixture(name="modeling_table")
-def modeling_table_fixture(float_feature, observation_table_from_source):
+@pytest.fixture(name="historical_feature_table")
+def historical_feature_table_fixture(float_feature, observation_table_from_source):
     """
-    Fixture for a ModelingTable
+    Fixture for a HistoricalFeatureTable
     """
-    feature_list = FeatureList([float_feature], name="feature_list_for_modeling_table")
+    feature_list = FeatureList([float_feature], name="feature_list_for_historical_feature_table")
     feature_list.save()
-    modeling_table = feature_list.get_historical_features_async(
-        observation_table_from_source, "my_modeling_table"
+    historical_feature_table = feature_list.get_historical_features_async(
+        observation_table_from_source, "my_historical_feature_table"
     )
-    return modeling_table
+    return historical_feature_table
 
 
 @pytest.fixture(name="grouped_event_view")
@@ -1213,8 +1214,8 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         ),
         context_id=context.id,
     )
-    modeling_table = ModelingTableCreate(
-        name="modeling_table",
+    historical_feature_table = HistoricalFeatureTableCreate(
+        name="historical_feature_table",
         feature_store_id=snowflake_feature_store.id,
         feature_list_id=feature_list.id,
         observation_table_id=observation_table.id,
@@ -1268,7 +1269,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (context, "context"),
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
-            (modeling_table, "modeling_table"),
+            (historical_feature_table, "historical_feature_table"),
             (prediction_table, "prediction_table"),
         ]
         for schema, name in schema_payload_name_pairs:

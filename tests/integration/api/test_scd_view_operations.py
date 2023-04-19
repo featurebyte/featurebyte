@@ -143,8 +143,8 @@ async def test_scd_join_small(session, data_source, source_type):
         surrogate_key_column="scd_cust_id",
     )
     scd_view = scd_table.get_view()
-    event_view.join(scd_view, on="cust_id", rsuffix="_latest")
-    event_view.join(scd_view, on="cust_id", rsuffix="_latest_v2")
+    event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest")
+    event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest_v2")
     df_actual = event_view.preview()
     pd.testing.assert_frame_equal(df_actual, df_expected, check_dtype=False)
 
@@ -158,7 +158,7 @@ def test_event_view_join_scd_view__preview_view(
     """
     event_view = event_table.get_view()
     scd_view = scd_table.get_view()
-    event_view.join(scd_view, on="ÜSER ID")
+    event_view = event_view.join(scd_view, on="ÜSER ID")
     df = event_view.preview(1000)
     df_expected = expected_dataframe_scd_join
 
@@ -183,7 +183,7 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
     """
     event_view = event_table.get_view()
     scd_table = scd_table.get_view()
-    event_view.join(scd_table, on="ÜSER ID")
+    event_view = event_view.join(scd_table, on="ÜSER ID")
 
     # Create a feature and preview it
     feature = event_view.groupby("ÜSER ID", category="User Status").aggregate_over(
@@ -216,7 +216,7 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
 
     # Window feature that depends on an SCD join
     event_view = event_table.get_view()
-    event_view.join(scd_view, on="ÜSER ID")
+    event_view = event_view.join(scd_view, on="ÜSER ID")
     window_feature = event_view.groupby("ÜSER ID", "User Status").aggregate_over(
         method="count",
         windows=["7d"],
@@ -458,7 +458,7 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table, so
     event_view = event_table.get_view()
     scd_view = scd_table.get_view()
 
-    event_view.join(scd_view, on="ÜSER ID")
+    event_view = event_view.join(scd_view, on="ÜSER ID")
 
     feature = event_view.groupby("User Status").aggregate_over(
         method="count",

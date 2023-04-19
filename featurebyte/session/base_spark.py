@@ -48,6 +48,9 @@ class BaseSparkSession(BaseSession, ABC):
         super().__init__(**data)
         self._initialize_storage()
 
+    def initializer(self) -> BaseSchemaInitializer:
+        return BaseSparkSchemaInitializer(self)
+
     @property
     def schema_name(self) -> str:
         return self.featurebyte_schema
@@ -237,6 +240,18 @@ class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
 
 class BaseSparkSchemaInitializer(BaseSchemaInitializer):
     """BaseSpark schema initializer class"""
+
+    def __init__(self, session: BaseSession):
+        super().__init__(session=session)
+        self.metadata_schema_initializer = BaseSparkMetadataSchemaInitializer(session)
+
+    @property
+    def current_working_schema_version(self) -> int:
+        return 1
+
+    @property
+    def sql_directory_name(self) -> str:
+        return "spark"
 
     async def drop_all_objects_in_working_schema(self) -> None:
         raise NotImplementedError()

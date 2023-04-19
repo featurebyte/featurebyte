@@ -26,7 +26,7 @@ from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import (
@@ -505,14 +505,24 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             logger.warning("offset parameter is provided but has no effect")
         return {}
 
-    def _update_metadata(
-        self,
+    def _get_create_joined_view_parameters(self) -> dict[str, Any]:
+        """
+        Returns additional view type specific parameters for _create_joined_view operation
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {}
+
+    def _create_joined_view(
+        self: ViewT,
         new_node_name: str,
         joined_columns_info: List[ColumnInfo],
         **kwargs: Any,
-    ) -> None:
+    ) -> ViewT:
         """
-        Updates the metadata for the new join
+        Create a new joined view with the given node name and columns info.
 
         Parameters
         ----------
@@ -522,10 +532,22 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             joined columns info
         kwargs: Any
             Additional keyword arguments used to override the underlying metadata
+
+        Returns
+        -------
+        ViewT
         """
-        self.node_name = new_node_name
-        self.columns_info = joined_columns_info
-        self.__dict__.update(kwargs)
+        return type(self)(
+            feature_store=self.feature_store,
+            **{
+                **self.json_dict(exclude={"feature_store": True}),
+                "graph": self.graph,
+                "node_name": new_node_name,
+                "columns_info": joined_columns_info,
+                **self._get_create_joined_view_parameters(),
+                **kwargs,
+            },
+        )
 
     def _get_key_if_entity(self, other_view: View) -> Optional[tuple[str, str]]:
         """
@@ -701,12 +723,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     @typechecked
     def join(  # pylint: disable=too-many-locals
-        self,
+        self: ViewT,
         other_view: View,
         on: Optional[str] = None,  # pylint: disable=invalid-name
         how: Literal["left", "inner"] = "left",
         rsuffix: str = "",
-    ) -> None:
+    ) -> ViewT:
         """
         Joins the current view with another view. The calling View can be of any type with the exception that columns
         from a SCDView can’t be added to a DimensionView or a SCDView.
@@ -742,13 +764,18 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Argument is used if the two views have overlapping column names and disambiguates such column names after
             join. The default rsuffix is an empty string - ''.
 
+        Returns
+        -------
+        ViewT
+            The joined view which has the same type as this view.
+
         Examples
         --------
         Joining an EventView with a DimensionView.
 
         >>> event_view = catalog.get_view("GROCERYINVOICE")
         >>> dimension_view = catalog.get_view("GROCERYPRODUCT")
-        >>> event_view.join(dimension_view, on="GroceryCustomerGuid", how="inner", rsuffix="_dimension")
+        >>> event_view = event_view.join(dimension_view, on="GroceryCustomerGuid", how="inner", rsuffix="_dimension")
         """
         self._validate_join(other_view, rsuffix, on=on)
 
@@ -792,8 +819,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             self.columns_info, append_rsuffix_to_column_info(filtered_column_infos, rsuffix)
         )
 
-        # Update metadata
-        self._update_metadata(node.name, joined_columns_info)
+        # create a new view and return it
+        return self._create_joined_view(
+            new_node_name=node.name, joined_columns_info=joined_columns_info
+        )
 
     @staticmethod
     def _validate_offset(offset: Optional[str]) -> None:

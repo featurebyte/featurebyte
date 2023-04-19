@@ -22,7 +22,6 @@ from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.materialisation import (
-    create_table_as,
     get_row_count_sql,
     get_source_expr,
     get_view_expr,
@@ -97,7 +96,7 @@ class BaseObservationInput(FeatureByteBaseModel):
         """
         # Sample a bit above the theoretical sample percentage since bernoulli sampling doesn't
         # guarantee an exact number of rows.
-        return min(100.0, 100.0 * desired_row_count / total_row_count * 1.2)
+        return min(100.0, 100.0 * desired_row_count / total_row_count * 1.4)
 
     async def materialize(
         self, session: BaseSession, destination: TableDetails, sample_rows: Optional[int]
@@ -124,8 +123,11 @@ class BaseObservationInput(FeatureByteBaseModel):
                 adapter = get_sql_adapter(source_type=session.source_type)
                 query_expr = adapter.tablesample(query_expr, num_percent).limit(sample_rows)
 
+        expression = get_sql_adapter(session.source_type).create_table_as(
+            table_details=destination, select_expr=query_expr
+        )
         query = sql_to_string(
-            create_table_as(table_details=destination, select_expr=query_expr),
+            expression,
             source_type=session.source_type,
         )
 

@@ -9,7 +9,19 @@ from requests.exceptions import JSONDecodeError
 from requests.models import Response
 
 
-class ResponseException(Exception):
+class FeatureByteException(Exception):
+    """
+    Base exception class for FeatureByte related exceptions.
+    Use this class as a base class for all exceptions raised by FeatureByte SDK so that
+    they can be repackaged for readability in a notebook environment.
+    """
+
+    def __init__(self, *args: Any, repackaged: bool = False, **kwargs: Any) -> None:
+        self.repackaged = repackaged
+        super().__init__(*args, **kwargs)
+
+
+class ResponseException(FeatureByteException):
     """
     Exception raised due to request handling failure
     """
@@ -100,93 +112,93 @@ class RecordDeletionException(ResponseException):
     """
 
 
-class MissingPointInTimeColumnError(Exception):
+class MissingPointInTimeColumnError(FeatureByteException):
     """
     Raised when point in time column is not provided
     """
 
 
-class UnsupportedPointInTimeColumnTypeError(Exception):
+class UnsupportedPointInTimeColumnTypeError(FeatureByteException):
     """
     Raised when point in time column type is not supported
     """
 
 
-class TooRecentPointInTimeError(Exception):
+class TooRecentPointInTimeError(FeatureByteException):
     """
     Raised when the latest point in time value is too recent in historical requests
     """
 
 
-class RequiredEntityNotProvidedError(Exception):
+class RequiredEntityNotProvidedError(FeatureByteException):
     """
     Raised when one or more required entities are not provided
     """
 
 
-class UnexpectedServingNamesMappingError(Exception):
+class UnexpectedServingNamesMappingError(FeatureByteException):
     """
     Raised when unexpected keys are provided in serving names mapping
     """
 
 
-class EntityJoinPathNotFoundError(Exception):
+class EntityJoinPathNotFoundError(FeatureByteException):
     """
     Raised when it is not possible to identify a join path to an entity using the provided entities
     as children entities
     """
 
 
-class AmbiguousEntityRelationshipError(Exception):
+class AmbiguousEntityRelationshipError(FeatureByteException):
     """
     Raised when the relationship between entities is ambiguous and automatic serving of parent
     features is not possible
     """
 
 
-class InvalidSettingsError(Exception):
+class InvalidSettingsError(FeatureByteException):
     """
     Raised when configuration has invalid settings
     """
 
 
-class DuplicatedRegistryError(Exception):
+class DuplicatedRegistryError(FeatureByteException):
     """
     Raised when the feature registry record already exists at the feature store
     """
 
 
-class MissingFeatureRegistryError(Exception):
+class MissingFeatureRegistryError(FeatureByteException):
     """
     Raised when the feature registry record does not exist
     """
 
 
-class InvalidFeatureRegistryOperationError(Exception):
+class InvalidFeatureRegistryOperationError(FeatureByteException):
     """
     Raised when the operation on the registry is invalid
     """
 
 
-class ObjectHasBeenSavedError(Exception):
+class ObjectHasBeenSavedError(FeatureByteException):
     """
     Raise when the object has been saved before
     """
 
 
-class TableSchemaHasBeenChangedError(Exception):
+class TableSchemaHasBeenChangedError(FeatureByteException):
     """
     Raise when the table schema has been changed (different from the time EventTable object is saved)
     """
 
 
-class CredentialsError(Exception):
+class CredentialsError(FeatureByteException):
     """
     Raise when the credentials used to access the resource is missing or invalid
     """
 
 
-class DocumentError(Exception):
+class DocumentError(FeatureByteException):
     """
     General exception raised when there are some issue at persistent layer operations
     """
@@ -234,26 +246,26 @@ class QueryExecutionTimeOut(DocumentError):
     """
 
 
-class FeatureStoreSchemaCollisionError(Exception):
+class FeatureStoreSchemaCollisionError(FeatureByteException):
     """
     Raise when the feature store ID is already in use by another
     working schema.
     """
 
 
-class NoFeatureStorePresentError(Exception):
+class NoFeatureStorePresentError(FeatureByteException):
     """
     Raise when we cannot find a feature store, when we expect one to be there.
     """
 
 
-class FeatureListNotOnlineEnabledError(Exception):
+class FeatureListNotOnlineEnabledError(FeatureByteException):
     """
     Raise when online features are requested for a FeatureList that is not online enabled
     """
 
 
-class JoinViewMismatchError(Exception):
+class JoinViewMismatchError(FeatureByteException):
     """
     Raise when the view types in a join are a mismatch.
 
@@ -263,7 +275,7 @@ class JoinViewMismatchError(Exception):
     """
 
 
-class NoJoinKeyFoundError(Exception):
+class NoJoinKeyFoundError(FeatureByteException):
     """
     Raise when no suitable join key is found.
 
@@ -271,14 +283,14 @@ class NoJoinKeyFoundError(Exception):
     """
 
 
-class RepeatedColumnNamesError(Exception):
+class RepeatedColumnNamesError(FeatureByteException):
     """
     Raise when two views have overlapping columns, and a user is trying to perform a Join, without providing
     a suffix
     """
 
 
-class AggregationNotSupportedForViewError(Exception):
+class AggregationNotSupportedForViewError(FeatureByteException):
     """
     Raise when the requested aggregation does not support the underlying View
     """
@@ -290,13 +302,13 @@ class InvalidImputationsError(ValueError):
     """
 
 
-class EventViewMatchingEntityColumnNotFound(Exception):
+class EventViewMatchingEntityColumnNotFound(FeatureByteException):
     """
     Raise when we are unable to find a matching entity column when trying to add a feature to an event view.
     """
 
 
-class ChangeViewNoJoinColumnError(Exception):
+class ChangeViewNoJoinColumnError(FeatureByteException):
     """
     Raise when get_join_column is called in ChangeView.
 
@@ -310,7 +322,7 @@ class TileScheduleNotSupportedError(NotImplementedError):
     """
 
 
-class NoFeatureJobSettingInSourceError(Exception):
+class NoFeatureJobSettingInSourceError(FeatureByteException):
     """
     Raise when the input table does not have any feature job setting.
     """
