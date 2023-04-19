@@ -12,6 +12,7 @@ from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, 
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
+from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
@@ -38,6 +39,7 @@ from featurebyte.service.table import TableService
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
 DocumentServiceT = TypeVar(
     "DocumentServiceT",
+    CredentialService,
     FeatureStoreService,
     ContextService,
     EntityService,
@@ -56,8 +58,8 @@ DocumentServiceT = TypeVar(
     RelationshipInfoService,
     PeriodicTaskService,
     ObservationTableService,
-    CredentialService,
     HistoricalFeatureTableService,
+    BatchRequestTableService,
     BatchFeatureTableService,
 )
 

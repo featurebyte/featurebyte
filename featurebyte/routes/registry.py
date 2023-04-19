@@ -5,6 +5,7 @@ This contains all the dependencies that we want to register in order to get our 
 """
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
+from featurebyte.routes.batch_request_table.controller import BatchRequestTableController
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.credential.controller import CredentialController
@@ -29,6 +30,7 @@ from featurebyte.routes.scd_table.controller import SCDTableController
 from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.table.controller import TableController
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
+from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
@@ -141,6 +143,14 @@ app_container_config.add_service_with_extra_deps(
     HistoricalFeatureTableService,
     [
         "feature_store_service",
+    ],
+)
+app_container_config.add_service_with_extra_deps(
+    "batch_request_table_service",
+    BatchRequestTableService,
+    [
+        "feature_store_service",
+        "context_service",
     ],
 )
 app_container_config.add_service_with_extra_deps(
@@ -365,12 +375,17 @@ app_container_config.add_controller(
     ["historical_feature_table_service", "task_controller"],
 )
 app_container_config.add_controller(
-    "deployment_controller",
-    DeploymentController,
-    ["feature_list_service"],
+    "batch_request_table_controller",
+    BatchRequestTableController,
+    ["batch_request_table_service", "task_controller"],
 )
 app_container_config.add_controller(
     "batch_feature_table_controller",
     BatchFeatureTableController,
     ["batch_feature_table_service", "task_controller"],
+)
+app_container_config.add_controller(
+    "deployment_controller",
+    DeploymentController,
+    ["feature_list_service"],
 )

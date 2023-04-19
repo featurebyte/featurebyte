@@ -12,7 +12,8 @@ from featurebyte.exception import (
     MissingPointInTimeColumnError,
     UnsupportedPointInTimeColumnTypeError,
 )
-from featurebyte.models.observation_table import ObservationTableModel, SourceTableObservationInput
+from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.models.request_input import SourceTableRequestInput
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.base import BaseSession
@@ -23,7 +24,7 @@ def observation_table_from_source_table_fixture(event_table):
     """
     Fixture for an ObservationTable from a source table
     """
-    observation_input = SourceTableObservationInput(source=event_table.tabular_source)
+    request_input = SourceTableRequestInput(source=event_table.tabular_source)
     location = TabularSource(
         **{
             "feature_store_id": event_table.tabular_source.feature_store_id,
@@ -37,8 +38,12 @@ def observation_table_from_source_table_fixture(event_table):
     return ObservationTableModel(
         name="observation_table_from_source_table",
         location=location,
-        observation_input=observation_input,
-        column_names=["a", "b", "c"],
+        request_input=request_input,
+        columns_info=[
+            {"name": "a", "dtype": "INT"},
+            {"name": "b", "dtype": "INT"},
+            {"name": "c", "dtype": "INT"},
+        ],
         most_recent_point_in_time="2023-01-15T10:00:00",
     )
 
@@ -64,7 +69,7 @@ def db_session_fixture():
     async def mock_list_table_schema(*args, **kwargs):
         _ = args
         _ = kwargs
-        return {"POINT_IN_TIME": "TIMESTAMP", "cust_id": "STRING"}
+        return {"POINT_IN_TIME": "TIMESTAMP", "cust_id": "VARCHAR"}
 
     async def execute_query(*args, **kwargs):
         _ = args
@@ -106,7 +111,7 @@ async def test_validate__missing_point_in_time(observation_table_service, table_
     async def mock_list_table_schema(*args, **kwargs):
         _ = args
         _ = kwargs
-        return {"a": "int", "b": "float", "not_point_in_time": "string"}
+        return {"a": "INT", "b": "FLOAT", "not_point_in_time": "VARCHAR"}
 
     mock_db_session = Mock(
         name="mock_session",
@@ -141,7 +146,10 @@ async def test_validate__most_recent_point_in_time(
     assert query == expected_query
 
     assert metadata == {
-        "column_names": ["POINT_IN_TIME", "cust_id"],
+        "columns_info": [
+            {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
+            {"name": "cust_id", "dtype": "VARCHAR"},
+        ],
         "most_recent_point_in_time": "2023-01-15T02:00:00",
     }
 
@@ -155,7 +163,7 @@ async def test_validate__supported_type_point_in_time(observation_table_service,
     async def mock_list_table_schema(*args, **kwargs):
         _ = args
         _ = kwargs
-        return {"POINT_IN_TIME": "STRING", "cust_id": "STRING"}
+        return {"POINT_IN_TIME": "VARCHAR", "cust_id": "VARCHAR"}
 
     mock_db_session = Mock(
         name="mock_session",
@@ -167,21 +175,19 @@ async def test_validate__supported_type_point_in_time(observation_table_service,
             mock_db_session, table_details
         )
 
-    assert str(exc.value) == "Point in time column should have timestamp type; got STRING"
+    assert str(exc.value) == "Point in time column should have timestamp type; got VARCHAR"
 
 
 @pytest.mark.asyncio
-async def test_observation_input_get_row_count(observation_table_from_source_table, db_session):
+async def test_request_input_get_row_count(observation_table_from_source_table, db_session):
     """
     Test get_row_count triggers expected query
     """
     db_session.execute_query = AsyncMock(return_value=pd.DataFrame({"row_count": [1000]}))
 
-    row_count = await observation_table_from_source_table.observation_input.get_row_count(
+    row_count = await observation_table_from_source_table.request_input.get_row_count(
         db_session,
-        observation_table_from_source_table.observation_input.get_query_expr(
-            db_session.source_type
-        ),
+        observation_table_from_source_table.request_input.get_query_expr(db_session.source_type),
     )
     assert row_count == 1000
 

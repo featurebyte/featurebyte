@@ -1,43 +1,44 @@
 """
-ObservationTable creation task
+BatchRequestTable creation task
 """
 from __future__ import annotations
 
 from typing import Any, cast
 
 from featurebyte.logger import logger
-from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
-from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.models.batch_request_table import BatchRequestTableModel
+from featurebyte.query_graph.node.schema import ColumnSpec
+from featurebyte.schema.worker.task.batch_request_table import BatchRequestTableTaskPayload
+from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import RequestTableMaterializationMixin
 
 
-class ObservationTableTask(RequestTableMaterializationMixin, BaseTask):
+class BatchRequestTableTask(RequestTableMaterializationMixin, BaseTask):
     """
-    ObservationTable Task
+    BatchRequestTable Task
     """
 
-    payload_class = ObservationTableTaskPayload
+    payload_class = BatchRequestTableTaskPayload
 
     async def execute(self) -> Any:
         """
-        Execute ObservationTable task
+        Execute BatchRequestTable task
         """
-        payload = cast(ObservationTableTaskPayload, self.payload)
+        payload = cast(BatchRequestTableTaskPayload, self.payload)
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
         db_session = await self.get_db_session(feature_store)
 
-        observation_table_service = ObservationTableService(
+        batch_request_table_service = BatchRequestTableService(
             user=self.user,
             persistent=self.get_persistent(),
             catalog_id=self.payload.catalog_id,
             context_service=self.context_service,
             feature_store_service=self.feature_store_service,
         )
-        location = await observation_table_service.generate_materialized_table_location(
+        location = await batch_request_table_service.generate_materialized_table_location(
             self.get_credential,
             payload.feature_store_id,
         )
@@ -48,19 +49,21 @@ class ObservationTableTask(RequestTableMaterializationMixin, BaseTask):
         )
 
         async with self.drop_table_on_error(db_session, location.table_details):
-            additional_metadata = (
-                await observation_table_service.validate_materialized_table_and_get_metadata(
-                    db_session, location.table_details
-                )
+            table_schema = await db_session.list_table_schema(
+                table_name=location.table_details.table_name,
+                database_name=location.table_details.database_name,
+                schema_name=location.table_details.schema_name,
             )
-            logger.debug("Creating a new ObservationTable", extras=location.table_details.dict())
-            observation_table = ObservationTableModel(
+            logger.debug("Creating a new BatchRequestTable", extras=location.table_details.dict())
+            batch_request_table = BatchRequestTableModel(
                 _id=self.payload.output_document_id,
                 user_id=payload.user_id,
                 name=payload.name,
                 location=location,
                 context_id=payload.context_id,
                 request_input=payload.request_input,
-                **additional_metadata,
+                columns_info=[
+                    ColumnSpec(name=name, dtype=var_type) for name, var_type in table_schema.items()
+                ],
             )
-            await observation_table_service.create_document(observation_table)
+            await batch_request_table_service.create_document(batch_request_table)

@@ -70,7 +70,7 @@ async def list_observation_tables(
     List ObservationTables
     """
     controller = request.state.app_container.observation_table_controller
-    periodic_task_list: ObservationTableList = await controller.list(
+    observation_table_list: ObservationTableList = await controller.list(
         page=page,
         page_size=page_size,
         sort_by=sort_by,
@@ -78,7 +78,7 @@ async def list_observation_tables(
         search=search,
         name=name,
     )
-    return periodic_task_list
+    return observation_table_list
 
 
 @router.get("/audit/{observation_table_id}", response_model=AuditDocumentList)

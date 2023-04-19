@@ -9,6 +9,7 @@ from fastapi import Depends, FastAPI, Header, Request
 from starlette.websockets import WebSocket
 
 import featurebyte.routes.batch_feature_table.api as batch_feature_table_api
+import featurebyte.routes.batch_request_table.api as batch_request_table_api
 import featurebyte.routes.catalog.api as catalog_api
 import featurebyte.routes.context.api as context_api
 import featurebyte.routes.credential.api as credential_api
@@ -107,6 +108,7 @@ def get_app() -> FastAPI:
 
     # add routers into the app
     resource_apis = [
+        credential_api,
         context_api,
         deployment_api,
         dimension_table_api,
@@ -128,8 +130,8 @@ def get_app() -> FastAPI:
         catalog_api,
         periodic_tasks_api,
         observation_table_api,
-        credential_api,
         historical_feature_table_api,
+        batch_request_table_api,
         batch_feature_table_api,
     ]
     dependencies = _get_api_deps()
