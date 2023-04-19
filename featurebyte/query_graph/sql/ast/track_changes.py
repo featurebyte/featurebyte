@@ -23,6 +23,19 @@ def create_lag_expression(
 ) -> Expression:
     """
     Create a LAG expression
+
+    Parameters
+    ----------
+    partition_key_expr: Expression
+        Expression for the partition key
+    timestamp_column_expr: Expression
+        Expression for the timestamp column
+    column_expr: Expression
+        Expression for the column to be lagged
+
+    Returns
+    -------
+    Expression
     """
     partition_by = [partition_key_expr]
     order = expressions.Order(expressions=[expressions.Ordered(this=timestamp_column_expr)])

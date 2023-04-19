@@ -272,6 +272,7 @@ class TableNode(SQLNode, ABC):
         # Use nested filter if QUALIFY clause is not supported
         if self.require_nested_filter_post_select:
             assert aliases is not None
+            assert self.qualify_condition is not None
             select_expr = self.context.adapter.filter_with_window_function(
                 select_expr, aliases, self.qualify_condition
             )

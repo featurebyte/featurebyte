@@ -26,7 +26,6 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructureBranchState,
     OperationStructureInfo,
     PostAggregationColumn,
-    SourceDataColumn,
     ViewDataColumn,
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
