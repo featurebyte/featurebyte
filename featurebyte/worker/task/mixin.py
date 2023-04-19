@@ -3,15 +3,15 @@ Mixin classes for tasks
 """
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any, AsyncIterator, Callable
 
 from contextlib import asynccontextmanager
 
 from featurebyte.logger import logger
-from featurebyte.models import FeatureStoreModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
+from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import BaseSession
@@ -23,7 +23,7 @@ class RequestTableMaterializationMixin:
     RequestTableMaterializationMixin is a mixin that contains methods that are used to materialize
     """
 
-    payload: ObservationTableTaskPayload
+    payload: BaseTaskPayload
     user: Any
     get_persistent: Callable[..., Persistent]
     get_credential: Callable[..., Any]
@@ -84,7 +84,7 @@ class RequestTableMaterializationMixin:
     @asynccontextmanager
     async def drop_table_on_error(
         self, db_session: BaseSession, table_details: TableDetails
-    ) -> None:
+    ) -> AsyncIterator[None]:
         """
         Drop the table on error
 

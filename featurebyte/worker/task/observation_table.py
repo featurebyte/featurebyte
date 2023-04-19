@@ -13,7 +13,7 @@ from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import RequestTableMaterializationMixin
 
 
-class ObservationTableTask(BaseTask, RequestTableMaterializationMixin):
+class ObservationTableTask(RequestTableMaterializationMixin, BaseTask):
     """
     ObservationTable Task
     """

@@ -14,7 +14,7 @@ from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import RequestTableMaterializationMixin
 
 
-class BatchRequestTableTask(BaseTask, RequestTableMaterializationMixin):
+class BatchRequestTableTask(RequestTableMaterializationMixin, BaseTask):
     """
     BatchRequestTable Task
     """
