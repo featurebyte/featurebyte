@@ -115,6 +115,8 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
+      - cmd: if [ ! -d .mypy_cache ]; then mkdir .mypy_cache; fi
+        silent: true
       - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py)' .
 
   lint-safety:
