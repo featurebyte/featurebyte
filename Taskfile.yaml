@@ -50,6 +50,7 @@ tasks:
 
   build-jar:
     desc: "Compile the hive jar files"
+    run: once
     sources:
       - hive-udf/**/*
     deps:

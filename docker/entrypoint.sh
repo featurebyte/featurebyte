@@ -42,8 +42,19 @@ _main() {
     exec gosu "${NON_PRIVUSER}:${NON_PRIVGROUP}" "$BASH_SOURCE" "$@"
   else
     # Running as normal user
-    python /scripts/migration.py
-    uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --workers=$WORKERS --timeout-keep-alive=300 --log-level=$LOG_LEVEL
+    echo "Starting process: $1"
+    if [ "$1" = 'celery' ]; then
+      celery --app featurebyte.worker.start.celery worker --loglevel=DEBUG --beat --scheduler featurebyte.worker.schedulers.MongoScheduler
+    elif [ "$1" = 'server' ]; then
+      python /scripts/migration.py
+      uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --timeout-keep-alive=300 --log-level=$LOG_LEVEL
+    elif [ "$1" = '' ]; then
+      echo "No command specified, choose either 'celery' or 'server'"
+      exit 1
+    else
+      echo "Unknown command: $1"
+      exit 1
+    fi
   fi
 }
 
