@@ -3,7 +3,6 @@ Tests for BatchFeatureTable routes
 """
 from http import HTTPStatus
 
-import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
@@ -32,7 +31,7 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
             ("feature_store", "feature_store.json"),
             ("entity", "entity.json"),
             ("context", "context.json"),
-            ("observation_table", "observation_table.json"),
+            ("batch_request_table", "batch_request_table.json"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}")
@@ -55,10 +54,3 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
-
-    @pytest.fixture(autouse=True)
-    def always_patched_observation_table_service(self, patched_observation_table_service):
-        """
-        Patch ObservationTableService so get_additional_metadata always passes
-        """
-        _ = patched_observation_table_service

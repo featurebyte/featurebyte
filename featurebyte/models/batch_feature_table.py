@@ -4,18 +4,18 @@ BatchFeatureTable related model(s)
 from __future__ import annotations
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.materialized_table import MaterializedTable
+from featurebyte.models.materialized_table import MaterializedTableModel
 
 
-class BatchFeatureTableModel(MaterializedTable):
+class BatchFeatureTableModel(MaterializedTableModel):
     """
     BatchFeatureTable is a table that stores the result of asynchronous prediction features requests
     """
 
-    observation_table_id: PydanticObjectId
+    batch_request_table_id: PydanticObjectId
     feature_list_id: PydanticObjectId
 
-    class Settings(MaterializedTable.Settings):
+    class Settings(MaterializedTableModel.Settings):
         """
         MongoDB settings
         """

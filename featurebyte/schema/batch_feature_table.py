@@ -21,7 +21,7 @@ class BatchFeatureTableCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     feature_store_id: PydanticObjectId
-    observation_table_id: PydanticObjectId
+    batch_request_table_id: PydanticObjectId
     feature_list_id: PydanticObjectId
 
 

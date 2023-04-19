@@ -8,7 +8,7 @@ from typing import Any, cast
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.schema.worker.task.batch_feature_table import BatchFeatureTableTaskPayload
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
-from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.worker.task.base import BaseTask
 
 
@@ -27,9 +27,11 @@ class BatchFeatureTableTask(BaseTask):
 
         app_container = self.app_container
 
-        observation_table_service: ObservationTableService = app_container.observation_table_service
-        observation_table_model = await observation_table_service.get_document(
-            payload.observation_table_id
+        batch_request_table_service: BatchRequestTableService = (
+            app_container.batch_request_table_service
+        )
+        batch_request_table_model = await batch_request_table_service.get_document(
+            payload.batch_request_table_id
         )
 
         batch_feature_table_service: BatchFeatureTableService = (
@@ -40,14 +42,14 @@ class BatchFeatureTableTask(BaseTask):
         )
 
         # TODO: Implement prediction table creation task at warehouse
-        _ = observation_table_model
+        _ = batch_request_table_model
 
         batch_feature_table_model = BatchFeatureTableModel(
             _id=payload.output_document_id,
             user_id=self.payload.user_id,
             name=payload.name,
             location=location,
-            observation_table_id=payload.observation_table_id,
+            batch_request_table_id=payload.batch_request_table_id,
             feature_list_id=payload.feature_list_id,
         )
         created_doc = await batch_feature_table_service.create_document(batch_feature_table_model)
