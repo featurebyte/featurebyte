@@ -4,6 +4,7 @@ Registrations module.
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
 from featurebyte.routes.app_container_config import AppContainerConfig
+from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.credential.controller import CredentialController
@@ -23,11 +24,11 @@ from featurebyte.routes.historical_feature_table.controller import HistoricalFea
 from featurebyte.routes.item_table.controller import ItemTableController
 from featurebyte.routes.observation_table.controller import ObservationTableController
 from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
-from featurebyte.routes.prediction_table.controller import PredictionTableController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.routes.scd_table.controller import SCDTableController
 from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.table.controller import TableController
+from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
@@ -54,7 +55,6 @@ from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.service.periodic_task import PeriodicTaskService
-from featurebyte.service.prediction_table import PredictionTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
@@ -144,8 +144,8 @@ app_container_config.add_service_with_extra_deps(
     ],
 )
 app_container_config.add_service_with_extra_deps(
-    "prediction_table_service",
-    PredictionTableService,
+    "batch_feature_table_service",
+    BatchFeatureTableService,
     [
         "feature_store_service",
     ],
@@ -370,7 +370,7 @@ app_container_config.add_controller(
     ["feature_list_service"],
 )
 app_container_config.add_controller(
-    "prediction_table_controller",
-    PredictionTableController,
-    ["prediction_table_service", "task_controller"],
+    "batch_feature_table_controller",
+    BatchFeatureTableController,
+    ["batch_feature_table_service", "task_controller"],
 )

@@ -1,3 +1,4 @@
+/batch_feature_table
 /catalog
 /context
 /credential
@@ -14,7 +15,6 @@
 /feature_store
 /item_table
 /historical_feature_table
-/prediction_table
 /observation_table
 /periodic_task
 /relationship_info

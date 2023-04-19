@@ -11,6 +11,7 @@ from featurebyte.models.entity import EntityModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
@@ -28,7 +29,6 @@ from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.mixin import Document
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.periodic_task import PeriodicTaskService
-from featurebyte.service.prediction_table import PredictionTableService
 from featurebyte.service.relationship import ParentT, RelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
@@ -58,7 +58,7 @@ DocumentServiceT = TypeVar(
     ObservationTableService,
     CredentialService,
     HistoricalFeatureTableService,
-    PredictionTableService,
+    BatchFeatureTableService,
 )
 
 

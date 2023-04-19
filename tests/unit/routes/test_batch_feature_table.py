@@ -1,5 +1,5 @@
 """
-Tests for PredictionTable routes
+Tests for BatchFeatureTable routes
 """
 from http import HTTPStatus
 
@@ -10,15 +10,15 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseAsyncApiTestSuite
 
 
-class TestPredictionTableApi(BaseAsyncApiTestSuite):
+class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
     """
-    Tests for PredictionTable route
+    Tests for BatchFeatureTable route
     """
 
-    class_name = "PredictionTable"
-    base_route = "/prediction_table"
+    class_name = "BatchFeatureTable"
+    base_route = "/batch_feature_table"
     payload = BaseAsyncApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/prediction_table.json"
+        "tests/fixtures/request_payloads/batch_feature_table.json"
     )
 
     create_conflict_payload_expected_detail_pairs = []

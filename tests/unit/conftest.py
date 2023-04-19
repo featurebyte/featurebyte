@@ -47,13 +47,13 @@ from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.routes.app_container import AppContainer
+from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
-from featurebyte.schema.prediction_table import PredictionTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
@@ -1223,8 +1223,8 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             feature_clusters=feature_list._get_feature_clusters(),
         ),
     )
-    prediction_table = PredictionTableCreate(
-        name="prediction_table",
+    batch_feature_table = BatchFeatureTableCreate(
+        name="batch_feature_table",
         feature_store_id=snowflake_feature_store.id,
         feature_list_id=feature_list.id,
         observation_table_id=observation_table.id,
@@ -1270,7 +1270,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
             (historical_feature_table, "historical_feature_table"),
-            (prediction_table, "prediction_table"),
+            (batch_feature_table, "batch_feature_table"),
         ]
         for schema, name in schema_payload_name_pairs:
             filename = f"{base_path}/{name}.json"

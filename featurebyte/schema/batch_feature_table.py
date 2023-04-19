@@ -1,5 +1,5 @@
 """
-PredictionTable API payload schema
+BatchFeatureTable API payload schema
 """
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ from bson import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.prediction_table import PredictionTableModel
+from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.schema.common.base import PaginationMixin
 
 
-class PredictionTableCreate(FeatureByteBaseModel):
+class BatchFeatureTableCreate(FeatureByteBaseModel):
     """
-    PredictionTable creation payload
+    BatchFeatureTableCreate creation payload
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
@@ -25,9 +25,9 @@ class PredictionTableCreate(FeatureByteBaseModel):
     feature_list_id: PydanticObjectId
 
 
-class PredictionTableList(PaginationMixin):
+class BatchFeatureTableList(PaginationMixin):
     """
-    Schema for listing prediction tables
+    Schema for listing batch feature tables
     """
 
-    data: List[PredictionTableModel]
+    data: List[BatchFeatureTableModel]

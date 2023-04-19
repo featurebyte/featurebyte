@@ -1,29 +1,29 @@
 """
-PredictionTable creation task
+BatchFeatureTable creation task
 """
 from __future__ import annotations
 
 from typing import Any, cast
 
-from featurebyte.models.prediction_table import PredictionTableModel
-from featurebyte.schema.worker.task.prediction_table import PredictionTableTaskPayload
+from featurebyte.models.batch_feature_table import BatchFeatureTableModel
+from featurebyte.schema.worker.task.batch_feature_table import BatchFeatureTableTaskPayload
+from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
-from featurebyte.service.prediction_table import PredictionTableService
 from featurebyte.worker.task.base import BaseTask
 
 
-class PredictionTableTask(BaseTask):
+class BatchFeatureTableTask(BaseTask):
     """
-    PredictionTableTask creates a prediction table by computing online predictions
+    BatchFeatureTableTask creates a batch feature table by computing online predictions
     """
 
-    payload_class = PredictionTableTaskPayload
+    payload_class = BatchFeatureTableTaskPayload
 
     async def execute(self) -> Any:
         """
-        Execute PredictionTableTask
+        Execute BatchFeatureTableTask
         """
-        payload = cast(PredictionTableTaskPayload, self.payload)
+        payload = cast(BatchFeatureTableTaskPayload, self.payload)
 
         app_container = self.app_container
 
@@ -32,15 +32,17 @@ class PredictionTableTask(BaseTask):
             payload.observation_table_id
         )
 
-        prediction_table_service: PredictionTableService = app_container.prediction_table_service
-        location = await prediction_table_service.generate_materialized_table_location(
+        batch_feature_table_service: BatchFeatureTableService = (
+            app_container.batch_feature_table_service
+        )
+        location = await batch_feature_table_service.generate_materialized_table_location(
             self.get_credential, payload.feature_store_id
         )
 
         # TODO: Implement prediction table creation task at warehouse
         _ = observation_table_model
 
-        prediction_table_model = PredictionTableModel(
+        batch_feature_table_model = BatchFeatureTableModel(
             _id=payload.output_document_id,
             user_id=self.payload.user_id,
             name=payload.name,
@@ -48,5 +50,5 @@ class PredictionTableTask(BaseTask):
             observation_table_id=payload.observation_table_id,
             feature_list_id=payload.feature_list_id,
         )
-        created_doc = await prediction_table_service.create_document(prediction_table_model)
+        created_doc = await batch_feature_table_service.create_document(batch_feature_table_model)
         assert created_doc.id == payload.output_document_id

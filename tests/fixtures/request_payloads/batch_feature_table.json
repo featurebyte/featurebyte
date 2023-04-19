@@ -7,6 +7,6 @@
     "_id": "6439158b89c3505eca729039",
     "feature_list_id": "642db61f28e1dffe39df355c",
     "feature_store_id": "642db61d28e1dffe39df3521",
-    "name": "prediction_table",
+    "name": "batch_feature_table",
     "observation_table_id": "642db61f28e1dffe39df3563"
 }

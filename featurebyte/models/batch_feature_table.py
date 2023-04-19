@@ -1,5 +1,5 @@
 """
-PredictionTable related model(s)
+BatchFeatureTable related model(s)
 """
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTable
 
 
-class PredictionTableModel(MaterializedTable):
+class BatchFeatureTableModel(MaterializedTable):
     """
-    PredictionTable is the result of asynchronous prediction features requests
+    BatchFeatureTable is a table that stores the result of asynchronous prediction features requests
     """
 
     observation_table_id: PydanticObjectId
@@ -20,4 +20,4 @@ class PredictionTableModel(MaterializedTable):
         MongoDB settings
         """
 
-        collection_name: str = "prediction_table"
+        collection_name: str = "batch_feature_table"
