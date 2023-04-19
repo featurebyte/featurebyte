@@ -229,7 +229,6 @@ tasks:
     deps:
       - task: docker-build
     cmds:
-      - mkdir -p ~/.featurebyte/data/spark/staging/playground
       - poetry run python scripts/test-docs-setup.py
 
   test-docs-teardown:

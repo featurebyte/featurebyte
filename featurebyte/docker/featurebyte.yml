@@ -29,19 +29,6 @@ services:
     logging:
       driver: local
 
-  featurebyte-docs:
-    networks:
-      - featurebyte
-    hostname: featurebyte-docs
-    restart: unless-stopped
-    container_name: featurebyte-docs
-    image: featurebyte-docs:latest
-    ports:
-      - "127.0.0.1:8089:80"
-    logging:
-      driver: local
-
-
   featurebyte-server:
     networks:
       - featurebyte
@@ -68,11 +55,10 @@ services:
       - "LOCAL_GID=${LOCAL_GID}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8088/status"]
-      interval: 10s
+      interval: 5s
       start_period: 30s
     volumes:
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
-      - ~/.featurebyte/data/spark/staging:/data/staging
       - ~/.featurebyte/data/files:/app/.featurebyte/data/files
       - file-store:/tmp
     logging:
@@ -101,7 +87,6 @@ services:
       - "worker"
     volumes:
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
-      - ~/.featurebyte/data/spark/staging:/data/staging
       - ~/.featurebyte/data/files:/app/.featurebyte/data/files
       - file-store:/tmp
     logging:
@@ -113,15 +98,14 @@ services:
     image: featurebyte/cluster-apache-spark:3.3.1
     container_name: spark-thrift
     ports:
-      - "10000:10000"
-      - "4040:4040"
+      - "0.0.0.0:10000:10000"
+      - "0.0.0.0:4040:4040"
     environment:
       - SPARK_MASTER=local
       - SPARK_LOCAL_IP=spark-thrift
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
     volumes:
-      - ~/.featurebyte/data/spark/staging:/opt/spark/data/staging
       - spark-warehouse:/opt/spark/data/derby
     healthcheck:
       test: netstat -ltn | grep -c 10000
