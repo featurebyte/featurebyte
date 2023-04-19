@@ -8,12 +8,11 @@ from typing import Any, cast
 from featurebyte.logger import logger
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
-from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.worker.task.base import BaseTask
-from featurebyte.worker.task.mixin import RequestTableMaterializationMixin
+from featurebyte.worker.task.mixin import DataWarehouseMixin
 
 
-class ObservationTableTask(RequestTableMaterializationMixin, BaseTask):
+class ObservationTableTask(DataWarehouseMixin, BaseTask):
     """
     ObservationTable Task
     """
@@ -25,21 +24,15 @@ class ObservationTableTask(RequestTableMaterializationMixin, BaseTask):
         Execute ObservationTable task
         """
         payload = cast(ObservationTableTaskPayload, self.payload)
-        feature_store = await self.feature_store_service.get_document(
+        feature_store = await self.app_container.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
         db_session = await self.get_db_session(feature_store)
-
-        observation_table_service = ObservationTableService(
-            user=self.user,
-            persistent=self.get_persistent(),
-            catalog_id=self.payload.catalog_id,
-            context_service=self.context_service,
-            feature_store_service=self.feature_store_service,
-        )
-        location = await observation_table_service.generate_materialized_table_location(
-            self.get_credential,
-            payload.feature_store_id,
+        location = (
+            await self.app_container.observation_table_service.generate_materialized_table_location(
+                self.get_credential,
+                payload.feature_store_id,
+            )
         )
         await payload.request_input.materialize(
             session=db_session,
@@ -48,10 +41,8 @@ class ObservationTableTask(RequestTableMaterializationMixin, BaseTask):
         )
 
         async with self.drop_table_on_error(db_session, location.table_details):
-            additional_metadata = (
-                await observation_table_service.validate_materialized_table_and_get_metadata(
-                    db_session, location.table_details
-                )
+            additional_metadata = await self.app_container.observation_table_service.validate_materialized_table_and_get_metadata(
+                db_session, location.table_details
             )
             logger.debug("Creating a new ObservationTable", extras=location.table_details.dict())
             observation_table = ObservationTableModel(
@@ -63,4 +54,4 @@ class ObservationTableTask(RequestTableMaterializationMixin, BaseTask):
                 request_input=payload.request_input,
                 **additional_metadata,
             )
-            await observation_table_service.create_document(observation_table)
+            await self.app_container.observation_table_service.create_document(observation_table)

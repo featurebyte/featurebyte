@@ -9,12 +9,11 @@ from featurebyte.logger import logger
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.schema.worker.task.batch_request_table import BatchRequestTableTaskPayload
-from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.worker.task.base import BaseTask
-from featurebyte.worker.task.mixin import RequestTableMaterializationMixin
+from featurebyte.worker.task.mixin import DataWarehouseMixin
 
 
-class BatchRequestTableTask(RequestTableMaterializationMixin, BaseTask):
+class BatchRequestTableTask(DataWarehouseMixin, BaseTask):
     """
     BatchRequestTable Task
     """
@@ -26,19 +25,11 @@ class BatchRequestTableTask(RequestTableMaterializationMixin, BaseTask):
         Execute BatchRequestTable task
         """
         payload = cast(BatchRequestTableTaskPayload, self.payload)
-        feature_store = await self.feature_store_service.get_document(
+        feature_store = await self.app_container.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
         db_session = await self.get_db_session(feature_store)
-
-        batch_request_table_service = BatchRequestTableService(
-            user=self.user,
-            persistent=self.get_persistent(),
-            catalog_id=self.payload.catalog_id,
-            context_service=self.context_service,
-            feature_store_service=self.feature_store_service,
-        )
-        location = await batch_request_table_service.generate_materialized_table_location(
+        location = await self.app_container.batch_request_table_service.generate_materialized_table_location(
             self.get_credential,
             payload.feature_store_id,
         )
@@ -66,4 +57,6 @@ class BatchRequestTableTask(RequestTableMaterializationMixin, BaseTask):
                     ColumnSpec(name=name, dtype=var_type) for name, var_type in table_schema.items()
                 ],
             )
-            await batch_request_table_service.create_document(batch_request_table)
+            await self.app_container.batch_request_table_service.create_document(
+                batch_request_table
+            )

@@ -41,7 +41,7 @@ class BatchFeatureTableTask(BaseTask):
             self.get_credential, payload.feature_store_id
         )
 
-        # TODO: Implement prediction table creation task at warehouse
+        # TODO: Implement batch feature table creation at warehouse
         _ = batch_request_table_model
 
         batch_feature_table_model = BatchFeatureTableModel(

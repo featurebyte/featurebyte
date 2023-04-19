@@ -9,54 +9,19 @@ from contextlib import asynccontextmanager
 
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.service.context import ContextService
-from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
 
 
-class RequestTableMaterializationMixin:
+class DataWarehouseMixin:
     """
-    RequestTableMaterializationMixin is a mixin that contains methods that are used to materialize
+    DataWarehouseMixin contains common methods for tasks that interact with data warehouses.
     """
 
     payload: BaseTaskPayload
-    user: Any
-    get_persistent: Callable[..., Persistent]
     get_credential: Callable[..., Any]
-
-    @property
-    def feature_store_service(self) -> FeatureStoreService:
-        """
-        Get the feature store service
-
-        Returns
-        -------
-        FeatureStoreService
-        """
-        return FeatureStoreService(
-            user=self.user,
-            persistent=self.get_persistent(),
-            catalog_id=self.payload.catalog_id,
-        )
-
-    @property
-    def context_service(self) -> ContextService:
-        """
-        Get the context service
-
-        Returns
-        -------
-        ContextService
-        """
-        return ContextService(
-            user=self.user,
-            persistent=self.get_persistent(),
-            catalog_id=self.payload.catalog_id,
-        )
 
     async def get_db_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """
