@@ -513,7 +513,6 @@ class FeatureList(
         """
         return super().saved
 
-    @enforce_observation_set_row_order
     @typechecked
     def preview(  # pylint: disable=useless-parent-delegation
         self,
