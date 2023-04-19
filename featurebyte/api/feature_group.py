@@ -197,7 +197,6 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         """
         return FeatureListModel.derive_feature_clusters(cast(List[FeatureModel], self._features))
 
-    @enforce_observation_set_row_order
     @typechecked
     def preview(
         self,
