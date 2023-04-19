@@ -98,6 +98,7 @@ class RequestTableMaterializationMixin:
         Yields
         ------
         AsyncIterator[None]
+            The async iterator
 
         Raises
         ------
