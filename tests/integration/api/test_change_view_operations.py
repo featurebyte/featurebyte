@@ -149,7 +149,7 @@ async def test_change_view_correctness(session, data_source):
     table_name = "test_change_view_correctness_table"
     await session.register_table(table_name, df, temporary=False)
 
-    scd_source_table = data_source.get_table(
+    scd_source_table = data_source.get_source_table(
         table_name=table_name,
         database_name=session.database_name,
         schema_name=session.schema_name,
