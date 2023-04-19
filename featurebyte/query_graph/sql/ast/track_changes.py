@@ -59,23 +59,30 @@ class TrackChanges(TableNode):
             this=quoted_identifier(parameters.tracked_column), expression=previous_value
         )
 
-        filtered_input_with_changes = (
-            expressions.Select(qualify=expressions.Qualify(this=value_changed_condition))
-            .select(
-                quoted_identifier(parameters.natural_key_column),
-                alias_(
-                    quoted_identifier(parameters.effective_timestamp_column),
-                    alias=parameters.new_valid_from_column_name,
-                    quoted=True,
-                ),
-                alias_(
-                    quoted_identifier(parameters.tracked_column),
-                    alias=parameters.new_tracked_column_name,
-                    quoted=True,
-                ),
-                alias_(previous_value, alias=parameters.previous_tracked_column_name, quoted=True),
-            )
-            .from_(input_node.sql_nested())
+        input_expr = select(
+            quoted_identifier(parameters.natural_key_column),
+            alias_(
+                quoted_identifier(parameters.effective_timestamp_column),
+                alias=parameters.new_valid_from_column_name,
+                quoted=True,
+            ),
+            alias_(
+                quoted_identifier(parameters.tracked_column),
+                alias=parameters.new_tracked_column_name,
+                quoted=True,
+            ),
+            alias_(previous_value, alias=parameters.previous_tracked_column_name, quoted=True),
+        ).from_(input_node.sql_nested())
+
+        filtered_input_with_changes = context.adapter.filter_with_window_function(
+            input_expr,
+            [
+                parameters.natural_key_column,
+                parameters.new_valid_from_column_name,
+                parameters.new_tracked_column_name,
+                parameters.previous_tracked_column_name,
+            ],
+            value_changed_condition,
         )
         previous_valid_from_expr = create_lag_expression(
             partition_key_expr=quoted_identifier(parameters.natural_key_column),
