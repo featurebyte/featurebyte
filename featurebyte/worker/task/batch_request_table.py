@@ -24,11 +24,6 @@ class BatchRequestTableTask(RequestTableMaterializationMixin, BaseTask):
     async def execute(self) -> Any:
         """
         Execute BatchRequestTable task
-
-        Raises
-        ------
-        Exception
-            If the materialized table fails to be created.
         """
         payload = cast(BatchRequestTableTaskPayload, self.payload)
         feature_store = await self.feature_store_service.get_document(

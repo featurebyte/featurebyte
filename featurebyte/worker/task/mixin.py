@@ -97,7 +97,12 @@ class RequestTableMaterializationMixin:
 
         Yields
         ------
-        None
+        AsyncIterator[None]
+
+        Raises
+        ------
+        Exception
+            If error occurs within the context
         """
         try:
             yield

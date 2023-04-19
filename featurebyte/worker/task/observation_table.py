@@ -23,11 +23,6 @@ class ObservationTableTask(RequestTableMaterializationMixin, BaseTask):
     async def execute(self) -> Any:
         """
         Execute ObservationTable task
-
-        Raises
-        ------
-        Exception
-            If the validation on the materialized table fails.
         """
         payload = cast(ObservationTableTaskPayload, self.payload)
         feature_store = await self.feature_store_service.get_document(
