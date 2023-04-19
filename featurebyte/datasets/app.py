@@ -49,10 +49,12 @@ def list_datasets() -> None:
 
 @app.command(name="import")
 def import_dataset(dataset_name: str) -> None:
-    logger.info(f"Importing Dataset {dataset_name}")
     """
     Import dataset to local Spark database. Ensure local Spark app is running.
     """
+
+    logger.info(f"Importing Dataset {dataset_name}")
+
     # check file exists
     path = os.path.join(datasets_dir, f"{dataset_name}.sql")
     if not os.path.exists(path):
@@ -95,12 +97,12 @@ def import_dataset(dataset_name: str) -> None:
 
     # Call featurebyte-server container to import dataset
     sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")
-    logger.info(f"Running spark commands to ingest dataset")
+    logger.info("Running spark commands to ingest dataset")
     DockerClient().execute(
         container="featurebyte-server",
         command=["python", "-m", "featurebyte.datasets.__main__", sql_b64],
     )
-    logger.info(f"Dataset successfully imported")
+    logger.info("Dataset successfully imported")
 
 
 if __name__ == "__main__":

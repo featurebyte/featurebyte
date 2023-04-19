@@ -297,7 +297,6 @@ def stop() -> None:
 def playground(
     local: bool = False,
     datasets: Optional[List[str]] = None,
-    docs_enabled: bool = True,
     force_import: bool = False,
 ) -> None:
     """
