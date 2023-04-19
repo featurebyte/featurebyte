@@ -236,7 +236,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
         >>> fb.FeatureStore.get_by_id(<catalog_id>)  # doctest: +SKIP
         """
-        return super().get_by_id(id=id)
+        return cls._get_by_id(id=id)
 
     @classmethod
     def list(  # pylint: disable=useless-parent-delegation

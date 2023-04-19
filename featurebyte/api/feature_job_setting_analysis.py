@@ -225,4 +225,4 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         FeatureJobSettingAnalysis
             FeatureJobSettingAnalysis object.
         """
-        return super().get_by_id(id=id)
+        return cls._get_by_id(id=id)
