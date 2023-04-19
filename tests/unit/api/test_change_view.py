@@ -16,6 +16,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.core.frame import FrozenFrame
 from featurebyte.core.series import FrozenSeries
 from featurebyte.enum import SourceType
+from featurebyte.exception import RawViewNotSupportedError
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import SCDTableData
@@ -624,56 +625,9 @@ def test_sdk_code_generation(saved_scd_table, update_fixtures):
 def test_raw_accessor(snowflake_scd_table):
     """Test raw accessor"""
     change_view = snowflake_scd_table.get_change_view("col_int")
-    assert change_view.raw.node.type == NodeType.INPUT
-    pd.testing.assert_series_equal(change_view.raw.dtypes, snowflake_scd_table.dtypes)
-
-    # check read operation is ok
-    column = "col_int"
-    raw_subset_frame = change_view.raw[[column]]
-    raw_subset_series = change_view.raw[column]
-    assert isinstance(raw_subset_frame, FrozenFrame)
-    assert isinstance(raw_subset_series, FrozenSeries)
-
-    # check write operation is not allowed
-    with pytest.raises(TypeError) as exc:
-        change_view.raw[column] = 1
-    assert "'FrozenFrame' object does not support item assignment" in str(exc.value)
-
-    mask = change_view.raw[column] > 1
-    with pytest.raises(TypeError) as exc:
-        change_view.raw[column][mask] = 1
-    assert "'FrozenSeries' object does not support item assignment" in str(exc.value)
-
-    # check operation between raw input and view
-    change_view[column] = change_view.raw[column] + 1
-    expected_view_with_raw_accessor_sql = """
-    SELECT
-      "col_text" AS "col_text",
-      CAST("effective_timestamp" AS STRING) AS "new_effective_timestamp",
-      CAST(LAG("effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS STRING) AS "past_effective_timestamp",
-      "col_int" AS "new_col_int",
-      LAG("col_int", 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS "past_col_int",
-      (
-        "col_int" + 1
-      ) AS "col_int"
-    FROM "sf_database"."sf_schema"."scd_table"
-    LIMIT 10
-    """
-    assert (
-        change_view.preview_sql().strip()
-        == textwrap.dedent(expected_view_with_raw_accessor_sql).strip()
-    )
-
-    # conditional assignment
-    change_view[column][mask] = 0
-    assert change_view.node.type == NodeType.ASSIGN
-
-    change_view[mask, column] = 0
-    assert change_view.node.type == NodeType.ASSIGN
-
-    # check filtering
-    filtered_column = change_view[column][mask]
-    assert filtered_column.node.type == NodeType.FILTER
+    with pytest.raises(RawViewNotSupportedError) as exc:
+        _ = change_view.raw
+    assert str(exc.value) == "Raw view is not supported for ChangeView"
 
 
 def test_filtered_view_output(saved_scd_table, cust_id_entity):

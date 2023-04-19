@@ -46,6 +46,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     ChangeViewNoJoinColumnError,
     NoJoinKeyFoundError,
+    RawViewNotSupportedError,
     RepeatedColumnNamesError,
 )
 from featurebyte.logger import logger
@@ -289,6 +290,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     # class variables
     _view_graph_node_type: ClassVar[GraphNodeType]
+    _is_raw_view_supported: ClassVar[bool] = True
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
@@ -356,7 +358,15 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Returns
         -------
         FrozenFrame
+
+        Raises
+        ------
+        RawViewNotSupportedError
+            If the view does not support accessing raw view
         """
+        if not self._is_raw_view_supported:
+            raise RawViewNotSupportedError(f"Raw view is not supported for {type(self).__name__}")
+
         view_input_node_names = []
         for graph_node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GRAPH):
             assert isinstance(graph_node, BaseGraphNode)

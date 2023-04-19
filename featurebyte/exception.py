@@ -316,6 +316,12 @@ class ChangeViewNoJoinColumnError(FeatureByteException):
     """
 
 
+class RawViewNotSupportedError(FeatureByteException):
+    """
+    Raise when accessing the raw attribute in Views where it is not supported.
+    """
+
+
 class TileScheduleNotSupportedError(NotImplementedError):
     """
     Raise when the Tile Scheduling is not supported
