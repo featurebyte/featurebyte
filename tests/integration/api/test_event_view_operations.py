@@ -561,11 +561,6 @@ async def test_get_historical_features(
     """
     Test getting historical features from FeatureList
     """
-    if use_async_workflow and session.source_type == "databricks":
-        # TODO: Enable this test once we fix the issue with async workflow"
-        # jira ticket: https://featurebyte.atlassian.net/browse/DEV-1489
-        return
-
     feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     df_training_events = pd.DataFrame(
         {
@@ -668,7 +663,10 @@ async def test_get_historical_features(
 
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
     fb_assert_frame_equal(
-        df_historical_features, df_historical_expected, dict_like_columns=["COUNT_BY_ACTION_24h"]
+        df_historical_features,
+        df_historical_expected,
+        dict_like_columns=["COUNT_BY_ACTION_24h"],
+        sort_by_columns=["POINT_IN_TIME", "üser id"] if use_async_workflow else None,
     )
 
     if not use_async_workflow:
@@ -730,6 +728,7 @@ async def _test_get_historical_features_with_serving_names(
         df_historical_features,
         df_historical_expected,
         dict_like_columns=["COUNT_BY_ACTION_24h"],
+        sort_by_columns=["POINT_IN_TIME", "new_user id"] if use_async_workflow else None,
     )
 
 

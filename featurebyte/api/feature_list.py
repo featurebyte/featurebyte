@@ -379,7 +379,7 @@ class FeatureList(
 
         See Also
         --------
-        - [FeatureGroup.feature_names](/reference/featurebyte.api.feature_list.FeatureGroup.feature_names/)
+        - [FeatureGroup.feature_names](/reference/featurebyte.api.feature_group.FeatureGroup.feature_names/)
         """
         return super().feature_names
 
@@ -896,7 +896,7 @@ class FeatureList(
 
         See Also
         --------
-        - [FeatureGroup.preview](/reference/featurebyte.api.feature_list.FeatureGroup.preview/):
+        - [FeatureGroup.preview](/reference/featurebyte.api.feature_group.FeatureGroup.preview/):
           Preview feature group.
         - [Feature.preview](/reference/featurebyte.api.feature.Feature.preview/):
           Preview feature group.

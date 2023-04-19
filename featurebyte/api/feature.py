@@ -668,7 +668,7 @@ class Feature(
 
         See Also
         --------
-        - [FeatureGroup.preview](/reference/featurebyte.api.feature_list.FeatureGroup.preview/):
+        - [FeatureGroup.preview](/reference/featurebyte.api.feature_group.FeatureGroup.preview/):
           Preview feature group.
         - [FeatureList.get_historical_features](/reference/featurebyte.api.feature_list.FeatureList.get_historical_features/):
           Get historical features from a feature list.
