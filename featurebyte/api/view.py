@@ -41,7 +41,7 @@ from featurebyte.common.join_utils import (
 from featurebyte.common.model_util import validate_offset_string
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
-from featurebyte.core.mixin import HasExtractPrunedGraphAndNode, SampleMixin
+from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
@@ -322,6 +322,35 @@ class ViewColumn(Series, SampleMixin):
         """
         return super().preview_sql(limit=limit, **kwargs)
 
+    @typechecked
+    def astype(  # pylint: disable=useless-parent-delegation
+        self: FrozenSeriesT,
+        new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
+    ) -> FrozenSeriesT:
+        """
+        Converts the data type of a column. It is useful when you need to convert column values between numerical and
+        string formats, or the other way around.
+
+        Parameters
+        ----------
+        new_type : Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]])
+            Desired type after conversion. Type can be provided directly, or as a string.
+
+        Returns
+        -------
+        FrozenSeriesT
+            A new Series with converted variable type.
+
+        Examples
+        --------
+        Convert a numerical series to a string series, and back to an int series.
+
+        >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> event_view["Amount"] = event_view["Amount"].astype(str)
+        >>> event_view["Amount"] = event_view["Amount"].astype(int)
+        """
+        return super().astype(new_type=new_type)
+
 
 class GroupByMixin:
     """
@@ -445,35 +474,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         list[str]
         """
         return super().columns
-
-    @typechecked
-    def astype(  # pylint: disable=useless-parent-delegation
-        self: FrozenSeriesT,
-        new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
-    ) -> FrozenSeriesT:
-        """
-        Converts the data type of a column. It is useful when you need to convert column values between numerical and
-        string formats, or the other way around.
-
-        Parameters
-        ----------
-        new_type : Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]])
-            Desired type after conversion. Type can be provided directly, or as a string.
-
-        Returns
-        -------
-        FrozenSeriesT
-            A new Series with converted variable type.
-
-        Examples
-        --------
-        Convert a numerical series to a string series, and back to an int series.
-
-        >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
-        >>> event_view["Amount"] = event_view["Amount"].astype(str)
-        >>> event_view["Amount"] = event_view["Amount"].astype(int)
-        """
-        return super().astype(new_type=new_type)
 
     @typechecked
     def preview_sql(  # pylint: disable=useless-parent-delegation

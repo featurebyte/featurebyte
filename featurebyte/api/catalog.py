@@ -713,7 +713,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> data_source = catalog.get_data_source("playground")
         """
         feature_store = FeatureStore.get(name=feature_store_name)
-        return feature_store.get_data_source()
+        return feature_store.get_data_source()  # pylint: disable=no-member
 
     @update_and_reset_catalog
     def get_view(self, table_name: str) -> View:

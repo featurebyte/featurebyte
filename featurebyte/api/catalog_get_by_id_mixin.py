@@ -49,7 +49,7 @@ class CatalogGetByIdMixin:
         >>> data_source = catalog.get_data_source_by_feature_store_id(ObjectId())  # doctest: +SKIP
         """
         feature_store = FeatureStore.get_by_id(id=id)
-        return feature_store.get_data_source()
+        return feature_store.get_data_source()  # pylint: disable=no-member
 
     @update_and_reset_catalog
     def get_view_by_table_id(
