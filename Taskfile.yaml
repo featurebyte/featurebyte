@@ -331,3 +331,9 @@ tasks:
       - docker volume rm $(docker volume ls -q)
       - rm -rf ~/.spark
       - rm -rf ~/.featurebyte/data
+
+  publish-mongodb:
+    desc: "Publish mongodb package to public featurebyte registry"
+    dir: docker/
+    cmds:
+      - docker buildx build --platform linux/amd64,linux/arm64 -t featurebyte/mongo:latest -t featurebyte/mongo:6 -f mongo.Dockerfile . --push
