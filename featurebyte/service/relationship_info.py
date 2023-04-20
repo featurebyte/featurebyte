@@ -40,7 +40,7 @@ class RelationshipInfoService(
         """
         result = await self.list_documents(
             query_filter={
-                "primary_entity_id": primary_entity_id,
+                "entity_id": primary_entity_id,
                 "related_entity_id": related_entity_id,
             },
         )

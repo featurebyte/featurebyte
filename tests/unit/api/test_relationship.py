@@ -35,14 +35,14 @@ def persistable_relationship_info_fixture(relationship_info_service, snowflake_e
             RelationshipInfoCreate(
                 name="test_relationship",
                 relationship_type=RelationshipType.CHILD_PARENT,
-                primary_entity_id=cust_entity.id,
+                entity_id=cust_entity.id,
                 related_entity_id=user_entity.id,
-                primary_table_id=snowflake_event_table.id,
+                relation_table_id=snowflake_event_table.id,
                 is_enabled=False,
                 updated_by=PydanticObjectId(ObjectId()),
             )
         )
-        assert created_relationship.primary_entity_id == cust_entity.id
+        assert created_relationship.entity_id == cust_entity.id
         return created_relationship
 
     return save
@@ -84,10 +84,10 @@ def assert_relationship_info(relationship_info_df):
     assert relationship_info_df.shape[0] == 1
     assert relationship_info_df["id"][0] is not None
     assert relationship_info_df["relationship_type"][0] == "child_parent"
-    assert relationship_info_df["primary_entity"][0] == "customer"
+    assert relationship_info_df["entity"][0] == "customer"
     assert relationship_info_df["related_entity"][0] == "user"
-    assert relationship_info_df["primary_table"][0] == "sf_event_table"
-    assert relationship_info_df["primary_table_type"][0] == "event_table"
+    assert relationship_info_df["relation_table"][0] == "sf_event_table"
+    assert relationship_info_df["relation_table_type"][0] == "event_table"
     assert not relationship_info_df["is_enabled"][0]
 
 

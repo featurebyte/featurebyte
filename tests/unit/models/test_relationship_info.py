@@ -16,9 +16,9 @@ def test_duplicate_primary_and_related_ids_throws_error():
     with pytest.raises(ValueError) as exc:
         RelationshipInfo(
             relationship_type=RelationshipType.CHILD_PARENT,
-            primary_entity_id=id_1,
+            entity_id=id_1,
             related_entity_id=id_1,
-            primary_table_id=PydanticObjectId(ObjectId()),
+            relation_table_id=PydanticObjectId(ObjectId()),
             is_enabled=False,
             updated_by=PydanticObjectId(ObjectId()),
         )
