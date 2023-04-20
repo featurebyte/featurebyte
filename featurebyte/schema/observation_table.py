@@ -3,35 +3,22 @@ ObservationTableModel API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-from bson import ObjectId
-from pydantic import Field, StrictStr, conint, root_validator
+from pydantic import Field
 
-from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
-    FeatureByteBaseModel,
-    PydanticObjectId,
-)
-from featurebyte.models.observation_table import (
-    ObservationInput,
-    ObservationInputType,
-    ObservationTableModel,
-)
+from featurebyte.models.observation_table import ObservationInput, ObservationTableModel
 from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.schema.request_table import BaseRequestTableCreate, BaseRequestTableListRecord
 
 
-class ObservationTableCreate(FeatureByteBaseModel):
+class ObservationTableCreate(BaseRequestTableCreate):
     """
     ObservationTableModel creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
-    feature_store_id: PydanticObjectId
-    context_id: Optional[PydanticObjectId]
-    observation_input: ObservationInput
-    sample_rows: Optional[conint(ge=0)]  # type: ignore[valid-type]
+    sample_rows: Optional[int] = Field(ge=0)
+    request_input: ObservationInput
 
 
 class ObservationTableList(PaginationMixin):
@@ -42,17 +29,7 @@ class ObservationTableList(PaginationMixin):
     data: List[ObservationTableModel]
 
 
-class ObservationTableListRecord(FeatureByteBaseDocumentModel):
+class ObservationTableListRecord(BaseRequestTableListRecord):
     """
     This model determines the schema when listing observation tables via ObservationTable.list()
     """
-
-    feature_store_id: PydanticObjectId
-    type: ObservationInputType
-
-    @root_validator(pre=True)
-    @classmethod
-    def _extract_location(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["type"] = values["observation_input"]["type"]
-        values["feature_store_id"] = values["location"]["feature_store_id"]
-        return values

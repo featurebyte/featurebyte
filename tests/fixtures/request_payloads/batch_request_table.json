@@ -4,17 +4,17 @@
         "Instead, update the test conftest.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "642db61f28e1dffe39df3563",
+    "_id": "643eafa8d30643ad7a0d62ad",
     "context_id": "642db61f28e1dffe39df3562",
     "feature_store_id": "642db61d28e1dffe39df3521",
-    "name": "observation_table",
+    "name": "batch_request_table",
     "request_input": {
         "source": {
             "feature_store_id": "642db61d28e1dffe39df3521",
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
-                "table_name": "sf_table"
+                "table_name": "dimension_table"
             }
         },
         "type": "source_table"

@@ -216,7 +216,7 @@ def test_create_observation_table_with_sample_rows(
     Test creating ObservationTable from SourceTable with sampling
     """
     with patch(
-        "featurebyte.models.observation_table.BaseObservationInput.get_row_count",
+        "featurebyte.models.request_input.BaseRequestInput.get_row_count",
         AsyncMock(return_value=1000),
     ):
         observation_table = snowflake_database_table.create_observation_table(

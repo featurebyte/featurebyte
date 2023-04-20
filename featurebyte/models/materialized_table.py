@@ -15,13 +15,15 @@ from featurebyte.models.base import (
 from featurebyte.query_graph.model.common_table import TabularSource
 
 
-class MaterializedTable(FeatureByteCatalogBaseDocumentModel):
+class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
     """
-    MaterializedTable represents a table that has been materialized and stored in feature store
+    MaterializedTableModel represents a table that has been materialized and stored in feature store
     database.
 
     location: TabularSource
         The table that stores the materialized data
+    columns_info: List[ColumnSpec]
+        The columns in the table
     """
 
     location: TabularSource

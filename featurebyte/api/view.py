@@ -1331,7 +1331,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            observation_input=ViewObservationInput(graph=pruned_graph, node_name=mapped_node.name),
+            request_input=ViewObservationInput(graph=pruned_graph, node_name=mapped_node.name),
             sample_rows=sample_rows,
         )
         observation_table_doc = ObservationTable.post_async_task(

@@ -16,7 +16,7 @@ from featurebyte.exception import (
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
 from featurebyte.query_graph.sql.materialisation import get_most_recent_point_in_time_sql
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
@@ -152,9 +152,12 @@ class ObservationTableService(
             database_name=destination.database_name,
             schema_name=destination.schema_name,
         )
-        column_names = list(table_schema.keys())
+        columns_info = [
+            ColumnSpec(name=column_name, dtype=var_type)
+            for column_name, var_type in table_schema.items()
+        ]
 
-        if SpecialColumnName.POINT_IN_TIME not in column_names:
+        if SpecialColumnName.POINT_IN_TIME not in table_schema:
             raise MissingPointInTimeColumnError(
                 f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
             )
@@ -173,6 +176,6 @@ class ObservationTableService(
             destination=destination,
         )
         return {
-            "column_names": column_names,
+            "columns_info": columns_info,
             "most_recent_point_in_time": most_recent_point_in_time,
         }
