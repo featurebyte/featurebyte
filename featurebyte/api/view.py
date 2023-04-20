@@ -328,7 +328,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     # class variables
     _view_graph_node_type: ClassVar[GraphNodeType]
-    _is_raw_view_supported: ClassVar[bool] = True
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"

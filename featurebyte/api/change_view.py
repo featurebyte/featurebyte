@@ -64,7 +64,6 @@ class ChangeView(View, GroupByMixin):
     # class variables
     _series_class = ChangeViewColumn
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.CHANGE_VIEW
-    _is_raw_view_supported: ClassVar[bool] = False
 
     # pydantic instance variables
     default_feature_job_setting: FeatureJobSetting = Field(
