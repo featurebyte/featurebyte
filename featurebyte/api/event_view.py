@@ -354,7 +354,7 @@ class EventView(View, GroupByMixin):
         feature: Feature
             The feature we want to add to the EventView.
         entity_column: Optional[str]
-            The entity column to use in the EventView. The type of this entity should match the entity of the feature.
+            The column representing the primary entity of the added feature in the EventView.
 
         Returns
         -------

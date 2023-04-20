@@ -314,19 +314,24 @@ class EventTable(TableApiObject):
         Parameters
         ----------
         analysis_date: Optional[datetime]
-            Analysis date
+            Specifies the end date and time (in UTC) for the analysis. If not provided, the current date and time will
+            be used.
         analysis_length: int
-            Length of analysis (seconds)
+            Sets the duration of the analysis in seconds. The default value is 2,419,200 seconds (approximately
+            4 weeks).
         min_featurejob_period: int
-            Minimum period for a feature job
+            Determines the minimum period (in seconds) between feature jobs. The default value is 60 seconds.
         exclude_late_job: bool
-            Exclude late jobs in analysis
+            If set to True, late jobs will be excluded from the analysis. This would assume that recent incidents
+            won't happen again in the future.
         job_time_buffer_setting: Union[int, Literal["auto"]]
-            Buffer time for job execution (seconds)
+            Specifies the buffer time (in seconds) for job timing recommendations. A larger buffer reduces the risk
+            of running a feature job before table updates are completed. If set to "auto", an appropriate buffer
+            time will be determined automatically.
         blind_spot_buffer_setting: int
-            Buffer time for table population blind spot
+            Defines the buffer time (in seconds) for the blind spot recommendation. The default value is 5 seconds.
         late_data_allowance: float
-            Threshold for late records (percentile)
+            Indicates the maximum acceptable percentage of late records. The default value is 0.005% (5e-05).
 
         Returns
         -------
