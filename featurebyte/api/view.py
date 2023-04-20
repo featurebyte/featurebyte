@@ -275,11 +275,6 @@ class RawMixin(QueryObject, ABC):
         Returns
         -------
         FrozenFrame
-
-        Raises
-        ------
-        RawViewNotSupportedError
-            If the view does not support accessing raw view
         """
         view_input_node_names = []
         for graph_node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GRAPH):
