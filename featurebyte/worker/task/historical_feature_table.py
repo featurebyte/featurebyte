@@ -56,6 +56,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
                 featurelist_get_historical_features=payload.featurelist_get_historical_features,
                 get_credential=self.get_credential,
                 output_table_details=location.table_details,
+                progress_callback=self.update_progress,
             )
 
             historical_feature_table = HistoricalFeatureTableModel(

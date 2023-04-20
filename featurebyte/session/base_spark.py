@@ -352,6 +352,11 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
             )
             await self.session.execute_query(
                 f"""
+                DROP FUNCTION IF EXISTS {function_name}
+                """
+            )
+            await self.session.execute_query(
+                f"""
                 CREATE OR REPLACE FUNCTION {function_name} AS '{class_name}'
                 USING JAR '{self.udf_jar_spark_reference_path}';
                 """

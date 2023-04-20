@@ -3,10 +3,11 @@ Base Tile class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
@@ -52,7 +53,11 @@ class TileManager(BaseModel):
         self._session = session
         self._task_manager = task_manager
 
-    async def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
+    async def generate_tiles_on_demand(
+        self,
+        tile_inputs: List[Tuple[TileSpec, str]],
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+    ) -> None:
         """
         Generate Tiles and update tile entity checking table
 
@@ -60,8 +65,14 @@ class TileManager(BaseModel):
         ----------
         tile_inputs: List[Tuple[TileSpec, str]]
             list of TileSpec, temp_entity_table to update the feature store
+        progress_callback: Optional[Callable[[int, str], None]]
+            Optional progress callback function
         """
-        for tile_spec, entity_table in tile_inputs:
+        num_jobs = len(tile_inputs)
+        if progress_callback:
+            progress_callback(0, f"0/{num_jobs} completed")
+
+        for index, (tile_spec, entity_table) in enumerate(tile_inputs):
             await self.generate_tiles(
                 tile_spec=tile_spec, tile_type=TileType.OFFLINE, start_ts_str=None, end_ts_str=None
             )
@@ -71,6 +82,11 @@ class TileManager(BaseModel):
                 tile_spec=tile_spec, temp_entity_table=entity_table
             )
             logger.debug(f"Done update_tile_entity_tracker for {tile_spec}")
+
+            if progress_callback:
+                progress_callback(
+                    int(np.floor((index + 1) / num_jobs * 90)), f"{index+1}/{num_jobs} completed"
+                )
 
     async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
         """

@@ -37,7 +37,7 @@ async def test_most_frequent_udf(session, to_object, counts, expected):
     [
         ({}, np.nan),
         ({"__MISSING__": None}, np.nan),
-        (None, np.nan),
+        # (None, np.nan),  skipped because spark returns None bypassing UDF call
         ({"a": 1}, 1),
         ({"a": 1, "b": 2, "c": 3}, 3),
         ({"a": 1, "b": np.nan, "c": 3}, 3),

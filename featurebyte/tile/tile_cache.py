@@ -3,7 +3,7 @@ Module for TileCache and its implementors
 """
 from __future__ import annotations
 
-from typing import cast
+from typing import Callable, Optional, cast
 
 import time
 from dataclasses import dataclass
@@ -109,6 +109,7 @@ class TileCache:
         request_id: str,
         request_table_name: str,
         serving_names_mapping: dict[str, str] | None = None,
+        progress_callback: Optional[Callable[[int, str], None]] = None,
     ) -> None:
         """Check tile status for the provided features and compute missing tiles if required
 
@@ -126,6 +127,10 @@ class TileCache:
             Request table name to use
         """
         tic = time.time()
+
+        if progress_callback is not None:
+            progress_callback(0, "Checking tile status")
+
         required_requests = await self.get_required_computation(
             request_id=request_id,
             graph=graph,
@@ -140,7 +145,7 @@ class TileCache:
 
         if required_requests:
             tic = time.time()
-            await self.invoke_tile_manager(required_requests)
+            await self.invoke_tile_manager(required_requests, progress_callback=progress_callback)
             elapsed = time.time() - tic
             logger.debug(f"Compute tiles on demand took {elapsed:.2f}s")
         else:
@@ -149,7 +154,9 @@ class TileCache:
         await self.cleanup_temp_tables()
 
     async def invoke_tile_manager(
-        self, required_requests: list[OnDemandTileComputeRequest]
+        self,
+        required_requests: list[OnDemandTileComputeRequest],
+        progress_callback: Optional[Callable[[int, str], None]] = None,
     ) -> None:
         """Interacts with FeatureListManager to compute tiles and update cache
 
@@ -157,12 +164,16 @@ class TileCache:
         ----------
         required_requests : list[OnDemandTileComputeRequest]
             List of required compute requests (where entity table is non-empty)
+        progress_callback: Optional[Callable[[int, str], None]]
+            Optional progress callback function
         """
         tile_inputs = []
         for request in required_requests:
             tile_input = request.to_tile_manager_input()
             tile_inputs.append(tile_input)
-        await self.tile_manager.generate_tiles_on_demand(tile_inputs=tile_inputs)
+        await self.tile_manager.generate_tiles_on_demand(
+            tile_inputs=tile_inputs, progress_callback=progress_callback
+        )
 
     async def cleanup_temp_tables(self) -> None:
         """Drops all the temp tables that was created by TileCache"""
