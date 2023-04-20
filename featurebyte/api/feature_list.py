@@ -452,8 +452,8 @@ class FeatureList(
         Parameters
         ----------
         conflict_resolution: ConflictResolution
-            "raise" will raise an error when we encounter a conflict error.
-            "retrieve" will handle the conflict error by retrieving the object with the same name.
+            "raise" raises error when then counters conflict error (default).
+            "retrieve" handle conflict error by retrieving the object with the same name.
 
         Raises
         ------
@@ -530,8 +530,10 @@ class FeatureList(
         Parameters
         ----------
         observation_set : pd.DataFrame
-            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
-            as well as columns with serving names for all entities used by features in the feature group.
+            Observation set DataFrame which combines historical points-in-time and values of the feature primary entity
+            or its descendant (serving entities). The column containing the point-in-time values should be named
+            `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
+            names for the entity.
 
         Returns
         -------
@@ -809,11 +811,14 @@ class FeatureList(
         Parameters
         ----------
         primary_entity: Optional[str]
-            Name of entity used to filter results. If multiple entities are provided, the filtered results will
-            contain features that are associated with all the entities.
+            This parameter accepts either a single string, a list of strings, or None (default) as input. It specifies
+            the primary entity or entities used to filter the results. When multiple entities are provided, the
+            resulting filtered list will include features associated with the combined set (union) of those entities.
         primary_table: Optional[str]
-            Name of table used to filter results. If multiple tables are provided, the filtered results will
-            contain features that are associated with all the tables.
+            Similar to primary_entity, this parameter accepts a single string, a list of strings, or None (default)
+            as input. It defines the primary table or tables used to filter the results. If multiple tables are
+            provided, the resulting filtered list will include features associated with the combined set (union) of
+            those tables.
 
         Returns
         -------
@@ -903,32 +908,28 @@ class FeatureList(
         Initial computation might take more time, but following calls will be faster due to pre-computed and saved
         partially aggregated data (tiles).
 
-        If the provided feature list includes On Demand features, the request data should contain the required
-        information to calculate these On Demand features.
-
         A training data observation set should typically meet the following criteria:
 
-        - be collected from a time period that does not start until after the earliest data availability timestamp
-        plus longest time window in the features
-        - be collected from a time period that ends before the latest data timestamp less the time window of the
-        target value
-        - uses points in time that align with the anticipated timing of the use case inference, whether it's based on a
+        * be collected from a time period that does not start until after the earliest data availability timestamp plus
+        longest time window in the features
+        * be collected from a time period that ends before the latest data timestamp less the time window of the target
+        value
+        * uses points in time that align with the anticipated timing of the use case inference, whether it's based on a
         regular schedule, triggered by an event, or any other timing mechanism.
-        - does not have duplicate rows
-        - has a column containing the primary entity of the use case, using its serving name
-        - has a column, named ""POINT_IN_TIME"", containing the points in time
-        - has for the same entity key points in time that have time intervals greater than the horizon of the target
-        to avoid leakage
+        * does not have duplicate rows
+        * has for the same entity, key points in time that have time intervals greater than the horizon of the target to
+        avoid leakage.
 
         Parameters
         ----------
         observation_set : pd.DataFrame
-            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
-            as well as columns with serving names for all entities used by features in the feature list.
+            Observation set DataFrame or ObservationTable object, which combines historical points-in-time and values
+            of the feature primary entity or its descendant (serving entities). The column containing the point-in-time
+            values should be named `POINT_IN_TIME`, while the columns representing entity values should be named using
+            accepted serving names for the entity.
         serving_names_mapping : Optional[Dict[str, str]]
-            Optional serving names mapping if the training events table has different serving name
-            columns than those defined in Entities. Mapping from original serving name to new
-            serving name.
+            Optional serving names mapping if the training events table has different serving name columns than those
+            defined in Entities, mapping from original serving name to new name.
         max_batch_size: int
             Maximum number of rows per batch.
 
@@ -1177,7 +1178,7 @@ class FeatureList(
         Parameters
         ----------
         status: Literal[tuple(FeatureListStatus)]
-            Feature list status
+            Desired feature list status.
 
         Examples
         --------
