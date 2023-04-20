@@ -51,7 +51,7 @@ class RelationshipInfoInfo(FeatureByteBaseModel):
 
     id: PydanticObjectId
     relationship_type: RelationshipType
-    primary_entity_name: str
+    entity_name: str
     related_entity_name: str
     table_name: str
     data_type: str
