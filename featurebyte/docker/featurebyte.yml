@@ -13,6 +13,8 @@ services:
     volumes:
       - mongodb:/data/
     healthcheck:
+      start_period: 10s
+      interval: 5s
       test: ["CMD", "mongosh", "--port=27022", "--eval", "rs.status()"]
     logging:
       driver: local
