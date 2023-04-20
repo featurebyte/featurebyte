@@ -163,10 +163,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Create a new catalog.
 
         >>> catalog = fb.Catalog.create("new_catalog")  # doctest: +SKIP
-
-        See Also
-        --------
-        - [Catalog.get_or_create](/reference/featurebyte.api.catalog.Catalog.get_or_create/): Get or create Catalog
         """
         catalog = cls(name=name)
         catalog.save()
