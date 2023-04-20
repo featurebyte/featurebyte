@@ -60,8 +60,7 @@ services:
       interval: 5s
       start_period: 30s
     volumes:
-      - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
-      - ~/.featurebyte/data/files:/app/.featurebyte/data/files
+      - files-data:/app/.featurebyte/data/files
       - staging-data:/data/staging
       - file-store:/tmp
     logging:
@@ -89,8 +88,7 @@ services:
     command:
       - "worker"
     volumes:
-      - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
-      - ~/.featurebyte/data/files:/app/.featurebyte/data/files
+      - files-data:/app/.featurebyte/data/files
       - staging-data:/data/staging
       - file-store:/tmp
     logging:
@@ -149,5 +147,6 @@ networks:
 volumes:
   mongodb:
   spark-warehouse:
+  files-data:
   staging-data:
   file-store:
