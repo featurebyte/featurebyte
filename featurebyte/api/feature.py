@@ -159,7 +159,7 @@ class Feature(
         >>> new_feature = lookup_feature.isin(dictionary_feature)
         >>> new_feature.name = "CustomerHasProductGroup_7d"
         """
-        return super().isin(other)
+        return super().isin(other)  # type: ignore[no-any-return,misc]
 
     def info(  # pylint: disable=useless-parent-delegation
         self, verbose: bool = False

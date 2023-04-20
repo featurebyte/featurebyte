@@ -378,7 +378,7 @@ class ViewColumn(Series, SampleMixin):
         3  a817d904-bc58-4048-978d-c13857969a69       Fruits
         4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
         """
-        return super().isin(other=other)
+        return super().isin(other=other)  # type: ignore[no-any-return,misc]
 
 
 class GroupByMixin:
