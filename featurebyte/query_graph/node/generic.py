@@ -1161,7 +1161,11 @@ class TrackChangesNode(BaseNode):
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
-        return [self.parameters.effective_timestamp_column, self.parameters.tracked_column]
+        return [
+            self.parameters.natural_key_column,
+            self.parameters.effective_timestamp_column,
+            self.parameters.tracked_column,
+        ]
 
     def _derive_node_operation_info(
         self,
