@@ -263,6 +263,8 @@ class RawMixin(QueryObject, ABC):
     Mixin that provides functionality to access raw view
     """
 
+    __fbautodoc__ = FBAutoDoc()
+
     _view_graph_node_type: ClassVar[GraphNodeType]
 
     @property

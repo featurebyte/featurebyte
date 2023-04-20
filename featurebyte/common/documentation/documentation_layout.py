@@ -449,7 +449,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([VIEW]),
-        DocLayoutItem([VIEW, CREATE, "View.raw"]),
+        DocLayoutItem([VIEW, CREATE, "View.raw"], doc_path_override="api.view.RawMixin.raw.md"),
         DocLayoutItem([VIEW, CREATE_FEATURE, "View.as_features"]),
         DocLayoutItem(
             [VIEW, CREATE_FEATURE, "view.groupby"],
