@@ -34,7 +34,7 @@ import featurebyte.routes.temp_data.api as temp_data_api
 from featurebyte import Configurations
 from featurebyte.common.utils import get_version
 from featurebyte.logger import logger
-from featurebyte.middleware import ExceptionMiddleware, TelemetryMiddleware
+from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId, User
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema import APIServiceStatus
@@ -186,16 +186,6 @@ def get_app() -> FastAPI:
         await sub.unsubscribe(channel)
         await sub.close()
         redis.close()
-
-    config = Configurations()
-    # Add telemetry middleware if enabled
-    if config.logging.telemetry:
-        _app.add_middleware(
-            TelemetryMiddleware,
-            endpoint=config.logging.telemetry_url,
-            user_id=config.logging.telemetry_id,
-            user_ip=config.logging.telemetry_ip,
-        )
 
     # Add exception middleware
     _app.add_middleware(ExceptionMiddleware)
