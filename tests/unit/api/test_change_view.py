@@ -642,8 +642,8 @@ def test_filtered_view_output(saved_scd_table, cust_id_entity):
     expected_sql = """
     SELECT
       "col_text" AS "col_text",
-      "new_effective_timestamp" AS "new_effective_timestamp",
-      "past_effective_timestamp" AS "past_effective_timestamp",
+      CAST("new_effective_timestamp" AS STRING) AS "new_effective_timestamp",
+      CAST("past_effective_timestamp" AS STRING) AS "past_effective_timestamp",
       "new_col_int" AS "new_col_int",
       "past_col_int" AS "past_col_int"
     FROM (
