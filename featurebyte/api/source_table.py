@@ -612,7 +612,6 @@ class SourceTable(AbstractTableData):
         Dimension table that maintains a history of changes.
 
         Parameters
-
         ----------
         name: str
             The desired name for the new table.

@@ -363,11 +363,6 @@ class ViewColumn(Series, SampleMixin):
         FrozenSeriesT
             Column or Feature with boolean values
 
-        Raises
-        ------
-        ValueError
-            raised when `other` is a Feature object but is not a dictionary feature.
-
         Examples
         --------
         Check to see if the values in a series are in a list of values, and use the result to filter

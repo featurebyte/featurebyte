@@ -149,11 +149,6 @@ class Feature(
         FrozenSeriesT
             Column or Feature with boolean values
 
-        Raises
-        ------
-        ValueError
-            raised when `other` is a Feature object but is not a dictionary feature.
-
         Examples
         --------
         Create a new feature that checks whether a lookup feature is contained in the keys of a
