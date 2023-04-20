@@ -325,8 +325,8 @@ tasks:
       - task: install
     cmds:
       - task: docker-build
-      - poetry run featurebyte start --local
-      - poetry run featurebyte start spark --local
+      - poetry run featurebyte start
+      - poetry run featurebyte start spark
 
   docker-dev-stop:
     desc: "Stops featurebyte-server in development mode"

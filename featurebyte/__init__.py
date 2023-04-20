@@ -268,28 +268,18 @@ def activate_and_get_catalog(name: str) -> Catalog:
     return Catalog.activate(name)
 
 
-def start(local: bool = False) -> None:
+def start() -> None:
     """
     Start featurebyte application
-
-    Parameters
-    ----------
-    local : bool
-        Do not pull new images from registry, by default False
     """
-    _start_app(ApplicationName.FEATUREBYTE, local=local, verbose=False)
+    _start_app(ApplicationName.FEATUREBYTE, verbose=False)
 
 
-def start_spark(local: bool = False) -> None:
+def start_spark() -> None:
     """
     Start local spark application
-
-    Parameters
-    ----------
-    local : bool
-        Do not pull new images from registry, by default False
     """
-    _start_app(ApplicationName.SPARK, local=local, verbose=False)
+    _start_app(ApplicationName.SPARK, verbose=False)
 
 
 def stop() -> None:
@@ -300,7 +290,6 @@ def stop() -> None:
 
 
 def playground(
-    local: bool = False,
     datasets: Optional[List[str]] = None,
     force_import: bool = False,
 ) -> None:
@@ -309,15 +298,12 @@ def playground(
 
     Parameters
     ----------
-    local : bool
-        Do not pull new images from registry, by default False
     datasets : Optional[List[str]]
         List of datasets to import, by default None (import all datasets)
     force_import: bool
         Import datasets even if they are already imported, by default False
     """
     _start_playground(
-        local=local,
         datasets=datasets,
         force_import=force_import,
         verbose=False,

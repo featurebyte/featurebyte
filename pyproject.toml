@@ -83,7 +83,6 @@ description = "Python Library for FeatureOps"
 homepage = "https://github.com/featurebyte/featurebyte"
 include = [
     "featurebyte/sql/spark/*.jar",
-    "docker/docker-compose.yml"
 ]
 keywords = []
 license = "Elastic License 2.0"
