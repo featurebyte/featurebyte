@@ -39,14 +39,13 @@ from featurebyte.common.join_utils import (
 )
 from featurebyte.common.model_util import validate_offset_string
 from featurebyte.core.frame import Frame, FrozenFrame
-from featurebyte.core.generic import ProtectedColumnsQueryObject
+from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     ChangeViewNoJoinColumnError,
     NoJoinKeyFoundError,
-    RawViewNotSupportedError,
     RepeatedColumnNamesError,
 )
 from featurebyte.logger import logger
@@ -259,6 +258,48 @@ class GroupByMixin:
         """
 
 
+class RawMixin(QueryObject, ABC):
+    """
+    Mixin that provides functionality to access raw view
+    """
+
+    _view_graph_node_type: ClassVar[GraphNodeType]
+
+    @property
+    def raw(self) -> FrozenFrame:
+        """
+        Return the raw input table view (without any cleaning operations applied)
+
+        Returns
+        -------
+        FrozenFrame
+
+        Raises
+        ------
+        RawViewNotSupportedError
+            If the view does not support accessing raw view
+        """
+        view_input_node_names = []
+        for graph_node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GRAPH):
+            assert isinstance(graph_node, BaseGraphNode)
+            if graph_node.parameters.type == self._view_graph_node_type:
+                view_input_node_names = self.graph.get_input_node_names(graph_node)
+
+        # first input node names must be the input node used to create the view
+        assert len(view_input_node_names) >= 1, "View should have at least one input"
+        input_node = self.graph.get_node_by_name(view_input_node_names[0])
+        assert isinstance(input_node, InputNode)
+        return FrozenFrame(
+            node_name=input_node.name,
+            tabular_source=self.tabular_source,
+            feature_store=self.feature_store,
+            columns_info=[
+                ColumnInfo(name=col.name, dtype=col.dtype, entity_id=None, semantic_id=None)
+                for col in input_node.parameters.columns
+            ],
+        )
+
+
 class View(ProtectedColumnsQueryObject, Frame, ABC):
     """
     Views are cleaned versions of Catalog tables and offer a flexible and efficient way to work with Catalog tables.
@@ -349,43 +390,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
           Retrieve a sample of a view.
         """
         return super().sample(size, seed, from_timestamp, to_timestamp, **kwargs)
-
-    @property
-    def raw(self) -> FrozenFrame:
-        """
-        Return the raw input table view (without any cleaning operations applied)
-
-        Returns
-        -------
-        FrozenFrame
-
-        Raises
-        ------
-        RawViewNotSupportedError
-            If the view does not support accessing raw view
-        """
-        if not self._is_raw_view_supported:
-            raise RawViewNotSupportedError(f"Raw view is not supported for {type(self).__name__}")
-
-        view_input_node_names = []
-        for graph_node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GRAPH):
-            assert isinstance(graph_node, BaseGraphNode)
-            if graph_node.parameters.type == self._view_graph_node_type:
-                view_input_node_names = self.graph.get_input_node_names(graph_node)
-
-        # first input node names must be the input node used to create the view
-        assert len(view_input_node_names) >= 1, "View should have at least one input"
-        input_node = self.graph.get_node_by_name(view_input_node_names[0])
-        assert isinstance(input_node, InputNode)
-        return FrozenFrame(
-            node_name=input_node.name,
-            tabular_source=self.tabular_source,
-            feature_store=self.feature_store,
-            columns_info=[
-                ColumnInfo(name=col.name, dtype=col.dtype, entity_id=None, semantic_id=None)
-                for col in input_node.parameters.columns
-            ],
-        )
 
     @property
     def entity_columns(self) -> list[str]:

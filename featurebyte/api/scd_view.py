@@ -7,7 +7,7 @@ from typing import Any, ClassVar, Optional
 
 from pydantic import Field
 
-from featurebyte.api.view import GroupByMixin, View, ViewColumn
+from featurebyte.api.view import GroupByMixin, RawMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
@@ -24,7 +24,7 @@ class SCDViewColumn(ViewColumn):
     __fbautodoc__ = FBAutoDoc()
 
 
-class SCDView(View, GroupByMixin):
+class SCDView(View, GroupByMixin, RawMixin):
     """
     A SCDView object is a modified version of the SCDTable object that provides additional capabilities for
     transforming data. With an SCDView, you can create and transform columns and filter records prior to

@@ -8,15 +8,11 @@ import textwrap
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-import pandas as pd
 import pytest
 
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
-from featurebyte.core.frame import FrozenFrame
-from featurebyte.core.series import FrozenSeries
 from featurebyte.enum import SourceType
-from featurebyte.exception import RawViewNotSupportedError
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import SCDTableData
@@ -625,9 +621,8 @@ def test_sdk_code_generation(saved_scd_table, update_fixtures):
 def test_raw_accessor(snowflake_scd_table):
     """Test raw accessor"""
     change_view = snowflake_scd_table.get_change_view("col_int")
-    with pytest.raises(RawViewNotSupportedError) as exc:
+    with pytest.raises(AttributeError) as exc:
         _ = change_view.raw
-    assert str(exc.value) == "Raw view is not supported for ChangeView"
 
 
 def test_filtered_view_output(saved_scd_table, cust_id_entity):
@@ -697,13 +692,13 @@ def test_change_view_column_lag(snowflake_change_view):
         """
         SELECT
           "col_text" AS "col_text",
-          "new_effective_timestamp" AS "new_effective_timestamp",
-          "past_effective_timestamp" AS "past_effective_timestamp",
+          CAST("new_effective_timestamp" AS STRING) AS "new_effective_timestamp",
+          CAST("past_effective_timestamp" AS STRING) AS "past_effective_timestamp",
           "new_col_int" AS "new_col_int",
           "past_col_int" AS "past_col_int",
           LAG("col_text", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "lag_col_text",
-          LAG("new_effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "lag_new_effective_timestamp",
-          LAG("past_effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "lag_past_effective_timestamp",
+          CAST(LAG("new_effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS STRING) AS "lag_new_effective_timestamp",
+          CAST(LAG("past_effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS STRING) AS "lag_past_effective_timestamp",
           LAG("new_col_int", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "lag_new_col_int",
           LAG("past_col_int", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "lag_past_col_int"
         FROM (
