@@ -97,7 +97,7 @@ def import_dataset(dataset_name: str) -> None:
         # Copy files to spark container
         DockerClient().copy(
             f"{download_folder}",
-            ("spark-thrift", f"/opt/spark/data/staging/datasets"),
+            ("spark-thrift", "/opt/spark/data/staging/datasets"),
         )
 
     # Call featurebyte-server container to import dataset
