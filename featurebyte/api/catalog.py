@@ -522,10 +522,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> catalog.list_relationships()[[
         ...     "relationship_type",
-        ...     "primary_entity",
+        ...     "entity",
         ...     "related_entity",
         ... ]]
-          relationship_type   primary_entity   related_entity
+          relationship_type           entity   related_entity
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
 
@@ -533,10 +533,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> catalog.list_relationships(relationship_type="child_parent")[[
         ...     "relationship_type",
-        ...     "primary_entity",
+        ...     "entity",
         ...     "related_entity",
         ... ]]
-          relationship_type   primary_entity   related_entity
+          relationship_type           entity   related_entity
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
         """

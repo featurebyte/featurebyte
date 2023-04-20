@@ -21,9 +21,9 @@ class RelationshipInfoCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     relationship_type: RelationshipType
-    primary_entity_id: PydanticObjectId
+    entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
-    primary_table_id: PydanticObjectId
+    relation_table_id: PydanticObjectId
     is_enabled: bool
     updated_by: Optional[PydanticObjectId]
 
@@ -51,7 +51,7 @@ class RelationshipInfoInfo(FeatureByteBaseModel):
 
     id: PydanticObjectId
     relationship_type: RelationshipType
-    primary_entity_name: str
+    entity_name: str
     related_entity_name: str
     table_name: str
     data_type: str

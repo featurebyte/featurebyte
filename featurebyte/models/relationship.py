@@ -87,9 +87,9 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
 
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
     relationship_type: RelationshipType
-    primary_entity_id: PydanticObjectId
+    entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
-    primary_table_id: PydanticObjectId
+    relation_table_id: PydanticObjectId
     is_enabled: bool
     updated_by: Optional[PydanticObjectId]
 
@@ -106,9 +106,9 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
             UniqueValuesConstraint(
-                fields=("primary_entity_id", "related_entity_id"),
+                fields=("entity_id", "related_entity_id"),
                 conflict_fields_signature={
-                    "primary_entity_id": ["primary_entity_id"],
+                    "entity_id": ["entity_id"],
                     "related_entity_id": ["related_entity_id"],
                 },
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
@@ -117,9 +117,9 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
 
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("relationship_type"),
-            pymongo.operations.IndexModel("primary_entity_id"),
+            pymongo.operations.IndexModel("entity_id"),
             pymongo.operations.IndexModel("related_entity_id"),
-            pymongo.operations.IndexModel("primary_table_id"),
+            pymongo.operations.IndexModel("relation_table_id"),
             pymongo.operations.IndexModel("is_enabled"),
             [
                 ("name", pymongo.TEXT),
@@ -129,7 +129,7 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
     @root_validator
     @classmethod
     def _validate_child_and_parent_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        child_id = values.get("primary_entity_id")
+        child_id = values.get("entity_id")
         parent_id = values.get("related_entity_id")
         if child_id == parent_id:
             raise ValueError("Primary and Related entity id cannot be the same")

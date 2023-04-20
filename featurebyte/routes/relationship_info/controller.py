@@ -78,7 +78,7 @@ class RelationshipInfoController(
             If data is not a valid RelationshipInfoCreate object
         """
         # Validate whether child_id and parent_id are valid entities.
-        entity_ids_to_check = {data.primary_entity_id, data.related_entity_id}
+        entity_ids_to_check = {data.entity_id, data.related_entity_id}
         entities = await self.entity_service.get_entities(entity_ids_to_check)  # type: ignore[arg-type]
         if len(entities) != 2:
             entity_ids_found = {entity.id for entity in entities}
@@ -87,8 +87,8 @@ class RelationshipInfoController(
             }
             raise ValueError(f"entity IDs not found: {missing_entity_ids}")
 
-        # Validate whether primary_table_id is ID by trying to retrieve it. If it's not, it will raise an error
-        await self.data_service.get_document(data.primary_table_id)
+        # Validate whether relation_table_id is ID by trying to retrieve it. If it's not, it will raise an error
+        await self.data_service.get_document(data.relation_table_id)
 
     async def list_relationship_info(
         self,

@@ -221,7 +221,7 @@ class TableColumnsInfoService(BaseService):
 
     async def _add_new_child_parent_relationships(
         self,
-        primary_entity_id: ObjectId,
+        entity_id: ObjectId,
         table_id: ObjectId,
         parent_entity_ids_to_add: List[ObjectId],
     ) -> None:
@@ -229,11 +229,11 @@ class TableColumnsInfoService(BaseService):
         for new_parent_entity_id in parent_entity_ids_to_add:
             await self.relationship_info_service.create_document(
                 data=RelationshipInfoCreate(
-                    name=f"{primary_entity_id}_{new_parent_entity_id}",
+                    name=f"{entity_id}_{new_parent_entity_id}",
                     relationship_type=RelationshipType.CHILD_PARENT,
-                    primary_entity_id=PydanticObjectId(primary_entity_id),
+                    entity_id=PydanticObjectId(entity_id),
                     related_entity_id=PydanticObjectId(new_parent_entity_id),
-                    primary_table_id=PydanticObjectId(table_id),
+                    relation_table_id=PydanticObjectId(table_id),
                     is_enabled=True,
                     updated_by=self.user.id,
                 )

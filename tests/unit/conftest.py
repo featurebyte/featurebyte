@@ -1199,9 +1199,9 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         _id="63f6a145e549df8ccf123456",
         name="child_parent_relationship",
         relationship_type=RelationshipType.CHILD_PARENT,
-        primary_entity_id=cust_id_entity.id,
+        entity_id=cust_id_entity.id,
         related_entity_id=transaction_entity.id,
-        primary_table_id="6337f9651050ee7d5980660d",
+        relation_table_id="6337f9651050ee7d5980660d",
         is_enabled=True,
         updated_by="63f6a145e549df8ccf123444",
     )
