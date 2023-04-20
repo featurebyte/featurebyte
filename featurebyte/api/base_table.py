@@ -243,7 +243,8 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
     @typechecked
     def preview(self, limit: int = 10, after_cleaning: bool = False) -> pd.DataFrame:
         """
-        Retrieve a preview of the table column.
+        Returns a DataFrame that contains a selection of rows of the table column. By default, the materialization
+        process occurs before any cleaning operations that were defined at the table level.
 
         Parameters
         ----------
@@ -334,8 +335,8 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
         """
-        Retrieve a summary of the contents in the table column.
-        This includes column name, column type, missing and unique count, and other statistics.
+        Returns descriptive statistics of the table column. By default, the statistics are computed before any
+        cleaning operations that were defined at the table level.
 
         Parameters
         ----------
@@ -686,6 +687,61 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
+
+    @typechecked
+    def describe(
+        self,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        after_cleaning: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Returns descriptive statistics of the table. By default, the statistics are computed before any cleaning
+        operations that were defined at the table level.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample. If 0, all rows will be used.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        after_cleaning: bool
+            Whether to apply cleaning operations.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary of the table.
+        """
+        return super().describe(size, seed, from_timestamp, to_timestamp, after_cleaning)
+
+    @typechecked
+    def preview(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, after_cleaning: bool = False
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains a selection of rows of the table. By default, the materialization process
+        occurs before any cleaning operations that were defined at the table level.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+        after_cleaning: bool
+            Whether to apply cleaning operations.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preview rows of the table.
+        """
+        return super().preview(limit=limit, after_cleaning=after_cleaning)
 
     @typechecked
     def __getitem__(self, item: str) -> TableColumn:

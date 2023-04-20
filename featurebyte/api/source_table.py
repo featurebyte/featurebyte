@@ -194,7 +194,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def dtypes(self) -> pd.Series:
         """
-        Retrieve column table type info.
+        Returns a Series with the data type of each column in the table.
 
         Returns
         -------
@@ -235,7 +235,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @typechecked
     def preview(self, limit: int = 10, after_cleaning: bool = False) -> pd.DataFrame:
         """
-        Retrieve a preview of the table.
+        Returns a DataFrame that contains a selection of rows of the table.
 
         Parameters
         ----------
@@ -358,8 +358,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
         """
-        Retrieve a summary of the contents in the table.
-        This includes columns names, column types, missing and unique counts, and other statistics.
+        Returns descriptive statistics of the table columns.
 
         Parameters
         ----------

@@ -4,7 +4,7 @@ Feature and FeatureList classes
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
 
 import time
 from http import HTTPStatus
@@ -14,7 +14,7 @@ from bson import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import DeletableApiObject, SavableApiObject
+from featurebyte.api.api_object import ConflictResolution, DeletableApiObject, SavableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_namespace import FeatureNamespace
@@ -32,7 +32,7 @@ from featurebyte.common.utils import CodeStr, dataframe_from_json, enforce_obser
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
-from featurebyte.core.series import FrozenSeries, Series
+from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
@@ -91,7 +91,11 @@ class Feature(
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Feature")
 
     # pydantic instance variable (public)
-    feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
+    feature_store: FeatureStoreModel = Field(
+        exclude=True,
+        allow_mutation=False,
+        description="Provides information about the feature store that the feature is connected to.",
+    )
 
     # class variables
     _route = "/feature"
@@ -535,6 +539,39 @@ class Feature(
         return operation_structure.is_time_based
 
     @property
+    def is_datetime(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the feature has a datetime data type.
+
+        Returns
+        -------
+        bool
+        """
+        return super().is_datetime
+
+    @property
+    def is_numeric(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the feature has a numeric data type.
+
+        Returns
+        -------
+        bool
+        """
+        return super().is_numeric
+
+    @property
+    def saved(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the Feature object is saved and part of the catalog.
+
+        Returns
+        -------
+        bool
+        """
+        return super().saved
+
+    @property
     def definition(self) -> str:
         """
         Displays the feature definition file of the feature.
@@ -575,6 +612,46 @@ class Feature(
             entities.append(Entity.get_by_id(entity_id))
         primary_entity = derive_primary_entity(entities)  # type: ignore
         return primary_entity
+
+    @typechecked
+    def save(  # pylint: disable=useless-parent-delegation
+        self, conflict_resolution: ConflictResolution = "raise"
+    ) -> None:
+        """
+        Adds a Feature object to the catalog.
+
+        A conflict could be triggered when the object being saved has violated a uniqueness check at the catalog.
+        If uniqueness is violated, you can either raise an error or retrieve the object with the same name, depending
+        on the conflict resolution parameter passed in. The default behavior is to raise an error.
+
+        Parameters
+        ----------
+        conflict_resolution: ConflictResolution
+            "raise" will raise an error when we encounter a conflict error.
+            "retrieve" will handle the conflict error by retrieving the object with the same name.
+        """
+        super().save(conflict_resolution=conflict_resolution)
+
+    @typechecked
+    def astype(  # pylint: disable=useless-parent-delegation
+        self: FrozenSeriesT,
+        new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
+    ) -> FrozenSeriesT:
+        """
+        Modifies the data type of a feature. It is useful when you need to convert feature values between numerical
+        and string formats, or the other way around.
+
+        Parameters
+        ----------
+        new_type : Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]])
+            Desired type after conversion. Type can be provided directly, or as a string.
+
+        Returns
+        -------
+        FrozenSeriesT
+            A new Series with converted variable type.
+        """
+        return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
 
     def binary_op_series_params(
         self, other: Scalar | FrozenSeries | ScalarSequence
@@ -621,14 +698,13 @@ class Feature(
         observation_set: pd.DataFrame,
     ) -> pd.DataFrame:
         """
-        Materialize feature using a small observation set of up to 50 rows.
+        Materializes a Feature object using a small observation set of up to 50 rows. Unlike get_historical_features,
+        this method does not store partial aggregations (tiles) to speed up future computation. Instead, it computes
+        the feature values on the fly, and should be used only for small observation sets for debugging or prototyping
+        unsaved features.
 
-        Unlike get_historical_features, this method does not store partial aggregations (tiles) to
-        speed up future computation. Instead, it computes the feature on the fly, and should be used
-        only for small observation sets for debugging or prototyping unsaved features.
-
-        Tiles are a method of storing partial aggregations in the feature store,
-        which helps to minimize the resources required to fulfill historical, batch and online requests.
+        The small observation set should combine historical points-in-time and key values of the primary entity from
+        the feature. Associated serving entities can also be utilized.
 
         Parameters
         ----------

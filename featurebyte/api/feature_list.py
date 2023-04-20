@@ -30,7 +30,7 @@ from featurebyte.api.api_object import (
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_group import BaseFeatureGroup
+from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
@@ -442,6 +442,24 @@ class FeatureList(
                 progress_bar()  # pylint: disable=not-callable
 
     def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
+        """
+        Adds a FeatureList object to the catalog.
+
+        A conflict could be triggered when the object being saved has violated a uniqueness check at the catalog.
+        If uniqueness is violated, you can either raise an error or retrieve the object with the same name, depending
+        on the conflict resolution parameter passed in. The default behavior is to raise an error.
+
+        Parameters
+        ----------
+        conflict_resolution: ConflictResolution
+            "raise" will raise an error when we encounter a conflict error.
+            "retrieve" will handle the conflict error by retrieving the object with the same name.
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When a record with the same key exists at the persistent data store.
+        """
         try:
             super().save(conflict_resolution=conflict_resolution)
         except DuplicatedRecordException as exc:
@@ -466,6 +484,64 @@ class FeatureList(
         >>> feature_list.delete()  # doctest: +SKIP
         """
         self._delete()
+
+    @typechecked
+    def drop(self, items: List[str]) -> FeatureGroup:  # pylint: disable=useless-parent-delegation
+        """
+        Drops feature(s) from the original FeatureList and returns a new FeatureGroup object.
+
+        Parameters
+        ----------
+        items: List[str]
+            List of feature names to be dropped
+
+        Returns
+        -------
+        FeatureGroup
+            FeatureGroup object containing remaining feature(s)
+        """
+        return super().drop(items=items)
+
+    @property
+    def saved(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the FeatureList object is saved and added to the catalog.
+
+        Returns
+        -------
+        bool
+        """
+        return super().saved
+
+    @typechecked
+    def preview(  # pylint: disable=useless-parent-delegation
+        self,
+        observation_set: pd.DataFrame,
+    ) -> Optional[pd.DataFrame]:
+        """
+        Materializes a FeatureList using a small observation set of up to 50 rows. Unlike get_historical_features,
+        this method does not store partial aggregations (tiles) to speed up future computation. Instead, it computes
+        the features on the fly, and should be used only for small observation sets for debugging or prototyping
+        unsaved features.
+
+        The small observation set should combine historical points-in-time and key values of the primary entity from
+        the feature list. Associated serving entities can also be utilized.
+
+        Parameters
+        ----------
+        observation_set : pd.DataFrame
+            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
+            as well as columns with serving names for all entities used by features in the feature group.
+
+        Returns
+        -------
+        pd.DataFrame
+            Materialized feature values.
+            The returned DataFrame will have the same number of rows, and include all columns from the observation set.
+
+            **Note**: `POINT_IN_TIME` values will be converted to UTC time.
+        """
+        return super().preview(observation_set=observation_set)
 
     @root_validator(pre=True)
     @classmethod

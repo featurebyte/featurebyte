@@ -173,7 +173,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
     @property
     def name_history(self) -> list[dict[str, Any]]:
         """
-        Get the history of the entity name. Entity name is used to associate a table column with the entity.
+        Returns the history of the entity name of the Entity object.
 
         Returns
         -------

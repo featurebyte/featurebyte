@@ -350,7 +350,11 @@ CleaningOperation = Annotated[
 
 class ColumnCleaningOperation(FeatureByteBaseModel):
     """
-    ColumnCleaningOperation schema
+    The ColumnCleaningOperation object serves as a link between a table column and a specific cleaning configuration.
+    It is utilized when creating a view in the manual mode that requires different configurations per colum. The
+    column_cleaning_operations parameter takes a list of these configurations. For each configuration, the
+    ColumnCleaningOperation object establishes the relationship between the colum involved and the corresponding
+    cleaning operations.
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ColumnCleaningOperation")
@@ -361,7 +365,11 @@ class ColumnCleaningOperation(FeatureByteBaseModel):
 
 class TableCleaningOperation(FeatureByteBaseModel):
     """
-    TableCleaningOperation schema
+    The TableCleaningOperation object serves as a link between a table and cleaning configurations for the columns in
+    the table. It is utilized when creating a new version of a feature that requires different cleaning configurations.
+    The table_cleaning_operations parameter takes a list of these configurations. For each configuration, the
+    ColumnCleaningOperation object establishes the relationship between the table and the corresponding cleaning
+    operations for the table.
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableCleaningOperation")

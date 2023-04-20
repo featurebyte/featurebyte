@@ -12,6 +12,7 @@ from typing import (
     Literal,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -41,7 +42,7 @@ from featurebyte.common.model_util import validate_offset_string
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
-from featurebyte.core.series import FrozenSeries, Series
+from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     ChangeViewNoJoinColumnError,
@@ -137,6 +138,83 @@ class ViewColumn(Series, SampleMixin):
         return super().sample(size, seed, from_timestamp, to_timestamp, **kwargs)
 
     @typechecked
+    def preview(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains a selection of rows of the view column. The materialization process occurs
+        after any cleaning operations that were defined either at the table level or during the view's creation.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preview rows of the data.
+
+        Examples
+        --------
+        Preview 3 rows of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["GroceryProductGuid"].preview(3)
+                             GroceryProductGuid
+        0  10355516-5582-4358-b5f9-6e1ea7d5dc9f
+        1  116c9284-2c41-446e-8eee-33901e0acdef
+        2  3a45a5e8-1b71-42e8-b84e-43ddaf692375
+        """
+        return super().preview(limit=limit, **kwargs)
+
+    @typechecked
+    def describe(  # pylint: disable=useless-parent-delegation
+        self,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Returns descriptive statistics of the view column. The statistics are computed after any cleaning operations
+        that were defined either at the table level or during the view's creation have been applied.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary of the view.
+
+        Examples
+        --------
+        Get summary of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].describe()
+                        ProductGroup
+        dtype                VARCHAR
+        unique                    87
+        %missing                 0.0
+        %empty                     0
+        entropy              4.13031
+        top       Chips et Tortillas
+        freq                    1319
+        """
+        return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
+
+    @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
         """
         Creates a lookup feature directly from the column in the View. The entity associated with the feature is
@@ -183,6 +261,96 @@ class ViewColumn(Series, SampleMixin):
         )[feature_name]
         return cast(Feature, feature)
 
+    @property
+    def is_datetime(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the view column has a datetime data type.
+
+        Returns
+        -------
+        bool
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+
+        >>> print(view["Timestamp"].is_datetime)
+        True
+        >>> print(view["Amount"].is_datetime)
+        False
+        """
+        return super().is_datetime
+
+    @property
+    def is_numeric(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the view column has a numeric data type.
+
+        Returns
+        -------
+        bool
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+
+        >>> print(view["Amount"].is_numeric)
+        True
+        >>> print(view["Timestamp"].is_numeric)
+        False
+        """
+        return super().is_numeric
+
+    @typechecked
+    def preview_sql(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> str:
+        """
+        Returns an SQL query for previewing the column data after applying the set of cleaning operations defined
+        at the column level.
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        str
+        """
+        return super().preview_sql(limit=limit, **kwargs)
+
+    @typechecked
+    def astype(  # pylint: disable=useless-parent-delegation
+        self: FrozenSeriesT,
+        new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
+    ) -> FrozenSeriesT:
+        """
+        Converts the data type of a column. It is useful when you need to convert column values between numerical and
+        string formats, or the other way around.
+
+        Parameters
+        ----------
+        new_type : Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]])
+            Desired type after conversion. Type can be provided directly, or as a string.
+
+        Returns
+        -------
+        FrozenSeriesT
+            A new Series with converted variable type.
+
+        Examples
+        --------
+        Convert a numerical series to a string series, and back to an int series.
+
+        >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> event_view["Amount"] = event_view["Amount"].astype(str)
+        >>> event_view["Amount"] = event_view["Amount"].astype(int)
+        """
+        return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
+
 
 class GroupByMixin:
     """
@@ -194,7 +362,17 @@ class GroupByMixin:
     @typechecked
     def groupby(self, by_keys: Union[str, List[str]], category: Optional[str] = None) -> GroupBy:
         """
-        Group a view using one or more columns.
+        The groupby method of a view returns a GroupBy class that can be used to group data based on one or more
+        columns representing entities (specified in the key parameter). Within each entity or group of entities,
+        the GroupBy class applies aggregation function(s) to the data.
+
+        The grouping keys determine the primary entity for the declared features in the aggregation function.
+
+        Moreover, the groupby method's category parameter allows you to define a categorical column, which can be
+        used to generate Cross Aggregate Features. These features involve aggregating data across categories of the
+        categorical column, enabling the extraction of patterns in an entity across these categories. For instance,
+        you can calculate the amount spent by a customer on each product category during a specific time period using
+        this approach.
 
         Parameters
         ----------
@@ -295,6 +473,115 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     def __str__(self) -> str:
         return repr(self)
+
+    @property
+    def columns(self) -> list[str]:  # pylint: disable=useless-parent-delegation
+        """
+        List the names of the columns in the view.
+
+        Returns
+        -------
+        list[str]
+        """
+        return super().columns
+
+    @typechecked
+    def preview_sql(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> str:
+        """
+        Returns an SQL query for previewing the view raw data after applying the set of cleaning operations defined
+        at the column level.
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        str
+        """
+        return super().preview_sql(limit=limit, **kwargs)
+
+    @typechecked
+    def describe(  # pylint: disable=useless-parent-delegation
+        self,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Returns descriptive statistics of the view. The statistics are computed after any cleaning operations
+        that were defined either at the table level or during the view's creation have been applied.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary of the view.
+
+        Examples
+        --------
+        Get summary of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").describe()
+                                    GroceryProductGuid        ProductGroup
+        dtype                                  VARCHAR             VARCHAR
+        unique                                   29099                  87
+        %missing                                   0.0                 0.0
+        %empty                                       0                   0
+        entropy                               6.214608             4.13031
+        top       017fe5ed-80a2-4e70-ae48-78aabfdee856  Chips et Tortillas
+        freq                                         1                1319
+        """
+        return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
+
+    @typechecked
+    def preview(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains a selection of rows of the view. The materialization process occurs after
+        any cleaning operations that were defined either at the table level or during the view's creation.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preview rows of the data.
+
+        Examples
+        --------
+        Preview 3 rows of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").preview(3)
+                             GroceryProductGuid ProductGroup
+        0  10355516-5582-4358-b5f9-6e1ea7d5dc9f      Glaçons
+        1  116c9284-2c41-446e-8eee-33901e0acdef      Glaçons
+        2  3a45a5e8-1b71-42e8-b84e-43ddaf692375      Glaçons
+        """
+        return super().preview(limit=limit, **kwargs)
 
     def sample(  # pylint: disable=useless-parent-delegation
         self,

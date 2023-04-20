@@ -5,6 +5,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from bson import ObjectId
+from pandas import DataFrame
+
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.data_source import DataSource
 from featurebyte.common.doc_util import FBAutoDoc
@@ -77,10 +80,13 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         storage_credential: Optional[StorageCredential] = None,
     ) -> FeatureStore:
         """
-        Create and return an instance of a feature store.
+        Creates and saves a Feature Store object to enable FeatureByte to work with a data warehouse. FeatureByte
+        leverages a data warehouse as both a data source and a feature store.
 
-        Database details and credentials provided are validated.
-        Note that only one feature store can be created for a specific set of database details.
+        To create a feature store, you need to specify the connection details and credentials to use.
+
+        Note that featurestore is one-off task. Only one feature store can be created for a specific set of
+        database details.
 
         Parameters
         ----------
@@ -183,6 +189,79 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
                 database_credential=database_credential,
                 storage_credential=storage_credential,
             )
+
+    @classmethod
+    def get(cls, name: str) -> FeatureStore:  # pylint: disable=useless-parent-delegation
+        """
+        Gets a FeatureStore object by its name.
+
+        Parameters
+        ----------
+        name: str
+            Name of the feature store to retrieve.
+
+        Returns
+        -------
+        FeatureStore
+            FeatureStore object.
+
+        Examples
+        --------
+        Get a FeatureStore object that is already saved.
+
+        >>> feature_store = fb.FeatureStore.get("feature_store_name")  # doctest: +SKIP
+        """
+        return super().get(name)
+
+    @classmethod
+    def get_by_id(  # pylint: disable=useless-parent-delegation
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> FeatureStore:
+        """
+        Returns a FeatureStore object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            Feature store unique identifier (ID).
+
+        Returns
+        -------
+        FeatureStore
+            FeatureStore object.
+
+        Examples
+        --------
+        Get a FeatureStore object that is already saved.
+
+        >>> fb.FeatureStore.get_by_id(<catalog_id>)  # doctest: +SKIP
+        """
+        return cls._get_by_id(id=id)
+
+    @classmethod
+    def list(  # pylint: disable=useless-parent-delegation
+        cls, include_id: Optional[bool] = False
+    ) -> DataFrame:
+        """
+        Returns a DataFrame that lists the feature stores by their names, types and creation dates.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        DataFrame
+            Table of objects.
+
+        Examples
+        --------
+        List all feature stores.
+
+        >>> feature_stores = fb.FeatureStore.list()
+        """
+        return super().list(include_id=include_id)
 
     def get_data_source(self) -> DataSource:
         """
