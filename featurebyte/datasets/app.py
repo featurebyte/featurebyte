@@ -61,7 +61,7 @@ def import_dataset(dataset_name: str) -> None:
         raise FileNotFoundError(path)
 
     # parse sql
-    hive_staging_path = f"file:///tmp/{dataset_name}"
+    hive_staging_path = f"file:///opt/spark/data/staging/datasets/{dataset_name}"
     with open(path, encoding="utf8") as file_obj:
         sql = file_obj.read()
         sql = sql.format(staging_path=hive_staging_path)
@@ -93,7 +93,10 @@ def import_dataset(dataset_name: str) -> None:
             )
 
         # Copy files to spark container
-        DockerClient().copy(f"{download_folder}/{dataset_name}", ("spark-thrift", "/tmp"))
+        DockerClient().copy(
+            f"{download_folder}/{dataset_name}",
+            ("spark-thrift", "/opt/spark/data/staging/datasets"),
+        )
 
     # Call featurebyte-server container to import dataset
     sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")

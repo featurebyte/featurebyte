@@ -60,6 +60,7 @@ services:
     volumes:
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/files:/app/.featurebyte/data/files
+      - staging-data:/data/staging
       - file-store:/tmp
     logging:
       driver: local
@@ -88,6 +89,7 @@ services:
     volumes:
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/files:/app/.featurebyte/data/files
+      - staging-data:/data/staging
       - file-store:/tmp
     logging:
       driver: local
@@ -106,6 +108,7 @@ services:
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
     volumes:
+      - staging-data:/opt/spark/data/staging
       - spark-warehouse:/opt/spark/data/derby
     healthcheck:
       test: netstat -ltn | grep -c 10000
@@ -144,4 +147,5 @@ networks:
 volumes:
   mongodb:
   spark-warehouse:
+  staging-data:
   file-store:
