@@ -40,7 +40,6 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     _list_schema = FeatureJobSettingAnalysisRecord
     _get_schema = FeatureJobSettingAnalysisModel
     _list_fields = [
-        "id",
         "created_at",
         "event_table",
         "analysis_start",

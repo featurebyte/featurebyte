@@ -603,6 +603,7 @@ def test_list_versions(saved_feature_list):
         FeatureList.list_versions(),
         pd.DataFrame(
             {
+                "id": [flist_2.id, flist_1.id, saved_feature_list.id],
                 "name": [flist_2.name, flist_1.name, saved_feature_list.name],
                 "feature_list_namespace_id": [
                     flist_2.feature_list_namespace_id,
@@ -625,6 +626,7 @@ def test_list_versions(saved_feature_list):
         saved_feature_list.list_versions(),
         pd.DataFrame(
             {
+                "id": [saved_feature_list.id],
                 "name": [saved_feature_list.name],
                 "feature_list_namespace_id": [saved_feature_list.feature_list_namespace.id],
                 "num_features": 1,
