@@ -233,7 +233,7 @@ class CountDictAccessor:
         Returns
         -------
         Feature
-            A new Feature object.
+            Another Cross Aggregate feature.
 
         Examples
         --------
