@@ -1191,19 +1191,20 @@ class TrackChangesNode(BaseNode):
             if column.name == self.parameters.natural_key_column
         )
         columns = [natural_key_source_column]
-        for column_name in [
-            self.parameters.previous_tracked_column_name,
-            self.parameters.new_tracked_column_name,
-            self.parameters.previous_valid_from_column_name,
-            self.parameters.new_valid_from_column_name,
+        track_dtype = tracked_source_column.dtype
+        valid_dtype = effective_timestamp_source_column.dtype
+        for column_name, dtype in [
+            (self.parameters.previous_tracked_column_name, track_dtype),
+            (self.parameters.new_tracked_column_name, track_dtype),
+            (self.parameters.previous_valid_from_column_name, valid_dtype),
+            (self.parameters.new_valid_from_column_name, valid_dtype),
         ]:
             derived_column = DerivedDataColumn.create(
                 name=column_name,
                 columns=[effective_timestamp_source_column, tracked_source_column],
-                transform=None,
+                transform=self.transform_info,
                 node_name=self.name,
-                dtype=tracked_source_column.dtype,
-                other_node_names=tracked_source_column.node_names,
+                dtype=dtype,
             )
             columns.append(derived_column)
         return OperationStructure(

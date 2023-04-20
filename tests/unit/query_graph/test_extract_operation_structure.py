@@ -4,6 +4,7 @@ Unit tests for query graph operation structure extraction
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 
 
 def extract_column_parameters(input_node, other_node_names=None, node_name=None):
@@ -1011,3 +1012,53 @@ def test_extract_operation_structure__graph_node_row_index_lineage(
 
     # make sure the row index lineage points to non-nested nodes
     assert op_struct.row_index_lineage == ("input_1",)
+
+
+def test_track_changes_operation_structure(global_graph, scd_table_input_node):
+    """Test track changes operation structure"""
+    track_changes_node = global_graph.add_operation(
+        node_type=NodeType.TRACK_CHANGES,
+        node_params={
+            "natural_key_column": "cust_id",
+            "effective_timestamp_column": "effective_ts",
+            "tracked_column": "membership_status",
+            "previous_tracked_column_name": "previous_membership_status",
+            "new_tracked_column_name": "new_membership_status",
+            "previous_valid_from_column_name": "previous_valid_from",
+            "new_valid_from_column_name": "new_valid_from",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[scd_table_input_node],
+    )
+
+    op_struct = global_graph.extract_operation_structure(node=track_changes_node)
+    common_source_column_params = {
+        "filter": False,
+        "node_name": "input_1",
+        "node_names": {"input_1"},
+        "table_id": None,
+        "table_type": "scd_table",
+        "type": "source",
+    }
+    track_changes_params = {
+        "columns": [
+            {"name": "effective_ts", "dtype": "TIMESTAMP", **common_source_column_params},
+            {"name": "membership_status", "dtype": "VARCHAR", **common_source_column_params},
+        ],
+        "filter": False,
+        "node_name": "track_changes_1",
+        "node_names": {"input_1", "track_changes_1"},
+        "transforms": ["track_changes"],
+        "type": "derived",
+    }
+    expected_columns = [
+        {"name": "cust_id", "dtype": "INT", **common_source_column_params},
+        {"name": "previous_membership_status", "dtype": "VARCHAR", **track_changes_params},
+        {"name": "new_membership_status", "dtype": "VARCHAR", **track_changes_params},
+        {"name": "previous_valid_from", "dtype": "TIMESTAMP", **track_changes_params},
+        {"name": "new_valid_from", "dtype": "TIMESTAMP", **track_changes_params},
+    ]
+    assert op_struct.columns == expected_columns
+    assert op_struct.aggregations == []
+    assert op_struct.output_type == NodeOutputType.FRAME
+    assert op_struct.output_category == NodeOutputCategory.VIEW
