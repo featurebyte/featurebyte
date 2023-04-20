@@ -104,10 +104,6 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         Returns
         -------
         FeatureStore
-
-        See Also
-        --------
-        - [FeatureStore.get_or_create](/reference/featurebyte.api.feature_store.FeatureStore.get_or_create/): Get or create FeatureStore
         """
         # Construct object, and save to persistent layer.
         feature_store = FeatureStore(

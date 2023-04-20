@@ -310,7 +310,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
 
     # use proxy class if specified
     autodoc_config = resource_class.__dict__.get("__fbautodoc__", FBAutoDoc())
-    if autodoc_config:
+    if autodoc_config.proxy_class:
         proxy_path = autodoc_config.proxy_class
 
     # process signature

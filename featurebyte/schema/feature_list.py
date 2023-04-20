@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
@@ -34,6 +35,8 @@ class FeatureVersionInfo(FeatureByteBaseModel):
     """
     Feature version info
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureVersionInfo")
 
     name: str
     version: VersionIdentifier

@@ -95,6 +95,7 @@ class BetaWave3Nav(Nav):
         TRANSFORM,
         LAGS,
         SERVE,
+        FEATURE,
         FEATURE_JOB_SETTING,
         SET_FEATURE_JOB,
         GROUPBY,

@@ -27,7 +27,6 @@ def test_all_init_methods_are_exposed():
         "S3StorageCredential",
         "UsernamePasswordCredential",
         "DefaultVersionMode",
-        "FeatureVersionInfo",
         "PeriodicTask",
         "start",
         "stop",
