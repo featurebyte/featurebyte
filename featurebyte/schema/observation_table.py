@@ -3,7 +3,9 @@ ObservationTableModel API payload schema
 """
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
+
+from pydantic import conint
 
 from featurebyte.models.observation_table import ObservationInput, ObservationTableModel
 from featurebyte.schema.common.base import PaginationMixin
@@ -15,6 +17,7 @@ class ObservationTableCreate(BaseRequestTableCreate):
     ObservationTableModel creation schema
     """
 
+    sample_rows: Optional[conint(ge=0)]  # type: ignore[valid-type]
     request_input: ObservationInput
 
 

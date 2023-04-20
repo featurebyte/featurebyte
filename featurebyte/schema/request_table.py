@@ -4,7 +4,7 @@ Base class for all request tables.
 from typing import Any, Dict, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, conint, root_validator
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -23,7 +23,6 @@ class BaseRequestTableCreate(FeatureByteBaseModel):
     name: StrictStr
     feature_store_id: PydanticObjectId
     context_id: Optional[PydanticObjectId]
-    sample_rows: Optional[conint(ge=0)]  # type: ignore[valid-type]
 
 
 class BaseRequestTableListRecord(FeatureByteBaseDocumentModel):
