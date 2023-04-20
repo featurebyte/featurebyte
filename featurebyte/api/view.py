@@ -411,10 +411,12 @@ class GroupByMixin:
         Parameters
         ----------
         by_keys: Union[str, List[str]]
-            Define the key (entity) to for the `groupby` operation
+            Specifies the column or list of columns by which the data should be grouped. These columns must correspond
+            to entities registered in the catalog. If this parameter is set to an empty list, the data will not be
+            grouped.
         category : Optional[str]
-            Optional category parameter to enable aggregation per category. It should be a column
-            name in the View.
+            Optional category parameter to enable aggregation across categories. To use this parameter, provide the
+            name of a column in the View that represents a categorical column.
 
         Returns
         -------
