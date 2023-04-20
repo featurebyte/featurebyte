@@ -31,7 +31,6 @@ import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.table.api as table_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
-from featurebyte import Configurations
 from featurebyte.common.utils import get_version
 from featurebyte.logger import logger
 from featurebyte.middleware import ExceptionMiddleware

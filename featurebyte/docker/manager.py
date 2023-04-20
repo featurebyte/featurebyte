@@ -7,7 +7,6 @@ import os
 import sys
 import tempfile
 import time
-import uuid
 from contextlib import contextmanager
 from enum import Enum
 
