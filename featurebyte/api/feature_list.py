@@ -709,7 +709,7 @@ class FeatureList(
         return feature_lists
 
     @classmethod
-    def _list_versions(cls, include_id: Optional[bool] = False) -> pd.DataFrame:
+    def _list_versions(cls, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         Returns a DataFrame that presents a summary of the feature list versions belonging to the namespace of the
         FeatureList object. The DataFrame contains multiple attributes of the feature list versions, such as their
@@ -747,7 +747,7 @@ class FeatureList(
         """
         return super().list(include_id=include_id)
 
-    def _list_versions_with_same_name(self, include_id: bool = False) -> pd.DataFrame:
+    def _list_versions_with_same_name(self, include_id: bool = True) -> pd.DataFrame:
         """
         List feature list versions with the same name
 

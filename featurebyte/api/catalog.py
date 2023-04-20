@@ -318,7 +318,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
     @classmethod
     def list(
-        cls, include_id: Optional[bool] = False
+        cls, include_id: Optional[bool] = True
     ) -> pd.DataFrame:  # pylint: disable=useless-parent-delegation
         """
         Returns a DataFrame containing information on catalogs such as their names, creation dates, and active status.
@@ -380,7 +380,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def list_features(
         self,
-        include_id: Optional[bool] = False,
+        include_id: Optional[bool] = True,
         primary_entity: Optional[Union[str, List[str]]] = None,
         primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
@@ -421,7 +421,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def list_feature_lists(
         self,
-        include_id: Optional[bool] = False,
+        include_id: Optional[bool] = True,
         entity: Optional[str] = None,
         table: Optional[str] = None,
     ) -> pd.DataFrame:
@@ -458,7 +458,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
     @update_and_reset_catalog
     def list_tables(
-        self, include_id: Optional[bool] = False, entity: Optional[str] = None
+        self, include_id: Optional[bool] = True, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered tables in the catalog, such as their
@@ -545,7 +545,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def list_feature_job_setting_analyses(
         self,
-        include_id: Optional[bool] = False,
+        include_id: Optional[bool] = True,
         event_table_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
         """
@@ -572,7 +572,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return FeatureJobSettingAnalysis.list(include_id=include_id, event_table_id=event_table_id)
 
     @update_and_reset_catalog
-    def list_feature_stores(self, include_id: Optional[bool] = False) -> pd.DataFrame:
+    def list_feature_stores(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved feature stores.
 
@@ -595,7 +595,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return FeatureStore.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_entities(self, include_id: Optional[bool] = False) -> pd.DataFrame:
+    def list_entities(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the entities registered in the catalog, such as
         their names, serving names and creation dates.
@@ -619,7 +619,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Entity.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_periodic_tasks(self, include_id: Optional[bool] = False) -> pd.DataFrame:
+    def list_periodic_tasks(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved periodic tasks.
 
@@ -642,7 +642,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return PeriodicTask.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_observation_tables(self, include_id: Optional[bool] = False) -> pd.DataFrame:
+    def list_observation_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved observation tables.
 
@@ -665,7 +665,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return ObservationTable.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_historical_feature_tables(self, include_id: Optional[bool] = False) -> pd.DataFrame:
+    def list_historical_feature_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved historical feature tables.
 

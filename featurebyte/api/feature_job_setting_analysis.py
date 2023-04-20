@@ -73,7 +73,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     @classmethod
     def list(
         cls,
-        include_id: Optional[bool] = False,
+        include_id: Optional[bool] = True,
         event_table_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
         """
