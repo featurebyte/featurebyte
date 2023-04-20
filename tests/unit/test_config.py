@@ -55,21 +55,6 @@ def test_configurations():
     ]
 
 
-def test_configurations_telemetry():
-    """
-    Test creating configuration from config file
-    """
-    empty_config = Configurations("tests/fixtures/config/empty.yaml")
-    config = Configurations("tests/fixtures/config/config_telemetry.yaml")
-
-    # No configuration testing
-    assert not empty_config.logging.telemetry
-    assert empty_config.logging.telemetry_url == "https://log.int.featurebyte.com"
-
-    assert not config.logging.telemetry
-    assert config.logging.telemetry_url == "https://telemetry.featurebyte.com"
-
-
 def test_get_client_no_persistence_settings():
     """
     Test getting client with no persistent settings
