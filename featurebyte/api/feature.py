@@ -130,6 +130,42 @@ class Feature(
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
 
+    @typechecked
+    def isin(  # pylint: disable=useless-parent-delegation
+        self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]
+    ) -> FrozenSeriesT:
+        """
+        Identifies if each element is contained in a sequence of values represented by the `other` parameter.
+
+        Parameters
+        ----------
+        other: Union[FrozenSeries, ScalarSequence]
+            The sequence of values to check for membership. `other` can be a predefined list of values, or a Cross
+            Aggregate feature. If `other` is a Cross Aggregate feature, the keys of the Cross Aggregate feature will
+            be used to check for membership.
+
+        Returns
+        -------
+        FrozenSeriesT
+            Column or Feature with boolean values
+
+        Raises
+        ------
+        ValueError
+            raised when `other` is a Feature object but is not a dictionary feature.
+
+        Examples
+        --------
+        Create a new feature that checks whether a lookup feature is contained in the keys of a
+        dictionary feature:
+
+        >>> lookup_feature = catalog.get_feature("ProductGroupLookup")
+        >>> dictionary_feature = catalog.get_feature("CustomerProductGroupCounts_7d")
+        >>> new_feature = lookup_feature.isin(dictionary_feature)
+        >>> new_feature.name = "CustomerHasProductGroup_7d"
+        """
+        return super().isin(other)
+
     def info(  # pylint: disable=useless-parent-delegation
         self, verbose: bool = False
     ) -> Dict[str, Any]:

@@ -39,6 +39,7 @@ from featurebyte.common.join_utils import (
     is_column_name_in_columns,
 )
 from featurebyte.common.model_util import validate_offset_string
+from featurebyte.common.typing import ScalarSequence
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
@@ -344,6 +345,45 @@ class ViewColumn(Series, SampleMixin):
         >>> event_view["Amount"] = event_view["Amount"].astype(int)
         """
         return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
+
+    @typechecked
+    def isin(  # pylint: disable=useless-parent-delegation
+        self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]
+    ) -> FrozenSeriesT:
+        """
+        Identifies if each element is contained in a sequence of values represented by the `other` parameter.
+
+        Parameters
+        ----------
+        other: Union[FrozenSeries, ScalarSequence]
+            The sequence of values to check for membership. `other` can be a predefined list of values.
+
+        Returns
+        -------
+        FrozenSeriesT
+            Column or Feature with boolean values
+
+        Raises
+        ------
+        ValueError
+            raised when `other` is a Feature object but is not a dictionary feature.
+
+        Examples
+        --------
+        Check to see if the values in a series are in a list of values, and use the result to filter
+        the original view:
+
+        >>> view = catalog.get_table("GROCERYPRODUCT").get_view()
+        >>> condition = view["ProductGroup"].isin(["Sauces", "Fromages", "Fruits"])
+        >>> view[condition].sample(5, seed=0)
+                             GroceryProductGuid ProductGroup
+        0  45cd58ba-efec-463a-9107-0633168a215e     Fromages
+        1  97e6afc9-1033-4fb3-b2a2-3d62261e1d17     Fromages
+        2  fb26ed22-524e-4c9e-9ea2-03c266e7f9b9     Fromages
+        3  a817d904-bc58-4048-978d-c13857969a69       Fruits
+        4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
+        """
+        return super().isin(other=other)
 
 
 class GroupByMixin:
