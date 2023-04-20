@@ -8,7 +8,7 @@ from typing import Any, ClassVar, List, Optional
 from pydantic import Field
 
 from featurebyte.api.event_view import EventView
-from featurebyte.api.view import GroupByMixin, View, ViewColumn
+from featurebyte.api.view import GroupByMixin, RawMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -27,7 +27,7 @@ class ItemViewColumn(ViewColumn):
     __fbautodoc__ = FBAutoDoc()
 
 
-class ItemView(View, GroupByMixin):
+class ItemView(View, GroupByMixin, RawMixin):
     """
     An ItemView object is a modified version of the ItemTable object that provides additional capabilities for
     transforming data. With an ItemView, you can create and transform columns, extract lags and filter records

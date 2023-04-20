@@ -17,12 +17,10 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
-from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
+from featurebyte.query_graph.sql.common import SQLType
 
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
 TableNodeT = TypeVar("TableNodeT", bound="TableNode")
-
-FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
 
 
 @dataclass
@@ -274,15 +272,9 @@ class TableNode(SQLNode, ABC):
         # Use nested filter if QUALIFY clause is not supported
         if self.require_nested_filter_post_select:
             assert aliases is not None
-            select_expr = select_expr.select(
-                expressions.alias_(
-                    self.qualify_condition, alias=FB_QUALIFY_CONDITION_COLUMN, quoted=True
-                )
-            )
-            select_expr = (
-                select(*[quoted_identifier(column_name) for column_name in aliases])
-                .from_(select_expr.subquery())
-                .where(quoted_identifier(FB_QUALIFY_CONDITION_COLUMN))
+            assert self.qualify_condition is not None
+            select_expr = self.context.adapter.filter_with_window_function(
+                select_expr, aliases, self.qualify_condition
             )
 
         return select_expr

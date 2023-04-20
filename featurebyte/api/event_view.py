@@ -10,7 +10,7 @@ import copy
 from pydantic import Field
 
 from featurebyte.api.lag import LaggableViewColumn
-from featurebyte.api.view import GroupByMixin, View
+from featurebyte.api.view import GroupByMixin, RawMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import validate_type_is_feature
 from featurebyte.enum import TableDataType
@@ -34,7 +34,7 @@ class EventViewColumn(LaggableViewColumn):
     __fbautodoc__ = FBAutoDoc()
 
 
-class EventView(View, GroupByMixin):
+class EventView(View, GroupByMixin, RawMixin):
     """
     An EventView object is a modified version of the EventTable object that provides additional capabilities for
     transforming data. With an EventView, you can create and transform columns, extract lags and filter records

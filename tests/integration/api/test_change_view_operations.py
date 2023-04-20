@@ -4,6 +4,7 @@ Test change view operations
 import datetime
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -94,3 +95,72 @@ def test_change_view__feature_no_entity(scd_table):
     observations_set = pd.DataFrame([{"POINT_IN_TIME": "2001-12-15 10:00:00"}])
     df = FeatureList([count_1w_feature], name="mylist").get_historical_features(observations_set)
     assert df.iloc[0].to_dict() == expected
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.asyncio
+async def test_change_view_correctness(session, data_source):
+    """
+    Test ChangeView correctness
+    """
+    df = pd.DataFrame(
+        [
+            {"effective_ts": "2022-01-01 00:00:00", "column": "a"},  # first entry
+            {"effective_ts": "2022-01-02 00:00:00", "column": "a"},
+            {"effective_ts": "2022-01-03 00:00:00", "column": "b"},  # changed: a -> b
+            {"effective_ts": "2022-01-04 00:00:00", "column": "b"},
+            {"effective_ts": "2022-01-05 00:00:00", "column": "b"},
+            {"effective_ts": "2022-01-06 00:00:00", "column": "c"},  # changed: b -> c
+            {"effective_ts": "2022-01-07 00:00:00", "column": "c"},
+        ]
+    )
+    df["effective_ts"] = pd.to_datetime(df["effective_ts"])
+    df["cust_id"] = "c1"
+
+    df_expected = pd.DataFrame(
+        [
+            {
+                "new_effective_ts": "2022-01-01 00:00:00",
+                "past_effective_ts": np.nan,
+                "new_column": "a",
+                "past_column": np.nan,
+                "past_column_lag": np.nan,
+            },
+            {
+                "new_effective_ts": "2022-01-03 00:00:00",
+                "past_effective_ts": "2022-01-01 00:00:00",
+                "new_column": "b",
+                "past_column": "a",
+                "past_column_lag": np.nan,
+            },
+            {
+                "new_effective_ts": "2022-01-06 00:00:00",
+                "past_effective_ts": "2022-01-03 00:00:00",
+                "new_column": "c",
+                "past_column": "b",
+                "past_column_lag": "a",
+            },
+        ]
+    )
+    df_expected["new_effective_ts"] = pd.to_datetime(df_expected["new_effective_ts"])
+    df_expected["past_effective_ts"] = pd.to_datetime(df_expected["past_effective_ts"])
+    df_expected.insert(0, "cust_id", "c1")
+
+    table_name = "test_change_view_correctness_table"
+    await session.register_table(table_name, df, temporary=False)
+
+    scd_source_table = data_source.get_source_table(
+        table_name=table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    scd_table = scd_source_table.create_scd_table(
+        name="test_change_view_correctness_scd_table",
+        natural_key_column="cust_id",
+        effective_timestamp_column="effective_ts",
+    )
+    change_view = scd_table.get_change_view(track_changes_column="column")
+    change_view["past_column_lag"] = change_view["past_column"].lag("cust_id")
+    df = change_view.preview()
+
+    pd.testing.assert_frame_equal(df, df_expected)
