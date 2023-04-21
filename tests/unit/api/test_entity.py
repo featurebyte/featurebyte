@@ -211,8 +211,8 @@ def test_get_entity():
 
     assert "Failed to retrieve the specified object." in str(exc.value)
 
-    # test list entity names
-    entity_list = Entity.list()
+    # test list entity names - no include_id
+    entity_list = Entity.list(include_id=False)
     expected_entity_list = pd.DataFrame(
         {
             "name": [region_entity.name, prod_entity.name, cust_entity.name],
@@ -231,7 +231,7 @@ def test_get_entity():
     assert_frame_equal(entity_list, expected_entity_list)
 
     # test list with include_id=True
-    entity_list = Entity.list(include_id=True)
+    entity_list = Entity.list()
     expected_entity_list["id"] = [region_entity.id, prod_entity.id, cust_entity.id]
     assert_frame_equal(entity_list, expected_entity_list[entity_list.columns])
 
