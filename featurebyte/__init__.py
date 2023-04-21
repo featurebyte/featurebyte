@@ -346,7 +346,7 @@ def list_deployments(
     --------
     >>> fb.list_deployments()
     Empty DataFrame
-    Columns: [catalog, name, feature_list_version, num_feature]
+    Columns: [catalog, name, feature_list_name, feature_list_version, num_features]
     Index: []
 
     See Also
@@ -381,6 +381,7 @@ __all__ = [
     "SCDTable",
     "SCDView",
     "SourceTable",
+    "Deployment",
     "DatabricksDetails",
     "SnowflakeDetails",
     "SparkDetails",

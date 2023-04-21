@@ -792,6 +792,11 @@ class ApiObject(FeatureByteBaseDocumentModel):
         -------
         dict[str, Any]
             Response data
+
+        Raises
+        ------
+        RecordCreationException
+            When unexpected creation failure
         """
         client = Configurations().get_client()
         create_response = client.post(url=route, json=payload)
