@@ -11,5 +11,7 @@ event_view = event_table.get_view(
 col = event_view["col_int"]
 col_1 = event_view["col_float"]
 col_2 = (col > 10).astype(int) - (~(col > 10)).astype(int)
-col_3 = (col_2 - col_1.abs().sqrt().ceil()) + ((col.floor() * col_1.log()) / col.exp())
+col_3 = (col_2 - col_1.abs().sqrt().ceil()) + (
+    (col.floor() * col_1.log()) / col.exp()
+)
 output = col_3 + col.isnull().astype(float)
