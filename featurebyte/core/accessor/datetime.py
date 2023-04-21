@@ -449,8 +449,8 @@ class DatetimeAccessor:
             **self._obj.unary_op_series_params(),
         )
 
-    @staticmethod
-    def _infer_timezone_offset(series: FrozenSeries) -> Optional[Union[FrozenSeries, str]]:
+    @classmethod
+    def _infer_timezone_offset(cls, series: FrozenSeries) -> Optional[Union[FrozenSeries, str]]:
         """
         Infer the timezone offset for the given series.
 
@@ -481,12 +481,12 @@ class DatetimeAccessor:
 
         # Check whether the series is a simple timestamp column (derived only from a timestamp
         # column from a source table)
-        source_timestamp_column = DatetimeAccessor._get_source_timestamp_column(operation_structure)
+        source_timestamp_column = cls._get_source_timestamp_column(operation_structure)
         if source_timestamp_column is None or source_timestamp_column.table_id is None:
             return None
 
         # Check whether the series is the event timestamp column of an EventTable
-        input_node_parameters = DatetimeAccessor._get_input_node_parameters_by_id(
+        input_node_parameters = cls._get_input_node_parameters_by_id(
             series.graph, source_timestamp_column.node_name, source_timestamp_column.table_id
         )
         if input_node_parameters.type == TableDataType.EVENT_TABLE:
@@ -495,7 +495,7 @@ class DatetimeAccessor:
                 # The series is an event timestamp column. Retrieve timezone offset if available.
                 result: Optional[Union[FrozenSeries, str]] = None
                 if params.event_timestamp_timezone_offset_column is not None:
-                    result = DatetimeAccessor._get_offset_series_from_frame(
+                    result = cls._get_offset_series_from_frame(
                         series.parent,
                         params.event_timestamp_timezone_offset_column,
                         params.id,
@@ -506,8 +506,9 @@ class DatetimeAccessor:
 
         return None
 
-    @staticmethod
+    @classmethod
     def _get_source_timestamp_column(
+        cls,
         operation_structure: OperationStructure,
     ) -> Optional[SourceDataColumn]:
         """
@@ -536,8 +537,9 @@ class DatetimeAccessor:
 
         return None
 
-    @staticmethod
+    @classmethod
     def _get_input_node_parameters_by_id(
+        cls,
         graph: QueryGraph,
         target_node_name: str,
         table_id: PydanticObjectId,
@@ -565,9 +567,9 @@ class DatetimeAccessor:
                 return input_node.parameters
         assert False, "Input node not found"
 
-    @staticmethod
+    @classmethod
     def _get_offset_series_from_frame(
-        frame: Frame, offset_column_name: str, table_id: Optional[PydanticObjectId]
+        cls, frame: Frame, offset_column_name: str, table_id: Optional[PydanticObjectId]
     ) -> Optional[FrozenSeries]:
         """
         Get a series from a frame that corresponds to the timezone offset column
