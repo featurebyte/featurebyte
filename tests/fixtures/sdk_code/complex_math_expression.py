@@ -8,9 +8,8 @@ event_view = event_table.get_view(
     drop_column_names=["created_at"],
     column_cleaning_operations=[],
 )
-col = event_view["col_float"]
-col_1 = event_view["col_int"]
-col_2 = (col_1 > 10).astype(int) - (~(col_1 > 10)).astype(int)
-col_3 = (col_1.floor() * col.log()) / col_1.exp()
-col_4 = (col_2 - col.abs().sqrt().ceil()) + col_3
-output = col_4 + col_1.isnull().astype(float)
+col = event_view["col_int"]
+col_1 = event_view["col_float"]
+col_2 = (col > 10).astype(int) - (~(col > 10)).astype(int)
+col_3 = (col_2 - col_1.abs().sqrt().ceil()) + ((col.floor() * col_1.log()) / col.exp())
+output = col_3 + col.isnull().astype(float)

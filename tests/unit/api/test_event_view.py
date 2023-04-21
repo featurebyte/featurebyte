@@ -649,8 +649,8 @@ def test_add_feature(
         "view_point_in_time_column": None,
     }
     assert view_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "graph_1"},
-        {"source": "input_2", "target": "graph_2"},
+        {"source": "input_2", "target": "graph_1"},
+        {"source": "input_1", "target": "graph_2"},
         {"source": "graph_1", "target": "graph_2"},
         {"source": "graph_2", "target": "item_groupby_1"},
         {"source": "item_groupby_1", "target": "project_1"},

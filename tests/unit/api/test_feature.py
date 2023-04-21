@@ -133,8 +133,8 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
         {"source": "input_1", "target": "graph_1"},
         {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
-        {"source": "project_1", "target": "add_1"},
         {"source": "project_1", "target": "gt_1"},
+        {"source": "project_1", "target": "add_1"},
         {"source": "add_1", "target": "conditional_1"},
         {"source": "gt_1", "target": "conditional_1"},
     ]
@@ -274,9 +274,9 @@ def saved_feature_fixture(
     assert groupby_node.parameters.windows == ["1d"]
     assert (
         groupby_node.parameters.tile_id
-        == "TILE_F1800_M300_B600_B839AFCB06ADBAEDCA89907891465110B151C88E"
+        == "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F"
     )
-    assert groupby_node.parameters.aggregation_id == "sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f"
+    assert groupby_node.parameters.aggregation_id == "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
 
     assert float_feature.name == "sum_1d"
     return float_feature
@@ -846,7 +846,7 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
 def test_get_sql(float_feature):
     """Test get sql for feature"""
     assert float_feature.sql.endswith(
-        'SELECT\n  "_fb_internal_window_w86400_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "sum_1d"\n'
+        'SELECT\n  "_fb_internal_window_w86400_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_1d"\n'
         "FROM _FB_AGGREGATED AS AGG"
     )
 
@@ -1037,7 +1037,7 @@ def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, f
     assert job_status_result.job_session_logs.shape == (0, 11)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "d96824b6"},
+            "aggregation_hash": {0: "aed233b0"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},

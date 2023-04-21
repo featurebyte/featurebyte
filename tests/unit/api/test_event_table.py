@@ -119,6 +119,8 @@ def event_table_dict_fixture(snowflake_database_table):
         "created_at": None,
         "updated_at": None,
         "user_id": None,
+        "event_timestamp_timezone_offset": None,
+        "event_timestamp_timezone_offset_column": None,
     }
 
 
@@ -855,6 +857,8 @@ def test_default_feature_job_setting_history(saved_event_table):
         "updated_at",
         "user_id",
         "catalog_id",
+        "event_timestamp_timezone_offset",
+        "event_timestamp_timezone_offset_column",
     }
 
 

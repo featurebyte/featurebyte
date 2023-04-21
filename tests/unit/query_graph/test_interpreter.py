@@ -317,8 +317,8 @@ def test_graph_interpreter_on_demand_tile_gen(
             DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65,
-          COUNT("a") AS count_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65
+          SUM("a") AS sum_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb,
+          COUNT("a") AS count_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
         FROM (
           SELECT
             *,
@@ -391,7 +391,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
 
-    aggregation_id = "c736c6a01f518c42567e72c90f6070173fa8b0ee"
+    aggregation_id = "828be81883198b473c3a5ac214dd4112d7559427"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -504,8 +504,8 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
             DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65,
-          COUNT("a") AS count_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65
+          SUM("a") AS sum_value_avg_{groupby_node_aggregation_id},
+          COUNT("a") AS count_value_avg_{groupby_node_aggregation_id}
         FROM (
           SELECT
             *,
@@ -545,7 +545,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     assert sql == expected
 
     # Check required tile 2 (groupby keys: biz_id)
-    aggregation_id = "6e33dd8addc3595450df495cd997ffd55efad68c"
+    aggregation_id = "ea3e51f28222785a9bc856e4f09a8ce4642bc6c8"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
     sql = info.sql
@@ -992,7 +992,7 @@ def test_isnull(graph, node_input):
     assert sql_code == expected
 
 
-def test_databricks_source(query_graph_with_groupby):
+def test_databricks_source(query_graph_with_groupby, groupby_node_aggregation_id):
     """Test SQL generation for databricks source"""
     graph = query_graph_with_groupby
     input_node = graph.get_node_by_name("input_1")
@@ -1019,12 +1019,12 @@ def test_databricks_source(query_graph_with_groupby):
     assert len(tile_gen_sqls) == 1
     tile_sql = tile_gen_sqls[0].sql
     expected = textwrap.dedent(
-        """
+        f"""
         SELECT
           TO_TIMESTAMP(UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           `cust_id`,
-          SUM(`a`) AS sum_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65,
-          COUNT(`a`) AS count_value_avg_47938f0bfcde2a5c7d483ce1926aa72900653d65
+          SUM(`a`) AS sum_value_avg_{groupby_node_aggregation_id},
+          COUNT(`a`) AS count_value_avg_{groupby_node_aggregation_id}
         FROM (
           SELECT
             *,
@@ -1075,7 +1075,7 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
         SELECT
           __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          value_latest_b956ae318e1a8832a8c6193e7a8fff7b0824d2d1
+          value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
         FROM (
           SELECT
             TO_TIMESTAMP(
@@ -1083,7 +1083,7 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
             ) AS __FB_TILE_START_DATE_COLUMN,
             "cust_id",
             ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_b956ae318e1a8832a8c6193e7a8fff7b0824d2d1
+            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
           FROM (
             SELECT
               *,
