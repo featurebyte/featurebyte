@@ -707,6 +707,9 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis"]),
+        DocLayoutItem(
+            [UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.get_by_id"]
+        ),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "TableFeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.info"]),
         DocLayoutItem(
