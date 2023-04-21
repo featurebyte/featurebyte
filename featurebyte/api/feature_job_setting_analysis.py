@@ -218,7 +218,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         Parameters
         ----------
         id: ObjectId
-            FeatureJobSettingAnalysis unique identifier (ID).
+            Analysis unique identifier ID.
 
         Returns
         -------

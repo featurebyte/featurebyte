@@ -140,7 +140,7 @@ class Table(TableListMixin):
         Parameters
         ----------
         verbose: bool
-            Control verbose level of the summary.
+            Controls whether the summary should include information for each column in the table.
 
         Returns
         -------

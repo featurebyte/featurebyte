@@ -108,7 +108,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         Parameters
         ----------
         entity_name: Optional[str]
-            Associate column name to the entity, remove association if entity name is None
+            The name of the entity that is represented or referenced by the column. If None, removes prior association.
 
         Examples
         --------
@@ -251,7 +251,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         limit: int
             Maximum number of return rows.
         after_cleaning: bool
-            Whether to preview the table after cleaning
+            Whether to apply cleaning operations.
 
         Returns
         -------
@@ -784,7 +784,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         Parameters
         ----------
         record_creation_timestamp_column: str
-            Record creation timestamp column used to perform feature job setting analysis
+            The column for the timestamp when a record was created.
 
         Examples
         --------

@@ -61,7 +61,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         Parameters
         ----------
         verbose: bool
-            Control verbose level of the summary.
+            The parameter "verbose" in the current state of the code does not have any impact on the output.
 
         Returns
         -------
@@ -219,7 +219,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         Parameters
         ----------
         id: ObjectId
-            Feature store unique identifier (ID).
+            FeatureStore unique identifier (ID) to retrieve.
 
         Returns
         -------

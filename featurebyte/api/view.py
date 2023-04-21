@@ -39,6 +39,7 @@ from featurebyte.common.join_utils import (
     is_column_name_in_columns,
 )
 from featurebyte.common.model_util import validate_offset_string
+from featurebyte.common.typing import ScalarSequence
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
 from featurebyte.core.mixin import SampleMixin
@@ -217,25 +218,19 @@ class ViewColumn(Series, SampleMixin):
     @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
         """
-        Creates a lookup feature directly from the column in the View. The entity associated with the feature is
-        identified by the primary key of the table. However, if the View is a Slowly Changing Dimension (SCD) view,
-        the entity is identified by the natural key of the table.
+        Creates a lookup feature directly from the column in the View.
 
-        For SCD views, lookup features are materialized through point-in-time joins, and the resulting value
-        represents the active row at the point-in-time indicated in the feature request. For instance, a customer
-        feature could be the customer's street address at the point-in-time of the request. To obtain a feature value
-        at a specific time before the request's point-in-time, an offset can be specified. For example, setting the
-        offset to 9 weeks would represent the customer's street address 9 weeks prior to the request's point-in-time.
+        For SCD views, lookup features are materialized through point-in-time joins, and the resulting value represents
+        the active row for the natural key at the point-in-time indicated in the feature request.
 
-        It is possible to perform additional transformations on the feature, and the feature is added to the catalog
-        solely when explicitly saved.
+        To obtain a feature value at a specific time before the request's point-in-time, an offset can be specified.
 
         Parameters
         ----------
         feature_name: str
-            Feature name
+            Name of the feature to create.
         offset: str
-            When specified, retrieve feature value as of this offset prior to the point-in-time
+            When specified, retrieve feature value as of this offset prior to the point-in-time.
 
         Returns
         -------
@@ -351,6 +346,40 @@ class ViewColumn(Series, SampleMixin):
         """
         return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
 
+    @typechecked
+    def isin(  # pylint: disable=useless-parent-delegation
+        self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]
+    ) -> FrozenSeriesT:
+        """
+        Identifies if each element is contained in a sequence of values represented by the `other` parameter.
+
+        Parameters
+        ----------
+        other: Union[FrozenSeries, ScalarSequence]
+            The sequence of values to check for membership. `other` can be a predefined list of values.
+
+        Returns
+        -------
+        FrozenSeriesT
+            Column with boolean values
+
+        Examples
+        --------
+        Check to see if the values in a series are in a list of values, and use the result to filter
+        the original view:
+
+        >>> view = catalog.get_table("GROCERYPRODUCT").get_view()
+        >>> condition = view["ProductGroup"].isin(["Sauces", "Fromages", "Fruits"])
+        >>> view[condition].sample(5, seed=0)
+                             GroceryProductGuid ProductGroup
+        0  45cd58ba-efec-463a-9107-0633168a215e     Fromages
+        1  97e6afc9-1033-4fb3-b2a2-3d62261e1d17     Fromages
+        2  fb26ed22-524e-4c9e-9ea2-03c266e7f9b9     Fromages
+        3  a817d904-bc58-4048-978d-c13857969a69       Fruits
+        4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
+        """
+        return super().isin(other=other)  # type: ignore[no-any-return,misc]
+
 
 class GroupByMixin:
     """
@@ -377,10 +406,12 @@ class GroupByMixin:
         Parameters
         ----------
         by_keys: Union[str, List[str]]
-            Define the key (entity) to for the `groupby` operation
+            Specifies the column or list of columns by which the data should be grouped. These columns must correspond
+            to entities registered in the catalog. If this parameter is set to an empty list, the data will not be
+            grouped.
         category : Optional[str]
-            Optional category parameter to enable aggregation per category. It should be a column
-            name in the View.
+            Optional category parameter to enable aggregation across categories. To use this parameter, provide the
+            name of a column in the View that represents a categorical column.
 
         Returns
         -------

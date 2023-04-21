@@ -973,9 +973,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         Parameters
         ----------
         other: Union[FrozenSeries, ScalarSequence]
-            The sequence of values to check for membership. `other` can be a predefined list of
-            values, or a dictionary feature if `self` is a Feature. If `other` is a dictionary
-            feature, the keys of the dictionary feature will be used to check for membership.
+            The sequence of values to check for membership. `other` can be a predefined list of values.
 
         Returns
         -------
