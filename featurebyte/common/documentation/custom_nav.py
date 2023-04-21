@@ -6,7 +6,6 @@ from typing import Any, Iterable, List, Mapping
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
 from featurebyte.common.documentation.constants import (
-    ACTIVATE,
     ADD_METADATA,
     CATALOG,
     CLASS_METHODS,
@@ -79,7 +78,6 @@ class BetaWave3Nav(Nav):
     _custom_second_level_order = [
         CLASS_METHODS,
         TYPE,
-        ACTIVATE,
         LIST,
         GET,
         GET_VIEW,
