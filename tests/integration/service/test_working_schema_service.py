@@ -52,7 +52,7 @@ def deployed_feature_list_fixture(event_table):
         "featurebyte.feature_manager.manager.get_next_job_datetime",
         return_value=next_job_datetime,
     ):
-        features.deploy(make_production_ready=True, enable=True)
+        features.deploy(make_production_ready=True)
 
         yield features
 
