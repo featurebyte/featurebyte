@@ -1361,7 +1361,7 @@ class FeatureList(
             payload=deployment_payload.json_dict(),
         )
 
-        from featurebyte.api.deployment import Deployment
+        from featurebyte.api.deployment import Deployment  # pylint: disable=import-outside-toplevel
 
         return Deployment.get_by_id(ObjectId(output["_id"]))
 

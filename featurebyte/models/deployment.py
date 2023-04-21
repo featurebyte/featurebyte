@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 import pymongo
-from pydantic import Field, StrictStr
+from pydantic import StrictStr
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,

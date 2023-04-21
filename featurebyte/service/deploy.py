@@ -17,7 +17,7 @@ from featurebyte.models.feature_list import (
     FeatureListStatus,
 )
 from featurebyte.persistent import Persistent
-from featurebyte.schema.deployment import DeploymentCreate, DeploymentUpdate
+from featurebyte.schema.deployment import DeploymentUpdate
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
