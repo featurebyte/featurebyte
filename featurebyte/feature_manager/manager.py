@@ -85,7 +85,6 @@ class FeatureManager(BaseModel):
 
         # enable tile generation with scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
-
             tile_job_exists = await self._tile_manager.tile_job_exists(tile_spec=tile_spec)
             if not tile_job_exists:
                 # enable online tiles scheduled job

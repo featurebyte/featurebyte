@@ -133,7 +133,6 @@ class WindowAggregator(BaseAggregator):
         fill_value: OptionalScalar,
         skip_fill_na: bool,
     ) -> None:
-
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
 
@@ -156,7 +155,6 @@ class WindowAggregator(BaseAggregator):
         number_of_unbounded_windows = len([w for w in windows if w is None])
 
         if number_of_unbounded_windows > 0:
-
             if method != AggFunc.LATEST:
                 raise ValueError('Unbounded window is only supported for the "latest" method')
 
@@ -217,7 +215,6 @@ class WindowAggregator(BaseAggregator):
         value_by_column: Optional[str] = None,
         feature_job_setting: Optional[dict[str, str]] = None,
     ) -> dict[str, Any]:
-
         parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
         return {
             "keys": self.keys,

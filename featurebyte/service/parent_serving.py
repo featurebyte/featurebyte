@@ -98,7 +98,6 @@ class ParentEntityLookupService(BaseService):
         entities_by_id = {entity.id: entity for entity in all_entities}
 
         for child_entity, parent_entity in zip(join_path, join_path[1:]):
-
             child_entity_id = child_entity.id
             parent_entity_id = parent_entity.id
 
@@ -166,7 +165,6 @@ class ParentEntityLookupService(BaseService):
         result = None
 
         while pending:
-
             (current_entity, current_path), pending = pending[0], pending[1:]
             updated_path = [current_entity] + current_path
 

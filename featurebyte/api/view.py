@@ -1204,7 +1204,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         column_names: list[str],
         feature_names: list[str],
     ) -> None:
-
         if len(column_names) == 0:
             raise ValueError("column_names is empty")
 

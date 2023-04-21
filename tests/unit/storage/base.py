@@ -95,7 +95,6 @@ class BaseStorageTestSuite:
         Test file upload
         """
         with tempfile.NamedTemporaryFile() as file_obj:
-
             # download should fail
             with pytest.raises(FileNotFoundError) as exc_info:
                 await storage.get(Path("non/existent/path"), file_obj.name)

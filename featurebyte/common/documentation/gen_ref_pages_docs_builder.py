@@ -266,7 +266,6 @@ def add_class_attributes_to_doc_groups(
     class_members, fields = get_class_members_and_fields_for_class_obj(class_obj)
 
     for attribute_name in class_members:
-
         # exclude explicitly skipped members
         if attribute_name in autodoc_config.skipped_members:
             continue

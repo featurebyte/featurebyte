@@ -30,7 +30,6 @@ from featurebyte.common.documentation.resource_util import import_resource
 
 @dataclass
 class RawParameterDetails:
-
     name: str
     param_type: Any
     param_default: Any
@@ -59,7 +58,6 @@ def get_params(
     render_kw_only_separator = True
 
     for i, parameter in enumerate(signature.parameters.values()):
-
         # skip self and cls in first position
         if i == 0 and parameter.name in ["self", "cls"]:
             continue

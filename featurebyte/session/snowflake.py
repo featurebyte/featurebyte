@@ -270,7 +270,6 @@ class SnowflakeSession(BaseSession):
         """
         schema = []
         for colname, dtype in dataframe.dtypes.to_dict().items():
-
             if dataframe.shape[0] > 0 and isinstance(dataframe[colname].iloc[0], datetime.datetime):
                 if dataframe[colname].iloc[0].tzinfo:
                     db_type = "TIMESTAMP_TZ"
@@ -375,7 +374,6 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
             tasks = await self._list_objects("TASKS")
 
     async def drop_all_objects_in_working_schema(self) -> None:
-
         if not await self.schema_exists():
             return
 

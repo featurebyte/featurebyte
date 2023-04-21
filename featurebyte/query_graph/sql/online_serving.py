@@ -168,7 +168,6 @@ class OnlineStorePrecomputePlan:
         params: PrecomputeQueryParams,
         source_type: SourceType,
     ) -> OnlineStorePrecomputeQuery:
-
         planner = FeatureExecutionPlanner(
             params.pruned_graph,
             source_type=source_type,
