@@ -413,9 +413,6 @@ class DatetimeAccessor:
 
     def _make_operation(self, field_name: str) -> FrozenSeries:
 
-        # pylint: disable=import-outside-toplevel
-        from featurebyte.core.series import FrozenSeries
-
         var_type = (
             DBVarType.FLOAT if self._node_type == NodeType.TIMEDELTA_EXTRACT else DBVarType.INT
         )
@@ -428,7 +425,7 @@ class DatetimeAccessor:
         node_params = {"property": self._property_node_params_map[field_name]}
         timezone_offset = self._infer_timezone_offset(self._obj)
 
-        if isinstance(timezone_offset, FrozenSeries):
+        if timezone_offset is not None and not isinstance(timezone_offset, str):
             return series_binary_operation(
                 input_series=self._obj,
                 other=timezone_offset,
