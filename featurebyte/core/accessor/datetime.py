@@ -3,7 +3,7 @@ This module contains datetime accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Union
+from typing import TYPE_CHECKING, Iterable, Optional, Union, cast
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.util import series_binary_operation, series_unary_operation
@@ -11,7 +11,11 @@ from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node.input import EventTableInputNodeParameters
+from featurebyte.query_graph.node.input import (
+    EventTableInputNodeParameters,
+    InputNode,
+    InputNodeParameters,
+)
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
@@ -485,8 +489,8 @@ class DatetimeAccessor:
         input_node_parameters = DatetimeAccessor._get_input_node_parameters_by_id(
             series.graph, source_timestamp_column.node_name, source_timestamp_column.table_id
         )
-        if input_node_parameters.get("type") == TableDataType.EVENT_TABLE:
-            params = EventTableInputNodeParameters(**input_node_parameters)
+        if input_node_parameters.type == TableDataType.EVENT_TABLE:
+            params = cast(EventTableInputNodeParameters, input_node_parameters)
             if params.timestamp_column == source_timestamp_column.name:
                 # The series is an event timestamp column. Retrieve timezone offset if available.
                 result: Optional[Union[FrozenSeries, str]] = None
@@ -537,7 +541,7 @@ class DatetimeAccessor:
         graph: QueryGraph,
         target_node_name: str,
         table_id: PydanticObjectId,
-    ) -> Dict[str, Any]:
+    ) -> InputNodeParameters:
         """
         Get the parameters of an input node by its table_id
 
@@ -552,13 +556,13 @@ class DatetimeAccessor:
 
         Returns
         -------
-        Dict[str, Any]
+        InputNodeParameters
         """
         target_node = graph.get_node_by_name(target_node_name)
         for input_node in graph.iterate_nodes(target_node=target_node, node_type=NodeType.INPUT):
-            parameters_dict = input_node.parameters.dict()
-            if parameters_dict.get("id") == table_id:
-                return parameters_dict
+            input_node = cast(InputNode, input_node)
+            if input_node.parameters.id == table_id:
+                return input_node.parameters
         assert False, "Input node not found"
 
     @staticmethod

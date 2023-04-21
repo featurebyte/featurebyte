@@ -328,21 +328,24 @@ class SCDTableInputNodeParameters(BaseInputNodeParameters):
         return output
 
 
+InputNodeParameters = Annotated[
+    Union[
+        EventTableInputNodeParameters,
+        ItemTableInputNodeParameters,
+        SourceTableInputNodeParameters,
+        DimensionTableInputNodeParameters,
+        SCDTableInputNodeParameters,
+    ],
+    Field(discriminator="type"),
+]
+
+
 class InputNode(BaseNode):
     """InputNode class"""
 
     type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Annotated[
-        Union[
-            EventTableInputNodeParameters,
-            ItemTableInputNodeParameters,
-            SourceTableInputNodeParameters,
-            DimensionTableInputNodeParameters,
-            SCDTableInputNodeParameters,
-        ],
-        Field(discriminator="type"),
-    ]
+    parameters: InputNodeParameters
 
     # class variable
     _table_type_to_table_class_enum: ClassVar[Dict[TableDataType, ClassEnum]] = {
