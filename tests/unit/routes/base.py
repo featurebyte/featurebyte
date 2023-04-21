@@ -142,10 +142,7 @@ class BaseApiTestSuite:
         response = test_api_client.post(f"{self.base_route}", json=self.payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
-        if self.async_create:
-            assert response_dict["status"] == "SUCCESS"
-        else:
-            assert response_dict["_id"] == id_before
+        assert response_dict["_id"] == id_before
         return response
 
     def multiple_success_payload_generator(self, api_client):
@@ -194,14 +191,9 @@ class BaseApiTestSuite:
         result = create_success_response.json()
 
         # check response
-        if self.async_create:
-            doc_id = result["payload"]["output_document_id"]
-            assert result["payload"]["user_id"] == str(user_id)
-            assert result["status"] == "SUCCESS"
-        else:
-            doc_id = ObjectId(result["_id"])
-            assert result["user_id"] == str(user_id)
-            assert datetime.fromisoformat(result["created_at"]) < datetime.utcnow()
+        doc_id = ObjectId(result["_id"])
+        assert result["user_id"] == str(user_id)
+        assert datetime.fromisoformat(result["created_at"]) < datetime.utcnow()
 
         # test get audit record
         test_api_client, _ = test_api_client_persistent
@@ -244,10 +236,7 @@ class BaseApiTestSuite:
         """Test get (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
-        if self.async_create:
-            doc_id = create_response_dict["payload"]["output_document_id"]
-        else:
-            doc_id = create_response_dict["_id"]
+        doc_id = create_response_dict["_id"]
 
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         response_dict = response.json()
@@ -406,6 +395,7 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
     """
 
     time_limit = 10
+    async_create = True
 
     def wait_for_results(self, api_client, create_response):
         """
@@ -502,11 +492,7 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         # test default catalog id is captured in document
         response_dict = create_success_response.json()
-        if self.async_create:
-            payload = response_dict["payload"]
-            assert payload["catalog_id"] == str(DEFAULT_CATALOG_ID)
-        else:
-            assert response_dict["catalog_id"] == str(DEFAULT_CATALOG_ID)
+        assert response_dict["catalog_id"] == str(DEFAULT_CATALOG_ID)
 
     def test_create_201_non_default_catalog(
         self, catalog_id, create_success_response_non_default_catalog

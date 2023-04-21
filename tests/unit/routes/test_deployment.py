@@ -8,10 +8,10 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from tests.unit.routes.base import BaseCatalogApiTestSuite
+from tests.unit.routes.base import BaseCatalogApiTestSuite, BaseAsyncApiTestSuite
 
 
-class TestDeploymentApi(BaseCatalogApiTestSuite):
+class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
     """
     TestDeploymentApi class
     """
@@ -86,6 +86,7 @@ class TestDeploymentApi(BaseCatalogApiTestSuite):
 
             # prepare the payload for deployment
             payload = self.payload.copy()
+            payload["_id"] = str(ObjectId())
             payload["feature_list_id"] = feature_list_id
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
@@ -149,7 +150,7 @@ class TestDeploymentApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
 
         create_response_dict = create_success_response.json()
-        deployment_id = create_response_dict["payload"]["output_document_id"]
+        deployment_id = create_response_dict["_id"]
 
         # disable deployment
         response = test_api_client.patch(

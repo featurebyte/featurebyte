@@ -74,7 +74,7 @@ class DeploymentController(
             ),
             user_id=self.service.user.id,
             catalog_id=self.service.catalog_id,
-            output_document_id=ObjectId(),
+            output_document_id=data.id or ObjectId(),
         )
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
