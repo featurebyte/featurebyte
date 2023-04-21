@@ -2,7 +2,7 @@
 Tile Monitor Job
 """
 from featurebyte.logger import logger
-from featurebyte.sql.common import construct_create_table_query, retry_sql, retry_sql_with_cache
+from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
@@ -165,9 +165,7 @@ class TileMonitor(TileCommon):
                             b.CREATED_AT
                         )
                 """
-                await retry_sql_with_cache(
-                    session=self._session, sql=insert_sql, cached_select_sql=compare_sql
-                )
+                await retry_sql(session=self._session, sql=insert_sql)
 
             insert_monitor_summary_sql = f"""
                 INSERT INTO TILE_MONITOR_SUMMARY(TILE_ID, TILE_START_DATE, TILE_TYPE, CREATED_AT)

@@ -8,12 +8,7 @@ from datetime import datetime
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
-from featurebyte.sql.common import (
-    CACHE_TABLE_PLACEHOLDER,
-    construct_create_table_query,
-    retry_sql,
-    retry_sql_with_cache,
-)
+from featurebyte.sql.common import construct_create_table_query, retry_sql
 
 
 class TileScheduleOnlineStore(BaselSqlModel):
@@ -140,7 +135,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
 
                 # update or insert feature values for entities that are in entity universe
                 merge_sql = f"""
-                     merge into {fs_table} a using ({CACHE_TABLE_PLACEHOLDER}) b
+                     merge into {fs_table} a using ({f_sql}) b
                          on {on_condition_str}
                          when matched then
                              update set a.{quote_f_name} = b.{quote_f_name}, a.UPDATED_AT_{f_name} = to_timestamp('{current_ts}')
@@ -149,9 +144,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
                                  values ({values_args}, to_timestamp('{current_ts}'))
                  """
 
-                await retry_sql_with_cache(
-                    session=self._session, sql=merge_sql, cached_select_sql=f_sql
-                )
+                await retry_sql(session=self._session, sql=merge_sql)
 
                 # remove feature values for entities that are not in entity universe
                 remove_values_sql = f"""UPDATE {fs_table} SET {quote_f_name} = NULL WHERE UPDATED_AT_{f_name} < to_timestamp('{current_ts}')"""
