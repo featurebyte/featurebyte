@@ -9,7 +9,7 @@ skips = ["B608"]
 
 [tool.black]  # https://github.com/psf/black
 color = true
-exclude = '/(\.direnv|\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build|buck-out|build|dist|__pypackages__|docker)/'
+exclude = '/(\.direnv|\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build|buck-out|build|dist|__pypackages__|docker|tests/fixtures/sdk_code)/'
 line-length = 100
 target-version = ["py38"]
 
