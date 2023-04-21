@@ -106,7 +106,6 @@ class BaseAggregator(ABC):
         fill_value: OptionalScalar,
         skip_fill_na: bool,
     ) -> Feature:
-
         # value_column is None for count-like aggregation method
         input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)  # type: ignore
         if not agg_method.is_var_type_supported(input_var_type):

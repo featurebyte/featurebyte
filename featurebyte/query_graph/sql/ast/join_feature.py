@@ -38,7 +38,6 @@ class JoinFeature(TableNode):
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> Optional[JoinFeature]:
-
         feature_query_node = context.input_sql_nodes[1].context.query_node
         view_node = cast(TableNode, context.input_sql_nodes[0])
 
@@ -116,7 +115,6 @@ class JoinFeature(TableNode):
         item_groupby_nodes = list(graph.iterate_nodes(feature_query_node, NodeType.ITEM_GROUPBY))
 
         for item_groupby_node in item_groupby_nodes:
-
             item_groupby_node_params = cast(ItemGroupbyParameters, item_groupby_node.parameters)
 
             # The EventView is conceptually the request table, so the entity column is the serving

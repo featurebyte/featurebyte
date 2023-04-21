@@ -281,7 +281,6 @@ class DeployService(BaseService):
 
                 # make each feature online enabled first
                 for ind, feature_id in enumerate(document.feature_ids):
-
                     async with self.persistent.start_transaction():
                         feature = await self.feature_service.get_document(document_id=feature_id)
                         feature_online_enabled_map[feature.id] = feature.online_enabled

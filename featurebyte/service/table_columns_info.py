@@ -122,7 +122,6 @@ class TableColumnsInfoService(BaseService):
             )
 
             async with self.persistent.start_transaction():
-
                 # update columns info
                 await service.update_document(
                     document_id=document_id,

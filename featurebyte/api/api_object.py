@@ -746,7 +746,6 @@ class ApiObject(FeatureByteBaseDocumentModel):
             title="Working...",
             **get_alive_bar_additional_params(),
         ) as progress_bar:
-
             try:
                 # create progress update thread
                 thread = ProgressThread(task_id=task_id, progress_bar=progress_bar)

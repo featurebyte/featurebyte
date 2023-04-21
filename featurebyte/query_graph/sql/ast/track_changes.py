@@ -60,7 +60,6 @@ class TrackChanges(TableNode):
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> TrackChanges:
-
         parameters = TrackChangesNodeParameters(**context.parameters)
         input_node = cast(TableNode, context.input_sql_nodes[0])
 

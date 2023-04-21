@@ -25,7 +25,6 @@ class InputNode(TableNode):
     query_node_type = NodeType.INPUT
 
     def from_query_impl(self, select_expr: Select) -> Select:
-
         dbtable = get_fully_qualified_table_name(self.dbtable)
         select_expr = select_expr.from_(dbtable)
 

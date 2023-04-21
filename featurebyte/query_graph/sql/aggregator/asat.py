@@ -52,7 +52,6 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
         current_columns: list[str],
         current_query_index: int,
     ) -> AggregationResult:
-
         queries = []
         for specs in self.grouped_specs.values():
             query = self._get_aggregation_subquery(specs)
