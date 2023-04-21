@@ -792,38 +792,43 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
                 "id",
                 "catalog",
                 "name",
+                "feature_list_name",
                 "feature_list_version",
-                "num_feature",
+                "num_features",
             ]
         ),
     )
 
     feature_list.save()
-    feature_list.deploy(enable=True, make_production_ready=True)
+    deployment = feature_list.deploy(make_production_ready=True)
+    assert deployment.enabled is True
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
     deployments = list_deployments(include_id=True)
+    expected_deployment_name = f'Deployment (feature_list: "{feature_list.name}", version: {feature_list.version.to_str()})'
     assert_frame_equal(
-        deployments[["id", "catalog", "name", "feature_list_version", "num_feature"]],
+        deployments[
+            ["catalog", "name", "feature_list_name", "feature_list_version", "num_features"]
+        ],
         pd.DataFrame(
             [
                 {
-                    "id": feature_list.id,
                     "catalog": "default",
-                    "name": feature_list.name,
-                    "feature_list_version": feature_list.version,
-                    "num_feature": len(feature_list.feature_names),
+                    "name": expected_deployment_name,
+                    "feature_list_name": feature_list.name,
+                    "feature_list_version": feature_list.version.to_str(),
+                    "num_features": len(feature_list.feature_names),
                 }
             ]
         ),
     )
 
     # Deploy again to show that we don't error
-    feature_list.deploy(enable=True, make_production_ready=True)
+    deployment.enable(True)
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
     # Disable feature list
-    feature_list.deploy(enable=False, make_production_ready=True)
+    deployment.enable(False)
     _assert_all_features_in_list_with_enabled_status(feature_list, False)
 
 
@@ -841,7 +846,7 @@ def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowfla
 
     # Deploy a feature list that errors due to guardrails
     with pytest.raises(RecordUpdateException) as exc:
-        feature_list.deploy(enable=True, make_production_ready=True)
+        feature_list.deploy(make_production_ready=True)
     assert (
         "Discrepancies found between the promoted feature version you are trying to promote to "
         "PRODUCTION_READY, and the input table." in str(exc.value)
@@ -849,7 +854,8 @@ def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowfla
     _assert_all_features_in_list_with_enabled_status(feature_list, False)
 
     # Set ignore_guardrails to be True - verify that the feature list deploys without errors
-    feature_list.deploy(enable=True, make_production_ready=True, ignore_guardrails=True)
+    deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
+    assert deployment.enabled == True
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
 
@@ -876,7 +882,8 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
         assert feature.deployed_feature_list_ids == []
 
     # first deploy feature list
-    feature_list.deploy(enable=True, make_production_ready=True)
+    deployment = feature_list.deploy(make_production_ready=True)
+    assert deployment.enabled is True
 
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)
@@ -884,7 +891,8 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
         assert feature.deployed_feature_list_ids == [feature_list.id]
 
     # deploy another feature list
-    another_feature_list.deploy(enable=True)
+    another_deployment = another_feature_list.deploy()
+    assert another_deployment.enabled is True
 
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)
@@ -899,7 +907,7 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
             assert feature.deployed_feature_list_ids == [feature_list.id]
 
     # disable feature list deployment
-    feature_list.deploy(enable=False)
+    deployment.enable(False)
 
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)
@@ -911,7 +919,7 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
             assert feature.deployed_feature_list_ids == []
 
     # disable another feature list deployment
-    another_feature_list.deploy(enable=False)
+    another_deployment.enable(False)
 
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)

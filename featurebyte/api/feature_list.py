@@ -4,7 +4,20 @@ FeatureListVersion class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import collections
 import json
@@ -66,6 +79,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
@@ -74,6 +88,11 @@ from featurebyte.schema.feature_list import (
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
+
+if TYPE_CHECKING:
+    from featurebyte.api.deployment import Deployment
+else:
+    Deployment = TypeVar("Deployment")
 
 
 class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
@@ -293,6 +312,7 @@ class FeatureList(
     _get_schema = FeatureListModel
     _list_fields = [
         "name",
+        "version",
         "feature_list_namespace_id",
         "num_features",
         "online_frac",
@@ -736,6 +756,9 @@ class FeatureList(
     @classmethod
     def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
         feature_lists = super()._post_process_list(item_list)
+        feature_lists["version"] = feature_lists["version"].apply(
+            lambda version_dict: VersionIdentifier(**version_dict).to_str()
+        )
         feature_lists["num_features"] = feature_lists.feature_ids.apply(len)
         feature_lists["online_frac"] = (
             feature_lists.online_enabled_feature_ids.apply(len) / feature_lists["num_features"]
@@ -1286,10 +1309,14 @@ class FeatureList(
 
     @typechecked
     def deploy(
-        self, enable: bool, make_production_ready: bool = False, ignore_guardrails: bool = False
-    ) -> None:
+        self,
+        deployment_name: Optional[str] = None,
+        make_production_ready: bool = False,
+        ignore_guardrails: bool = False,
+    ) -> Deployment:
         """
-        Deploys a FeatureList object to support online and batch serving of the feature list in production.
+        Create a deployment of a feature list. With a deployment, you can serve the feature list in production by
+        either online or batch serving.
 
         This triggers the orchestration of the feature materialization into the online feature store. A feature list
         is deployed without creating separate pipelines or using different tools.
@@ -1300,17 +1327,22 @@ class FeatureList(
 
         Parameters
         ----------
-        enable: bool
-            Whether to deploy this feature list.
+        deployment_name: Optional[str]
+            Name of the deployment, if not provided, the name will be generated automatically.
         make_production_ready: bool
             Whether to convert the feature to production ready if it is not production ready.
         ignore_guardrails: bool
             Whether to ignore guardrails when trying to promote features in the list to production ready status.
 
+        Returns
+        -------
+        Deployment
+            Deployment object of the feature list.
+
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.deploy(enable=True, make_production_ready=True)  # doctest: +SKIP
+        >>> deployment = feature_list.deploy(make_production_ready=True)  # doctest: +SKIP
 
         See Also
         --------
@@ -1323,13 +1355,15 @@ class FeatureList(
             },
             allow_update_local=False,
         )
-
-        self.post_async_task(
-            route=f"{self._route}/{self.id}/deploy",
-            payload={
-                "deployed": enable,
-            },
+        deployment_payload = DeploymentCreate(name=deployment_name, feature_list_id=self.id)
+        output = self.post_async_task(
+            route="/deployment",
+            payload=deployment_payload.json_dict(),
         )
+
+        from featurebyte.api.deployment import Deployment
+
+        return Deployment.get_by_id(ObjectId(output["_id"]))
 
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
         """

@@ -28,6 +28,7 @@ class BaseApiTestSuite:
     base_route = None
     class_name = None
     payload = None
+    async_create = False
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
     list_unprocessable_params_expected_detail_pairs = [
@@ -141,7 +142,10 @@ class BaseApiTestSuite:
         response = test_api_client.post(f"{self.base_route}", json=self.payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
-        assert response_dict["_id"] == id_before
+        if self.async_create:
+            assert response_dict["status"] == "SUCCESS"
+        else:
+            assert response_dict["_id"] == id_before
         return response
 
     def multiple_success_payload_generator(self, api_client):
@@ -159,6 +163,10 @@ class BaseApiTestSuite:
             # payload name is set here as we need the exact name value for test_list_200 test
             response = test_api_client.post(f"{self.base_route}", json=payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
+            if self.async_create:
+                assert response.json()["status"] == "SUCCESS"
+            else:
+                assert response.json()["_id"] == payload["_id"]
             output.append(response)
         return output
 
@@ -186,9 +194,14 @@ class BaseApiTestSuite:
         result = create_success_response.json()
 
         # check response
-        doc_id = ObjectId(result["_id"])
-        assert result["user_id"] == str(user_id)
-        assert datetime.fromisoformat(result["created_at"]) < datetime.utcnow()
+        if self.async_create:
+            doc_id = result["payload"]["output_document_id"]
+            assert result["payload"]["user_id"] == str(user_id)
+            assert result["status"] == "SUCCESS"
+        else:
+            doc_id = ObjectId(result["_id"])
+            assert result["user_id"] == str(user_id)
+            assert datetime.fromisoformat(result["created_at"]) < datetime.utcnow()
 
         # test get audit record
         test_api_client, _ = test_api_client_persistent
@@ -231,7 +244,11 @@ class BaseApiTestSuite:
         """Test get (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
-        doc_id = create_response_dict["_id"]
+        if self.async_create:
+            doc_id = create_response_dict["payload"]["output_document_id"]
+        else:
+            doc_id = create_response_dict["_id"]
+
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
@@ -484,19 +501,25 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         # test default catalog id is captured in document
-        assert create_success_response.json()["catalog_id"] == str(DEFAULT_CATALOG_ID)
+        response_dict = create_success_response.json()
+        if self.async_create:
+            payload = response_dict["payload"]
+            assert payload["catalog_id"] == str(DEFAULT_CATALOG_ID)
+        else:
+            assert response_dict["catalog_id"] == str(DEFAULT_CATALOG_ID)
 
     def test_create_201_non_default_catalog(
-        self,
-        catalog_id,
-        create_success_response_non_default_catalog,
+        self, catalog_id, create_success_response_non_default_catalog
     ):
         """Test creation (success) in non default catalog"""
         response = create_success_response_non_default_catalog
         result = response.json()
 
         # check catalog id is updated correctly
-        assert result["catalog_id"] == str(catalog_id)
+        if self.async_create:
+            assert result["payload"]["catalog_id"] == str(catalog_id)
+        else:
+            assert result["catalog_id"] == str(catalog_id)
 
     def test_list_200_non_default_catalog(
         self,
@@ -506,7 +529,11 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
     ):
         """Test list in non default catalog"""
         test_api_client, _ = test_api_client_persistent
-        custom_catalog_document_id = create_success_response_non_default_catalog.json()["_id"]
+        create_response_dict = create_success_response_non_default_catalog.json()
+        if self.async_create:
+            custom_catalog_document_id = create_response_dict["payload"]["output_document_id"]
+        else:
+            custom_catalog_document_id = create_response_dict["_id"]
 
         # expect to see document in the catalog
         response = test_api_client.get(
@@ -531,7 +558,11 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
     ):
         """Test get (success)"""
         test_api_client, _ = test_api_client_persistent
-        custom_catalog_document_id = create_success_response_non_default_catalog.json()["_id"]
+        create_response_dict = create_success_response_non_default_catalog.json()
+        if self.async_create:
+            custom_catalog_document_id = create_response_dict["payload"]["output_document_id"]
+        else:
+            custom_catalog_document_id = create_response_dict["_id"]
 
         # expect to see document in the catalog
         response = test_api_client.get(

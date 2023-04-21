@@ -3,7 +3,7 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Dict, Literal, Union
 
 from http import HTTPStatus
 
@@ -26,7 +26,6 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
@@ -39,8 +38,6 @@ from featurebyte.schema.feature_list import (
     OnlineFeaturesResponseModel,
 )
 from featurebyte.schema.info import FeatureListInfo
-from featurebyte.schema.task import Task
-from featurebyte.schema.worker.task.feature_list_deploy import FeatureListDeployTaskPayload
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -76,7 +73,6 @@ class FeatureListController(
         online_serving_service: OnlineServingService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_service: FeatureService,
-        task_controller: TaskController,
     ):
         super().__init__(service)
         self.feature_list_namespace_service = feature_list_namespace_service
@@ -88,7 +84,6 @@ class FeatureListController(
         self.online_serving_service = online_serving_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.feature_service = feature_service
-        self.task_controller = task_controller
 
     async def create_feature_list(
         self, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
@@ -197,39 +192,6 @@ class FeatureListController(
                 await self.feature_list_namespace_service.delete_document(
                     document_id=feature_list.feature_list_namespace_id
                 )
-
-    async def deploy_feature_list(
-        self,
-        feature_list_id: ObjectId,
-        data: FeatureListUpdate,
-    ) -> Optional[Task]:
-        """
-        Update FeatureList at persistent asynchronously
-
-        Parameters
-        ----------
-        feature_list_id: ObjectId
-            FeatureList ID
-        data: FeatureListUpdate
-            FeatureList update payload
-
-        Returns
-        -------
-        Task
-            Task object created for deployment
-        """
-        if data.deployed is not None:
-            payload = FeatureListDeployTaskPayload(
-                feature_list_id=feature_list_id,
-                deployed=data.deployed,
-                catalog_id=self.service.catalog_id,
-                output_document_id=feature_list_id,
-            )
-
-            task_id = await self.task_controller.task_manager.submit(payload=payload)
-            return await self.task_controller.get_task(task_id=str(task_id))
-
-        return None
 
     async def list_feature_lists(
         self,

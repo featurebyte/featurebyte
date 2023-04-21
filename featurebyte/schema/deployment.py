@@ -1,9 +1,10 @@
 """
 Pydantic schemas for handling API payloads for deployment routes
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from pydantic import Field, root_validator
+from bson import ObjectId
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -11,8 +12,35 @@ from featurebyte.models.base import (
     PydanticObjectId,
     VersionIdentifier,
 )
+from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
-from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
+
+
+class DeploymentCreate(FeatureByteBaseModel):
+    """
+    Schema for deployment creation
+    """
+
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    name: Optional[StrictStr]
+    feature_list_id: PydanticObjectId
+
+
+class DeploymentList(PaginationMixin):
+    """
+    Paginated list of Deployment
+    """
+
+    data: List[DeploymentModel]
+
+
+class DeploymentUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Schema for deployment update
+    """
+
+    enabled: Optional[bool]
 
 
 class DeploymentRead(FeatureByteBaseDocumentModel):
@@ -57,14 +85,6 @@ class DeploymentRead(FeatureByteBaseDocumentModel):
         """
 
         collection_name: str = FeatureListModel.collection_name()
-
-
-class DeploymentList(PaginationMixin):
-    """
-    Paginated list of DimensionTable
-    """
-
-    data: List[DeploymentRead]
 
 
 class DeploymentSummary(FeatureByteBaseModel):
