@@ -138,6 +138,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
     def test_deployment_summary_200(self, test_api_client_persistent, create_success_response):
         """Test deployment summary"""
+        _ = create_success_response
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.get("/deployment/summary/")
         assert response.status_code == HTTPStatus.OK
