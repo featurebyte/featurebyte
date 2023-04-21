@@ -6,7 +6,6 @@ from typing import List, Optional
 from dataclasses import dataclass
 
 from featurebyte.common.documentation.constants import (
-    ACTIVATE,
     ADD_METADATA,
     CATALOG,
     CLASS_METHODS,
