@@ -8,7 +8,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from tests.unit.routes.base import BaseCatalogApiTestSuite, BaseAsyncApiTestSuite
+from tests.unit.routes.base import BaseAsyncApiTestSuite, BaseCatalogApiTestSuite
 
 
 class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):

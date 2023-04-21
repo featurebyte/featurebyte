@@ -604,6 +604,11 @@ def test_list_versions(saved_feature_list):
         pd.DataFrame(
             {
                 "name": [flist_2.name, flist_1.name, saved_feature_list.name],
+                "version": [
+                    flist_2.version.to_str(),
+                    flist_1.version.to_str(),
+                    saved_feature_list.version.to_str(),
+                ],
                 "feature_list_namespace_id": [
                     flist_2.feature_list_namespace_id,
                     flist_1.feature_list_namespace_id,
@@ -626,6 +631,7 @@ def test_list_versions(saved_feature_list):
         pd.DataFrame(
             {
                 "name": [saved_feature_list.name],
+                "version": [saved_feature_list.version.to_str()],
                 "feature_list_namespace_id": [saved_feature_list.feature_list_namespace.id],
                 "num_features": 1,
                 "online_frac": 0.0,
@@ -1122,7 +1128,8 @@ def test_get_online_serving_code(mock_preview, feature_list):
     )
     feature_list.save()
     assert feature_list.saved is True
-    feature_list.deploy(enable=True, make_production_ready=True)
+    deployment = feature_list.deploy(make_production_ready=True)
+    assert deployment.enabled is True
     assert (
         feature_list.get_online_serving_code().strip()
         == textwrap.dedent(
@@ -1188,7 +1195,8 @@ def test_get_online_serving_code_not_deployed(feature_list):
 def test_get_online_serving_code_unsupported_language(feature_list):
     """Test feature get_online_serving_code with unsupported language"""
     feature_list.save()
-    feature_list.deploy(enable=True, make_production_ready=True)
+    deployment = feature_list.deploy(make_production_ready=True)
+    assert deployment.enabled is True
     with pytest.raises(NotImplementedError) as exc:
         feature_list.get_online_serving_code(language="java")
     assert "Supported languages: ['python', 'sh']" in str(exc.value)
@@ -1269,7 +1277,8 @@ def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache)
     # update original feature list deployed status (stored at feature list record)
     assert saved_feature_list.deployed is False
     assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.DRAFT
-    saved_feature_list.deploy(enable=True, make_production_ready=True)
+    deployment = saved_feature_list.deploy(make_production_ready=True)
+    assert deployment.enabled == True
     assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.PRODUCTION_READY
     assert saved_feature_list.deployed is True
 
