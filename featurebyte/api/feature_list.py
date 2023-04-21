@@ -31,7 +31,7 @@ from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
-from featurebyte.api.feature_job import FeatureJobMixin
+from featurebyte.api.feature_job import FeatureJobMixin, FeatureJobStatusResult
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
@@ -310,6 +310,38 @@ class FeatureList(
             if tile_specs:
                 feature_tile_specs.append((str(feature.name), tile_specs))
         return feature_tile_specs
+
+    @typechecked
+    def get_feature_jobs_status(  # pylint: disable=useless-parent-delegation
+        self,
+        job_history_window: int = 1,
+        job_duration_tolerance: int = 60,
+    ) -> FeatureJobStatusResult:
+        """
+        Returns a report on the recent activity of scheduled feature jobs associated with a FeatureList object.
+
+        The report includes recent runs for these jobs, whether they were successful, and the duration of the jobs.
+        This provides a summary of the health of the feature, and whether online features are updated in a timely
+        manner.
+
+        Failed and late jobs can occur due to various reasons, including insufficient compute capacity. Check your
+        data warehouse logs for more details on the errors. If the errors are due to insufficient compute capacity,
+        you can consider upsizing your instances.
+
+        Parameters
+        ----------
+        job_history_window: int
+            History window in hours
+        job_duration_tolerance: int
+            Maximum duration before job is considered later
+
+        Returns
+        -------
+        FeatureJobStatusResult
+        """
+        return super().get_feature_jobs_status(
+            job_history_window=job_history_window, job_duration_tolerance=job_duration_tolerance
+        )
 
     def info(  # pylint: disable=useless-parent-delegation
         self, verbose: bool = False
