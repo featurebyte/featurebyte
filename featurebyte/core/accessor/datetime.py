@@ -412,7 +412,6 @@ class DatetimeAccessor:
         return self._make_operation("microsecond")
 
     def _make_operation(self, field_name: str) -> FrozenSeries:
-
         var_type = (
             DBVarType.FLOAT if self._node_type == NodeType.TIMEDELTA_EXTRACT else DBVarType.INT
         )
@@ -592,7 +591,6 @@ class DatetimeAccessor:
         offset_column_name_in_frame = None
 
         for opstruct_column in operation_structure.columns:
-
             if isinstance(opstruct_column, SourceDataColumn):
                 if (
                     opstruct_column.table_id == table_id
