@@ -1010,7 +1010,7 @@ def test_get_feature_jobs_status_incomplete_logs(
     assert job_status_result.job_session_logs.shape == (1, 11)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "d96824b6"},
+            "aggregation_hash": {0: "aed233b0"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},

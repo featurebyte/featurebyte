@@ -49,6 +49,8 @@ def input_event_table_node_fixture(event_table):
             },
             "timestamp_column": "event_timestamp",
             "type": "event_table",
+            "event_timestamp_timezone_offset": None,
+            "event_timestamp_timezone_offset_column": None,
         },
     }
 
