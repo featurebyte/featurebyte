@@ -111,7 +111,11 @@ class ItemView(View, GroupByMixin, RawMixin):
 
         """
         assert self.event_view.event_id_column, "event_id_column is not set"
-        (node, joined_columns_info, join_parameters,) = ItemTableData.join_event_view_columns(
+        (
+            node,
+            joined_columns_info,
+            join_parameters,
+        ) = ItemTableData.join_event_view_columns(
             graph=self.graph,
             item_view_node=self.node,
             item_view_columns_info=self.columns_info,

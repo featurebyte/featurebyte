@@ -344,7 +344,6 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
         branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-
         # First input is a View
         input_operation_info = inputs[0]
         self._validate_view(input_operation_info)
@@ -1091,7 +1090,6 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-
         # First input is a View
         input_operation_info = inputs[0]
         self._validate_view(input_operation_info)

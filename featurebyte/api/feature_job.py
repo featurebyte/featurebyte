@@ -340,7 +340,7 @@ class FeatureJobMixin(ApiObject):
         # get feature tilespecs information
         feature_tile_specs = self._get_feature_tiles_specs()
         tile_specs = []
-        for (feature_name, tile_spec_list) in feature_tile_specs:
+        for feature_name, tile_spec_list in feature_tile_specs:
             data = []
             for tile_spec in tile_spec_list:
                 data.append(

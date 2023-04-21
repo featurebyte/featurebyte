@@ -205,7 +205,6 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
         self.get_credential = get_credential
 
     async def migrate_record(self, document: Document, version: Optional[int]) -> None:
-
         # Data warehouse migration requires version to be provided when calling migrate_all_records
         # so that the warehouse metadata can be updated accordingly
         assert version is not None

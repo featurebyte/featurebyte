@@ -335,7 +335,6 @@ class WindowAggregator(TileBasedAggregator):
         num_tiles: int,
         tile_value_columns: list[str],
     ) -> Select:
-
         # Join two tables with range join: REQ (processed request table) and TILE (tile table). For
         # each row in the REQ table, we want to join with rows in the TILE table with tile index
         # between REQ.FIRST_TILE_INDEX and REQ.LAST_TILE_INDEX.
@@ -639,7 +638,6 @@ class WindowAggregator(TileBasedAggregator):
         results = []
 
         for agg_specs in self.window_aggregation_spec_set.get_grouped_aggregation_specs():
-
             # All TileBasedAggregationSpec in agg_specs share common attributes such as
             # tile_table_id, keys, etc. Get the first one to access them.
             agg_spec = agg_specs[0]
@@ -683,7 +681,6 @@ class WindowAggregator(TileBasedAggregator):
         current_columns: list[str],
         current_query_index: int,
     ) -> AggregationResult:
-
         queries = self.get_window_aggregations(point_in_time_column)
 
         return self._update_with_left_joins(

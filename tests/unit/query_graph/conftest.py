@@ -1235,7 +1235,6 @@ def query_graph_with_cleaning_ops_and_groupby_fixture(
 
 @pytest.fixture(name="parent_serving_preparation")
 def parent_serving_preparation_fixture():
-
     with open("tests/fixtures/request_payloads/dimension_table.json") as f:
         data_model = DimensionTableModel(**json.load(f))
 

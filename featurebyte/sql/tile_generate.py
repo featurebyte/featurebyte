@@ -133,7 +133,6 @@ class TileGenerate(TileCommon):
             await retry_sql(self._session, update_tile_last_ind_sql)
 
     def _construct_tile_sql_with_index(self) -> str:
-
         if self.entity_column_names:
             entity_and_value_column_names_str = (
                 f"{self.entity_column_names_str}, {self.value_column_names_str}"

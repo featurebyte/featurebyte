@@ -17,7 +17,6 @@ from featurebyte.tile.manager import TileManager
 
 @pytest_asyncio.fixture(name="tile_task_prep_spark")
 async def tile_task_online_store_prep(session, base_sql_model):
-
     entity_col_names = "__FB_TILE_START_DATE_COLUMN,PRODUCT_ACTION,CUST_ID"
     feature_name = "feature_1"
     feature_store_table_name = "fs_table_1"
@@ -96,7 +95,6 @@ async def mock_feature_fixture(feature_model_dict, feature_store):
 
 @pytest_asyncio.fixture(name="tile_manager")
 async def tile_manager_fixture(session, tile_spec, feature, persistent):
-
     task_manager = TaskManager(
         user=User(id=feature.user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )

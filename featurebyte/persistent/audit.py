@@ -280,7 +280,6 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
                 Return value from execution of the function
             """
             async with persistent.start_transaction() as session:
-
                 return_value, num_updated, original_docs = await _execute_transaction(
                     persistent=session,
                     collection_name=collection_name,

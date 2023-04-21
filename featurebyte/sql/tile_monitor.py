@@ -27,7 +27,6 @@ class TileMonitor(TileCommon):
         if not tile_table_exist_flag:
             logger.info(f"tile table {self.tile_id} does not exist")
         else:
-
             tile_sql = self.monitor_sql.replace("'", "''")
 
             await TileRegistry(

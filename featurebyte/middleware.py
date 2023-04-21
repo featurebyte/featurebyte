@@ -102,12 +102,10 @@ class ExecutionContext:
         try:
             return await self.call_next(self.request)
         except Exception as exc:  # pylint: disable=broad-except
-
             for except_class, (
                 handle_status_code,
                 handle_message,
             ) in self.exception_handlers.items():
-
                 if isinstance(exc, except_class):
                     if isinstance(handle_status_code, int):
                         status_code = handle_status_code

@@ -44,7 +44,6 @@ class Aggregate(TableNode):
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> Optional[Aggregate]:
-
         if context.sql_type not in {SQLType.AGGREGATION, SQLType.POST_AGGREGATION}:
             return None
 

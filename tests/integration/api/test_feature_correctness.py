@@ -109,7 +109,6 @@ def calculate_aggregate_asat_ground_truth(
 
 @pytest.fixture(scope="session")
 def observation_set(transaction_data_upper_case):
-
     # Sample training time points from historical table
     df = transaction_data_upper_case
     cols = ["ËVENT_TIMESTAMP", "ÜSER ID"]
@@ -131,7 +130,6 @@ def observation_set(transaction_data_upper_case):
 
 @pytest.fixture(scope="session")
 def scd_observation_set(scd_dataframe):
-
     num_rows = 1000
     point_in_time_values = pd.date_range(
         scd_dataframe["Effective Timestamp"].min(),
@@ -339,7 +337,6 @@ def test_aggregate_over(
         agg_func_callable,
         category,
     ) in feature_parameters:
-
         feature_group = event_view.groupby(entity_column_name, category=category).aggregate_over(
             method=agg_name,
             value_column=variable_column_name,
@@ -428,7 +425,6 @@ def test_aggregate_asat(
         feature_name,
         agg_func_callable,
     ) in feature_parameters:
-
         feature = scd_view.groupby(entity_column_name).aggregate_asat(
             method=agg_name,
             value_column=variable_column_name,

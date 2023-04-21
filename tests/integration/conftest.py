@@ -94,7 +94,6 @@ def pytest_collection_modifyitems(config, items):
         return None
 
     def get_sorting_key(entry):
-
         index, item = entry
         extra_ordering_key = ""
 
@@ -107,7 +106,6 @@ def pytest_collection_modifyitems(config, items):
         return extra_ordering_key, index
 
     def filter_items_by_source_types(all_items):
-
         if not filtered_source_types:
             return all_items
 

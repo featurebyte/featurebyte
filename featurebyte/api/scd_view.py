@@ -138,7 +138,6 @@ class SCDView(View, GroupByMixin, RawMixin):
         )
 
     def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
-
         # When calling_view doesn't have the timestamp_column attribute, it means that it is a
         # DimensionView. It is invalid to join DimensionView with SCDView on the right
         # side. A validation error would have been raised before reaching here.
