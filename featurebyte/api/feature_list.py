@@ -452,7 +452,7 @@ class FeatureList(
         Parameters
         ----------
         conflict_resolution: ConflictResolution
-            "raise" raises error when then counters conflict error (default).
+            "raise" raises error when we encounter a conflict error (default).
             "retrieve" handle conflict error by retrieving the object with the same name.
 
         Raises

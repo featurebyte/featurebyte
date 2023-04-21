@@ -147,7 +147,7 @@ class Feature(
         Returns
         -------
         FrozenSeriesT
-            Column or Feature with boolean values
+            Feature with boolean values
 
         Examples
         --------

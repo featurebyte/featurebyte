@@ -361,7 +361,7 @@ class ViewColumn(Series, SampleMixin):
         Returns
         -------
         FrozenSeriesT
-            Column or Feature with boolean values
+            Column with boolean values
 
         Examples
         --------
