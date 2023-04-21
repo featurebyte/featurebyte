@@ -179,6 +179,10 @@ def _get_table_layout() -> List[DocLayoutItem]:
             doc_path_override="api.base_table.TableApiObject.preview_sql.md",
         ),
         DocLayoutItem([TABLE, LINEAGE, "ItemTable.event_table_id"]),
+        DocLayoutItem(
+            [TABLE, MANAGE, "Table.update_status"],
+            doc_path_override="api.base_table.TableApiObject.update_status.md",
+        ),
         DocLayoutItem([TABLE, TYPE, "DimensionTable"]),
         DocLayoutItem([TABLE, TYPE, "EventTable"]),
         DocLayoutItem([TABLE, TYPE, "ItemTable"]),
