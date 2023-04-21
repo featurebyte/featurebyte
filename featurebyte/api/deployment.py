@@ -70,6 +70,11 @@ class Deployment(ApiObject):
         ----------
         enabled : bool
             Enable (True) or disable (False) the deployment.
+
+        Raises
+        ------
+        RecordUpdateException
+            If the deployment update fails.
         """
         client = Configurations().get_client()
         update_response = client.patch(url=f"{self._route}/{self.id}", json={"enabled": enabled})

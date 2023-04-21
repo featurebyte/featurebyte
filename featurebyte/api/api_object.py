@@ -792,13 +792,6 @@ class ApiObject(FeatureByteBaseDocumentModel):
         -------
         dict[str, Any]
             Response data
-
-        Raises
-        ------
-        RecordCreationException
-            When failed to generate feature job setting analysis task
-        RecordRetrievalException
-            When failed to retrieve feature job setting analysis result
         """
         client = Configurations().get_client()
         create_response = client.post(url=route, json=payload)
