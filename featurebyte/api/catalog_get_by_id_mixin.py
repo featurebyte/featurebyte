@@ -112,7 +112,7 @@ class CatalogGetByIdMixin:
         Parameters
         ----------
         id: ObjectId
-            Feature list id.
+            FeatureList unique identifier (ID) to retrieve.
 
         Returns
         -------
@@ -137,7 +137,7 @@ class CatalogGetByIdMixin:
         Parameters
         ----------
         id: ObjectId
-            Table id.
+            Table unique identifier (ID)  to retrieve.
 
         Returns
         -------
@@ -162,7 +162,7 @@ class CatalogGetByIdMixin:
         Parameters
         ----------
         id: ObjectId
-            Relationship id.
+            Relationship object unique identifier ID.
 
         Returns
         -------
@@ -212,7 +212,7 @@ class CatalogGetByIdMixin:
         Parameters
         ----------
         id: ObjectId
-            Feature store id.
+            FeatureStore unique identifier (ID) to retrieve.
 
         Returns
         -------

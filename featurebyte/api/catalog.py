@@ -79,7 +79,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         verbose: bool
-            Control verbose level of the summary.
+            The parameter "verbose" in the current state of the code does not have any impact on the output.
 
         Returns
         -------
@@ -301,7 +301,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         id: ObjectId
-            Catalog unique identifier (ID).
+            Catalog unique identifier ID.
 
         Returns
         -------
@@ -360,9 +360,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         name: str
-            Entity name
+            Entity name.
         serving_names: List[str]
-            Names of the serving columns
+            List of accepted names for the unique identifier that is used to identify the entity during a preview
+            or serving request.
 
         Returns
         -------
@@ -507,9 +508,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include the id in the dataframe.
+            Whether to include Relationship object id in the output.
         relationship_type: Optional[Literal[tuple[RelationshipType]]]
-            The type of relationship to list.
+            This parameter allows you to filter the results based on a specific relationship type. If no relationship
+            type is provided (default is None), no filtering will be applied based on relationship type.
 
         Returns
         -------
@@ -882,7 +884,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         name: str
-            Feature store name.
+            Name of the feature store to retrieve.
 
         Returns
         -------

@@ -215,8 +215,10 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         Parameters
         ----------
         observation_set : pd.DataFrame
-            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
-            as well as columns with serving names for all entities used by features in the feature group.
+            Observation set DataFrame which combines historical points-in-time and values of the feature primary entity
+            or its descendant (serving entities). The column containing the point-in-time values should be named
+            `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
+            names for the entity.
 
         Returns
         -------
