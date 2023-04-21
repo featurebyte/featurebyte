@@ -592,7 +592,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([CATALOG]),
-        DocLayoutItem([CATALOG, ACTIVATE, "Catalog.activate"]),
+        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.activate"]),
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get"]),
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_active"]),
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_by_id"]),
