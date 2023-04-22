@@ -608,7 +608,14 @@ def expected_joined_event_item_dataframe_fixture(transaction_data_upper_case, it
     """
     df = pd.merge(
         transaction_data_upper_case[
-            ["TRANSACTION_ID", "ËVENT_TIMESTAMP", "ÜSER ID", "CUST_ID", "PRODUCT_ACTION"]
+            [
+                "TRANSACTION_ID",
+                "ËVENT_TIMESTAMP",
+                "ÜSER ID",
+                "CUST_ID",
+                "PRODUCT_ACTION",
+                "TZ_OFFSET",
+            ]
         ],
         items_dataframe,
         left_on="TRANSACTION_ID",
