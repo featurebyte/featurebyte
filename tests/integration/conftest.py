@@ -1071,9 +1071,7 @@ def create_transactions_event_table_from_data_source(
         name=event_table_name,
         event_id_column="TRANSACTION_ID",
         event_timestamp_column="ËVENT_TIMESTAMP",
-        event_timestamp_timezone_offset_column=(
-            "TZ_OFFSET" if data_source.type != SourceType.SNOWFLAKE else None
-        ),
+        event_timestamp_timezone_offset_column="TZ_OFFSET",
     )
     event_table.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(
