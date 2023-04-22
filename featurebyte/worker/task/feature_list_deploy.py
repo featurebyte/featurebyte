@@ -7,25 +7,25 @@ from typing import Any, cast
 
 from featurebyte.schema.worker.task.feature_list_deploy import (
     CreateDeploymentPayload,
+    DeploymentCreateUpdateTaskPayload,
     DeploymentPayloadType,
-    FeatureListDeployTaskPayload,
     UpdateDeploymentPayload,
 )
 from featurebyte.worker.task.base import BaseTask
 
 
-class FeatureListDeployTask(BaseTask):
+class DeploymentCreateUpdateTask(BaseTask):
     """
     FeatureList Deploy Task
     """
 
-    payload_class = FeatureListDeployTaskPayload
+    payload_class = DeploymentCreateUpdateTaskPayload
 
     async def execute(self) -> Any:
         """
-        Execute FeatureList Deploy task
+        Execute Deployment Create & Update Task
         """
-        payload = cast(FeatureListDeployTaskPayload, self.payload)
+        payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
         if payload.deployment_payload.type == DeploymentPayloadType.CREATE:
             create_deployment_payload = cast(CreateDeploymentPayload, payload.deployment_payload)
             await self.app_container.deploy_service.create_deployment(

@@ -40,11 +40,11 @@ DeploymentPayload = Annotated[
 ]
 
 
-class FeatureListDeployTaskPayload(BaseTaskPayload):
+class DeploymentCreateUpdateTaskPayload(BaseTaskPayload):
     """
-    FeatureList Deploy Task Payload
+    Deployment Create & Update Task Payload
     """
 
-    command = WorkerCommand.FEATURE_LIST_DEPLOY
+    command = WorkerCommand.DEPLOYMENT_CREATE_UPDATE
     output_collection_name = DeploymentModel.collection_name()
     deployment_payload: DeploymentPayload

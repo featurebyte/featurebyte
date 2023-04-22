@@ -20,7 +20,7 @@ from featurebyte.schema.deployment import (
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.feature_list_deploy import (
     CreateDeploymentPayload,
-    FeatureListDeployTaskPayload,
+    DeploymentCreateUpdateTaskPayload,
     UpdateDeploymentPayload,
 )
 from featurebyte.service.context import ContextService
@@ -66,7 +66,7 @@ class DeploymentController(
         # check if feature list exists
         _ = await self.feature_list_service.get_document(document_id=data.feature_list_id)
 
-        payload = FeatureListDeployTaskPayload(
+        payload = DeploymentCreateUpdateTaskPayload(
             deployment_payload=CreateDeploymentPayload(
                 name=data.name,
                 feature_list_id=data.feature_list_id,
@@ -100,7 +100,7 @@ class DeploymentController(
         # check if deployment exists
         deployment = await self.service.get_document(document_id=document_id)
         if data.enabled is not None and data.enabled != deployment.enabled:
-            payload = FeatureListDeployTaskPayload(
+            payload = DeploymentCreateUpdateTaskPayload(
                 deployment_payload=UpdateDeploymentPayload(enabled=data.enabled),
                 user_id=self.service.user.id,
                 catalog_id=self.service.catalog_id,
