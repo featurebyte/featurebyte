@@ -19,6 +19,7 @@ def test_all_init_methods_are_exposed():
     # Add to this list if you add a new method to __init__, but do not want to expose it in the docs for whatever
     # reason.
     excluded_methods = {
+        "Deployment",  # TODO: Remove this once we expose Deployment in the docs.
         "Configurations",
         "Series",
         "to_timedelta",

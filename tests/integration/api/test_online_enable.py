@@ -35,11 +35,11 @@ def online_enabled_feature_list_fixture(event_table, config):
         features, name="My Feature List (tests/integration/api/test_feature.py)"
     )
     feature_list.save()
-    feature_list.deploy(enable=True, make_production_ready=True)
+    deployment = feature_list.deploy(make_production_ready=True)
 
     yield feature_list
 
-    feature_list.deploy(enable=False, make_production_ready=True)
+    deployment.enable(False)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -54,9 +54,10 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
     )
     feature_list = FeatureList([feature], "my_non_time_aware_list")
     feature_list.save()
+    deployment = None
 
     try:
-        feature_list.deploy(enable=True, make_production_ready=True)
+        deployment = feature_list.deploy(make_production_ready=True)
 
         # Check feature request
         client = config.get_client()
@@ -67,7 +68,8 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
             json=data.json_dict(),
         )
     finally:
-        feature_list.deploy(enable=False, make_production_ready=False)
+        if deployment:
+            deployment.enable(False)
 
     assert res.status_code == 200
     assert res.json() == {

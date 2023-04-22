@@ -17,6 +17,7 @@ from bson.objectid import ObjectId
 from cachetools import TTLCache, cachedmethod
 from cachetools.keys import hashkey
 from pandas import DataFrame
+from requests.models import Response
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import PrettyDict, ProgressThread
@@ -87,6 +88,9 @@ class ForeignKeyMapping:
     # By default, we will pull the `name` from the retrieved values. This will override that behaviour
     # to pull a different field.
     display_field_override: Optional[str] = None
+    # Whether to use list or list_versions to retrieve the data. By default, we will use list.
+    # This will override that behaviour to use list_versions.
+    use_list_versions: bool = False
 
 
 class ApiObject(FeatureByteBaseDocumentModel):
@@ -525,7 +529,12 @@ class ApiObject(FeatureByteBaseDocumentModel):
         """
         # populate object names using foreign keys
         for foreign_key_mapping in cls._list_foreign_keys:
-            object_list = foreign_key_mapping.object_class.list(include_id=True)
+            if foreign_key_mapping.use_list_versions:
+                assert hasattr(foreign_key_mapping.object_class, "list_versions")
+                object_list = foreign_key_mapping.object_class.list_versions(include_id=True)
+            else:
+                object_list = foreign_key_mapping.object_class.list(include_id=True)
+
             if object_list.shape[0] > 0:
                 object_list.index = object_list.id
                 field_to_pull = (
@@ -700,45 +709,16 @@ class ApiObject(FeatureByteBaseDocumentModel):
             return PrettyDict(response.json())
         raise RecordRetrievalException(response, "Failed to retrieve object info.")
 
-    @staticmethod
-    def post_async_task(
-        route: str, payload: dict[str, Any], delay: float = 3.0, retrieve_result: bool = True
+    @classmethod
+    def _poll_async_task(
+        cls, task_response: Response, delay: float = 3.0, retrieve_result: bool = True
     ) -> dict[str, Any]:
-        """
-        Post async task to the worker & retrieve the results (blocking)
-        Parameters
-        ----------
-        route: str
-            Async task route
-        payload: dict[str, Any]
-            Task payload
-        delay: float
-            Delay used in polling the task
-        retrieve_result: bool
-            Whether to retrieve result from output_url
-
-        Returns
-        -------
-        dict[str, Any]
-            Response data
-
-        Raises
-        ------
-        RecordCreationException
-            When failed to generate feature job setting analysis task
-        RecordRetrievalException
-            When failed to retrieve feature job setting analysis result
-        """
-        client = Configurations().get_client()
-        create_response = client.post(url=route, json=payload)
-        if create_response.status_code != HTTPStatus.CREATED:
-            raise RecordCreationException(response=create_response)
-
-        create_response_dict = create_response.json()
-        status = create_response_dict["status"]
-        task_id = create_response_dict["id"]
+        response_dict = task_response.json()
+        status = response_dict["status"]
+        task_id = response_dict["id"]
 
         # poll the task route (if the task is still running)
+        client = Configurations().get_client()
         task_get_response = None
 
         with alive_bar(
@@ -772,14 +752,14 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         # check the task status
         if status != TaskStatus.SUCCESS:
-            raise RecordCreationException(response=task_get_response or create_response)
+            raise RecordCreationException(response=task_get_response or task_response)
 
         # retrieve task result
-        output_url = create_response_dict.get("output_path")
+        output_url = response_dict.get("output_path")
         if output_url is None and task_get_response:
             output_url = task_get_response.json().get("output_path")
         if output_url is None:
-            raise RecordRetrievalException(response=task_get_response or create_response)
+            raise RecordRetrievalException(response=task_get_response or task_response)
 
         if not retrieve_result:
             return {"output_url": output_url}
@@ -789,6 +769,42 @@ class ApiObject(FeatureByteBaseDocumentModel):
         if result_response.status_code == HTTPStatus.OK:
             return dict(result_response.json())
         raise RecordRetrievalException(response=result_response)
+
+    @classmethod
+    def post_async_task(
+        cls, route: str, payload: dict[str, Any], delay: float = 3.0, retrieve_result: bool = True
+    ) -> dict[str, Any]:
+        """
+        Post async task to the worker & retrieve the results (blocking)
+
+        Parameters
+        ----------
+        route: str
+            Async task route
+        payload: dict[str, Any]
+            Task payload
+        delay: float
+            Delay used in polling the task
+        retrieve_result: bool
+            Whether to retrieve result from output_url
+
+        Returns
+        -------
+        dict[str, Any]
+            Response data
+
+        Raises
+        ------
+        RecordCreationException
+            When unexpected creation failure
+        """
+        client = Configurations().get_client()
+        create_response = client.post(url=route, json=payload)
+        if create_response.status_code != HTTPStatus.CREATED:
+            raise RecordCreationException(response=create_response)
+        return cls._poll_async_task(
+            task_response=create_response, delay=delay, retrieve_result=retrieve_result
+        )
 
 
 class SavableApiObject(ApiObject):

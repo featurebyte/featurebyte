@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import (
     FeatureListModel,
@@ -16,10 +17,12 @@ from featurebyte.models.feature_list import (
     FeatureListStatus,
 )
 from featurebyte.persistent import Persistent
+from featurebyte.schema.deployment import DeploymentUpdate
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -40,6 +43,7 @@ class DeployService(BaseService):
         catalog_id: ObjectId,
         online_enable_service: OnlineEnableService,
         feature_list_status_service: FeatureListStatusService,
+        deployment_service: DeploymentService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.feature_service = FeatureService(
@@ -53,6 +57,7 @@ class DeployService(BaseService):
         self.feature_list_namespace_service = FeatureListNamespaceService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
+        self.deployment_service = deployment_service
 
     @classmethod
     def _extract_deployed_feature_list_ids(
@@ -228,8 +233,8 @@ class DeployService(BaseService):
         feature_list_id: ObjectId,
         deployed: bool,
         get_credential: Any,
-        return_document: bool = True,
         update_progress: Optional[Callable[[int, str], None]] = None,
+        return_document: bool = True,
     ) -> Optional[FeatureListModel]:
         """
         Update deployed status in feature list
@@ -242,10 +247,10 @@ class DeployService(BaseService):
             Target deployed status
         get_credential: Any
             Get credential handler function
-        return_document: bool
-            Whether to return updated document
         update_progress: Callable[[int, str], None]
             Update progress handler function
+        return_document: bool
+            Whether to return updated document
 
         Returns
         -------
@@ -331,3 +336,82 @@ class DeployService(BaseService):
                     raise revert_exc from exc
                 raise exc
         return self.conditional_return(document=document, condition=return_document)
+
+    async def create_deployment(
+        self,
+        feature_list_id: ObjectId,
+        deployment_id: ObjectId,
+        deployment_name: Optional[str],
+        get_credential: Any,
+        update_progress: Optional[Callable[[int, str], None]] = None,
+    ) -> None:
+        """
+        Create deployment for the given feature list feature list
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            Feature list ID
+        deployment_id: ObjectId
+            Deployment ID
+        deployment_name: Optional[str]
+            Deployment name
+        get_credential: Any
+            Get credential handler function
+        update_progress: Callable[[int, str], None]
+            Update progress handler function
+        """
+        feature_list = await self.feature_list_service.get_document(document_id=feature_list_id)
+        default_deployment_name = (
+            f'Deployment (feature_list: "{feature_list.name}", '
+            f"version: {feature_list.version.to_str()})"
+        )
+        to_enable_deployment = True
+        await self.update_feature_list(
+            feature_list_id=feature_list_id,
+            deployed=to_enable_deployment,
+            get_credential=get_credential,
+            update_progress=update_progress,
+        )
+        await self.deployment_service.create_document(
+            data=DeploymentModel(
+                _id=deployment_id,
+                name=deployment_name or default_deployment_name,
+                feature_list_id=feature_list_id,
+                enabled=to_enable_deployment,
+            )
+        )
+
+    async def update_deployment(
+        self,
+        deployment_id: ObjectId,
+        enabled: bool,
+        get_credential: Any,
+        update_progress: Optional[Callable[[int, str], None]] = None,
+    ) -> None:
+        """
+        Update deployment enabled status
+
+        Parameters
+        ----------
+        deployment_id: ObjectId
+            Deployment ID
+        enabled: bool
+            Enabled status
+        get_credential: Any
+            Get credential handler function
+        update_progress: Callable[[int, str], None]
+            Update progress handler function
+        """
+        deployment = await self.deployment_service.get_document(document_id=deployment_id)
+        if deployment.enabled != enabled:
+            await self.update_feature_list(
+                feature_list_id=deployment.feature_list_id,
+                deployed=enabled,
+                get_credential=get_credential,
+                update_progress=update_progress,
+            )
+            await self.deployment_service.update_document(
+                document_id=deployment_id,
+                data=DeploymentUpdate(enabled=enabled),
+            )

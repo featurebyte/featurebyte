@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import FeatureList
+from featurebyte import Deployment, FeatureList
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from tests.util.helper import assert_preview_result_equal, make_online_request
 
@@ -259,8 +259,9 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
 
     # Check online serving.
     feature_list.save()
+    deployment = None
     try:
-        feature_list.deploy(enable=True, make_production_ready=True)
+        deployment = feature_list.deploy(make_production_ready=True)
         params = preview_params.copy()
         params.pop("POINT_IN_TIME")
         online_result = make_online_request(config.get_client(), feature_list, [params])
@@ -274,7 +275,8 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
             }
         ]
     finally:
-        feature_list.deploy(enable=False)
+        if deployment:
+            deployment.enable(False)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
@@ -311,8 +313,9 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
         [scd_lookup_feature], "feature_list__test_scd_lookup_feature_with_offset"
     )
     feature_list.save()
+    deployment = None
     try:
-        feature_list.deploy(enable=True, make_production_ready=True)
+        deployment = feature_list.deploy(make_production_ready=True)
         params = preview_params.copy()
         params.pop("POINT_IN_TIME")
         online_result = make_online_request(config.get_client(), feature_list, [params])
@@ -320,7 +323,7 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
             {"üser id": 1, "Current User Status Offset 90d": "STÀTUS_CODE_39"}
         ]
     finally:
-        feature_list.deploy(enable=False)
+        deployment.enable(False)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
@@ -439,7 +442,7 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
 
     # check online serving
     feature_list.save()
-    feature_list.deploy(enable=True, make_production_ready=True)
+    feature_list.deploy(make_production_ready=True)
 
     data = FeatureListGetOnlineFeatures(entity_serving_names=[{"row_number": 1}])
     res = config.get_client().post(

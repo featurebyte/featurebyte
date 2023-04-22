@@ -3,7 +3,7 @@
 /context
 /credential
 /deployment
-/deployment/summary
+/deployment/summary/
 /dimension_table
 /entity
 /event_table

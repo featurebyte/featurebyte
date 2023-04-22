@@ -49,6 +49,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.context import ContextCreate
+from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
@@ -1281,6 +1282,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         late_data_allowance=5e-05,
     )
     context = ContextCreate(name="transaction_context", entity_ids=[cust_id_entity.id])
+    deployment = DeploymentCreate(name=None, feature_list_id=feature_list.id)
     relationship_info = RelationshipInfoCreate(
         _id="63f6a145e549df8ccf123456",
         name="child_parent_relationship",
@@ -1354,6 +1356,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (feature_list_namespace, "feature_list_namespace"),
             (feature_job_setting_analysis, "feature_job_setting_analysis"),
             (context, "context"),
+            (deployment, "deployment"),
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
             (batch_request_table, "batch_request_table"),

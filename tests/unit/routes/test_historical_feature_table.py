@@ -22,6 +22,7 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
     payload = BaseAsyncApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/historical_feature_table.json"
     )
+    async_create = True
 
     create_conflict_payload_expected_detail_pairs = [
         (
