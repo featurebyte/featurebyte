@@ -6,7 +6,7 @@ from typing import Any, List
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
-from featurebyte.sql.common import construct_create_table_query, retry_sql, retry_sql_with_cache
+from featurebyte.sql.common import construct_create_table_query, retry_sql
 
 
 class TileGenerateEntityTracking(BaselSqlModel):
@@ -83,6 +83,4 @@ class TileGenerateEntityTracking(BaselSqlModel):
                             insert ({self.tile_last_start_date_column})
                                 values (b.{self.tile_last_start_date_column})
                 """
-            await retry_sql_with_cache(
-                session=self._session, sql=merge_sql, cached_select_sql=self.entity_table
-            )
+            await retry_sql(session=self._session, sql=merge_sql)
