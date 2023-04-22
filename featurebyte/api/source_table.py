@@ -453,6 +453,8 @@ class SourceTable(AbstractTableData):
         name: str,
         event_timestamp_column: str,
         event_id_column: str,
+        event_timestamp_timezone_offset: Optional[str] = None,
+        event_timestamp_timezone_offset_column: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> EventTable:
@@ -479,6 +481,13 @@ class SourceTable(AbstractTableData):
             The column that represents the unique identfier for each event.
         event_timestamp_column: str
             The column that contains the timestamp of the associated event.
+        event_timestamp_timezone_offset: Optional[str]
+            Timezone offset for the event timestamp column. Supported format is "(+|-)HH:mm".
+            Specify this if the timezone offset is a fixed value. Examples: "+08:00" or "-05:00".
+        event_timestamp_timezone_offset_column: Optional[str]
+            Timezone offset column for the event timestamp column. The column is expected to have
+            string type, and each value in the column is expected to have the format "(+|-)HH:mm".
+            Specify this if the timezone offset is different for different rows in the event table.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
         _id: Optional[ObjectId]
@@ -511,6 +520,8 @@ class SourceTable(AbstractTableData):
             record_creation_timestamp_column=record_creation_timestamp_column,
             event_timestamp_column=event_timestamp_column,
             event_id_column=event_id_column,
+            event_timestamp_timezone_offset=event_timestamp_timezone_offset,
+            event_timestamp_timezone_offset_column=event_timestamp_timezone_offset_column,
             _id=_id,
         )
 

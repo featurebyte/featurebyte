@@ -197,6 +197,19 @@ def mock_snowflake_execute_query(snowflake_connector):
                 {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
                 {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
             ],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table_no_tz"': [
+                {
+                    "column_name": "event_timestamp",
+                    "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+                },
+                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_NTZ"})},
+                {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+                {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+                {
+                    "column_name": "tz_offset",
+                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                },
+            ],
             'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_view"': [
                 {"column_name": "col_date", "data_type": json.dumps({"type": "DATE"})},
                 {"column_name": "col_time", "data_type": json.dumps({"type": "TIME"})},
@@ -369,6 +382,22 @@ def snowflake_database_table_fixture(
     yield snowflake_table
 
 
+@pytest.fixture(name="snowflake_database_table_no_tz")
+def snowflake_database_table_no_tz_fixture(
+    snowflake_data_source,
+):
+    """
+    SourceTable object fixture where timestamp columns have no timezone
+    """
+    snowflake_table = snowflake_data_source.get_source_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="sf_table_no_tz",
+    )
+    assert isinstance(snowflake_table.feature_store, FeatureStore)
+    yield snowflake_table
+
+
 @pytest.fixture(name="snowflake_database_table_item_table")
 def snowflake_database_table_item_table_fixture(snowflake_data_source):
     """
@@ -479,6 +508,40 @@ def snowflake_event_table_fixture(snowflake_database_table, snowflake_event_tabl
     yield event_table
 
 
+@pytest.fixture(name="snowflake_event_table_with_tz_offset_column")
+def snowflake_event_table_with_tz_offset_column_fixture(
+    snowflake_database_table_no_tz, transaction_entity, cust_id_entity
+):
+    """EventTable object fixture"""
+    event_table = snowflake_database_table_no_tz.create_event_table(
+        name="sf_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        event_timestamp_timezone_offset_column="tz_offset",
+        record_creation_timestamp_column="created_at",
+    )
+    event_table["col_int"].as_entity(transaction_entity.name)
+    event_table["cust_id"].as_entity(cust_id_entity.name)
+    yield event_table
+
+
+@pytest.fixture(name="snowflake_event_table_with_tz_offset_constant")
+def snowflake_event_table_with_tz_offset_constant_fixture(
+    snowflake_database_table_no_tz, transaction_entity, cust_id_entity
+):
+    """EventTable object fixture"""
+    event_table = snowflake_database_table_no_tz.create_event_table(
+        name="sf_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        event_timestamp_timezone_offset="-05:30",
+        record_creation_timestamp_column="created_at",
+    )
+    event_table["col_int"].as_entity(transaction_entity.name)
+    event_table["cust_id"].as_entity(cust_id_entity.name)
+    yield event_table
+
+
 @pytest.fixture(name="snowflake_dimension_table")
 def snowflake_dimension_table_fixture(
     snowflake_database_table_dimension_table, snowflake_dimension_table_id
@@ -563,6 +626,25 @@ def snowflake_item_table_same_event_id_fixture(
         event_table_name=snowflake_event_table.name,
         _id=snowflake_item_table_id_2,
     )
+
+
+@pytest.fixture(name="snowflake_item_table_with_timezone_offset_column")
+def snowflake_item_table_with_timezone_offset_column_fixture(
+    snowflake_database_table_item_table,
+    mock_get_persistent,
+    snowflake_event_table_with_tz_offset_column,
+):
+    """
+    Snowflake ItemTable object fixture where the EventTable has a timezone offset column
+    """
+    _ = mock_get_persistent
+    item_table = snowflake_database_table_item_table.create_item_table(
+        name="sf_item_table",
+        event_id_column="event_id_col",
+        item_id_column="item_id_col",
+        event_table_name=snowflake_event_table_with_tz_offset_column.name,
+    )
+    yield item_table
 
 
 @pytest.fixture(name="cust_id_entity")

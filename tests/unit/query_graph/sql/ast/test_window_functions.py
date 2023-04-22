@@ -183,7 +183,7 @@ def test_window_function(global_graph, input_node):
             DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          COUNT(*) AS value_count_bdd430697527efc219056ed856d0fc44ad2388ed
+          COUNT(*) AS value_count_6f5d8a3722c7f61988e8518cfbd485e1b7e4ef87
         FROM (
           SELECT
             *,

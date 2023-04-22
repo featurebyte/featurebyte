@@ -184,6 +184,8 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
         default=None
     )  # DEV-556: this should be compulsory
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
+    event_timestamp_timezone_offset: Optional[str] = Field(default=None)
+    event_timestamp_timezone_offset_column: Optional[InColumnStr] = Field(default=None)
 
     @root_validator(pre=True)
     @classmethod
@@ -326,21 +328,24 @@ class SCDTableInputNodeParameters(BaseInputNodeParameters):
         return output
 
 
+InputNodeParameters = Annotated[
+    Union[
+        EventTableInputNodeParameters,
+        ItemTableInputNodeParameters,
+        SourceTableInputNodeParameters,
+        DimensionTableInputNodeParameters,
+        SCDTableInputNodeParameters,
+    ],
+    Field(discriminator="type"),
+]
+
+
 class InputNode(BaseNode):
     """InputNode class"""
 
     type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Annotated[
-        Union[
-            EventTableInputNodeParameters,
-            ItemTableInputNodeParameters,
-            SourceTableInputNodeParameters,
-            DimensionTableInputNodeParameters,
-            SCDTableInputNodeParameters,
-        ],
-        Field(discriminator="type"),
-    ]
+    parameters: InputNodeParameters
 
     # class variable
     _table_type_to_table_class_enum: ClassVar[Dict[TableDataType, ClassEnum]] = {

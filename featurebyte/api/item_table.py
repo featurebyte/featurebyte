@@ -199,6 +199,8 @@ class ItemTable(TableApiObject):
 
             event_view_param_metadata = event_view.node.parameters.metadata  # type: ignore
             event_join_column_names = [event_view.timestamp_column] + event_view.entity_columns
+            if event_view.timestamp_timezone_offset_column is not None:
+                event_join_column_names.append(event_view.timestamp_timezone_offset_column)
             event_drop_column_names = event_view_param_metadata.drop_column_names
             event_column_cleaning_operations = event_view_param_metadata.column_cleaning_operations
 

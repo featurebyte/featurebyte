@@ -195,6 +195,8 @@ def event_input_node_fixture(feature_store_details, event_table_data):
             "id_column": "event_id",
             "timestamp_column": "event_timestamp",
             "type": "event_table",
+            "event_timestamp_timezone_offset": None,
+            "event_timestamp_timezone_offset_column": None,
         },
         "output_type": "frame",
     }

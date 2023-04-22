@@ -383,7 +383,7 @@ def groupby_node_aggregation_id_fixture(query_graph_with_groupby):
     """Groupby node the aggregation id (without aggregation method part)"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     aggregation_id = groupby_node.parameters.aggregation_id.split("_")[1]
-    assert aggregation_id == "47938f0bfcde2a5c7d483ce1926aa72900653d65"
+    assert aggregation_id == "30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb"
     return aggregation_id
 
 
@@ -1047,6 +1047,8 @@ def query_graph_single_node(
                 "timestamp_column": None,
                 "id": None,
                 "id_column": None,
+                "event_timestamp_timezone_offset": None,
+                "event_timestamp_timezone_offset_column": None,
             },
             "output_type": "frame",
         }

@@ -19,7 +19,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.input import EventTableInputNodeParameters, InputNode
 
 if TYPE_CHECKING:
     from featurebyte.api.feature import Feature
@@ -80,15 +80,43 @@ class EventView(View, GroupByMixin, RawMixin):
         -------
         str
         """
+        return self._get_event_table_node_parameters().timestamp_column  # type: ignore
+
+    @property
+    def timestamp_timezone_offset_column(self) -> Optional[str]:
+        """
+        Timestamp timezone offset column of the event table
+
+        Returns
+        -------
+        Optional[str]
+        """
+        return self._get_event_table_node_parameters().event_timestamp_timezone_offset_column
+
+    @property
+    def timestamp_timezone_offset(self) -> Optional[str]:
+        """
+        Timestamp timezone of the event table
+
+        Returns
+        -------
+        Optional[str]
+        """
+        return self._get_event_table_node_parameters().event_timestamp_timezone_offset
+
+    def _get_event_table_node_parameters(self) -> EventTableInputNodeParameters:
         input_node = next(
             node
             for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.INPUT)
             if cast(InputNode, node).parameters.type == TableDataType.EVENT_TABLE
         )
-        return input_node.parameters.timestamp_column  # type: ignore
+        return cast(EventTableInputNodeParameters, input_node.parameters)
 
     def _get_additional_inherited_columns(self) -> set[str]:
-        return {self.timestamp_column}
+        columns = {self.timestamp_column}
+        if self.timestamp_timezone_offset_column is not None:
+            columns.add(self.timestamp_timezone_offset_column)
+        return columns
 
     @property
     def protected_attributes(self) -> list[str]:

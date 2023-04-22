@@ -59,13 +59,13 @@ def test_latest_aggregator(agg_specs_no_window):
           REQ."a" AS "a",
           REQ."b" AS "b",
           REQ."c" AS "c",
-          REQ."_fb_internal_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a" AS "_fb_internal_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a"
+          REQ."_fb_internal_latest_3b3c2a8389d7720826731fefb7060b6578050e04" AS "_fb_internal_latest_3b3c2a8389d7720826731fefb7060b6578050e04"
         FROM (
           SELECT
             L."a" AS "a",
             L."b" AS "b",
             L."c" AS "c",
-            R.value_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a AS "_fb_internal_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a"
+            R.value_latest_3b3c2a8389d7720826731fefb7060b6578050e04 AS "_fb_internal_latest_3b3c2a8389d7720826731fefb7060b6578050e04"
           FROM (
             SELECT
               "__FB_KEY_COL_0",
@@ -127,7 +127,7 @@ def test_latest_aggregator(agg_specs_no_window):
     ).strip()
     assert result.updated_table_expr.sql(pretty=True) == expected
 
-    assert result.column_names == [f"_fb_internal_latest_6ba5affa84771d1b3e01284bc5301186a8828c7a"]
+    assert result.column_names == [f"_fb_internal_latest_3b3c2a8389d7720826731fefb7060b6578050e04"]
     assert result.updated_index == 0
 
 
