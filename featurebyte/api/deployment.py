@@ -6,6 +6,7 @@ from __future__ import annotations
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature_list import FeatureList
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.deployment import DeploymentUpdate
 
@@ -24,6 +25,8 @@ class Deployment(ApiObject):
     For data warehouses covering multiple domains, creating multiple catalogs can help maintain organization and
     simplify management of the data and features.
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Deployment")
 
     # class variables
     _route = "/deployment"

@@ -402,7 +402,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
                 raise RecordRetrievalException(response, f"Failed to list {route}.")
 
     @classmethod
-    def list(cls, include_id: Optional[bool] = False) -> DataFrame:
+    def list(cls, include_id: Optional[bool] = True) -> DataFrame:
         """
         List objects name stored in the persistent data store.
 

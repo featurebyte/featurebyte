@@ -228,6 +228,7 @@ def test_list_credentials(credential):
     credentials = Credential.list()
     assert credentials.to_dict("records") == [
         {
+            "id": credential.id,
             "created_at": pd.to_datetime(credential.created_at),
             "database_credential_type": "USERNAME_PASSWORD",
             "feature_store": "sf_featurestore",

@@ -291,6 +291,16 @@ tasks:
     cmds:
       - poetry run mkdocs serve --config-file mkdocs.yaml
 
+  docs-persist-reference:
+    desc: "Build the documentation and persist the docs locally."
+    deps:
+      - task: install
+    env:
+      PYTHONPATH:
+        sh: echo "$(pwd)/docs/extensions"
+    cmds:
+      - poetry run mkdocs build --config-file mkdocs.yaml
+
   docs-dump-csv:
     desc: "Dump the documentation into a CSV file for easy browsing."
     deps:

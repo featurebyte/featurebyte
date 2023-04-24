@@ -1,3 +1,4 @@
+/batch_feature_table
 /batch_request_table
 /catalog
 /context

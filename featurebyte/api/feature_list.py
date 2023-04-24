@@ -351,9 +351,9 @@ class FeatureList(
         Parameters
         ----------
         job_history_window: int
-            History window in hours
+            History window in hours.
         job_duration_tolerance: int
-            Maximum duration before job is considered later
+            Maximum duration before job is considered later, in seconds.
 
         Returns
         -------
@@ -766,7 +766,7 @@ class FeatureList(
         return feature_lists
 
     @classmethod
-    def _list_versions(cls, include_id: Optional[bool] = False) -> pd.DataFrame:
+    def _list_versions(cls, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         Returns a DataFrame that presents a summary of the feature list versions belonging to the namespace of the
         FeatureList object. The DataFrame contains multiple attributes of the feature list versions, such as their
@@ -804,7 +804,7 @@ class FeatureList(
         """
         return super().list(include_id=include_id)
 
-    def _list_versions_with_same_name(self, include_id: bool = False) -> pd.DataFrame:
+    def _list_versions_with_same_name(self, include_id: bool = True) -> pd.DataFrame:
         """
         List feature list versions with the same name
 

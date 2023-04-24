@@ -21,8 +21,10 @@ from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.item_view import ItemView
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_table import SCDTable
@@ -353,10 +355,13 @@ def list_deployments(
 
 
 __all__ = [
+    # API objects
     "Catalog",
     "ChangeView",
     "Configurations",
-    "Table",
+    "DatabricksDetails",
+    "DataSource",
+    "Deployment",
     "DimensionTable",
     "DimensionView",
     "Entity",
@@ -365,23 +370,23 @@ __all__ = [
     "Feature",
     "FeatureGroup",
     "FeatureJobSetting",
-    "TableFeatureJobSetting",
     "FeatureJobSettingAnalysis",
     "FeatureList",
     "FeatureStore",
-    "DataSource",
+    "HistoricalFeatureTable",
     "ItemTable",
     "ItemView",
+    "ObservationTable",
     "Relationship",
     "Series",
     "SCDTable",
     "SCDView",
     "SourceTable",
-    "Deployment",
-    "DatabricksDetails",
     "SnowflakeDetails",
     "SparkDetails",
     "to_timedelta",
+    "Table",
+    "TableFeatureJobSetting",
     # credentials
     "AccessTokenCredential",
     "Credential",

@@ -21,6 +21,7 @@ def test_list():
     """
     df = HistoricalFeatureTable.list()
     assert df.columns.tolist() == [
+        "id",
         "name",
         "feature_store_name",
         "observation_table_name",

@@ -47,6 +47,7 @@ from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.routes.app_container import AppContainer
+from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.deployment import DeploymentCreate
@@ -1301,14 +1302,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         ),
         context_id=context.id,
     )
-    batch_request_table = BatchRequestTableCreate(
-        name="batch_request_table",
-        feature_store_id=snowflake_feature_store.id,
-        request_input=SourceTableRequestInput(
-            source=snowflake_dimension_table.tabular_source,
-        ),
-        context_id=context.id,
-    )
     historical_feature_table = HistoricalFeatureTableCreate(
         name="historical_feature_table",
         feature_store_id=snowflake_feature_store.id,
@@ -1317,6 +1310,20 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         featurelist_get_historical_features=FeatureListGetHistoricalFeatures(
             feature_clusters=feature_list._get_feature_clusters(),
         ),
+    )
+    batch_request_table = BatchRequestTableCreate(
+        name="batch_request_table",
+        feature_store_id=snowflake_feature_store.id,
+        request_input=SourceTableRequestInput(
+            source=snowflake_dimension_table.tabular_source,
+        ),
+        context_id=context.id,
+    )
+    batch_feature_table = BatchFeatureTableCreate(
+        name="batch_feature_table",
+        feature_store_id=snowflake_feature_store.id,
+        batch_request_table_id=batch_request_table.id,
+        deployment_id=deployment.id,
     )
 
     if update_fixtures:
@@ -1359,8 +1366,9 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (deployment, "deployment"),
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
-            (batch_request_table, "batch_request_table"),
             (historical_feature_table, "historical_feature_table"),
+            (batch_request_table, "batch_request_table"),
+            (batch_feature_table, "batch_feature_table"),
         ]
         for schema, name in schema_payload_name_pairs:
             filename = f"{base_path}/{name}.json"
