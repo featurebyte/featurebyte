@@ -1,11 +1,7 @@
 name: lint
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
-## GCR_PYPI_CREDENTIALS_R_B64    | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Docker     ] read
 ## SLACK_OAUTH                   | Slack App OAUTH Token           | [Slack                          ] write message
-env:
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64 # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
 on:
   pull_request:
     types: [opened, synchronize, reopened]
