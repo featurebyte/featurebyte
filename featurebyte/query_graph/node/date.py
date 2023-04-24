@@ -21,6 +21,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     StatementT,
     ValueStr,
     VariableNameGenerator,
+    VariableNameStr,
     VarNameExpressionStr,
 )
 
@@ -72,11 +73,11 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             date_property = "day_of_week"
 
         if offset_operand is None:
-            expression_str = f"{ts_operand}.dt.{date_property}"
+            output = VariableNameStr(f"{ts_operand}.dt.{date_property}")
         else:
-            expression_str = f"{ts_operand}.dt.tz_offset({offset_operand}).{date_property}"
+            output = ExpressionStr(f"{ts_operand}.dt.tz_offset({offset_operand}).{date_property}")
 
-        return [], ExpressionStr(expression_str)
+        return [], output
 
 
 class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
