@@ -4,6 +4,7 @@ Registrations module.
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
 from featurebyte.routes.app_container_config import AppContainerConfig
+from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
 from featurebyte.routes.batch_request_table.controller import BatchRequestTableController
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.context.controller import ContextController
@@ -28,6 +29,7 @@ from featurebyte.routes.relationship_info.controller import RelationshipInfoCont
 from featurebyte.routes.scd_table.controller import SCDTableController
 from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.table.controller import TableController
+from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
@@ -131,12 +133,30 @@ app_container_config.add_service_with_extra_deps(
         "feature_store_service",
     ],
 )
+app_container_config.add_basic_service("context_service", ContextService)
+app_container_config.add_basic_service("entity_service", EntityService)
+app_container_config.add_basic_service("dimension_table_service", DimensionTableService)
+app_container_config.add_basic_service("event_table_service", EventTableService)
+app_container_config.add_basic_service("item_table_service", ItemTableService)
+app_container_config.add_basic_service("scd_table_service", SCDTableService)
+app_container_config.add_basic_service("feature_service", FeatureService)
+app_container_config.add_basic_service("feature_list_service", FeatureListService)
+app_container_config.add_basic_service("deployment_service", DeploymentService)
 app_container_config.add_service_with_extra_deps(
     "observation_table_service",
     ObservationTableService,
     [
         "feature_store_service",
         "context_service",
+    ],
+)
+app_container_config.add_service_with_extra_deps(
+    "historical_feature_table_service",
+    HistoricalFeatureTableService,
+    [
+        "feature_store_service",
+        "observation_table_service",
+        "feature_list_service",
     ],
 )
 app_container_config.add_service_with_extra_deps(
@@ -148,22 +168,14 @@ app_container_config.add_service_with_extra_deps(
     ],
 )
 app_container_config.add_service_with_extra_deps(
-    "historical_feature_table_service",
-    HistoricalFeatureTableService,
+    "batch_feature_table_service",
+    BatchFeatureTableService,
     [
         "feature_store_service",
+        "batch_request_table_service",
+        "deployment_service",
     ],
 )
-
-app_container_config.add_basic_service("context_service", ContextService)
-app_container_config.add_basic_service("entity_service", EntityService)
-app_container_config.add_basic_service("dimension_table_service", DimensionTableService)
-app_container_config.add_basic_service("event_table_service", EventTableService)
-app_container_config.add_basic_service("item_table_service", ItemTableService)
-app_container_config.add_basic_service("scd_table_service", SCDTableService)
-app_container_config.add_basic_service("feature_service", FeatureService)
-app_container_config.add_basic_service("feature_list_service", FeatureListService)
-app_container_config.add_basic_service("deployment_service", DeploymentService)
 app_container_config.add_service_with_extra_deps(
     "feature_readiness_service",
     FeatureReadinessService,
@@ -356,9 +368,17 @@ app_container_config.add_controller(
     "periodic_task_controller", PeriodicTaskController, ["periodic_task_service"]
 )
 app_container_config.add_controller(
+    "credential_controller", CredentialController, ["credential_service", "info_service"]
+)
+app_container_config.add_controller(
     "observation_table_controller",
     ObservationTableController,
     ["observation_table_service", "task_controller"],
+)
+app_container_config.add_controller(
+    "historical_feature_table_controller",
+    HistoricalFeatureTableController,
+    ["historical_feature_table_service", "task_controller"],
 )
 app_container_config.add_controller(
     "batch_request_table_controller",
@@ -366,12 +386,9 @@ app_container_config.add_controller(
     ["batch_request_table_service", "task_controller"],
 )
 app_container_config.add_controller(
-    "credential_controller", CredentialController, ["credential_service", "info_service"]
-)
-app_container_config.add_controller(
-    "historical_feature_table_controller",
-    HistoricalFeatureTableController,
-    ["historical_feature_table_service", "task_controller"],
+    "batch_feature_table_controller",
+    BatchFeatureTableController,
+    ["batch_feature_table_service", "task_controller"],
 )
 app_container_config.add_controller(
     "deployment_controller",
