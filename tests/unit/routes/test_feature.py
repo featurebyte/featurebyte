@@ -372,7 +372,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
             if api_object == "feature":
                 feature_ids.append(response.json()["_id"])
-            if api_object == "feature_list_id":
+            if api_object == "feature_list":
                 feature_list_id = payload["_id"]
 
         response = test_api_client.get(self.base_route, params={"feature_list_id": feature_list_id})
