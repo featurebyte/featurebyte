@@ -1,0 +1,70 @@
+# This workflow will check to see what diffs will be made to the documentation. If there are any, this will fail
+# the check. This is to ensure that all changes that are being made to documentation are signed off by a developer.
+# To sign off, or skip the documentation check, add
+#   - Add 'Documentation Changes Confirmed' label to the PR
+
+name: documentation
+on:
+  pull_request:
+    types: [opened, reopened, labeled, unlabeled]
+    branches:
+      - main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+jobs:
+  check-should-run:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'Documentation Changes Confirmed') }}
+  build-updated-docs:
+    needs: ["check-should-run"]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+      - name: Building docs for current branch
+        run: |
+          task docs-persist-reference
+      - name: Upload new docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs-updated
+          path: site/reference/*
+  build-base-docs:
+    steps:
+      - needs: ["check-should-run"]
+      - name: Checkout merge-base
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+        run: git checkout $(git merge-base --fork-point HEAD main)
+      - name: Building docs for base branch
+        run: |
+          task docs-persist-reference
+      - name: Upload base docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs-base
+          path: site/reference/*
+  diff-docs:
+    needs: ["build-updated-docs", "build-base-docs"]
+    steps:
+      - name: Download base docs
+        uses: actions/download-artifact@v3
+        with:
+          name: docs-base
+          path: featurebyte/docs/base/
+      - name: Download new docs
+        uses: actions/download-artifact@v3
+        with:
+          name: docs-updated
+          path: featurebyte/docs/updated/
+      - name: Diff docs
+        run: |
+          if [[ $(diff featurebyte/docs/base/ featurebyte/docs/updated/) ]]; then
+            echo "The documentation was modified."
+            exit 1
+          else
+            echo "The documentation was not modified."
+          fi
