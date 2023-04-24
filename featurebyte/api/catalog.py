@@ -26,9 +26,9 @@ from featurebyte.api.relationship import Relationship
 from featurebyte.api.table import Table
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
+from featurebyte.models.base import activate_catalog, get_active_catalog_id
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate

@@ -11,7 +11,7 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import MissingValueImputation, get_version
+from featurebyte import MissingValueImputation, get_version, list_unsaved_features
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_group import FeatureGroup
@@ -1369,3 +1369,117 @@ def test_primary_entity__feature_group(feature_group, cust_id_entity):
     Test primary_entity property for a feature group
     """
     assert feature_group.primary_entity == [Entity.get_by_id(cust_id_entity.id)]
+
+
+def test_list_unsaved_features(
+    float_feature,
+    bool_feature,
+    count_per_category_feature_group,
+    sum_per_category_feature,
+    count_per_category_feature,
+):
+    """
+    Test list_unsaved_features method
+    """
+    unsaved_feature = float_feature
+    feature_group = FeatureGroup(
+        [float_feature, sum_per_category_feature],
+    )
+    feature_list_1 = FeatureList(
+        [count_per_category_feature_group, sum_per_category_feature], name="FL1"
+    )
+    feature_list_2 = FeatureList(
+        [float_feature, sum_per_category_feature, count_per_category_feature], name="FL2"
+    )
+
+    # test list unsaved features
+    unsaved_feature_df = list_unsaved_features().sort_values(["name", "variable_name"])
+    expected_df = pd.DataFrame(
+        {
+            "variable_name": [
+                "count_per_category_feature",
+                'count_per_category_feature_group["counts_1d"]',
+                'feature_list_1["counts_1d"]',
+                'feature_list_2["counts_1d"]',
+                'count_per_category_feature_group["counts_2h"]',
+                'feature_list_1["counts_2h"]',
+                'count_per_category_feature_group["counts_30m"]',
+                'feature_list_1["counts_30m"]',
+                'feature_group["sum_1d"]',
+                'feature_list_2["sum_1d"]',
+                "float_feature",
+                "unsaved_feature",
+                'feature_group["sum_30m"]',
+                'feature_list_1["sum_30m"]',
+                'feature_list_2["sum_30m"]',
+                "sum_per_category_feature",
+                "bool_feature",
+            ],
+            "name": [
+                "counts_1d",
+                "counts_1d",
+                "counts_1d",
+                "counts_1d",
+                "counts_2h",
+                "counts_2h",
+                "counts_30m",
+                "counts_30m",
+                "sum_1d",
+                "sum_1d",
+                "sum_1d",
+                "sum_1d",
+                "sum_30m",
+                "sum_30m",
+                "sum_30m",
+                "sum_30m",
+                None,
+            ],
+        }
+    )
+    assert unsaved_feature_df.columns.tolist() == [
+        "object_id",
+        "variable_name",
+        "name",
+        "catalog",
+        "active_catalog",
+    ]
+    expected_df["catalog"] = "default"
+    expected_df["active_catalog"] = True
+    pd.testing.assert_frame_equal(
+        unsaved_feature_df[["variable_name", "name", "catalog", "active_catalog"]].reset_index(
+            drop=True
+        ),
+        expected_df,
+    )
+
+    # save some features
+    feature_list_1.save()
+    float_feature.save()
+    unsaved_feature_df = list_unsaved_features().sort_values("name")
+    expected_df = pd.DataFrame(
+        {
+            "variable_name": [
+                "bool_feature",
+            ],
+            "name": [
+                None,
+            ],
+        }
+    )
+    expected_df["catalog"] = "default"
+    expected_df["active_catalog"] = True
+    pd.testing.assert_frame_equal(
+        unsaved_feature_df[["variable_name", "name", "catalog", "active_catalog"]].reset_index(
+            drop=True
+        ),
+        expected_df,
+    )
+
+    # save remaining
+    bool_feature.name = "bool"
+    bool_feature.save()
+    unsaved_feature_df = list_unsaved_features().sort_values("name")
+    pd.testing.assert_frame_equal(
+        unsaved_feature_df,
+        pd.DataFrame(columns=["object_id", "variable_name", "name", "catalog", "active_catalog"]),
+    )

@@ -12,7 +12,6 @@ from pathlib import Path
 import requests
 import websocket
 import yaml
-from bson import ObjectId
 from pydantic import AnyHttpUrl, BaseModel, Field, validator
 from requests import Response
 
@@ -20,12 +19,11 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import get_version
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 
 # default local location
-DEFAULT_HOME_PATH: Path = Path.home().joinpath(".featurebyte")
+from featurebyte.models.base import get_active_catalog_id
 
-ACTIVE_CATALOG_ID: ObjectId = DEFAULT_CATALOG_ID
+DEFAULT_HOME_PATH: Path = Path.home().joinpath(".featurebyte")
 
 
 def get_home_path() -> Path:
@@ -38,30 +36,6 @@ def get_home_path() -> Path:
         Featurebyte Home path
     """
     return Path(os.environ.get("FEATUREBYTE_HOME", str(DEFAULT_HOME_PATH)))
-
-
-def get_active_catalog_id() -> ObjectId:
-    """
-    Get active catalog id
-
-    Returns
-    -------
-    ObjectId
-    """
-    return ACTIVE_CATALOG_ID
-
-
-def activate_catalog(catalog_id: ObjectId) -> None:
-    """
-    Set active catalog
-
-    Parameters
-    ----------
-    catalog_id: ObjectId
-        Catalog ID to set as active
-    """
-    global ACTIVE_CATALOG_ID  # pylint: disable=global-statement
-    ACTIVE_CATALOG_ID = catalog_id
 
 
 class LogLevel(StrEnum):

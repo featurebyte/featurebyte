@@ -19,6 +19,31 @@ from featurebyte.enum import StrEnum
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
 
 DEFAULT_CATALOG_ID = ObjectId("63eda344d0313fb925f7883a")
+ACTIVE_CATALOG_ID: ObjectId = DEFAULT_CATALOG_ID
+
+
+def get_active_catalog_id() -> ObjectId:
+    """
+    Get active catalog id
+
+    Returns
+    -------
+    ObjectId
+    """
+    return ACTIVE_CATALOG_ID
+
+
+def activate_catalog(catalog_id: ObjectId) -> None:
+    """
+    Set active catalog
+
+    Parameters
+    ----------
+    catalog_id: ObjectId
+        Catalog ID to set as active
+    """
+    global ACTIVE_CATALOG_ID  # pylint: disable=global-statement
+    ACTIVE_CATALOG_ID = catalog_id
 
 
 class PydanticObjectId(ObjectId):
@@ -338,7 +363,7 @@ class FeatureByteCatalogBaseDocumentModel(FeatureByteBaseDocumentModel):
     def _validate_catalog_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         catalog_id = values.get("catalog_id")
         if catalog_id is None:
-            values["catalog_id"] = DEFAULT_CATALOG_ID
+            values["catalog_id"] = get_active_catalog_id()
         return values
 
     class Settings(FeatureByteBaseDocumentModel.Settings):

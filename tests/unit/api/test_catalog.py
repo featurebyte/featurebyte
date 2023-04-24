@@ -40,13 +40,12 @@ from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.table import Table
-from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID, activate_catalog, get_active_catalog_id
 
 
 @pytest.fixture(autouse=True)

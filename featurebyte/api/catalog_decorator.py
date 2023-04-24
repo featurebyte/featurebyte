@@ -5,7 +5,7 @@ from typing import Any
 
 from functools import wraps
 
-from featurebyte.config import activate_catalog, get_active_catalog_id
+from featurebyte.models.base import activate_catalog, get_active_catalog_id
 
 
 def update_and_reset_catalog(func: Any) -> Any:
