@@ -466,6 +466,18 @@ def snowflake_event_table_id_fixture():
     return ObjectId("6337f9651050ee7d5980660d")
 
 
+@pytest.fixture(name="snowflake_event_table_with_tz_offset_column_id")
+def snowflake_event_table_with_tz_offset_column_id_fixture():
+    """Snowflake event table ID"""
+    return ObjectId("64468d2ea444e44a0df168d8")
+
+
+@pytest.fixture(name="snowflake_event_table_with_tz_offset_constant_id")
+def snowflake_event_table_with_tz_offset_constant_id_fixture():
+    """Snowflake event table ID"""
+    return ObjectId("64468d44a444e44a0df168d9")
+
+
 @pytest.fixture(name="snowflake_item_table_id")
 def snowflake_item_table_id_fixture():
     """Snowflake event table ID"""
@@ -512,7 +524,10 @@ def snowflake_event_table_fixture(snowflake_database_table, snowflake_event_tabl
 
 @pytest.fixture(name="snowflake_event_table_with_tz_offset_column")
 def snowflake_event_table_with_tz_offset_column_fixture(
-    snowflake_database_table_no_tz, transaction_entity, cust_id_entity
+    snowflake_database_table_no_tz,
+    snowflake_event_table_with_tz_offset_column_id,
+    transaction_entity,
+    cust_id_entity,
 ):
     """EventTable object fixture"""
     event_table = snowflake_database_table_no_tz.create_event_table(
@@ -521,6 +536,7 @@ def snowflake_event_table_with_tz_offset_column_fixture(
         event_timestamp_column="event_timestamp",
         event_timestamp_timezone_offset_column="tz_offset",
         record_creation_timestamp_column="created_at",
+        _id=snowflake_event_table_with_tz_offset_column_id,
     )
     event_table["col_int"].as_entity(transaction_entity.name)
     event_table["cust_id"].as_entity(cust_id_entity.name)
@@ -529,7 +545,10 @@ def snowflake_event_table_with_tz_offset_column_fixture(
 
 @pytest.fixture(name="snowflake_event_table_with_tz_offset_constant")
 def snowflake_event_table_with_tz_offset_constant_fixture(
-    snowflake_database_table_no_tz, transaction_entity, cust_id_entity
+    snowflake_database_table_no_tz,
+    snowflake_event_table_with_tz_offset_constant_id,
+    transaction_entity,
+    cust_id_entity,
 ):
     """EventTable object fixture"""
     event_table = snowflake_database_table_no_tz.create_event_table(
@@ -538,6 +557,7 @@ def snowflake_event_table_with_tz_offset_constant_fixture(
         event_timestamp_column="event_timestamp",
         event_timestamp_timezone_offset="-05:30",
         record_creation_timestamp_column="created_at",
+        _id=snowflake_event_table_with_tz_offset_constant_id,
     )
     event_table["col_int"].as_entity(transaction_entity.name)
     event_table["cust_id"].as_entity(cust_id_entity.name)
