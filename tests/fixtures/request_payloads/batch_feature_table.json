@@ -4,9 +4,9 @@
         "Instead, update the test conftest.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "6439158b89c3505eca729039",
+    "_id": "6445eb8def0d16d55b96ec9c",
+    "batch_request_table_id": "643eafa8d30643ad7a0d62ad",
     "deployment_id": "64422b7238f5c753ca96295d",
     "feature_store_id": "642db61d28e1dffe39df3521",
-    "name": "batch_feature_table",
-    "batch_request_table_id": "643eafa8d30643ad7a0d62ad"
+    "name": "batch_feature_table"
 }

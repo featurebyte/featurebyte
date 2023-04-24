@@ -1302,14 +1302,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         ),
         context_id=context.id,
     )
-    batch_request_table = BatchRequestTableCreate(
-        name="batch_request_table",
-        feature_store_id=snowflake_feature_store.id,
-        request_input=SourceTableRequestInput(
-            source=snowflake_dimension_table.tabular_source,
-        ),
-        context_id=context.id,
-    )
     historical_feature_table = HistoricalFeatureTableCreate(
         name="historical_feature_table",
         feature_store_id=snowflake_feature_store.id,
@@ -1330,8 +1322,8 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     batch_feature_table = BatchFeatureTableCreate(
         name="batch_feature_table",
         feature_store_id=snowflake_feature_store.id,
-        feature_list_id=feature_list.id,
-        observation_table_id=observation_table.id,
+        batch_request_table_id=batch_request_table.id,
+        deployment_id=deployment.id,
     )
 
     if update_fixtures:
