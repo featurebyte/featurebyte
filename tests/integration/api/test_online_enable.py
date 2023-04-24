@@ -36,6 +36,7 @@ def online_enabled_feature_list_fixture(event_table, config):
     )
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
 
     yield feature_list
 
@@ -58,6 +59,7 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
 
     try:
         deployment = feature_list.deploy(make_production_ready=True)
+        deployment.enable()
 
         # Check feature request
         client = config.get_client()

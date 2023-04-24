@@ -104,7 +104,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "_id": response_dict["data"][0]["_id"],
                     "name": 'Deployment (feature_list: "sf_feature_list")_2',
                     "feature_list_id": response_dict["data"][0]["feature_list_id"],
-                    "enabled": True,
+                    "enabled": False,
                     "catalog_id": str(DEFAULT_CATALOG_ID),
                     "user_id": response_dict["data"][0]["user_id"],
                     "created_at": response_dict["data"][0]["created_at"],
@@ -114,7 +114,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "_id": response_dict["data"][1]["_id"],
                     "name": 'Deployment (feature_list: "sf_feature_list")_1',
                     "feature_list_id": response_dict["data"][1]["feature_list_id"],
-                    "enabled": True,
+                    "enabled": False,
                     "catalog_id": str(DEFAULT_CATALOG_ID),
                     "user_id": response_dict["data"][1]["user_id"],
                     "created_at": response_dict["data"][1]["created_at"],
@@ -124,7 +124,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "_id": response_dict["data"][2]["_id"],
                     "name": 'Deployment (feature_list: "sf_feature_list")_0',
                     "feature_list_id": response_dict["data"][2]["feature_list_id"],
-                    "enabled": True,
+                    "enabled": False,
                     "catalog_id": str(DEFAULT_CATALOG_ID),
                     "user_id": response_dict["data"][2]["user_id"],
                     "created_at": response_dict["data"][2]["created_at"],
@@ -138,8 +138,13 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
     def test_deployment_summary_200(self, test_api_client_persistent, create_success_response):
         """Test deployment summary"""
-        _ = create_success_response
         test_api_client, _ = test_api_client_persistent
+        response = test_api_client.get("/deployment/summary/")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == {"num_feature_list": 0, "num_feature": 0}
+
+        deployment_id = create_success_response.json()["_id"]
+        test_api_client.patch(f"/deployment/{deployment_id}", json={"enabled": True})
         response = test_api_client.get("/deployment/summary/")
         assert response.status_code == HTTPStatus.OK
         assert response.json() == {"num_feature_list": 1, "num_feature": 1}
@@ -152,20 +157,6 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
         create_response_dict = create_success_response.json()
         deployment_id = create_response_dict["_id"]
-
-        # disable deployment
-        response = test_api_client.patch(
-            f"{self.base_route}/{deployment_id}", json={"enabled": False}
-        )
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK
-        assert response_dict["status"] == "SUCCESS", response_dict
-
-        # get deployment and check if it is disabled
-        response = test_api_client.get(f"{self.base_route}/{deployment_id}")
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK
-        assert response_dict["enabled"] is False
 
         # enable deployment
         response = test_api_client.patch(
@@ -180,3 +171,17 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
         assert response_dict["enabled"] is True
+
+        # disable deployment
+        response = test_api_client.patch(
+            f"{self.base_route}/{deployment_id}", json={"enabled": False}
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict["status"] == "SUCCESS", response_dict
+
+        # get deployment and check if it is disabled
+        response = test_api_client.get(f"{self.base_route}/{deployment_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict["enabled"] is False

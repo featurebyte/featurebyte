@@ -807,7 +807,8 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
 
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
-    assert deployment.enabled is True
+    assert deployment.enabled is False
+    deployment.enable()
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
     deployments = list_deployments(include_id=True)
@@ -863,7 +864,8 @@ def test_deploy__ignore_guardrails_skips_validation_checks(feature_list, snowfla
 
     # Set ignore_guardrails to be True - verify that the feature list deploys without errors
     deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
-    assert deployment.enabled == True
+    assert deployment.enabled == False
+    deployment.enable()
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
 
@@ -891,6 +893,8 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
 
     # first deploy feature list
     deployment = feature_list.deploy(make_production_ready=True)
+    assert deployment.enabled is False
+    deployment.enable()
     assert deployment.enabled is True
 
     for feature_id in feature_list.feature_ids:
@@ -900,6 +904,7 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
 
     # deploy another feature list
     another_deployment = another_feature_list.deploy()
+    another_deployment.enable()
     assert another_deployment.enabled is True
 
     for feature_id in feature_list.feature_ids:
@@ -1133,6 +1138,7 @@ def test_get_online_serving_code(mock_preview, feature_list):
     feature_list.save()
     assert feature_list.saved is True
     deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
     assert deployment.enabled is True
     assert (
         feature_list.get_online_serving_code().strip()
@@ -1200,6 +1206,7 @@ def test_get_online_serving_code_unsupported_language(feature_list):
     """Test feature get_online_serving_code with unsupported language"""
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
     assert deployment.enabled is True
     with pytest.raises(NotImplementedError) as exc:
         feature_list.get_online_serving_code(language="java")
@@ -1282,6 +1289,7 @@ def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache)
     assert saved_feature_list.deployed is False
     assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.DRAFT
     deployment = saved_feature_list.deploy(make_production_ready=True)
+    deployment.enable()
     assert deployment.enabled == True
     assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.PRODUCTION_READY
     assert saved_feature_list.deployed is True

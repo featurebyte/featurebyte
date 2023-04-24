@@ -419,6 +419,12 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.status_code == HTTPStatus.CREATED
         assert response.json()["status"] == "SUCCESS"
 
+        # enable the deployment
+        deployment_id = response.json()["payload"]["output_document_id"]
+        response = client.patch(f"/deployment/{deployment_id}", json={"enabled": True})
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["status"] == "SUCCESS"
+
         response = client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["deployed"] is True
@@ -469,7 +475,12 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
-        assert response.json()["deployed"] is True
+        assert response.json()["deployed"] is False
+
+        # enable the deployment
+        response = test_api_client.patch(f"/deployment/{deployment_id}", json={"enabled": True})
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["status"] == "SUCCESS"
 
         # check serving endpoint populated in info
         response = test_api_client.get(

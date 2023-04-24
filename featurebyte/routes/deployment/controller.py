@@ -70,7 +70,7 @@ class DeploymentController(
             deployment_payload=CreateDeploymentPayload(
                 name=data.name,
                 feature_list_id=data.feature_list_id,
-                enabled=True,
+                enabled=False,
             ),
             user_id=self.service.user.id,
             catalog_id=self.service.catalog_id,

@@ -262,6 +262,7 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
     deployment = None
     try:
         deployment = feature_list.deploy(make_production_ready=True)
+        deployment.enable()
         params = preview_params.copy()
         params.pop("POINT_IN_TIME")
         online_result = make_online_request(config.get_client(), feature_list, [params])
@@ -316,6 +317,7 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
     deployment = None
     try:
         deployment = feature_list.deploy(make_production_ready=True)
+        deployment.enable()
         params = preview_params.copy()
         params.pop("POINT_IN_TIME")
         online_result = make_online_request(config.get_client(), feature_list, [params])
@@ -442,7 +444,8 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
 
     # check online serving
     feature_list.save()
-    feature_list.deploy(make_production_ready=True)
+    deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
 
     data = FeatureListGetOnlineFeatures(entity_serving_names=[{"row_number": 1}])
     res = config.get_client().post(
