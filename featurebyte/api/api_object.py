@@ -40,6 +40,7 @@ ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
+POLLING_INTERVAL = 3
 
 
 def get_api_object_cache_key(
@@ -711,7 +712,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
     @classmethod
     def _poll_async_task(
-        cls, task_response: Response, delay: float = 3.0, retrieve_result: bool = True
+        cls, task_response: Response, delay: float = POLLING_INTERVAL, retrieve_result: bool = True
     ) -> dict[str, Any]:
         response_dict = task_response.json()
         status = response_dict["status"]
@@ -772,7 +773,11 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
     @classmethod
     def post_async_task(
-        cls, route: str, payload: dict[str, Any], delay: float = 3.0, retrieve_result: bool = True
+        cls,
+        route: str,
+        payload: dict[str, Any],
+        delay: float = POLLING_INTERVAL,
+        retrieve_result: bool = True,
     ) -> dict[str, Any]:
         """
         Post async task to the worker & retrieve the results (blocking)
@@ -805,6 +810,33 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return cls._poll_async_task(
             task_response=create_response, delay=delay, retrieve_result=retrieve_result
         )
+
+    def patch_async_task(
+        self, route: str, payload: dict[str, Any], delay: float = POLLING_INTERVAL
+    ) -> None:
+        """
+        Patch async task to the worker & wait for the task to finish (blocking)
+
+        Parameters
+        ----------
+        route: str
+            Async task route
+        payload: dict[str, Any]
+            Task payload
+        delay: float
+            Delay used in polling the task
+
+        Raises
+        ------
+        RecordUpdateException
+            When unexpected update failure
+        """
+        client = Configurations().get_client()
+        update_response = client.patch(url=route, json=payload)
+        if update_response.status_code != HTTPStatus.OK:
+            raise RecordUpdateException(response=update_response)
+        if update_response.json():
+            self._poll_async_task(task_response=update_response, delay=delay, retrieve_result=False)
 
 
 class SavableApiObject(ApiObject):

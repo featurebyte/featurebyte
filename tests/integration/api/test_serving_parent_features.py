@@ -157,10 +157,11 @@ def feature_list_with_child_entities_fixture(country_feature, mock_task_manager)
     deployment = None
     try:
         deployment = feature_list.deploy(make_production_ready=True)
+        deployment.enable()
         yield feature_list
     finally:
         if deployment:
-            deployment.enable(False)
+            deployment.disable()
 
 
 @pytest.fixture(name="feature_list_with_parent_child_features", scope="module")
@@ -178,10 +179,11 @@ def feature_list_with_parent_child_features_fixture(
     deployment = None
     try:
         deployment = feature_list.deploy(make_production_ready=True)
+        deployment.enable()
         yield feature_list
     finally:
         if deployment:
-            deployment.enable(False)
+            deployment.disable()
 
 
 @pytest.mark.asyncio

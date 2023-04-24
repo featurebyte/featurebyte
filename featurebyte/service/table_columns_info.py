@@ -233,7 +233,7 @@ class TableColumnsInfoService(BaseService):
                     entity_id=PydanticObjectId(entity_id),
                     related_entity_id=PydanticObjectId(new_parent_entity_id),
                     relation_table_id=PydanticObjectId(table_id),
-                    is_enabled=True,
+                    enabled=True,
                     updated_by=self.user.id,
                 )
             )

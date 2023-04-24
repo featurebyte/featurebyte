@@ -44,9 +44,11 @@ def test_features_without_entity(event_table):
     try:
         feature_list_1.save()
         deployment_1 = feature_list_1.deploy(make_production_ready=True)
+        deployment_1.enable()
 
         feature_list_2.save()
         deployment_2 = feature_list_2.deploy(make_production_ready=True)
+        deployment_2.enable()
 
         # Test getting historical requests
         df_features_deployed_1 = (
@@ -62,7 +64,7 @@ def test_features_without_entity(event_table):
     finally:
         for deployment in [deployment_1, deployment_2]:
             if deployment:
-                deployment.enable(False)
+                deployment.disable()
 
     pd.testing.assert_frame_equal(df_features_1, df_features_deployed_1)
     pd.testing.assert_frame_equal(df_features_2, df_features_deployed_2)

@@ -1337,7 +1337,7 @@ class FeatureList(
         Returns
         -------
         Deployment
-            Deployment object of the feature list.
+            Deployment object of the feature list. The created deployment is disabled by default.
 
         Examples
         --------

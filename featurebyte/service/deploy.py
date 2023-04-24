@@ -342,6 +342,7 @@ class DeployService(BaseService):
         feature_list_id: ObjectId,
         deployment_id: ObjectId,
         deployment_name: Optional[str],
+        to_enable_deployment: bool,
         get_credential: Any,
         update_progress: Optional[Callable[[int, str], None]] = None,
     ) -> None:
@@ -356,6 +357,8 @@ class DeployService(BaseService):
             Deployment ID
         deployment_name: Optional[str]
             Deployment name
+        to_enable_deployment: bool
+            Whether to enable deployment
         get_credential: Any
             Get credential handler function
         update_progress: Callable[[int, str], None]
@@ -366,7 +369,6 @@ class DeployService(BaseService):
             f'Deployment (feature_list: "{feature_list.name}", '
             f"version: {feature_list.version.to_str()})"
         )
-        to_enable_deployment = True
         await self.update_feature_list(
             feature_list_id=feature_list_id,
             deployed=to_enable_deployment,

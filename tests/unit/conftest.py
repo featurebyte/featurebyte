@@ -1291,7 +1291,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         entity_id=cust_id_entity.id,
         related_entity_id=transaction_entity.id,
         relation_table_id="6337f9651050ee7d5980660d",
-        is_enabled=True,
+        enabled=True,
         updated_by="63f6a145e549df8ccf123444",
     )
     observation_table = ObservationTableCreate(

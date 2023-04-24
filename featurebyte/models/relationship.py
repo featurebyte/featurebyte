@@ -90,7 +90,7 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
-    is_enabled: bool
+    enabled: bool
     updated_by: Optional[PydanticObjectId]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
@@ -120,7 +120,7 @@ class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("entity_id"),
             pymongo.operations.IndexModel("related_entity_id"),
             pymongo.operations.IndexModel("relation_table_id"),
-            pymongo.operations.IndexModel("is_enabled"),
+            pymongo.operations.IndexModel("enabled"),
             [
                 ("name", pymongo.TEXT),
             ],

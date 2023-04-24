@@ -97,6 +97,7 @@ async def test_online_serving_sql(features, session, config):
         return_value=next_job_datetime,
     ):
         deployment = feature_list.deploy(make_production_ready=True)
+        deployment.enable()
         assert deployment.enabled is True
 
     user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
@@ -134,7 +135,7 @@ async def test_online_serving_sql(features, session, config):
         # Check online_features route
         check_online_features_route(feature_list, config, df_historical, columns)
     finally:
-        deployment.enable(enabled=False)
+        deployment.disable()
         assert deployment.enabled is False
 
 

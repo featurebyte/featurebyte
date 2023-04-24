@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from featurebyte.schema.worker.task.feature_list_deploy import (
+from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
     DeploymentCreateUpdateTaskPayload,
     DeploymentPayloadType,
@@ -32,6 +32,7 @@ class DeploymentCreateUpdateTask(BaseTask):
                 feature_list_id=create_deployment_payload.feature_list_id,
                 deployment_id=payload.output_document_id,
                 deployment_name=create_deployment_payload.name,
+                to_enable_deployment=create_deployment_payload.enabled,
                 get_credential=self.get_credential,
                 update_progress=self.update_progress,
             )

@@ -18,7 +18,7 @@ from featurebyte.schema.deployment import (
     DeploymentUpdate,
 )
 from featurebyte.schema.task import Task
-from featurebyte.schema.worker.task.feature_list_deploy import (
+from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
     DeploymentCreateUpdateTaskPayload,
     UpdateDeploymentPayload,
@@ -70,7 +70,7 @@ class DeploymentController(
             deployment_payload=CreateDeploymentPayload(
                 name=data.name,
                 feature_list_id=data.feature_list_id,
-                enabled=True,
+                enabled=False,
             ),
             user_id=self.service.user.id,
             catalog_id=self.service.catalog_id,
