@@ -32,7 +32,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         (
             {
                 "relationship_type": "child_parent",
-                "is_enabled": False,
+                "enabled": False,
             },
             [
                 {"loc": ["body", "name"], "msg": "field required", "type": "value_error.missing"},
@@ -118,22 +118,22 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
 
     def test_update_200(self, test_api_client_persistent, create_success_response):
         """
-        Test patch to update is_enabled status
+        Test patch to update enabled status
         """
-        # Create RelationshipInfo and verify is_enabled is True
+        # Create RelationshipInfo and verify enabled is True
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
-        assert response_dict["is_enabled"]
+        assert response_dict["enabled"]
 
-        # Update is_enabled to False
-        data_update = RelationshipInfoUpdate(is_enabled=False)
+        # Update enabled to False
+        data_update = RelationshipInfoUpdate(enabled=False)
         response = test_api_client.patch(
             f"{self.base_route}/{response_dict['_id']}", json=data_update.dict()
         )
         assert response.status_code == HTTPStatus.OK
 
-        # Verify is_enabled is False
+        # Verify enabled is False
         response = test_api_client.get(f"{self.base_route}/{response_dict['_id']}")
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
-        assert not response_dict["is_enabled"]
+        assert not response_dict["enabled"]

@@ -268,7 +268,7 @@ def event_table_entity_initializer_fixture(
                     entity_id=PydanticObjectId(entity_id),
                     related_entity_id=PydanticObjectId(parent_id),
                     relation_table_id=PydanticObjectId(event_table.id),
-                    is_enabled=True,
+                    enabled=True,
                     updated_by=user.id,
                 )
             )

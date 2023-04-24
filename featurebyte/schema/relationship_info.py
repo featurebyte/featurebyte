@@ -24,7 +24,7 @@ class RelationshipInfoCreate(FeatureByteBaseModel):
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
-    is_enabled: bool
+    enabled: bool
     updated_by: Optional[PydanticObjectId]
 
 
@@ -41,7 +41,7 @@ class RelationshipInfoUpdate(BaseDocumentServiceUpdateSchema):
     RelationshipInfo update payload schema
     """
 
-    is_enabled: bool
+    enabled: bool
 
 
 class RelationshipInfoInfo(FeatureByteBaseModel):

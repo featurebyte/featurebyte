@@ -50,7 +50,7 @@ class Relationship(ApiObject):
         "related_entity",
         "relation_table",
         "relation_table_type",
-        "is_enabled",
+        "enabled",
         "created_at",
         "updated_at",
     ]
@@ -62,11 +62,11 @@ class Relationship(ApiObject):
     ]
 
     # pydantic instance variable (internal use)
-    internal_is_enabled: bool = Field(alias="is_enabled")
+    internal_enabled: bool = Field(alias="enabled")
     internal_updated_by: PydanticObjectId = Field(alias="updated_by")
 
     @property
-    def is_enabled(self) -> bool:
+    def enabled(self) -> bool:
         """
         Whether the relationship has been updated
 
@@ -76,9 +76,9 @@ class Relationship(ApiObject):
             Whether the relationship has been updated
         """
         try:
-            return self.cached_model.is_enabled
+            return self.cached_model.enabled
         except RecordRetrievalException:
-            return self.internal_is_enabled
+            return self.internal_enabled
 
     @property
     def updated_by(self) -> PydanticObjectId:
@@ -158,20 +158,18 @@ class Relationship(ApiObject):
             ]
         return list_responses
 
-    @typechecked
-    def enable(self, enable: bool) -> None:
+    def _update_enabled(self, enabled: bool) -> None:
+        self.internal_enabled = enabled
+        payload = RelationshipInfoUpdate(enabled=enabled)
+        self.update(payload.json_dict(), allow_update_local=True, add_internal_prefix=True)
+
+    def enable(self) -> None:
         """
-        Enables a Relationship object or disable it by setting the enable parameter to False. By default, a
-        Relationship object is enabled.
+        Enables a Relationship object.
 
         A Relationship object of parent-child is automatically created when the primary key (or natural key in the
         context of a SCD table) identifies one entity. This entity is the child entity. Other entities that are
         referenced in the table are identified as the parent entities.
-
-        Parameters
-        ----------
-        enable: bool
-            Whether to enable or disable the relationship
 
         Examples
         --------
@@ -179,17 +177,24 @@ class Relationship(ApiObject):
 
         >>> import featurebyte as fb  # doctest: +SKIP
         >>> relationship = fb.Relationship.get_by_id(<relationship_id>)  # doctest: +SKIP
-        >>> relationship.enable(True)  # doctest: +SKIP
+        >>> relationship.enable()  # doctest: +SKIP
+        """
+        self._update_enabled(enabled=True)
 
+    def disable(self) -> None:
+        """
+        Disables a Relationship object.
 
+        A Relationship object of parent-child is automatically created when the primary key (or natural key in the
+        context of a SCD table) identifies one entity. This entity is the child entity. Other entities that are
+        referenced in the table are identified as the parent entities.
+
+        Examples
+        --------
         Disable a relationship
 
         >>> import featurebyte as fb  # doctest: +SKIP
         >>> relationship = fb.Relationship.get_by_id(<relationship_id>)  # doctest: +SKIP
-        >>> relationship.enable(False)  # doctest: +SKIP
+        >>> relationship.disable()  # doctest: +SKIP
         """
-
-        payload = RelationshipInfoUpdate(
-            is_enabled=enable,
-        )
-        self.update(payload.json_dict(), allow_update_local=True, add_internal_prefix=True)
+        self._update_enabled(enabled=False)

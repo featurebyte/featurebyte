@@ -19,7 +19,7 @@ def test_duplicate_primary_and_related_ids_throws_error():
             entity_id=id_1,
             related_entity_id=id_1,
             relation_table_id=PydanticObjectId(ObjectId()),
-            is_enabled=False,
+            enabled=False,
             updated_by=PydanticObjectId(ObjectId()),
         )
     assert "Primary and Related entity id cannot be the same" in str(exc.value)

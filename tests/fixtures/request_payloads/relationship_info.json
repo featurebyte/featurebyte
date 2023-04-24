@@ -5,7 +5,7 @@
         "Run `pytest --update-fixtures` to update it."
     ],
     "_id": "63f6a145e549df8ccf123456",
-    "is_enabled": true,
+    "enabled": true,
     "name": "child_parent_relationship",
     "entity_id": "63f94ed6ea1f050131379214",
     "relation_table_id": "6337f9651050ee7d5980660d",

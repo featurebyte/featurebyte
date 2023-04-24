@@ -665,7 +665,7 @@ async def test_get_relationship_info_info(
             entity_id=entity.id,
             related_entity_id=transaction_entity.id,
             relation_table_id=event_table.id,
-            is_enabled=True,
+            enabled=True,
             updated_by=PydanticObjectId(ObjectId()),
         )
     )

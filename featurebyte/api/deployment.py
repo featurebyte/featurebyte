@@ -61,7 +61,7 @@ class Deployment(ApiObject):
         """
         return self.cached_model.enabled
 
-    def _update_is_enabled(self, enabled: bool) -> None:
+    def _update_enabled(self, enabled: bool) -> None:
         client = Configurations().get_client()
         update_response = client.patch(url=f"{self._route}/{self.id}", json={"enabled": enabled})
         if update_response.status_code != HTTPStatus.OK:
@@ -73,10 +73,10 @@ class Deployment(ApiObject):
         """
         Enable the deployment.
         """
-        self._update_is_enabled(enabled=True)
+        self._update_enabled(enabled=True)
 
     def disable(self) -> None:
         """
         Disable the deployment.
         """
-        self._update_is_enabled(enabled=False)
+        self._update_enabled(enabled=False)

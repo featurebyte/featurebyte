@@ -39,7 +39,7 @@ def relationship_info_create_fixture():
         entity_id=entity_id,
         related_entity_id=related_entity_id,
         relation_table_id=relation_table_id,
-        is_enabled=False,
+        enabled=False,
         updated_by=PydanticObjectId(ObjectId()),
     )
 

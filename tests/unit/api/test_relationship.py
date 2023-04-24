@@ -38,7 +38,7 @@ def persistable_relationship_info_fixture(relationship_info_service, snowflake_e
                 entity_id=cust_entity.id,
                 related_entity_id=user_entity.id,
                 relation_table_id=snowflake_event_table.id,
-                is_enabled=False,
+                enabled=False,
                 updated_by=PydanticObjectId(ObjectId()),
             )
         )
@@ -63,18 +63,19 @@ def test_accessing_persisted_relationship_info_attributes(persisted_relationship
     """
     # Retrieving one copy from the database
     version_1 = Relationship.get_by_id(id=persisted_relationship_info.id)
-    assert not version_1.is_enabled
+    assert not version_1.enabled
 
     # Retrieving another copy from the database
     version_2 = Relationship.get_by_id(id=persisted_relationship_info.id)
-    assert not version_2.is_enabled
+    assert not version_2.enabled
 
     # Update the enabled value on the first in-memory version
-    version_1.enable(True)
+    version_1.enable()
+    assert version_1.enabled is True
 
     # Check that both versions are updated
-    assert version_1.is_enabled
-    assert version_2.is_enabled
+    assert version_1.enabled
+    assert version_2.enabled
 
 
 def assert_relationship_info(relationship_info_df):
@@ -88,7 +89,7 @@ def assert_relationship_info(relationship_info_df):
     assert relationship_info_df["related_entity"][0] == "user"
     assert relationship_info_df["relation_table"][0] == "sf_event_table"
     assert relationship_info_df["relation_table_type"][0] == "event_table"
-    assert not relationship_info_df["is_enabled"][0]
+    assert not relationship_info_df["enabled"][0]
 
 
 @pytest.mark.asyncio
@@ -125,22 +126,23 @@ async def test_enable(persisted_relationship_info):
     Test enable
     """
     # verify that relationship is not enabled
-    assert not persisted_relationship_info.is_enabled
+    assert not persisted_relationship_info.enabled
 
     # retrieve relationship via get_by_id
     relationship = Relationship.get_by_id(persisted_relationship_info.id)
-    assert not relationship.is_enabled
+    assert not relationship.enabled
 
     # enable relationship
-    relationship.enable(True)
+    relationship.enable()
 
     # verify that relationship is now enabled
     relationship = Relationship.get_by_id(persisted_relationship_info.id)
-    assert relationship.is_enabled
+    assert relationship.enabled
 
     # disable relationship
-    relationship.enable(False)
+    relationship.disable()
+    assert relationship.enabled is False
 
     # verify that relationship is now enabled
     relationship = Relationship.get_by_id(persisted_relationship_info.id)
-    assert not relationship.is_enabled
+    assert not relationship.enabled
