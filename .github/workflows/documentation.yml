@@ -28,6 +28,9 @@ jobs:
   build-updated-docs:
     runs-on: ubuntu-latest
     needs: ["check-should-run"]
+    strategy:
+      matrix:
+        python-version: [ "3.8.0" ]
     steps:
       - uses: actions/checkout@v3
       - uses: arduino/setup-task@v1
@@ -66,6 +69,9 @@ jobs:
   build-base-docs:
     runs-on: ubuntu-latest
     needs: ["check-should-run"]
+    strategy:
+      matrix:
+        python-version: [ "3.8.0" ]
     steps:
       - name: Checkout merge-base
         uses: actions/checkout@v3
