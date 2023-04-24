@@ -8,7 +8,6 @@ from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
-import httpx
 import numpy as np
 import pandas as pd
 import pytest
