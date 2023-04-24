@@ -243,8 +243,8 @@ class SCDTable(TableApiObject):
         prefixes: Optional[Tuple[Optional[str], Optional[str]]]
             Optional prefixes where each element indicates the prefix to add to the new column names for the name of
             the column that we want to track. The first prefix will be used for the old, and the second for the new.
-             If not provided, the column names will be prefixed with the default values of "past_", and "new_". At
-             least one of the values must not be None. If two values are provided, they must be different.
+            If not provided, the column names will be prefixed with the default values of "past_", and "new_". At
+            least one of the values must not be None. If two values are provided, they must be different.
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
            View mode to use. When auto, the view will be constructed with cleaning operations.
         drop_column_names: Optional[List[str]]
