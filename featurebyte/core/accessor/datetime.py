@@ -119,7 +119,7 @@ class DatetimeAccessor:
             )
         self._obj = obj
 
-        self._timezone_offset: Optional[str, FrozenSeries] = None
+        self._timezone_offset: Optional[Union[str, FrozenSeries]] = None
 
         # Optional timezone offset override
         if timezone_offset is not None:
