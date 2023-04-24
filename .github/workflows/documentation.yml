@@ -108,9 +108,9 @@ jobs:
         run: git checkout "origin/${{ github.head_ref }}"
       - name: Checkout merge base
         run: |
-          git checkout $(git merge-base --fork-point HEAD origin/main)
+          git checkout $(git merge-base --fork-point HEAD^ origin/main)
       - name: Git log
-        run: git log
+        run: git log -n 5
       - name: Building docs for base branch
         run: |
           task docs-persist-reference
