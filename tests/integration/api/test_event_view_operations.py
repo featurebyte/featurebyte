@@ -248,7 +248,6 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
 
     # check accessor operations
     check_string_operations(event_view, "PRODUCT_ACTION")
-    check_datetime_operations(event_view, "ËVENT_TIMESTAMP")
 
     # check casting operations
     check_cast_operations(event_view, source_type=event_view.feature_store.type)
@@ -788,9 +787,12 @@ def check_string_operations(event_view, column_name, limit=100):
     pd.testing.assert_series_equal(str_df["str_slice"], pandas_series.str[:5], check_names=False)
 
 
-def check_datetime_operations(event_view, column_name, limit=100):
+def test_datetime_operations(event_view, source_type):
     """Test datetime operations"""
     event_view = event_view.copy()
+
+    column_name = "ËVENT_TIMESTAMP"
+    limit = 100
     datetime_series = event_view[column_name]
 
     # add datetime extracted properties
@@ -835,9 +837,27 @@ def check_datetime_operations(event_view, column_name, limit=100):
 
     # check datetime extracted properties
     dt_df = event_view.preview(limit=limit)
+
     pandas_series = dt_df[column_name]
+    if source_type in {"spark", "databricks"}:
+        # For non-snowflake sources, the event timestamps would have been stored as UTC. The
+        # correct date properties should be extracted using the local time, so add timezone offset
+        # here to obtain the local time.
+        offset_info = dt_df["TZ_OFFSET"].str.extract(
+            "(?P<sign>[+-])(?P<hour>\d\d):(?P<minute>\d\d)"
+        )
+        offset_info["sign"] = offset_info["sign"].replace({"-": -1, "+": 1}).astype(int)
+        offset_info["total_minutes"] = offset_info["sign"] * offset_info["hour"].astype(
+            int
+        ) * 60 + offset_info["minute"].astype(int)
+        event_timestamp_local_timezone = pandas_series + pd.to_timedelta(
+            offset_info["total_minutes"], unit="m"
+        )
+    else:
+        event_timestamp_local_timezone = pandas_series
+
     for prop in properties:
-        series_prop = pandas_series.apply(lambda x: getattr(x, prop))
+        series_prop = getattr(event_timestamp_local_timezone.dt, prop)
         pd.testing.assert_series_equal(
             dt_df[f"dt_{prop}"],
             series_prop,
