@@ -74,16 +74,11 @@ jobs:
         python-version: [ "3.8.0" ]
     needs: ["check-should-run"]
     steps:
-      - name: Checkout history
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-#      - name: Specifically checkout branch
-#        run: git checkout "origin/${{ github.head_ref }}"
       - name: Checkout merge base
         run: git checkout $(git merge-base "origin/${{ github.head_ref }}" origin/main)
-      - name: Git log
-        run: git log -n 5
       - uses: arduino/setup-task@v1
         with:
           version: 3.x
