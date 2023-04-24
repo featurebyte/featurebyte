@@ -35,9 +35,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - run:
-          echo $(git merge-base --fork-point origin/"${{ github.head_ref }}" origin/main)
-#      - uses: actions/checkout@v3
+      - name: checkout branch
+        run: git checkout "origin/${{ github.head_ref }}"
+      - name: test
+        run: git log
+
 #      - uses: arduino/setup-task@v1
 #        with:
 #          version: 3.x
