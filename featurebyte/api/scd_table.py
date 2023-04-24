@@ -246,7 +246,7 @@ class SCDTable(TableApiObject):
             If not provided, the column names will be prefixed with the default values of "past_", and "new_". At
             least one of the values must not be None. If two values are provided, they must be different.
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
-           View mode to use. When auto, the view will be constructed with cleaning operations.
+            View mode to use. When auto, the view will be constructed with cleaning operations.
         drop_column_names: Optional[List[str]]
             List of column names to drop (manual mode only).
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
