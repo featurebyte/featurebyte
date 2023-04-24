@@ -19,9 +19,6 @@ env:
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi
   GCR_PYPI_LOCATION: us-central1
-  # TODO (Chester|GA-Release): This will be removed
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
 jobs:
   # Github caches do not update themselves on a successful run
   # This workflow will delete them and rebuild them to the most updated dependencies / requirements
@@ -62,11 +59,9 @@ jobs:
         uses: abatilo/actions-poetry@v2
         with:
           poetry-version: 1.3.1
-      # TODO (Chester|GA-Release): This will be removed
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
       - name: Adding C headers
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc

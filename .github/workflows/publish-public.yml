@@ -32,8 +32,7 @@ env:
   BETA_PYPI_REPO: beta-pypi
   BETA_PYPI_LOCATION: us-central1
   BETA_DOCKER_LOCATION: us-central1
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64 # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+
   # Docker
   SERVER_IMAGE_REPO: "us-central1-docker.pkg.dev/beta-testing-373907/docker/featurebyte-server"
 
