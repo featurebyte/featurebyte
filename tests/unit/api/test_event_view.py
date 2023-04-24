@@ -1004,3 +1004,30 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
         table_id=snowflake_event_table_with_tz_offset_column.id,
         dimension_table_id=snowflake_dimension_table.id,
     )
+
+
+def test_datetime_property_extraction__manually_specified_timezone_offset(
+    snowflake_event_table_with_tz_offset_constant, update_fixtures
+):
+    """
+    Test extracting datetime property with manually specified timezone offset
+    """
+    view = snowflake_event_table_with_tz_offset_constant.get_view()
+    timestamp_hour = view["event_timestamp"].dt.tz_offset("+08:00").hour
+    view["event_timestamp_hour"] = timestamp_hour
+
+    # Check DT_EXTRACT node set up correctly
+    assert timestamp_hour.node.parameters.dict() == {
+        "property": "hour",
+        "timezone_offset": "+08:00",
+    }
+    dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
+    assert len(dt_extract_input_nodes) == 1
+
+    check_sdk_code_generation(
+        view,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/event_view_with_tz_offset_constant_manual.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_event_table_with_tz_offset_constant.id,
+    )
