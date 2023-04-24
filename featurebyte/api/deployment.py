@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from http import HTTPStatus
 
-from typeguard import typechecked
-
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature_list import FeatureList
