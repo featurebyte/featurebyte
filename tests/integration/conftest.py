@@ -421,7 +421,7 @@ def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
 
 
 @pytest.fixture(name="transaction_data", scope="session")
-def transaction_dataframe(source_type):
+def transaction_dataframe():
     """
     Simulated transaction Dataframe
     """

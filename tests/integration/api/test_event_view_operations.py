@@ -839,25 +839,21 @@ def test_datetime_operations(event_view, source_type):
     dt_df = event_view.preview(limit=limit)
 
     pandas_series = dt_df[column_name]
-    if source_type in {"spark", "databricks"}:
-        # For non-snowflake sources, the event timestamps would have been stored as UTC. The
-        # correct date properties should be extracted using the local time, so add timezone offset
-        # here to obtain the local time.
-        offset_info = dt_df["TZ_OFFSET"].str.extract(
-            "(?P<sign>[+-])(?P<hour>\d\d):(?P<minute>\d\d)"
-        )
-        offset_info["sign"] = offset_info["sign"].replace({"-": -1, "+": 1}).astype(int)
-        offset_info["total_minutes"] = offset_info["sign"] * offset_info["hour"].astype(
-            int
-        ) * 60 + offset_info["minute"].astype(int)
-        event_timestamp_local_timezone = pandas_series + pd.to_timedelta(
-            offset_info["total_minutes"], unit="m"
-        )
-    else:
-        event_timestamp_local_timezone = pandas_series
+
+    # The correct date properties should be extracted using events' local time. This will add
+    # timezone offset to the event timestamp (UTC) to obtain the local time.
+    event_timestamp_utc = pd.to_datetime(pandas_series, utc=True).dt.tz_localize(None)
+    offset_info = dt_df["TZ_OFFSET"].str.extract("(?P<sign>[+-])(?P<hour>\d\d):(?P<minute>\d\d)")
+    offset_info["sign"] = offset_info["sign"].replace({"-": -1, "+": 1}).astype(int)
+    offset_info["total_minutes"] = offset_info["sign"] * offset_info["hour"].astype(
+        int
+    ) * 60 + offset_info["minute"].astype(int)
+    event_timestamp_localized = event_timestamp_utc + pd.to_timedelta(
+        offset_info["total_minutes"], unit="m"
+    )
 
     for prop in properties:
-        series_prop = getattr(event_timestamp_local_timezone.dt, prop)
+        series_prop = getattr(event_timestamp_localized.dt, prop)
         pd.testing.assert_series_equal(
             dt_df[f"dt_{prop}"],
             series_prop,
