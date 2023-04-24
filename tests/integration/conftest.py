@@ -469,11 +469,13 @@ def transaction_dataframe():
     # exclude any nanosecond components since it is not supported
     data["ëvent_timestamp"] = data["ëvent_timestamp"].dt.floor("us")
     # add timezone offset
-    offsets = rng.choice(range(24), size=data["ëvent_timestamp"].shape[0])
+    offsets = rng.choice(range(-18, 18, 1), size=data["ëvent_timestamp"].shape[0])
     data["ëvent_timestamp"] = data["ëvent_timestamp"] + pd.Series(offsets) * pd.Timedelta(hours=1)
+    formatted_offsets = [f"{i:+03d}:00" for i in offsets]
     data["ëvent_timestamp"] = pd.to_datetime(
-        data["ëvent_timestamp"].astype(str) + [f"+{i:02d}:00" for i in offsets]
+        data["ëvent_timestamp"].astype(str) + formatted_offsets
     )
+    data["tz_offset"] = formatted_offsets
     data["transaction_id"] = [f"T{i}" for i in range(data.shape[0])]
     yield data
 
@@ -606,7 +608,14 @@ def expected_joined_event_item_dataframe_fixture(transaction_data_upper_case, it
     """
     df = pd.merge(
         transaction_data_upper_case[
-            ["TRANSACTION_ID", "ËVENT_TIMESTAMP", "ÜSER ID", "CUST_ID", "PRODUCT_ACTION"]
+            [
+                "TRANSACTION_ID",
+                "ËVENT_TIMESTAMP",
+                "ÜSER ID",
+                "CUST_ID",
+                "PRODUCT_ACTION",
+                "TZ_OFFSET",
+            ]
         ],
         items_dataframe,
         left_on="TRANSACTION_ID",
@@ -1053,6 +1062,7 @@ def create_transactions_event_table_from_data_source(
             "PRODUCT_ACTION": "VARCHAR",
             "SESSION_ID": "INT",
             "ÀMOUNT": "FLOAT",
+            "TZ_OFFSET": "VARCHAR",
             "TRANSACTION_ID": "VARCHAR",
         }
     )
@@ -1061,6 +1071,7 @@ def create_transactions_event_table_from_data_source(
         name=event_table_name,
         event_id_column="TRANSACTION_ID",
         event_timestamp_column="ËVENT_TIMESTAMP",
+        event_timestamp_timezone_offset_column="TZ_OFFSET",
     )
     event_table.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(

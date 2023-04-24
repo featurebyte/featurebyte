@@ -23,13 +23,13 @@ from featurebyte.query_graph.sql.ast.util import prepare_binary_op_input_nodes
 class DatetimeExtractNode(ExpressionNode):
     """Node for extract datetime properties operation"""
 
-    expr: ExpressionNode
+    expr: Expression
     dt_property: DatetimeSupportedPropertyType
     query_node_type = NodeType.DT_EXTRACT
 
     @property
     def sql(self) -> Expression:
-        params = {"this": self.dt_property, "expression": self.expr.sql}
+        params = {"this": self.dt_property, "expression": self.expr}
         prop_expr = expressions.Extract(**params)
         if self.dt_property == "dayofweek":
             return self.context.adapter.adjust_dayofweek(prop_expr)
@@ -42,10 +42,32 @@ class DatetimeExtractNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> DatetimeExtractNode:
         input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
         table_node = input_expr_node.table_node
+
+        # Extract timezone offset expression (can be a fixed value or a column)
+        if context.parameters.get("timezone_offset") is not None:
+            timezone_offset_expr = make_literal_value(context.parameters["timezone_offset"])
+        elif len(context.input_sql_nodes) > 1:
+            timezone_offset_expr = context.input_sql_nodes[1].sql
+        else:
+            timezone_offset_expr = None
+
+        if timezone_offset_expr is None:
+            timestamp_expr = input_expr_node.sql
+        else:
+            # If timezone offset is provided, apply that to the input timestamp (in UTC) to obtain
+            # the local time before extracting date properties
+            timezone_offset_seconds = expressions.Anonymous(
+                this="F_TIMEZONE_OFFSET_TO_SECOND",
+                expressions=[timezone_offset_expr],
+            )
+            timestamp_expr = expressions.Anonymous(
+                this="DATEADD", expressions=["second", timezone_offset_seconds, input_expr_node.sql]
+            )
+
         sql_node = DatetimeExtractNode(
             context=context,
             table_node=table_node,
-            expr=input_expr_node,
+            expr=timestamp_expr,
             dt_property=context.parameters["property"],
         )
         return sql_node

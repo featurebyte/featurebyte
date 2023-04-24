@@ -43,10 +43,11 @@ def test_event_view_sample(event_table):
         "PRODUCT_ACTION",
         "SESSION_ID",
         "ÀMOUNT",
+        "TZ_OFFSET",
         "TRANSACTION_ID",
     ]
 
-    assert sample_df.shape == (10, 8)
+    assert sample_df.shape == (10, 9)
     assert sample_df["ËVENT_TIMESTAMP"].min() == pd.Timestamp("2001-01-06 03:42:00.000640+10:00")
     assert sample_df["ËVENT_TIMESTAMP"].max() == pd.Timestamp("2001-10-14 13:57:21.000525+06:00")
 
@@ -63,7 +64,7 @@ def test_event_view_sample_seed(event_table):
     """
     event_view = event_table.get_view()
     sample_df = event_view.sample(size=10, seed=4321)
-    assert sample_df.shape == (10, 8)
+    assert sample_df.shape == (10, 9)
     assert sample_df["ËVENT_TIMESTAMP"].min() == pd.Timestamp("2001-01-01 22:23:02.000349+22:00")
     assert sample_df["ËVENT_TIMESTAMP"].max() == pd.Timestamp("2001-10-05 14:34:01.000068+10:00")
 
@@ -81,7 +82,7 @@ def test_event_view_sample_with_date_range(event_table):
         "to_timestamp": "2001-10-14",
     }
     sample_df = event_view.sample(**sample_params)
-    assert sample_df.shape == (15, 8)
+    assert sample_df.shape == (15, 9)
     assert sample_df["ËVENT_TIMESTAMP"].min() == pd.Timestamp("2001-10-10 18:58:16.000637+13:00")
     assert sample_df["ËVENT_TIMESTAMP"].max() == pd.Timestamp("2001-10-13 13:12:06.000903+09:00")
 
@@ -104,9 +105,10 @@ def test_item_view_sample(item_table):
         "CUST_ID",
         "ÜSER ID",
         "PRODUCT_ACTION",
+        "TZ_OFFSET",
     ]
 
-    assert sample_df.shape == (10, 7)
+    assert sample_df.shape == (10, 8)
     assert sample_df["ËVENT_TIMESTAMP"].min() == pd.Timestamp("2001-01-02 21:55:20.000561+1000")
     assert sample_df["ËVENT_TIMESTAMP"].max() == pd.Timestamp("2001-12-27 14:51:49.000824+1300")
 
@@ -124,7 +126,7 @@ def test_item_view_sample_with_date_range(item_table):
         "to_timestamp": "2001-10-14",
     }
     sample_df = item_view.sample(**sample_params)
-    assert sample_df.shape == (15, 7)
+    assert sample_df.shape == (15, 8)
     assert sample_df["ËVENT_TIMESTAMP"].min() == pd.Timestamp("2001-10-10 18:12:15.000088+1400")
     assert sample_df["ËVENT_TIMESTAMP"].max() == pd.Timestamp("2001-10-14 16:08:02.000346+2200")
 

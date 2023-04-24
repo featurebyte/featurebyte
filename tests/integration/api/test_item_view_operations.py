@@ -22,6 +22,7 @@ def test_expected_rows_and_columns(item_table, expected_joined_event_item_datafr
         "CUST_ID",
         "ÜSER ID",
         "PRODUCT_ACTION",
+        "TZ_OFFSET",
     ]
     assert df_preview.columns.tolist() == expected_columns
     assert df_preview.shape[0] == 50
@@ -187,6 +188,7 @@ def test_item_view_joined_with_dimension_view(
         "CUST_ID",
         "ÜSER ID",
         "PRODUCT_ACTION",
+        "TZ_OFFSET",
     ]
     assert item_view.columns == item_columns
     original_item_preview = item_view.preview()

@@ -162,6 +162,7 @@ EXPECTED_FUNCTIONS = [
     "F_COUNT_DICT_COSINE_SIMILARITY",
     "F_GET_RANK",
     "F_GET_RELATIVE_FREQUENCY",
+    "F_TIMEZONE_OFFSET_TO_SECOND",
 ]
 
 EXPECTED_TABLES = [
@@ -312,6 +313,11 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "F_COUNT_DICT_COSINE_SIMILARITY.sql",
             "identifier": "F_COUNT_DICT_COSINE_SIMILARITY",
+            "type": "function",
+        },
+        {
+            "filename": "F_TIMEZONE_OFFSET_TO_SECOND.sql",
+            "identifier": "F_TIMEZONE_OFFSET_TO_SECOND",
             "type": "function",
         },
         {"filename": "T_TILE_REGISTRY.sql", "identifier": "TILE_REGISTRY", "type": "table"},

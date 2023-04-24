@@ -924,7 +924,6 @@ def test_datetime_property_extraction__event_timestamp(
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 1
 
-    # TODO: update expected sql when timezone offset has effect
     expected = textwrap.dedent(
         """
         SELECT
@@ -932,7 +931,7 @@ def test_datetime_property_extraction__event_timestamp(
           "col_int" AS "col_int",
           "cust_id" AS "cust_id",
           "tz_offset" AS "tz_offset",
-          EXTRACT(hour FROM "event_timestamp") AS "event_timestamp_hour"
+          EXTRACT(hour FROM DATEADD(second, F_TIMEZONE_OFFSET_TO_SECOND('-05:30'), "event_timestamp")) AS "event_timestamp_hour"
         FROM "sf_database"."sf_schema"."sf_table_no_tz"
         LIMIT 10
         """
@@ -960,7 +959,6 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
         "columns": ["tz_offset"]
     }
 
-    # TODO: update expected sql when timezone offset has effect
     expected = textwrap.dedent(
         """
         SELECT
@@ -969,7 +967,7 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
           L."cust_id" AS "cust_id",
           L."tz_offset" AS "tz_offset",
           R."col_text" AS "col_text",
-          EXTRACT(hour FROM L."event_timestamp") AS "event_timestamp_hour"
+          EXTRACT(hour FROM DATEADD(second, F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset"), L."event_timestamp")) AS "event_timestamp_hour"
         FROM (
           SELECT
             "event_timestamp" AS "event_timestamp",
