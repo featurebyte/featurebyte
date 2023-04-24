@@ -68,12 +68,12 @@ class Relationship(ApiObject):
     @property
     def enabled(self) -> bool:
         """
-        Whether the relationship has been updated
+        Whether the relationship has been enabled
 
         Returns
         -------
         bool
-            Whether the relationship has been updated
+            Whether the relationship has been enabled
         """
         try:
             return self.cached_model.enabled

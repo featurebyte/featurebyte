@@ -3,13 +3,9 @@ Deployment module
 """
 from __future__ import annotations
 
-from http import HTTPStatus
-
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature_list import FeatureList
-from featurebyte.config import Configurations
-from featurebyte.exception import RecordUpdateException
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.deployment import DeploymentUpdate
 
@@ -59,22 +55,14 @@ class Deployment(ApiObject):
         """
         return self.cached_model.enabled
 
-    def _update_enabled(self, enabled: bool) -> None:
-        client = Configurations().get_client()
-        update_response = client.patch(url=f"{self._route}/{self.id}", json={"enabled": enabled})
-        if update_response.status_code != HTTPStatus.OK:
-            raise RecordUpdateException(response=update_response)
-        if update_response.json():
-            self._poll_async_task(task_response=update_response)
-
     def enable(self) -> None:
         """
         Enable the deployment.
         """
-        self._update_enabled(enabled=True)
+        self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": True})
 
     def disable(self) -> None:
         """
         Disable the deployment.
         """
-        self._update_enabled(enabled=False)
+        self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": False})
