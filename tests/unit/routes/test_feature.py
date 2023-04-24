@@ -377,6 +377,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         response = test_api_client.get(self.base_route, params={"feature_list_id": feature_list_id})
         response_dict = response.json()
+
         output_feature_ids = [feat["_id"] for feat in response_dict["data"]]
         assert response.status_code == HTTPStatus.OK
         assert response_dict["total"] == len(feature_ids)

@@ -8,6 +8,7 @@ from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
+import httpx
 import numpy as np
 import pandas as pd
 import pytest
@@ -755,13 +756,13 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         with patch("featurebyte.sql.tile_registry.TileRegistry.execute") as _:
-            response = test_api_client.post(
+            with test_api_client.stream(
+                "POST",
                 f"{self.base_route}/historical_features",
                 data={"payload": json.dumps(featurelist_get_historical_features_payload)},
                 files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
-                stream=True,
-            )
-            assert response.status_code == HTTPStatus.OK, response.json()
+            ) as response:
+                assert response.status_code == HTTPStatus.OK
 
         # test streaming download works
         content = b""
