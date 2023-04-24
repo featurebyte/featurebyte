@@ -948,13 +948,13 @@ def test_datetime_property_extraction__event_timestamp(
 
 
 def test_datetime_property_extraction__event_timestamp_joined_view(
-    snowflake_event_table_with_tz_offset_column, snowflake_dimension_view, update_fixtures
+    snowflake_event_table_with_tz_offset_column, snowflake_dimension_table, update_fixtures
 ):
     """
     Test extracting datetime property from event timestamp lookup feature
     """
     view = snowflake_event_table_with_tz_offset_column.get_view()
-    view = view.join(snowflake_dimension_view[["col_int", "col_text"]])
+    view = view.join(snowflake_dimension_table.get_view()[["col_int", "col_text"]])
     timestamp_hour = view["event_timestamp"].dt.hour
     view["event_timestamp_hour"] = timestamp_hour
 
@@ -1002,4 +1002,5 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
         fixture_path="tests/fixtures/sdk_code/event_view_with_tz_offset_column.py",
         update_fixtures=update_fixtures,
         table_id=snowflake_event_table_with_tz_offset_column.id,
+        dimension_table_id=snowflake_dimension_table.id,
     )
