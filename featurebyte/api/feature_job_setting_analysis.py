@@ -40,7 +40,6 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     _list_schema = FeatureJobSettingAnalysisRecord
     _get_schema = FeatureJobSettingAnalysisModel
     _list_fields = [
-        "id",
         "created_at",
         "event_table",
         "analysis_start",
@@ -73,7 +72,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     @classmethod
     def list(
         cls,
-        include_id: Optional[bool] = False,
+        include_id: Optional[bool] = True,
         event_table_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
         """

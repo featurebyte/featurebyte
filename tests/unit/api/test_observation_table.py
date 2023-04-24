@@ -21,6 +21,7 @@ def test_list():
     """
     df = ObservationTable.list()
     assert df.columns.tolist() == [
+        "id",
         "name",
         "type",
         "feature_store_name",

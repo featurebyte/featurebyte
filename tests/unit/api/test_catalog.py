@@ -476,6 +476,12 @@ def test_get_catalog():
     catalog_list = Catalog.list()
     expected_catalog_list = pd.DataFrame(
         {
+            "id": [
+                healthcare_catalog.id,
+                creditcard_catalog.id,
+                grocery_catalog.id,
+                default_catalog.id,
+            ],
             "name": [
                 healthcare_catalog.name,
                 creditcard_catalog.name,
