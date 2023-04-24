@@ -16,6 +16,9 @@ jobs:
   check-should-run:
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Documentation Changes Confirmed') }}
+    steps:
+      - name: Exit
+        run: exit 0
   build-updated-docs:
     runs-on: ubuntu-latest
     needs: ["check-should-run"]
