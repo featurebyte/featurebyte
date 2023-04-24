@@ -132,9 +132,7 @@ jobs:
         run: |
           mkdir -p featurebyte/docs/base
           mkdir -p featurebyte/docs/updated
-          touch featurebyte/docs/base/a.txt
-          echo "hello world" > featurebyte/docs/base/a.txt
-          diff --new-file -ur featurebyte/docs/base/ featurebyte/docs/updated/ > diff.txt
+          diff --new-file --renderNothingWhenEmpty -ur featurebyte/docs/base/ featurebyte/docs/updated/ > diff.txt
       - name: Generate HTML
         run: |
           cat diff.txt | diff2html -i stdin --title="Documentation Differences" -F diff.html --style="side"
