@@ -304,13 +304,10 @@ tasks:
 
   docker-build:
     desc: "Build the docker image"
-    preconditions:
-      - sh: printenv FEATUREBYTE_NP_PASSWORD
-        msg: "FEATUREBYTE_NP_PASSWORD is not set."
     deps:
       - task: install
     cmds:
-      - docker buildx build . -f docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="${FEATUREBYTE_NP_PASSWORD}" -t featurebyte-server:latest
+      - docker buildx build . -f docker/Dockerfile -t featurebyte-server:latest
 
   docker-dev:
     desc: "Starts featurebyte-server in development mode"
