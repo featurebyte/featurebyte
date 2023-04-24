@@ -9,5 +9,5 @@ event_view = event_table.get_view(
     column_cleaning_operations=[],
 )
 col = event_view["event_timestamp"]
-event_view["event_timestamp_hour"] = col.dt.tz("-05:30").hour
+event_view["event_timestamp_hour"] = col.dt.tz_offset("-05:30").hour
 output = event_view

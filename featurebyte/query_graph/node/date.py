@@ -74,7 +74,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         if offset_operand is None:
             expression_str = f"{ts_operand}.dt.{date_property}"
         else:
-            expression_str = f"{ts_operand}.dt.tz({offset_operand}).{date_property}"
+            expression_str = f"{ts_operand}.dt.tz_offset({offset_operand}).{date_property}"
 
         return [], ExpressionStr(expression_str)
 

@@ -127,9 +127,7 @@ class DatetimeAccessor:
         # provide datetime extraction lookup and completion for __getattr__
         return self._property_node_params_map.keys()
 
-    def tz(  # pylint: disable=invalid-name
-        self, timezone_offset: Union[str, FrozenSeries]
-    ) -> DatetimeAccessor:
+    def tz_offset(self, timezone_offset: Union[str, FrozenSeries]) -> DatetimeAccessor:
         """
         Returns a DatetimeAccessor object with the specified timezone offset.
 
