@@ -70,10 +70,7 @@ class HistoricalFeatureTableService(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
 
-        # Validate the observation_table_id and feature_list_id
-        feature_list_id = data.featurelist_get_historical_features.feature_list_id
-        if feature_list_id:
-            await self.feature_list_service.get_document(document_id=feature_list_id)
+        # Validate the observation_table_id
         await self.observation_table_service.get_document(document_id=data.observation_table_id)
 
         return HistoricalFeatureTableTaskPayload(

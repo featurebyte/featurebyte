@@ -46,18 +46,6 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
             },
             f'ObservationTable (id: "{random_id}") not found. Please save the ObservationTable object first.',
         ),
-        (
-            {
-                **payload,
-                "_id": str(ObjectId()),
-                "name": "random_name",
-                "featurelist_get_historical_features": {
-                    **payload["featurelist_get_historical_features"],
-                    "feature_list_id": random_id,
-                },
-            },
-            f'FeatureList (id: "{random_id}") not found. Please save the FeatureList object first.',
-        ),
     ]
 
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
