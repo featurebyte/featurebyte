@@ -62,7 +62,7 @@ def test_features_without_entity(event_table):
     finally:
         for deployment in [deployment_1, deployment_2]:
             if deployment:
-                deployment.enable(False)
+                deployment.disable()
 
     pd.testing.assert_frame_equal(df_features_1, df_features_deployed_1)
     pd.testing.assert_frame_equal(df_features_2, df_features_deployed_2)

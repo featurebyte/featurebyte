@@ -134,7 +134,7 @@ async def test_online_serving_sql(features, session, config):
         # Check online_features route
         check_online_features_route(feature_list, config, df_historical, columns)
     finally:
-        deployment.enable(enabled=False)
+        deployment.disable()
         assert deployment.enabled is False
 
 

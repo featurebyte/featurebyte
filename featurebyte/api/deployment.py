@@ -61,24 +61,22 @@ class Deployment(ApiObject):
         """
         return self.cached_model.enabled
 
-    @typechecked
-    def enable(self, enabled: bool) -> None:
-        """
-        Enable or disable the deployment.
-
-        Parameters
-        ----------
-        enabled : bool
-            Enable (True) or disable (False) the deployment.
-
-        Raises
-        ------
-        RecordUpdateException
-            If the deployment update fails.
-        """
+    def _update_is_enabled(self, enabled: bool) -> None:
         client = Configurations().get_client()
         update_response = client.patch(url=f"{self._route}/{self.id}", json={"enabled": enabled})
         if update_response.status_code != HTTPStatus.OK:
             raise RecordUpdateException(response=update_response)
         if update_response.json():
             self._poll_async_task(task_response=update_response)
+
+    def enable(self) -> None:
+        """
+        Enable the deployment.
+        """
+        self._update_is_enabled(enabled=True)
+
+    def disable(self) -> None:
+        """
+        Disable the deployment.
+        """
+        self._update_is_enabled(enabled=False)

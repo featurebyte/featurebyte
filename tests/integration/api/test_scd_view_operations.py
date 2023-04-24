@@ -276,7 +276,7 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
         ]
     finally:
         if deployment:
-            deployment.enable(False)
+            deployment.disable()
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
@@ -323,7 +323,7 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
             {"üser id": 1, "Current User Status Offset 90d": "STÀTUS_CODE_39"}
         ]
     finally:
-        deployment.enable(False)
+        deployment.disable()
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)

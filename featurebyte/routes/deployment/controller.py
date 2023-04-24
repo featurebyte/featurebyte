@@ -18,7 +18,7 @@ from featurebyte.schema.deployment import (
     DeploymentUpdate,
 )
 from featurebyte.schema.task import Task
-from featurebyte.schema.worker.task.feature_list_deploy import (
+from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
     DeploymentCreateUpdateTaskPayload,
     UpdateDeploymentPayload,

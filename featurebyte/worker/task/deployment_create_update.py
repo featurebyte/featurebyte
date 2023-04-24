@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from featurebyte.schema.worker.task.feature_list_deploy import (
+from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
     DeploymentCreateUpdateTaskPayload,
     DeploymentPayloadType,

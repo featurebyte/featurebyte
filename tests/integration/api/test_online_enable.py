@@ -39,7 +39,7 @@ def online_enabled_feature_list_fixture(event_table, config):
 
     yield feature_list
 
-    deployment.enable(False)
+    deployment.disable()
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -69,7 +69,7 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
         )
     finally:
         if deployment:
-            deployment.enable(False)
+            deployment.disable()
 
     assert res.status_code == 200
     assert res.json() == {

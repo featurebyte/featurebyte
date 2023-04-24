@@ -830,11 +830,13 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     )
 
     # Deploy again to show that we don't error
-    deployment.enable(True)
+    deployment.enable()
+    assert deployment.enabled is True
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
     # Disable feature list
-    deployment.enable(False)
+    deployment.disable()
+    assert deployment.enabled is False
     _assert_all_features_in_list_with_enabled_status(feature_list, False)
 
 
@@ -913,7 +915,8 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
             assert feature.deployed_feature_list_ids == [feature_list.id]
 
     # disable feature list deployment
-    deployment.enable(False)
+    deployment.disable()
+    assert deployment.enabled is False
 
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)
@@ -925,7 +928,8 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
             assert feature.deployed_feature_list_ids == []
 
     # disable another feature list deployment
-    another_deployment.enable(False)
+    another_deployment.disable()
+    assert another_deployment.enabled is False
 
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)
