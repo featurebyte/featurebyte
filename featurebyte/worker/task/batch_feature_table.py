@@ -50,7 +50,7 @@ class BatchFeatureTableTask(BaseTask):
             name=payload.name,
             location=location,
             batch_request_table_id=payload.batch_request_table_id,
-            feature_list_id=payload.feature_list_id,
+            deployment_id=payload.deployment_id,
         )
         created_doc = await batch_feature_table_service.create_document(batch_feature_table_model)
         assert created_doc.id == payload.output_document_id

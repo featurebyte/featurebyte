@@ -22,7 +22,7 @@ class BatchFeatureTableCreate(FeatureByteBaseModel):
     name: StrictStr
     feature_store_id: PydanticObjectId
     batch_request_table_id: PydanticObjectId
-    feature_list_id: PydanticObjectId
+    deployment_id: PydanticObjectId
 
 
 class BatchFeatureTableList(PaginationMixin):

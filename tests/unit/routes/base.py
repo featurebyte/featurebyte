@@ -130,6 +130,16 @@ class BaseApiTestSuite:
                 self.list_unprocessable_params_expected_detail_pairs,
             )
 
+    @staticmethod
+    def make_feature_production_ready(api_client, feature_id, catalog_id):
+        """Make feature production ready"""
+        response = api_client.patch(
+            f"/feature/{feature_id}",
+            headers={"active-catalog-id": str(catalog_id)},
+            json={"readiness": "PRODUCTION_READY"},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """Setup for post route"""
 

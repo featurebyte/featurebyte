@@ -148,6 +148,16 @@ app_container_config.add_service_with_extra_deps(
         "feature_store_service",
     ],
 )
+
+app_container_config.add_basic_service("context_service", ContextService)
+app_container_config.add_basic_service("entity_service", EntityService)
+app_container_config.add_basic_service("dimension_table_service", DimensionTableService)
+app_container_config.add_basic_service("event_table_service", EventTableService)
+app_container_config.add_basic_service("item_table_service", ItemTableService)
+app_container_config.add_basic_service("scd_table_service", SCDTableService)
+app_container_config.add_basic_service("feature_service", FeatureService)
+app_container_config.add_basic_service("feature_list_service", FeatureListService)
+app_container_config.add_basic_service("deployment_service", DeploymentService)
 app_container_config.add_service_with_extra_deps(
     "batch_request_table_service",
     BatchRequestTableService,
@@ -161,18 +171,10 @@ app_container_config.add_service_with_extra_deps(
     BatchFeatureTableService,
     [
         "feature_store_service",
+        "batch_request_table_service",
+        "deployment_service",
     ],
 )
-
-app_container_config.add_basic_service("context_service", ContextService)
-app_container_config.add_basic_service("entity_service", EntityService)
-app_container_config.add_basic_service("dimension_table_service", DimensionTableService)
-app_container_config.add_basic_service("event_table_service", EventTableService)
-app_container_config.add_basic_service("item_table_service", ItemTableService)
-app_container_config.add_basic_service("scd_table_service", SCDTableService)
-app_container_config.add_basic_service("feature_service", FeatureService)
-app_container_config.add_basic_service("feature_list_service", FeatureListService)
-app_container_config.add_basic_service("deployment_service", DeploymentService)
 app_container_config.add_service_with_extra_deps(
     "feature_readiness_service",
     FeatureReadinessService,
