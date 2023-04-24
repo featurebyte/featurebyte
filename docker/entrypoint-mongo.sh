@@ -45,7 +45,8 @@ while ! mongosh --quiet --port=27021 --eval "rs.status()" 1>/dev/null 2>&1; do s
 while [[ 1 -ne "$(mongosh --quiet --port=27021 --eval "rs.status().ok")" ]]; do
   sleep 1;
 done
-echo "\nmongo-rs is established"
+echo ""
+echo "mongo-rs is established"
 
 # Sleep
 sleep inf

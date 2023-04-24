@@ -36,7 +36,6 @@ env:
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
   # Docker
   SERVER_IMAGE_REPO: "us-central1-docker.pkg.dev/beta-testing-373907/docker/featurebyte-server"
-  DOCS_IMAGE_REPO: "us-central1-docker.pkg.dev/beta-testing-373907/docker/featurebyte-docs"
 
 concurrency:
   cancel-in-progress: false
@@ -111,10 +110,6 @@ jobs:
         uses: mikefarah/yq@master
         with:
           cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
-      - name: Replace docker-compose image tag (docs)
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq -i '.services.featurebyte-docs.image = "${{ env.DOCS_IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
       - name: Authenticate to Google Cloud
         id: 'auth'
         uses: 'google-github-actions/auth@v1'

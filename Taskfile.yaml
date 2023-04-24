@@ -115,6 +115,8 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
+      - cmd: if [ ! -d .mypy_cache ]; then mkdir .mypy_cache; fi
+        silent: true
       - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py)' .
 
   lint-safety:
@@ -229,7 +231,6 @@ tasks:
     deps:
       - task: docker-build
     cmds:
-      - mkdir -p ~/.featurebyte/data/spark/staging/playground
       - poetry run python scripts/test-docs-setup.py
 
   test-docs-teardown:
