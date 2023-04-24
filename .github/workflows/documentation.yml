@@ -32,8 +32,11 @@ jobs:
         python-version: [ "3.8.0" ]
     needs: ["check-should-run"]
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - run:
-          echo "${{ toJSON(github) }}"
+          echo $(git merge-base --fork-point origin/"${{ github.head_ref }}" origin/main)
 #      - uses: actions/checkout@v3
 #      - uses: arduino/setup-task@v1
 #        with:
