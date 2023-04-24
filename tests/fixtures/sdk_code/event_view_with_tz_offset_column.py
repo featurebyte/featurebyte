@@ -19,5 +19,5 @@ event_view = event_table.get_view(
 joined_view = event_view.join(view, on=None, how="left", rsuffix="")
 col = joined_view["event_timestamp"]
 col_1 = joined_view["tz_offset"]
-joined_view["event_timestamp_hour"] = col.dt.hour
+joined_view["event_timestamp_hour"] = col.dt.tz(col_1).hour
 output = joined_view

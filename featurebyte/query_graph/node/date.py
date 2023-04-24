@@ -19,12 +19,13 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     ExpressionStr,
     StatementT,
+    ValueStr,
     VariableNameGenerator,
     VarNameExpressionStr,
 )
 
 
-class DatetimeExtractNode(BaseSeriesOutputWithSingleOperandNode):
+class DatetimeExtractNode(BaseSeriesOutputNode):
     """DatetimeExtractNode class"""
 
     class Parameters(BaseModel):
@@ -39,11 +40,43 @@ class DatetimeExtractNode(BaseSeriesOutputWithSingleOperandNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT
 
-    def generate_expression(self, operand: str) -> str:
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        ts_operand: str = input_var_name_expressions[0].as_input()
+
+        offset_operand: Optional[str]
+        if self.parameters.timezone_offset is not None:
+            offset_operand = ValueStr.create(self.parameters.timezone_offset).as_input()
+        elif len(input_var_name_expressions) == 2:
+            offset_operand = input_var_name_expressions[1].as_input()
+        else:
+            offset_operand = None
+
         date_property: str = self.parameters.property
         if date_property == "dayofweek":
             date_property = "day_of_week"
-        return f"{operand}.dt.{date_property}"
+
+        if offset_operand is None:
+            expression_str = f"{ts_operand}.dt.{date_property}"
+        else:
+            expression_str = f"{ts_operand}.dt.tz({offset_operand}).{date_property}"
+
+        return [], ExpressionStr(expression_str)
 
 
 class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
