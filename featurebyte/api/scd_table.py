@@ -123,13 +123,15 @@ class SCDTable(TableApiObject):
         Parameters
         ----------
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
-            View mode to use (manual or auto). When auto, the view will be constructed with cleaning operations
-            from the table, the record creation timestamp column will be dropped and the columns to join from the
-            EventView will be automatically selected.
+            View mode to use. When auto, the view will be constructed with cleaning operations from the table, the
+            surrogate key, the end timestamp column, the active flag and the record creation timestamp column will be
+            dropped.
         drop_column_names: Optional[List[str]]
             List of column names to drop (manual mode only).
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            Column cleaning operations to apply (manual mode only).
+            List of cleaning operations to apply per column in manual mode only. Each element in the list indicates the
+            cleaning operations for a specific column. The association between this column and the cleaning operations
+            is established via the ColumnCleaningOperation constructor.
 
         Returns
         -------
@@ -234,22 +236,23 @@ class SCDTable(TableApiObject):
         Parameters
         ----------
         track_changes_column: str
-            Column to track changes for.
+            Name of the column to track changes for.
         default_feature_job_setting: Optional[FeatureJobSetting]
-            Default feature job setting to set.
+            Default feature job setting to set with the FeatureJobSetting constructor. If not provided, the default
+            feature job setting is daily, aligning with the view's creation time.
         prefixes: Optional[Tuple[Optional[str], Optional[str]]]
             Optional prefixes where each element indicates the prefix to add to the new column names for the name of
             the column that we want to track. The first prefix will be used for the old, and the second for the new.
-            Pass a value of None instead of a string to indicate that the column name will be prefixed with the default
-            values of "past_", and "new_". At least one of the values must not be None. If two values are provided,
-            they must be different.
+             If not provided, the column names will be prefixed with the default values of "past_", and "new_". At
+             least one of the values must not be None. If two values are provided, they must be different.
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
-            View mode to use (manual or auto). When auto, the view will be constructed with cleaning operations
-            from the table, the record creation timestamp column will be dropped.
+           View mode to use. When auto, the view will be constructed with cleaning operations.
         drop_column_names: Optional[List[str]]
             List of column names to drop (manual mode only).
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            Column cleaning operations to apply (manual mode only).
+            List of cleaning operations to apply per column in manual mode only. Each element in the list indicates the
+            cleaning operations for a specific column. The association between this column and the cleaning operations
+            is established via the ColumnCleaningOperation constructor.
 
         Returns
         -------

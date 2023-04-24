@@ -136,13 +136,15 @@ class ItemTable(TableApiObject):
             A suffix to append on to the columns from the EventTable. This is useful to prevent column name
             collisions.
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
-            View mode to use (manual or auto). When auto, the view will be constructed with cleaning operations
-            from the table, the record creation timestamp column will be dropped and the columns to join from the
-            EventView will be automatically selected.
+            View mode to use. When auto, the view will be constructed with cleaning operations from the table, the
+            record creation timestamp column will be dropped and the event timestamp and columns representing entities
+            from the EventView will be automatically added.
         drop_column_names: Optional[List[str]]
-            List of column names to drop for the ItemView (manual mode only).
+            List of column names to drop (manual mode only).
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            Column cleaning operations to apply to the ItemView (manual mode only).
+            List of cleaning operations to apply per column in manual mode only. Each element in the list indicates
+            the cleaning operations for a specific column. The association between this column and the cleaning
+            operations is established via the ColumnCleaningOperation constructor.
         event_drop_column_names: Optional[List[str]]
             List of column names to drop for the EventView (manual mode only).
         event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]]

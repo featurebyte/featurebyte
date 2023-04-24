@@ -101,12 +101,14 @@ class DimensionTable(TableApiObject):
         Parameters
         ----------
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
-            View mode to use (manual or auto). When auto, the view will be constructed with cleaning operations
-            from the table, the record creation timestamp column will be dropped.
+            View mode to use. When auto, the view will be constructed with cleaning operations from the table, the
+            record creation timestamp column will be dropped.
         drop_column_names: Optional[List[str]]
             List of column names to drop (manual mode only).
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            Column cleaning operations to apply (manual mode only).
+            List of cleaning operations to apply per column in manual mode only. Each element in the list indicates the
+            cleaning operations for a specific column. The association between this column and the cleaning operations
+            is established via the ColumnCleaningOperation constructor.
 
         Returns
         -------
