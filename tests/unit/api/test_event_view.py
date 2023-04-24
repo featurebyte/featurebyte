@@ -907,7 +907,7 @@ def test_shape(snowflake_event_table):
 
 
 def test_datetime_property_extraction__event_timestamp(
-    snowflake_event_table_with_tz_offset_constant,
+    snowflake_event_table_with_tz_offset_constant, update_fixtures
 ):
     """
     Test extracting datetime property from event timestamp lookup feature
@@ -938,9 +938,17 @@ def test_datetime_property_extraction__event_timestamp(
     ).strip()
     assert view.preview_sql() == expected
 
+    check_sdk_code_generation(
+        view,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/event_view_with_tz_offset_constant.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_event_table_with_tz_offset_constant.id,
+    )
+
 
 def test_datetime_property_extraction__event_timestamp_joined_view(
-    snowflake_event_table_with_tz_offset_column, snowflake_dimension_view
+    snowflake_event_table_with_tz_offset_column, snowflake_dimension_view, update_fixtures
 ):
     """
     Test extracting datetime property from event timestamp lookup feature
@@ -987,3 +995,11 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
         """
     ).strip()
     assert view.preview_sql() == expected
+
+    check_sdk_code_generation(
+        view,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/event_view_with_tz_offset_column.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_event_table_with_tz_offset_column.id,
+    )

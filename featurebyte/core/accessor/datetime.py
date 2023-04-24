@@ -86,7 +86,7 @@ class DatetimeAccessor:
         proxy_class="featurebyte.Series",
     )
 
-    def __init__(self, obj: FrozenSeries):
+    def __init__(self, obj: FrozenSeries, timezone_offset: Optional[str, FrozenSeries] = None):
         if obj.is_datetime:
             self._node_type = NodeType.DT_EXTRACT
             self._property_node_params_map = {
@@ -115,10 +115,20 @@ class DatetimeAccessor:
                 f"Can only use .dt accessor with datetime or timedelta values; got {obj.dtype}"
             )
         self._obj = obj
+        self._timezone_offset_constant = None
+        self._timezone_offset_series = None
+        if timezone_offset is not None:
+            if isinstance(timezone_offset, str):
+                self._timezone_offset_constant = timezone_offset
+            else:
+                self._timezone_offset_series = timezone_offset
 
     def __dir__(self) -> Iterable[str]:
         # provide datetime extraction lookup and completion for __getattr__
         return self._property_node_params_map.keys()
+
+    def tz(self, timezone_offset: Union[str, FrozenSeries]) -> DatetimeAccessor:
+        return DatetimeAccessor(self._obj, timezone_offset)
 
     @property
     def year(self) -> FrozenSeries:
