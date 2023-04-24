@@ -129,7 +129,7 @@ jobs:
         run: npm install -g diff2html-cli
       - name: Diff docs and generate html
         run: |
-          diff -ur featurebyte/docs/base/ featurebyte/docs/updated/ > diff.txt
+          diff --new-file -ur featurebyte/docs/base/ featurebyte/docs/updated/ > diff.txt
           cat test_local_diff.txt | diff2html -i stdin --title="Documentation Differences" -F diff.html --style="side"
       - name: Upload diff html
         uses: actions/upload-artifact@v3
