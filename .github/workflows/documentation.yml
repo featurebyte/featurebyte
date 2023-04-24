@@ -128,6 +128,7 @@ jobs:
       - name: Install diff2html
         run: npm install -g diff2html-cli
       - name: Diff docs
+        continue-on-error: true
         run: |
           diff --new-file -ur featurebyte/docs/base/ featurebyte/docs/updated/ > diff.txt
       - name: Generate HTML
