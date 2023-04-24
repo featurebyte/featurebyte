@@ -22,7 +22,7 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
     payload = BaseAsyncApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/historical_feature_table.json"
     )
-    async_create = True
+    random_id = str(ObjectId())
 
     create_conflict_payload_expected_detail_pairs = [
         (
@@ -30,42 +30,65 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
             f'HistoricalFeatureTable (id: "{payload["_id"]}") already exists. '
             f'Get the existing object by `HistoricalFeatureTable.get(name="{payload["name"]}")`.',
         ),
+        (
+            {**payload, "_id": str(ObjectId())},
+            f'HistoricalFeatureTable (name: "{payload["name"]}") already exists. '
+            f'Get the existing object by `HistoricalFeatureTable.get(name="{payload["name"]}")`.',
+        ),
     ]
-
-    create_unprocessable_payload_expected_detail_pairs = []
+    create_unprocessable_payload_expected_detail_pairs = [
+        (
+            {
+                **payload,
+                "_id": str(ObjectId()),
+                "name": "random_name",
+                "observation_table_id": random_id,
+            },
+            f'ObservationTable (id: "{random_id}") not found. Please save the ObservationTable object first.',
+        ),
+        (
+            {
+                **payload,
+                "_id": str(ObjectId()),
+                "name": "random_name",
+                "featurelist_get_historical_features": {
+                    **payload["featurelist_get_historical_features"],
+                    "feature_list_id": random_id,
+                },
+            },
+            f'FeatureList (id: "{random_id}") not found. Please save the FeatureList object first.',
+        ),
+    ]
 
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """
         Setup for post route
         """
-        # save feature store
-        payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
-        response = api_client.post(
-            "/feature_store", headers={"active-catalog-id": str(catalog_id)}, json=payload
-        )
-        assert response.status_code == HTTPStatus.CREATED
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+            ("entity", "entity"),
+            ("context", "context"),
+            ("observation_table", "observation_table"),
+            ("event_table", "event_table"),
+            ("feature", "feature_sum_30m"),
+            ("feature_list", "feature_list_single"),
+            ("deployment", "deployment"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(
+                f"/{api_object}",
+                headers={"active-catalog-id": str(catalog_id)},
+                json=payload,
+            )
+            if api_object == "feature":
+                self.make_feature_production_ready(api_client, response.json()["_id"], catalog_id)
 
-        # save entity
-        payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
-        response = api_client.post(
-            "/entity", headers={"active-catalog-id": str(catalog_id)}, json=payload
-        )
-        assert response.status_code == HTTPStatus.CREATED
-
-        # save context
-        payload = self.load_payload("tests/fixtures/request_payloads/context.json")
-        response = api_client.post(
-            "/context", headers={"active-catalog-id": str(catalog_id)}, json=payload
-        )
-        assert response.status_code == HTTPStatus.CREATED
-
-        # save observation table
-        payload = self.load_payload("tests/fixtures/request_payloads/observation_table.json")
-        response = api_client.post(
-            "/observation_table", headers={"active-catalog-id": str(catalog_id)}, json=payload
-        )
-        response = self.wait_for_results(api_client, response)
-        assert response.json()["status"] == "SUCCESS"
+            if api_object == "observation_table":
+                response = self.wait_for_results(api_client, response)
+                assert response.json()["status"] == "SUCCESS"
+            else:
+                assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""

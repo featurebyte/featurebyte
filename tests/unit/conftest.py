@@ -1366,7 +1366,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (deployment, "deployment"),
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
-            (batch_request_table, "batch_request_table"),
             (historical_feature_table, "historical_feature_table"),
             (batch_request_table, "batch_request_table"),
             (batch_feature_table, "batch_feature_table"),

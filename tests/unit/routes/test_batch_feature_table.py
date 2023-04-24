@@ -37,10 +37,6 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
-            {**payload, "_id": str(ObjectId()), "name": "random_name", "deployment_id": random_id},
-            f'Deployment (id: "{random_id}") not found. Please save the Deployment object first.',
-        ),
-        (
             {
                 **payload,
                 "_id": str(ObjectId()),
@@ -48,6 +44,10 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
                 "batch_request_table_id": random_id,
             },
             f'BatchRequestTable (id: "{random_id}") not found. Please save the BatchRequestTable object first.',
+        ),
+        (
+            {**payload, "_id": str(ObjectId()), "name": "random_name", "deployment_id": random_id},
+            f'Deployment (id: "{random_id}") not found. Please save the Deployment object first.',
         ),
     ]
 
