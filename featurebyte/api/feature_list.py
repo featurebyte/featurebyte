@@ -351,9 +351,9 @@ class FeatureList(
         Parameters
         ----------
         job_history_window: int
-            History window in hours
+            History window in hours.
         job_duration_tolerance: int
-            Maximum duration before job is considered later
+            Maximum duration before job is considered later, in seconds.
 
         Returns
         -------
