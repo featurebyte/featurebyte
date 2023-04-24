@@ -7,6 +7,8 @@ from dataclasses import dataclass
 
 from featurebyte.common.documentation.constants import (
     ADD_METADATA,
+    BATCH_FEATURE_TABLE,
+    BATCH_REQUEST_TABLE,
     CATALOG,
     CLASS_METHODS,
     CLEANING_OPERATION,
@@ -17,6 +19,7 @@ from featurebyte.common.documentation.constants import (
     CREATE_TABLE,
     DATA_SOURCE,
     DEPLOY,
+    DEPLOYMENT,
     ENTITY,
     ENUMS,
     EXPLORE,
@@ -28,12 +31,14 @@ from featurebyte.common.documentation.constants import (
     GET,
     GET_VIEW,
     GROUPBY,
+    HISTORICAL_FEATURE_TABLE,
     INFO,
     JOIN,
     LAGS,
     LINEAGE,
     LIST,
     MANAGE,
+    OBSERVATION_TABLE,
     RELATIONSHIP,
     SAVE,
     SERVE,
@@ -186,6 +191,8 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, TYPE, "EventTable"]),
         DocLayoutItem([TABLE, TYPE, "ItemTable"]),
         DocLayoutItem([TABLE, TYPE, "SCDTable"]),
+        DocLayoutItem([TABLE, TYPE, "HistoricalFeatureTable"]),
+        DocLayoutItem([TABLE, TYPE, "ObservationTable"]),
         DocLayoutItem(
             [TABLE, ADD_METADATA, "Table.update_record_creation_timestamp_column"],
             doc_path_override="api.base_table.TableApiObject.update_record_creation_timestamp_column.md",
@@ -724,6 +731,21 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_deployment_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the Deployment module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the Deployment module.
+    """
+    return [
+        DocLayoutItem([DEPLOYMENT, INFO, "Deployment.enabled"]),
+        DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
+    ]
+
+
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -749,4 +771,5 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_enum_layout(),
         *_get_source_table_layout(),
         *_get_feature_job_layout(),
+        *_get_deployment_layout(),
     ]

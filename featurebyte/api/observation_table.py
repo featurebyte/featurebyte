@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.schema.observation_table import ObservationTableListRecord
 
@@ -13,6 +14,8 @@ class ObservationTable(ObservationTableModel, ApiObject):
     """
     ObservationTable class
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ObservationTable")
 
     _route = "/observation_table"
     _list_schema = ObservationTableListRecord

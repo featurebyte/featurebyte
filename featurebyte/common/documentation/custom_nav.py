@@ -17,6 +17,7 @@ from featurebyte.common.documentation.constants import (
     CREATE_TABLE,
     DATA_SOURCE,
     DEPLOY,
+    DEPLOYMENT,
     ENTITY,
     ENUMS,
     EXPLORE,
@@ -72,6 +73,7 @@ class BetaWave3Nav(Nav):
         FEATURE,
         FEATURE_GROUP,
         FEATURE_LIST,
+        DEPLOYMENT,
         UTILITY_CLASSES,
     ]
 
