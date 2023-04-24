@@ -1,12 +1,5 @@
 FROM python:3.8-slim AS builder
 
-ARG FEATUREBYTE_REPOSITORY=us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi
-ARG FEATUREBYTE_NP_USERNAME=_json_key_base64
-ARG FEATUREBYTE_NP_PASSWORD
-ENV FEATUREBYTE_REPOSITORY=${FEATUREBYTE_REPOSITORY?missing_repository}
-ENV FEATUREBYTE_NP_USERNAME=${FEATUREBYTE_NP_USERNAME?missing_username}
-ENV FEATUREBYTE_NP_PASSWORD=${FEATUREBYTE_NP_PASSWORD?missing_featurebyte_serviceaccount_base64_key}
-
 # install build tools
 RUN apt-get update && \
     apt-get install -y build-essential curl libsasl2-dev && \
@@ -19,7 +12,6 @@ COPY pyproject.toml poetry.lock /app/
 RUN pip install poetry==1.3.1 && \
     python -m venv /opt/venv && \
     poetry config virtualenvs.create false && \
-    poetry config http-basic.featurebyte_np ${FEATUREBYTE_NP_USERNAME} ${FEATUREBYTE_NP_PASSWORD} && \
     . /opt/venv/bin/activate && \
     poetry install -n --sync --extras=server
 
