@@ -13,13 +13,13 @@ def test_all_init_methods_are_exposed():
     overall_layout = get_overall_layout()
     classes_and_properties = set()
     for item in overall_layout:
-        classes_and_properties.add(item.menu_header[-1])
+        classes_and_properties.add(item.menu_header[-1])  # Add the method/property.
+        classes_and_properties.add(item.menu_header[0])  # Add top level nav item.
     missing_methods = []
     # excluded_methods are methods that are in __init__ but are not exposed in the docs.
     # Add to this list if you add a new method to __init__, but do not want to expose it in the docs for whatever
     # reason.
     excluded_methods = {
-        "Deployment",  # TODO: Remove this once we expose Deployment in the docs.
         "Configurations",
         "Series",
         "to_timedelta",
