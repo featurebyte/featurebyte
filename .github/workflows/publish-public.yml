@@ -1,10 +1,10 @@
 ## Publish Beta ##
 ### REQUIREMENTS ###
-# Given a branch name of release/beta/0.3 and a version of 0.3.4
+# Given a branch name of release/0.3 and a version of 0.3.4
 # Documentation image must be published with the same version
 
 # == GIT TAG ==
-# git tag will be created based on the branch name: release/beta/0.3.4
+# git tag will be created based on the branch name: release/0.3.4
 # == PYPI ==
 # pypi version is based on the version input: 0.3.4
 # == DOCKER ==
@@ -58,12 +58,12 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           version: 3.x
-#      - name: Check User
-#        run: |
-#          if [ "${{ github.actor }}" != "featurebyte" ]; then
-#            echo "Only featurebyte can publish"
-#            exit 1
-#          fi
+      - name: Check User
+        run: |
+          # TODO: Change the allowed deployment user methodology
+          if [[ "${{ github.event.sender.login }}" != "bushwhackr" && "${{ github.event.sender.login }}" != "admin-featurebyte" ]]; then
+            exit 1
+          fi
       - name: Check Version
         run: |
           if (grep -vqP "^[0-9]+[.][0-9]+[.][0-9]+" <<< "${{ github.event.inputs.version }}"); then
@@ -78,16 +78,8 @@ jobs:
               echo "Version must match the branch name"
               exit 1
           fi
-          echo "REF_VERSION=$(grep -oP '^release/\K.+$' <<< "${{ github.ref_name }}")" >> $GITHUB_ENV
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - name: Setup Docker
-        uses: docker/setup-buildx-action@v2
-      - name: Docker Login Beta Artifact Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.BETA_DOCKER_LOCATION }}-docker.pkg.dev
-          username: _json_key_base64
-          password: ${{ secrets.BETA_ARTIFACT_REGISTRY_RW_B64 }}
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -105,7 +97,7 @@ jobs:
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
-          poetry config repositories.testpypi https://test.pypi.org/legacy/
+          poetry config repositories.test-pypi https://test.pypi.org/legacy/
           poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
           poetry config pypi-token.test-pypi ${{ secrets.TEST_PYPI_API_TOKEN }}
 
@@ -123,11 +115,15 @@ jobs:
         uses: mikefarah/yq@master
         with:
           cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
+
+      # Test-PyPI Publish
       - name: Publish to Test-PyPI
         if: ${{ github.event.inputs.test-pypi == 'true' }}
         run: |
           task install
-          poetry publish --build -r beta_pypi
+          poetry publish --build -r test-pypi
+
+      # PyPI Publish
       - name: Publish to PyPI
         if: ${{ github.event.inputs.pypi == 'true' }}
         run: |
@@ -141,21 +137,30 @@ jobs:
           git config --global user.email "featurebyte[bot]@users.noreply.github.com"
           git tag "release/${{ github.event.inputs.version }}"
           git push origin "release/${{ github.event.inputs.version }}"
+
+      # Docker build
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+      - name: Docker Login Beta Artifact Registry
+        uses: docker/login-action@v2
+        with:
+          username: _json_key_base64
+          password: ${{ secrets.BETA_ARTIFACT_REGISTRY_RW_B64 }}
       - name: Build & Tag & Push Image to docker.io
         if: ${{ github.event.inputs.docker == 'true' }}
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
+            ${{ env.SERVER_IMAGE_REPO }}:latest
             ${{ env.SERVER_IMAGE_REPO }}:${{ env.SHORT_HASH }}
-            ${{ env.SERVER_IMAGE_REPO }}:${{ env.REF_VERSION }}
             ${{ env.SERVER_IMAGE_REPO }}:${{ github.event.inputs.version }}
           context: .
           platforms: |
             linux/amd64
             linux/arm64
           file: docker/Dockerfile
-          cache-from: type=registry,ref=${{ env.SERVER_IMAGE_REPO }}:${{ env.REF_VERSION }}
+          cache-from: type=registry,ref=${{ env.SERVER_IMAGE_REPO }}:latest
           cache-to: type=inline
   slack:
     runs-on: ubuntu-latest
@@ -198,7 +203,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "```publish: [${{ env.PUBLISH_RESULT }}]```"
+                    "text": "```publish: [${{ env.PUBLISH_RESULT }}]\n\ntest-pypi: [${{ github.event.inputs.test-pypi }}]\npypi: [${{ github.event.inputs.pypi }}]\ndocker: [${{ github.event.inputs.docker }}]```"
                   }
                 }
               ]
