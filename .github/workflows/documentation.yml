@@ -128,9 +128,10 @@ jobs:
           path: featurebyte/docs/updated/
       - name: Diff docs
         run: |
-          if [[ $(diff featurebyte/docs/base/ featurebyte/docs/updated/) ]]; then
-            echo "The documentation was modified."
-            exit 1
-          else
-            echo "The documentation was not modified."
-          fi
+          diff featurebyte/docs/base/ featurebyte/docs/updated/
+#          if [[ $(diff featurebyte/docs/base/ featurebyte/docs/updated/) ]]; then
+#            echo "The documentation was modified."
+#            exit 1
+#          else
+#            echo "The documentation was not modified."
+#          fi
