@@ -107,7 +107,7 @@ cryptography = "38.0.4"
 databricks-cli = { version = "^0.17.3", optional = true }
 databricks-sql-connector = "^2.5.0"
 fastapi = { version =  "^0.85.1", optional = true }
-featurebyte-freeware = { version = "^0.2.11", source = "featurebyte_np", optional = true }
+featurebyte-freeware = { version = "^0.2.11", optional = true }
 humanize = "^4.4.0"
 importlib_metadata = { version = "^4.5.0", python = "^3.8"}
 jinja2 = { version = "^3.1.2", optional = true }
@@ -203,11 +203,6 @@ types-urllib3 = "^1.26.16"
 
 [tool.poetry.scripts]
 featurebyte = "featurebyte.__main__:app"
-
-[[tool.poetry.source]]
-name = "featurebyte_np"
-secondary = true
-url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi/simple/"
 
 [tool.pylint.classes]  # https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml
 max-args = 10
