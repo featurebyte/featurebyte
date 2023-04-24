@@ -128,7 +128,7 @@ jobs:
           path: featurebyte/docs/updated/
       - name: Diff docs
         run: |
-          diff featurebyte/docs/base/ featurebyte/docs/updated/
+          diff -r featurebyte/docs/base/ featurebyte/docs/updated/
 #          if [[ $(diff featurebyte/docs/base/ featurebyte/docs/updated/) ]]; then
 #            echo "The documentation was modified."
 #            exit 1
