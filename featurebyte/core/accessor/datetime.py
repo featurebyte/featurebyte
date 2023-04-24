@@ -87,7 +87,9 @@ class DatetimeAccessor:
         proxy_class="featurebyte.Series",
     )
 
-    def __init__(self, obj: FrozenSeries, timezone_offset: Optional[str, FrozenSeries] = None):
+    def __init__(
+        self, obj: FrozenSeries, timezone_offset: Optional[Union[str, FrozenSeries]] = None
+    ):
         if obj.is_datetime:
             self._node_type = NodeType.DT_EXTRACT
             self._property_node_params_map = {
@@ -117,6 +119,8 @@ class DatetimeAccessor:
             )
         self._obj = obj
 
+        self._timezone_offset: Optional[str, FrozenSeries] = None
+
         # Optional timezone offset override
         if timezone_offset is not None:
             if not obj.is_datetime:
@@ -131,8 +135,6 @@ class DatetimeAccessor:
                         f"Only a string type column can be used as the timezone offset column; got {timezone_offset.dtype}"
                     )
                 self._timezone_offset = timezone_offset
-        else:
-            self._timezone_offset = None
 
     def __dir__(self) -> Iterable[str]:
         # provide datetime extraction lookup and completion for __getattr__
