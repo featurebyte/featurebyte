@@ -950,5 +950,5 @@ class DeletableApiObject(ApiObject):
     def _delete(self) -> None:
         client = Configurations().get_client()
         response = client.delete(url=f"{self._route}/{self.id}")
-        if response.status_code != HTTPStatus.NO_CONTENT:
+        if response.status_code != HTTPStatus.OK:
             raise RecordDeletionException(response, "Failed to delete the specified object.")

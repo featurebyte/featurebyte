@@ -112,7 +112,7 @@ def test_default_local_storage():
     ).joinpath("data/files")
 
 
-@patch("requests.Session.send")
+@patch("httpx._client.Client.send")
 def test_use_profile(mock_requests_get):
     """
     Test selecting profile for api service

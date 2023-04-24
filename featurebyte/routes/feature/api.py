@@ -31,7 +31,7 @@ from featurebyte.schema.feature import (
     FeatureSQL,
     FeatureUpdate,
 )
-from featurebyte.schema.info import FeatureInfo
+from featurebyte.schema.info import DeleteResponse, FeatureInfo
 
 router = APIRouter(prefix="/feature")
 
@@ -73,13 +73,14 @@ async def update_feature(
     return feature
 
 
-@router.delete("/{feature_id}", status_code=HTTPStatus.NO_CONTENT)
-async def delete_feature(request: Request, feature_id: PydanticObjectId) -> None:
+@router.delete("/{feature_id}", status_code=HTTPStatus.OK)
+async def delete_feature(request: Request, feature_id: PydanticObjectId) -> DeleteResponse:
     """
     Delete Feature
     """
     controller = request.state.app_container.feature_controller
     await controller.delete_feature(feature_id=feature_id)
+    return DeleteResponse()
 
 
 @router.get("", response_model=FeaturePaginatedList)

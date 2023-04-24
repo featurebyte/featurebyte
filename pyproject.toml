@@ -143,6 +143,7 @@ server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "jinja2", "moto
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
+httpx = "^0.24.0"
 junitparser = "^2.8.0"
 mongomock = "^4.0.0"
 mongomock-motor = "^0.0.12"

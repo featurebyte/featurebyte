@@ -534,7 +534,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # delete feature list
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.NO_CONTENT
+        assert response.status_code == HTTPStatus.OK
 
         # check that feature list and feature list namespace are deleted
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
@@ -559,7 +559,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # delete feature list
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.NO_CONTENT
+        assert response.status_code == HTTPStatus.OK
 
         # check namespace after delete
         namespace_dict = test_api_client.get(f"/feature_list_namespace/{namespace_id}").json()
