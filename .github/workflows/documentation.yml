@@ -133,6 +133,7 @@ jobs:
           mkdir -p featurebyte/docs/base
           mkdir -p featurebyte/docs/updated
           touch featurebyte/docs/base/a.txt
+          echo "hello world" > featurebyte/docs/base/a.txt
           diff --new-file -ur featurebyte/docs/base/ featurebyte/docs/updated/ > diff.txt
       - name: Generate HTML
         run: |
