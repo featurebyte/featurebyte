@@ -158,11 +158,6 @@ class Relationship(ApiObject):
             ]
         return list_responses
 
-    def _update_enabled(self, enabled: bool) -> None:
-        self.internal_enabled = enabled
-        payload = RelationshipInfoUpdate(enabled=enabled)
-        self.update(payload.json_dict(), allow_update_local=True, add_internal_prefix=True)
-
     def enable(self) -> None:
         """
         Enables a Relationship object.
@@ -179,7 +174,7 @@ class Relationship(ApiObject):
         >>> relationship = fb.Relationship.get_by_id(<relationship_id>)  # doctest: +SKIP
         >>> relationship.enable()  # doctest: +SKIP
         """
-        self._update_enabled(enabled=True)
+        self.update({"enabled": True}, allow_update_local=True, add_internal_prefix=True)
 
     def disable(self) -> None:
         """
@@ -197,4 +192,4 @@ class Relationship(ApiObject):
         >>> relationship = fb.Relationship.get_by_id(<relationship_id>)  # doctest: +SKIP
         >>> relationship.disable()  # doctest: +SKIP
         """
-        self._update_enabled(enabled=False)
+        self.update({"enabled": False}, allow_update_local=True, add_internal_prefix=True)
