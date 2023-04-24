@@ -109,6 +109,8 @@ jobs:
       - name: Checkout merge base
         run: |
           git checkout $(git merge-base --fork-point HEAD origin/main)
+      - name: Git log
+        run: git log
       - name: Building docs for base branch
         run: |
           task docs-persist-reference
