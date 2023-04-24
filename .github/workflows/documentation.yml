@@ -103,7 +103,9 @@ jobs:
           sudo apt-get install python-dev libsasl2-dev gcc
           sudo apt-get install wkhtmltopdf
       - name: Checkout merge base
-        run: git checkout $(git merge-base --fork-point HEAD origin/main)
+        run: |
+          echo $(git merge-base --fork-point HEAD origin/main)
+          git checkout $(git merge-base --fork-point HEAD origin/main)
       - name: Building docs for base branch
         run: |
           task docs-persist-reference
