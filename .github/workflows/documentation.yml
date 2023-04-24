@@ -35,114 +35,102 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: checkout branch
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }} # Restore from `cache` job
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.3.1
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+      - name: Adding C headers
+        run: |
+          sudo apt-get install python-dev libsasl2-dev gcc
+          sudo apt-get install wkhtmltopdf
+      - name: Building docs for current branch
+        run: |
+          task docs-persist-reference
+      - name: Upload new docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs-updated
+          path: site/reference/*
+  build-base-docs:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version: [ "3.8.0" ]
+    needs: ["check-should-run"]
+    steps:
+      - name: Checkout history
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }} # Restore from `cache` job
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.3.1
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+      - name: Adding C headers
+        run: |
+          sudo apt-get install python-dev libsasl2-dev gcc
+          sudo apt-get install wkhtmltopdf
+      - name: Specifically checkout branch
         run: git checkout "origin/${{ github.head_ref }}"
-      - name: test
-        run: git log
-
-#      - uses: arduino/setup-task@v1
-#        with:
-#          version: 3.x
-#      - name: Set up Python ${{ matrix.python-version }}
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: ${{ matrix.python-version }}
-#      - name: Setup cache
-#        uses: actions/cache@v3
-#        with:
-#          path: .venv
-#          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-#          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }} # Restore from `cache` job
-#      - name: Install Poetry
-#        uses: abatilo/actions-poetry@v2
-#        with:
-#          poetry-version: 1.3.1
-#      - name: Configure Poetry
-#        run: |
-#          poetry config virtualenvs.in-project true
-#          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
-#      - name: Adding C headers
-#        run: |
-#          sudo apt-get install python-dev libsasl2-dev gcc
-#          sudo apt-get install wkhtmltopdf
-#      - name: Building docs for current branch
-#        run: |
-#          task docs-persist-reference
-#      - name: Upload new docs
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: docs-updated
-#          path: site/reference/*
-#  build-base-docs:
-#    runs-on: ubuntu-20.04
-#    strategy:
-#      matrix:
-#        python-version: [ "3.8.0" ]
-#    needs: ["check-should-run"]
-#    steps:
-#      - name: Checkout history
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0
-#      - uses: arduino/setup-task@v1
-#        with:
-#          version: 3.x
-#      - name: Set up Python ${{ matrix.python-version }}
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: ${{ matrix.python-version }}
-#      - name: Setup cache
-#        uses: actions/cache@v3
-#        with:
-#          path: .venv
-#          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-#          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }} # Restore from `cache` job
-#      - name: Install Poetry
-#        uses: abatilo/actions-poetry@v2
-#        with:
-#          poetry-version: 1.3.1
-#      - name: Configure Poetry
-#        run: |
-#          poetry config virtualenvs.in-project true
-#          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
-#      - name: Adding C headers
-#        run: |
-#          sudo apt-get install python-dev libsasl2-dev gcc
-#          sudo apt-get install wkhtmltopdf
-#      - name: echo merge base
-#        run: |
-#          echo $(git merge-base --fork-point "${{ github.event.ref_name }}" origin/main)
-#      - name: Checkout merge base
-#        run: |
-#          git checkout $(git merge-base --fork-point "${{ github.event.ref_name }}" origin/main)
-#      - name: Building docs for base branch
-#        run: |
-#          task docs-persist-reference
-#      - name: Upload base docs
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: docs-base
-#          path: site/reference/*
-#  diff-docs:
-#    runs-on: ubuntu-latest
-#    needs: ["build-updated-docs", "build-base-docs"]
-#    steps:
-#      - name: Download base docs
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: docs-base
-#          path: featurebyte/docs/base/
-#      - name: Download new docs
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: docs-updated
-#          path: featurebyte/docs/updated/
-#      - name: Diff docs
-#        run: |
-#          diff -r featurebyte/docs/base/ featurebyte/docs/updated/
-##          if [[ $(diff featurebyte/docs/base/ featurebyte/docs/updated/) ]]; then
-##            echo "The documentation was modified."
-##            exit 1
-##          else
-##            echo "The documentation was not modified."
-##          fi
+      - name: Checkout merge base
+        run: |
+          git checkout $(git merge-base --fork-point HEAD origin/main)
+      - name: Building docs for base branch
+        run: |
+          task docs-persist-reference
+      - name: Upload base docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs-base
+          path: site/reference/*
+  diff-docs:
+    runs-on: ubuntu-latest
+    needs: ["build-updated-docs", "build-base-docs"]
+    steps:
+      - name: Download base docs
+        uses: actions/download-artifact@v3
+        with:
+          name: docs-base
+          path: featurebyte/docs/base/
+      - name: Download new docs
+        uses: actions/download-artifact@v3
+        with:
+          name: docs-updated
+          path: featurebyte/docs/updated/
+      - name: Diff docs
+        run: |
+          diff -r featurebyte/docs/base/ featurebyte/docs/updated/
