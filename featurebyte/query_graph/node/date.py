@@ -72,6 +72,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         if date_property == "dayofweek":
             date_property = "day_of_week"
 
+        output: VarNameExpressionStr
         if offset_operand is None:
             output = VariableNameStr(f"{ts_operand}.dt.{date_property}")
         else:
