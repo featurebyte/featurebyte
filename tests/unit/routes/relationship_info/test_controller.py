@@ -30,15 +30,15 @@ def relationship_info_create_fixture():
     """
     relationship_info_create fixture
     """
-    primary_entity_id = PydanticObjectId(ObjectId())
+    entity_id = PydanticObjectId(ObjectId())
     related_entity_id = PydanticObjectId(ObjectId())
-    primary_table_id = PydanticObjectId(ObjectId())
+    relation_table_id = PydanticObjectId(ObjectId())
     return RelationshipInfoCreate(
         name="random",
         relationship_type=RelationshipType.CHILD_PARENT,
-        primary_entity_id=primary_entity_id,
+        entity_id=entity_id,
         related_entity_id=related_entity_id,
-        primary_table_id=primary_table_id,
+        relation_table_id=relation_table_id,
         is_enabled=False,
         updated_by=PydanticObjectId(ObjectId()),
     )
@@ -64,7 +64,7 @@ def entities_fixture(relationship_info_create):
     Create entities
     """
     entity_1 = Entity(
-        name="entity_1", serving_names=["entity_1"], _id=relationship_info_create.primary_entity_id
+        name="entity_1", serving_names=["entity_1"], _id=relationship_info_create.entity_id
     )
     entity_1.save()
     entity_2 = Entity(
@@ -128,6 +128,6 @@ async def test_validate_relationship_info_create__no_error_thrown(
 
     # Try to create relationship info again - expect no error
     create_dict = relationship_info_create.dict()
-    create_dict["primary_table_id"] = event_table.id  # update table source ID to a valid table ID
+    create_dict["relation_table_id"] = event_table.id  # update table source ID to a valid table ID
     relationship_info_create = RelationshipInfoCreate(**create_dict)
     await relationship_info_controller._validate_relationship_info_create(relationship_info_create)

@@ -344,7 +344,6 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
         branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-
         # First input is a View
         input_operation_info = inputs[0]
         self._validate_view(input_operation_info)
@@ -1091,7 +1090,6 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-
         # First input is a View
         input_operation_info = inputs[0]
         self._validate_view(input_operation_info)
@@ -1134,6 +1132,95 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="joined_view")
         statements.append((var_name, expression))
         return statements, var_name
+
+
+class TrackChangesNodeParameters(BaseModel):
+    """Parameters for TrackChangesNode"""
+
+    natural_key_column: InColumnStr
+    effective_timestamp_column: InColumnStr
+    tracked_column: InColumnStr
+    previous_tracked_column_name: OutColumnStr
+    new_tracked_column_name: OutColumnStr
+    previous_valid_from_column_name: OutColumnStr
+    new_valid_from_column_name: OutColumnStr
+
+
+class TrackChangesNode(BaseNode):
+    """TrackChangesNode class"""
+
+    type: Literal[NodeType.TRACK_CHANGES] = Field(NodeType.TRACK_CHANGES, const=True)
+    parameters: TrackChangesNodeParameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return [
+            self.parameters.natural_key_column,
+            self.parameters.effective_timestamp_column,
+            self.parameters.tracked_column,
+        ]
+
+    def _derive_node_operation_info(
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
+    ) -> OperationStructure:
+        _ = branch_state, global_state
+        input_operation_info = inputs[0]
+        effective_timestamp_source_column = next(
+            column
+            for column in input_operation_info.columns
+            if column.name == self.parameters.effective_timestamp_column
+        )
+        tracked_source_column = next(
+            column
+            for column in input_operation_info.columns
+            if column.name == self.parameters.tracked_column
+        )
+        natural_key_source_column = next(
+            column
+            for column in input_operation_info.columns
+            if column.name == self.parameters.natural_key_column
+        )
+        columns = [natural_key_source_column]
+        track_dtype = tracked_source_column.dtype
+        valid_dtype = effective_timestamp_source_column.dtype
+        for column_name, dtype in [
+            (self.parameters.previous_tracked_column_name, track_dtype),
+            (self.parameters.new_tracked_column_name, track_dtype),
+            (self.parameters.previous_valid_from_column_name, valid_dtype),
+            (self.parameters.new_valid_from_column_name, valid_dtype),
+        ]:
+            derived_column = DerivedDataColumn.create(
+                name=column_name,
+                columns=[effective_timestamp_source_column, tracked_source_column],
+                transform=self.transform_info,
+                node_name=self.name,
+                dtype=dtype,
+            )
+            columns.append(derived_column)
+        return OperationStructure(
+            columns=columns,
+            output_type=NodeOutputType.FRAME,
+            output_category=NodeOutputCategory.VIEW,
+            row_index_lineage=append_to_lineage(input_operation_info.row_index_lineage, self.name),
+        )
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        raise NotImplementedError()
 
 
 class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):

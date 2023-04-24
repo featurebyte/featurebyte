@@ -209,7 +209,7 @@ def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
     assert output.nodes_map["groupby_1"].parameters.tile_id == expected_tile_id
 
     # check that tile id is different if regenerate_groupby_hash=True
-    expected_tile_id = "TILE_F3600_M1800_B900_CC01E1AC06B80B2F6F4D8FA20AA73F8F4D6E8468"
+    expected_tile_id = "TILE_F3600_M1800_B900_44F5A6D9500FD740581C63DBB87A6770DE6AB633"
     output, _ = query_graph_with_groupby.reconstruct(
         node_name_to_replacement_node={}, regenerate_groupby_hash=True
     )
@@ -277,8 +277,8 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     groupby_node = add_pruning_sensitive_operation(
         graph=graph, node_cls=GroupByNode, node_params=groupby_node_params, input_node=node_input
     )
-    tile_id = "TILE_F3600_M1800_B900_5634D1ED93AC01BE6B85305C981C8FA24B504FF8"
-    aggregation_id = "sum_4da7881cf93520070719bc58d040456d4b96f606"
+    tile_id = "TILE_F3600_M1800_B900_89C17DAA4D06AB13E3BFCAEB0AF236CE0CCA713F"
+    aggregation_id = "sum_35a40dbf3534a4c4fc204b5101187cf81556efc4"
     assert groupby_node.parameters.tile_id == tile_id
     assert groupby_node.parameters.aggregation_id == aggregation_id
 
@@ -293,8 +293,8 @@ def test_query_graph__add_groupby_operation_with_graph_node(
     groupby_node = add_pruning_sensitive_operation(
         graph=graph, node_cls=GroupByNode, node_params=groupby_node_params, input_node=graph_node
     )
-    tile_id = "TILE_F3600_M1800_B900_CC01E1AC06B80B2F6F4D8FA20AA73F8F4D6E8468"
-    aggregation_id = "sum_1147e0f46db4ca1f592453505c9799fdfa1079b1"
+    tile_id = "TILE_F3600_M1800_B900_44F5A6D9500FD740581C63DBB87A6770DE6AB633"
+    aggregation_id = "sum_8a508c0abe8012b3650ed6e7e125b01ff70a8930"
     assert groupby_node.parameters.tile_id == tile_id
     assert groupby_node.parameters.aggregation_id == aggregation_id
 
@@ -359,7 +359,9 @@ def test_query_graph__representation():
                         "type": "event_table",
                         "id": "633844bd416657bb96c96d3f",
                         "timestamp_column": null,
-                        "id_column": null
+                        "id_column": null,
+                        "event_timestamp_timezone_offset": null,
+                        "event_timestamp_timezone_offset_column": null
                     }
                 }
             ]

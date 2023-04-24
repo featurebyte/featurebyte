@@ -194,7 +194,6 @@ async def test_data_warehouse_migration_v6(
     df_expected = await _retrieve_tile_registry()
 
     async with revert_when_done(session, "TILE_REGISTRY"):
-
         # Simulate migration scenario where VALUE_COLUMN_TYPES column is missing
         await session.execute_query("ALTER TABLE TILE_REGISTRY DROP COLUMN VALUE_COLUMN_TYPES")
         assert "VALUE_COLUMN_TYPES" not in (await _retrieve_tile_registry())

@@ -54,7 +54,6 @@ class OnDemandTileComputePlan:
         tile_gen_info_lst = get_tile_gen_info(graph, node, self.source_type)
 
         for tile_info in tile_gen_info_lst:
-
             # The date range of each tile table depends on the feature window sizes.
             self.update_max_window_size(tile_info)
 

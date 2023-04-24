@@ -42,7 +42,7 @@ def test_indexes():
                         indexed_fields.add(key)
                         check_field(model, key)
                 else:
-                    for (key, _) in index:
+                    for key, _ in index:
                         indexed_fields.add(key)
                         check_field(model, key)
 
@@ -63,7 +63,7 @@ def test_indexes():
     # load all document model classes
     models_path = os.path.dirname(base.__file__)
     table_indexes = defaultdict(list)
-    for (_, name, _) in pkgutil.iter_modules([models_path]):
+    for _, name, _ in pkgutil.iter_modules([models_path]):
         module = importlib.import_module(f"featurebyte.models.{name}")
         for attr in dir(module):
             resource = getattr(module, attr)

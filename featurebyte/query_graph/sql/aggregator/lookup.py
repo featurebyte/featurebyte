@@ -36,7 +36,6 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
     def get_expression_for_column(
         self, main_alias: str, join_alias: str, column_name: str
     ) -> expressions.Expression:
-
         expr = super().get_expression_for_column(
             main_alias=main_alias, join_alias=join_alias, column_name=column_name
         )
@@ -106,7 +105,6 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
             Group of LookupSpec as a list
         """
         for specs in self.grouped_specs.values():
-
             scd_parameters = specs[0].scd_parameters
             if scd_parameters:
                 if specs[0].aggregation_source.is_scd_filtered_by_current_flag:
@@ -139,7 +137,6 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
         out = []
 
         for specs in self.iterate_grouped_lookup_specs(is_scd=False):
-
             entity_column = specs[0].entity_column
             serving_name = specs[0].serving_names[0]
             source_expr = specs[0].source_expr
@@ -179,7 +176,6 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
         current_columns: list[str],
         current_query_index: int,
     ) -> AggregationResult:
-
         # SCD lookup
         table_expr, scd_agg_result_names = self._update_with_scd_lookups(
             table_expr=table_expr,
@@ -233,7 +229,6 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
         scd_agg_result_names = []
 
         for lookup_specs in self.iterate_grouped_lookup_specs(is_scd=True):
-
             left_table = Table(
                 expr=table_expr,
                 timestamp_column=point_in_time_column,

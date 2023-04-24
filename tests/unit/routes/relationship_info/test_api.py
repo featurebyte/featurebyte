@@ -37,7 +37,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
             [
                 {"loc": ["body", "name"], "msg": "field required", "type": "value_error.missing"},
                 {
-                    "loc": ["body", "primary_entity_id"],
+                    "loc": ["body", "entity_id"],
                     "msg": "field required",
                     "type": "value_error.missing",
                 },
@@ -47,7 +47,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
                     "type": "value_error.missing",
                 },
                 {
-                    "loc": ["body", "primary_table_id"],
+                    "loc": ["body", "relation_table_id"],
                     "msg": "field required",
                     "type": "value_error.missing",
                 },
@@ -70,9 +70,9 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["primary_entity_id"] = entity_ids[i * 2]
+            payload["entity_id"] = entity_ids[i * 2]
             payload["related_entity_id"] = entity_ids[i * 2 + 1]
-            payload["primary_table_id"] = "6337f9651050ee7d5980660d"
+            payload["relation_table_id"] = "6337f9651050ee7d5980660d"
             payload["updated_by"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
@@ -112,7 +112,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
         assert response_dict["relationship_type"] == "child_parent"
-        assert response_dict["primary_entity_name"] == "customer"
+        assert response_dict["entity_name"] == "customer"
         assert response_dict["related_entity_name"] == "transaction"
         assert response_dict["table_name"] == "sf_event_table"
 

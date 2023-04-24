@@ -175,7 +175,9 @@ class DBVarType(StrEnum):
 
 class AggFunc(StrEnum):
     """
-    Supported aggregation functions in groupby.
+    The AggFunc enum class provides a way to represent various aggregation methods in your code. It helps reduce
+    errors by defining a set of supported aggregation methods. Each enum constant corresponds to a specific
+    aggregation method.
     """
 
     __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.AggFunc")
@@ -202,7 +204,7 @@ class AggFunc(StrEnum):
 
 class SourceType(StrEnum):
     """
-    Database or data warehouse source type.
+    The SourceType enum class provides a way to represent different types of data warehouse source in your code.
     """
 
     __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.SourceType")
@@ -229,7 +231,7 @@ class SourceType(StrEnum):
 
 class StorageType(StrEnum):
     """
-    Distributed storage type.
+    The StorageType enum class provides a way to represent different types of distributed storage in your code.
     """
 
     __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.StorageType")
@@ -279,7 +281,7 @@ class WorkerCommand(StrEnum):
 
     FEATURE_JOB_SETTING_ANALYSIS_CREATE = "FEATURE_JOB_SETTING_ANALYSIS_CREATE"
     FEATURE_JOB_SETTING_ANALYSIS_BACKTEST = "FEATURE_JOB_SETTING_ANALYSIS_BACKTEST"
-    FEATURE_LIST_DEPLOY = "FEATURE_LIST_DEPLOY"
+    DEPLOYMENT_CREATE_UPDATE = "DEPLOYMENT_CREATE_UPDATE"
     HISTORICAL_FEATURE_TABLE_CREATE = "HISTORICAL_TABLE_CREATE"
     BATCH_REQUEST_TABLE_CREATE = "BATCH_REQUEST_TABLE_CREATE"
     OBSERVATION_TABLE_CREATE = "OBSERVATION_TABLE_CREATE"

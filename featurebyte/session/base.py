@@ -257,7 +257,6 @@ class BaseSession(BaseModel):
 
         try:
             while True:
-
                 # check for timeout
                 if timeout and time.time() - start_time > timeout:
                     thread.is_terminated = True
@@ -715,7 +714,6 @@ class BaseSchemaInitializer(ABC):
         output = []
 
         for filename in os.listdir(sql_directory):
-
             if not filename.endswith(".sql"):
                 continue
 

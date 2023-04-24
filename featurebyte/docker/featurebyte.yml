@@ -7,11 +7,11 @@ services:
     hostname: mongo-rs
     restart: unless-stopped
     container_name: mongo-rs
-    image: "mongo:6.0.3"
-    entrypoint: ["/bin/bash", "./scripts/entrypoint.sh"]
+    image: "featurebyte/mongo:6"
+    environment:
+      - MONGO_HOSTNAME=mongo-rs
     volumes:
-      - ./entrypoint-mongo.sh:/scripts/entrypoint.sh
-      - ~/.featurebyte/data/mongodb:/data/
+      - mongodb:/data/
     healthcheck:
       test: ["CMD", "mongosh", "--port=27022", "--eval", "rs.status()"]
     logging:
@@ -54,6 +54,8 @@ services:
         condition: service_healthy
     ports:
       - "0.0.0.0:8088:8088"
+    command:
+      - "server"
     environment:
       - "FEATUREBYTE_HOME=/app/.featurebyte"
       - "MPLCONFIGDIR=/app/matplotlib"
@@ -61,17 +63,14 @@ services:
       - "MONGODB_URI=mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0"
       - "API_HOST=0.0.0.0"
       - "API_PORT=8088"
-      - "WORKERS=3"
       - "LOG_LEVEL=info"
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
-      - "FEATUREBYTE_TELEMETRY_ID=${FEATUREBYTE_TELEMETRY_ID}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8088/status"]
       interval: 10s
       start_period: 30s
     volumes:
-      - ./migration.py:/scripts/migration.py
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
       - ~/.featurebyte/data/files:/app/.featurebyte/data/files
@@ -98,10 +97,9 @@ services:
       - "MONGODB_URI=mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0"
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
-    entrypoint: |
-      /bin/bash /scripts/entrypoint-worker.sh
+    command:
+      - "worker"
     volumes:
-      - ./entrypoint-worker.sh:/scripts/entrypoint-worker.sh
       - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
       - ~/.featurebyte/data/files:/app/.featurebyte/data/files
@@ -160,5 +158,6 @@ networks:
     external: true
 
 volumes:
+  mongodb:
   spark-warehouse:
   file-store:

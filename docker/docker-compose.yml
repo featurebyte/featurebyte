@@ -4,10 +4,9 @@ services:
   mongo-rs:
     hostname: mongo-testrs
     container_name: mongo-testrs
-    image: "mongo:6.0.3"
-    entrypoint: ["/bin/bash", "./scripts/entrypoint.sh"]
-    volumes:
-      - ./entrypoint-mongo.sh:/scripts/entrypoint.sh
+    image: "featurebyte/mongo:latest"
+    environment:
+      - MONGO_HOSTNAME=localhost
     ports:
       - 27021:27021
       - 27022:27022

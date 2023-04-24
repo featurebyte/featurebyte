@@ -62,7 +62,6 @@ class TileManager(BaseModel):
             list of TileSpec, temp_entity_table to update the feature store
         """
         for tile_spec, entity_table in tile_inputs:
-
             await self.generate_tiles(
                 tile_spec=tile_spec, tile_type=TileType.OFFLINE, start_ts_str=None, end_ts_str=None
             )

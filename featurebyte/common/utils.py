@@ -223,7 +223,6 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
     type_conversions: Optional[dict[Optional[str], DBVarType]] = values.get("type_conversions")
     if type_conversions:
         for col_name, dtype in type_conversions.items():
-
             # is col_name is None in type_conversions it should apply to the only column in the dataframe
             if not col_name:
                 col_name = dataframe.columns[0]  # pylint: disable=no-member

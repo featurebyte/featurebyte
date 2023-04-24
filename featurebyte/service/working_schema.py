@@ -88,7 +88,6 @@ class WorkingSchemaService(BaseService):
     async def _reschedule_online_enabled_features(
         self, feature_store_id: ObjectId, session: BaseSession
     ) -> None:
-
         # activate use of raw query filter to retrieve all documents regardless of catalog membership
         self.feature_service.allow_use_raw_query_filter()
         online_enabled_feature_docs = self.feature_service.list_documents_iterator(

@@ -6,7 +6,6 @@ from typing import List, Optional
 from dataclasses import dataclass
 
 from featurebyte.common.documentation.constants import (
-    ACTIVATE,
     ADD_METADATA,
     CATALOG,
     CLASS_METHODS,
@@ -179,6 +178,10 @@ def _get_table_layout() -> List[DocLayoutItem]:
             doc_path_override="api.base_table.TableApiObject.preview_sql.md",
         ),
         DocLayoutItem([TABLE, LINEAGE, "ItemTable.event_table_id"]),
+        DocLayoutItem(
+            [TABLE, MANAGE, "Table.update_status"],
+            doc_path_override="api.base_table.TableApiObject.update_status.md",
+        ),
         DocLayoutItem([TABLE, TYPE, "DimensionTable"]),
         DocLayoutItem([TABLE, TYPE, "EventTable"]),
         DocLayoutItem([TABLE, TYPE, "ItemTable"]),
@@ -344,6 +347,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, CONSTRUCTOR, "FeatureList"]),
         DocLayoutItem([FEATURE_LIST, CREATE_FEATURE_GROUP, "FeatureList.drop"]),
         DocLayoutItem([FEATURE_LIST, DEPLOY, "FeatureList.deploy"]),
+        DocLayoutItem([FEATURE_LIST, DEPLOY, "FeatureList.get_historical_features_async"]),
         DocLayoutItem([FEATURE_LIST, SAVE, "FeatureList.save"]),
         DocLayoutItem([FEATURE_LIST, EXPLORE, "FeatureList.preview"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.created_at"]),
@@ -352,6 +356,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.list_features"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.name"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.saved"]),
+        DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.status"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.updated_at"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.is_default"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.production_ready_fraction"]),
@@ -387,7 +392,6 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_STORE, CLASS_METHODS, "FeatureStore.get_by_id"]),
         DocLayoutItem([FEATURE_STORE, CLASS_METHODS, "FeatureStore.list"]),
         DocLayoutItem([FEATURE_STORE, CLASS_METHODS, "FeatureStore.create"]),
-        DocLayoutItem([FEATURE_STORE, CREATE, "FeatureStore.get_or_create"]),
         DocLayoutItem([FEATURE_STORE, GET, "FeatureStore.get_data_source"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.created_at"]),
         DocLayoutItem([FEATURE_STORE, INFO, "FeatureStore.details"]),
@@ -449,7 +453,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([VIEW]),
-        DocLayoutItem([VIEW, CREATE, "View.raw"]),
+        DocLayoutItem([VIEW, CREATE, "View.raw"], doc_path_override="api.view.RawMixin.raw.md"),
         DocLayoutItem([VIEW, CREATE_FEATURE, "View.as_features"]),
         DocLayoutItem(
             [VIEW, CREATE_FEATURE, "view.groupby"],
@@ -542,7 +546,6 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_datetime"]),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_numeric"]),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.name"]),
-        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.timestamp_column"]),
         DocLayoutItem([VIEW_COLUMN, LAGS, "ChangeViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LAGS, "EventViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.feature_store"]),
@@ -594,12 +597,11 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([CATALOG]),
-        DocLayoutItem([CATALOG, ACTIVATE, "Catalog.activate"]),
+        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.activate"]),
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get"]),
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_active"]),
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_by_id"]),
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.create"]),
-        DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.get_or_create"]),
         DocLayoutItem([CATALOG, CLASS_METHODS, "Catalog.list"]),
         DocLayoutItem([CATALOG, CREATE, "Catalog.create_entity"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_feature_by_id"]),
@@ -664,6 +666,7 @@ def _get_enum_layout() -> List[DocLayoutItem]:
             [UTILITY_CLASSES, GROUPBY, "view.GroupBy.aggregate_over"],
             doc_path_override="api.groupby.GroupBy.aggregate_over.md",
         ),
+        DocLayoutItem([UTILITY_CLASSES, FEATURE, "FeatureVersionInfo"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SnowflakeDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SparkDetails"]),
@@ -703,6 +706,9 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis"]),
+        DocLayoutItem(
+            [UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.get_by_id"]
+        ),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "TableFeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.info"]),
         DocLayoutItem(

@@ -662,16 +662,16 @@ async def test_get_relationship_info_info(
         RelationshipInfoCreate(
             name="test_relationship",
             relationship_type=relationship_type,
-            primary_entity_id=entity.id,
+            entity_id=entity.id,
             related_entity_id=transaction_entity.id,
-            primary_table_id=event_table.id,
+            relation_table_id=event_table.id,
             is_enabled=True,
             updated_by=PydanticObjectId(ObjectId()),
         )
     )
     relationship_info = await info_service.get_relationship_info_info(created_relationship.id)
     assert relationship_info.relationship_type == relationship_type
-    assert relationship_info.primary_entity_name == "customer"
+    assert relationship_info.entity_name == "customer"
     assert relationship_info.related_entity_name == "transaction"
     assert relationship_info.table_name == "sf_event_table"
     assert relationship_info.updated_by == "default user"

@@ -166,7 +166,7 @@ def test_item_table_join_event_table_attributes_on_demand_tile_gen(
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "item_type",
-          COUNT(*) AS value_count_f31c5c9eb3c998d87069cce7b2abbf7f455e89e0
+          COUNT(*) AS value_count_bac600740926fd108d0945c41b34484acf70adad
         FROM (
           SELECT
             *,
@@ -326,8 +326,8 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("ord_size") AS sum_value_avg_b3d693b2f24a3b72386f1591e8cbdd4803cbf72e,
-          COUNT("ord_size") AS count_value_avg_b3d693b2f24a3b72386f1591e8cbdd4803cbf72e
+          SUM("ord_size") AS sum_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff,
+          COUNT("ord_size") AS count_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff
         FROM (
           SELECT
             *,

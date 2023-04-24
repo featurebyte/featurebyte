@@ -16,6 +16,7 @@ from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -61,6 +62,7 @@ DocumentServiceT = TypeVar(
     HistoricalFeatureTableService,
     BatchRequestTableService,
     BatchFeatureTableService,
+    DeploymentService,
 )
 
 

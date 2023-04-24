@@ -49,7 +49,7 @@ class BaseFrame(QueryObject, SampleMixin):
     @property
     def dtypes(self) -> pd.Series:
         """
-        Retrieve column table type info
+        Returns a Series with the data type of each column in the view.
 
         Returns
         -------

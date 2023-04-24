@@ -194,7 +194,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @property
     def dtypes(self) -> pd.Series:
         """
-        Retrieve column table type info.
+        Returns a Series with the data type of each column in the table.
 
         Returns
         -------
@@ -235,7 +235,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     @typechecked
     def preview(self, limit: int = 10, after_cleaning: bool = False) -> pd.DataFrame:
         """
-        Retrieve a preview of the table.
+        Returns a DataFrame that contains a selection of rows of the table.
 
         Parameters
         ----------
@@ -358,8 +358,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
         """
-        Retrieve a summary of the contents in the table.
-        This includes columns names, column types, missing and unique counts, and other statistics.
+        Returns descriptive statistics of the table columns.
 
         Parameters
         ----------
@@ -454,6 +453,8 @@ class SourceTable(AbstractTableData):
         name: str,
         event_timestamp_column: str,
         event_id_column: str,
+        event_timestamp_timezone_offset: Optional[str] = None,
+        event_timestamp_timezone_offset_column: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> EventTable:
@@ -475,13 +476,20 @@ class SourceTable(AbstractTableData):
         Parameters
         ----------
         name: str
-            Event table name.
+            The desired name for the new table.
         event_id_column: str
-            Event ID column from the given source table.
+            The column that represents the unique identfier for each event.
         event_timestamp_column: str
-            Event timestamp column from the given source table.
+            The column that contains the timestamp of the associated event.
+        event_timestamp_timezone_offset: Optional[str]
+            Timezone offset for the event timestamp column. Supported format is "(+|-)HH:mm".
+            Specify this if the timezone offset is a fixed value. Examples: "+08:00" or "-05:00".
+        event_timestamp_timezone_offset_column: Optional[str]
+            Timezone offset column for the event timestamp column. The column is expected to have
+            string type, and each value in the column is expected to have the format "(+|-)HH:mm".
+            Specify this if the timezone offset is different for different rows in the event table.
         record_creation_timestamp_column: str
-            Record creation timestamp column from the given source table.
+            The optional column for the timestamp when a record was created.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create an
             event table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -512,6 +520,8 @@ class SourceTable(AbstractTableData):
             record_creation_timestamp_column=record_creation_timestamp_column,
             event_timestamp_column=event_timestamp_column,
             event_id_column=event_id_column,
+            event_timestamp_timezone_offset=event_timestamp_timezone_offset,
+            event_timestamp_timezone_offset_column=event_timestamp_timezone_offset_column,
             _id=_id,
         )
 
@@ -540,15 +550,17 @@ class SourceTable(AbstractTableData):
         Parameters
         ----------
         name: str
-            Item table name.
+            The desired name for the new table.
         event_id_column: str
-            Event ID column from the given source table.
+            The column that represents the unique identifier for the associated event. This column will be used to join
+            the item table with the event table.
         item_id_column: str
-            Item ID column from the given source table.
+            The column that represents the unique identifier for each item.
         event_table_name: str
-            Name of the EventTable associated with this ItemTable.
+            The name of the event table that the item table will be associated with. This is used to ensure that the
+            item table is properly linked to the correct event table.
         record_creation_timestamp_column: Optional[str]
-            Record creation timestamp column from the given source table.
+            The optional column for the timestamp when a record was created.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create an
             item table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -613,11 +625,11 @@ class SourceTable(AbstractTableData):
         Parameters
         ----------
         name: str
-            Dimension table name.
+            The desired name for the new table.
         dimension_id_column: str
-            Dimension table ID column from the given tabular source.
+            The column that serves as the primary key, uniquely identifying each record in the table.
         record_creation_timestamp_column: str
-            Record creation timestamp column from the given tabular source.
+            The optional column for the timestamp when a record was created.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create a
             dimension table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -688,20 +700,19 @@ class SourceTable(AbstractTableData):
         Parameters
         ----------
         name: str
-            SCDTable name.
+            The desired name for the new table.
         natural_key_column: str
-            Natural key column from the given source table.
+            The column that uniquely identifies active records at a given point-in-time.
         effective_timestamp_column: str
-            Effective timestamp column from the given source table.
+            The column that represents when the record becomes effective (i.e., active).
         end_timestamp_column: Optional[str]
-            End timestamp column from the given source table.
+            The optional column for the end or expiration timestamp, indicating when a record is no longer active.
         surrogate_key_column: Optional[str]
-            Surrogate key column from the given source table. A surrogate key is a unique identifier assigned to
-            each record, and is used to provide a stable identifier for data even as it changes over time.
+            The optional column for a surrogate key that uniquely identifies each row in the table.
         current_flag_column: Optional[str]
-            Column to indicate whether the keys are for the current time in point.
+            The optional column that shows if a record is currently active or not.
         record_creation_timestamp_column: str
-            Record creation timestamp column from the given source table.
+            The optional column for the timestamp when a record was created.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create a
             SCD table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -756,13 +767,13 @@ class SourceTable(AbstractTableData):
         Parameters
         ----------
         name: str
-            Event table name.
+            The desired name for the new table.
         event_id_column: str
-            Event ID column from the given source table.
+            The column that represents the unique identifier for each event.
         event_timestamp_column: str
-            Event timestamp column from the given source table.
+            The column that contains the timestamp of the associated event.
         record_creation_timestamp_column: str
-            Record creation timestamp column from the given source table.
+            The optional column for the timestamp when a record was created.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create an
             event table with a specific ID. This should not be a common operation, and is typically used in tests

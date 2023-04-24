@@ -7,7 +7,7 @@ import dateutil.parser
 
 from featurebyte.common import date_util
 from featurebyte.logger import logger
-from featurebyte.sql.common import construct_create_table_query, retry_sql, retry_sql_with_cache
+from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
@@ -106,9 +106,7 @@ class TileGenerate(TileCommon):
                         insert ({insert_str})
                             values ({values_str})
             """
-            await retry_sql_with_cache(
-                session=self._session, sql=merge_sql, cached_select_sql=tile_sql
-            )
+            await retry_sql(session=self._session, sql=merge_sql)
 
         if self.last_tile_start_str:
             logger.debug(f"last_tile_start_str: {self.last_tile_start_str}")
@@ -133,7 +131,6 @@ class TileGenerate(TileCommon):
             await retry_sql(self._session, update_tile_last_ind_sql)
 
     def _construct_tile_sql_with_index(self) -> str:
-
         if self.entity_column_names:
             entity_and_value_column_names_str = (
                 f"{self.entity_column_names_str}, {self.value_column_names_str}"

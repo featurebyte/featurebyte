@@ -72,6 +72,7 @@ class EventTableModel(EventTableData, TableModel):
                 ("event_timestamp_column", DBVarType.supported_timestamp_types()),
                 ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
                 ("event_id_column", DBVarType.supported_id_types()),
+                ("event_timestamp_timezone_offset_column", {DBVarType.VARCHAR}),
             ],
         )
     )

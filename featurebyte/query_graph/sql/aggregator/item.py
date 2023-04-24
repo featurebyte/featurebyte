@@ -149,7 +149,6 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         current_columns: list[str],
         current_query_index: int,
     ) -> AggregationResult:
-
         _ = point_in_time_column
         queries = []
         for specs in self.grouped_specs.values():

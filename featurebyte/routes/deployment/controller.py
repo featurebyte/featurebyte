@@ -3,16 +3,33 @@ Deployment API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal
+from typing import Optional
 
+from bson import ObjectId
+
+from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.deployment import DeploymentList, DeploymentSummary
+from featurebyte.routes.task.controller import TaskController
+from featurebyte.schema.deployment import (
+    DeploymentCreate,
+    DeploymentList,
+    DeploymentSummary,
+    DeploymentUpdate,
+)
+from featurebyte.schema.task import Task
+from featurebyte.schema.worker.task.feature_list_deploy import (
+    CreateDeploymentPayload,
+    DeploymentCreateUpdateTaskPayload,
+    UpdateDeploymentPayload,
+)
+from featurebyte.service.context import ContextService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.feature_list import FeatureListService
 
 
 class DeploymentController(
-    BaseDocumentController[FeatureListModel, FeatureListService, DeploymentList]
+    BaseDocumentController[DeploymentModel, DeploymentService, DeploymentList]
 ):
     """
     Deployment Controller
@@ -22,59 +39,76 @@ class DeploymentController(
 
     def __init__(
         self,
-        service: FeatureListService,
+        service: DeploymentService,
+        context_service: ContextService,
+        feature_list_service: FeatureListService,
+        task_controller: TaskController,
     ):
         super().__init__(service)
-        self.service = service
+        self.context_service = context_service
+        self.feature_list_service = feature_list_service
+        self.task_controller = task_controller
 
-    async def list(
-        self,
-        page: int = 1,
-        page_size: int = 10,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
-        **kwargs: Any,
-    ) -> DeploymentList:
+    async def create_deployment(self, data: DeploymentCreate) -> Task:
         """
-        List documents stored at persistent (GitDB or MongoDB)
+        Create deployment.
 
         Parameters
         ----------
-        page: int
-            Page number
-        page_size: int
-            Number of items per page
-        sort_by: str | None
-            Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
-            Sorting the returning documents in ascending order or descending order
-        kwargs: Any
-            Additional keyword arguments
+        data : DeploymentCreate
+            Deployment data to create.
 
         Returns
         -------
-        DeploymentList
-            List of deployments
+        Task
+            Task to create deployment.
         """
-        # allow the use of raw query filter since we need to list all deployments across catalogs
-        self.service.allow_use_raw_query_filter()
-        query_filter: Dict[str, Any] = {"deployed": True}
-        if kwargs.get("name"):
-            query_filter["name"] = kwargs["name"]
-        if kwargs.get("version"):
-            query_filter["version"] = kwargs["version"]
-        if kwargs.get("search"):
-            query_filter["$text"] = {"$search": kwargs["search"]}
+        # check if feature list exists
+        _ = await self.feature_list_service.get_document(document_id=data.feature_list_id)
 
-        return await super().list(
-            page=page,
-            page_size=page_size,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
-            use_raw_query_filter=True,
-            query_filter=query_filter,
-            **kwargs,
+        payload = DeploymentCreateUpdateTaskPayload(
+            deployment_payload=CreateDeploymentPayload(
+                name=data.name,
+                feature_list_id=data.feature_list_id,
+                enabled=True,
+            ),
+            user_id=self.service.user.id,
+            catalog_id=self.service.catalog_id,
+            output_document_id=data.id or ObjectId(),
         )
+        task_id = await self.task_controller.task_manager.submit(payload=payload)
+        return await self.task_controller.get_task(task_id=str(task_id))
+
+    async def update_deployment(
+        self, document_id: ObjectId, data: DeploymentUpdate
+    ) -> Optional[Task]:
+        """
+        Update deployment.
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Deployment ID to update.
+        data: DeploymentUpdate
+            Deployment data to update.
+
+        Returns
+        -------
+        Optional[Task]
+            Task to create deployment.
+        """
+        # check if deployment exists
+        deployment = await self.service.get_document(document_id=document_id)
+        if data.enabled is not None and data.enabled != deployment.enabled:
+            payload = DeploymentCreateUpdateTaskPayload(
+                deployment_payload=UpdateDeploymentPayload(enabled=data.enabled),
+                user_id=self.service.user.id,
+                catalog_id=self.service.catalog_id,
+                output_document_id=document_id,
+            )
+            task_id = await self.task_controller.task_manager.submit(payload=payload)
+            return await self.task_controller.get_task(task_id=str(task_id))
+        return None
 
     async def get_deployment_summary(self) -> DeploymentSummary:
         """
@@ -85,21 +119,23 @@ class DeploymentController(
         DeploymentSummary
             Summary of all deployments.
         """
-        # allow the use of raw query filter since we need to list all deployments across catalogs
-        self.service.allow_use_raw_query_filter()
         feature_list_ids = set()
         feature_ids = set()
         deployment_data = await self.service.list_documents(
             page=1,
             page_size=0,
-            use_raw_query_filter=True,
-            query_filter={"deployed": True},
+            query_filter={"enabled": True},
         )
 
         for doc in deployment_data["data"]:
-            feature_list = FeatureListModel(**doc)
-            feature_list_ids.add(feature_list.id)
-            feature_ids.update(set(feature_list.feature_ids))
+            deployment_model = DeploymentModel(**doc)
+            feature_list_ids.add(deployment_model.feature_list_id)
+
+        async for doc in self.feature_list_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(feature_list_ids)}},
+        ):
+            feature_list_model = FeatureListModel(**doc)
+            feature_ids.update(set(feature_list_model.feature_ids))
         return DeploymentSummary(
             num_feature_list=len(feature_list_ids),
             num_feature=len(feature_ids),

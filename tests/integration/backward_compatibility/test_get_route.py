@@ -116,8 +116,6 @@ def config_fixture(test_api_client):
         ],
         "logging": {
             "level": "DEBUG",
-            "telemetry": False,
-            "telemetry_url": "http://127.0.0.1",
         },
     }
 

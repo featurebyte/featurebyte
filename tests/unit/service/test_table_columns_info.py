@@ -265,9 +265,9 @@ def event_table_entity_initializer_fixture(
                 data=RelationshipInfoCreate(
                     name=f"{entity_id}_{parent_id}",
                     relationship_type=RelationshipType.CHILD_PARENT,
-                    primary_entity_id=PydanticObjectId(entity_id),
+                    entity_id=PydanticObjectId(entity_id),
                     related_entity_id=PydanticObjectId(parent_id),
-                    primary_table_id=PydanticObjectId(event_table.id),
+                    relation_table_id=PydanticObjectId(event_table.id),
                     is_enabled=True,
                     updated_by=user.id,
                 )
@@ -377,7 +377,7 @@ def get_relationships():
     relationships = Relationship.list()
     expected_relationships = []
     for _, relationship in relationships.iterrows():
-        expected_relationships.append((relationship.primary_entity, relationship.related_entity))
+        expected_relationships.append((relationship.entity, relationship.related_entity))
     return expected_relationships
 
 

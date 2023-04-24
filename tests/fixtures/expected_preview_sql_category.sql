@@ -1,10 +1,10 @@
 WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
   SELECT
-    avg_c736c6a01f518c42567e72c90f6070173fa8b0ee.INDEX,
-    avg_c736c6a01f518c42567e72c90f6070173fa8b0ee."cust_id",
-    avg_c736c6a01f518c42567e72c90f6070173fa8b0ee."product_type",
-    sum_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee,
-    count_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee
+    avg_828be81883198b473c3a5ac214dd4112d7559427.INDEX,
+    avg_828be81883198b473c3a5ac214dd4112d7559427."cust_id",
+    avg_828be81883198b473c3a5ac214dd4112d7559427."product_type",
+    sum_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
+    count_value_avg_828be81883198b473c3a5ac214dd4112d7559427
   FROM (
     SELECT
       *,
@@ -16,8 +16,8 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
         ) AS __FB_TILE_START_DATE_COLUMN,
         "cust_id",
         "product_type",
-        SUM("a") AS sum_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee,
-        COUNT("a") AS count_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee
+        SUM("a") AS sum_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
+        COUNT("a") AS count_value_avg_828be81883198b473c3a5ac214dd4112d7559427
       FROM (
         SELECT
           *,
@@ -50,7 +50,7 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
         "cust_id",
         "product_type"
     )
-  ) AS avg_c736c6a01f518c42567e72c90f6070173fa8b0ee
+  ) AS avg_828be81883198b473c3a5ac214dd4112d7559427
 ), REQUEST_TABLE AS (
   SELECT
     CAST('2022-04-20 10:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
@@ -91,8 +91,8 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_window_w7200_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee" AS "_fb_internal_window_w7200_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee",
-    "T1"."_fb_internal_window_w172800_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee" AS "_fb_internal_window_w172800_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee"
+    "T0"."_fb_internal_window_w7200_avg_828be81883198b473c3a5ac214dd4112d7559427" AS "_fb_internal_window_w7200_avg_828be81883198b473c3a5ac214dd4112d7559427",
+    "T1"."_fb_internal_window_w172800_avg_828be81883198b473c3a5ac214dd4112d7559427" AS "_fb_internal_window_w172800_avg_828be81883198b473c3a5ac214dd4112d7559427"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -105,22 +105,22 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
           ELSE CAST(INNER_."product_type" AS TEXT)
         END,
         TO_VARIANT(
-          INNER_."inner__fb_internal_window_w7200_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee"
+          INNER_."inner__fb_internal_window_w7200_avg_828be81883198b473c3a5ac214dd4112d7559427"
         )
-      ) AS "_fb_internal_window_w7200_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee"
+      ) AS "_fb_internal_window_w7200_avg_828be81883198b473c3a5ac214dd4112d7559427"
     FROM (
       SELECT
         "POINT_IN_TIME",
         "CUSTOMER_ID",
         "product_type",
-        SUM(sum_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee) / SUM(count_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee) AS "inner__fb_internal_window_w7200_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee"
+        SUM(sum_value_avg_828be81883198b473c3a5ac214dd4112d7559427) / SUM(count_value_avg_828be81883198b473c3a5ac214dd4112d7559427) AS "inner__fb_internal_window_w7200_avg_828be81883198b473c3a5ac214dd4112d7559427"
       FROM (
         SELECT
           REQ."POINT_IN_TIME",
           REQ."CUSTOMER_ID",
           TILE.INDEX,
-          TILE.count_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee,
-          TILE.sum_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee,
+          TILE.count_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
+          TILE.sum_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
           TILE."product_type"
         FROM "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
         INNER JOIN TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS TILE
@@ -133,8 +133,8 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
           REQ."POINT_IN_TIME",
           REQ."CUSTOMER_ID",
           TILE.INDEX,
-          TILE.count_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee,
-          TILE.sum_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee,
+          TILE.count_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
+          TILE.sum_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
           TILE."product_type"
         FROM "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
         INNER JOIN TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS TILE
@@ -164,22 +164,22 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
           ELSE CAST(INNER_."product_type" AS TEXT)
         END,
         TO_VARIANT(
-          INNER_."inner__fb_internal_window_w172800_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee"
+          INNER_."inner__fb_internal_window_w172800_avg_828be81883198b473c3a5ac214dd4112d7559427"
         )
-      ) AS "_fb_internal_window_w172800_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee"
+      ) AS "_fb_internal_window_w172800_avg_828be81883198b473c3a5ac214dd4112d7559427"
     FROM (
       SELECT
         "POINT_IN_TIME",
         "CUSTOMER_ID",
         "product_type",
-        SUM(sum_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee) / SUM(count_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee) AS "inner__fb_internal_window_w172800_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee"
+        SUM(sum_value_avg_828be81883198b473c3a5ac214dd4112d7559427) / SUM(count_value_avg_828be81883198b473c3a5ac214dd4112d7559427) AS "inner__fb_internal_window_w172800_avg_828be81883198b473c3a5ac214dd4112d7559427"
       FROM (
         SELECT
           REQ."POINT_IN_TIME",
           REQ."CUSTOMER_ID",
           TILE.INDEX,
-          TILE.count_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee,
-          TILE.sum_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee,
+          TILE.count_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
+          TILE.sum_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
           TILE."product_type"
         FROM "REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
         INNER JOIN TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS TILE
@@ -192,8 +192,8 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
           REQ."POINT_IN_TIME",
           REQ."CUSTOMER_ID",
           TILE.INDEX,
-          TILE.count_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee,
-          TILE.sum_value_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee,
+          TILE.count_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
+          TILE.sum_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
           TILE."product_type"
         FROM "REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
         INNER JOIN TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS TILE
@@ -216,6 +216,6 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_window_w7200_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee" AS "a_2h_average",
-  "_fb_internal_window_w172800_avg_c736c6a01f518c42567e72c90f6070173fa8b0ee" AS "a_48h_average"
+  "_fb_internal_window_w7200_avg_828be81883198b473c3a5ac214dd4112d7559427" AS "a_2h_average",
+  "_fb_internal_window_w172800_avg_828be81883198b473c3a5ac214dd4112d7559427" AS "a_48h_average"
 FROM _FB_AGGREGATED AS AGG

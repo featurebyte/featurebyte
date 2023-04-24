@@ -131,7 +131,6 @@ class AsAtAggregator(BaseAggregator):
         fill_value: OptionalScalar,
         skip_fill_na: bool,
     ) -> None:
-
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
 

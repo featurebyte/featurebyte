@@ -5,6 +5,7 @@ import pytest
 from featurebyte.common.model_util import (
     convert_version_string_to_dict,
     validate_job_setting_parameters,
+    validate_timezone_offset_string,
 )
 
 
@@ -44,3 +45,37 @@ def test_frequency_should_at_least_one_minute():
 def test_convert_version_string_to_dict(input_value, expected):
     """Test convert version string to dictionary"""
     assert convert_version_string_to_dict(input_value) == expected
+
+
+@pytest.mark.parametrize(
+    "timezone_offset",
+    [
+        "+08:00",
+        "-05:30",
+    ],
+)
+def test_validate_timezone_offset_string__valid(timezone_offset):
+    """
+    Test validate_timezone_offset_string on valid offset strings
+    """
+    validate_timezone_offset_string(timezone_offset)
+
+
+@pytest.mark.parametrize(
+    "timezone_offset",
+    [
+        "0800",
+        "08:00",
+        "+00:61",
+        "+25:00",
+        "+ab:cd",
+        "+08:00:00",
+    ],
+)
+def test_validate_timezone_offset_string__invalid(timezone_offset):
+    """
+    Test validate_timezone_offset_string on valid offset strings
+    """
+    with pytest.raises(ValueError) as exc:
+        validate_timezone_offset_string(timezone_offset)
+    assert "Invalid timezone_offset" in str(exc.value)

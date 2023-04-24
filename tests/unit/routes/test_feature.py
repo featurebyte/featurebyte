@@ -712,8 +712,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/sql", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "sum_30m"\n'
-            "FROM _FB_AGGREGATED AS AGG"
+            'SELECT\n  "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_30m"\nFROM _FB_AGGREGATED AS AGG'
         )
 
     @freeze_time("2022-01-02 10:00:00")

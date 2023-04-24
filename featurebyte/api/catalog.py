@@ -79,7 +79,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         verbose: bool
-            Control verbose level of the summary.
+            The parameter "verbose" in the current state of the code does not have any impact on the output.
 
         Returns
         -------
@@ -141,7 +141,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         name: str,
     ) -> Catalog:
         """
-        Create and return an instance of a catalog. The catalog will be activated.
+        Creates a Catalog object that allows team members to easily add, search, retrieve, and reuse tables,
+        entities, features, and feature lists. The Catalog provides detailed information about the properties of
+        these elements, including their type, creation date, related versions, readiness, status, and other
+        descriptive details.
+
+        When dealing with data warehouses that cover multiple domains, creating several catalogs can aid in
+        maintaining organization and simplifying management of data and features for different domains.
 
         Parameters
         ----------
@@ -157,10 +163,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Create a new catalog.
 
         >>> catalog = fb.Catalog.create("new_catalog")  # doctest: +SKIP
-
-        See Also
-        --------
-        - [Catalog.get_or_create](/reference/featurebyte.api.catalog.Catalog.get_or_create/): Get or create Catalog
         """
         catalog = cls(name=name)
         catalog.save()
@@ -266,6 +268,79 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         """
         return self._get_audit_history(field_name="name")
 
+    @classmethod
+    def get(cls, name: str) -> Catalog:  # pylint: disable=useless-parent-delegation
+        """
+        Gets a Catalog object by its name.
+
+        Parameters
+        ----------
+        name: str
+            Name of the catalog to retrieve.
+
+        Returns
+        -------
+        Catalog
+            Catalog object.
+
+        Examples
+        --------
+        Get a Catalog object that is already saved.
+
+        >>> catalog = fb.Catalog.get("catalog_name")  # doctest: +SKIP
+        """
+        return super().get(name)
+
+    @classmethod
+    def get_by_id(  # pylint: disable=useless-parent-delegation
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> Catalog:
+        """
+        Returns a Catalog object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            Catalog unique identifier ID.
+
+        Returns
+        -------
+        Catalog
+            Catalog object.
+
+        Examples
+        --------
+        Get a Catalog object that is already saved.
+
+        >>> fb.Catalog.get_by_id(<catalog_id>)  # doctest: +SKIP
+        """
+        return super().get_by_id(id=id)
+
+    @classmethod
+    def list(
+        cls, include_id: Optional[bool] = False
+    ) -> pd.DataFrame:  # pylint: disable=useless-parent-delegation
+        """
+        Returns a DataFrame containing information on catalogs such as their names, creation dates, and active status.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        DataFrame
+            Table of objects.
+
+        Examples
+        --------
+        List all Catalogs.
+
+        >>> catalogs = fb.Catalog.list()
+        """
+        return super().list(include_id=include_id)
+
     @update_and_reset_catalog
     def create_entity(self, name: str, serving_names: List[str]) -> Entity:
         """
@@ -285,9 +360,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         name: str
-            Entity name
+            Entity name.
         serving_names: List[str]
-            Names of the serving columns
+            List of accepted names for the unique identifier that is used to identify the entity during a preview
+            or serving request.
 
         Returns
         -------
@@ -432,9 +508,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include the id in the dataframe.
+            Whether to include Relationship object id in the output.
         relationship_type: Optional[Literal[tuple[RelationshipType]]]
-            The type of relationship to list.
+            This parameter allows you to filter the results based on a specific relationship type. If no relationship
+            type is provided (default is None), no filtering will be applied based on relationship type.
 
         Returns
         -------
@@ -447,10 +524,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> catalog.list_relationships()[[
         ...     "relationship_type",
-        ...     "primary_entity",
+        ...     "entity",
         ...     "related_entity",
         ... ]]
-          relationship_type   primary_entity   related_entity
+          relationship_type           entity   related_entity
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
 
@@ -458,10 +535,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> catalog.list_relationships(relationship_type="child_parent")[[
         ...     "relationship_type",
-        ...     "primary_entity",
+        ...     "entity",
         ...     "related_entity",
         ... ]]
-          relationship_type   primary_entity   related_entity
+          relationship_type           entity   related_entity
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
         """
@@ -634,7 +711,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> data_source = catalog.get_data_source("playground")
         """
         feature_store = FeatureStore.get(name=feature_store_name)
-        return feature_store.get_data_source()
+        return feature_store.get_data_source()  # pylint: disable=no-member
 
     @update_and_reset_catalog
     def get_view(self, table_name: str) -> View:
@@ -807,7 +884,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Parameters
         ----------
         name: str
-            Feature store name.
+            Name of the feature store to retrieve.
 
         Returns
         -------

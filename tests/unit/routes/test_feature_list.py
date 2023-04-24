@@ -107,10 +107,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             new_feature_id = str(ObjectId())
             response = api_client.post(
                 "/feature",
-                json={
-                    **feature_payload,
-                    "_id": new_feature_id,
-                },
+                json={**feature_payload, "_id": new_feature_id},
             )
             assert response.status_code == HTTPStatus.CREATED
 
@@ -123,9 +120,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
     @pytest.fixture(autouse=True)
     def mock_online_enable_service_update_data_warehouse(self):
-        """
-        Mock _update_data_warehouse method in OnlineEnableService to make it a no-op
-        """
+        """Mock _update_data_warehouse method in OnlineEnableService to make it a no-op"""
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 
@@ -406,6 +401,28 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response_dict["total"] == 1
         assert response_dict["data"] == [new_version_response.json()]
 
+    def _make_production_ready_and_deploy(self, client, feature_list_doc):
+        doc_id = feature_list_doc["_id"]
+        for feature_id in feature_list_doc["feature_ids"]:
+            # upgrade readiness level to production ready first
+            response = client.patch(
+                f"/feature/{feature_id}", json={"readiness": "PRODUCTION_READY"}
+            )
+            assert response.status_code == HTTPStatus.OK
+
+        response = client.patch(f"{self.base_route}/{doc_id}", json={})
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["deployed"] is False
+
+        # deploy the feature list
+        response = client.post("/deployment", json={"feature_list_id": doc_id})
+        assert response.status_code == HTTPStatus.CREATED
+        assert response.json()["status"] == "SUCCESS"
+
+        response = client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["deployed"] is True
+
     def test_list_200__filter_by_namespace_id(
         self, test_api_client_persistent, create_multiple_success_responses
     ):
@@ -431,99 +448,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         )
         assert negative_response.json()["total"] == 0, negative_response.json()
 
-    def _make_production_ready_and_deploy(self, client, feature_list_doc):
-        doc_id = feature_list_doc["_id"]
-        for feature_id in feature_list_doc["feature_ids"]:
-            # upgrade readiness level to production ready first
-            response = client.patch(
-                f"/feature/{feature_id}", json={"readiness": "PRODUCTION_READY"}
-            )
-            assert response.status_code == HTTPStatus.OK
-        # deploy the feature list
-        response = client.patch(f"{self.base_route}/{doc_id}", json={})
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["deployed"] is False
-
-        response = client.post(f"{self.base_route}/{doc_id}/deploy", json={"deployed": True})
-        assert response.status_code == HTTPStatus.CREATED
-        assert response.json()["status"] == "SUCCESS"
-
-        response = client.get(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["deployed"] is True
-
-    def test_update_200(self, test_api_client_persistent, create_success_response):
-        """Test update (success)"""
-        test_api_client, _ = test_api_client_persistent
-        create_response_dict = create_success_response.json()
-        doc_id = create_response_dict["_id"]
-
-        # upgrade readiness level to production ready first and then deploy the feature list
-        self._make_production_ready_and_deploy(test_api_client, create_response_dict)
-
-        response = test_api_client.get(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.OK
-        response_dict = response.json()
-
-        # list deployments
-        response = test_api_client.get("/deployment")
-        assert response.status_code == HTTPStatus.OK, response.json()
-        assert response.json() == {
-            "page": 1,
-            "page_size": 10,
-            "total": 1,
-            "data": [
-                {
-                    "_id": doc_id,
-                    "name": response_dict["name"],
-                    "feature_list_namespace_id": response_dict["feature_list_namespace_id"],
-                    "feature_list_version": response_dict["version"],
-                    "catalog_id": response_dict["catalog_id"],
-                    "num_feature": len(response_dict["feature_ids"]),
-                    "user_id": response_dict["user_id"],
-                    "created_at": response_dict["created_at"],
-                    "updated_at": response_dict["updated_at"],
-                }
-            ],
-        }
-
-        # deployment summary
-        response = test_api_client.get("/deployment/summary")
-        assert response.status_code == HTTPStatus.OK, response.json()
-        assert response.json() == {
-            "num_feature_list": 1,
-            "num_feature": len(create_response_dict["feature_ids"]),
-        }
-
-        # disable deployment
-        response = test_api_client.post(
-            f"{self.base_route}/{doc_id}/deploy", json={"deployed": False}
-        )
-        assert response.status_code == HTTPStatus.CREATED
-        assert response.json()["status"] == "SUCCESS"
-
-        response = test_api_client.get(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["deployed"] is False
-
-        # list deployments
-        response = test_api_client.get("/deployment")
-        assert response.status_code == HTTPStatus.OK, response.json()
-        assert response.json() == {
-            "page": 1,
-            "page_size": 10,
-            "total": 0,
-            "data": [],
-        }
-
-        # deployment summary
-        response = test_api_client.get("/deployment/summary")
-        assert response.status_code == HTTPStatus.OK, response.json()
-        assert response.json() == {
-            "num_feature_list": 0,
-            "num_feature": 0,
-        }
-
     def test_update_200__deploy_with_make_production_ready(
         self, test_api_client_persistent, create_success_response, api_object_to_id
     ):
@@ -538,9 +462,8 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         )
         assert response.status_code == HTTPStatus.OK
 
-        response = test_api_client.post(
-            f"{self.base_route}/{doc_id}/deploy", json={"deployed": True}
-        )
+        response = test_api_client.post("/deployment", json={"feature_list_id": doc_id})
+        deployment_id = response.json()["payload"]["output_document_id"]
         assert response.status_code == HTTPStatus.CREATED
         assert response.json()["status"] == "SUCCESS"
 
@@ -579,10 +502,8 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response_dict.items() > expected_info_response.items(), response_dict
 
         # disable deployment
-        response = test_api_client.post(
-            f"{self.base_route}/{doc_id}/deploy", json={"deployed": False}
-        )
-        assert response.status_code == HTTPStatus.CREATED
+        response = test_api_client.patch(f"/deployment/{deployment_id}", json={"enabled": False})
+        assert response.status_code == HTTPStatus.OK
         assert response.json()["status"] == "SUCCESS"
 
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
@@ -845,7 +766,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_window_w1800_sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f" AS "sum_30m"\n'
+            'SELECT\n  "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 

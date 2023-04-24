@@ -66,7 +66,6 @@ async def invoke_tile_manager_and_check_tracker_table(session, tile_cache, reque
     await tile_cache.invoke_tile_manager(requests)
 
     for request in requests:
-
         tracker_table_name = f"{request.aggregation_id}_entity_tracker"
         df_entity_tracker = await session.execute_query(f"SELECT * FROM {tracker_table_name}")
 

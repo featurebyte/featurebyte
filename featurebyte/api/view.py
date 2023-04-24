@@ -12,6 +12,7 @@ from typing import (
     Literal,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -38,10 +39,11 @@ from featurebyte.common.join_utils import (
     is_column_name_in_columns,
 )
 from featurebyte.common.model_util import validate_offset_string
+from featurebyte.common.typing import ScalarSequence
 from featurebyte.core.frame import Frame, FrozenFrame
-from featurebyte.core.generic import ProtectedColumnsQueryObject
+from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
 from featurebyte.core.mixin import SampleMixin
-from featurebyte.core.series import FrozenSeries, Series
+from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     ChangeViewNoJoinColumnError,
@@ -137,27 +139,98 @@ class ViewColumn(Series, SampleMixin):
         return super().sample(size, seed, from_timestamp, to_timestamp, **kwargs)
 
     @typechecked
+    def preview(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains a selection of rows of the view column. The materialization process occurs
+        after any cleaning operations that were defined either at the table level or during the view's creation.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preview rows of the data.
+
+        Examples
+        --------
+        Preview 3 rows of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["GroceryProductGuid"].preview(3)
+                             GroceryProductGuid
+        0  10355516-5582-4358-b5f9-6e1ea7d5dc9f
+        1  116c9284-2c41-446e-8eee-33901e0acdef
+        2  3a45a5e8-1b71-42e8-b84e-43ddaf692375
+        """
+        return super().preview(limit=limit, **kwargs)
+
+    @typechecked
+    def describe(  # pylint: disable=useless-parent-delegation
+        self,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Returns descriptive statistics of the view column. The statistics are computed after any cleaning operations
+        that were defined either at the table level or during the view's creation have been applied.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary of the view.
+
+        Examples
+        --------
+        Get summary of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].describe()
+                        ProductGroup
+        dtype                VARCHAR
+        unique                    87
+        %missing                 0.0
+        %empty                     0
+        entropy              4.13031
+        top       Chips et Tortillas
+        freq                    1319
+        """
+        return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
+
+    @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
         """
-        Creates a lookup feature directly from the column in the View. The entity associated with the feature is
-        identified by the primary key of the table. However, if the View is a Slowly Changing Dimension (SCD) view,
-        the entity is identified by the natural key of the table.
+        Creates a lookup feature directly from the column in the View.
 
-        For SCD views, lookup features are materialized through point-in-time joins, and the resulting value
-        represents the active row at the point-in-time indicated in the feature request. For instance, a customer
-        feature could be the customer's street address at the point-in-time of the request. To obtain a feature value
-        at a specific time before the request's point-in-time, an offset can be specified. For example, setting the
-        offset to 9 weeks would represent the customer's street address 9 weeks prior to the request's point-in-time.
+        For SCD views, lookup features are materialized through point-in-time joins, and the resulting value represents
+        the active row for the natural key at the point-in-time indicated in the feature request.
 
-        It is possible to perform additional transformations on the feature, and the feature is added to the catalog
-        solely when explicitly saved.
+        To obtain a feature value at a specific time before the request's point-in-time, an offset can be specified.
 
         Parameters
         ----------
         feature_name: str
-            Feature name
+            Name of the feature to create.
         offset: str
-            When specified, retrieve feature value as of this offset prior to the point-in-time
+            When specified, retrieve feature value as of this offset prior to the point-in-time.
 
         Returns
         -------
@@ -183,6 +256,130 @@ class ViewColumn(Series, SampleMixin):
         )[feature_name]
         return cast(Feature, feature)
 
+    @property
+    def is_datetime(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the view column has a datetime data type.
+
+        Returns
+        -------
+        bool
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+
+        >>> print(view["Timestamp"].is_datetime)
+        True
+        >>> print(view["Amount"].is_datetime)
+        False
+        """
+        return super().is_datetime
+
+    @property
+    def is_numeric(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the view column has a numeric data type.
+
+        Returns
+        -------
+        bool
+
+        Examples
+        --------
+        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+
+        >>> print(view["Amount"].is_numeric)
+        True
+        >>> print(view["Timestamp"].is_numeric)
+        False
+        """
+        return super().is_numeric
+
+    @typechecked
+    def preview_sql(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> str:
+        """
+        Returns an SQL query for previewing the column data after applying the set of cleaning operations defined
+        at the column level.
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        str
+        """
+        return super().preview_sql(limit=limit, **kwargs)
+
+    @typechecked
+    def astype(  # pylint: disable=useless-parent-delegation
+        self: FrozenSeriesT,
+        new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
+    ) -> FrozenSeriesT:
+        """
+        Converts the data type of a column. It is useful when you need to convert column values between numerical and
+        string formats, or the other way around.
+
+        Parameters
+        ----------
+        new_type : Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]])
+            Desired type after conversion. Type can be provided directly, or as a string.
+
+        Returns
+        -------
+        FrozenSeriesT
+            A new Series with converted variable type.
+
+        Examples
+        --------
+        Convert a numerical series to a string series, and back to an int series.
+
+        >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> event_view["Amount"] = event_view["Amount"].astype(str)
+        >>> event_view["Amount"] = event_view["Amount"].astype(int)
+        """
+        return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
+
+    @typechecked
+    def isin(  # pylint: disable=useless-parent-delegation
+        self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]
+    ) -> FrozenSeriesT:
+        """
+        Identifies if each element is contained in a sequence of values represented by the `other` parameter.
+
+        Parameters
+        ----------
+        other: Union[FrozenSeries, ScalarSequence]
+            The sequence of values to check for membership. `other` can be a predefined list of values.
+
+        Returns
+        -------
+        FrozenSeriesT
+            Column with boolean values
+
+        Examples
+        --------
+        Check to see if the values in a series are in a list of values, and use the result to filter
+        the original view:
+
+        >>> view = catalog.get_table("GROCERYPRODUCT").get_view()
+        >>> condition = view["ProductGroup"].isin(["Sauces", "Fromages", "Fruits"])
+        >>> view[condition].sample(5, seed=0)
+                             GroceryProductGuid ProductGroup
+        0  45cd58ba-efec-463a-9107-0633168a215e     Fromages
+        1  97e6afc9-1033-4fb3-b2a2-3d62261e1d17     Fromages
+        2  fb26ed22-524e-4c9e-9ea2-03c266e7f9b9     Fromages
+        3  a817d904-bc58-4048-978d-c13857969a69       Fruits
+        4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
+        """
+        return super().isin(other=other)  # type: ignore[no-any-return,misc]
+
 
 class GroupByMixin:
     """
@@ -194,15 +391,27 @@ class GroupByMixin:
     @typechecked
     def groupby(self, by_keys: Union[str, List[str]], category: Optional[str] = None) -> GroupBy:
         """
-        Group a view using one or more columns.
+        The groupby method of a view returns a GroupBy class that can be used to group data based on one or more
+        columns representing entities (specified in the key parameter). Within each entity or group of entities,
+        the GroupBy class applies aggregation function(s) to the data.
+
+        The grouping keys determine the primary entity for the declared features in the aggregation function.
+
+        Moreover, the groupby method's category parameter allows you to define a categorical column, which can be
+        used to generate Cross Aggregate Features. These features involve aggregating data across categories of the
+        categorical column, enabling the extraction of patterns in an entity across these categories. For instance,
+        you can calculate the amount spent by a customer on each product category during a specific time period using
+        this approach.
 
         Parameters
         ----------
         by_keys: Union[str, List[str]]
-            Define the key (entity) to for the `groupby` operation
+            Specifies the column or list of columns by which the data should be grouped. These columns must correspond
+            to entities registered in the catalog. If this parameter is set to an empty list, the data will not be
+            grouped.
         category : Optional[str]
-            Optional category parameter to enable aggregation per category. It should be a column
-            name in the View.
+            Optional category parameter to enable aggregation across categories. To use this parameter, provide the
+            name of a column in the View that represents a categorical column.
 
         Returns
         -------
@@ -258,6 +467,45 @@ class GroupByMixin:
         """
 
 
+class RawMixin(QueryObject, ABC):
+    """
+    Mixin that provides functionality to access raw view
+    """
+
+    __fbautodoc__ = FBAutoDoc()
+
+    _view_graph_node_type: ClassVar[GraphNodeType]
+
+    @property
+    def raw(self) -> FrozenFrame:
+        """
+        Return the raw input table view (without any cleaning operations applied)
+
+        Returns
+        -------
+        FrozenFrame
+        """
+        view_input_node_names = []
+        for graph_node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GRAPH):
+            assert isinstance(graph_node, BaseGraphNode)
+            if graph_node.parameters.type == self._view_graph_node_type:
+                view_input_node_names = self.graph.get_input_node_names(graph_node)
+
+        # first input node names must be the input node used to create the view
+        assert len(view_input_node_names) >= 1, "View should have at least one input"
+        input_node = self.graph.get_node_by_name(view_input_node_names[0])
+        assert isinstance(input_node, InputNode)
+        return FrozenFrame(
+            node_name=input_node.name,
+            tabular_source=self.tabular_source,
+            feature_store=self.feature_store,
+            columns_info=[
+                ColumnInfo(name=col.name, dtype=col.dtype, entity_id=None, semantic_id=None)
+                for col in input_node.parameters.columns
+            ],
+        )
+
+
 class View(ProtectedColumnsQueryObject, Frame, ABC):
     """
     Views are cleaned versions of Catalog tables and offer a flexible and efficient way to work with Catalog tables.
@@ -295,6 +543,115 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     def __str__(self) -> str:
         return repr(self)
+
+    @property
+    def columns(self) -> list[str]:  # pylint: disable=useless-parent-delegation
+        """
+        List the names of the columns in the view.
+
+        Returns
+        -------
+        list[str]
+        """
+        return super().columns
+
+    @typechecked
+    def preview_sql(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> str:
+        """
+        Returns an SQL query for previewing the view raw data after applying the set of cleaning operations defined
+        at the column level.
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        str
+        """
+        return super().preview_sql(limit=limit, **kwargs)
+
+    @typechecked
+    def describe(  # pylint: disable=useless-parent-delegation
+        self,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Returns descriptive statistics of the view. The statistics are computed after any cleaning operations
+        that were defined either at the table level or during the view's creation have been applied.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample.
+        seed: int
+            Seed to use for random sampling.
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from.
+        to_timestamp: Optional[datetime]
+            End of date range to sample from.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary of the view.
+
+        Examples
+        --------
+        Get summary of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").describe()
+                                    GroceryProductGuid        ProductGroup
+        dtype                                  VARCHAR             VARCHAR
+        unique                                   29099                  87
+        %missing                                   0.0                 0.0
+        %empty                                       0                   0
+        entropy                               6.214608             4.13031
+        top       017fe5ed-80a2-4e70-ae48-78aabfdee856  Chips et Tortillas
+        freq                                         1                1319
+        """
+        return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
+
+    @typechecked
+    def preview(  # pylint: disable=useless-parent-delegation
+        self, limit: int = 10, **kwargs: Any
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains a selection of rows of the view. The materialization process occurs after
+        any cleaning operations that were defined either at the table level or during the view's creation.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+        **kwargs: Any
+            Additional keyword parameters.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preview rows of the data.
+
+        Examples
+        --------
+        Preview 3 rows of a view.
+        >>> catalog.get_view("GROCERYPRODUCT").preview(3)
+                             GroceryProductGuid ProductGroup
+        0  10355516-5582-4358-b5f9-6e1ea7d5dc9f      Glaçons
+        1  116c9284-2c41-446e-8eee-33901e0acdef      Glaçons
+        2  3a45a5e8-1b71-42e8-b84e-43ddaf692375      Glaçons
+        """
+        return super().preview(limit=limit, **kwargs)
 
     def sample(  # pylint: disable=useless-parent-delegation
         self,
@@ -347,35 +704,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
           Retrieve a sample of a view.
         """
         return super().sample(size, seed, from_timestamp, to_timestamp, **kwargs)
-
-    @property
-    def raw(self) -> FrozenFrame:
-        """
-        Return the raw input table view (without any cleaning operations applied)
-
-        Returns
-        -------
-        FrozenFrame
-        """
-        view_input_node_names = []
-        for graph_node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GRAPH):
-            assert isinstance(graph_node, BaseGraphNode)
-            if graph_node.parameters.type == self._view_graph_node_type:
-                view_input_node_names = self.graph.get_input_node_names(graph_node)
-
-        # first input node names must be the input node used to create the view
-        assert len(view_input_node_names) >= 1, "View should have at least one input"
-        input_node = self.graph.get_node_by_name(view_input_node_names[0])
-        assert isinstance(input_node, InputNode)
-        return FrozenFrame(
-            node_name=input_node.name,
-            tabular_source=self.tabular_source,
-            feature_store=self.feature_store,
-            columns_info=[
-                ColumnInfo(name=col.name, dtype=col.dtype, entity_id=None, semantic_id=None)
-                for col in input_node.parameters.columns
-            ],
-        )
 
     @property
     def entity_columns(self) -> list[str]:
@@ -876,7 +1204,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         column_names: list[str],
         feature_names: list[str],
     ) -> None:
-
         if len(column_names) == 0:
             raise ValueError("column_names is empty")
 

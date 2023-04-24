@@ -22,6 +22,8 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 
+FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
+
 
 class BaseAdapter:
     """
@@ -424,6 +426,40 @@ class BaseAdapter:
         -------
         Expression
         """
+
+    @classmethod
+    def filter_with_window_function(
+        cls, select_expr: Select, column_names: list[str], condition: Expression
+    ) -> Select:
+        """
+        Construct query to filter with window function
+
+        Parameters
+        ----------
+        select_expr: Select
+            Select expression
+        column_names: list[str]
+            List of column names
+        condition: Expression
+            Filter condition expression which involves a window function
+
+        Returns
+        -------
+        Select
+        """
+        if cls.is_qualify_clause_supported():
+            select_expr = select_expr.copy()
+            select_expr.args["qualify"] = expressions.Qualify(this=condition)
+        else:
+            select_expr = select_expr.select(
+                expressions.alias_(condition, alias=FB_QUALIFY_CONDITION_COLUMN, quoted=True)
+            )
+            select_expr = (
+                select(*[quoted_identifier(column_name) for column_name in column_names])
+                .from_(select_expr.subquery())
+                .where(quoted_identifier(FB_QUALIFY_CONDITION_COLUMN))
+            )
+        return select_expr
 
 
 class SnowflakeAdapter(BaseAdapter):

@@ -154,11 +154,13 @@ def feature_list_with_child_entities_fixture(country_feature, mock_task_manager)
 
     feature_list = FeatureList([country_feature], name=f"{table_prefix}_country_list")
     feature_list.save(conflict_resolution="retrieve")
+    deployment = None
     try:
-        feature_list.deploy(enable=True, make_production_ready=True)
+        deployment = feature_list.deploy(make_production_ready=True)
         yield feature_list
     finally:
-        feature_list.deploy(enable=False)
+        if deployment:
+            deployment.enable(False)
 
 
 @pytest.fixture(name="feature_list_with_parent_child_features", scope="module")
@@ -173,11 +175,13 @@ def feature_list_with_parent_child_features_fixture(
         [city_feature, country_feature], name=f"{table_prefix}_city_country_list"
     )
     feature_list.save(conflict_resolution="retrieve")
+    deployment = None
     try:
-        feature_list.deploy(enable=True, make_production_ready=True)
+        deployment = feature_list.deploy(make_production_ready=True)
         yield feature_list
     finally:
-        feature_list.deploy(enable=False)
+        if deployment:
+            deployment.enable(False)
 
 
 @pytest.mark.asyncio

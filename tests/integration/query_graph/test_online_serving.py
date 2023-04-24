@@ -96,7 +96,8 @@ async def test_online_serving_sql(features, session, config):
         "featurebyte.feature_manager.manager.get_next_job_datetime",
         return_value=next_job_datetime,
     ):
-        feature_list.deploy(make_production_ready=True, enable=True)
+        deployment = feature_list.deploy(make_production_ready=True)
+        assert deployment.enabled is True
 
     user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
     df_training_events = pd.DataFrame(
@@ -133,7 +134,8 @@ async def test_online_serving_sql(features, session, config):
         # Check online_features route
         check_online_features_route(feature_list, config, df_historical, columns)
     finally:
-        feature_list.deploy(make_production_ready=True, enable=False)
+        deployment.enable(enabled=False)
+        assert deployment.enabled is False
 
 
 def check_online_features_route(feature_list, config, df_historical, columns):

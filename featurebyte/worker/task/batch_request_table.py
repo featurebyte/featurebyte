@@ -36,7 +36,7 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask):
         await payload.request_input.materialize(
             session=db_session,
             destination=location.table_details,
-            sample_rows=payload.sample_rows,
+            sample_rows=None,
         )
 
         async with self.drop_table_on_error(db_session, location.table_details):

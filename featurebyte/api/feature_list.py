@@ -4,7 +4,20 @@ FeatureListVersion class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import collections
 import json
@@ -30,8 +43,8 @@ from featurebyte.api.api_object import (
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_group import BaseFeatureGroup
-from featurebyte.api.feature_job import FeatureJobMixin
+from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
+from featurebyte.api.feature_job import FeatureJobMixin, FeatureJobStatusResult
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
@@ -66,6 +79,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
@@ -74,6 +88,11 @@ from featurebyte.schema.feature_list import (
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
+
+if TYPE_CHECKING:
+    from featurebyte.api.deployment import Deployment
+else:
+    Deployment = TypeVar("Deployment")
 
 
 class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
@@ -293,6 +312,7 @@ class FeatureList(
     _get_schema = FeatureListModel
     _list_fields = [
         "name",
+        "version",
         "feature_list_namespace_id",
         "num_features",
         "online_frac",
@@ -310,6 +330,38 @@ class FeatureList(
             if tile_specs:
                 feature_tile_specs.append((str(feature.name), tile_specs))
         return feature_tile_specs
+
+    @typechecked
+    def get_feature_jobs_status(  # pylint: disable=useless-parent-delegation
+        self,
+        job_history_window: int = 1,
+        job_duration_tolerance: int = 60,
+    ) -> FeatureJobStatusResult:
+        """
+        Returns a report on the recent activity of scheduled feature jobs associated with a FeatureList object.
+
+        The report includes recent runs for these jobs, whether they were successful, and the duration of the jobs.
+        This provides a summary of the health of the feature, and whether online features are updated in a timely
+        manner.
+
+        Failed and late jobs can occur due to various reasons, including insufficient compute capacity. Check your
+        data warehouse logs for more details on the errors. If the errors are due to insufficient compute capacity,
+        you can consider upsizing your instances.
+
+        Parameters
+        ----------
+        job_history_window: int
+            History window in hours
+        job_duration_tolerance: int
+            Maximum duration before job is considered later
+
+        Returns
+        -------
+        FeatureJobStatusResult
+        """
+        return super().get_feature_jobs_status(
+            job_history_window=job_history_window, job_duration_tolerance=job_duration_tolerance
+        )
 
     def info(  # pylint: disable=useless-parent-delegation
         self, verbose: bool = False
@@ -442,6 +494,24 @@ class FeatureList(
                 progress_bar()  # pylint: disable=not-callable
 
     def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
+        """
+        Adds a FeatureList object to the catalog.
+
+        A conflict could be triggered when the object being saved has violated a uniqueness check at the catalog.
+        If uniqueness is violated, you can either raise an error or retrieve the object with the same name, depending
+        on the conflict resolution parameter passed in. The default behavior is to raise an error.
+
+        Parameters
+        ----------
+        conflict_resolution: ConflictResolution
+            "raise" raises error when we encounter a conflict error (default).
+            "retrieve" handle conflict error by retrieving the object with the same name.
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When a record with the same key exists at the persistent data store.
+        """
         try:
             super().save(conflict_resolution=conflict_resolution)
         except DuplicatedRecordException as exc:
@@ -466,6 +536,66 @@ class FeatureList(
         >>> feature_list.delete()  # doctest: +SKIP
         """
         self._delete()
+
+    @typechecked
+    def drop(self, items: List[str]) -> FeatureGroup:  # pylint: disable=useless-parent-delegation
+        """
+        Drops feature(s) from the original FeatureList and returns a new FeatureGroup object.
+
+        Parameters
+        ----------
+        items: List[str]
+            List of feature names to be dropped
+
+        Returns
+        -------
+        FeatureGroup
+            FeatureGroup object containing remaining feature(s)
+        """
+        return super().drop(items=items)
+
+    @property
+    def saved(self) -> bool:  # pylint: disable=useless-parent-delegation
+        """
+        Returns whether the FeatureList object is saved and added to the catalog.
+
+        Returns
+        -------
+        bool
+        """
+        return super().saved
+
+    @typechecked
+    def preview(  # pylint: disable=useless-parent-delegation
+        self,
+        observation_set: pd.DataFrame,
+    ) -> Optional[pd.DataFrame]:
+        """
+        Materializes a FeatureList using a small observation set of up to 50 rows. Unlike get_historical_features,
+        this method does not store partial aggregations (tiles) to speed up future computation. Instead, it computes
+        the features on the fly, and should be used only for small observation sets for debugging or prototyping
+        unsaved features.
+
+        The small observation set should combine historical points-in-time and key values of the primary entity from
+        the feature list. Associated serving entities can also be utilized.
+
+        Parameters
+        ----------
+        observation_set : pd.DataFrame
+            Observation set DataFrame which combines historical points-in-time and values of the feature primary entity
+            or its descendant (serving entities). The column containing the point-in-time values should be named
+            `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
+            names for the entity.
+
+        Returns
+        -------
+        pd.DataFrame
+            Materialized feature values.
+            The returned DataFrame will have the same number of rows, and include all columns from the observation set.
+
+            **Note**: `POINT_IN_TIME` values will be converted to UTC time.
+        """
+        return super().preview(observation_set=observation_set)
 
     @root_validator(pre=True)
     @classmethod
@@ -626,6 +756,9 @@ class FeatureList(
     @classmethod
     def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
         feature_lists = super()._post_process_list(item_list)
+        feature_lists["version"] = feature_lists["version"].apply(
+            lambda version_dict: VersionIdentifier(**version_dict).to_str()
+        )
         feature_lists["num_features"] = feature_lists.feature_ids.apply(len)
         feature_lists["online_frac"] = (
             feature_lists.online_enabled_feature_ids.apply(len) / feature_lists["num_features"]
@@ -733,11 +866,14 @@ class FeatureList(
         Parameters
         ----------
         primary_entity: Optional[str]
-            Name of entity used to filter results. If multiple entities are provided, the filtered results will
-            contain features that are associated with all the entities.
+            This parameter accepts either a single string, a list of strings, or None (default) as input. It specifies
+            the primary entity or entities used to filter the results. When multiple entities are provided, the
+            resulting filtered list will include features associated with the combined set (union) of those entities.
         primary_table: Optional[str]
-            Name of table used to filter results. If multiple tables are provided, the filtered results will
-            contain features that are associated with all the tables.
+            Similar to primary_entity, this parameter accepts a single string, a list of strings, or None (default)
+            as input. It defines the primary table or tables used to filter the results. If multiple tables are
+            provided, the resulting filtered list will include features associated with the combined set (union) of
+            those tables.
 
         Returns
         -------
@@ -827,32 +963,28 @@ class FeatureList(
         Initial computation might take more time, but following calls will be faster due to pre-computed and saved
         partially aggregated data (tiles).
 
-        If the provided feature list includes On Demand features, the request data should contain the required
-        information to calculate these On Demand features.
-
         A training data observation set should typically meet the following criteria:
 
-        - be collected from a time period that does not start until after the earliest data availability timestamp
-        plus longest time window in the features
-        - be collected from a time period that ends before the latest data timestamp less the time window of the
-        target value
-        - uses points in time that align with the anticipated timing of the use case inference, whether it's based on a
+        * be collected from a time period that does not start until after the earliest data availability timestamp plus
+        longest time window in the features
+        * be collected from a time period that ends before the latest data timestamp less the time window of the target
+        value
+        * uses points in time that align with the anticipated timing of the use case inference, whether it's based on a
         regular schedule, triggered by an event, or any other timing mechanism.
-        - does not have duplicate rows
-        - has a column containing the primary entity of the use case, using its serving name
-        - has a column, named ""POINT_IN_TIME"", containing the points in time
-        - has for the same entity key points in time that have time intervals greater than the horizon of the target
-        to avoid leakage
+        * does not have duplicate rows
+        * has for the same entity, key points in time that have time intervals greater than the horizon of the target to
+        avoid leakage.
 
         Parameters
         ----------
         observation_set : pd.DataFrame
-            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
-            as well as columns with serving names for all entities used by features in the feature list.
+            Observation set DataFrame or ObservationTable object, which combines historical points-in-time and values
+            of the feature primary entity or its descendant (serving entities). The column containing the point-in-time
+            values should be named `POINT_IN_TIME`, while the columns representing entity values should be named using
+            accepted serving names for the entity.
         serving_names_mapping : Optional[Dict[str, str]]
-            Optional serving names mapping if the training events table has different serving name
-            columns than those defined in Entities. Mapping from original serving name to new
-            serving name.
+            Optional serving names mapping if the training events table has different serving name columns than those
+            defined in Entities, mapping from original serving name to new name.
         max_batch_size: int
             Maximum number of rows per batch.
 
@@ -1101,7 +1233,7 @@ class FeatureList(
         Parameters
         ----------
         status: Literal[tuple(FeatureListStatus)]
-            Feature list status
+            Desired feature list status.
 
         Examples
         --------
@@ -1177,10 +1309,14 @@ class FeatureList(
 
     @typechecked
     def deploy(
-        self, enable: bool, make_production_ready: bool = False, ignore_guardrails: bool = False
-    ) -> None:
+        self,
+        deployment_name: Optional[str] = None,
+        make_production_ready: bool = False,
+        ignore_guardrails: bool = False,
+    ) -> Deployment:
         """
-        Deploys a FeatureList object to support online and batch serving of the feature list in production.
+        Create a deployment of a feature list. With a deployment, you can serve the feature list in production by
+        either online or batch serving.
 
         This triggers the orchestration of the feature materialization into the online feature store. A feature list
         is deployed without creating separate pipelines or using different tools.
@@ -1191,17 +1327,22 @@ class FeatureList(
 
         Parameters
         ----------
-        enable: bool
-            Whether to deploy this feature list.
+        deployment_name: Optional[str]
+            Name of the deployment, if not provided, the name will be generated automatically.
         make_production_ready: bool
             Whether to convert the feature to production ready if it is not production ready.
         ignore_guardrails: bool
             Whether to ignore guardrails when trying to promote features in the list to production ready status.
 
+        Returns
+        -------
+        Deployment
+            Deployment object of the feature list.
+
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.deploy(enable=True, make_production_ready=True)  # doctest: +SKIP
+        >>> deployment = feature_list.deploy(make_production_ready=True)  # doctest: +SKIP
 
         See Also
         --------
@@ -1214,13 +1355,15 @@ class FeatureList(
             },
             allow_update_local=False,
         )
-
-        self.post_async_task(
-            route=f"{self._route}/{self.id}/deploy",
-            payload={
-                "deployed": enable,
-            },
+        deployment_payload = DeploymentCreate(name=deployment_name, feature_list_id=self.id)
+        output = self.post_async_task(
+            route="/deployment",
+            payload=deployment_payload.json_dict(),
         )
+
+        from featurebyte.api.deployment import Deployment  # pylint: disable=import-outside-toplevel
+
+        return Deployment.get_by_id(ObjectId(output["_id"]))
 
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
         """

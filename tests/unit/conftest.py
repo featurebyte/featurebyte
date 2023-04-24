@@ -50,6 +50,7 @@ from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.context import ContextCreate
+from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
@@ -197,6 +198,19 @@ def mock_snowflake_execute_query(snowflake_connector):
                 },
                 {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
                 {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            ],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table_no_tz"': [
+                {
+                    "column_name": "event_timestamp",
+                    "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+                },
+                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_NTZ"})},
+                {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+                {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+                {
+                    "column_name": "tz_offset",
+                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                },
             ],
             'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_view"': [
                 {"column_name": "col_date", "data_type": json.dumps({"type": "DATE"})},
@@ -370,6 +384,22 @@ def snowflake_database_table_fixture(
     yield snowflake_table
 
 
+@pytest.fixture(name="snowflake_database_table_no_tz")
+def snowflake_database_table_no_tz_fixture(
+    snowflake_data_source,
+):
+    """
+    SourceTable object fixture where timestamp columns have no timezone
+    """
+    snowflake_table = snowflake_data_source.get_source_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="sf_table_no_tz",
+    )
+    assert isinstance(snowflake_table.feature_store, FeatureStore)
+    yield snowflake_table
+
+
 @pytest.fixture(name="snowflake_database_table_item_table")
 def snowflake_database_table_item_table_fixture(snowflake_data_source):
     """
@@ -480,6 +510,40 @@ def snowflake_event_table_fixture(snowflake_database_table, snowflake_event_tabl
     yield event_table
 
 
+@pytest.fixture(name="snowflake_event_table_with_tz_offset_column")
+def snowflake_event_table_with_tz_offset_column_fixture(
+    snowflake_database_table_no_tz, transaction_entity, cust_id_entity
+):
+    """EventTable object fixture"""
+    event_table = snowflake_database_table_no_tz.create_event_table(
+        name="sf_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        event_timestamp_timezone_offset_column="tz_offset",
+        record_creation_timestamp_column="created_at",
+    )
+    event_table["col_int"].as_entity(transaction_entity.name)
+    event_table["cust_id"].as_entity(cust_id_entity.name)
+    yield event_table
+
+
+@pytest.fixture(name="snowflake_event_table_with_tz_offset_constant")
+def snowflake_event_table_with_tz_offset_constant_fixture(
+    snowflake_database_table_no_tz, transaction_entity, cust_id_entity
+):
+    """EventTable object fixture"""
+    event_table = snowflake_database_table_no_tz.create_event_table(
+        name="sf_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        event_timestamp_timezone_offset="-05:30",
+        record_creation_timestamp_column="created_at",
+    )
+    event_table["col_int"].as_entity(transaction_entity.name)
+    event_table["cust_id"].as_entity(cust_id_entity.name)
+    yield event_table
+
+
 @pytest.fixture(name="snowflake_dimension_table")
 def snowflake_dimension_table_fixture(
     snowflake_database_table_dimension_table, snowflake_dimension_table_id
@@ -564,6 +628,25 @@ def snowflake_item_table_same_event_id_fixture(
         event_table_name=snowflake_event_table.name,
         _id=snowflake_item_table_id_2,
     )
+
+
+@pytest.fixture(name="snowflake_item_table_with_timezone_offset_column")
+def snowflake_item_table_with_timezone_offset_column_fixture(
+    snowflake_database_table_item_table,
+    mock_get_persistent,
+    snowflake_event_table_with_tz_offset_column,
+):
+    """
+    Snowflake ItemTable object fixture where the EventTable has a timezone offset column
+    """
+    _ = mock_get_persistent
+    item_table = snowflake_database_table_item_table.create_item_table(
+        name="sf_item_table",
+        event_id_column="event_id_col",
+        item_id_column="item_id_col",
+        event_table_name=snowflake_event_table_with_tz_offset_column.name,
+    )
+    yield item_table
 
 
 @pytest.fixture(name="cust_id_entity")
@@ -1200,13 +1283,14 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         late_data_allowance=5e-05,
     )
     context = ContextCreate(name="transaction_context", entity_ids=[cust_id_entity.id])
+    deployment = DeploymentCreate(name=None, feature_list_id=feature_list.id)
     relationship_info = RelationshipInfoCreate(
         _id="63f6a145e549df8ccf123456",
         name="child_parent_relationship",
         relationship_type=RelationshipType.CHILD_PARENT,
-        primary_entity_id=cust_id_entity.id,
+        entity_id=cust_id_entity.id,
         related_entity_id=transaction_entity.id,
-        primary_table_id="6337f9651050ee7d5980660d",
+        relation_table_id="6337f9651050ee7d5980660d",
         is_enabled=True,
         updated_by="63f6a145e549df8ccf123444",
     )
@@ -1215,6 +1299,14 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         feature_store_id=snowflake_feature_store.id,
         request_input=SourceTableRequestInput(
             source=snowflake_event_table.tabular_source,
+        ),
+        context_id=context.id,
+    )
+    batch_request_table = BatchRequestTableCreate(
+        name="batch_request_table",
+        feature_store_id=snowflake_feature_store.id,
+        request_input=SourceTableRequestInput(
+            source=snowflake_dimension_table.tabular_source,
         ),
         context_id=context.id,
     )
@@ -1279,8 +1371,10 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (feature_list_namespace, "feature_list_namespace"),
             (feature_job_setting_analysis, "feature_job_setting_analysis"),
             (context, "context"),
+            (deployment, "deployment"),
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
+            (batch_request_table, "batch_request_table"),
             (historical_feature_table, "historical_feature_table"),
             (batch_request_table, "batch_request_table"),
             (batch_feature_table, "batch_feature_table"),

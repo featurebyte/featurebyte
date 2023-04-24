@@ -130,7 +130,11 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
 class TableFeatureJobSetting(FeatureByteBaseModel):
     """
-    Table feature job setting schema
+    The TableFeatureJobSetting object serves as a link between a table and a specific feature job setting configuration.
+    It is utilized when creating a new version of a feature that requires different configurations for feature job
+    settings. The table_feature_job_settings parameter takes a list of these configurations. For each configuration,
+    the TableFeatureJobSetting object establishes the relationship between the table involved and the corresponding
+    feature job setting.
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableFeatureJobSetting")

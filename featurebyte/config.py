@@ -86,13 +86,6 @@ class LoggingSettings(BaseModel):
 
     level: LogLevel = LogLevel.DEBUG
     serialize: bool = False
-    telemetry: bool = False
-    telemetry_url: str = "https://log.int.featurebyte.com"
-    telemetry_id: str = os.getenv("FEATUREBYTE_TELEMETRY_ID", "unknown")
-    try:
-        telemetry_ip: str = requests.get("https://ifconfig.me", timeout=5).text
-    except Exception:  # pylint: disable=broad-except
-        telemetry_ip: str = "unknown"  # type: ignore
 
 
 class LocalStorageSettings(BaseModel):

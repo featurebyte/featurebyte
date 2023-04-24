@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Tuple
 
+import re
 from datetime import datetime
 
 import pandas as pd
@@ -130,3 +131,35 @@ def convert_version_string_to_dict(version: str) -> dict[str, Any]:
         name, suffix_str = version.rsplit("_", 1)
         suffix = int(suffix_str) if suffix_str else None
     return {"name": name, "suffix": suffix}
+
+
+def validate_timezone_offset_string(timezone_offset: str) -> None:
+    """
+    Validate timezone offset string
+
+    Parameters
+    ----------
+    timezone_offset: str
+        Timezone offset string
+
+    Raises
+    ------
+    ValueError
+        If the timezone offset string is invalid
+
+    # noqa: DAR401
+    """
+    exception = ValueError(
+        f"Invalid timezone_offset: {timezone_offset}. Supported format is (+/-)HH:mm, for example,"
+        f"+06:00 or -03:00"
+    )
+
+    match = re.match(r"([+-])(\d\d):(\d\d)$", timezone_offset)
+    if not match:
+        raise exception
+
+    _, hours, minutes = match.groups()
+    hours, minutes = int(hours), int(minutes)
+
+    if int(hours) > 24 or int(minutes) > 60:
+        raise exception

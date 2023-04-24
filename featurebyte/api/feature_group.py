@@ -170,7 +170,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     @typechecked
     def drop(self, items: List[str]) -> FeatureGroup:
         """
-        Drop feature(s) from the FeatureGroup/FeatureList
+        Drops feature(s) from the original FeatureGroup and returns a new FeatureGroup object.
 
         Parameters
         ----------
@@ -180,7 +180,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         Returns
         -------
         FeatureGroup
-            FeatureGroup object contains remaining feature(s)
+            FeatureGroup object containing remaining feature(s)
         """
         selected_feat_names = [
             feat_name for feat_name in self.feature_objects if feat_name not in items
@@ -204,20 +204,21 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         observation_set: pd.DataFrame,
     ) -> Optional[pd.DataFrame]:
         """
-        Materialize feature group using a small observation set of up to 50 rows.
+        Materializes a FeatureGroup object using a small observation set of up to 50 rows. Unlike
+        get_historical_features, this method does not store partial aggregations (tiles) to speed up future
+        computation. Instead, it computes the features on the fly, and should be used only for small observation
+        sets for debugging or prototyping unsaved features.
 
-        Unlike get_historical_features, this method does not store partial aggregations (tiles) to
-        speed up future computation. Instead, it computes the features on the fly, and should be used
-        only for small observation sets for debugging or prototyping unsaved features.
-
-        Tiles are a method of storing partial aggregations in the feature store,
-        which helps to minimize the resources required to fulfill historical, batch and online requests.
+        The small observation set should combine historical points-in-time and key values of the primary entity from
+        the feature group. Associated serving entities can also be utilized.
 
         Parameters
         ----------
         observation_set : pd.DataFrame
-            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
-            as well as columns with serving names for all entities used by features in the feature group.
+            Observation set DataFrame which combines historical points-in-time and values of the feature primary entity
+            or its descendant (serving entities). The column containing the point-in-time values should be named
+            `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
+            names for the entity.
 
         Returns
         -------
@@ -358,9 +359,11 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     @typechecked
     def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
         """
-        Save features within a FeatureGroup object to the persistent. Conflict could be triggered when the feature
-        being saved has violated uniqueness check at the persistent (for example, same ID has been used by another
-        record stored at the persistent).
+        Adds each Feature object within a FeatureGroup object to the catalog.
+
+        A conflict could be triggered when the Feature objects being saved have violated a uniqueness check. If
+        uniqueness is violated, you can either raise an error or retrieve the object with the same name, depending
+        on the conflict resolution parameter passed in. The default behavior is to raise an error.
 
         Parameters
         ----------

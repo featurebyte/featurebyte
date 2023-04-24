@@ -36,6 +36,7 @@ from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_validation import EntityValidationService
@@ -111,7 +112,9 @@ app_container_config.add_service_with_extra_deps(
     ["feature_list_namespace_service", "feature_list_service"],
 )
 app_container_config.add_service_with_extra_deps(
-    "deploy_service", DeployService, ["online_enable_service", "feature_list_status_service"]
+    "deploy_service",
+    DeployService,
+    ["online_enable_service", "feature_list_status_service", "deployment_service"],
 )
 app_container_config.add_service_with_extra_deps(
     "preview_service",
@@ -169,6 +172,7 @@ app_container_config.add_basic_service("item_table_service", ItemTableService)
 app_container_config.add_basic_service("scd_table_service", SCDTableService)
 app_container_config.add_basic_service("feature_service", FeatureService)
 app_container_config.add_basic_service("feature_list_service", FeatureListService)
+app_container_config.add_basic_service("deployment_service", DeploymentService)
 app_container_config.add_service_with_extra_deps(
     "feature_readiness_service",
     FeatureReadinessService,
@@ -305,7 +309,6 @@ app_container_config.add_controller(
         "online_serving_service",
         "feature_store_warehouse_service",
         "feature_service",
-        "task_controller",
     ],
 )
 app_container_config.add_controller(
@@ -362,12 +365,12 @@ app_container_config.add_controller(
     "periodic_task_controller", PeriodicTaskController, ["periodic_task_service"]
 )
 app_container_config.add_controller(
+    "credential_controller", CredentialController, ["credential_service", "info_service"]
+)
+app_container_config.add_controller(
     "observation_table_controller",
     ObservationTableController,
     ["observation_table_service", "task_controller"],
-)
-app_container_config.add_controller(
-    "credential_controller", CredentialController, ["credential_service", "info_service"]
 )
 app_container_config.add_controller(
     "historical_feature_table_controller",
@@ -387,5 +390,10 @@ app_container_config.add_controller(
 app_container_config.add_controller(
     "deployment_controller",
     DeploymentController,
-    ["feature_list_service"],
+    [
+        "deployment_service",
+        "context_service",
+        "feature_list_service",
+        "task_controller",
+    ],
 )

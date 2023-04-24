@@ -8,7 +8,7 @@ from typing import Any, ClassVar
 from pydantic import Field
 
 from featurebyte.api.scd_view import SCDView
-from featurebyte.api.view import View, ViewColumn
+from featurebyte.api.view import RawMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
@@ -24,7 +24,7 @@ class DimensionViewColumn(ViewColumn):
     __fbautodoc__ = FBAutoDoc()
 
 
-class DimensionView(View):
+class DimensionView(View, RawMixin):
     """
     A DimensionView object is a modified version of the DimensionTable object that provides additional capabilities
     for transforming data. With a DimensionView, you can create and transform columns and filter records prior to

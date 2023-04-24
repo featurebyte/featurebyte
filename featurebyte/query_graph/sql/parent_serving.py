@@ -70,7 +70,6 @@ def _apply_join_step(
     feature_store_details: FeatureStoreDetails,
     current_columns: list[str],
 ) -> Select:
-
     # Use a LookupAggregator to join in the parent entity since the all the different types of
     # lookup logic dependent on the data type still apply (SCD lookup, time based event data lookup,
     # etc)
@@ -94,7 +93,6 @@ def _get_lookup_spec_from_join_step(
     join_step: JoinStep,
     feature_store_details: FeatureStoreDetails,
 ) -> LookupSpec:
-
     # Set up data specific parameters
     if join_step.table.type == TableDataType.SCD_TABLE:
         scd_parameters = SCDLookupParameters(**join_step.table.dict())

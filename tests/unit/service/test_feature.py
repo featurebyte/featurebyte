@@ -110,7 +110,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
         "output_type": "frame",
         "parameters": {
             "agg_func": "sum",
-            "aggregation_id": "sum_d96824b6af9f301d26d9bd64801d0cd10ab5fe8f",
+            "aggregation_id": "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
             "blind_spot": 600,
             "entity_ids": [ObjectId(api_object_to_id["entity"])],
             "frequency": 1800,
@@ -118,7 +118,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
             "names": ["sum_30m"],
             "parent": "col_float",
             "serving_names": ["cust_id"],
-            "tile_id": "TILE_F1800_M300_B600_B839AFCB06ADBAEDCA89907891465110B151C88E",
+            "tile_id": "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
             "time_modulo_frequency": 300,
             "timestamp": "event_timestamp",
             "value_by": None,
@@ -132,7 +132,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
     expected_raw_groupby_params["windows"] = ["30m", "2h", "1d"]
     expected_raw_groupby_params[
         "tile_id"
-    ] = "TILE_F1800_M300_B600_B839AFCB06ADBAEDCA89907891465110B151C88E"
+    ] = "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F"
     expected_raw_groupby_node = {**expected_groupby_node, "parameters": expected_raw_groupby_params}
     async for doc in feature_service.list_documents_iterator(query_filter={"_id": feature.id}):
         graph = QueryGraphModel(**doc["graph"])

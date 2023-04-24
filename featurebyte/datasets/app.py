@@ -61,7 +61,6 @@ def import_dataset(dataset_name: str) -> None:
     local_staging_basepath = Path("~/.featurebyte/data/spark/staging/datasets").expanduser()
     local_staging_basepath.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=local_staging_basepath) as local_staging_path:
-
         # parse sql
         hive_staging_path = f"file:///opt/spark/data/staging/datasets/{os.path.basename(local_staging_path)}/{dataset_name}"
         with open(path, encoding="utf8") as file_obj:
