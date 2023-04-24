@@ -115,6 +115,8 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
+      - cmd: if [ ! -d .mypy_cache ]; then mkdir .mypy_cache; fi
+        silent: true
       - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py)' .
 
   lint-safety:
@@ -229,7 +231,6 @@ tasks:
     deps:
       - task: docker-build
     cmds:
-      - mkdir -p ~/.featurebyte/data/spark/staging/playground
       - poetry run python scripts/test-docs-setup.py
 
   test-docs-teardown:
@@ -289,6 +290,16 @@ tasks:
       FB_DOCS_DEBUG_MODE: True
     cmds:
       - poetry run mkdocs serve --config-file mkdocs.yaml
+
+  docs-persist-reference:
+    desc: "Build the documentation and persist the docs locally."
+    deps:
+      - task: install
+    env:
+      PYTHONPATH:
+        sh: echo "$(pwd)/docs/extensions"
+    cmds:
+      - poetry run mkdocs build --config-file mkdocs.yaml
 
   docs-dump-csv:
     desc: "Dump the documentation into a CSV file for easy browsing."

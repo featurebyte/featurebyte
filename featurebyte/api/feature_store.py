@@ -236,7 +236,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
     @classmethod
     def list(  # pylint: disable=useless-parent-delegation
-        cls, include_id: Optional[bool] = False
+        cls, include_id: Optional[bool] = True
     ) -> DataFrame:
         """
         Returns a DataFrame that lists the feature stores by their names, types and creation dates.

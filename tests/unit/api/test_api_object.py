@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.api.api_object import ApiObject
@@ -69,6 +70,7 @@ def test_list(mock_configuration):
         output,
         pd.DataFrame(
             {
+                "id": [ObjectId(f"637b87ee8959fd0e36a0bc{i:02d}") for i in range(11)],
                 "name": [f"item_{i}" for i in range(11)],
                 "created_at": pd.to_datetime(["2022-11-21T14:00:49.255000"] * 11),
             }
@@ -232,7 +234,7 @@ def test_api_object_list_empty():
         response.json.return_value = response_dict
         response.status_code = HTTPStatus.OK
         mock_client.get.return_value = response
-        assert_frame_equal(ApiObject.list(), pd.DataFrame(columns=["name", "created_at"]))
+        assert_frame_equal(ApiObject.list(), pd.DataFrame(columns=["id", "name", "created_at"]))
 
 
 @pytest.mark.parametrize(

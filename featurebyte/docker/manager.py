@@ -32,8 +32,6 @@ class ApplicationName(str, Enum):
     """
     FEATUREBYTE = "featurebyte"
     SPARK = "spark"
-    DOCS = "docs"
-
 
 console = Console()
 
@@ -91,8 +89,6 @@ def get_service_names(app_name: ApplicationName) -> List[str]:
         return ["featurebyte-server", "featurebyte-worker"]
     if app_name == ApplicationName.SPARK:
         return ["spark-thrift"]
-    if app_name == ApplicationName.DOCS:
-        return ["featurebyte-docs"]
     raise ValueError("Not a valid application name")
 
 
@@ -259,8 +255,7 @@ def start_app(
         __delete_docker_backup()
 
 
-def start_playground(local: bool = False, datasets: Optional[List[str]] = None, docs_enabled: bool = True,
-                     force_import: bool = False, verbose: bool = True) -> None:
+def start_playground(local: bool = False, datasets: Optional[List[str]] = None, force_import: bool = False, verbose: bool = True) -> None:
     """
     Start featurebyte playground environment
 
@@ -270,8 +265,6 @@ def start_playground(local: bool = False, datasets: Optional[List[str]] = None, 
         Do not pull new images from registry, by default False
     datasets : Optional[List[str]]
         List of datasets to import, by default None (import all datasets)
-    docs_enabled : bool
-        Enable documentation service, by default True
     force_import : bool
         Import datasets even if they are already imported, by default False
     verbose : bool
@@ -281,8 +274,6 @@ def start_playground(local: bool = False, datasets: Optional[List[str]] = None, 
 
     # determine services to start
     services = get_service_names(ApplicationName.FEATUREBYTE) + get_service_names(ApplicationName.SPARK)
-    if docs_enabled and not local:
-        services += get_service_names(ApplicationName.DOCS)
 
     step = 1
     logger.info(f"({step}/{num_steps}) Starting featurebyte services")

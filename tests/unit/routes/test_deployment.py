@@ -29,16 +29,6 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 
-    @staticmethod
-    def _make_feature_production_ready(api_client, feature_id, catalog_id):
-        """Make feature production ready"""
-        response = api_client.patch(
-            f"/feature/{feature_id}",
-            headers={"active-catalog-id": str(catalog_id)},
-            json={"readiness": "PRODUCTION_READY"},
-        )
-        assert response.status_code == HTTPStatus.OK, response.json()
-
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """Setup for post route"""
         api_object_filename_pairs = [
@@ -55,7 +45,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             )
             assert response.status_code == HTTPStatus.CREATED, response.json()
             if api_object == "feature":
-                self._make_feature_production_ready(api_client, response.json()["_id"], catalog_id)
+                self.make_feature_production_ready(api_client, response.json()["_id"], catalog_id)
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
@@ -72,7 +62,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             response = api_client.post("/feature", json={**feat_payload, "_id": new_feature_id})
             assert response.status_code == HTTPStatus.CREATED
             assert response.json()["_id"] == new_feature_id
-            self._make_feature_production_ready(api_client, new_feature_id, DEFAULT_CATALOG_ID)
+            self.make_feature_production_ready(api_client, new_feature_id, DEFAULT_CATALOG_ID)
 
             # save a new feature_list with the new feature_ids
             feat_list_payload = feature_list_payload.copy()
