@@ -3,8 +3,6 @@ name: notify
 
 
 on:
-  pull_request:
-    types: [ labeled ]
   workflow_dispatch: {}
 
 concurrency:
@@ -16,32 +14,40 @@ env: {}
 jobs:
   slack:
     runs-on: ubuntu-latest
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'breaking') }}
+#    if: ${{ contains(github.event.pull_request.labels.*.name, 'breaking') }}
+    if: ${{ github.event.sender.login != 'buckwhackr' }}
     steps:
-      - uses: actions/checkout@v3
+#      - uses: actions/checkout@v3
+      - run: |
+          if [[ "${{ github.event.sender.login }}" == "bushwhackr" ]]; then
+            echo "bushwhackr"
+          else
+            echo "Not bushwhackr"
+          fi
 
-      - name: Send Slack notification to user-experience channel
-        uses: slackapi/slack-github-action@v1.23.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
-        with:
-          channel-id: C042PLEC8D9
-          payload: |
-            {
-              "text": "${{ github.event.repository.name }} Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "`${{ github.event.repository.name }}` Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]"
-                  }
-                }, {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Actor: ${{ github.actor }}\nChanges: ${{ github.event.pull_request._links.html.href }}/files"
-                  }
-                }
-              ]
-            }
+
+#      - name: Send Slack notification to user-experience channel
+#        uses: slackapi/slack-github-action@v1.23.0
+#        env:
+#          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+#        with:
+#          channel-id: C042PLEC8D9
+#          payload: |
+#            {
+#              "text": "${{ github.event.repository.name }} Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]",
+#              "blocks": [
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": "`${{ github.event.repository.name }}` Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]"
+#                  }
+#                }, {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": "Actor: ${{ github.actor }}\nChanges: ${{ github.event.pull_request._links.html.href }}/files"
+#                  }
+#                }
+#              ]
+#            }
