@@ -9,8 +9,9 @@ import pytest
 
 from featurebyte import FeatureList
 from featurebyte.common.date_util import get_next_job_datetime
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
-from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
+from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_expr
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from tests.util.helper import fb_assert_frame_equal
 
@@ -114,13 +115,14 @@ async def test_online_serving_sql(features, session, config):
         df_entities = pd.DataFrame({"üser id": user_ids})
         request_table_expr = construct_dataframe_sql_expr(df_entities, date_cols=[])
         feature_clusters = feature_list._get_feature_clusters()
-        online_retrieval_sql = get_online_store_retrieval_sql(
+        online_retrieval_expr = get_online_store_retrieval_expr(
             feature_clusters[0].graph,
             feature_clusters[0].nodes,
             source_type=session.source_type,
             request_table_columns=["üser id"],
             request_table_expr=request_table_expr,
         )
+        online_retrieval_sql = sql_to_string(online_retrieval_expr, session.source_type)
         online_features = await session.execute_query(online_retrieval_sql)
 
         # Check result is expected

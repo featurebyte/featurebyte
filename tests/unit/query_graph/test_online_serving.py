@@ -10,11 +10,12 @@ import pandas as pd
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
     OnlineStorePrecomputePlan,
     get_online_store_precompute_queries,
-    get_online_store_retrieval_sql,
+    get_online_store_retrieval_expr,
     is_online_store_eligible,
 )
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
@@ -251,13 +252,14 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
     )
 
     # Check retrieval sql
-    sql = get_online_store_retrieval_sql(
+    expr = get_online_store_retrieval_expr(
         request_table_name="MY_REQUEST_TABLE",
         request_table_columns=["CUSTOMER_ID"],
         graph=pruned_graph,
         nodes=[pruned_node],
         source_type=SourceType.SNOWFLAKE,
     )
+    sql = sql_to_string(expr, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_complex.sql",
@@ -272,13 +274,14 @@ def test_online_store_feature_retrieval_sql__all_eligible(
     Test constructing feature retrieval sql for online store
     """
     graph, *nodes = query_graph_with_groupby_and_feature_nodes
-    sql = get_online_store_retrieval_sql(
+    expr = get_online_store_retrieval_expr(
         request_table_name="MY_REQUEST_TABLE",
         request_table_columns=["CUSTOMER_ID"],
         graph=graph,
         nodes=nodes,
         source_type=SourceType.SNOWFLAKE,
     )
+    sql = sql_to_string(expr, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_simple.sql",
@@ -294,13 +297,14 @@ def test_online_store_feature_retrieval_sql__mixed(
     from the online store and has to be computed on demand
     """
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    sql = get_online_store_retrieval_sql(
+    expr = get_online_store_retrieval_expr(
         request_table_name="MY_REQUEST_TABLE",
         request_table_columns=["CUSTOMER_ID", "order_id"],
         graph=graph,
         nodes=nodes,
         source_type=SourceType.SNOWFLAKE,
     )
+    sql = sql_to_string(expr, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_mixed.sql",
@@ -318,13 +322,14 @@ def test_online_store_feature_retrieval_sql__request_subquery(
     request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
 
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    sql = get_online_store_retrieval_sql(
+    expr = get_online_store_retrieval_expr(
         request_table_expr=request_table_expr,
         request_table_columns=["CUSTOMER_ID"],
         graph=graph,
         nodes=nodes,
         source_type=SourceType.SNOWFLAKE,
     )
+    sql = sql_to_string(expr, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_request_subquery.sql",
@@ -341,13 +346,14 @@ def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column
     df = pd.DataFrame({"CUSTOMER_ID": [1001, 1002, 1003]})
     request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
 
-    sql = get_online_store_retrieval_sql(
+    expr = get_online_store_retrieval_expr(
         request_table_expr=request_table_expr,
         request_table_columns=["CUSTOMER_ID"],
         graph=global_graph,
         nodes=[scd_lookup_feature_node],
         source_type=SourceType.SNOWFLAKE,
     )
+    sql = sql_to_string(expr, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_scd_current_flag.sql",

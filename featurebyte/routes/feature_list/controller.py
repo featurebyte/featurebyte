@@ -442,6 +442,7 @@ class FeatureListController(
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
+        assert result is not None, result
         return result
 
     async def get_feature_job_logs(

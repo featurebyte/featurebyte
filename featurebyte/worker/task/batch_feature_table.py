@@ -10,9 +10,10 @@ from featurebyte.schema.worker.task.batch_feature_table import BatchFeatureTable
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.worker.task.base import BaseTask
+from featurebyte.worker.task.mixin import DataWarehouseMixin
 
 
-class BatchFeatureTableTask(BaseTask):
+class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
     """
     BatchFeatureTableTask creates a batch feature table by computing online predictions
     """
@@ -24,6 +25,10 @@ class BatchFeatureTableTask(BaseTask):
         Execute BatchFeatureTableTask
         """
         payload = cast(BatchFeatureTableTaskPayload, self.payload)
+        feature_store = await self.app_container.feature_store_service.get_document(
+            document_id=payload.feature_store_id
+        )
+        db_session = await self.get_db_session(feature_store)
 
         app_container = self.app_container
 
