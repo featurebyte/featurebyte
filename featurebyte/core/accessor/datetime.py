@@ -118,21 +118,21 @@ class DatetimeAccessor:
         self._obj = obj
 
         # Optional timezone offset override
-        self._timezone_offset_constant = None
-        self._timezone_offset_series = None
         if timezone_offset is not None:
             if not obj.is_datetime:
                 raise ValueError("Cannot apply a timezone offset to a TIMEDELTA type column")
             if isinstance(timezone_offset, str):
                 validate_timezone_offset_string(timezone_offset)
-                self._timezone_offset_constant = timezone_offset
+                self._timezone_offset = timezone_offset
             else:
                 assert timezone_offset is not None
                 if not timezone_offset.dtype == DBVarType.VARCHAR:
                     raise ValueError(
                         f"Only a string type column can be used as the timezone offset column; got {timezone_offset.dtype}"
                     )
-                self._timezone_offset_series = timezone_offset
+                self._timezone_offset = timezone_offset
+        else:
+            self._timezone_offset = None
 
     def __dir__(self) -> Iterable[str]:
         # provide datetime extraction lookup and completion for __getattr__
@@ -506,11 +506,8 @@ class DatetimeAccessor:
         if series.dtype != DBVarType.TIMESTAMP:
             return None
 
-        if self._timezone_offset_constant is not None:
-            return self._timezone_offset_constant
-
-        if self._timezone_offset_series is not None:
-            return self._timezone_offset_series
+        if self._timezone_offset is not None:
+            return self._timezone_offset
 
         operation_structure = series.graph.extract_operation_structure(
             series.node, keep_all_source_columns=True
