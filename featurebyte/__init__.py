@@ -375,15 +375,40 @@ def list_unsaved_features() -> pd.DataFrame:
     """
     processed_variables = set()
     unsaved_features = []
+    client = Configurations().get_client()
 
-    # check local variables first, then global variables
-    caller_variables = [inspect.stack()[1][0].f_locals, inspect.stack()[1][0].f_globals]
+    def _is_saved(feature: Feature) -> bool:
+        """
+        Check if a feature is saved.
+
+        Parameters
+        ----------
+        feature: Feature
+            Feature to check
+
+        Returns
+        -------
+        bool
+        """
+        response = client.get(
+            url=f"/feature/{feature.id}", headers={"active-catalog-id": str(feature.catalog_id)}
+        )
+        if response.status_code == HTTPStatus.OK:
+            return True
+        return False
+
+    # get list of frame info from the current call stack
+    call_stack = inspect.stack()
+    # skip the first frame, which is the current function, to get the caller's frame
+    caller_frame_info = call_stack[1]
+    # check caller's local variables first, then global variables for unsaved features
+    caller_variables = [caller_frame_info.frame.f_locals, caller_frame_info.frame.f_globals]
     for variables in caller_variables:
         for var_name, var_obj in variables.items():
             # global variable may be overriden by local variable
             if var_name in processed_variables:
                 continue
-            if isinstance(var_obj, Feature) and not var_obj.saved:
+            if isinstance(var_obj, Feature) and not _is_saved(var_obj):
                 unsaved_features.append(
                     {
                         "object_id": str(var_obj.id),
@@ -394,7 +419,7 @@ def list_unsaved_features() -> pd.DataFrame:
                 )
             elif isinstance(var_obj, BaseFeatureGroup):
                 for name, feature in var_obj.feature_objects.items():
-                    if not feature.saved:
+                    if not _is_saved(feature):
                         unsaved_features.append(
                             {
                                 "object_id": str(feature.id),

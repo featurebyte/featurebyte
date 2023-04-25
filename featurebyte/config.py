@@ -19,10 +19,9 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import get_version
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
-
-# default local location
 from featurebyte.models.base import get_active_catalog_id
 
+# default local location
 DEFAULT_HOME_PATH: Path = Path.home().joinpath(".featurebyte")
 
 
@@ -170,7 +169,9 @@ class APIClient(BaseAPIClient):
         """
         try:
             headers = kwargs.get("headers", {})
-            headers["active-catalog-id"] = str(get_active_catalog_id())
+            headers["active-catalog-id"] = headers.get(
+                "active-catalog-id", str(get_active_catalog_id())
+            )
             kwargs["headers"] = headers
             return super().request(
                 method,
