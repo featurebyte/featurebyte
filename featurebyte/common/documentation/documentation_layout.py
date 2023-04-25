@@ -773,6 +773,10 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([OBSERVATION_TABLE]),
+        DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.name"]),
+        DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.created_at"]),
+        DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.updated_at"]),
+        DocLayoutItem([OBSERVATION_TABLE, LINEAGE, "ObservationTable.id"]),
     ]
 
 
@@ -801,6 +805,10 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([HISTORICAL_FEATURE_TABLE]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.name"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.created_at"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.updated_at"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.id"]),
     ]
 
 
