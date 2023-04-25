@@ -425,7 +425,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> feature_list.feature_names
         ['InvoiceCount_60days']
 
@@ -463,7 +464,8 @@ class FeatureList(
         --------
         Get a FeatureList object that is already saved.
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         """
         if version is None:
             feature_list_namespace = FeatureListNamespace.get(name=name)
@@ -532,7 +534,8 @@ class FeatureList(
         --------
         Delete a FeatureList.
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> feature_list.delete()  # doctest: +SKIP
         """
         self._delete()
@@ -793,7 +796,8 @@ class FeatureList(
 
         List FeatureList versions with the same name (calling from FeatureList object):
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> feature_list.list_versions()  # doctest: +SKIP
                            name feature_list_namespace_id  num_features  online_frac  deployed              created_at
         0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
@@ -820,7 +824,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> feature_list.list_versions()  # doctest: +SKIP
                            name feature_list_namespace_id  num_features  online_frac  deployed              created_at
         0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
@@ -882,7 +887,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> display_columns = ["name", "version", "dtype", "primary_tables", "primary_entities"]
         >>> feature_list.list_features().sort_values("created_at")[display_columns]  # doctest: +SKIP
                           name  version  dtype    primary_tables   primary_entities
@@ -1003,19 +1009,22 @@ class FeatureList(
         Examples
         --------
         Create a feature list with two features.
-        >>> feature_list = fb.FeatureList([  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = fb.FeatureList([
         ...     catalog.get_feature("InvoiceCount_60days"),
         ...     catalog.get_feature("InvoiceAmountAvg_60days"),
         ... ], name="InvoiceFeatures")
+        ...  # doctest: +ELLIPSIS
 
         Prepare observation set with POINT_IN_TIME and serving names columns.
-        >>> observation_set = pd.DataFrame({  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> observation_set = pd.DataFrame({
         ...     "POINT_IN_TIME": pd.date_range(start="2022-04-15", end="2022-04-30", freq="2D"),
         ...     "GROCERYCUSTOMERGUID": ["a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3"] * 8,
         ... })
+        ...  # doctest: +ELLIPSIS
 
         Retrieve materialized historical features.
-        >>> feature_list.get_historical_features(observation_set)  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list.get_historical_features(observation_set)
+        ...  # doctest: +ELLIPSIS
           POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days  InvoiceAmountAvg_60days
         0    2022-04-15  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
         1    2022-04-17  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
@@ -1137,7 +1146,8 @@ class FeatureList(
         --------
         Retrieve feature list & check its features.
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> feature_list.list_features()[["name", "version"]]  # doctest: +SKIP
                           name  version
         0  InvoiceCount_60days  V230330
@@ -1237,7 +1247,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> feature_list.update_status(FeatureListStatus.TEMPLATE)
         """
         self.feature_list_namespace.update(
@@ -1265,7 +1276,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
 
         See Also
@@ -1293,7 +1305,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
         >>> feature_list.as_default_version()
 
@@ -1341,7 +1354,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> deployment = feature_list.deploy(make_production_ready=True)  # doctest: +SKIP
 
         See Also
@@ -1390,7 +1404,8 @@ class FeatureList(
         --------
         Retrieve python code template when "language" is set to "python"
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> feature_list.get_online_serving_code(language="python")  # doctest: +SKIP
             from typing import Any, Dict
             import pandas as pd
@@ -1418,7 +1433,8 @@ class FeatureList(
 
         Retrieve shell script template when "language" is set to "sh"
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +REPORT_ONLY_FIRST_FAILURE
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        ...  # doctest: +ELLIPSIS
         >>> feature_list.get_online_serving_code(language="sh")  # doctest: +SKIP
             \\#!/bin/sh
             curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
