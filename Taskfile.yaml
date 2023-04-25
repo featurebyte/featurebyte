@@ -223,7 +223,7 @@ tasks:
       - task: install
     cmds:
       - task: test-docs-setup
-      - poetry run pytest --timeout=240 featurebyte/api/feature_list.py
+      - poetry run pytest --timeout=240 featurebyte
       - task: test-docs-teardown
 
   test-docs-setup:
