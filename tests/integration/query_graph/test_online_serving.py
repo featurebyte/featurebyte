@@ -206,4 +206,8 @@ def check_get_batch_features_async(
         database_name=batch_feature_table.location.table_details.database_name,
     )
     preview_df = source_table.preview(limit=df_historical.shape[0])
-    pd.testing.assert_frame_equal(df_historical[columns], preview_df[columns], check_dtype=False)
+    fb_assert_frame_equal(
+        df_historical[columns],
+        preview_df[columns],
+        dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
+    )
