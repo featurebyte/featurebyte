@@ -31,7 +31,7 @@ from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import (
     DefaultVersionMode,
@@ -59,6 +59,8 @@ from featurebyte.schema.feature import (
     FeatureSQL,
     FeatureUpdate,
 )
+
+logger = get_logger(__name__)
 
 
 class Feature(

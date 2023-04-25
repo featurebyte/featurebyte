@@ -13,7 +13,7 @@ from sqlglot.expressions import Expression, select
 
 from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -27,6 +27,8 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.session.base import BaseSession
+
+logger = get_logger(__name__)
 
 
 @dataclass

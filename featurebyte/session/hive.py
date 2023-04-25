@@ -15,7 +15,9 @@ from thrift.transport.TTransport import TTransportBase, TTransportException
 from typeguard import typechecked
 
 from featurebyte.enum import StrEnum
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class AuthType(StrEnum):

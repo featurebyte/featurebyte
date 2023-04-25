@@ -50,7 +50,7 @@ from featurebyte.exception import (
     InvalidSettingsError,
     RecordRetrievalException,
 )
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
     AccessTokenCredential,
     S3StorageCredential,
@@ -76,6 +76,9 @@ from featurebyte.schema.deployment import DeploymentSummary
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
+
+
+logger = get_logger(__name__)
 
 
 def list_profiles() -> pd.DataFrame:

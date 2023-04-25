@@ -5,12 +5,14 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.schema.worker.task.batch_request_table import BatchRequestTableTaskPayload
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
+
+logger = get_logger(__name__)
 
 
 class BatchRequestTableTask(DataWarehouseMixin, BaseTask):
@@ -45,7 +47,7 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask):
                 database_name=location.table_details.database_name,
                 schema_name=location.table_details.schema_name,
             )
-            logger.debug("Creating a new BatchRequestTable", extras=location.table_details.dict())
+            logger.debug("Creating a new BatchRequestTable", extra=location.table_details.dict())
             batch_request_table = BatchRequestTableModel(
                 _id=self.payload.output_document_id,
                 user_id=payload.user_id,

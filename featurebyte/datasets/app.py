@@ -14,7 +14,10 @@ from rich.console import Console
 from rich.table import Table
 
 from featurebyte.common.path_util import get_package_root
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 console = Console()
 datasets_dir = os.path.join(get_package_root(), "datasets")

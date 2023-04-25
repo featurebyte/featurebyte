@@ -8,13 +8,15 @@ from typing import Any, Dict, Optional
 from bson.objectid import ObjectId
 from cryptography.fernet import InvalidToken
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.credential import CredentialCreate, CredentialServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+
+logger = get_logger(__name__)
 
 
 class CredentialService(

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
@@ -16,6 +16,8 @@ from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
+
+logger = get_logger(__name__)
 
 
 class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):

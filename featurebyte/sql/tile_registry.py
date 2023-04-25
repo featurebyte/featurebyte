@@ -1,9 +1,11 @@
 """
 Tile Registry Job Script
 """
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
+
+logger = get_logger(__name__)
 
 
 class TileRegistry(TileCommon):

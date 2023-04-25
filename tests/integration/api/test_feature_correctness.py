@@ -8,9 +8,11 @@ import pytest
 
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import validate_job_setting_parameters
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
 from tests.util.helper import fb_assert_frame_equal, get_lagged_series_pandas
+
+logger = get_logger(__name__)
 
 
 def calculate_aggregate_over_ground_truth(

@@ -11,7 +11,7 @@ from uuid import UUID
 
 from bson.objectid import ObjectId
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.persistent import Persistent
@@ -21,6 +21,9 @@ from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.worker import celery
 
 TaskId = Union[ObjectId, UUID]
+
+
+logger = get_logger(__name__)
 
 
 class AbstractTaskManager:

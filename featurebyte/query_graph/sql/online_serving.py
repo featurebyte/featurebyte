@@ -14,7 +14,7 @@ from sqlglot.expressions import Expression, select
 
 from featurebyte.common.utils import prepare_dataframe_for_json
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
@@ -39,6 +39,8 @@ from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.session.base import BaseSession
+
+logger = get_logger(__name__)
 
 
 class OnlineStorePrecomputeQuery(FeatureByteBaseModel):

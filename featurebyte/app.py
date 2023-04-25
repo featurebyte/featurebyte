@@ -34,7 +34,7 @@ import featurebyte.routes.table.api as table_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
 from featurebyte.common.utils import get_version
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId, User
 from featurebyte.routes.app_container import AppContainer
@@ -45,6 +45,8 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
+
+logger = get_logger(__name__)
 
 
 def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:

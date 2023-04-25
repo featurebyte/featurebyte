@@ -4,12 +4,14 @@ Tests for SessionManager class
 from unittest.mock import Mock, patch
 
 import pytest
-from loguru import logger
 from pytest import LogCaptureFixture
 
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.logging import get_logger
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.session.manager import SessionManager, session_cache
+
+logger = get_logger(__name__)
 
 
 @pytest.fixture(autouse=True, name="caplog_handle")

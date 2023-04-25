@@ -20,7 +20,7 @@ from featurebyte.feature_manager.sql_template import (
     tm_upsert_online_store_mapping,
     tm_upsert_tile_feature_mapping,
 )
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
@@ -28,6 +28,8 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.manager import TileManager
 from featurebyte.utils.snowflake.sql import escape_column_names
+
+logger = get_logger(__name__)
 
 
 class FeatureManager(BaseModel):

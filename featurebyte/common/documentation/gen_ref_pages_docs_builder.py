@@ -25,11 +25,14 @@ from featurebyte.common.documentation.doc_types import (
 )
 from featurebyte.common.documentation.documentation_layout import DocLayoutItem, get_overall_layout
 from featurebyte.common.documentation.resource_extractor import get_resource_details
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
 PATH_TO_DOCS_REPO = os.environ.get("FB_DOCS_REPO_PATH", None)
 MISSING_DEBUG_MARKDOWN = "missing.md"
+
+
+logger = get_logger(__name__)
 
 
 def get_missing_core_object_file_template(object_name: str, content: str) -> str:

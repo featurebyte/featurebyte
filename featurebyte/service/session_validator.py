@@ -7,7 +7,7 @@ from bson import ObjectId
 
 from featurebyte.enum import SourceType, StrEnum
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import DatabaseDetails
@@ -15,6 +15,8 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+
+logger = get_logger(__name__)
 
 
 class ValidateStatus(StrEnum):

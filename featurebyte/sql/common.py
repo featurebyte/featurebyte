@@ -9,11 +9,14 @@ import asyncio
 
 import pandas as pd
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 
 TABLE_PROPERTIES = "TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5')"
+
+
+logger = get_logger(__name__)
 
 
 def construct_create_table_query(

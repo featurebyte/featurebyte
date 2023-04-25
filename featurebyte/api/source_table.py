@@ -20,7 +20,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
 from featurebyte.models.request_input import SourceTableRequestInput
@@ -46,6 +46,9 @@ else:
     EventTable = TypeVar("EventTable")
     ItemTable = TypeVar("ItemTable")
     SCDTable = TypeVar("SCDTable")
+
+
+logger = get_logger(__name__)
 
 
 class TableDataFrame(BaseFrame):

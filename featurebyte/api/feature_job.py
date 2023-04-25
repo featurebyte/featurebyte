@@ -20,9 +20,11 @@ from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.tile import TileSpec
+
+logger = get_logger(__name__)
 
 
 class FeatureJobStatusResult(FeatureByteBaseModel):

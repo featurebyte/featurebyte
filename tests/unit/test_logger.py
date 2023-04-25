@@ -3,7 +3,9 @@ Test Logger
 """
 import logging
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class MockLogHandler(logging.Handler):

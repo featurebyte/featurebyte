@@ -11,7 +11,7 @@ import time
 import pandas as pd
 
 from featurebyte.enum import SourceType, SpecialColumnName
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -19,6 +19,8 @@ from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.tile_compute import OnDemandTileComputePlan
+
+logger = get_logger(__name__)
 
 
 def get_feature_preview_sql(

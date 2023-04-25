@@ -18,7 +18,9 @@ from featurebyte.config import (
     Profile,
 )
 from featurebyte.exception import InvalidSettingsError
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def test_configurations():

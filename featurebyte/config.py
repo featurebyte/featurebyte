@@ -419,12 +419,6 @@ class Configurations:
         InvalidSettingsError
             Invalid settings
         """
-        # pylint: disable=import-outside-toplevel,cyclic-import
-        from featurebyte.logger import configure_logger, logger
-
-        # configure logger
-        configure_logger(logger, self)
-
         if self.profile:
             client = APIClient(api_url=self.profile.api_url, api_token=self.profile.api_token)
         else:

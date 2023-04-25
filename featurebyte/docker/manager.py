@@ -22,8 +22,10 @@ from featurebyte.api.feature_store import FeatureStore, SourceType
 from featurebyte.common.path_util import get_package_root
 from featurebyte.config import Configurations
 from featurebyte.datasets.app import import_dataset
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.query_graph.node.schema import SparkDetails
+
+logger = get_logger(__name__)
 
 
 class ApplicationName(str, Enum):

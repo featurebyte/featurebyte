@@ -40,7 +40,7 @@ from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.credential import (
     AccessTokenCredential,
@@ -63,6 +63,9 @@ from featurebyte.worker.task.base import TASK_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
 MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
+
+
+logger = get_logger(__name__)
 
 
 def pytest_collection_modifyitems(config, items):

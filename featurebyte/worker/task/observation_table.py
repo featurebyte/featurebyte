@@ -5,11 +5,13 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
+
+logger = get_logger(__name__)
 
 
 class ObservationTableTask(DataWarehouseMixin, BaseTask):
@@ -44,7 +46,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
             additional_metadata = await self.app_container.observation_table_service.validate_materialized_table_and_get_metadata(
                 db_session, location.table_details
             )
-            logger.debug("Creating a new ObservationTable", extras=location.table_details.dict())
+            logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())
             observation_table = ObservationTableModel(
                 _id=self.payload.output_document_id,
                 user_id=payload.user_id,

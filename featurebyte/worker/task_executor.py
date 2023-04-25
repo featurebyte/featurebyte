@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from asgiref.sync import async_to_sync
+
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.base import User
 from featurebyte.utils.credential import MongoBackedCredentialProvider
@@ -43,7 +45,7 @@ class TaskExecutor:
 
 
 @celery.task(bind=True)
-async def execute_task(self: Any, **payload: Any) -> None:
+def execute_task(self: Any, **payload: Any) -> None:
     """
     Execute Celery task
 
@@ -59,7 +61,7 @@ async def execute_task(self: Any, **payload: Any) -> None:
     # send initial progress to indicate task is started
     progress.put({"percent": 0})
     try:
-        await executor.execute()
+        async_to_sync(executor.execute)()
         # send final progress to indicate task is completed
         progress.put({"percent": 100})
     finally:

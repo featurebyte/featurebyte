@@ -7,12 +7,14 @@ from typing import Any, AsyncIterator, Callable
 
 from contextlib import asynccontextmanager
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
+
+logger = get_logger(__name__)
 
 
 class DataWarehouseMixin:

@@ -1,0 +1,130 @@
+"""
+Logging formatting
+"""
+from typing import TYPE_CHECKING, Any, Optional, Tuple
+
+import logging
+import sys
+
+from featurebyte.common.env_util import is_notebook
+from featurebyte.config import Configurations
+
+if TYPE_CHECKING:
+    _LoggerAdapter = logging.LoggerAdapter[logging.Logger]
+else:
+    _LoggerAdapter = logging.LoggerAdapter
+
+
+class CustomAdapter(_LoggerAdapter):
+    """
+    Custom logging adapter to capture extra field
+    """
+
+    def process(self, msg: str, kwargs: Any) -> Tuple[str, Any]:
+        """
+        Process message
+        Parameters
+        ----------
+        msg: str
+            Message
+        kwargs: Any
+            Keyword arguments
+        Returns
+        -------
+        Tuple[str, Any]
+        """
+        extra = kwargs.pop("extra", None)
+        return f"{msg} | {extra}" if extra else msg, kwargs
+
+
+class CustomFormatter(logging.Formatter):
+    colors = {
+        "red": "\x1b[31;20m",
+        "green": "\x1b[32;20m",
+        "yellow": "\x1b[33;20m",
+        "blue": "\x1b[34;20m",
+        "grey": "\x1b[38;20m",
+        "bold_red": "\x1b[31;1m",
+    }
+
+    level_colors = {
+        "DEBUG": "blue",
+        "INFO": "grey",
+        "WARNING": "yellow",
+        "ERROR": "red",
+        "CRITICAL": "bold_red",
+    }
+
+    @classmethod
+    def colorize(cls, value: str, color: str) -> str:
+        """
+        Colorize string
+
+        Parameters
+        ----------
+        value: str
+            String to colorize
+        color: str
+            Color to use
+
+        Returns
+        -------
+        str
+            Colorized string
+        """
+        if color not in cls.colors:
+            return value
+        color_code = cls.colors[color]
+        return f"{color_code}{value}\x1b[0m"
+
+    def format(self, record: logging.LogRecord) -> str:
+        record.levelname = self.colorize(
+            record.levelname, self.level_colors.get(record.levelname, "grey")
+        )
+        return super().format(record)
+
+
+NOTEBOOK_LOG_FORMATTER = CustomFormatter(
+    "\x1b[32;20m%(asctime)s\x1b[0m | \033[1m%(levelname)8s\x1b[0m | %(message)s",
+    "%Y-%m-%d %H:%M:%S",
+)
+CONSOLE_LOG_FORMATTER = CustomFormatter(
+    "\x1b[32;20m%(asctime)s\x1b[0m | %(name)s | \033[1m%(levelname)8s\x1b[0m | %(funcName)s:%(lineno)d | %(message)s",
+    "%Y-%m-%d %H:%M:%S",
+)
+
+
+def get_logger(logger_name: str, configurations: Optional[Configurations] = None) -> _LoggerAdapter:
+    """
+    Get logger
+
+    Parameters
+    ----------
+    logger_name: str
+        Name of logger
+    configurations: Configurations
+        Optional configurations used to configure logger
+
+    Returns
+    -------
+    _LoggerAdapter
+    """
+    configurations = configurations or Configurations()
+    is_notebook_env = is_notebook()
+    if is_notebook_env:
+        formatter = NOTEBOOK_LOG_FORMATTER
+    else:
+        formatter = CONSOLE_LOG_FORMATTER
+
+    console_handler = logging.StreamHandler(stream=sys.stderr)
+    console_handler.setFormatter(formatter)
+    logger = logging.getLogger(logger_name)
+    logger.propagate = False
+    logger.setLevel(configurations.logging.level)
+    if logger.hasHandlers():
+        logger.handlers.clear()
+    logger.addHandler(console_handler)
+    return CustomAdapter(logger, {"extra": None})
+
+
+__all__ = ["get_logger"]

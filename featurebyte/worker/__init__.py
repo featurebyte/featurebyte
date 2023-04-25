@@ -1,11 +1,6 @@
 """
 Celery worker
 """
-from typing import Any
-
-from asyncio import get_event_loop
-from inspect import isawaitable
-
 from celery import Celery
 
 from featurebyte.models.periodic_task import PeriodicTask
@@ -16,46 +11,7 @@ from featurebyte.utils.persistent import DATABASE_NAME, MONGO_URI
 CELERY_TASK_COLLECTION = Task.collection_name()
 CELERY_SCHEDULE_COLLECTION = PeriodicTask.collection_name()
 
-
-class AsyncCelery(Celery):
-    """
-    Customized Celery to support asynchronous tasks
-    """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.patch_task()
-
-        if "app" in kwargs:
-            self.init_app(kwargs["app"])
-
-    def patch_task(self) -> None:
-        """
-        Patch Task to support asynchronous tasks using process event loop
-        """
-        TaskBase = self.Task
-
-        class ContextTask(TaskBase):  # type: ignore
-            """
-            Async Task class
-            """
-
-            abstract = True
-
-            async def _run(self, *args: Any, **kwargs: Any) -> Any:
-                result = TaskBase.__call__(self, *args, **kwargs)
-                if isawaitable(result):
-                    return await result
-                return result
-
-            def __call__(self, *args: Any, **kwargs: Any) -> Any:
-                loop = get_event_loop()
-                return loop.run_until_complete(self._run(*args, **kwargs))
-
-        self.Task = ContextTask  # pylint: disable=invalid-name
-
-
-celery = AsyncCelery(
+celery = Celery(
     __name__,
     broker=REDIS_URI,
     backend=MONGO_URI,
