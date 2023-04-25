@@ -748,6 +748,70 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the BatchFeatureTable module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the BatchFeatureTable module.
+    """
+    return [
+        DocLayoutItem([BATCH_FEATURE_TABLE]),
+    ]
+
+
+def _get_observation_table_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the ObservationTable module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the ObservationTable module.
+    """
+    return [
+        DocLayoutItem([OBSERVATION_TABLE]),
+        DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.name"]),
+        DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.created_at"]),
+        DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.updated_at"]),
+        DocLayoutItem([OBSERVATION_TABLE, LINEAGE, "ObservationTable.id"]),
+    ]
+
+
+def _get_batch_request_table_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the BatchRequestTable module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the BatchRequestTable module.
+    """
+    return [
+        DocLayoutItem([BATCH_REQUEST_TABLE]),
+    ]
+
+
+def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the HistoricalFeatureTable module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the HistoricalFeatureTable module.
+    """
+    return [
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.name"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.created_at"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.updated_at"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.id"]),
+    ]
+
+
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -774,4 +838,8 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_source_table_layout(),
         *_get_feature_job_layout(),
         *_get_deployment_layout(),
+        # *_get_batch_feature_table_layout(),
+        # *_get_batch_request_table_layout(),
+        *_get_observation_table_layout(),
+        *_get_historical_feature_table_layout(),
     ]

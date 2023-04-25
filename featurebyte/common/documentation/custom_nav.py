@@ -7,6 +7,8 @@ from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
 from featurebyte.common.documentation.constants import (
     ADD_METADATA,
+    BATCH_FEATURE_TABLE,
+    BATCH_REQUEST_TABLE,
     CATALOG,
     CLASS_METHODS,
     CLEANING_OPERATION,
@@ -29,12 +31,14 @@ from featurebyte.common.documentation.constants import (
     GET,
     GET_VIEW,
     GROUPBY,
+    HISTORICAL_FEATURE_TABLE,
     INFO,
     JOIN,
     LAGS,
     LINEAGE,
     LIST,
     MANAGE,
+    OBSERVATION_TABLE,
     RELATIONSHIP,
     SAVE,
     SERVE,
@@ -73,7 +77,11 @@ class BetaWave3Nav(Nav):
         FEATURE,
         FEATURE_GROUP,
         FEATURE_LIST,
+        OBSERVATION_TABLE,
+        HISTORICAL_FEATURE_TABLE,
         DEPLOYMENT,
+        # BATCH_REQUEST_TABLE,
+        # BATCH_FEATURE_TABLE,
         UTILITY_CLASSES,
     ]
 
