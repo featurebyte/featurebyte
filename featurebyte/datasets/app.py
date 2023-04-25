@@ -96,7 +96,7 @@ def import_dataset(dataset_name: str) -> None:
 
         # Copy files to spark container
         DockerClient().copy(
-            f"{download_folder}",
+            f"{download_folder}/{dataset_name}",
             ("spark-thrift", "/opt/spark/data/staging/datasets"),
         )
 
