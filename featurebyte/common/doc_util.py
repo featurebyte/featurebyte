@@ -50,3 +50,7 @@ class FBAutoDoc(BaseModel):
 
     skipped_members: List[str] = Field(default=COMMON_SKIPPED_ATTRIBUTES)
     proxy_class: Optional[str] = Field(default=None)
+    # Setting this to True will skip the rendering of the parameters in the documentation for the class.
+    # This is typically used for class level parameters that should not be initialized directly, compared to say a
+    # dataclass object.
+    skip_params_in_class_docs: bool = Field(default=False)

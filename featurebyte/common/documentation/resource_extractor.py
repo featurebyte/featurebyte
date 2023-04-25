@@ -310,6 +310,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
     autodoc_config = resource_class.__dict__.get("__fbautodoc__", FBAutoDoc())
     if autodoc_config.proxy_class:
         proxy_path = autodoc_config.proxy_class
+    should_skip_params = autodoc_config.skip_params_in_class_docs
 
     # process signature
     parameters, return_type = get_params_from_signature(resource)
@@ -366,4 +367,5 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         examples=[_format_example(example) for example in docstring.examples],
         see_also=docstring.see_also.description if docstring.see_also else None,
         enum_values=_get_param_details(enum_possible_values, enum_desc),
+        should_skip_params_in_class_docs=should_skip_params,
     )

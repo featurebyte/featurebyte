@@ -42,6 +42,7 @@ class SCDView(View, GroupByMixin, RawMixin):
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
         proxy_class="featurebyte.SCDView",
+        skip_params_in_class_docs=True,
     )
 
     # class variables
