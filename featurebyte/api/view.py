@@ -1189,6 +1189,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[node],
         )
+
         feature = Feature(
             name=feature_name,
             feature_store=self.feature_store,
