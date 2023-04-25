@@ -51,7 +51,7 @@ class ItemView(View, GroupByMixin, RawMixin):
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
         proxy_class="featurebyte.ItemView",
-        skip_params_in_docs=True,
+        skip_params_in_class_docs=True,
     )
 
     # class variables

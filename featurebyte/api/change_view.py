@@ -59,7 +59,7 @@ class ChangeView(View, GroupByMixin):
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
         proxy_class="featurebyte.ChangeView",
-        skip_params_in_docs=True,
+        skip_params_in_class_docs=True,
     )
 
     # class variables

@@ -95,7 +95,7 @@ class DocClassWithProxyPathAndSkipParams:
 
     __fbautodoc__ = FBAutoDoc(
         proxy_class="autodoc_proxy",
-        skip_params_in_docs=True,
+        skip_params_in_class_docs=True,
     )
 
 
@@ -141,7 +141,7 @@ def test_get_resource_details__enum_class():
                 description="Test documentation for enum classes.",
             ),
         ],
-        should_skip_params=False,
+        should_skip_params_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -172,7 +172,7 @@ def test_get_resource_details__class():
         examples=["Some example code."],
         see_also="Some text that normally references other resources.",
         enum_values=[],
-        should_skip_params=False,
+        should_skip_params_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -204,7 +204,7 @@ def test_get_resource_details__method():
         examples=["Some example code."],
         see_also=None,
         enum_values=[],
-        should_skip_params=False,
+        should_skip_params_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -232,7 +232,7 @@ def test_get_resource_details__pydantic_field():
         examples=[],
         see_also=None,
         enum_values=[],
-        should_skip_params=False,
+        should_skip_params_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -262,7 +262,7 @@ def test_get_resource_details__property():
         examples=[],
         see_also=None,
         enum_values=[],
-        should_skip_params=False,
+        should_skip_params_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -282,4 +282,4 @@ def test_get_resource_details__proxy_paths():
         "tests.unit.common.documentation.test_resource_extractor.DocClassWithProxyPathAndSkipParams"
     )
     assert resource_details.proxy_path == "autodoc_proxy"
-    assert resource_details.should_skip_params
+    assert resource_details.should_skip_params_in_class_docs

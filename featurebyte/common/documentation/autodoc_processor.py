@@ -311,7 +311,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
             self._render(elem, "Description", content)
 
         # Render parameters
-        if resource_details.parameters and not resource_details.should_skip_params:
+        should_not_render_params = (
+            resource_details.should_skip_params_in_class_docs and resource_details.type == "class"
+        )
+        if resource_details.parameters and not should_not_render_params:
             self._render(elem, "Parameters", _get_parameters_content(resource_details.parameters))
 
         if resource_details.enum_values:
