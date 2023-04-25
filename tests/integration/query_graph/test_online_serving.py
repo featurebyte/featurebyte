@@ -13,7 +13,7 @@ from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_expr
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
-from tests.util.helper import fb_assert_frame_equal
+from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
 
 
 @pytest.fixture(name="features", scope="session")
@@ -109,9 +109,6 @@ async def test_online_serving_sql(
         deployment.enable()
         assert deployment.enabled is True
 
-        # check get batch features
-        check_get_batch_features_async(deployment, event_table.get_view(), data_source, columns)
-
     user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
     df_training_events = pd.DataFrame(
         {
@@ -146,6 +143,21 @@ async def test_online_serving_sql(
 
         # Check online_features route
         check_online_features_route(feature_list, config, df_historical, columns)
+
+        # check get batch features
+        batch_request_table = await create_batch_request_table_from_dataframe(
+            session=session,
+            df=df_entities,
+            data_source=data_source,
+        )
+        check_get_batch_features_async(
+            data_source,
+            deployment,
+            batch_request_table,
+            df_historical,
+            columns,
+        )
+
     finally:
         deployment.disable()
         assert deployment.enabled is False
@@ -179,15 +191,13 @@ def check_online_features_route(feature_list, config, df_historical, columns):
     fb_assert_frame_equal(df_expected, df, dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"])
 
 
-def check_get_batch_features_async(deployment, view, data_source, columns):
+def check_get_batch_features_async(
+    data_source, deployment, batch_request_table, df_historical, columns
+):
     """
     Check get_batch_features_async
     """
-    entity_column = "üser id"
-    view[entity_column] = view["ÜSER ID"]
-    request_view = view[[entity_column]]
-    batch_request_table = request_view.create_batch_request_table(name="batch_request_table")
-    batch_feature_table = deployment.get_batch_features_async(
+    batch_feature_table = deployment.get_batch_features(
         batch_request_table=batch_request_table,
         batch_feature_table_name="batch_feature_table",
     )
@@ -196,7 +206,5 @@ def check_get_batch_features_async(deployment, view, data_source, columns):
         schema_name=batch_feature_table.location.table_details.schema_name,
         database_name=batch_feature_table.location.table_details.database_name,
     )
-    preview_df = source_table.preview()
-    expected_columns = ["ËVENT_TIMESTAMP", "TZ_OFFSET", "TRANSACTION_ID"] + columns
-    assert all(preview_df.columns == expected_columns), preview_df.columns
-    assert source_table.shape()[0] == request_view.shape()[0]
+    preview_df = source_table.preview(limit=df_historical.shape[0])
+    pd.testing.assert_frame_equal(df_historical[columns], preview_df[columns], check_dtype=False)

@@ -73,7 +73,7 @@ class Deployment(ApiObject):
         """
         self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": False})
 
-    def get_batch_features_async(
+    def get_batch_features(
         self,
         batch_request_table: BatchRequestTable,
         batch_feature_table_name: str,

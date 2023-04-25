@@ -345,6 +345,20 @@ async def create_observation_table_from_dataframe(session, df, data_source):
     ).create_observation_table(f"observation_table_{unique_id}")
 
 
+async def create_batch_request_table_from_dataframe(session, df, data_source):
+    """
+    Create a BatchRequestTable from a pandas DataFrame
+    """
+    unique_id = ObjectId()
+    db_table_name = f"df_{unique_id}"
+    await session.register_table(db_table_name, df, temporary=False)
+    return data_source.get_source_table(
+        db_table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    ).create_batch_request_table(f"batch_request_table_{unique_id}")
+
+
 async def get_dataframe_from_materialized_table(session, materialized_table):
     """
     Retrieve pandas DataFrame from a materialized table
