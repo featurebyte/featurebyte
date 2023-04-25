@@ -80,6 +80,7 @@ def mock_session_for_online_serving_fixture():
 @pytest.fixture(name="expected_online_feature_query")
 def expected_online_feature_query_fixture():
     """Expected query for online feature"""
+    # pylint: disable=line-too-long
     return textwrap.dedent(
         """
         WITH ONLINE_REQUEST_TABLE AS (
@@ -205,7 +206,6 @@ async def test_feature_list_deployed_with_batch_request_table(
     online_serving_service,
     deployed_feature_list,
     mock_session_for_online_serving,
-    expected_online_feature_query,
     batch_request_table,
 ):
     """
@@ -223,6 +223,8 @@ async def test_feature_list_deployed_with_batch_request_table(
 
     assert len(mock_session_for_online_serving.execute_query.call_args_list) == 1
     args, _ = mock_session_for_online_serving.execute_query.call_args
+
+    # pylint: disable=line-too-long
     assert (
         args[0]
         == textwrap.dedent(
