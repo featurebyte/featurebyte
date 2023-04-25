@@ -80,7 +80,6 @@ async def test_online_serving_sql(
     features,
     session,
     config,
-    event_table,
     data_source,
 ):
     """
