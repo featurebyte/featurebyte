@@ -1099,9 +1099,29 @@ def test_join_event_table_attributes__with_multiple_assignments(snowflake_item_v
     assert joined_view.columns == expected_columns
 
 
+def test_item_view_with_timezone_offset_column__protected_attributes(
+    snowflake_item_table_with_timezone_offset_column,
+):
+    """
+    Test protected attributes include timestamp timezone offset column
+    """
+    view = snowflake_item_table_with_timezone_offset_column.get_view(event_suffix="_event_table")
+    assert view.protected_columns == {
+        "cust_id_event_table",
+        "tz_offset_event_table",
+        "item_id_col",
+        "event_id_col",
+        "event_timestamp_event_table",
+    }
+    assert view.timestamp_timezone_offset_column == "tz_offset_event_table"
+
+
 def test_datetime_property_extraction__event_timestamp_in_item_view(
     snowflake_item_table_with_timezone_offset_column,
 ):
+    """
+    Test datetime property extraction from an ItemView with event timestamp timezone offset column
+    """
     view = snowflake_item_table_with_timezone_offset_column.get_view(event_suffix="_event_table")
     timestamp_hour = view["event_timestamp_event_table"].dt.hour
     view["timestamp_hour"] = timestamp_hour

@@ -389,7 +389,6 @@ def test_item_view_graph_node(item_table_data, event_table_data, item_input_node
     (
         item_graph_node,
         item_columns_info,
-        timestamp_column,
     ) = item_table_data.construct_item_view_graph_node(
         item_table_node=item_input_node,
         columns_to_join=["event_timestamp", "amount"],
@@ -425,7 +424,6 @@ def test_item_view_graph_node(item_table_data, event_table_data, item_input_node
         "event_id",
         "event_timestamp",
     }
-    assert timestamp_column == "event_timestamp_event"
     assert {col.name for col in item_columns_info} == {
         "item_id",
         "item_name",

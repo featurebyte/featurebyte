@@ -10,6 +10,7 @@ from pydantic import Field, StrictStr, root_validator
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.event_table import EventTable
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.join_utils import append_rsuffix_to_columns
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
@@ -220,7 +221,6 @@ class ItemTable(TableApiObject):
         (
             view_graph_node,
             columns_info,
-            timestamp_column,
         ) = item_table_data.construct_item_view_graph_node(
             item_table_node=data_node,
             columns_to_join=event_join_column_names,
@@ -241,6 +241,14 @@ class ItemTable(TableApiObject):
                 event_table_id=event_table.id,
             ),
         )
+        timestamp_column = append_rsuffix_to_columns([event_view.timestamp_column], event_suffix)[0]
+        timestamp_timezone_offset_column = (
+            append_rsuffix_to_columns([event_view.timestamp_timezone_offset_column], event_suffix)[
+                0
+            ]
+            if event_view.timestamp_timezone_offset_column
+            else None
+        )
         inserted_graph_node = GlobalQueryGraph().add_node(
             view_graph_node, input_nodes=[data_node, event_view.node]
         )
@@ -255,6 +263,7 @@ class ItemTable(TableApiObject):
             default_feature_job_setting=self.default_feature_job_setting,
             event_view=event_view,
             timestamp_column_name=timestamp_column,
+            timestamp_timezone_offset_column_name=timestamp_timezone_offset_column,
         )
 
     @root_validator(pre=True)

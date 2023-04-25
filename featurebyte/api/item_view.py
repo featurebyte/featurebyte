@@ -78,6 +78,7 @@ class ItemView(View, GroupByMixin, RawMixin):
     )
     event_view: EventView = Field(allow_mutation=False)
     timestamp_column_name: str = Field(allow_mutation=False)
+    timestamp_timezone_offset_column_name: Optional[str] = Field(allow_mutation=False)
 
     def join_event_table_attributes(
         self,
@@ -145,8 +146,20 @@ class ItemView(View, GroupByMixin, RawMixin):
 
         Returns
         -------
+        str
         """
         return self.timestamp_column_name
+
+    @property
+    def timestamp_timezone_offset_column(self) -> Optional[str]:
+        """
+        Event timezone offset column
+
+        Returns
+        -------
+        str
+        """
+        return self.timestamp_timezone_offset_column_name
 
     @property
     def protected_attributes(self) -> list[str]:
@@ -157,11 +170,14 @@ class ItemView(View, GroupByMixin, RawMixin):
         -------
         list[str]
         """
-        return super().protected_attributes + [
+        out = super().protected_attributes + [
             "event_id_column",
             "item_id_column",
             "timestamp_column",
         ]
+        if self.timestamp_timezone_offset_column is not None:
+            out.append("timestamp_timezone_offset_column")
+        return out
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
