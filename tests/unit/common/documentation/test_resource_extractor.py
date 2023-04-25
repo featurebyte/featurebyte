@@ -88,13 +88,14 @@ class TestDocumentationEnum(StrEnum):
     NO_DESCRIPTION = "no desc"
 
 
-class DocClassWithProxyPath:
+class DocClassWithProxyPathAndSkipParams:
     """
-    Doc class with FBAutoDoc proxy path.
+    Doc class with FBAutoDoc proxy path, and skip params.
     """
 
     __fbautodoc__ = FBAutoDoc(
         proxy_class="autodoc_proxy",
+        skip_params_in_docs=True,
     )
 
 
@@ -140,6 +141,7 @@ def test_get_resource_details__enum_class():
                 description="Test documentation for enum classes.",
             ),
         ],
+        should_skip_params=False,
     )
     assert resource_details == expected_resource_details
 
@@ -170,6 +172,7 @@ def test_get_resource_details__class():
         examples=["Some example code."],
         see_also="Some text that normally references other resources.",
         enum_values=[],
+        should_skip_params=False,
     )
     assert resource_details == expected_resource_details
 
@@ -201,6 +204,7 @@ def test_get_resource_details__method():
         examples=["Some example code."],
         see_also=None,
         enum_values=[],
+        should_skip_params=False,
     )
     assert resource_details == expected_resource_details
 
@@ -228,6 +232,7 @@ def test_get_resource_details__pydantic_field():
         examples=[],
         see_also=None,
         enum_values=[],
+        should_skip_params=False,
     )
     assert resource_details == expected_resource_details
 
@@ -257,6 +262,7 @@ def test_get_resource_details__property():
         examples=[],
         see_also=None,
         enum_values=[],
+        should_skip_params=False,
     )
     assert resource_details == expected_resource_details
 
@@ -273,6 +279,7 @@ def test_get_resource_details__proxy_paths():
 
     # Or infer via FBAutoDoc override
     resource_details = get_resource_details(
-        "tests.unit.common.documentation.test_resource_extractor.DocClassWithProxyPath"
+        "tests.unit.common.documentation.test_resource_extractor.DocClassWithProxyPathAndSkipParams"
     )
     assert resource_details.proxy_path == "autodoc_proxy"
+    assert resource_details.should_skip_params
