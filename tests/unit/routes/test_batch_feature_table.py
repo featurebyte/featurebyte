@@ -111,14 +111,18 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
                 headers={"active-catalog-id": str(catalog_id)},
                 json=payload,
             )
-            if api_object == "feature":
-                self.make_feature_production_ready(api_client, response.json()["_id"], catalog_id)
-
             if api_object in {"batch_request_table", "deployment"}:
                 response = self.wait_for_results(api_client, response)
                 assert response.json()["status"] == "SUCCESS"
             else:
                 assert response.status_code == HTTPStatus.CREATED
+
+            if api_object == "feature":
+                self.make_feature_production_ready(api_client, response.json()["_id"], catalog_id)
+            if api_object == "deployment":
+                assert response.json()["status"] == "SUCCESS"
+                deployment_id = response.json()["payload"]["output_document_id"]
+                self.enable_deployment(api_client, deployment_id, catalog_id)
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
