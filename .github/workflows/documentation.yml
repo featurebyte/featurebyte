@@ -35,6 +35,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Checkout branch
+        run: git checkout "origin/${{ github.head_ref }}"
       - uses: arduino/setup-task@v1
         with:
           version: 3.x
@@ -125,5 +127,24 @@ jobs:
         with:
           name: docs-updated
           path: featurebyte/docs/updated/
+      - name: Install diff2html
+        run: npm install -g diff2html-cli
       - name: Diff docs
-        run: diff -r featurebyte/docs/base/ featurebyte/docs/updated/
+        continue-on-error: true
+        run: |
+          diff --new-file -ur featurebyte/docs/base/ featurebyte/docs/updated/ > diff.txt
+      - name: Generate HTML
+        run: |
+          cat diff.txt | diff2html -i stdin --title="Documentation Differences" -F diff.html --style="side" --renderNothingWhenEmpty
+      - name: Upload diff html
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs-diff.html
+          path: diff.html
+      - name: Fail if diff is not empty
+        run: |
+          if [ -s diff.txt ]; then
+            cat diff.txt
+            echo "Documentation changes detected. Please confirm that these changes are expected."
+            exit 1
+          fi
