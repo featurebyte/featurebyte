@@ -137,8 +137,8 @@ class ItemTable(TableApiObject):
             collisions.
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use. When auto, the view will be constructed with cleaning operations from the table, the
-            record creation timestamp column will be dropped and the event timestamp and columns representing entities
-            from the EventView will be automatically added.
+            record creation timestamp column will be dropped and the event timestamp, timezone offset, and columns
+            representing entities from the EventView will be automatically added.
         drop_column_names: Optional[List[str]]
             List of column names to drop (manual mode only).
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
