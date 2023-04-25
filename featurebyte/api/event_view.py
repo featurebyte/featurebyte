@@ -49,7 +49,7 @@ class EventView(View, GroupByMixin, RawMixin):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.EventView")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.EventView", skip_params_in_docs=True)
 
     # class variables
     _series_class = EventViewColumn

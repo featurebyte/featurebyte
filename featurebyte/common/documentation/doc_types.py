@@ -160,6 +160,9 @@ class ResourceDetails(BaseModel):
     see_also: Optional[str]
     enum_values: Optional[List[ParameterDetails]]
 
+    # Setting this param to True will not render the parameters in the documentation.
+    should_skip_params: bool
+
     @property
     def resource(self) -> Any:
         """
