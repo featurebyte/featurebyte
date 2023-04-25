@@ -446,6 +446,7 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.updated_at"]),
         DocLayoutItem([RELATIONSHIP, LINEAGE, "Relationship.id"]),
         DocLayoutItem([RELATIONSHIP, MANAGE, "Relationship.enable"]),
+        DocLayoutItem([RELATIONSHIP, MANAGE, "Relationship.disable"]),
     ]
 
 
@@ -743,6 +744,7 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.enabled"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
+        DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
     ]
 
 
