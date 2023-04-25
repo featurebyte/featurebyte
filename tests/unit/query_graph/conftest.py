@@ -1000,6 +1000,50 @@ def aggregate_asat_feature_node_fixture(global_graph, scd_table_input_node):
     return feature_node
 
 
+@pytest.fixture(name="time_since_last_event_feature_node")
+def time_since_last_event_feature_node_fixture(global_graph, input_node):
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "ts",
+        "agg_func": "latest",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["latest_event_timestamp_90d"],
+        "windows": ["90d"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, input_node)
+    latest_timestamp_feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["latest_event_timestamp_90d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
+    )
+    request_point_in_time_node = global_graph.add_operation(
+        node_type=NodeType.REQUEST_COLUMN,
+        node_params={"column_name": "POINT_IN_TIME"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[],
+    )
+    time_since_last_event_feature_node = global_graph.add_operation(
+        node_type=NodeType.DATE_DIFF,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[latest_timestamp_feature_node, request_point_in_time_node],
+    )
+    time_since_last_event_feature_node = global_graph.add_operation(
+        node_type=NodeType.ALIAS,
+        node_params={"name": "time_since_last_event"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[time_since_last_event_feature_node],
+    )
+    return time_since_last_event_feature_node
+
+
 @pytest.fixture(name="event_table_details")
 def get_event_table_details_fixture():
     """

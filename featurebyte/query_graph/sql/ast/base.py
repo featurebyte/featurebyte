@@ -388,7 +388,7 @@ class TableNode(SQLNode, ABC):
 class ExpressionNode(SQLNode, ABC):
     """Base class for all expression nodes (non-table)"""
 
-    table_node: TableNode
+    table_node: Optional[TableNode]
 
     @property
     def sql_standalone(self) -> Expression:
@@ -399,6 +399,7 @@ class ExpressionNode(SQLNode, ABC):
         Expression
             A sqlglot Expression object
         """
+        assert self.table_node is not None
         return self.table_node.get_sql_for_expressions([self.sql])
 
 

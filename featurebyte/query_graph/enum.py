@@ -90,6 +90,7 @@ class NodeType(StrEnum):
 
     # operations with side effect
     INPUT = "input"
+    REQUEST_COLUMN = "request_column"
 
     # graph node to support nested graph
     GRAPH = "graph"
