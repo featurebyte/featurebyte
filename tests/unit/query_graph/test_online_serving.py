@@ -29,6 +29,28 @@ def get_aggregation_specs(groupby_node) -> List[TileBasedAggregationSpec]:
     return agg_specs
 
 
+def get_online_store_retrieval_sql(
+    graph,
+    nodes,
+    source_type,
+    request_table_columns,
+    request_table_name=None,
+    request_table_expr=None,
+    parent_serving_preparation=None,
+):
+    """Generate SQL for retrieving online store data"""
+    expr = get_online_store_retrieval_expr(
+        graph=graph,
+        nodes=nodes,
+        source_type=source_type,
+        request_table_columns=request_table_columns,
+        request_table_name=request_table_name,
+        request_table_expr=request_table_expr,
+        parent_serving_preparation=parent_serving_preparation,
+    )
+    return sql_to_string(expr, SourceType.SNOWFLAKE)
+
+
 def test_construct_universe_sql(query_graph_with_groupby):
     """
     Test constructing universe sql for a simple point in time groupby
@@ -252,14 +274,13 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
     )
 
     # Check retrieval sql
-    expr = get_online_store_retrieval_expr(
+    sql = get_online_store_retrieval_sql(
         request_table_name="MY_REQUEST_TABLE",
         request_table_columns=["CUSTOMER_ID"],
         graph=pruned_graph,
         nodes=[pruned_node],
         source_type=SourceType.SNOWFLAKE,
     )
-    sql = sql_to_string(expr, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_complex.sql",
@@ -274,14 +295,13 @@ def test_online_store_feature_retrieval_sql__all_eligible(
     Test constructing feature retrieval sql for online store
     """
     graph, *nodes = query_graph_with_groupby_and_feature_nodes
-    expr = get_online_store_retrieval_expr(
+    sql = get_online_store_retrieval_sql(
         request_table_name="MY_REQUEST_TABLE",
         request_table_columns=["CUSTOMER_ID"],
         graph=graph,
         nodes=nodes,
         source_type=SourceType.SNOWFLAKE,
     )
-    sql = sql_to_string(expr, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_simple.sql",
@@ -297,14 +317,13 @@ def test_online_store_feature_retrieval_sql__mixed(
     from the online store and has to be computed on demand
     """
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    expr = get_online_store_retrieval_expr(
+    sql = get_online_store_retrieval_sql(
         request_table_name="MY_REQUEST_TABLE",
         request_table_columns=["CUSTOMER_ID", "order_id"],
         graph=graph,
         nodes=nodes,
         source_type=SourceType.SNOWFLAKE,
     )
-    sql = sql_to_string(expr, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_mixed.sql",
@@ -322,14 +341,13 @@ def test_online_store_feature_retrieval_sql__request_subquery(
     request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
 
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    expr = get_online_store_retrieval_expr(
+    sql = get_online_store_retrieval_sql(
         request_table_expr=request_table_expr,
         request_table_columns=["CUSTOMER_ID"],
         graph=graph,
         nodes=nodes,
         source_type=SourceType.SNOWFLAKE,
     )
-    sql = sql_to_string(expr, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_request_subquery.sql",
@@ -346,14 +364,13 @@ def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column
     df = pd.DataFrame({"CUSTOMER_ID": [1001, 1002, 1003]})
     request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
 
-    expr = get_online_store_retrieval_expr(
+    sql = get_online_store_retrieval_sql(
         request_table_expr=request_table_expr,
         request_table_columns=["CUSTOMER_ID"],
         graph=global_graph,
         nodes=[scd_lookup_feature_node],
         source_type=SourceType.SNOWFLAKE,
     )
-    sql = sql_to_string(expr, SourceType.SNOWFLAKE)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_scd_current_flag.sql",
