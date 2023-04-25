@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable, Optional, Union, cast
 
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.model_util import validate_timezone_offset_string
 from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -86,7 +87,9 @@ class DatetimeAccessor:
         proxy_class="featurebyte.Series",
     )
 
-    def __init__(self, obj: FrozenSeries):
+    def __init__(
+        self, obj: FrozenSeries, timezone_offset: Optional[Union[str, FrozenSeries]] = None
+    ):
         if obj.is_datetime:
             self._node_type = NodeType.DT_EXTRACT
             self._property_node_params_map = {
@@ -116,9 +119,46 @@ class DatetimeAccessor:
             )
         self._obj = obj
 
+        self._timezone_offset: Optional[Union[str, FrozenSeries]] = None
+
+        # Optional timezone offset override
+        if timezone_offset is not None:
+            if not obj.is_datetime:
+                raise ValueError("Cannot apply a timezone offset to a TIMEDELTA type column")
+            if isinstance(timezone_offset, str):
+                validate_timezone_offset_string(timezone_offset)
+                self._timezone_offset = timezone_offset
+            else:
+                assert timezone_offset is not None
+                if not timezone_offset.dtype == DBVarType.VARCHAR:
+                    raise ValueError(
+                        f"Only a string type column can be used as the timezone offset column; got {timezone_offset.dtype}"
+                    )
+                self._timezone_offset = timezone_offset
+
     def __dir__(self) -> Iterable[str]:
         # provide datetime extraction lookup and completion for __getattr__
         return self._property_node_params_map.keys()
+
+    def tz_offset(self, timezone_offset: Union[str, FrozenSeries]) -> DatetimeAccessor:
+        """
+        Returns a DatetimeAccessor object with the specified timezone offset.
+
+        The timezone offset will be applied to convert the underlying timestamp column to localized
+        time before extracting datetime properties.
+
+        Parameters
+        ----------
+        timezone_offset : str or FrozenSeries
+            The timezone offset to apply. If a string is provided, it must be a valid timezone
+            offset in the format "(+|-)HH:mm". If the timezone offset can also be a column in the
+            table, in which case a Column object should be provided.
+
+        Returns
+        -------
+        DatetimeAccessor
+        """
+        return DatetimeAccessor(self._obj, timezone_offset)
 
     @property
     def year(self) -> FrozenSeries:
@@ -445,8 +485,7 @@ class DatetimeAccessor:
             **self._obj.unary_op_series_params(),
         )
 
-    @classmethod
-    def _infer_timezone_offset(cls, series: FrozenSeries) -> Optional[Union[FrozenSeries, str]]:
+    def _infer_timezone_offset(self, series: FrozenSeries) -> Optional[Union[FrozenSeries, str]]:
         """
         Infer the timezone offset for the given series.
 
@@ -469,6 +508,9 @@ class DatetimeAccessor:
         if series.dtype != DBVarType.TIMESTAMP:
             return None
 
+        if self._timezone_offset is not None:
+            return self._timezone_offset
+
         operation_structure = series.graph.extract_operation_structure(
             series.node, keep_all_source_columns=True
         )
@@ -477,12 +519,12 @@ class DatetimeAccessor:
 
         # Check whether the series is a simple timestamp column (derived only from a timestamp
         # column from a source table)
-        source_timestamp_column = cls._get_source_timestamp_column(operation_structure)
+        source_timestamp_column = self._get_source_timestamp_column(operation_structure)
         if source_timestamp_column is None or source_timestamp_column.table_id is None:
             return None
 
         # Check whether the series is the event timestamp column of an EventTable
-        input_node_parameters = cls._get_input_node_parameters_by_id(
+        input_node_parameters = self._get_input_node_parameters_by_id(
             series.graph, source_timestamp_column.node_name, source_timestamp_column.table_id
         )
         if input_node_parameters.type == TableDataType.EVENT_TABLE:
@@ -491,7 +533,7 @@ class DatetimeAccessor:
                 # The series is an event timestamp column. Retrieve timezone offset if available.
                 result: Optional[Union[FrozenSeries, str]] = None
                 if params.event_timestamp_timezone_offset_column is not None:
-                    result = cls._get_offset_series_from_frame(
+                    result = self._get_offset_series_from_frame(
                         series.parent,
                         params.event_timestamp_timezone_offset_column,
                         params.id,

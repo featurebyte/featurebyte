@@ -257,3 +257,62 @@ def test_invalid_property__timedelta(timedelta_series, property_name):
         f"Datetime attribute {property_name} is not available for Series with TIMEDELTA type"
     )
     assert expected_msg in str(exc_info.value)
+
+
+def test_timezone_offset__manually_specified_constant(timestamp_series):
+    """
+    Test specifying timezone offset manually as a constant value
+    """
+    timestamp_hour = timestamp_series.dt.tz_offset("+08:00").hour
+
+    assert timestamp_hour.node.parameters.dict() == {
+        "property": "hour",
+        "timezone_offset": "+08:00",
+    }
+    dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
+    assert len(dt_extract_input_nodes) == 1
+
+
+def test_timezone_offset__manually_specified_column(timestamp_series, varchar_series):
+    """
+    Test specifying timezone offset manually as another column
+    """
+    timestamp_hour = timestamp_series.dt.tz_offset(varchar_series).hour
+
+    assert timestamp_hour.node.parameters.dict() == {"property": "hour", "timezone_offset": None}
+    dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
+    assert len(dt_extract_input_nodes) == 2
+    _, tz_offset_node = dt_extract_input_nodes
+    assert timestamp_hour.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+        "columns": ["PRODUCT_ACTION"]
+    }
+
+
+def test_timezone_offset__invalid_constant(timestamp_series):
+    """
+    Test specifying timezone offset that is invalid
+    """
+    with pytest.raises(ValueError) as exc_info:
+        _ = timestamp_series.dt.tz_offset("ab:cd").hour
+    assert "Invalid timezone_offset: ab:cd" in str(exc_info.value)
+
+
+def test_timezone_offset__invalid_column(timestamp_series, int_series):
+    """
+    Test specifying timezone offset that is invalid
+    """
+    with pytest.raises(ValueError) as exc_info:
+        _ = timestamp_series.dt.tz_offset(int_series).hour
+    assert (
+        str(exc_info.value)
+        == "Only a string type column can be used as the timezone offset column; got INT"
+    )
+
+
+def test_timezone_offset__invalid_series_type(timedelta_series):
+    """
+    Test specifying timezone offset on a timedelta series
+    """
+    with pytest.raises(ValueError) as exc_info:
+        _ = timedelta_series.dt.tz_offset("+08:00").hour
+    assert str(exc_info.value) == "Cannot apply a timezone offset to a TIMEDELTA type column"
