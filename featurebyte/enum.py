@@ -178,8 +178,6 @@ class AggFunc(StrEnum):
     The AggFunc enum class provides a way to represent various aggregation methods in your code. It helps reduce
     errors by defining a set of supported aggregation methods. Each enum constant corresponds to a specific
     aggregation method.
-
-    Test diff
     """
 
     __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.AggFunc")
