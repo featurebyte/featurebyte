@@ -7,7 +7,7 @@ from typing import Literal
 
 from dataclasses import dataclass
 
-from sqlglot import expressions, parse_one
+from sqlglot import expressions
 from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.enum import NodeType
@@ -49,7 +49,9 @@ class CountDictTransformNode(ExpressionNode):
         if self.transform_type == "most_frequent":
             # The F_COUNT_DICT_MOST_FREQUENT UDF produces a VARIANT type. Cast to string to prevent
             # double quoting in the feature output ('remove' vs '"remove"')
-            output_expr = expressions.Cast(this=output_expr, to=parse_one("VARCHAR"))
+            output_expr = expressions.Cast(
+                this=output_expr, to=expressions.DataType.build("VARCHAR")
+            )
         return output_expr
 
     @classmethod

@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 from bson import ObjectId
-from sqlglot.expressions import Select
+from sqlglot.expressions import Expression, Select
 
 from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -622,4 +622,4 @@ class FeatureSpec:
     """
 
     feature_name: str
-    feature_expr: str
+    feature_expr: Expression

@@ -13,7 +13,7 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, quoted_identifier
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.specs import (
     AggregationSource,
@@ -285,11 +285,15 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr=f'"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"',
+            feature_expr=quoted_identifier(
+                f"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"
+            ),
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
-            feature_expr=f'"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"',
+            feature_expr=quoted_identifier(
+                f"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"
+            ),
         ),
     }
     assert plan.required_entity_ids == {ObjectId("637516ebc9c18f5a277a78db")}
@@ -365,11 +369,15 @@ def test_feature_execution_planner__serving_names_mapping(
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr=f'"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"',
+            feature_expr=quoted_identifier(
+                f"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"
+            ),
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
-            feature_expr=f'"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"',
+            feature_expr=quoted_identifier(
+                f"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"
+            ),
         ),
     }
 
@@ -420,11 +428,15 @@ def test_feature_execution_planner__query_graph_with_graph_node(
     assert execution_plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr=f'"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"',
+            feature_expr=quoted_identifier(
+                f"_fb_internal_window_w7200_avg_{groupby_node_aggregation_id}"
+            ),
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
-            feature_expr=f'"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"',
+            feature_expr=quoted_identifier(
+                f"_fb_internal_window_w172800_avg_{groupby_node_aggregation_id}"
+            ),
         ),
     }
 
