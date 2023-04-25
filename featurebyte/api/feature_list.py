@@ -1120,7 +1120,9 @@ class FeatureList(
         Parameters
         ----------
         features: Optional[List[FeatureVersionInfo]]
-            Specified feature version in feature list. Each feature version is specified by feature name and version.
+            List specific feature versions that must be used in the new FeatureList object instead of the default
+            version. Each feature version in the list is defined by using the FeatureVersionInfo constructor that
+            takes as input the feature name and the version.
 
         Returns
         -------

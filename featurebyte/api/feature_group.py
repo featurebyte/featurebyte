@@ -46,7 +46,11 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         Dictionary of feature name to feature object
     """
 
-    items: Sequence[Union[Feature, BaseFeatureGroup]] = Field(exclude=True)
+    items: Sequence[Union[Feature, BaseFeatureGroup]] = Field(
+        exclude=True,
+        description="A sequence that consists of Feature, FeatureList, and FeatureGroup objects. This sequence is used "
+        "to create a new FeatureGroup that contains the Feature objects found within the provided items.",
+    )
     feature_objects: OrderedDict[str, Feature] = Field(
         exclude=True, default_factory=collections.OrderedDict
     )

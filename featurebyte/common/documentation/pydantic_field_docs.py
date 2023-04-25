@@ -79,6 +79,7 @@ pydantic_field_doc_overrides = {
         CATALOG_ID: _get_catalog_id_docstring_override("FeatureList"),
     },
     "FeatureStore": _get_doc_overrides("FeatureStore"),
+    "MissingValueImputation": {"imputed_value": "Value to fill missing values."},
     "Relationship": _get_doc_overrides("Relationship"),
     "Table": {
         ID: _get_id_docstring_override("Table"),

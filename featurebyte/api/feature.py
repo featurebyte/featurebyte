@@ -815,18 +815,19 @@ class Feature(
         Parameters
         ----------
         table_feature_job_settings: Optional[List[TableFeatureJobSetting]]
-            List of table feature job settings to be applied to the feature. Each table feature job setting
-            contains the table name and the feature job setting to be applied to the feature. Table name is
-            used to identify the `GroupBy.aggregate_over` operation in the feature by matching the provided
-            table name with the table name of the timestamp column used in the groupby operation. The
-            existing feature job settings for a feature can be retrieved using `Feature.info` (check
-            code examples below).
+            List of table feature job settings to apply to the feature. Each item in the list represents a specific
+            feature job setting for a table, which is created using the TableFeatureJobSetting constructor. This
+            constructor takes the table name and the desired feature job setting as input. The setting should only be
+            applied to tables that originally contained the timestamp column used in the GroupBy.aggregate_over
+            operation for the feature. If the operation was performed on an item table, use the name of the related
+            event table, as the event timestamp is sourced from there.
         table_cleaning_operations: Optional[List[TableCleaningOperation]]
-            List of table cleaning operations to be applied to the feature. Each table cleaning operation
-            contains the table name and the cleaning operations to be applied to the feature. Table name is
-            used to identify the table in the feature graph by matching the provided table name with the
-            table name used by the View (in the feature graph). The existing table cleaning operations for a
-            feature can be retrieved using `Feature.info` (check code examples below).
+            List of table cleaning operations to apply to the feature. Each item in the list represents the cleaning
+            operations for a specific table, which is created using the TableCleaningOperation constructor. This
+            constructor takes the table name and the cleaning operations for that table as input. The cleaning
+            operations for each table are represented as a list, where each item defines the cleaning operations
+            for a specific column. The association between a column and its cleaning operations is established using
+            the ColumnCleaningOperation constructor.
 
         Returns
         -------
