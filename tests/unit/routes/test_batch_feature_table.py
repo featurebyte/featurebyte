@@ -1,13 +1,17 @@
 """
 Tests for BatchFeatureTable routes
 """
+import json
 from http import HTTPStatus
+from unittest import mock
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from tests.unit.routes.base import BaseAsyncApiTestSuite
 
 
@@ -56,6 +60,35 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
         """Mock _update_data_warehouse method in OnlineEnableService to make it a no-op"""
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
+
+    @pytest.fixture(autouse=True)
+    def patch_snowflake_execute_query(self, snowflake_connector, snowflake_query_map):
+        """Patch SnowflakeSession.execute_query to return mock data"""
+        _ = snowflake_connector
+
+        def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
+            _ = timeout
+            if query.startswith('SHOW COLUMNS IN "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_'):
+                # return a cust_id column for batch request table to pass validation
+                res = [
+                    {
+                        "column_name": "cust_id",
+                        "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                    }
+                ]
+            else:
+                res = snowflake_query_map.get(query)
+                print(f"\n\n{query}")
+
+            if res is not None:
+                return pd.DataFrame(res)
+            return None
+
+        with mock.patch(
+            "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+        ) as mock_execute_query:
+            mock_execute_query.side_effect = side_effect
+            yield mock_execute_query
 
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """

@@ -468,6 +468,7 @@ async def get_online_features(
         request_table_expr = expressions.select("*").from_(
             get_fully_qualified_table_name(request_data.location.table_details.dict())
         )
+        request_table_columns = [col.name for col in request_data.columns_info]
 
     retrieval_expr = get_online_store_retrieval_expr(
         graph,
