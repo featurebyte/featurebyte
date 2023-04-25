@@ -127,7 +127,10 @@ class EventView(View, GroupByMixin, RawMixin):
         -------
         list[str]
         """
-        return super().protected_attributes + ["timestamp_column"]
+        out = super().protected_attributes + ["timestamp_column"]
+        if self.timestamp_timezone_offset_column is not None:
+            out.append("timestamp_timezone_offset_column")
+        return out
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
