@@ -96,7 +96,6 @@ class ViewConstructionService(BaseService):
             view_parameters["event_view_node"] = event_view_node
             view_parameters["event_view_columns_info"] = event_view_columns_info
             view_parameters["event_view_event_id_column"] = table_input_node.parameters.id_column  # type: ignore
-            # TODO: most likely need to update here
 
             # prepare additional parameters for metadata update
             event_metadata = cast(ViewMetadata, event_view_node.parameters.metadata)  # type: ignore
