@@ -16,6 +16,7 @@ from mkautodoc.extension import trim_docstring
 from pydantic.fields import ModelField, Undefined
 
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.documentation.allowed_classes import allowed_classes
 from featurebyte.common.documentation.constants import EMPTY_VALUE
 from featurebyte.common.documentation.doc_types import (
     Docstring,
@@ -280,9 +281,6 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         resource = getattr(resource_class, resource_name, EMPTY_VALUE)
         if resource == EMPTY_VALUE:
             # pydantic field
-            # print("resource_class", resource_class)
-            # print("resource_name", resource_name)
-            # print("class fields", class_fields)
             resource = class_fields[resource_name]  # type: ignore[index]
             resource_type = "property"
         else:
@@ -339,22 +337,14 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
     )
 
     # populate descriptions for class parameters
-    # print("resource_name", resource_name.lower())
-    # if resource_type == "class" and "disguised" in resource_name.lower():
-    if resource_type == "class" and not issubclass(resource_class, Enum):
-        # print("parameters", parameters)
+    if resource_type == "class" and resource_name.lower() in allowed_classes:
         for parameter in parameters:
-            # Only try to get more details for the params if there's not enough info
-            if parameter.param_type is not None:
-                continue
             param_name = parameter.name
             descriptor = resource_descriptor or class_descriptor
             resource_to_import = f"{descriptor}::{param_name}"
-            # print("resource_to_import", resource_to_import)
             if param_name == "*":
                 continue
             resource_details = get_resource_details(resource_to_import)
-            # print("description", resource_details.description_string)
             if param_name not in parameters_desc or not parameters_desc[param_name]:
                 parameters_desc[param_name] = resource_details.description_string
 
