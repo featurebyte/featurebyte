@@ -763,13 +763,13 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             ) as response:
                 assert response.status_code == HTTPStatus.OK
 
-        # test streaming download works
-        content = b""
-        for chunk in response.iter_content(chunk_size=8192):
-            content += chunk
+                # test streaming download works
+                content = b""
+                for chunk in response.iter_bytes():
+                    content += chunk
 
-        df = dataframe_from_arrow_stream(content)
-        assert_frame_equal(df, expected_df)
+                df = dataframe_from_arrow_stream(content)
+                assert_frame_equal(df, expected_df)
 
     def test_sql_200(self, test_api_client_persistent, featurelist_preview_payload):
         """Test featurelist sql (success)"""
