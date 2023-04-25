@@ -25,6 +25,7 @@ import pandas as pd
 from pydantic import PrivateAttr
 from typeguard import typechecked
 
+from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
@@ -52,6 +53,7 @@ from featurebyte.exception import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.batch_request_table import ViewBatchRequestInput
 from featurebyte.models.observation_table import ViewObservationInput
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
@@ -59,6 +61,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import BaseGraphNode
+from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 
 if TYPE_CHECKING:
@@ -1379,3 +1382,31 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             route="/observation_table", payload=payload.json_dict()
         )
         return ObservationTable.get_by_id(observation_table_doc["_id"])
+
+    def create_batch_request_table(
+        self,
+        name: str,
+    ) -> BatchRequestTable:
+        """
+        Create a BatchRequestTable from the View.
+
+        Parameters
+        ----------
+        name: str
+            Name of the BatchRequestTable.
+
+        Returns
+        -------
+        BatchRequestTable
+            BatchRequestTable object.
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        payload = BatchRequestTableCreate(
+            name=name,
+            feature_store_id=self.feature_store.id,
+            request_input=ViewBatchRequestInput(graph=pruned_graph, node_name=mapped_node.name),
+        )
+        batch_request_table_doc = BatchRequestTable.post_async_task(
+            route="/batch_request_table", payload=payload.json_dict()
+        )
+        return BatchRequestTable.get_by_id(batch_request_table_doc["_id"])
