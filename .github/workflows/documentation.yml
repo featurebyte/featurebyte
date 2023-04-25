@@ -144,6 +144,7 @@ jobs:
       - name: Fail if diff is not empty
         run: |
           if [ -s diff.txt ]; then
+            cat diff.txt
             echo "Documentation changes detected. Please confirm that these changes are expected."
             exit 1
           fi
