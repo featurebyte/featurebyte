@@ -3,6 +3,8 @@ Unit tests for timezone offset related functionality in API objects
 """
 import textwrap
 
+from featurebyte import MissingValueImputation
+from featurebyte.api.feature import Feature
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -243,3 +245,37 @@ def test_datetime_property_extraction__event_timestamp_in_item_view(
         """
     ).strip()
     assert view.preview_sql() == expected
+
+
+def test_feature_using_timezone_offset_with_cleaning_operations(
+    snowflake_event_table_with_tz_offset_column, update_fixtures
+):
+    """
+    Test creating a feature derived from event timestamp column where the timezone offset column
+    requires cleaning operations
+    """
+    cleaning_ops = [MissingValueImputation(imputed_value="+00:00")]
+    snowflake_event_table_with_tz_offset_column["tz_offset"].update_critical_data_info(cleaning_ops)
+
+    view = snowflake_event_table_with_tz_offset_column.get_view()
+    view["timestamp_hour"] = view["event_timestamp"].dt.hour
+
+    feature = view.groupby("cust_id", category="timestamp_hour").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["7d"],
+        feature_names=["timestamp_hour_counts_7d"],
+        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+    )["timestamp_hour_counts_7d"]
+    feature.save()
+
+    # Check generated code for the saved feature (cleaning operations on the offset column should be
+    # preserved)
+    feature_loaded = Feature.get(feature.name)
+    check_sdk_code_generation(
+        feature_loaded,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/feature_with_cleaned_tz_offset_column.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_event_table_with_tz_offset_column.id,
+    )
