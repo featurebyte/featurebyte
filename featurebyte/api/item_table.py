@@ -242,13 +242,12 @@ class ItemTable(TableApiObject):
             ),
         )
         timestamp_column = append_rsuffix_to_columns([event_view.timestamp_column], event_suffix)[0]
-        timestamp_timezone_offset_column = (
-            append_rsuffix_to_columns([event_view.timestamp_timezone_offset_column], event_suffix)[
-                0
-            ]
-            if event_view.timestamp_timezone_offset_column
-            else None
-        )
+        if event_view.timestamp_timezone_offset_column is None:
+            timestamp_timezone_offset_column = None
+        else:
+            timestamp_timezone_offset_column = append_rsuffix_to_columns(
+                [event_view.timestamp_timezone_offset_column], event_suffix
+            )[0]
         inserted_graph_node = GlobalQueryGraph().add_node(
             view_graph_node, input_nodes=[data_node, event_view.node]
         )
