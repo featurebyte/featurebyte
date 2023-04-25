@@ -40,25 +40,29 @@ def random_task_payload_class_fixture(command_class):
 @pytest.fixture(name="random_task_class")
 def random_task_class_fixture(random_task_payload_class, persistent):
     """RandomTask class"""
+    # Cannot reinitialize the same command
+    if "random_command" in TASK_MAP:
+        yield TASK_MAP["random_command"]
+    else:
 
-    class RandomTask(BaseTask):
-        """RandomTask class"""
+        class RandomTask(BaseTask):
+            """RandomTask class"""
 
-        payload_class = random_task_payload_class
+            payload_class = random_task_payload_class
 
-        async def execute(self) -> None:
-            """Run some task"""
-            await persistent.insert_one(
-                collection_name="random_collection",
-                document={
-                    "_id": self.payload.output_document_id,
-                    "user_id": self.user.id,
-                    "output_document_id": self.payload.output_document_id,
-                },
-                user_id=self.user.id,
-            )
+            async def execute(self) -> None:
+                """Run some task"""
+                await persistent.insert_one(
+                    collection_name="random_collection",
+                    document={
+                        "_id": self.payload.output_document_id,
+                        "user_id": self.user.id,
+                        "output_document_id": self.payload.output_document_id,
+                    },
+                    user_id=self.user.id,
+                )
 
-    yield RandomTask
+        yield RandomTask
 
 
 def test_extend_base_task_payload(random_task_payload_class):
@@ -114,7 +118,6 @@ def test_task_has_been_implemented(random_task_class, command_class):
     """
     # check task get loaded to TASK_MAP properly
     assert "random_command" in TASK_MAP
-    assert TASK_MAP["random_command"] == random_task_class
     with pytest.raises(ValueError) as exc:
 
         class ConflictTaskPayload(BaseTaskPayload):

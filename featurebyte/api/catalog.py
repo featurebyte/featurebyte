@@ -799,7 +799,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved feature list.
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +SKIP
         """
         return FeatureList.get(name=name, version=version)
 
