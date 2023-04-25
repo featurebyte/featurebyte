@@ -76,10 +76,17 @@ def features_fixture(event_table, source_type):
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
-async def test_online_serving_sql(features, session, config):
+async def test_online_serving_sql(
+    features,
+    session,
+    config,
+    event_table,
+    data_source,
+):
     """
     Test executing feature compute sql and feature retrieval SQL for online store
     """
+    # pylint: disable=too-many-locals
 
     point_in_time = "2001-01-02 12:00:00"
     frequency = pd.Timedelta("1h").total_seconds()
@@ -91,6 +98,7 @@ async def test_online_serving_sql(features, session, config):
     )
 
     feature_list = FeatureList(features, name="My Online Serving Featurelist")
+    columns = ["üser id"] + [feature.name for feature in features]
     # Deploy as at point_in_time (will trigger online and offline tile jobs using previous job time)
     feature_list.save()
     with patch(
@@ -100,6 +108,9 @@ async def test_online_serving_sql(features, session, config):
         deployment = feature_list.deploy(make_production_ready=True)
         deployment.enable()
         assert deployment.enabled is True
+
+        # check get batch features
+        check_get_batch_features_async(deployment, event_table.get_view(), data_source, columns)
 
     user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
     df_training_events = pd.DataFrame(
@@ -126,7 +137,6 @@ async def test_online_serving_sql(features, session, config):
         online_features = await session.execute_query(online_retrieval_sql)
 
         # Check result is expected
-        columns = ["üser id"] + [feature.name for feature in features]
         assert set(online_features.columns.tolist()) == set(columns)
         fb_assert_frame_equal(
             df_historical[columns],
@@ -167,3 +177,26 @@ def check_online_features_route(feature_list, config, df_historical, columns):
         drop=True
     )
     fb_assert_frame_equal(df_expected, df, dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"])
+
+
+def check_get_batch_features_async(deployment, view, data_source, columns):
+    """
+    Check get_batch_features_async
+    """
+    entity_column = "üser id"
+    view[entity_column] = view["ÜSER ID"]
+    request_view = view[[entity_column]]
+    batch_request_table = request_view.create_batch_request_table(name="batch_request_table")
+    batch_feature_table = deployment.get_batch_features_async(
+        batch_request_table=batch_request_table,
+        batch_feature_table_name="batch_feature_table",
+    )
+    source_table = data_source.get_source_table(
+        table_name=batch_feature_table.location.table_details.table_name,
+        schema_name=batch_feature_table.location.table_details.schema_name,
+        database_name=batch_feature_table.location.table_details.database_name,
+    )
+    preview_df = source_table.preview()
+    expected_columns = ["ËVENT_TIMESTAMP", "TZ_OFFSET", "TRANSACTION_ID"] + columns
+    assert all(preview_df.columns == expected_columns), preview_df.columns
+    assert source_table.shape()[0] == request_view.shape()[0]
