@@ -176,7 +176,9 @@ class DisguisedValueImputation(BaseCleaningOperation):
     type: Literal[ConditionOperationField.DISGUISED] = Field(
         ConditionOperationField.DISGUISED, const=True
     )
-    disguised_values: Sequence[OptionalScalar] = Field(description="List of disguised values")
+    disguised_values: Sequence[OptionalScalar] = Field(
+        description="List of values that need to be replaced."
+    )
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.DISGUISED_VALUE_IMPUTATION(
@@ -216,7 +218,7 @@ class UnexpectedValueImputation(BaseCleaningOperation):
         ConditionOperationField.NOT_IN, const=True
     )
     expected_values: Sequence[OptionalScalar] = Field(
-        description="List of expected values, values not in expected " "value will be imputed"
+        description="List of values that are expected to be present."
     )
 
     def derive_sdk_code(self) -> ObjectClass:
@@ -264,8 +266,20 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
         ConditionOperationField.LESS_THAN_OR_EQUAL,
         ConditionOperationField.GREATER_THAN,
         ConditionOperationField.GREATER_THAN_OR_EQUAL,
-    ] = Field(allow_mutation=False, description="Boundary type")
-    end_point: Numeric = Field(description="End point")
+    ] = Field(
+        allow_mutation=False,
+        description="Determines how the boundary values are treated.\n"
+        "- If type is `less_than`, any value that is less than the end_point "
+        "value will be replaced with imputed_value.\n"
+        "- If type is `less_than_or_equal`, any value that is less than or "
+        "equal to the end_point value will be replaced with imputed_value.\n"
+        "- If type is `greater_than`, any value that is greater than the end_"
+        "point value will be replaced with imputed_value.\n"
+        "- If type is `greater_than_or_equal`, any value that is greater "
+        "than or equal to the end_point value will be replaced with "
+        "imputed_value.",
+    )
+    end_point: Numeric = Field(description="The value that marks the boundary.")
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.VALUE_BEYOND_ENDPOINT_IMPUTATION(
@@ -359,8 +373,17 @@ class ColumnCleaningOperation(FeatureByteBaseModel):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ColumnCleaningOperation")
 
-    column_name: str
-    cleaning_operations: Sequence[CleaningOperation]
+    column_name: str = Field(
+        description="Name of the column that requires cleaning. The cleaning operations specified in the second "
+        "parameter will be applied to this column."
+    )
+    cleaning_operations: Sequence[CleaningOperation] = Field(
+        description="Sequence (e.g., list) of cleaning operations "
+        "that will be applied to the specified column. Each cleaning operation is an instance of one of the five "
+        "classes that perform specific cleaning tasks on the data. When the cleaning_operations are executed, they "
+        "will be applied to the specified column in the order that they appear in the list. Ensure that values "
+        "imputed in earlier steps are not marked for cleaning in later operations."
+    )
 
 
 class TableCleaningOperation(FeatureByteBaseModel):
@@ -374,8 +397,16 @@ class TableCleaningOperation(FeatureByteBaseModel):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableCleaningOperation")
 
-    table_name: str
-    column_cleaning_operations: List[ColumnCleaningOperation]
+    table_name: str = Field(
+        description="Name of the table that requires cleaning. The cleaning operations specified in the second "
+        "parameter will be applied to this table."
+    )
+    column_cleaning_operations: List[ColumnCleaningOperation] = Field(
+        description="List of cleaning operations that need to be performed on the columns of the table. The "
+        "relationship between each column and its respective cleaning operations is established using the "
+        "ColumnCleaningOperation constructor. This constructor takes two inputs: the name of the column and the "
+        "cleaning operations that should be applied to that column."
+    )
 
     # pydantic validators
     _validate_unique_column_name = validator("column_cleaning_operations", allow_reuse=True)(

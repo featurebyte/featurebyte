@@ -38,8 +38,8 @@ class FeatureVersionInfo(FeatureByteBaseModel):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureVersionInfo")
 
-    name: str
-    version: VersionIdentifier
+    name: str = Field(description="Name of feature namespace.")
+    version: VersionIdentifier = Field(description="Feature version.")
 
     # pydantic validators
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
