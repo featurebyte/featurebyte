@@ -38,14 +38,12 @@ env:
   DATABRICKS_CATALOG: "hive_metastore"
   DATABRICKS_SCHEMA_FEATUREBYTE: "FEATUREBYTE_GITHUB"
   DATABRICKS_STORAGE_URL: ${{ secrets.DATABRICKS_STORAGE_URL }}
-  DATABRICKS_STORAGE_ACCESS_KEY_ID: "GOOG1EGI26DDNOGQ34T2RUMKJYOV3NL567KJURTRXD3XIATOWIM27XZF6ZHXY"
-  DATABRICKS_STORAGE_ACCESS_KEY_SECRET: ${{ secrets.DATABRICKS_STORAGE_ACCESS_KEY_SECRET }}
+  DATABRICKS_STORAGE_ACCESS_KEY_ID: ${{ secrets.DATABRICKS_S3_ACCESS_KEY }}
+  DATABRICKS_STORAGE_ACCESS_KEY_SECRET: ${{ secrets.DATABRICKS_S3_SECRET_KEY }}
   # Python
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi
   GCR_PYPI_LOCATION: us-central1
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64 # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
 
 jobs:
   build-jar:
@@ -103,7 +101,6 @@ jobs:
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
       - name: Adding C headers
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
@@ -156,7 +153,6 @@ jobs:
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
       - name: Adding C headers + Install dependencies
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
@@ -209,7 +205,6 @@ jobs:
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
       - name: Adding C headers
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
@@ -285,7 +280,6 @@ jobs:
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
       - name: Adding C headers
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
@@ -338,7 +332,6 @@ jobs:
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
       - name: Adding C headers and wkhtmltopdf
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
@@ -383,7 +376,6 @@ jobs:
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
       - name: Install dependencies
         run: |
           poetry install -n --sync

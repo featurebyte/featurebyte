@@ -1,8 +1,3 @@
-# SECRETS NAME                   | Description                     | PERMISSIONS
-# ------------------------------ | ------------------------------- | ----------------------------------------------------
-## WORKFLOW_GH_TOKEN__CHESTER    | Github Classic Token            | [Github Cache                   ] delete
-## GCR_PYPI_CREDENTIALS_R_B64    | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
-
 name: "Daily Maintenance"
 on:
   workflow_dispatch: {}
@@ -10,6 +5,7 @@ on:
     - cron: '0 0 * * *' # On 00:00 Everyday
 # Permission to push (DELETE) tags
 permissions:
+  actions: write
   contents: write
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -19,31 +15,31 @@ env:
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi
   GCR_PYPI_LOCATION: us-central1
-  # TODO (Chester|GA-Release): This will be removed
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
 jobs:
-  # Github caches do not update themselves on a successful run
-  # This workflow will delete them and rebuild them to the most updated dependencies / requirements
   cache:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
         python-version: ["3.8.0"]
     steps:
-      - name: "delete all cache"
-        run: |
-          # Get all Caches
-          export CACHE_IDS=$(curl -s \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.WORKFLOW_GH_TOKEN__CHESTER }}" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/caches" | jq '.actions_caches[].id')
-
-          # Delete Cache
-          printenv CACHE_IDS | xargs -I {} curl -X DELETE \
-              -H "Accept: application/vnd.github.v3+json" \
-              -H "Authorization: token ${{ secrets.WORKFLOW_GH_TOKEN__CHESTER }}" \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/caches/{}"
+      - name: Clear cache
+        uses: actions/github-script@v6
+        with:
+          script: |
+            console.log("About to clear")
+            const caches = await github.rest.actions.getActionsCacheList({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            })
+            for (const cache of caches.data.actions_caches) {
+              console.log(cache)
+              github.rest.actions.deleteActionsCacheById({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                cache_id: cache.id,
+              })
+            }
+            console.log("Clear completed")
       # Recreates the cache
       - uses: actions/checkout@v3
       - uses: arduino/setup-task@v1
@@ -62,11 +58,9 @@ jobs:
         uses: abatilo/actions-poetry@v2
         with:
           poetry-version: 1.3.1
-      # TODO (Chester|GA-Release): This will be removed
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
       - name: Adding C headers
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc
