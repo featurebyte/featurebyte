@@ -165,8 +165,141 @@ def mock_snowflake_connector():
         yield mock_connector
 
 
+@pytest.fixture(name="snowflake_query_map")
+def snowflake_query_map_fixture():
+    """snowflake query map fixture"""
+    query_map = {
+        "SHOW DATABASES": [{"name": "sf_database"}],
+        'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],
+        'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_table"}],
+        'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_view"}],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
+            {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
+            {
+                "column_name": "col_char",
+                "data_type": json.dumps({"type": "TEXT", "length": 1}),
+            },
+            {
+                "column_name": "col_text",
+                "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+            },
+            {"column_name": "col_binary", "data_type": json.dumps({"type": "BINARY"})},
+            {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
+            {
+                "column_name": "event_timestamp",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+            },
+            {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
+            {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+        ],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table_no_tz"': [
+            {
+                "column_name": "event_timestamp",
+                "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+            },
+            {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_NTZ"})},
+            {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {
+                "column_name": "tz_offset",
+                "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+            },
+        ],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_view"': [
+            {"column_name": "col_date", "data_type": json.dumps({"type": "DATE"})},
+            {"column_name": "col_time", "data_type": json.dumps({"type": "TIME"})},
+            {
+                "column_name": "col_timestamp_ltz",
+                "data_type": json.dumps({"type": "TIMESTAMP_LTZ"}),
+            },
+            {
+                "column_name": "col_timestamp_ntz",
+                "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+            },
+            {
+                "column_name": "col_timestamp_tz",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+            },
+        ],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."items_table"': [
+            {
+                "column_name": "event_id_col",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+            },
+            {
+                "column_name": "item_id_col",
+                "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+            },
+            {
+                "column_name": "item_type",
+                "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+            },
+            {"column_name": "item_amount", "data_type": json.dumps({"type": "REAL"})},
+            {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
+            {
+                "column_name": "event_timestamp",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+            },
+        ],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."items_table_same_event_id"': [
+            {
+                "column_name": "col_int",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+            },
+            {
+                "column_name": "item_id_col",
+                "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+            },
+            {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
+        ],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."fixed_table"': [
+            {"column_name": "num", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {"column_name": "num10", "data_type": json.dumps({"type": "FIXED", "scale": 1})},
+            {"column_name": "dec", "data_type": json.dumps({"type": "FIXED", "scale": 2})},
+        ],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."non_scalar_table"': [
+            {
+                "column_name": "variant",
+                "data_type": json.dumps({"type": "VARIANT", "nullable": True}),
+            },
+        ],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"': [
+            {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
+            {
+                "column_name": "is_active",
+                "data_type": json.dumps({"type": "BOOLEAN", "length": 1}),
+            },
+            {
+                "column_name": "col_text",
+                "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+            },
+            {"column_name": "col_binary", "data_type": json.dumps({"type": "BINARY"})},
+            {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
+            {
+                "column_name": "effective_timestamp",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+            },
+            {
+                "column_name": "end_timestamp",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+            },
+            {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
+            {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+        ],
+        "SHOW SCHEMAS": [
+            {"name": "PUBLIC"},
+        ],
+    }
+    query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
+    ]
+    return query_map
+
+
 @pytest.fixture(name="snowflake_execute_query")
-def mock_snowflake_execute_query(snowflake_connector):
+def mock_snowflake_execute_query(snowflake_connector, snowflake_query_map):
     """
     Mock execute_query in featurebyte.session.snowflake.SnowflakeSession class
     """
@@ -174,134 +307,7 @@ def mock_snowflake_execute_query(snowflake_connector):
 
     def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
         _ = timeout
-        query_map = {
-            "SHOW DATABASES": [{"name": "sf_database"}],
-            'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],
-            'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_table"}],
-            'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_view"}],
-            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
-                {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-                {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
-                {
-                    "column_name": "col_char",
-                    "data_type": json.dumps({"type": "TEXT", "length": 1}),
-                },
-                {
-                    "column_name": "col_text",
-                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
-                },
-                {"column_name": "col_binary", "data_type": json.dumps({"type": "BINARY"})},
-                {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
-                {
-                    "column_name": "event_timestamp",
-                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
-                },
-                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
-                {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-            ],
-            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table_no_tz"': [
-                {
-                    "column_name": "event_timestamp",
-                    "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
-                },
-                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_NTZ"})},
-                {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-                {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-                {
-                    "column_name": "tz_offset",
-                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
-                },
-            ],
-            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_view"': [
-                {"column_name": "col_date", "data_type": json.dumps({"type": "DATE"})},
-                {"column_name": "col_time", "data_type": json.dumps({"type": "TIME"})},
-                {
-                    "column_name": "col_timestamp_ltz",
-                    "data_type": json.dumps({"type": "TIMESTAMP_LTZ"}),
-                },
-                {
-                    "column_name": "col_timestamp_ntz",
-                    "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
-                },
-                {
-                    "column_name": "col_timestamp_tz",
-                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
-                },
-            ],
-            'SHOW COLUMNS IN "sf_database"."sf_schema"."items_table"': [
-                {
-                    "column_name": "event_id_col",
-                    "data_type": json.dumps({"type": "FIXED", "scale": 0}),
-                },
-                {
-                    "column_name": "item_id_col",
-                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
-                },
-                {
-                    "column_name": "item_type",
-                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
-                },
-                {"column_name": "item_amount", "data_type": json.dumps({"type": "REAL"})},
-                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
-                {
-                    "column_name": "event_timestamp",
-                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
-                },
-            ],
-            'SHOW COLUMNS IN "sf_database"."sf_schema"."items_table_same_event_id"': [
-                {
-                    "column_name": "col_int",
-                    "data_type": json.dumps({"type": "FIXED", "scale": 0}),
-                },
-                {
-                    "column_name": "item_id_col",
-                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
-                },
-                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
-            ],
-            'SHOW COLUMNS IN "sf_database"."sf_schema"."fixed_table"': [
-                {"column_name": "num", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-                {"column_name": "num10", "data_type": json.dumps({"type": "FIXED", "scale": 1})},
-                {"column_name": "dec", "data_type": json.dumps({"type": "FIXED", "scale": 2})},
-            ],
-            'SHOW COLUMNS IN "sf_database"."sf_schema"."non_scalar_table"': [
-                {
-                    "column_name": "variant",
-                    "data_type": json.dumps({"type": "VARIANT", "nullable": True}),
-                },
-            ],
-            'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"': [
-                {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-                {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
-                {
-                    "column_name": "is_active",
-                    "data_type": json.dumps({"type": "BOOLEAN", "length": 1}),
-                },
-                {
-                    "column_name": "col_text",
-                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
-                },
-                {"column_name": "col_binary", "data_type": json.dumps({"type": "BINARY"})},
-                {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
-                {
-                    "column_name": "effective_timestamp",
-                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
-                },
-                {
-                    "column_name": "end_timestamp",
-                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
-                },
-                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
-                {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-            ],
-            "SHOW SCHEMAS": [
-                {"name": "PUBLIC"},
-            ],
-        }
-        query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
-            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
-        ]
-        res = query_map.get(query)
+        res = snowflake_query_map.get(query)
         if res is not None:
             return pd.DataFrame(res)
         return None

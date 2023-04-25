@@ -435,13 +435,14 @@ class FeatureListController(
         try:
             result = await self.online_serving_service.get_online_features_from_feature_list(
                 feature_list=feature_list,
-                entity_serving_names=data.entity_serving_names,
+                request_data=data.entity_serving_names,
                 get_credential=get_credential,
             )
         except (FeatureListNotOnlineEnabledError, RuntimeError) as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
+        assert result is not None, result
         return result
 
     async def get_feature_job_logs(

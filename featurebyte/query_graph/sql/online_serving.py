@@ -3,22 +3,34 @@ SQL generation for online serving
 """
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
+import time
 from dataclasses import dataclass
 
+import pandas as pd
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, select
 
+from featurebyte.common.utils import prepare_dataframe_for_json
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
+from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, quoted_identifier, sql_to_string
+from featurebyte.query_graph.sql.common import (
+    REQUEST_TABLE_NAME,
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
+from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.online_serving_util import (
     get_online_store_table_name_from_entity_ids,
@@ -26,6 +38,7 @@ from featurebyte.query_graph.sql.online_serving_util import (
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
+from featurebyte.session.base import BaseSession
 
 
 class OnlineStorePrecomputeQuery(FeatureByteBaseModel):
@@ -341,7 +354,7 @@ def is_online_store_eligible(graph: QueryGraph, node: Node) -> bool:
     return has_point_in_time_groupby
 
 
-def get_online_store_retrieval_sql(
+def get_online_store_retrieval_expr(
     graph: QueryGraph,
     nodes: list[Node],
     source_type: SourceType,
@@ -349,7 +362,7 @@ def get_online_store_retrieval_sql(
     request_table_name: Optional[str] = None,
     request_table_expr: Optional[expressions.Select] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
-) -> str:
+) -> expressions.Select:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
 
@@ -372,7 +385,7 @@ def get_online_store_retrieval_sql(
 
     Returns
     -------
-    str
+    expressions.Select
     """
     planner = FeatureExecutionPlanner(
         graph,
@@ -402,12 +415,89 @@ def get_online_store_retrieval_sql(
     request_table_name = "ONLINE_" + request_table_name
     ctes = [(request_table_name, expr)]
 
-    expr = plan.construct_combined_sql(
+    output_expr = plan.construct_combined_sql(
         request_table_name=request_table_name,
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=request_table_columns,
         prior_cte_statements=ctes,
         exclude_columns={SpecialColumnName.POINT_IN_TIME},
     )
+    return output_expr
 
-    return sql_to_string(expr, source_type=source_type)
+
+async def get_online_features(
+    session: BaseSession,
+    graph: QueryGraph,
+    nodes: list[Node],
+    request_data: Union[pd.DataFrame, BatchRequestTableModel],
+    source_type: SourceType,
+    parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    output_table_details: Optional[TableDetails] = None,
+) -> Optional[List[Dict[str, Any]]]:
+    """
+    Get online features
+
+    Parameters
+    ----------
+    session: BaseSession
+        Session to use for executing the query
+    graph: QueryGraph
+        Query graph
+    nodes: list[Node]
+        List of query graph nodes
+    request_data: Union[pd.DataFrame, BatchRequestTableModel]
+        Request data as a dataframe or a BatchRequestTableModel
+    source_type: SourceType
+        Source type information
+    parent_serving_preparation: Optional[ParentServingPreparation]
+        Preparation required for serving parent features
+    output_table_details: Optional[TableDetails]
+        Optional output table details to write the results to. If this parameter is provided, the
+        function will return None (intended to be used when handling asynchronous batch online feature requests).
+
+    Returns
+    -------
+    Optional[List[Dict[str, Any]]]
+    """
+    tic = time.time()
+
+    if isinstance(request_data, pd.DataFrame):
+        request_table_expr = construct_dataframe_sql_expr(request_data, date_cols=[])
+        request_table_columns = request_data.columns.tolist()
+    else:
+        request_table_expr = expressions.select("*").from_(
+            get_fully_qualified_table_name(request_data.location.table_details.dict())
+        )
+        request_table_columns = [col.name for col in request_data.columns_info]
+
+    retrieval_expr = get_online_store_retrieval_expr(
+        graph,
+        nodes,
+        source_type=source_type,
+        request_table_columns=request_table_columns,
+        request_table_expr=request_table_expr,
+        parent_serving_preparation=parent_serving_preparation,
+    )
+    logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
+
+    tic = time.time()
+    if output_table_details is None:
+        retrieval_sql = sql_to_string(retrieval_expr, source_type=source_type)
+        df_features = await session.execute_query(retrieval_sql)
+        assert df_features is not None
+
+        features = []
+        prepare_dataframe_for_json(df_features)
+        for _, row in df_features.iterrows():
+            features.append(row.to_dict())
+        logger.debug(f"OnlineServingService sql execution elapsed: {time.time() - tic:.6f}s")
+        return features
+
+    # write the request to the output table
+    expression = get_sql_adapter(session.source_type).create_table_as(
+        table_details=output_table_details, select_expr=retrieval_expr
+    )
+    query = sql_to_string(expression, source_type=session.source_type)
+    await session.execute_query_long_running(query)
+    logger.debug(f"OnlineServingService sql execution elapsed: {time.time() - tic:.6f}s")
+    return None

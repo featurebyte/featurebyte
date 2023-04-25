@@ -9,10 +9,11 @@ import pytest
 
 from featurebyte import FeatureList
 from featurebyte.common.date_util import get_next_job_datetime
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
-from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
+from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_expr
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
-from tests.util.helper import fb_assert_frame_equal
+from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
 
 
 @pytest.fixture(name="features", scope="session")
@@ -75,10 +76,16 @@ def features_fixture(event_table, source_type):
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
-async def test_online_serving_sql(features, session, config):
+async def test_online_serving_sql(
+    features,
+    session,
+    config,
+    data_source,
+):
     """
     Test executing feature compute sql and feature retrieval SQL for online store
     """
+    # pylint: disable=too-many-locals
 
     point_in_time = "2001-01-02 12:00:00"
     frequency = pd.Timedelta("1h").total_seconds()
@@ -90,6 +97,7 @@ async def test_online_serving_sql(features, session, config):
     )
 
     feature_list = FeatureList(features, name="My Online Serving Featurelist")
+    columns = ["üser id"] + [feature.name for feature in features]
     # Deploy as at point_in_time (will trigger online and offline tile jobs using previous job time)
     feature_list.save()
     with patch(
@@ -114,17 +122,17 @@ async def test_online_serving_sql(features, session, config):
         df_entities = pd.DataFrame({"üser id": user_ids})
         request_table_expr = construct_dataframe_sql_expr(df_entities, date_cols=[])
         feature_clusters = feature_list._get_feature_clusters()
-        online_retrieval_sql = get_online_store_retrieval_sql(
+        online_retrieval_expr = get_online_store_retrieval_expr(
             feature_clusters[0].graph,
             feature_clusters[0].nodes,
             source_type=session.source_type,
             request_table_columns=["üser id"],
             request_table_expr=request_table_expr,
         )
+        online_retrieval_sql = sql_to_string(online_retrieval_expr, session.source_type)
         online_features = await session.execute_query(online_retrieval_sql)
 
         # Check result is expected
-        columns = ["üser id"] + [feature.name for feature in features]
         assert set(online_features.columns.tolist()) == set(columns)
         fb_assert_frame_equal(
             df_historical[columns],
@@ -134,6 +142,21 @@ async def test_online_serving_sql(features, session, config):
 
         # Check online_features route
         check_online_features_route(feature_list, config, df_historical, columns)
+
+        # check get batch features
+        batch_request_table = await create_batch_request_table_from_dataframe(
+            session=session,
+            df=df_entities,
+            data_source=data_source,
+        )
+        check_get_batch_features_async(
+            data_source,
+            deployment,
+            batch_request_table,
+            df_historical,
+            columns,
+        )
+
     finally:
         deployment.disable()
         assert deployment.enabled is False
@@ -165,3 +188,26 @@ def check_online_features_route(feature_list, config, df_historical, columns):
         drop=True
     )
     fb_assert_frame_equal(df_expected, df, dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"])
+
+
+def check_get_batch_features_async(
+    data_source, deployment, batch_request_table, df_historical, columns
+):
+    """
+    Check get_batch_features_async
+    """
+    batch_feature_table = deployment.get_batch_features(
+        batch_request_table=batch_request_table,
+        batch_feature_table_name="batch_feature_table",
+    )
+    source_table = data_source.get_source_table(
+        table_name=batch_feature_table.location.table_details.table_name,
+        schema_name=batch_feature_table.location.table_details.schema_name,
+        database_name=batch_feature_table.location.table_details.database_name,
+    )
+    preview_df = source_table.preview(limit=df_historical.shape[0])
+    fb_assert_frame_equal(
+        df_historical[columns],
+        preview_df[columns],
+        dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
+    )

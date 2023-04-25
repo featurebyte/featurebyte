@@ -10,11 +10,12 @@ import pandas as pd
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
     OnlineStorePrecomputePlan,
     get_online_store_precompute_queries,
-    get_online_store_retrieval_sql,
+    get_online_store_retrieval_expr,
     is_online_store_eligible,
 )
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
@@ -26,6 +27,28 @@ def get_aggregation_specs(groupby_node) -> List[TileBasedAggregationSpec]:
         groupby_node, get_sql_adapter(SourceType.SNOWFLAKE)
     )
     return agg_specs
+
+
+def get_online_store_retrieval_sql(
+    graph,
+    nodes,
+    source_type,
+    request_table_columns,
+    request_table_name=None,
+    request_table_expr=None,
+    parent_serving_preparation=None,
+):
+    """Generate SQL for retrieving online store data"""
+    expr = get_online_store_retrieval_expr(
+        graph=graph,
+        nodes=nodes,
+        source_type=source_type,
+        request_table_columns=request_table_columns,
+        request_table_name=request_table_name,
+        request_table_expr=request_table_expr,
+        parent_serving_preparation=parent_serving_preparation,
+    )
+    return sql_to_string(expr, SourceType.SNOWFLAKE)
 
 
 def test_construct_universe_sql(query_graph_with_groupby):

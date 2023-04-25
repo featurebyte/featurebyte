@@ -1,6 +1,7 @@
 """
 Catalog module
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -11,6 +12,8 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
+from featurebyte.api.batch_feature_table import BatchFeatureTable
+from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog_decorator import update_and_reset_catalog
 from featurebyte.api.catalog_get_by_id_mixin import CatalogGetByIdMixin
 from featurebyte.api.data_source import DataSource
@@ -690,6 +693,52 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return HistoricalFeatureTable.list(include_id=include_id)
 
     @update_and_reset_catalog
+    def list_batch_request_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        List saved batch request tables.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of batch request tables.
+
+        Examples
+        --------
+        List saved batch request tables.
+
+        >>> batch_request_tables = catalog.list_batch_request_tables()
+        """
+        return BatchRequestTable.list(include_id=include_id)
+
+    @update_and_reset_catalog
+    def list_batch_feature_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        List saved batch feature tables.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of batch feature tables.
+
+        Examples
+        --------
+        List saved batch feature tables.
+
+        >>> batch_feature_tables = catalog.list_batch_feature_tables()
+        """
+        return BatchFeatureTable.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def get_data_source(self, feature_store_name: str) -> DataSource:
         """
         Gets a data source based on the name of the feature store that the data source is associated with.
@@ -993,3 +1042,49 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
         """
         return HistoricalFeatureTable.get(name=name)
+
+    @update_and_reset_catalog
+    def get_batch_request_table(self, name: str) -> BatchRequestTable:
+        """
+        Get batch request table by name.
+
+        Parameters
+        ----------
+        name: str
+            Batch request table name.
+
+        Returns
+        -------
+        BatchRequestTable
+            Batch request table object.
+
+        Examples
+        --------
+        Get a saved batch request table.
+
+        >>> batch_request_table = catalog.get_batch_request_table("batch_request_table_name")  # doctest: +SKIP
+        """
+        return BatchRequestTable.get(name=name)
+
+    @update_and_reset_catalog
+    def get_batch_feature_table(self, name: str) -> BatchFeatureTable:
+        """
+        Get batch feature table by name.
+
+        Parameters
+        ----------
+        name: str
+            Batch feature table name.
+
+        Returns
+        -------
+        BatchFeatureTable
+            Batch feature table object.
+
+        Examples
+        --------
+        Get a saved batch feature table.
+
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name") # doctest: +SKIP
+        """
+        return BatchFeatureTable.get(name=name)

@@ -140,6 +140,16 @@ class BaseApiTestSuite:
         )
         assert response.status_code == HTTPStatus.OK, response.json()
 
+    @staticmethod
+    def enable_deployment(api_client, deployment_id, catalog_id):
+        """Enable deployment"""
+        response = api_client.patch(
+            f"/deployment/{deployment_id}",
+            headers={"active-catalog-id": str(catalog_id)},
+            json={"enabled": True},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """Setup for post route"""
 

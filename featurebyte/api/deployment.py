@@ -4,10 +4,13 @@ Deployment module
 from __future__ import annotations
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
+from featurebyte.api.batch_feature_table import BatchFeatureTable
+from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.deployment import DeploymentModel
+from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.deployment import DeploymentUpdate
 
 
@@ -69,3 +72,34 @@ class Deployment(ApiObject):
         Disable the deployment.
         """
         self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": False})
+
+    def get_batch_features(
+        self,
+        batch_request_table: BatchRequestTable,
+        batch_feature_table_name: str,
+    ) -> BatchFeatureTable:
+        """
+        Get batch features asynchronously using a batch request table. The batch request features
+        will be materialized into a batch feature table.
+
+        Parameters
+        ----------
+        batch_request_table: BatchRequestTable
+            Batch request table contains required serving names columns
+        batch_feature_table_name: str
+            Name of the batch feature table to be created
+
+        Returns
+        -------
+        BatchFeatureTable
+        """
+        payload = BatchFeatureTableCreate(
+            name=batch_feature_table_name,
+            feature_store_id=batch_request_table.location.feature_store_id,
+            batch_request_table_id=batch_request_table.id,
+            deployment_id=self.id,
+        )
+        batch_feature_table_doc = self.post_async_task(
+            route="/batch_feature_table", payload=payload.json_dict()
+        )
+        return BatchFeatureTable.get_by_id(batch_feature_table_doc["_id"])

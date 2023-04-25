@@ -13,9 +13,10 @@ from featurebyte.service.historical_feature_table import HistoricalFeatureTableS
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.worker.task.base import BaseTask
+from featurebyte.worker.task.mixin import DataWarehouseMixin
 
 
-class HistoricalFeatureTableTask(BaseTask):
+class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
     """
     HistoricalFeatureTableTask creates a HistoricalFeatureTable by computing historical features
     """
@@ -27,6 +28,10 @@ class HistoricalFeatureTableTask(BaseTask):
         Execute HistoricalFeatureTableTask
         """
         payload = cast(HistoricalFeatureTableTaskPayload, self.payload)
+        feature_store = await self.app_container.feature_store_service.get_document(
+            document_id=payload.feature_store_id
+        )
+        db_session = await self.get_db_session(feature_store)
 
         app_container = self.app_container
 
@@ -42,24 +47,23 @@ class HistoricalFeatureTableTask(BaseTask):
             self.get_credential, payload.feature_store_id
         )
 
-        preview_service: PreviewService = app_container.preview_service
+        async with self.drop_table_on_error(
+            db_session=db_session, table_details=location.table_details
+        ):
+            preview_service: PreviewService = app_container.preview_service
+            await preview_service.get_historical_features(
+                observation_set=observation_table_model,
+                featurelist_get_historical_features=payload.featurelist_get_historical_features,
+                get_credential=self.get_credential,
+                output_table_details=location.table_details,
+            )
 
-        await preview_service.get_historical_features(
-            observation_set=observation_table_model,
-            featurelist_get_historical_features=payload.featurelist_get_historical_features,
-            get_credential=self.get_credential,
-            output_table_details=location.table_details,
-        )
-
-        historical_feature_table_model = HistoricalFeatureTableModel(
-            _id=payload.output_document_id,
-            user_id=self.payload.user_id,
-            name=payload.name,
-            location=location,
-            observation_table_id=payload.observation_table_id,
-            feature_list_id=payload.featurelist_get_historical_features.feature_list_id,
-        )
-        created_doc = await historical_feature_table_service.create_document(
-            historical_feature_table_model
-        )
-        assert created_doc.id == payload.output_document_id
+            historical_feature_table = HistoricalFeatureTableModel(
+                _id=payload.output_document_id,
+                user_id=self.payload.user_id,
+                name=payload.name,
+                location=location,
+                observation_table_id=payload.observation_table_id,
+                feature_list_id=payload.featurelist_get_historical_features.feature_list_id,
+            )
+            await historical_feature_table_service.create_document(historical_feature_table)

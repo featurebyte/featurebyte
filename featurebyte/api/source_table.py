@@ -1,6 +1,7 @@
 """
 SourceTable class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, cast
@@ -30,9 +31,11 @@ from featurebyte.query_graph.model.table import AllTableDataT, SouceTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 
 if TYPE_CHECKING:
+    from featurebyte.api.batch_request_table import BatchRequestTable
     from featurebyte.api.dimension_table import DimensionTable
     from featurebyte.api.event_table import EventTable
     from featurebyte.api.item_table import ItemTable
@@ -975,3 +978,32 @@ class SourceTable(AbstractTableData):
             route="/observation_table", payload=payload.json_dict()
         )
         return ObservationTable.get_by_id(observation_table_doc["_id"])
+
+    def create_batch_request_table(
+        self,
+        name: str,
+    ) -> BatchRequestTable:
+        """
+        Create a batch request table from this source table.
+
+        Parameters
+        ----------
+        name: str
+            Batch request table name.
+
+        Returns
+        -------
+        BatchRequestTable
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.batch_request_table import BatchRequestTable
+
+        payload = BatchRequestTableCreate(
+            name=name,
+            feature_store_id=self.feature_store.id,
+            request_input=SourceTableRequestInput(source=self.tabular_source),
+        )
+        batch_request_table_doc = BatchRequestTable.post_async_task(
+            route="/batch_request_table", payload=payload.json_dict()
+        )
+        return BatchRequestTable.get_by_id(batch_request_table_doc["_id"])
