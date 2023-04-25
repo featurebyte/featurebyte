@@ -1031,3 +1031,31 @@ def test_datetime_property_extraction__manually_specified_timezone_offset(
         update_fixtures=update_fixtures,
         table_id=snowflake_event_table_with_tz_offset_constant.id,
     )
+
+
+def test_datetime_property_extraction__manually_specified_timezone_offset_column(
+    snowflake_event_table_with_tz_offset_constant, update_fixtures
+):
+    """
+    Test extracting datetime property with manually specified timezone offset column
+    """
+    view = snowflake_event_table_with_tz_offset_constant.get_view()
+    timestamp_hour = view["event_timestamp"].dt.tz_offset(view["tz_offset"]).hour
+    view["event_timestamp_hour"] = timestamp_hour
+
+    # Check DT_EXTRACT node set up correctly
+    assert timestamp_hour.node.parameters.dict() == {"property": "hour", "timezone_offset": None}
+    dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
+    assert len(dt_extract_input_nodes) == 2
+    _, tz_offset_node = dt_extract_input_nodes
+    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+        "columns": ["tz_offset"]
+    }
+
+    check_sdk_code_generation(
+        view,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/event_view_with_tz_offset_column_manual.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_event_table_with_tz_offset_constant.id,
+    )
