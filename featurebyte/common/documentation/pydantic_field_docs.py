@@ -55,6 +55,8 @@ def _get_doc_overrides(class_name: str) -> Dict[str, str]:
 
 
 pydantic_field_doc_overrides = {
+    "BatchFeatureTable": _get_doc_overrides("BatchFeatureTable"),
+    "BatchRequestTable": _get_doc_overrides("BatchRequestTable"),
     "Catalog": _get_doc_overrides("Catalog"),
     "DisguisedValueImputation": {
         "imputed_value": "The value that will be used to replace any element that matches one of the values in the "

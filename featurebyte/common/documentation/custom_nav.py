@@ -80,8 +80,8 @@ class BetaWave3Nav(Nav):
         OBSERVATION_TABLE,
         HISTORICAL_FEATURE_TABLE,
         DEPLOYMENT,
-        # BATCH_REQUEST_TABLE,
-        # BATCH_FEATURE_TABLE,
+        BATCH_REQUEST_TABLE,
+        BATCH_FEATURE_TABLE,
         UTILITY_CLASSES,
     ]
 
