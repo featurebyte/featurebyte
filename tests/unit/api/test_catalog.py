@@ -21,6 +21,8 @@ from pydantic import ValidationError
 
 from featurebyte.api.api_object import ApiObject, DeletableApiObject, SavableApiObject
 from featurebyte.api.base_table import TableApiObject, TableListMixin
+from featurebyte.api.batch_feature_table import BatchFeatureTable
+from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog import Catalog, update_and_reset_catalog
 from featurebyte.api.credential import Credential
 from featurebyte.api.deployment import Deployment
@@ -84,6 +86,8 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_periodic_tasks", PeriodicTask, "list"),
         MethodMetadata("list_observation_tables", ObservationTable, "list"),
         MethodMetadata("list_historical_feature_tables", HistoricalFeatureTable, "list"),
+        MethodMetadata("list_batch_request_tables", BatchRequestTable, "list"),
+        MethodMetadata("list_batch_feature_tables", BatchFeatureTable, "list"),
     ]
 
 
@@ -99,6 +103,8 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_periodic_task", PeriodicTask, "get"),
         MethodMetadata("get_observation_table", ObservationTable, "get"),
         MethodMetadata("get_historical_feature_table", HistoricalFeatureTable, "get"),
+        MethodMetadata("get_batch_request_table", BatchRequestTable, "get"),
+        MethodMetadata("get_batch_feature_table", BatchFeatureTable, "get"),
     ]
 
 
