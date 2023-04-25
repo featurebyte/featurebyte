@@ -119,12 +119,14 @@ class TileCache:
             Query graph
         nodes : list[Node]
             List of query graph node
-        serving_names_mapping : dict[str, str] | None
-            Optional mapping from original serving name to new serving name
         request_id : str
             Request ID
         request_table_name: str
             Request table name to use
+        serving_names_mapping : dict[str, str] | None
+            Optional mapping from original serving name to new serving name
+        progress_callback: Optional[Callable[[int, str], None]]
+            Optional progress callback function
         """
         tic = time.time()
 
