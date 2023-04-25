@@ -44,7 +44,7 @@ class OnlineServingService(BaseService):
     async def get_online_features_from_feature_list(
         self,
         feature_list: FeatureListModel,
-        entity_serving_names: Union[List[Dict[str, Any]], BatchRequestTableModel],
+        request_data: Union[List[Dict[str, Any]], BatchRequestTableModel],
         get_credential: Any,
         output_table_details: Optional[TableDetails] = None,
     ) -> Optional[OnlineFeaturesResponseModel]:
@@ -55,8 +55,8 @@ class OnlineServingService(BaseService):
         ----------
         feature_list: FeatureListModel
             Feature List
-        entity_serving_names: Union[List[Dict[str, Any]], BatchRequestTableModel]
-            Entity serving names
+        request_data: Union[List[Dict[str, Any]], BatchRequestTableModel]
+            Request data containing entity serving names
         get_credential: Any
             Get credential handler
         output_table_details: Optional[TableDetails]
@@ -85,12 +85,12 @@ class OnlineServingService(BaseService):
             document_id=feature_cluster.feature_store_id
         )
 
-        if isinstance(entity_serving_names, list):
-            request_data = pd.DataFrame(entity_serving_names)
-            request_column_names = set(entity_serving_names[0].keys())
+        if isinstance(request_data, list):
+            request_input = pd.DataFrame(request_data)
+            request_column_names = set(request_data[0].keys())
         else:
-            request_data = entity_serving_names
-            request_column_names = {col.name for col in entity_serving_names.columns_info}
+            request_input = request_data
+            request_column_names = {col.name for col in request_data.columns_info}
 
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
@@ -109,7 +109,7 @@ class OnlineServingService(BaseService):
             session=db_session,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
-            request_data=request_data,
+            request_data=request_input,
             source_type=feature_store.type,
             parent_serving_preparation=parent_serving_preparation,
             output_table_details=output_table_details,

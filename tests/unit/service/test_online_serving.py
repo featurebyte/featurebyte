@@ -30,7 +30,7 @@ async def test_feature_list_not_deployed(
     with pytest.raises(FeatureListNotOnlineEnabledError) as exc:
         await online_serving_service.get_online_features_from_feature_list(
             feature_list=feature_list,
-            entity_serving_names=entity_serving_names,
+            request_data=entity_serving_names,
             get_credential=Mock(),
         )
     assert str(exc.value) == "Feature List is not online enabled"
@@ -44,7 +44,7 @@ async def test_missing_entity_error(online_serving_service, deployed_feature_lis
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
         await online_serving_service.get_online_features_from_feature_list(
             feature_list=deployed_feature_list,
-            entity_serving_names=[{"wrong_entity": 123}],
+            request_data=[{"wrong_entity": 123}],
             get_credential=Mock(),
         )
     expected = (
@@ -77,7 +77,7 @@ async def test_feature_list_deployed(
         mock_get_feature_store_session.return_value = mock_session
         result = await online_serving_service.get_online_features_from_feature_list(
             feature_list=deployed_feature_list,
-            entity_serving_names=entity_serving_names,
+            request_data=entity_serving_names,
             get_credential=Mock(),
         )
 
