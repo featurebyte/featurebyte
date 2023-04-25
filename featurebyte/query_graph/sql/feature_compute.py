@@ -261,7 +261,9 @@ class FeatureExecutionPlan:
                 columns.append(quoted_identifier(agg_result_name))
         else:
             for feature_spec in self.feature_specs.values():
-                feature_alias = f"{feature_spec.feature_expr} AS {quoted_identifier(feature_spec.feature_name).sql()}"
+                feature_alias = expressions.alias_(
+                    feature_spec.feature_expr, alias=feature_spec.feature_name, quoted=True
+                )
                 columns.append(feature_alias)
 
         if request_table_columns:
@@ -522,7 +524,7 @@ class FeatureExecutionPlanner:
             for feature_name, feature_expr in sql_node.columns_map.items():
                 feature_spec = FeatureSpec(
                     feature_name=feature_name,
-                    feature_expr=feature_expr.sql(),
+                    feature_expr=feature_expr,
                 )
                 self.plan.add_feature_spec(feature_spec)
         else:
@@ -535,6 +537,5 @@ class FeatureExecutionPlanner:
                 # this could still be previewed as an "unnamed" feature since the expression is
                 # available, but it cannot be published.
                 feature_name = "Unnamed"
-            feature_expr_str = sql_node.sql.sql()
-            feature_spec = FeatureSpec(feature_name=feature_name, feature_expr=feature_expr_str)
+            feature_spec = FeatureSpec(feature_name=feature_name, feature_expr=sql_node.sql)
             self.plan.add_feature_spec(feature_spec)
