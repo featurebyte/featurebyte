@@ -108,10 +108,13 @@ async def test_task_executor(random_task_class, persistent):
     }
 
 
-def test_task_has_been_implemented(command_class):
+def test_task_has_been_implemented(random_task_class, command_class):
     """
     Test implement a task whose command has been implemented before
     """
+    # check task get loaded to TASK_MAP properly
+    assert "random_command" in TASK_MAP
+    assert TASK_MAP["random_command"] == random_task_class
     with pytest.raises(ValueError) as exc:
 
         class ConflictTaskPayload(BaseTaskPayload):
