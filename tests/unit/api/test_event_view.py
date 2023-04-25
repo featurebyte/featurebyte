@@ -906,6 +906,16 @@ def test_shape(snowflake_event_table):
         assert view["col_int"].shape() == (1000, 1)
 
 
+def test_protected_attributes_include_timezone_offset_column(
+    snowflake_event_table_with_tz_offset_column,
+):
+    """
+    Test that protected attributes include timezone offset column
+    """
+    view = snowflake_event_table_with_tz_offset_column.get_view()
+    assert view.protected_columns == {"tz_offset", "cust_id", "col_int", "event_timestamp"}
+
+
 def test_datetime_property_extraction__event_timestamp(
     snowflake_event_table_with_tz_offset_constant, update_fixtures
 ):

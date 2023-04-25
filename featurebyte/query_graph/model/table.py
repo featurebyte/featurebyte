@@ -272,7 +272,7 @@ class ItemTableData(BaseTableData):
         event_suffix: Optional[str],
         drop_column_names: List[str],
         metadata: ItemViewMetadata,
-    ) -> Tuple[GraphNode, List[ColumnInfo], str]:
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
         Construct ItemView graph node
 
@@ -297,7 +297,7 @@ class ItemTableData(BaseTableData):
 
         Returns
         -------
-        Tuple[GraphNode, List[ColumnInfo], str]
+        Tuple[GraphNode, List[ColumnInfo]]
         """
         view_graph_node, proxy_input_nodes = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.ITEM_VIEW,
@@ -311,7 +311,7 @@ class ItemTableData(BaseTableData):
             proxy_event_view_node,
         ) = proxy_input_nodes
         item_view_columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
-        _, columns_info, join_parameters = self.join_event_view_columns(
+        _, columns_info, _ = self.join_event_view_columns(
             graph=view_graph_node,
             item_view_node=proxy_item_table_node,
             item_view_columns_info=item_view_columns_info,
@@ -323,10 +323,7 @@ class ItemTableData(BaseTableData):
             event_suffix=event_suffix,
         )
 
-        # right output columns is the renamed event timestamp column
-        # (see `columns` parameter in above `_join_event_table_attributes` method)
-        renamed_event_timestamp_column = join_parameters.right_output_columns[0]
-        return view_graph_node, columns_info, renamed_event_timestamp_column
+        return view_graph_node, columns_info
 
 
 class DimensionTableData(BaseTableData):
