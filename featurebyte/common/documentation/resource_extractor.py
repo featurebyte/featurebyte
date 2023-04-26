@@ -16,7 +16,7 @@ from mkautodoc.extension import trim_docstring
 from pydantic.fields import ModelField, Undefined
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.documentation.allowed_classes import allowed_classes
+from featurebyte.common.documentation.allowed_classes import nested_description_allowed_classes
 from featurebyte.common.documentation.constants import EMPTY_VALUE
 from featurebyte.common.documentation.doc_types import (
     Docstring,
@@ -337,7 +337,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
     )
 
     # populate descriptions for class parameters
-    if resource_type == "class" and resource_name.lower() in allowed_classes:
+    if resource_type == "class" and resource_name.lower() in nested_description_allowed_classes:
         for parameter in parameters:
             param_name = parameter.name
             descriptor = resource_descriptor or class_descriptor
