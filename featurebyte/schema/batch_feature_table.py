@@ -10,7 +10,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
-from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.schema.common.base import BaseInfo, PaginationMixin
 
 
 class BatchFeatureTableCreate(FeatureByteBaseModel):
@@ -31,3 +31,12 @@ class BatchFeatureTableList(PaginationMixin):
     """
 
     data: List[BatchFeatureTableModel]
+
+
+class BatchFeatureTableInfo(BaseInfo):
+    """
+    Schema for batch feature table info
+    """
+
+    batch_request_table_name: str
+    deployment_name: str

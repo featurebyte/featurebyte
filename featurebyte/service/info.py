@@ -22,6 +22,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.schema.batch_feature_table import BatchFeatureTableInfo
 from featurebyte.schema.batch_request_table import BatchRequestTableInfo
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableInfo
@@ -49,10 +50,12 @@ from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.table import TableList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -131,6 +134,9 @@ class InfoService(BaseService):
         self.context_service = ContextService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
+        self.deployment_service = DeploymentService(
+            user=user, persistent=persistent, catalog_id=catalog_id
+        )
         self.observation_table_service = ObservationTableService(
             user=user,
             persistent=persistent,
@@ -150,6 +156,12 @@ class InfoService(BaseService):
             catalog_id=catalog_id,
             feature_store_service=self.feature_store_service,
             context_service=self.context_service,
+        )
+        self.batch_feature_table_service = BatchFeatureTableService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            feature_store_service=self.feature_store_service,
         )
         self.user_service = UserService(user=user, persistent=persistent, catalog_id=catalog_id)
 
@@ -997,4 +1009,39 @@ class InfoService(BaseService):
             updated_at=batch_request_table.updated_at,
             table_details=batch_request_table.location.table_details,
             columns_info=batch_request_table.columns_info,
+        )
+
+    async def get_batch_feature_table_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> BatchFeatureTableInfo:
+        """
+        Get batch feature table info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        BatchFeatureTableInfo
+        """
+        _ = verbose
+        batch_feature_table = await self.batch_feature_table_service.get_document(
+            document_id=document_id
+        )
+        batch_request_table = await self.batch_request_table_service.get_document(
+            document_id=batch_feature_table.batch_request_table_id
+        )
+        deployment = await self.deployment_service.get_document(
+            document_id=batch_feature_table.deployment_id
+        )
+        return BatchFeatureTableInfo(
+            name=batch_feature_table.name,
+            deployment_name=deployment.name,
+            batch_request_table_name=batch_request_table.name,
+            created_at=batch_feature_table.created_at,
+            updated_at=batch_feature_table.updated_at,
         )

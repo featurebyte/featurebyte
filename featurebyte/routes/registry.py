@@ -394,6 +394,7 @@ app_container_config.add_controller(
         "batch_request_table_service",
         "deployment_service",
         "entity_validation_service",
+        "info_service",
         "task_controller",
     ],
 )

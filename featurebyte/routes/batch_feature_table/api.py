@@ -20,8 +20,13 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
-from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate, BatchFeatureTableList
+from featurebyte.schema.batch_feature_table import (
+    BatchFeatureTableCreate,
+    BatchFeatureTableInfo,
+    BatchFeatureTableList,
+)
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/batch_feature_table")
@@ -104,3 +109,15 @@ async def list_batch_feature_table_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.get("/{batch_feature_table_id}/info", response_model=BatchFeatureTableInfo)
+async def get_batch_feature_table_info(
+    request: Request, batch_feature_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+) -> BatchFeatureTableInfo:
+    """
+    Get BatchFeatureTable info
+    """
+    controller = request.state.app_container.batch_feature_table_controller
+    info = await controller.get_info(document_id=batch_feature_table_id, verbose=verbose)
+    return info

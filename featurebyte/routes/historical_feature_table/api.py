@@ -119,7 +119,5 @@ async def get_historical_feature_table_info(
     Get HistoricalFeatureTable info
     """
     controller = request.state.app_container.historical_feature_table_controller
-    historical_feature_table_info: HistoricalFeatureTableInfo = await controller.get_info(
-        document_id=historical_feature_table_id, verbose=verbose
-    )
-    return historical_feature_table_info
+    info = await controller.get_info(document_id=historical_feature_table_id, verbose=verbose)
+    return info

@@ -161,3 +161,18 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
         assert response.json()["detail"] == (
             'Required entities are not provided in the request: customer (serving name: "cust_id")'
         )
+
+    def test_info_200(self, test_api_client_persistent, create_success_response):
+        """Test info route"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict == {
+            "name": self.payload["name"],
+            "deployment_name": 'Deployment (feature_list: "sf_feature_list")',
+            "batch_request_table_name": "batch_request_table",
+            "created_at": response_dict["created_at"],
+            "updated_at": None,
+        }

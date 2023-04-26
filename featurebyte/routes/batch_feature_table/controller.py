@@ -3,10 +3,16 @@ BatchFeatureTable API route controller
 """
 from __future__ import annotations
 
+from bson import ObjectId
+
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
-from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate, BatchFeatureTableList
+from featurebyte.schema.batch_feature_table import (
+    BatchFeatureTableCreate,
+    BatchFeatureTableInfo,
+    BatchFeatureTableList,
+)
 from featurebyte.schema.task import Task
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
@@ -14,6 +20,7 @@ from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.info import InfoService
 
 
 class BatchFeatureTableController(
@@ -33,6 +40,7 @@ class BatchFeatureTableController(
         batch_request_table_service: BatchRequestTableService,
         deployment_service: DeploymentService,
         entity_validation_service: EntityValidationService,
+        info_service: InfoService,
         task_controller: TaskController,
     ):
         super().__init__(service)
@@ -41,6 +49,7 @@ class BatchFeatureTableController(
         self.batch_request_table_service = batch_request_table_service
         self.deployment_service = deployment_service
         self.entity_validation_service = entity_validation_service
+        self.info_service = info_service
         self.task_controller = task_controller
 
     async def create_batch_feature_table(
@@ -85,3 +94,23 @@ class BatchFeatureTableController(
         payload = await self.service.get_batch_feature_table_task_payload(data=data)
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
+
+    async def get_info(self, document_id: ObjectId, verbose: bool) -> BatchFeatureTableInfo:
+        """
+        Get BatchFeatureTable info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            BatchFeatureTable ID
+        verbose: bool
+            Whether to return verbose info
+
+        Returns
+        -------
+        BatchFeatureTableInfo
+        """
+        info_document = await self.info_service.get_batch_feature_table_info(
+            document_id=document_id, verbose=verbose
+        )
+        return info_document
