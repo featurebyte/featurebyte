@@ -138,6 +138,10 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         This is used to ensure combining a Feature and RequestColumn always produces a Feature
         regardless of the operands' ordering.
+
+        Returns
+        -------
+        int
         """
         return 0
 

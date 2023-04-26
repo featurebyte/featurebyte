@@ -175,8 +175,6 @@ def series_binary_operation(
         whether the binary operation is from right object or not
     additional_node_params: dict[str, Any] | None
         additional parameters to include as node parameters
-    kwargs : Any
-        Other series parameters
 
     Returns
     -------

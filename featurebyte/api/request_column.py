@@ -16,6 +16,20 @@ class RequestColumn(Series):
 
     @classmethod
     def create_request_column(cls, column_name: str, column_dtype: DBVarType) -> RequestColumn:
+        """
+        Create a RequestColumn object.
+
+        Parameters
+        ----------
+        column_name: str
+            Column name in the request data.
+        column_dtype: DBVarType
+            Variable type of the column.
+
+        Returns
+        -------
+        RequestColumn
+        """
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.REQUEST_COLUMN,
             node_params={"column_name": column_name, "dtype": column_dtype},
