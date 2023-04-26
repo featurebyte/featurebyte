@@ -81,8 +81,8 @@ class TestBatchRequestTableApi(BaseAsyncApiTestSuite):
         doc_id = create_success_response.json()["_id"]
         response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
         response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK
-        assert response.json() == {
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict == {
             "name": self.payload["name"],
             "type": "source_table",
             "table_details": {
@@ -90,7 +90,7 @@ class TestBatchRequestTableApi(BaseAsyncApiTestSuite):
                 "schema_name": "sf_schema",
                 "table_name": response_dict["table_details"]["table_name"],
             },
+            "columns_info": [],
             "created_at": response_dict["created_at"],
             "updated_at": None,
-            "columns_info": [],
         }

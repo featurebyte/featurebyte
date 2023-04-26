@@ -20,9 +20,11 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
 from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableCreate,
+    HistoricalFeatureTableInfo,
     HistoricalFeatureTableList,
 )
 from featurebyte.schema.task import Task
@@ -107,3 +109,17 @@ async def list_historical_feature_table_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.get("/{historical_feature_table_id}/info", response_model=HistoricalFeatureTableInfo)
+async def get_historical_feature_table_info(
+    request: Request, historical_feature_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+) -> HistoricalFeatureTableInfo:
+    """
+    Get HistoricalFeatureTable info
+    """
+    controller = request.state.app_container.historical_feature_table_controller
+    historical_feature_table_info: HistoricalFeatureTableInfo = await controller.get_info(
+        document_id=historical_feature_table_id, verbose=verbose
+    )
+    return historical_feature_table_info

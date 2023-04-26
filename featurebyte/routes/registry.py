@@ -375,6 +375,7 @@ app_container_config.add_controller(
         "feature_store_service",
         "observation_table_service",
         "entity_validation_service",
+        "info_service",
         "task_controller",
     ],
 )

@@ -3,17 +3,21 @@ HistoricalTable API route controller
 """
 from __future__ import annotations
 
+from bson import ObjectId
+
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableCreate,
+    HistoricalFeatureTableInfo,
     HistoricalFeatureTableList,
 )
 from featurebyte.schema.task import Task
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
+from featurebyte.service.info import InfoService
 from featurebyte.service.observation_table import ObservationTableService
 
 
@@ -34,12 +38,14 @@ class HistoricalFeatureTableController(
         feature_store_service: FeatureStoreService,
         observation_table_service: ObservationTableService,
         entity_validation_service: EntityValidationService,
+        info_service: InfoService,
         task_controller: TaskController,
     ):
         super().__init__(service)
         self.feature_store_service = feature_store_service
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service
+        self.info_service = info_service
         self.task_controller = task_controller
 
     async def create_historical_feature_table(
@@ -80,3 +86,23 @@ class HistoricalFeatureTableController(
         payload = await self.service.get_historical_feature_table_task_payload(data=data)
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
+
+    async def get_info(self, document_id: ObjectId, verbose: bool) -> HistoricalFeatureTableInfo:
+        """
+        Get HistoricalFeatureTable info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            HistoricalFeatureTable ID
+        verbose: bool
+            Whether to return verbose info
+
+        Returns
+        -------
+        HistoricalFeatureTableInfo
+        """
+        info_document = await self.info_service.get_historical_feature_table_info(
+            document_id=document_id, verbose=verbose
+        )
+        return info_document

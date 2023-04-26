@@ -123,3 +123,20 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
         assert response.json()["detail"] == (
             "Unexpected serving names provided in serving_names_mapping: random_name"
         )
+
+    def test_info_200(self, test_api_client_persistent, create_success_response):
+        """Test info route"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        response_dict = response.json()
+        assert isinstance(response_dict["feature_list_version"], str)
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict == {
+            "name": self.payload["name"],
+            "feature_list_name": "sf_feature_list",
+            "feature_list_version": response_dict["feature_list_version"],
+            "observation_table_name": "observation_table",
+            "created_at": response_dict["created_at"],
+            "updated_at": None,
+        }

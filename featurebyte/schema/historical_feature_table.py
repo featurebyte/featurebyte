@@ -12,9 +12,10 @@ from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     PydanticObjectId,
+    VersionIdentifier,
 )
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
-from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.schema.common.base import BaseInfo, PaginationMixin
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 
 
@@ -52,3 +53,13 @@ class HistoricalFeatureTableListRecord(FeatureByteBaseDocumentModel):
         values["feature_store_id"] = values["location"]["feature_store_id"]
         values["observation_table_id"] = values["observation_table_id"]
         return values
+
+
+class HistoricalFeatureTableInfo(BaseInfo):
+    """
+    Schema for historical feature table info
+    """
+
+    observation_table_name: str
+    feature_list_name: str
+    feature_list_version: str
