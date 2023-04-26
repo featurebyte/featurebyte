@@ -135,7 +135,9 @@ services:
         --conf spark.sql.warehouse.dir=file:///opt/spark/data/derby/warehouse/ \
         --conf spark.sql.hive.thriftServer.singleSession=false \
         --conf spark.hadoop.metastore.catalog.default=spark \
-        --conf spark.sql.adaptive.enabled=true
+        --conf spark.sql.adaptive.enabled=true \
+        --conf spark.sql.analyzer.maxIterations=50000 \
+        --conf spark.sql.optimizer.maxIterations=50000
     logging:
       driver: local
 

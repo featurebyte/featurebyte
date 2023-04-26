@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import AsyncGenerator, List, Optional, Union, cast
+from typing import AsyncGenerator, Callable, List, Optional, Union, cast
 
 import datetime
 import time
@@ -30,6 +30,7 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.session.base import BaseSession
+from featurebyte.tile.manager import TILE_COMPUTE_PROGRESS_MAX_PERCENT
 from featurebyte.tile.tile_cache import TileCache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
@@ -275,6 +276,7 @@ async def compute_tiles_on_demand(
     request_table_columns: list[str],
     serving_names_mapping: Optional[dict[str, str]],
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    progress_callback: Optional[Callable[[int, str], None]] = None,
 ) -> None:
     """
     Compute tiles on demand
@@ -298,6 +300,8 @@ async def compute_tiles_on_demand(
         columns than those defined in Entities
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    progress_callback: Optional[Callable[[int, str], None]]
+        Optional progress callback function
     """
     tic = time.time()
     tile_cache = TileCache(session=session)
@@ -326,6 +330,7 @@ async def compute_tiles_on_demand(
         request_id=request_id,
         request_table_name=effective_request_table_name,
         serving_names_mapping=serving_names_mapping,
+        progress_callback=progress_callback,
     )
     elapsed = time.time() - tic
     logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
@@ -341,6 +346,7 @@ async def get_historical_features(
     is_feature_list_deployed: bool = False,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     output_table_details: Optional[TableDetails] = None,
+    progress_callback: Optional[Callable[[int, str], None]] = None,
 ) -> Optional[AsyncGenerator[bytes, None]]:
     """Get historical features
 
@@ -369,6 +375,8 @@ async def get_historical_features(
         Optional output table details to write the results to. If this parameter is provided, the
         function will return None (intended to be used when handling asynchronous historical
         requests).
+    progress_callback: Optional[Callable[[int, str], None]]
+        Optional progress callback function
 
     Returns
     -------
@@ -412,7 +420,11 @@ async def get_historical_features(
             request_table_columns=request_table_columns,
             serving_names_mapping=serving_names_mapping,
             parent_serving_preparation=parent_serving_preparation,
+            progress_callback=progress_callback,
         )
+
+    if progress_callback:
+        progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, "Computing features")
 
     # Execute feature query and stream results back
     if output_table_details is None:

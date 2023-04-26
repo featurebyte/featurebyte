@@ -3,7 +3,7 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Dict, Optional, Tuple, Union
+from typing import Any, AsyncGenerator, Callable, Dict, Optional, Tuple, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -438,6 +438,7 @@ class PreviewService(BaseService):
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
         get_credential: Any,
         output_table_details: Optional[TableDetails] = None,
+        progress_callback: Optional[Callable[[int, str], None]] = None,
     ) -> Optional[AsyncGenerator[bytes, None]]:
         """
         Get historical features for Feature List
@@ -452,6 +453,8 @@ class PreviewService(BaseService):
             Get credential handler function
         output_table_details: Optional[TableDetails]
             Optional output table details to write the results to
+        progress_callback: Optional[Callable[[int, str], None]]
+            Optional progress callback function
 
         Returns
         -------
@@ -507,6 +510,7 @@ class PreviewService(BaseService):
             is_feature_list_deployed=is_feature_list_deployed,
             parent_serving_preparation=parent_serving_preparation,
             output_table_details=output_table_details,
+            progress_callback=progress_callback,
         )
 
     async def feature_sql(self, feature_sql: FeatureSQL) -> str:

@@ -1,7 +1,6 @@
 package com.featurebyte.hive.udf;
 
-import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.NUMERIC_GROUP;
-import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP;
+import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.*;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
@@ -63,7 +62,7 @@ public abstract class CountDictUDF extends GenericUDF {
 
     try {
       checkArgPrimitive(map_args, 1);
-      checkArgGroups(map_args, 1, inputTypes, NUMERIC_GROUP);
+      checkArgGroups(map_args, 1, inputTypes, NUMERIC_GROUP, VOID_GROUP);
       obtainDoubleConverter(map_args, 1, inputTypes, converters);
     } catch (UDFArgumentException e) {
       throw new UDFArgumentTypeException(1, "Map value must be numeric");

@@ -56,6 +56,7 @@ tasks:
     deps:
       - task: lint-java
     cmds:
+      - rm -f hive-udf/lib/build/libs/*.jar
       - cd hive-udf && ./gradlew shadowJar
       - task: test-java
       - rm -f featurebyte/sql/spark/*.jar

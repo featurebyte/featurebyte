@@ -472,7 +472,7 @@ class SampleMixin:
         %empty                                       0                   0
         entropy                               6.214608             4.13031
         top       017fe5ed-80a2-4e70-ae48-78aabfdee856  Chips et Tortillas
-        freq                                         1                1319
+        freq                                       1.0              1319.0
 
         Get summary of a column.
         >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].describe()
@@ -483,7 +483,7 @@ class SampleMixin:
         %empty                     0
         entropy              4.13031
         top       Chips et Tortillas
-        freq                    1319
+        freq                  1319.0
 
         See Also
         --------

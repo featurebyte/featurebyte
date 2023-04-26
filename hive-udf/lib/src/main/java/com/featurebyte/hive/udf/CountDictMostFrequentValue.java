@@ -4,12 +4,16 @@ import java.util.Map;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 @Description(
     name = "F_COUNT_DICT_MOST_FREQUENT_VALUE",
     value = "_FUNC_(counts) - compute most frequent value from count dictionary")
 public class CountDictMostFrequentValue extends CountDictUDF {
+
+  private final DoubleWritable output = new DoubleWritable();
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -18,7 +22,7 @@ public class CountDictMostFrequentValue extends CountDictUDF {
       return nullOI;
     }
     checkTypesAndInitialize(arguments);
-    return inputMapOI.getMapValueObjectInspector();
+    return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
   }
 
   @Override
@@ -27,16 +31,21 @@ public class CountDictMostFrequentValue extends CountDictUDF {
       return null;
     }
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
-    double most_frequent_count = 0.0;
-    Object most_frequent_count_value = null;
+
+    String mostFrequentKey = null;
+    double mostFrequentCount = 0.0;
     for (Map.Entry<String, Object> entry : counts.entrySet()) {
       double doubleValue = convertMapValueAsDouble(entry.getValue());
-      if (doubleValue > most_frequent_count) {
-        most_frequent_count = doubleValue;
-        most_frequent_count_value = entry.getValue();
+      if (Double.isNaN(doubleValue)) continue;
+      if (doubleValue > mostFrequentCount) {
+        mostFrequentKey = entry.getKey();
+        mostFrequentCount = doubleValue;
       }
     }
-    return most_frequent_count_value;
+    if (mostFrequentKey == null) return null;
+
+    output.set(mostFrequentCount);
+    return output;
   }
 
   @Override
