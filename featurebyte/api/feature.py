@@ -318,14 +318,14 @@ class Feature(
 
         return cls._list(include_id=include_id, params=params)
 
-    def _list_versions_with_same_name(self, include_id: bool = False) -> pd.DataFrame:
+    def _list_versions_with_same_name(self, include_id: bool = True) -> pd.DataFrame:
         """
         List feature versions with the same name
 
         Parameters
         ----------
         include_id: bool
-            Whether to include id in the list
+            Whether to include id in the list.
 
         Returns
         -------

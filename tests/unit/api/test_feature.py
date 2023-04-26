@@ -922,6 +922,11 @@ def test_list_versions(saved_feature):
         Feature.list_versions(),
         pd.DataFrame(
             {
+                "id": [
+                    feature_group["new_feat2"].id,
+                    feature_group["new_feat1"].id,
+                    saved_feature.id,
+                ],
                 "name": ["new_feat2", "new_feat1", saved_feature.name],
                 "version": [saved_feature.version.to_str()] * 3,
                 "dtype": [saved_feature.dtype] * 3,
@@ -943,6 +948,7 @@ def test_list_versions(saved_feature):
         saved_feature.list_versions(),
         pd.DataFrame(
             {
+                "id": [saved_feature.id],
                 "name": [saved_feature.name],
                 "version": [saved_feature.version.to_str()],
                 "dtype": [saved_feature.dtype],
