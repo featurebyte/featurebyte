@@ -45,10 +45,12 @@ class Project(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
+        assert self.table_node is not None
         return self.table_node.get_column_expr(self.column_name)
 
     @property
     def sql_standalone(self) -> Expression:
+        assert self.table_node is not None
         return self.table_node.get_sql_for_expressions(exprs=[self.sql], aliases=[self.column_name])
 
 
@@ -201,6 +203,7 @@ def resolve_project_node(expr_node: ExpressionNode) -> Optional[ExpressionNode]:
     if not isinstance(expr_node, Project):
         return expr_node
     table_node = expr_node.table_node
+    assert table_node is not None
     assigned_node = table_node.get_column_node(expr_node.column_name)
     return assigned_node
 
