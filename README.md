@@ -73,19 +73,6 @@ fb.stop()
 
 Refer to <a href="https://docs.featurebyte.com/0.1/get_started/installation/">Documentation</a>
 
-### 3. Install from source
-
-Checkout the featurebyte repo
-
-```bash
-git clone git@github.com:featurebyte/featurebyte.git && cd featurebyte
-```
-
-Install <a href="https://taskfile.dev/installation/">task</a> and run the following command
-
-```bash
-task install
-```
 
 ## 📝 Documentation
 
@@ -190,6 +177,6 @@ Releases are versioned using the [Semantic Versions](https://semver.org/) specif
 
 This project is licensed under the terms of the `Elastic License 2.0` license. See [LICENSE](https://github.com/featurebyte/featurebyte/blob/main/LICENSE) for more details.
 
-## Contributing
+## :wrench: Contributing
 All contributions are welcomed. Please adhere to the [CODE_OF_CONDUCT](https://github.com/featurebyte/featurebyte/blob/main/CODE_OF_CONDUCT.md) and read the
 [Developer's Guide](https://github.com/featurebyte/featurebyte/blob/main/CONTRIBUTING.md) to get started.
