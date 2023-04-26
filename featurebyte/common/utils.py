@@ -10,6 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
 from io import BytesIO
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -17,8 +18,26 @@ import pyarrow as pa
 import pygments
 from dateutil import parser
 from pygments.formatters.html import HtmlFormatter
+from requests import Response
 
 from featurebyte.enum import DBVarType, InternalName
+
+
+class ResponseStream(object):
+    @property
+    def closed(self) -> bool:
+        return False
+
+    def __init__(self, request_iterator):
+        self._bytes = b""
+        self._iterator = request_iterator
+
+    def read(self, size=None):
+        while len(self._bytes) < size:
+            self._bytes += next(self._iterator)
+        data = self._bytes[:size]
+        self._bytes = self._bytes[size:]
+        return data
 
 
 def get_version() -> str:
@@ -232,6 +251,22 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
             else:
                 raise NotImplementedError()
     return dataframe
+
+
+def parquet_from_arrow_stream(response: Response, output_path: Path) -> None:
+    """
+    Write parquet file from arrow byte stream
+
+    Parameters
+    ----------
+    response: Response
+        Streamed http response
+    output_path: Path
+        Output path
+    """
+    # pa.parquet.ParquetFile(response.raw).metadata
+    reader = pa.ipc.open_stream(ResponseStream(response.iter_content(1024)))
+    return reader.read_all().to_pandas().to_parquet(output_path)
 
 
 def validate_datetime_input(value: Union[datetime, str]) -> str:

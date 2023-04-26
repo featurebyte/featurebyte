@@ -519,7 +519,7 @@ def log_env_summary() -> None:
 
     # list deployments
     client = conf.get_client()
-    response = client.get("/deployment/summary")
+    response = client.get("/deployment/summary/")
     if response.status_code != HTTPStatus.OK:
         raise RecordRetrievalException(response, "Failed to fetch deployment summary")
     summary = DeploymentSummary(**response.json())

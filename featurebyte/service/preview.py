@@ -16,6 +16,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
@@ -24,6 +25,7 @@ from featurebyte.query_graph.sql.feature_historical import (
 )
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.materialisation import get_source_expr
 from featurebyte.schema.feature import FeaturePreview, FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
@@ -609,3 +611,37 @@ class PreviewService(BaseService):
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
         )
         return sql_to_string(expr, source_type=source_type)
+
+    async def download_table(
+        self,
+        location: TabularSource,
+        get_credential: Any,
+    ) -> Optional[AsyncGenerator[bytes, None]]:
+        """
+        Download table from location
+
+        Parameters
+        ----------
+        location: TabularSource
+            Location to download from
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        AsyncGenerator[bytes, None]
+            Asynchronous bytes generator
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=location.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store,
+            get_credential=get_credential,
+        )
+        sql_expr = get_source_expr(source=location.table_details)
+        sql = sql_to_string(
+            sql_expr,
+            source_type=db_session.source_type,
+        )
+        return db_session.get_async_query_stream(sql)

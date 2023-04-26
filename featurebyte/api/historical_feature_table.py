@@ -5,13 +5,14 @@ from __future__ import annotations
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.materialized_table import MaterializedTableMixin
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableListRecord
 
 
-class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject):
+class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, MaterializedTableMixin):
     """
     HistoricalFeatureTable class
     """
