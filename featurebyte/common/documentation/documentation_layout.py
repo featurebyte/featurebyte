@@ -191,7 +191,6 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, TYPE, "EventTable"]),
         DocLayoutItem([TABLE, TYPE, "ItemTable"]),
         DocLayoutItem([TABLE, TYPE, "SCDTable"]),
-        DocLayoutItem([TABLE, TYPE, "HistoricalFeatureTable"]),
         DocLayoutItem([TABLE, TYPE, "ObservationTable"]),
         DocLayoutItem(
             [TABLE, ADD_METADATA, "Table.update_record_creation_timestamp_column"],
