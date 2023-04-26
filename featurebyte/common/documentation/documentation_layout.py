@@ -17,6 +17,7 @@ from featurebyte.common.documentation.constants import (
     CREATE_FEATURE,
     CREATE_FEATURE_GROUP,
     CREATE_TABLE,
+    CREDENTIAL,
     DATA_SOURCE,
     DEPLOY,
     DEPLOYMENT,
@@ -637,7 +638,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_enum_layout() -> List[DocLayoutItem]:
+def _get_utility_classes_layout() -> List[DocLayoutItem]:
     """
     The layout for the Enums used in featurebyte.
 
@@ -655,6 +656,7 @@ def _get_enum_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "ColumnCleaningOperation"]),
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "TableCleaningOperation"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "DefaultVersionMode"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
         DocLayoutItem(
@@ -676,6 +678,10 @@ def _get_enum_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SnowflakeDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SparkDetails"]),
+        DocLayoutItem([UTILITY_CLASSES, CREDENTIAL]),
+        DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "AccessTokenCredential"]),
+        DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
+        DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
     ]
 
 
@@ -840,7 +846,7 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_view_layout(),
         *_get_view_column_layout(),
         *_get_catalog_layout(),
-        *_get_enum_layout(),
+        *_get_utility_classes_layout(),
         *_get_source_table_layout(),
         *_get_feature_job_layout(),
         *_get_deployment_layout(),

@@ -9,6 +9,7 @@ import pymongo
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
@@ -38,6 +39,8 @@ class FeatureReadiness(OrderedStrEnum):
 
 class DefaultVersionMode(StrEnum):
     """Default feature setting mode"""
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DefaultVersionMode")
 
     AUTO = "AUTO"
     MANUAL = "MANUAL"

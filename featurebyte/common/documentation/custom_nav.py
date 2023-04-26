@@ -17,6 +17,7 @@ from featurebyte.common.documentation.constants import (
     CREATE_FEATURE,
     CREATE_FEATURE_GROUP,
     CREATE_TABLE,
+    CREDENTIAL,
     DATA_SOURCE,
     DEPLOY,
     DEPLOYMENT,
@@ -86,6 +87,7 @@ class BetaWave3Nav(Nav):
     ]
 
     _custom_second_level_order = [
+        CREDENTIAL,
         CLASS_METHODS,
         TYPE,
         LIST,

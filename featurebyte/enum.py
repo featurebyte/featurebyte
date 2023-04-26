@@ -180,7 +180,7 @@ class AggFunc(StrEnum):
     aggregation method.
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.AggFunc")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AggFunc")
 
     SUM = "sum", "Compute sum of values."
     AVG = "avg", "Compute average value."
@@ -207,7 +207,7 @@ class SourceType(StrEnum):
     The SourceType enum class provides a way to represent different types of data warehouse source in your code.
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.SourceType")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SourceType")
 
     SNOWFLAKE = "snowflake", "Snowflake connection details."
     SQLITE = "sqlite", "SQLite connection details."
@@ -234,7 +234,7 @@ class StorageType(StrEnum):
     The StorageType enum class provides a way to represent different types of distributed storage in your code.
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.StorageType")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.StorageType")
 
     FILE = "file", "Local file storage."
     S3 = "s3", "S3 Storage."
