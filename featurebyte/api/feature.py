@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
 
+import os
 import time
 from http import HTTPStatus
 
@@ -640,7 +641,9 @@ class Feature(
         return primary_entity
 
     @typechecked
-    def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
+    def save(  # pylint: disable=useless-parent-delegation
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[str] = None
+    ) -> None:
         """
         Adds a Feature object to the catalog.
 
@@ -653,8 +656,17 @@ class Feature(
         conflict_resolution: ConflictResolution
             "raise" will raise an error when we encounter a conflict error.
             "retrieve" will handle the conflict error by retrieving the object with the same name.
+        _id: Optional[str]
+            The ID of the object to be saved. This is used internally by the SDK when saving a new object that is
         """
-        super().save(conflict_resolution=conflict_resolution)
+        sdk_execution_mode = os.environ.get("SDK_EXECUTION_MODE")
+        if sdk_execution_mode == "SERVER":
+            super().save(conflict_resolution=conflict_resolution, _id=_id)
+        else:
+            object_dict = self.post_async_task(
+                route="/feature/definition", payload=self._get_create_payload()
+            )
+            type(self).__init__(self, **object_dict, **self._get_init_params_from_object())
 
     @typechecked
     def astype(

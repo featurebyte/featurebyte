@@ -899,7 +899,9 @@ class SavableApiObject(ApiObject):
         _ = conflict_resolution
 
     @typechecked
-    def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
+    def save(
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[str] = None
+    ) -> None:
         """
         Save an object to the persistent data store.
 
@@ -914,6 +916,8 @@ class SavableApiObject(ApiObject):
         conflict_resolution: ConflictResolution
             "raise" will raise an error when we encounter a conflict error.
             "retrieve" will handle the conflict error by retrieving the object with the same name.
+        _id: Optional[str]
+            The object ID to be used when saving the object. If not provided, a new object ID will be generated.
 
         Raises
         ------
@@ -948,7 +952,10 @@ class SavableApiObject(ApiObject):
 
         self._pre_save_operations(conflict_resolution=conflict_resolution)
         client = Configurations().get_client()
-        response = client.post(url=self._route, json=self._get_create_payload())
+        payload = self._get_create_payload()
+        if _id is not None:
+            payload["_id"] = _id
+        response = client.post(url=self._route, json=payload)
         retrieve_object = False
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:

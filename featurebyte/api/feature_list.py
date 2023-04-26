@@ -558,7 +558,9 @@ class FeatureList(
                 progress_bar.text = text
                 progress_bar()  # pylint: disable=not-callable
 
-    def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
+    def save(
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[str] = None
+    ) -> None:
         """
         Adds a FeatureList object to the catalog.
 
@@ -571,6 +573,8 @@ class FeatureList(
         conflict_resolution: ConflictResolution
             "raise" raises error when we encounter a conflict error (default).
             "retrieve" handle conflict error by retrieving the object with the same name.
+        _id: Optional[str]
+            The ID of the FeatureList object. If None, a random ID will be assigned.
 
         Raises
         ------

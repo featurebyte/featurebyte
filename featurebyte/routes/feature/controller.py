@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Union, cast
+from typing import Any, Dict, Literal, Optional, Union, cast
 
 from http import HTTPStatus
 from pprint import pformat
@@ -24,6 +24,7 @@ from featurebyte.routes.common.base import (
     DerivePrimaryEntityMixin,
     PaginatedDocument,
 )
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature import (
     FeatureCreate,
     FeatureModelResponse,
@@ -34,6 +35,8 @@ from featurebyte.schema.feature import (
     FeatureUpdate,
 )
 from featurebyte.schema.info import FeatureInfo
+from featurebyte.schema.task import Task
+from featurebyte.schema.worker.task.feature_create import FeatureCreateTaskPayload
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -67,6 +70,7 @@ class FeatureController(
         version_service: VersionService,
         info_service: InfoService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
+        task_controller: TaskController,
     ):
         super().__init__(service)
         self.feature_namespace_service = feature_namespace_service
@@ -77,6 +81,31 @@ class FeatureController(
         self.version_service = version_service
         self.info_service = info_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
+        self.task_controller = task_controller
+
+    async def submit_feature_create_task(self, data: FeatureCreate) -> Optional[Task]:
+        """
+        Submit Feature Create Task
+
+        Parameters
+        ----------
+        data: FeatureCreate
+            Feature creation payload
+
+        Returns
+        -------
+        Optional[Task]
+            Task object
+        """
+        payload = FeatureCreateTaskPayload(
+            **{
+                **data.json_dict(),
+                "catalog_id": self.service.catalog_id,
+                "output_document_id": data.id,
+            }
+        )
+        task_id = await self.task_controller.task_manager.submit(payload=payload)
+        return await self.task_controller.task_manager.get_task(task_id=str(task_id))
 
     async def create_feature(
         self, data: Union[FeatureCreate, FeatureNewVersionCreate]
