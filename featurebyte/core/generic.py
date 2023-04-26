@@ -14,7 +14,7 @@ from typeguard import typechecked
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.algorithm import dfs_traversal
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -105,7 +105,7 @@ class QueryObject(FeatureByteBaseModel):
 
         Returns
         -------
-        NodeOutputType
+        NodeOutputCategory
         """
         operation_structure = self.graph.extract_operation_structure(self.node)
         return operation_structure.output_category

@@ -117,12 +117,30 @@ class SeriesBinaryOperator:
 def construct_binary_op_series_output(
     input_series: FrozenSeries, other: FrozenSeries, node_name: str, output_var_type: DBVarType
 ) -> FrozenSeriesT:
+    """
+    Construct the output series for binary operation between two series.
+
+    Parameters
+    ----------
+    input_series : FrozenSeries
+        Input series
+    other : FrozenSeries
+        Other series
+    node_name : str
+        Node name
+    output_var_type : DBVarType
+        Output variable type
+
+    Returns
+    -------
+    FrozenSeriesT
+    """
     if input_series.binary_op_output_class_priority <= other.binary_op_output_class_priority:
         output_type_series, other_series = input_series, other
     else:
         output_type_series, other_series = other, input_series
     kwargs = output_type_series.binary_op_series_params(other_series)
-    return type(output_type_series)(
+    out = type(output_type_series)(
         feature_store=output_type_series.feature_store,
         tabular_source=output_type_series.tabular_source,
         node_name=node_name,
@@ -130,6 +148,7 @@ def construct_binary_op_series_output(
         dtype=output_var_type,
         **kwargs,
     )
+    return cast(FrozenSeriesT, out)
 
 
 def series_binary_operation(
