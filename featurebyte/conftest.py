@@ -10,6 +10,9 @@ import featurebyte
 
 @pytest.fixture(autouse=True, scope="session")
 def init_conftest():
+    """
+    Removes all alive_progress bars from the console for test-docs
+    """
     config_handler.set_global(disable=True)
 
 
