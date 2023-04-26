@@ -27,6 +27,8 @@ services:
     container_name: redis
     image: "redis:6.2.5"
     healthcheck:
+      start_period: 10s
+      interval: 5s
       test: ["CMD", "redis-cli", "ping"]
     logging:
       driver: local
