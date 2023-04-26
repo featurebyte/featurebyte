@@ -7,6 +7,7 @@ from typing import Dict, List, Literal, Optional, Union
 
 from typeguard import typechecked
 
+from featurebyte import FeatureJobSetting
 from featurebyte.api.asat_aggregator import AsAtAggregator
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
@@ -92,7 +93,7 @@ class GroupBy:
         windows: Optional[List[Optional[str]]] = None,
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
-        feature_job_setting: Optional[Dict[str, str]] = None,
+        feature_job_setting: Optional[FeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
     ) -> FeatureGroup:
@@ -180,7 +181,7 @@ class GroupBy:
             windows=windows,
             feature_names=feature_names,
             timestamp_column=timestamp_column,
-            feature_job_setting=feature_job_setting,
+            feature_job_setting=feature_job_setting_obj,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
         )
