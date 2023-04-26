@@ -1052,7 +1052,7 @@ def test_list_features(saved_feature_list, float_feature):
     )
 
     feature_version_list = saved_feature_list.list_features()
-    assert feature_version_list.shape[0] == 0
+    assert feature_version_list.shape[0] == 1
 
 
 @freeze_time("2023-01-20 06:30:00")
