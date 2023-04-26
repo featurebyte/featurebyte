@@ -1036,6 +1036,7 @@ def test_list_features(saved_feature_list, float_feature):
         feature_version_list,
         pd.DataFrame(
             {
+                "id": [float_feature.id],
                 "name": [float_feature.name],
                 "version": [float_feature.version.to_str()],
                 "dtype": [float_feature.dtype],
