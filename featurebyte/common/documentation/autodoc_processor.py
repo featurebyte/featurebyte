@@ -189,8 +189,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
                     else "autodoc-param-group"
                 )
                 for param, is_last in last_iter(resource_details.parameters):
-                    if "FeatureGroup" in resource_details.name:
-                        print("param", param)
                     # Don't render rest of params if we are at the keyword separator, and we should
                     # hide keyword only params.
                     if (
