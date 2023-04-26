@@ -380,6 +380,6 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         examples=[_format_example(example) for example in docstring.examples],
         see_also=docstring.see_also.description if docstring.see_also else None,
         enum_values=_get_param_details(enum_possible_values, enum_desc),
-        should_skip_params_in_class_docs=autodoc_config.skip_params_in_class_docs,
-        should_skip_signature_in_class_docs=autodoc_config.hide_signature_in_class_docs,
+        should_skip_params_in_class_docs=autodoc_config.skip_params_and_signature_in_class_docs,
+        should_skip_signature_in_class_docs=autodoc_config.skip_params_and_signature_in_class_docs,
     )
