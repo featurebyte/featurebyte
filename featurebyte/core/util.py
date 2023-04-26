@@ -140,7 +140,7 @@ def construct_binary_op_series_output(
     else:
         output_type_series, other_series = other, input_series
     kwargs = output_type_series.binary_op_series_params(other_series)
-    out = type(output_type_series)(
+    return type(output_type_series)(  # type: ignore[return-value]
         feature_store=output_type_series.feature_store,
         tabular_source=output_type_series.tabular_source,
         node_name=node_name,
@@ -148,7 +148,6 @@ def construct_binary_op_series_output(
         dtype=output_var_type,
         **kwargs,
     )
-    return cast(FrozenSeriesT, out)
 
 
 def series_binary_operation(
