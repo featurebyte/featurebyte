@@ -2,31 +2,8 @@
 Unit tests for BatchRequestTable class
 """
 import pandas as pd
-import pytest
 
 from featurebyte.api.batch_request_table import BatchRequestTable
-
-
-@pytest.fixture(name="batch_request_table_from_source")
-def batch_request_table_from_source_fixture(
-    snowflake_database_table,
-    snowflake_execute_query_batch_request_table_patcher,
-    snowflake_query_map,
-):
-    with snowflake_execute_query_batch_request_table_patcher(snowflake_query_map, True):
-        return snowflake_database_table.create_batch_request_table(
-            "batch_request_table_from_source_table"
-        )
-
-
-@pytest.fixture(name="batch_request_table_from_view")
-def batch_request_table_from_view_fixture(
-    snowflake_event_view, snowflake_execute_query_batch_request_table_patcher, snowflake_query_map
-):
-    with snowflake_execute_query_batch_request_table_patcher(snowflake_query_map, True):
-        return snowflake_event_view.create_batch_request_table(
-            "batch_request_table_from_event_view"
-        )
 
 
 def test_get(batch_request_table_from_source):
