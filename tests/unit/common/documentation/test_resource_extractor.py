@@ -96,6 +96,7 @@ class DocClassWithFbAutoDocParams:
     __fbautodoc__ = FBAutoDoc(
         proxy_class="autodoc_proxy",
         skip_params_and_signature_in_class_docs=True,
+        hide_keyword_only_params_in_class_docs=True,
     )
 
 
@@ -143,6 +144,7 @@ def test_get_resource_details__enum_class():
         ],
         should_skip_params_in_class_docs=False,
         should_skip_signature_in_class_docs=False,
+        should_hide_keyword_only_params_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -175,6 +177,7 @@ def test_get_resource_details__class():
         enum_values=[],
         should_skip_params_in_class_docs=False,
         should_skip_signature_in_class_docs=False,
+        should_hide_keyword_only_params_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -208,6 +211,7 @@ def test_get_resource_details__method():
         enum_values=[],
         should_skip_params_in_class_docs=False,
         should_skip_signature_in_class_docs=False,
+        should_hide_keyword_only_params_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -237,6 +241,7 @@ def test_get_resource_details__pydantic_field():
         enum_values=[],
         should_skip_params_in_class_docs=False,
         should_skip_signature_in_class_docs=False,
+        should_hide_keyword_only_params_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -268,6 +273,7 @@ def test_get_resource_details__property():
         enum_values=[],
         should_skip_params_in_class_docs=False,
         should_skip_signature_in_class_docs=False,
+        should_hide_keyword_only_params_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -289,3 +295,4 @@ def test_get_resource_details__proxy_paths():
     assert resource_details.proxy_path == "autodoc_proxy"
     assert resource_details.should_skip_params_in_class_docs
     assert resource_details.should_skip_signature_in_class_docs
+    assert resource_details.should_hide_keyword_only_params_in_class_docs
