@@ -365,7 +365,7 @@ app_container_config.add_controller(
 app_container_config.add_controller(
     "observation_table_controller",
     ObservationTableController,
-    ["observation_table_service", "task_controller"],
+    ["observation_table_service", "info_service", "task_controller"],
 )
 app_container_config.add_controller(
     "historical_feature_table_controller",
@@ -381,7 +381,7 @@ app_container_config.add_controller(
 app_container_config.add_controller(
     "batch_request_table_controller",
     BatchRequestTableController,
-    ["batch_request_table_service", "task_controller"],
+    ["batch_request_table_service", "info_service", "task_controller"],
 )
 app_container_config.add_controller(
     "batch_feature_table_controller",

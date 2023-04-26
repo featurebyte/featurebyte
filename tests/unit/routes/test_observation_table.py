@@ -83,3 +83,26 @@ class TestObservationTableApi(BaseAsyncApiTestSuite):
         Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
         """
         _ = patched_observation_table_service
+
+    def test_info_200(self, test_api_client_persistent, create_success_response):
+        """Test info route"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == {
+            "name": self.payload["name"],
+            "type": "source_table",
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": response_dict["table_details"]["table_name"],
+            },
+            "created_at": response_dict["created_at"],
+            "updated_at": None,
+            "columns_info": [
+                {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
+                {"name": "cust_id", "dtype": "INT"},
+            ],
+        }

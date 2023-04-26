@@ -3,7 +3,7 @@ BatchRequestTable API routes
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -20,8 +20,13 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
-from featurebyte.schema.batch_request_table import BatchRequestTableCreate, BatchRequestTableList
+from featurebyte.schema.batch_request_table import (
+    BatchRequestTableCreate,
+    BatchRequestTableInfo,
+    BatchRequestTableList,
+)
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/batch_request_table")
@@ -104,3 +109,15 @@ async def list_batch_request_table_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.get("/{batch_request_table_id}/info", response_model=BatchRequestTableInfo)
+async def get_batch_request_table_info(
+    request: Request, batch_request_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+) -> BatchRequestTableInfo:
+    """
+    Get BatchRequestTable info
+    """
+    controller = request.state.app_container.batch_request_table_controller
+    info = await controller.get_info(document_id=batch_request_table_id, verbose=verbose)
+    return info

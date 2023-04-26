@@ -20,8 +20,13 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
-from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableList
+from featurebyte.schema.observation_table import (
+    ObservationTableCreate,
+    ObservationTableInfo,
+    ObservationTableList,
+)
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/observation_table")
@@ -104,3 +109,15 @@ async def list_observation_table_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.get("/{observation_table_id}/info", response_model=ObservationTableInfo)
+async def get_observation_table_info(
+    request: Request, observation_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+) -> ObservationTableInfo:
+    """
+    Get ObservationTable info
+    """
+    controller = request.state.app_container.observation_table_controller
+    info = await controller.get_info(document_id=observation_table_id, verbose=verbose)
+    return info
