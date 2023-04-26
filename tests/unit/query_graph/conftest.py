@@ -1025,7 +1025,7 @@ def time_since_last_event_feature_node_fixture(global_graph, input_node):
     )
     request_point_in_time_node = global_graph.add_operation(
         node_type=NodeType.REQUEST_COLUMN,
-        node_params={"column_name": "POINT_IN_TIME"},
+        node_params={"column_name": "POINT_IN_TIME", "dtype": DBVarType.TIMESTAMP},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[],
     )

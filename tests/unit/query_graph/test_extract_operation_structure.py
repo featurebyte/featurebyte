@@ -1091,14 +1091,35 @@ def test_request_column_operation_structure(global_graph, time_since_last_event_
             "type": "aggregation",
             "column": source_column,
             "aggregation_type": "groupby",
-        }
+        },
+        {
+            "name": "POINT_IN_TIME",
+            "dtype": "TIMESTAMP",
+            "filter": False,
+            "node_names": {"request_column_1"},
+            "node_name": "request_column_1",
+            "method": None,
+            "keys": [],
+            "window": None,
+            "category": None,
+            "type": "aggregation",
+            "column": None,
+            "aggregation_type": "request_column",
+        },
     ]
     expected_aggregations = [
         {
             "columns": expected_aggregation_columns,
             "filter": False,
             "name": "time_since_last_event",
-            "node_names": {"groupby_1", "alias_1", "input_1", "date_diff_1", "project_1"},
+            "node_names": {
+                "groupby_1",
+                "alias_1",
+                "input_1",
+                "date_diff_1",
+                "project_1",
+                "request_column_1",
+            },
             "node_name": "alias_1",
             "transforms": ["date_diff"],
             "type": "post_aggregation",

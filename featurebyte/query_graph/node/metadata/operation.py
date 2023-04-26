@@ -342,7 +342,11 @@ class AggregationColumn(BaseDataColumn):
     )
     column: Optional[ViewDataColumn]
     aggregation_type: Literal[
-        NodeType.GROUPBY, NodeType.ITEM_GROUPBY, NodeType.LOOKUP, NodeType.AGGREGATE_AS_AT
+        NodeType.GROUPBY,
+        NodeType.ITEM_GROUPBY,
+        NodeType.LOOKUP,
+        NodeType.AGGREGATE_AS_AT,
+        NodeType.REQUEST_COLUMN,
     ]
 
     def __hash__(self) -> int:
