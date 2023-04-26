@@ -114,7 +114,7 @@ def import_dataset(dataset_name: str) -> None:
                 )
                 DockerClient().copy(
                     f"{download_folder}/{base_path}",
-                    ("spark-thrift", f"/opt/spark/data/staging/"),
+                    ("spark-thrift", "/opt/spark/data/staging/"),
                 )
             else:
                 raise ValueError(f"Unknown file type: {base_object}")
