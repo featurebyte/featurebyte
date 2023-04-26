@@ -3,7 +3,7 @@ Utility functions for API Objects
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union
+from typing import Any, Iterator, List, Optional, Union
 
 import functools
 from datetime import datetime
@@ -15,29 +15,49 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.parquet as pq
 import pygments
+from alive_progress import alive_bar
 from dateutil import parser
 from pygments.formatters.html import HtmlFormatter
 from requests import Response
 
+from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.enum import DBVarType, InternalName
 
 
-class ResponseStream(object):
-    @property
-    def closed(self) -> bool:
-        return False
+class ResponseStream:
+    """
+    Simulate a buffer-like object from a streamed response content iterator
+    """
 
-    def __init__(self, request_iterator):
+    def __init__(self, request_iterator: Iterator[bytes]) -> None:
         self._bytes = b""
         self._iterator = request_iterator
+        self.closed = False
 
-    def read(self, size=None):
-        while len(self._bytes) < size:
-            self._bytes += next(self._iterator)
-        data = self._bytes[:size]
-        self._bytes = self._bytes[size:]
-        return data
+    def read(self, size: int = 1024) -> bytes:
+        """
+        Read data from iterator.
+
+        Parameters
+        ----------
+        size: int
+            Number of bytes to read
+
+        Returns
+        -------
+        bytes
+        """
+        try:
+            while len(self._bytes) < size:
+                self._bytes += next(self._iterator)
+            data = self._bytes[:size]
+            self._bytes = self._bytes[size:]
+            return data
+        except StopIteration:
+            self.closed = True
+            return b""
 
 
 def get_version() -> str:
@@ -253,7 +273,7 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
     return dataframe
 
 
-def parquet_from_arrow_stream(response: Response, output_path: Path) -> None:
+def parquet_from_arrow_stream(response: Response, output_path: Path, num_rows: int) -> None:
     """
     Write parquet file from arrow byte stream
 
@@ -263,10 +283,27 @@ def parquet_from_arrow_stream(response: Response, output_path: Path) -> None:
         Streamed http response
     output_path: Path
         Output path
+    num_rows: int
+        Number of rows to write
     """
-    # pa.parquet.ParquetFile(response.raw).metadata
     reader = pa.ipc.open_stream(ResponseStream(response.iter_content(1024)))
-    return reader.read_all().to_pandas().to_parquet(output_path)
+    batch = reader.read_next_batch()
+    with pq.ParquetWriter(output_path, batch.schema) as writer:
+        try:
+            with alive_bar(
+                total=num_rows,
+                title="Downloading table",
+                **get_alive_bar_additional_params(),
+            ) as progress_bar:
+                while True:
+                    table = pa.Table.from_batches([batch])
+                    if table.num_rows == 0:
+                        break
+                    writer.write_table(table)
+                    progress_bar(table.num_rows)  # pylint: disable=not-callable
+                    batch = reader.read_next_batch()
+        except StopIteration:
+            pass
 
 
 def validate_datetime_input(value: Union[datetime, str]) -> str:

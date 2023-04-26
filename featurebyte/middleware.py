@@ -19,6 +19,7 @@ from featurebyte.exception import (
     DocumentError,
     DocumentNotFoundError,
     FeatureStoreSchemaCollisionError,
+    LimitExceededError,
     NoFeatureStorePresentError,
     QueryNotSupportedError,
     RequiredEntityNotProvidedError,
@@ -166,6 +167,8 @@ ExecutionContext.register(
 ExecutionContext.register(DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
 ExecutionContext.register(ValidationError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
+
+ExecutionContext.register(LimitExceededError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
 # error due to entity validation failure
 ExecutionContext.register(

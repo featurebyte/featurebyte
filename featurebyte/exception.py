@@ -332,3 +332,9 @@ class NoChangesInFeatureVersionError(DocumentError):
     """
     Raise when we try to create a new feature version, but there are no differences.
     """
+
+
+class LimitExceededError(FeatureByteException):
+    """
+    Raised when limit is exceeded
+    """
