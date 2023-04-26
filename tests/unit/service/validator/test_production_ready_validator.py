@@ -69,7 +69,7 @@ async def test_validate(
     """
     # Generate a feature
     snowflake_event_table_with_entity.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
+        feature_job_setting=feature_group_feature_job_setting
     )
     snowflake_event_table_with_entity["col_int"].update_critical_data_info(
         cleaning_operations=[
@@ -79,8 +79,10 @@ async def test_validate(
 
     event_view = snowflake_event_table_with_entity.get_view()
     updated_feature_job_setting = feature_group_feature_job_setting
-    assert feature_group_feature_job_setting["blind_spot"] == "10m"
-    updated_feature_job_setting["blind_spot"] = "3m"  # set a new value
+    assert feature_group_feature_job_setting.blind_spot == "10m"
+    new_feature_job_settings_dict = updated_feature_job_setting.json_dict()
+    new_feature_job_settings_dict["blind_spot"] = "3m"  # ∂set a new value
+    updated_feature_job_setting = FeatureJobSetting(**new_feature_job_settings_dict)
     feature = event_view.groupby("cust_id").aggregate_over(
         value_column="col_int",
         method="sum",
@@ -207,14 +209,16 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     """
     # update event table w/ a feature job setting
     snowflake_event_table_with_entity.update_default_feature_job_setting(
-        FeatureJobSetting(**feature_group_feature_job_setting)
+        feature_group_feature_job_setting
     )
 
     # create a feature with a different feature job setting from the event table
     event_view = snowflake_event_table_with_entity.get_view()
     updated_feature_job_setting = feature_group_feature_job_setting.copy()
-    assert updated_feature_job_setting["blind_spot"] == "10m"
-    updated_feature_job_setting["blind_spot"] = "5m"  # set a new value
+    assert updated_feature_job_setting.blind_spot == "10m"
+    new_feature_job_settings_dict = updated_feature_job_setting.json_dict()
+    new_feature_job_settings_dict["blind_spot"] = "5m"  # ∂set a new value
+    updated_feature_job_setting = FeatureJobSetting(**new_feature_job_settings_dict)
     feature_group = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
@@ -260,7 +264,7 @@ async def test_validate__no_diff_in_feature_should_return_none(
     """
     # Create a feature that has same feature job setting and cleaning operations as it's table source
     snowflake_event_table_with_entity.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
+        feature_job_setting=feature_group_feature_job_setting
     )
 
     event_view = snowflake_event_table_with_entity.get_view()
