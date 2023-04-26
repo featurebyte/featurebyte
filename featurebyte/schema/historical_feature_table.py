@@ -12,7 +12,6 @@ from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     PydanticObjectId,
-    VersionIdentifier,
 )
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails

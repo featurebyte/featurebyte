@@ -1,18 +1,13 @@
 """
 Tests for BatchFeatureTable routes
 """
-import json
-from contextlib import contextmanager
 from http import HTTPStatus
-from unittest import mock
 from unittest.mock import patch
 
-import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from tests.unit.routes.base import BaseAsyncApiTestSuite
 
 
