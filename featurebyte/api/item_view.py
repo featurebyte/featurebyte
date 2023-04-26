@@ -52,6 +52,7 @@ class ItemView(View, GroupByMixin, RawMixin):
     __fbautodoc__ = FBAutoDoc(
         proxy_class="featurebyte.ItemView",
         skip_params_in_class_docs=True,
+        hide_signature_in_class_docs=True,
     )
 
     # class variables

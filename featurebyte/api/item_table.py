@@ -54,7 +54,11 @@ class ItemTable(TableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ItemTable", skip_params_in_class_docs=True)
+    __fbautodoc__ = FBAutoDoc(
+        proxy_class="featurebyte.ItemTable",
+        skip_params_in_class_docs=True,
+        hide_signature_in_class_docs=True,
+    )
 
     # class variables
     _route = "/item_table"
