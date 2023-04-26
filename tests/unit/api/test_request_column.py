@@ -3,10 +3,12 @@ RequestColumn unit tests
 """
 import pytest
 
+from featurebyte.api.feature import Feature
 from featurebyte.api.request_column import RequestColumn, point_in_time
+from tests.util.helper import check_sdk_code_generation
 
 
-@pytest.fixture(name="latest_event_timestamp_feature_fixture")
+@pytest.fixture(name="latest_event_timestamp_feature")
 def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity):
     """
     Fixture for a timestamp feature
@@ -35,9 +37,25 @@ def test_point_in_time_request_column():
     }
 
 
-def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature_fixture):
+def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature, update_fixtures):
     """
     Test an on-demand feature involving point in time
     """
-    time_since_last_event_feature = point_in_time - latest_event_timestamp_feature_fixture
-    raise
+    new_feature = (point_in_time - latest_event_timestamp_feature).dt.day
+    new_feature.name = "Time Since Last Event (days)"
+    assert isinstance(new_feature, Feature)
+
+    assert new_feature.entity_ids == latest_event_timestamp_feature.entity_ids
+    assert new_feature.entity_identifiers == latest_event_timestamp_feature.entity_identifiers
+    assert new_feature.feature_store == latest_event_timestamp_feature.feature_store
+    assert new_feature.tabular_source == latest_event_timestamp_feature.tabular_source
+
+    # new_feature.save()
+    # loaded_feature = Feature.get(new_feature.name)
+    # check_sdk_code_generation(
+    #     loaded_feature,
+    #     to_use_saved_data=True,
+    #     fixture_path="tests/fixtures/sdk_code/feature_with_request_column.py",
+    #     update_fixtures=update_fixtures,
+    #     table_id=new_feature.table_ids[0],
+    # )

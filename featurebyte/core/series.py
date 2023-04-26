@@ -64,7 +64,10 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
         TypeError
             If the other series has incompatible type
         """
-        if isinstance(self.other, Series) and self.input_series.__class__ != self.other.__class__:
+        if (
+            isinstance(self.other, Series)
+            and self.input_series.output_category != self.other.output_category
+        ):
             # Checking strict equality of types when both sides are Series is intentional. It is to
             # handle cases such as when self is EventViewColumn and other is Feature - they are both
             # Series but such operations are not allowed.
@@ -115,7 +118,6 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
-
         Parameters
         ----------
         other: Scalar | FrozenSeries | ScalarSequence
@@ -127,6 +129,17 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         """
         _ = other
         return {}
+
+    @property
+    def binary_op_output_class_priority(self) -> int:
+        """
+        Determines whether type(self) will be used as the output class (lower means higher
+        priority).
+
+        This is used to ensure combining a Feature and RequestColumn always produces a Feature
+        regardless of the operands' ordering.
+        """
+        return 0
 
     def unary_op_series_params(self) -> dict[str, Any]:
         """

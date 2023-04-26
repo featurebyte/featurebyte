@@ -30,6 +30,10 @@ class RequestColumn(Series):
             dtype=column_dtype,
         )
 
+    @property
+    def binary_op_output_class_priority(self) -> int:
+        return 1
+
 
 point_in_time = RequestColumn.create_request_column(
     SpecialColumnName.POINT_IN_TIME.value, DBVarType.TIMESTAMP
