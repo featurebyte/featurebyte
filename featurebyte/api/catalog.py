@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 import pandas as pd
 from bson import ObjectId
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
@@ -68,7 +69,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     _list_fields = ["name", "created_at", "active"]
 
     # pydantic instance variable (internal use)
-    internal_default_feature_store_ids: List[PydanticObjectId]
+    internal_default_feature_store_ids: List[PydanticObjectId] = Field(
+        alias="default_feature_store_ids"
+    )
 
     @property
     def default_feature_store_ids(self) -> List[PydanticObjectId]:
@@ -803,7 +806,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> data_source = catalog.get_data_source("playground")
         """
-        assert len(self.internal_default_feature_store_ids) == 1
+        assert len(self.internal_default_feature_store_ids) > 0
         feature_store = FeatureStore.get_by_id(id=self.internal_default_feature_store_ids[0])
         return feature_store.get_data_source()  # pylint: disable=no-member
 
