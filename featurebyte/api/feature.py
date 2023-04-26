@@ -278,10 +278,8 @@ class Feature(
     @classmethod
     def _list_versions(
         cls,
-        include_id: Optional[bool] = False,
+        include_id: Optional[bool] = True,
         feature_list_id: Optional[ObjectId] = None,
-        primary_entity: Optional[Union[str, List[str]]] = None,
-        primary_table: Optional[Union[str, List[str]]] = None,
     ) -> pd.DataFrame:
         """
         Returns a DataFrame that presents a summary of the feature versions belonging to the namespace of the
@@ -291,15 +289,10 @@ class Feature(
         Parameters
         ----------
         include_id: Optional[bool]
-            Whether to include id in the list
+            Whether to include id in the list.
         feature_list_id: Optional[ObjectId] = None,
-            Include only features in specified feature list
-        primary_entity: Optional[str]
-            Name of entity used to filter results. If multiple entities are provided, the filtered results will
-            contain features that are associated with all the entities.
-        primary_table: Optional[str]
-            Name of table used to filter results. If multiple tables are provided, the filtered results will
-            contain features that are associated with all the tables.
+            Feature list ID used to filter results and only include versions that are used in the specified feature
+            list.
 
         Returns
         -------
@@ -327,8 +320,7 @@ class Feature(
         if feature_list_id:
             params = {"feature_list_id": str(feature_list_id)}
 
-        feature_list = cls._list(include_id=include_id, params=params)
-        return filter_feature_list(feature_list, primary_entity, primary_table)
+        return cls._list(include_id=include_id, params=params)
 
     def _list_versions_with_same_name(self, include_id: bool = False) -> pd.DataFrame:
         """
