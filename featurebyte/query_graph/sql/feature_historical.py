@@ -30,6 +30,7 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.session.base import BaseSession
+from featurebyte.tile.manager import TILE_COMPUTE_PROGRESS_MAX_PERCENT
 from featurebyte.tile.tile_cache import TileCache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
@@ -423,7 +424,7 @@ async def get_historical_features(
         )
 
     if progress_callback:
-        progress_callback(90, "Computing features")
+        progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, "Computing features")
 
     # Execute feature query and stream results back
     if output_table_details is None:

@@ -33,18 +33,18 @@ public class CountDictMostFrequentValue extends CountDictUDF {
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
 
     String mostFrequentKey = null;
-    double most_frequent_count = 0.0;
+    double mostFrequentCount = 0.0;
     for (Map.Entry<String, Object> entry : counts.entrySet()) {
       double doubleValue = convertMapValueAsDouble(entry.getValue());
       if (Double.isNaN(doubleValue)) continue;
-      if (doubleValue > most_frequent_count) {
+      if (doubleValue > mostFrequentCount) {
         mostFrequentKey = entry.getKey();
-        most_frequent_count = doubleValue;
+        mostFrequentCount = doubleValue;
       }
     }
     if (mostFrequentKey == null) return null;
 
-    output.set(most_frequent_count);
+    output.set(mostFrequentCount);
     return output;
   }
 

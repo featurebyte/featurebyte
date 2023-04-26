@@ -1,5 +1,5 @@
 """
-Tests for snowflake cosine similarity UDF
+Tests for most frequent UDF
 """
 import numpy as np
 import pytest

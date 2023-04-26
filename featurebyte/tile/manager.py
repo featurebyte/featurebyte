@@ -25,6 +25,8 @@ from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 from featurebyte.tile.scheduler import TileScheduler
 from featurebyte.tile.sql_template import tm_retrieve_tile_job_audit_logs
 
+TILE_COMPUTE_PROGRESS_MAX_PERCENT = 90  #  Progress percentage to report at end of tile computation
+
 
 class TileManager(BaseModel):
     """
@@ -85,7 +87,8 @@ class TileManager(BaseModel):
 
             if progress_callback:
                 progress_callback(
-                    int(np.floor((index + 1) / num_jobs * 90)), f"{index+1}/{num_jobs} completed"
+                    int(np.floor((index + 1) / num_jobs * TILE_COMPUTE_PROGRESS_MAX_PERCENT)),
+                    f"{index+1}/{num_jobs} completed",
                 )
 
     async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
