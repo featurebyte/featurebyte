@@ -61,7 +61,7 @@ from featurebyte.schema.feature import (
 )
 
 
-class Feature(
+class Feature(  # type: ignore[misc]
     ProtectedColumnsQueryObject,
     Series,
     FrozenFeatureModel,

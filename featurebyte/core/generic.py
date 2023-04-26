@@ -165,14 +165,15 @@ class QueryObject(FeatureByteBaseModel):
         pruned_graph, node = self.extract_pruned_graph_and_node()
         extract_kwargs: dict[str, Any] = {
             "to_use_saved_data": to_use_saved_data,
-            "feature_store_name": self.feature_store.name,
-            "feature_store_id": self.feature_store.id,
+            "feature_store_name": self.feature_store.name if self.feature_store else None,
+            "feature_store_id": self.feature_store.id if self.feature_store else None,
             "table_id_to_info": table_id_to_info or {},
         }
         state = SDKCodeExtractor(graph=pruned_graph).extract(node=node, **extract_kwargs)
         return state.code_generator.generate(to_format=to_format)
 
     def _preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
+        assert self.feature_store is not None
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         return GraphInterpreter(
             pruned_graph, source_type=self.feature_store.type
@@ -205,7 +206,9 @@ class QueryObject(FeatureByteBaseModel):
         deep: bool = False,
     ) -> QueryObjectT:
         update_dict = update or {}
-        update_dict.update({"feature_store": self.feature_store.copy(deep=deep)})
+        update_dict.update(
+            {"feature_store": self.feature_store.copy(deep=deep) if self.feature_store else None}
+        )
         return super().copy(
             include=include,
             exclude=exclude,

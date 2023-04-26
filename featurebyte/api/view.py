@@ -1350,7 +1350,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             )
             features.append(feature)
 
-        return FeatureGroup(features)
+        return FeatureGroup(features)  # type: ignore[no-any-return]
 
     def create_observation_table(
         self, name: str, sample_rows: Optional[int] = None
@@ -1371,6 +1371,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ObservationTable
             ObservationTable object.
         """
+        assert self.feature_store is not None
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = ObservationTableCreate(
             name=name,
@@ -1400,6 +1401,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         BatchRequestTable
             BatchRequestTable object.
         """
+        assert self.feature_store is not None
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = BatchRequestTableCreate(
             name=name,
