@@ -5,6 +5,7 @@ Common test fixtures used across unit test directories
 import json
 import tempfile
 import traceback
+from contextlib import contextmanager
 from datetime import datetime
 from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
@@ -797,6 +798,42 @@ def patched_observation_table_service():
         Mock(side_effect=mocked_get_additional_metadata),
     ):
         yield
+
+
+@pytest.fixture(name="snowflake_execute_query_batch_request_table_patcher")
+def snowflake_execute_query_batch_reqeust_table_patcher():
+    """Fixture to patch SnowflakeSession.execute_query to return mock data for batch request table"""
+
+    @contextmanager
+    def patch_snowflake_execute_query(query_map, handle_batch_request_table_query):
+        """Patch SnowflakeSession.execute_query to return mock data"""
+
+        def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
+            _ = timeout
+            if handle_batch_request_table_query and query.startswith(
+                'SHOW COLUMNS IN "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_'
+            ):
+                # return a cust_id column for batch request table to pass validation
+                res = [
+                    {
+                        "column_name": "cust_id",
+                        "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                    }
+                ]
+            else:
+                res = query_map.get(query)
+
+            if res is not None:
+                return pd.DataFrame(res)
+            return None
+
+        with mock.patch(
+            "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+        ) as mock_execute_query:
+            mock_execute_query.side_effect = side_effect
+            yield mock_execute_query
+
+    return patch_snowflake_execute_query
 
 
 @pytest.fixture(name="observation_table_from_source")

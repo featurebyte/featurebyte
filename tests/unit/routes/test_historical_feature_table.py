@@ -137,6 +137,12 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
             "feature_list_name": "sf_feature_list",
             "feature_list_version": response_dict["feature_list_version"],
             "observation_table_name": "observation_table",
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": response_dict["table_details"]["table_name"],
+            },
+            "columns_info": [],
             "created_at": response_dict["created_at"],
             "updated_at": None,
         }

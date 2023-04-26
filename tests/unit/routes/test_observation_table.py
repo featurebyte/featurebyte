@@ -94,6 +94,7 @@ class TestObservationTableApi(BaseAsyncApiTestSuite):
         assert response_dict == {
             "name": self.payload["name"],
             "type": "source_table",
+            "feature_store_name": "sf_featurestore",
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",

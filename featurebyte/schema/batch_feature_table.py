@@ -10,6 +10,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
+from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
 from featurebyte.schema.common.base import BaseInfo, PaginationMixin
 
 
@@ -40,3 +41,5 @@ class BatchFeatureTableInfo(BaseInfo):
 
     batch_request_table_name: str
     deployment_name: str
+    table_details: TableDetails
+    columns_info: List[ColumnSpec]

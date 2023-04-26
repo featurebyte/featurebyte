@@ -934,13 +934,17 @@ class InfoService(BaseService):
         observation_table = await self.observation_table_service.get_document(
             document_id=document_id
         )
+        feature_store = await self.feature_store_service.get_document(
+            document_id=observation_table.location.feature_store_id
+        )
         return ObservationTableInfo(
             name=observation_table.name,
             type=observation_table.request_input.type,
-            created_at=observation_table.created_at,
-            updated_at=observation_table.updated_at,
+            feature_store_name=feature_store.name,
             table_details=observation_table.location.table_details,
             columns_info=observation_table.columns_info,
+            created_at=observation_table.created_at,
+            updated_at=observation_table.updated_at,
         )
 
     async def get_historical_feature_table_info(
@@ -975,10 +979,10 @@ class InfoService(BaseService):
             feature_list_name=feature_list.name,
             feature_list_version=feature_list.version.to_str(),
             observation_table_name=observation_table.name,
-            created_at=historical_feature_table.created_at,
-            updated_at=historical_feature_table.updated_at,
             table_details=historical_feature_table.location.table_details,
             columns_info=historical_feature_table.columns_info,
+            created_at=historical_feature_table.created_at,
+            updated_at=historical_feature_table.updated_at,
         )
 
     async def get_batch_request_table_info(
@@ -1002,13 +1006,17 @@ class InfoService(BaseService):
         batch_request_table = await self.batch_request_table_service.get_document(
             document_id=document_id
         )
+        feature_store = await self.feature_store_service.get_document(
+            document_id=batch_request_table.location.feature_store_id
+        )
         return BatchRequestTableInfo(
             name=batch_request_table.name,
             type=batch_request_table.request_input.type,
-            created_at=batch_request_table.created_at,
-            updated_at=batch_request_table.updated_at,
+            feature_store_name=feature_store.name,
             table_details=batch_request_table.location.table_details,
             columns_info=batch_request_table.columns_info,
+            created_at=batch_request_table.created_at,
+            updated_at=batch_request_table.updated_at,
         )
 
     async def get_batch_feature_table_info(
@@ -1042,6 +1050,8 @@ class InfoService(BaseService):
             name=batch_feature_table.name,
             deployment_name=deployment.name,
             batch_request_table_name=batch_request_table.name,
+            table_details=batch_feature_table.location.table_details,
+            columns_info=batch_feature_table.columns_info,
             created_at=batch_feature_table.created_at,
             updated_at=batch_feature_table.updated_at,
         )

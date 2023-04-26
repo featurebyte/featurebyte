@@ -15,6 +15,7 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
+from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
 from featurebyte.schema.common.base import BaseInfo, PaginationMixin
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 
@@ -63,3 +64,5 @@ class HistoricalFeatureTableInfo(BaseInfo):
     observation_table_name: str
     feature_list_name: str
     feature_list_version: str
+    table_details: TableDetails
+    columns_info: List[ColumnSpec]
