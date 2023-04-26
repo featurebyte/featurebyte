@@ -16,6 +16,7 @@ from mkautodoc.extension import trim_docstring
 from pydantic.fields import ModelField, Undefined
 
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.documentation.allowed_classes import allowed_classes
 from featurebyte.common.documentation.constants import EMPTY_VALUE
 from featurebyte.common.documentation.doc_types import (
     Docstring,
@@ -268,6 +269,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         proxy_path = None
 
     parts = resource_descriptor.split("::")
+    class_descriptor = ""
     if len(parts) > 1:
         # class member
         resource_name = parts.pop(-1)
@@ -333,6 +335,18 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         if docstring.params
         else {}
     )
+
+    # populate descriptions for class parameters
+    if resource_type == "class" and resource_name.lower() in allowed_classes:
+        for parameter in parameters:
+            param_name = parameter.name
+            descriptor = resource_descriptor or class_descriptor
+            resource_to_import = f"{descriptor}::{param_name}"
+            if param_name == "*":
+                continue
+            resource_details = get_resource_details(resource_to_import)
+            if param_name not in parameters_desc or not parameters_desc[param_name]:
+                parameters_desc[param_name] = resource_details.description_string
 
     enum_desc = {}
     enum_possible_values: List[RawParameterDetails] = []

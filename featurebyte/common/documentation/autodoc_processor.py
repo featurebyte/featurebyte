@@ -88,6 +88,9 @@ def _get_parameters_content(parameters: List[ParameterDetails]) -> str:
         items_to_render = []
         if not param.name:
             continue
+        # Skip the keyword separator param
+        if param.name == "*":
+            continue
         param_name = param.name.replace("*", "\\*")
         param_type = f": *{param.type}*" if param.type else ""
         param_default = (

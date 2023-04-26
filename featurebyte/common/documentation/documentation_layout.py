@@ -759,6 +759,10 @@ def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([BATCH_FEATURE_TABLE]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.name"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.created_at"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.updated_at"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.id"]),
     ]
 
 
@@ -791,6 +795,10 @@ def _get_batch_request_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([BATCH_REQUEST_TABLE]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.name"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.created_at"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.updated_at"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, LINEAGE, "BatchRequestTable.id"]),
     ]
 
 
@@ -838,8 +846,8 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_source_table_layout(),
         *_get_feature_job_layout(),
         *_get_deployment_layout(),
-        # *_get_batch_feature_table_layout(),
-        # *_get_batch_request_table_layout(),
+        *_get_batch_feature_table_layout(),
+        *_get_batch_request_table_layout(),
         *_get_observation_table_layout(),
         *_get_historical_feature_table_layout(),
     ]

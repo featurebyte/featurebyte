@@ -55,7 +55,13 @@ def _get_doc_overrides(class_name: str) -> Dict[str, str]:
 
 
 pydantic_field_doc_overrides = {
+    "BatchFeatureTable": _get_doc_overrides("BatchFeatureTable"),
+    "BatchRequestTable": _get_doc_overrides("BatchRequestTable"),
     "Catalog": _get_doc_overrides("Catalog"),
+    "DisguisedValueImputation": {
+        "imputed_value": "The value that will be used to replace any element that matches one of the values in the "
+        "disguised_values list.",
+    },
     "Entity": _get_doc_overrides("Entity"),
     "Feature": {
         CATALOG_ID: _get_catalog_id_docstring_override("Feature"),
@@ -83,6 +89,9 @@ pydantic_field_doc_overrides = {
     "MissingValueImputation": {"imputed_value": "Value to fill missing values."},
     "ObservationTable": _get_doc_overrides("ObservationTable"),
     "Relationship": _get_doc_overrides("Relationship"),
+    "StringValueImputation": {
+        "imputed_value": "The value that will be used to replace any string values.",
+    },
     "Table": {
         ID: _get_id_docstring_override("Table"),
         CREATED_AT: _get_created_at_docstring_override("Table"),
@@ -102,6 +111,13 @@ pydantic_field_doc_overrides = {
         "columns_info": "Returns a list of columns specifications. This includes the id of the Entity objects tagged "
         "in the table and the default cleaning operations set for each column in the table.",
         "feature_store": "Provides information about the feature store that the view is connected to.",
+    },
+    "UnexpectedValueImputation": {
+        "imputed_value": "The value that will be used to replace any value that does not match the expected values "
+        "in the expected_values list.",
+    },
+    "ValueBeyondEndpointImputation": {
+        "imputed_value": "The value that will be used to replace any value that falls outside a specified range.",
     },
     "ViewColumn": {
         DTYPE: "Returns the data type of the view column.",

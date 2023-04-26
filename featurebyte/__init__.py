@@ -7,6 +7,8 @@ from http import HTTPStatus
 
 import pandas as pd
 
+from featurebyte.api.batch_feature_table import BatchFeatureTable
+from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.credential import Credential
@@ -448,6 +450,8 @@ def list_unsaved_features() -> pd.DataFrame:
 
 __all__ = [
     # API objects
+    "BatchFeatureTable",
+    "BatchRequestTable",
     "Catalog",
     "ChangeView",
     "Configurations",

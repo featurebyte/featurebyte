@@ -3,7 +3,7 @@ Feature Job Setting Model
 """
 from typing import Any, Dict
 
-from pydantic import root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
@@ -47,9 +47,19 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureJobSetting")
 
-    blind_spot: str
-    frequency: str
-    time_modulo_frequency: str
+    blind_spot: str = Field(
+        description="Establishes the time difference between when the feature is calculated and the most recent "
+        "event timestamp to be processed."
+    )
+    frequency: str = Field(
+        description="Indicates the interval at which the batch process should be executed."
+    )
+    time_modulo_frequency: str = Field(
+        description="Specifies the offset from the end of the frequency interval to the start of the feature job. "
+        "For instance, with settings frequency: 60m and time_modulo_frequency: 130s, the feature job will begin 2 "
+        "minutes and 10 seconds after the start of each hour, such as 00:02:10, 01:02:10, 02:02:10, ..., 15:02:10, "
+        "..., 23:02:10."
+    )
 
     @root_validator(pre=True)
     @classmethod
@@ -139,5 +149,10 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableFeatureJobSetting")
 
-    table_name: str
-    feature_job_setting: FeatureJobSetting
+    table_name: str = Field(
+        description="Name of the table to which the feature job setting applies feature_job_setting."
+    )
+    feature_job_setting: FeatureJobSetting = Field(
+        description="Feature class that contains specific settings that should be applied to feature jobs that "
+        "involve time aggregate operations and use timestamps from the table specified in the table_name parameter."
+    )
