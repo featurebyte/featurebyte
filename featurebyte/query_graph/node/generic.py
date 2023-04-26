@@ -29,8 +29,10 @@ from featurebyte.query_graph.node.metadata.operation import (
     ViewDataColumn,
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
+    ClassEnum,
     CodeGenerationConfig,
     ExpressionStr,
+    ObjectClass,
     RightHandSide,
     StatementT,
     ValueStr,
@@ -545,11 +547,11 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         method = ValueStr.create(self.parameters.agg_func)
         windows = ValueStr.create(self.parameters.windows)
         feature_names = ValueStr.create(self.parameters.names)
-        feature_job_setting = {
-            "blind_spot": f"{self.parameters.blind_spot}s",
-            "frequency": f"{self.parameters.frequency}s",
-            "time_modulo_frequency": f"{self.parameters.time_modulo_frequency}s",
-        }
+        feature_job_setting: ObjectClass = ClassEnum.FEATURE_JOB_SETTING(
+            blind_spot=f"{self.parameters.blind_spot}s",
+            frequency=f"{self.parameters.frequency}s",
+            time_modulo_frequency=f"{self.parameters.time_modulo_frequency}s",
+        )
         grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
         agg = (
             f"aggregate_over(value_column={value_column}, "

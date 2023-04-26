@@ -144,7 +144,7 @@ class GroupBy:
             Output feature names
         timestamp_column: Optional[str]
             Timestamp column used to specify the window (if not specified, event table timestamp is used)
-        feature_job_setting: Optional[Dict[str, str]]
+        feature_job_setting: Optional[FeatureJobSetting]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
         fill_value: OptionalScalar
@@ -181,7 +181,7 @@ class GroupBy:
             windows=windows,
             feature_names=feature_names,
             timestamp_column=timestamp_column,
-            feature_job_setting=feature_job_setting_obj,
+            feature_job_setting=feature_job_setting,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
         )
