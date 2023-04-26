@@ -52,7 +52,6 @@ class HistoricalFeatureTableListRecord(FeatureByteBaseDocumentModel):
     @classmethod
     def _extract(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         values["feature_store_id"] = values["location"]["feature_store_id"]
-        values["observation_table_id"] = values["observation_table_id"]
         return values
 
 

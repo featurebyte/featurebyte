@@ -11,7 +11,7 @@ def test_get(observation_table_from_source):
     Test retrieving an ObservationTable object by name
     """
     observation_table = ObservationTable.get(observation_table_from_source.name)
-    assert observation_table.name == observation_table_from_source.name
+    assert observation_table == observation_table_from_source
 
 
 @pytest.mark.usefixtures("observation_table_from_source", "observation_table_from_view")

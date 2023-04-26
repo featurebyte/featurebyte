@@ -58,7 +58,7 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
 
     @pytest.fixture(autouse=True)
     def mock_online_enable_service_update_data_warehouse(self):
-        """Mock _update_data_warehouse method in OnlineEnableService to make it a no-op"""
+        """Mock update_data_warehouse method in OnlineEnableService to make it a no-op"""
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 

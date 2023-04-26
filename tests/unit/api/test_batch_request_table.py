@@ -11,7 +11,7 @@ def test_get(batch_request_table_from_source):
     Test retrieving an BatchRequestTable object by name
     """
     batch_request_table = BatchRequestTable.get(batch_request_table_from_source.name)
-    assert batch_request_table.name == batch_request_table_from_source.name
+    assert batch_request_table == batch_request_table_from_source
 
 
 def test_list(batch_request_table_from_source, batch_request_table_from_view):

@@ -11,7 +11,7 @@ def test_get(historical_feature_table):
     Test retrieving an HistoricalFeatureTable object by name
     """
     retrieved_historical_feature_table = HistoricalFeatureTable.get(historical_feature_table.name)
-    assert retrieved_historical_feature_table.name == historical_feature_table.name
+    assert retrieved_historical_feature_table == historical_feature_table
 
 
 @pytest.mark.usefixtures("historical_feature_table")

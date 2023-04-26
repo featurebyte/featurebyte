@@ -10,11 +10,12 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import Configurations
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.item_table import ItemTable
+from featurebyte.config import Configurations
 from featurebyte.models.feature_store import TableStatus
 
 
@@ -311,6 +312,7 @@ def batch_request_table_from_source_fixture(
     snowflake_execute_query_batch_request_table_patcher,
     snowflake_query_map,
 ):
+    """Batch request table from source table fixture"""
     with snowflake_execute_query_batch_request_table_patcher(snowflake_query_map, True):
         return snowflake_database_table.create_batch_request_table(
             "batch_request_table_from_source_table"
@@ -321,7 +323,17 @@ def batch_request_table_from_source_fixture(
 def batch_request_table_from_view_fixture(
     snowflake_event_view, snowflake_execute_query_batch_request_table_patcher, snowflake_query_map
 ):
+    """Batch request table from view fixture"""
     with snowflake_execute_query_batch_request_table_patcher(snowflake_query_map, True):
         return snowflake_event_view.create_batch_request_table(
             "batch_request_table_from_event_view"
         )
+
+
+@pytest.fixture(name="deployment")
+def deployment_fixture(float_feature):
+    """Deployment fixture"""
+    feature_list = FeatureList([float_feature], name="my_feature_list")
+    feature_list.save()
+    deployment = feature_list.deploy(make_production_ready=True)
+    return deployment
