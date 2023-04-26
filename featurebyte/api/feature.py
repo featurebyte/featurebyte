@@ -19,11 +19,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_namespace import FeatureNamespace
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.feature_util import (
-    FEATURE_COMMON_LIST_FIELDS,
-    FEATURE_LIST_FOREIGN_KEYS,
-    filter_feature_list,
-)
+from featurebyte.api.feature_util import FEATURE_COMMON_LIST_FIELDS, FEATURE_LIST_FOREIGN_KEYS
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
