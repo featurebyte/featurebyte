@@ -10,6 +10,7 @@ import pymongo
 from cryptography.fernet import Fernet
 from pydantic import Field, StrictStr
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -105,6 +106,8 @@ class UsernamePasswordCredential(BaseDatabaseCredential):
     Username / Password credential
     """
 
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UsernamePasswordCredential")
+
     type: Literal[DatabaseCredentialType.USERNAME_PASSWORD] = Field(
         DatabaseCredentialType.USERNAME_PASSWORD, const=True
     )
@@ -116,6 +119,8 @@ class AccessTokenCredential(BaseDatabaseCredential):
     """
     Access token credential
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AccessTokenCredential")
 
     type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(
         DatabaseCredentialType.ACCESS_TOKEN, const=True
@@ -150,6 +155,8 @@ class S3StorageCredential(BaseStorageCredential):
     """
     S3 storage credential
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.S3StorageCredential")
 
     type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
     s3_access_key_id: StrictStr

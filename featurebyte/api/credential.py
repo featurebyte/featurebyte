@@ -28,7 +28,7 @@ class Credential(DeletableApiObject, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Credential"], proxy_class="featurebyte.Credential")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Credential")
 
     # class variables
     _route = "/credential"

@@ -20,18 +20,11 @@ def test_all_init_items_are_exposed():
     # Add to this list if you add a new item to __init__, but do not want to expose it in the docs for whatever
     # reason.
     excluded_items = {
-        "Configurations",
-        "Series",
-        "to_timedelta",
-        "AccessTokenCredential",
-        "Credential",
-        "S3StorageCredential",
-        "UsernamePasswordCredential",
-        "DefaultVersionMode",
-        "PeriodicTask",
-        "start",
-        "stop",
-        "playground",
+        "to_timedelta",  # Utility method - should add.
+        "PeriodicTask",  # Users won't use, but keeping for ease of internal use / debugging.
+        "start",  # Users won't use, but keeping for ease of internal use / debugging.
+        "stop",  # Users won't use, but keeping for ease of internal use / debugging.
+        "playground",  # Utility method - should add.
     }
     for item in all_exposed_items:
         if item in items and item in excluded_items:

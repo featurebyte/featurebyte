@@ -180,7 +180,7 @@ class AggFunc(StrEnum):
     aggregation method.
     """
 
-    __fbautodoc__ = FBAutoDoc(section=["Enums"], proxy_class="featurebyte.AggFunc")
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AggFunc")
 
     SUM = "sum", "Compute sum of values."
     AVG = "avg", "Compute average value."
