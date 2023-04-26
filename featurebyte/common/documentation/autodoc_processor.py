@@ -192,7 +192,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
                     # Don't render rest of params if we are at the keyword separator, and we should
                     # hide keyword only params.
                     if (
-                        resource_details.should_hide_keyword_only_params_in_class_docs
+                        resource_details.type == "class"
+                        and resource_details.should_hide_keyword_only_params_in_class_docs
                         and param.name == "*"
                     ):
                         break
@@ -339,7 +340,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 "Parameters",
                 _get_parameters_content(
                     resource_details.parameters,
-                    resource_details.should_hide_keyword_only_params_in_class_docs,
+                    resource_details.should_hide_keyword_only_params_in_class_docs
+                    and resource_details.type == "class",
                 ),
             )
 
