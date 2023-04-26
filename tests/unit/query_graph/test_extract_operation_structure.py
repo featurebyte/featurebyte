@@ -1062,3 +1062,50 @@ def test_track_changes_operation_structure(global_graph, scd_table_input_node):
     assert op_struct.aggregations == []
     assert op_struct.output_type == NodeOutputType.FRAME
     assert op_struct.output_category == NodeOutputCategory.VIEW
+
+
+def test_request_column_operation_structure(global_graph, time_since_last_event_feature_node):
+    """Test request column operation structure"""
+    op_struct = global_graph.extract_operation_structure(node=time_since_last_event_feature_node)
+    source_column = {
+        "name": "ts",
+        "dtype": "TIMESTAMP",
+        "filter": False,
+        "node_names": {"input_1"},
+        "node_name": "input_1",
+        "table_id": None,
+        "table_type": "event_table",
+        "type": "source",
+    }
+    expected_aggregation_columns = [
+        {
+            "name": "latest_event_timestamp_90d",
+            "dtype": "TIMESTAMP",
+            "filter": False,
+            "node_names": {"input_1", "groupby_1", "project_1"},
+            "node_name": "groupby_1",
+            "method": "latest",
+            "keys": ["cust_id"],
+            "window": "90d",
+            "category": None,
+            "type": "aggregation",
+            "column": source_column,
+            "aggregation_type": "groupby",
+        }
+    ]
+    expected_aggregations = [
+        {
+            "columns": expected_aggregation_columns,
+            "filter": False,
+            "name": "time_since_last_event",
+            "node_names": {"groupby_1", "alias_1", "input_1", "date_diff_1", "project_1"},
+            "node_name": "alias_1",
+            "transforms": ["date_diff"],
+            "type": "post_aggregation",
+            "dtype": "TIMEDELTA",
+        }
+    ]
+    assert to_dict(op_struct.aggregations) == expected_aggregations
+    assert to_dict(op_struct.columns) == [source_column]
+    assert op_struct.output_type == NodeOutputType.SERIES
+    assert op_struct.output_category == NodeOutputCategory.FEATURE
