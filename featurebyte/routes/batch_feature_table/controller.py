@@ -69,6 +69,7 @@ class BatchFeatureTableController(
         )
 
         # feature cluster group feature graph by feature store ID, only single feature store is supported
+        assert feature_list.feature_clusters is not None
         feature_cluster = feature_list.feature_clusters[0]
         feature_store = await self.feature_store_service.get_document(
             document_id=feature_cluster.feature_store_id

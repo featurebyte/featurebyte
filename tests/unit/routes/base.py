@@ -444,7 +444,7 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         id_before = self.payload["_id"]
-        response = test_api_client.post(f"{self.base_route}", json=self.payload)
+        response = test_api_client.post(self.base_route, json=self.payload)
 
         response = self.wait_for_results(test_api_client, response)
         response_dict = response.json()
