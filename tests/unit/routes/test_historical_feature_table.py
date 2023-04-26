@@ -1,6 +1,7 @@
 """
 Tests for HistoricalFeatureTable routes
 """
+import copy
 from http import HTTPStatus
 from unittest.mock import patch
 
@@ -113,7 +114,7 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
         """Test that 422 is returned when payload fails validation check"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
-        payload = self.payload.copy()
+        payload = copy.deepcopy(self.payload)
         payload["featurelist_get_historical_features"]["serving_names_mapping"] = {
             "random_name": "random_name"
         }
