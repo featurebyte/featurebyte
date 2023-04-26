@@ -46,6 +46,7 @@ def prepare_binary_op_input_nodes(
         # Swap left & right objects if the operation from the right object
         left_node, right_node = right_node, left_node
 
+    assert table_node is not None
     return table_node, left_node, right_node
 
 
@@ -66,4 +67,5 @@ def prepare_unary_input_nodes(
     input_expr_node = context.input_sql_nodes[0]
     assert isinstance(input_expr_node, ExpressionNode)
     table_node = input_expr_node.table_node
+    assert table_node is not None
     return table_node, input_expr_node, context.parameters

@@ -452,3 +452,27 @@ def test_get_feature_preview_sql__with_parent_serving_preparation(
         "tests/fixtures/expected_preview_sql_with_parent_serving_preparation.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_get_feature_preview_sql__on_demand_features(
+    global_graph,
+    time_since_last_event_feature_node,
+    update_fixtures,
+):
+    """Test sql generation for on-demand features"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=global_graph,
+        nodes=[time_since_last_event_feature_node],
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_on_demand_features.sql",
+        update_fixture=update_fixtures,
+    )
