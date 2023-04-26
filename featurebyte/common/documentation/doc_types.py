@@ -166,6 +166,9 @@ class ResourceDetails(BaseModel):
     # Setting this param to True will not render the signature for the class in the documentation.
     should_skip_signature_in_class_docs: bool
 
+    # Setting this param to True will not render the keyword only params for the class in the documentation.
+    should_hide_keyword_only_params_in_class_docs: bool
+
     @property
     def resource(self) -> Any:
         """

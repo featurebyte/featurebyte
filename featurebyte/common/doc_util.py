@@ -57,3 +57,10 @@ class FBAutoDoc(BaseModel):
     # should not show the constructor signature, and should have links in the See Also section to point users to the
     # factory methods.
     skip_params_and_signature_in_class_docs: bool = Field(default=False)
+
+    # Setting this to True will skip the rendering of the keyword only params in the signature in the documentation
+    # for the class.
+    # For example, if a class has a constructor like
+    #   def __init__(self, a, b, *, c, d)
+    # then setting this to True will skip the rendering of c and d in the signature.
+    hide_keyword_only_params_in_class_docs: bool = Field(default=False)

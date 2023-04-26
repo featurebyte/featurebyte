@@ -291,6 +291,7 @@ class FeatureList(
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
         proxy_class="featurebyte.FeatureList",
+        hide_keyword_only_params_in_class_docs=True,
     )
 
     # override FeatureListModel attributes
