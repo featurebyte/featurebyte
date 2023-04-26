@@ -69,7 +69,9 @@ def _render_list_item_with_multiple_paragraphs(
     return list_item_str
 
 
-def _get_parameters_content(parameters: List[ParameterDetails]) -> str:
+def _get_parameters_content(
+    parameters: List[ParameterDetails], should_skip_keyword_params: bool = False
+) -> str:
     """
     Helper method to get the content for parameters.
 
@@ -77,6 +79,8 @@ def _get_parameters_content(parameters: List[ParameterDetails]) -> str:
     ----------
     parameters: List[ParameterDetails]
         List of parameter details
+    should_skip_keyword_params: bool
+        Flag to indicate if keyword params should be skipped
 
     Returns
     -------
@@ -90,6 +94,9 @@ def _get_parameters_content(parameters: List[ParameterDetails]) -> str:
             continue
         # Skip the keyword separator param
         if param.name == "*":
+            # Can early return once we reach the keyword separator param if we want to skip the rendering.
+            if should_skip_keyword_params:
+                return content
             continue
         param_name = param.name.replace("*", "\\*")
         param_type = f": *{param.type}*" if param.type else ""
@@ -182,6 +189,15 @@ class FBAutoDocProcessor(AutoDocProcessor):
                     else "autodoc-param-group"
                 )
                 for param, is_last in last_iter(resource_details.parameters):
+                    # Don't render rest of params if we are at the keyword separator, and we should
+                    # hide keyword only params.
+                    if (
+                        resource_details.type == "class"
+                        and resource_details.should_hide_keyword_only_params_in_class_docs
+                        and param.name == "*"
+                    ):
+                        break
+
                     param_group_elem = etree.SubElement(signature_elem, "div")
                     param_group_elem.set("class", param_group_class)
 
@@ -319,7 +335,15 @@ class FBAutoDocProcessor(AutoDocProcessor):
             resource_details.should_skip_params_in_class_docs and resource_details.type == "class"
         )
         if resource_details.parameters and not should_not_render_params:
-            self._render(elem, "Parameters", _get_parameters_content(resource_details.parameters))
+            self._render(
+                elem,
+                "Parameters",
+                _get_parameters_content(
+                    resource_details.parameters,
+                    resource_details.should_hide_keyword_only_params_in_class_docs
+                    and resource_details.type == "class",
+                ),
+            )
 
         if resource_details.enum_values:
             self._render(

@@ -382,4 +382,5 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         enum_values=_get_param_details(enum_possible_values, enum_desc),
         should_skip_params_in_class_docs=autodoc_config.skip_params_and_signature_in_class_docs,
         should_skip_signature_in_class_docs=autodoc_config.skip_params_and_signature_in_class_docs,
+        should_hide_keyword_only_params_in_class_docs=autodoc_config.hide_keyword_only_params_in_class_docs,
     )

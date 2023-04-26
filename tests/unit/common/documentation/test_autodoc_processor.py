@@ -28,10 +28,10 @@ def test_render_list_item_with_multiple_paragraphs(input_title, input_paragraphs
 
 
 @pytest.mark.parametrize(
-    "parameters,expected_output",
+    "parameters,should_skip_keyword,expected_output",
     [
-        ([], ""),
-        ([ParameterDetails(name=None, type=None, default=None, description=None)], ""),
+        ([], False, ""),
+        ([ParameterDetails(name=None, type=None, default=None, description=None)], False, ""),
         (
             [
                 ParameterDetails(
@@ -41,6 +41,7 @@ def test_render_list_item_with_multiple_paragraphs(input_title, input_paragraphs
                     name="name2", type="int2", default="Float2", description="test description2"
                 ),
             ],
+            False,
             "- **name: *int***<br>\t**default**: *Float*\n<br>\ttest description<br><br>\n"
             "- **name2: *int2***<br>\t**default**: *Float2*\n<br>\ttest description2<br><br>\n",
         ),
@@ -50,17 +51,39 @@ def test_render_list_item_with_multiple_paragraphs(input_title, input_paragraphs
                     name="name", type=None, default="Float", description="test description"
                 )
             ],
+            False,
             "- **name**<br>\t**default**: *Float*\n<br>\ttest description<br><br>\n",
         ),
         (
             [ParameterDetails(name="name", type="int", default="Float", description=None)],
+            False,
+            "- **name: *int***<br>\t**default**: *Float*\n<br><br>\n",
+        ),
+        (
+            [
+                ParameterDetails(name="name", type="int", default="Float", description=None),
+                ParameterDetails(name="*", type="int", default="Float", description=None),
+                ParameterDetails(name="name2", type="int2", default="Float2", description=None),
+            ],
+            False,
+            "- **name: *int***<br>\t**default**: *Float*\n<br><br>\n"
+            "- **name2: *int2***<br>\t**default**: *Float2*\n"
+            "<br><br>\n",
+        ),
+        (
+            [
+                ParameterDetails(name="name", type="int", default="Float", description=None),
+                ParameterDetails(name="*", type="int", default="Float", description=None),
+                ParameterDetails(name="name2", type="int2", default="Float2", description=None),
+            ],
+            True,
             "- **name: *int***<br>\t**default**: *Float*\n<br><br>\n",
         ),
     ],
 )
-def test_get_parameters_content(parameters, expected_output):
+def test_get_parameters_content(parameters, should_skip_keyword, expected_output):
     """
     Test _get_parameters_content
     """
-    content = _get_parameters_content(parameters)
+    content = _get_parameters_content(parameters, should_skip_keyword)
     assert content == expected_output

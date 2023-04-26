@@ -325,7 +325,10 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureGroup")
+    __fbautodoc__ = FBAutoDoc(
+        proxy_class="featurebyte.FeatureGroup",
+        hide_keyword_only_params_in_class_docs=True,
+    )
 
     @typechecked
     def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
