@@ -11,7 +11,10 @@ from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableList,
 )
 from featurebyte.schema.task import Task
+from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
+from featurebyte.service.observation_table import ObservationTableService
 
 
 class HistoricalFeatureTableController(
@@ -25,8 +28,18 @@ class HistoricalFeatureTableController(
 
     paginated_document_class = HistoricalFeatureTableList
 
-    def __init__(self, service: HistoricalFeatureTableService, task_controller: TaskController):
+    def __init__(
+        self,
+        service: HistoricalFeatureTableService,
+        feature_store_service: FeatureStoreService,
+        observation_table_service: ObservationTableService,
+        entity_validation_service: EntityValidationService,
+        task_controller: TaskController,
+    ):
         super().__init__(service)
+        self.feature_store_service = feature_store_service
+        self.observation_table_service = observation_table_service
+        self.entity_validation_service = entity_validation_service
         self.task_controller = task_controller
 
     async def create_historical_feature_table(
@@ -45,6 +58,25 @@ class HistoricalFeatureTableController(
         -------
         Task
         """
+        # Validate the observation_table_id
+        observation_table = await self.observation_table_service.get_document(
+            document_id=data.observation_table_id
+        )
+
+        # feature cluster group feature graph by feature store ID, only single feature store is supported
+        feature_cluster = data.featurelist_get_historical_features.feature_clusters[0]
+        feature_store = await self.feature_store_service.get_document(
+            document_id=feature_cluster.feature_store_id
+        )
+        await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+            graph=feature_cluster.graph,
+            nodes=feature_cluster.nodes,
+            request_column_names={col.name for col in observation_table.columns_info},
+            feature_store=feature_store,
+            serving_names_mapping=data.featurelist_get_historical_features.serving_names_mapping,
+        )
+
+        # prepare task payload and submit task
         payload = await self.service.get_historical_feature_table_task_payload(data=data)
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
