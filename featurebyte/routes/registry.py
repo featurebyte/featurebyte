@@ -153,11 +153,7 @@ app_container_config.add_service_with_extra_deps(
 app_container_config.add_service_with_extra_deps(
     "historical_feature_table_service",
     HistoricalFeatureTableService,
-    [
-        "feature_store_service",
-        "observation_table_service",
-        "feature_list_service",
-    ],
+    ["feature_store_service"],
 )
 app_container_config.add_service_with_extra_deps(
     "batch_request_table_service",
@@ -170,11 +166,7 @@ app_container_config.add_service_with_extra_deps(
 app_container_config.add_service_with_extra_deps(
     "batch_feature_table_service",
     BatchFeatureTableService,
-    [
-        "feature_store_service",
-        "batch_request_table_service",
-        "deployment_service",
-    ],
+    ["feature_store_service"],
 )
 app_container_config.add_service_with_extra_deps(
     "feature_readiness_service",
@@ -378,7 +370,13 @@ app_container_config.add_controller(
 app_container_config.add_controller(
     "historical_feature_table_controller",
     HistoricalFeatureTableController,
-    ["historical_feature_table_service", "task_controller"],
+    [
+        "historical_feature_table_service",
+        "feature_store_service",
+        "observation_table_service",
+        "entity_validation_service",
+        "task_controller",
+    ],
 )
 app_container_config.add_controller(
     "batch_request_table_controller",
@@ -388,7 +386,15 @@ app_container_config.add_controller(
 app_container_config.add_controller(
     "batch_feature_table_controller",
     BatchFeatureTableController,
-    ["batch_feature_table_service", "task_controller"],
+    [
+        "batch_feature_table_service",
+        "feature_store_service",
+        "feature_list_service",
+        "batch_request_table_service",
+        "deployment_service",
+        "entity_validation_service",
+        "task_controller",
+    ],
 )
 app_container_config.add_controller(
     "deployment_controller",

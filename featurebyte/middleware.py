@@ -21,6 +21,8 @@ from featurebyte.exception import (
     FeatureStoreSchemaCollisionError,
     NoFeatureStorePresentError,
     QueryNotSupportedError,
+    RequiredEntityNotProvidedError,
+    UnexpectedServingNamesMappingError,
 )
 from featurebyte.logger import logger
 
@@ -164,6 +166,14 @@ ExecutionContext.register(
 ExecutionContext.register(DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
 ExecutionContext.register(ValidationError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
+
+# error due to entity validation failure
+ExecutionContext.register(
+    RequiredEntityNotProvidedError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+)
+ExecutionContext.register(
+    UnexpectedServingNamesMappingError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+)
 
 ExecutionContext.register(
     QueryNotSupportedError,

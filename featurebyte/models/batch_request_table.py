@@ -3,7 +3,7 @@ BatchRequestTable models
 """
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 from typing_extensions import Annotated
 
 import pymongo
@@ -12,7 +12,6 @@ from pydantic import Field
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.models.request_input import SourceTableRequestInput, ViewRequestInput
-from featurebyte.query_graph.node.schema import ColumnSpec
 
 
 class ViewBatchRequestInput(ViewRequestInput):
@@ -43,7 +42,6 @@ class BatchRequestTableModel(MaterializedTableModel):
     """
 
     request_input: BatchRequestInput
-    columns_info: List[ColumnSpec]
     context_id: Optional[PydanticObjectId] = Field(default=None)
 
     class Settings(MaterializedTableModel.Settings):

@@ -13,6 +13,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.node.schema import ColumnSpec
 
 
 class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
@@ -27,6 +28,7 @@ class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     location: TabularSource
+    columns_info: List[ColumnSpec]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

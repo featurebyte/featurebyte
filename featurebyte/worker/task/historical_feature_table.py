@@ -5,7 +5,9 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from featurebyte.logger import logger
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
@@ -57,7 +59,14 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
                 get_credential=self.get_credential,
                 output_table_details=location.table_details,
             )
-
+            table_schema = await db_session.list_table_schema(
+                table_name=location.table_details.table_name,
+                database_name=location.table_details.database_name,
+                schema_name=location.table_details.schema_name,
+            )
+            logger.debug(
+                "Creating a new HistoricalFeatureTable", extras=location.table_details.dict()
+            )
             historical_feature_table = HistoricalFeatureTableModel(
                 _id=payload.output_document_id,
                 user_id=self.payload.user_id,
@@ -65,5 +74,8 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
                 location=location,
                 observation_table_id=payload.observation_table_id,
                 feature_list_id=payload.featurelist_get_historical_features.feature_list_id,
+                columns_info=[
+                    ColumnSpec(name=name, dtype=var_type) for name, var_type in table_schema.items()
+                ],
             )
             await historical_feature_table_service.create_document(historical_feature_table)

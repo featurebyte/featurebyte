@@ -2,6 +2,7 @@
 Tests for BatchFeatureTable routes
 """
 import json
+from contextlib import contextmanager
 from http import HTTPStatus
 from unittest import mock
 from unittest.mock import patch
@@ -61,14 +62,15 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 
-    @pytest.fixture(autouse=True)
-    def patch_snowflake_execute_query(self, snowflake_connector, snowflake_query_map):
+    @contextmanager
+    def patch_snowflake_execute_query(self, query_map, handle_batch_request_table_query):
         """Patch SnowflakeSession.execute_query to return mock data"""
-        _ = snowflake_connector
 
         def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
             _ = timeout
-            if query.startswith('SHOW COLUMNS IN "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_'):
+            if handle_batch_request_table_query and query.startswith(
+                'SHOW COLUMNS IN "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_'
+            ):
                 # return a cust_id column for batch request table to pass validation
                 res = [
                     {
@@ -77,8 +79,7 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
                     }
                 ]
             else:
-                res = snowflake_query_map.get(query)
-                print(f"\n\n{query}")
+                res = query_map.get(query)
 
             if res is not None:
                 return pd.DataFrame(res)
@@ -88,6 +89,13 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
             "featurebyte.session.snowflake.SnowflakeSession.execute_query"
         ) as mock_execute_query:
             mock_execute_query.side_effect = side_effect
+            yield mock_execute_query
+
+    @pytest.fixture(autouse=True)
+    def auto_patch_snowflake_execute_query(self, snowflake_connector, snowflake_query_map):
+        """Patch SnowflakeSession.execute_query to return mock data"""
+        _ = snowflake_connector
+        with self.patch_snowflake_execute_query(snowflake_query_map, True) as mock_execute_query:
             yield mock_execute_query
 
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
@@ -132,3 +140,24 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
+
+    def test_create_422__batch_request_table_failed_validation_check(
+        self, test_api_client_persistent, snowflake_query_map
+    ):
+        """Test create 422 for batch request table failed validation check"""
+        test_api_client, _ = test_api_client_persistent
+        with self.patch_snowflake_execute_query(snowflake_query_map, False):
+            self.setup_creation_route(test_api_client)
+
+            # check that columns_info is empty as we are mocking the query
+            batch_request_table_id = self.payload["batch_request_table_id"]
+            response = test_api_client.get(f"/batch_request_table/{batch_request_table_id}")
+            assert response.json()["columns_info"] == []
+
+            # check that create fails
+            response = test_api_client.post(self.base_route, json=self.payload)
+
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == (
+            'Required entities are not provided in the request: customer (serving name: "cust_id")'
+        )

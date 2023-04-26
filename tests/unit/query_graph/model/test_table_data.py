@@ -16,7 +16,7 @@ from featurebyte.query_graph.model.table import (
     DimensionTableData,
     EventTableData,
     ItemTableData,
-    SouceTableData,
+    SourceTableData,
 )
 from featurebyte.query_graph.node.cleaning_operation import (
     ConditionOperationField,
@@ -64,7 +64,7 @@ def feature_store_details_fixture():
 @pytest.fixture(name="source_table_data")
 def source_table_data_fixture(tabular_source):
     """Source table fixture"""
-    return SouceTableData(
+    return SourceTableData(
         columns_info=[
             ColumnInfo(name="col_int", dtype=DBVarType.INT),
             ColumnInfo(name="col_float", dtype=DBVarType.FLOAT),

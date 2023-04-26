@@ -108,3 +108,18 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
                 "featurebyte.query_graph.sql.feature_historical.compute_tiles_on_demand",
             ):
                 yield
+
+    def test_create_422__failed_entity_validation_check(self, test_api_client_persistent):
+        """Test that 422 is returned when payload fails validation check"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        payload = self.payload.copy()
+        payload["featurelist_get_historical_features"]["serving_names_mapping"] = {
+            "random_name": "random_name"
+        }
+
+        response = test_api_client.post(self.base_route, json=payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == (
+            "Unexpected serving names provided in serving_names_mapping: random_name"
+        )
