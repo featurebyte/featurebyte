@@ -1207,7 +1207,7 @@ class FeatureList(
         )
         if response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=response)
-        return FeatureList(**response.json(), **self._get_init_params(), saved=True)
+        return FeatureList(**response.json(), **self._get_init_params())
 
     @typechecked
     def update_status(

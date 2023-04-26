@@ -965,7 +965,7 @@ class Feature(
 
         object_dict = response.json()
         self._update_cache(object_dict)  # update object cache store
-        return Feature(**object_dict, **self._get_init_params_from_object(), saved=True)
+        return Feature(**object_dict, **self._get_init_params_from_object())
 
     @typechecked
     def update_readiness(
