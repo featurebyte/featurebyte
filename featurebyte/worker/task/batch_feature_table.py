@@ -5,9 +5,11 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from featurebyte.logger import logger
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.schema.worker.task.batch_feature_table import BatchFeatureTableTaskPayload
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
@@ -67,7 +69,12 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
                 get_credential=self.get_credential,
                 output_table_details=location.table_details,
             )
-
+            table_schema = await db_session.list_table_schema(
+                table_name=location.table_details.table_name,
+                database_name=location.table_details.database_name,
+                schema_name=location.table_details.schema_name,
+            )
+            logger.debug("Creating a new BatchFeatureTable", extras=location.table_details.dict())
             batch_feature_table_model = BatchFeatureTableModel(
                 _id=payload.output_document_id,
                 user_id=self.payload.user_id,
@@ -75,5 +82,8 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
                 location=location,
                 batch_request_table_id=payload.batch_request_table_id,
                 deployment_id=payload.deployment_id,
+                columns_info=[
+                    ColumnSpec(name=name, dtype=var_type) for name, var_type in table_schema.items()
+                ],
             )
             await batch_feature_table_service.create_document(batch_feature_table_model)
