@@ -5,6 +5,7 @@ from typing import List, Type
 
 import pytest
 
+from featurebyte import FeatureJobSetting
 from featurebyte.api.base_aggregator import BaseAggregator
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
@@ -134,26 +135,6 @@ def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view_wit
     )
 
 
-def test_groupby__feature_job_setting_partially_specified(
-    snowflake_event_view_with_entity_and_feature_job, cust_id_entity
-):
-    """
-    Test when feature job setting is partially specified
-    """
-    with pytest.raises(ValueError) as exc:
-        _ = snowflake_event_view_with_entity_and_feature_job.groupby("cust_id").aggregate_over(
-            value_column="col_float",
-            method="sum",
-            windows=["30m", "1h", "2h"],
-            feature_names=["feat_30m", "feat_1h", "feat_2h"],
-            feature_job_setting={"frequency": "1h"},
-        )
-    assert (
-        str(exc.value)
-        == "All of frequency, time_modulo_frequency and blind_spot must be specified in feature_job_setting"
-    )
-
-
 def test_groupby__window_sizes_issue(snowflake_event_view_with_entity):
     """
     Test groupby not able to infer feature job setting
@@ -236,7 +217,9 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
         method="sum",
         windows=["30m", "1h", "2h"],
         feature_names=["feat_30m", "feat_1h", "feat_2h"],
-        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
     )
     # check node params
     feature = feature_group["feat_30m"]
@@ -271,7 +254,9 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
         method=method,
         windows=["30m", "1h", "2h"],
         feature_names=["feat_30m", "feat_1h", "feat_2h"],
-        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
     )
     if method != "count":
         aggregate_kwargs["value_column"] = "col_float"
@@ -301,7 +286,7 @@ def test_groupby__count_feature_specify_value_column(snowflake_event_view_with_e
             method="count",
             windows=["30m", "1h", "2h"],
             feature_names=["feat_30m", "feat_1h", "feat_2h"],
-            feature_job_setting=dict(
+            feature_job_setting=FeatureJobSetting(
                 blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
             ),
         )
@@ -331,7 +316,9 @@ def test_groupby__required_params_missing(
         method="max",
         windows=["30m", "1h", "2h"],
         feature_names=["feat_30m", "feat_1h", "feat_2h"],
-        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
     )
     aggregate_kwargs.pop(missing_param)
     with pytest.raises(ValueError) as exc:
@@ -356,7 +343,9 @@ def test_groupby__prune(snowflake_event_view_with_entity):
         method="sum",
         windows=["30m", "1h", "2h"],
         feature_names=["feat_30m", "feat_1h", "feat_2h"],
-        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
     )
     feature = feature_group["feat_30m"]
     feature_dict = feature.dict()
@@ -389,7 +378,7 @@ def test_groupby__aggregation_method_does_not_support_input_var_type(
             method="sum",
             windows=["30m", "1h", "2h"],
             feature_names=["feat_30m", "feat_1h", "feat_2h"],
-            feature_job_setting=dict(
+            feature_job_setting=FeatureJobSetting(
                 blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
             ),
         )
@@ -584,7 +573,7 @@ def test__fill_value_not_allowed_with_category(snowflake_event_view_with_entity)
             fill_value=0,
             windows=["30m"],
             feature_names=["feat_30m"],
-            feature_job_setting=dict(
+            feature_job_setting=FeatureJobSetting(
                 blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
             ),
         )
@@ -603,7 +592,7 @@ def test__fill_value_not_allowed_with_skip_fill_na(snowflake_event_view_with_ent
             skip_fill_na=True,
             windows=["30m"],
             feature_names=["feat_30m"],
-            feature_job_setting=dict(
+            feature_job_setting=FeatureJobSetting(
                 blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
             ),
         )
