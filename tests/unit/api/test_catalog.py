@@ -186,12 +186,12 @@ def test_all_relevant_methods_are_in_list():
         assert method.catalog_method_name in create_methods
 
 
-def test_get_data_source(snowflake_feature_store):
+def test_get_data_source():
     """
     Test that get_data_source returns the correct data source.
     """
     catalog = Catalog.get_active()
-    data_source = catalog.get_data_source(snowflake_feature_store.name)
+    data_source = catalog.get_data_source()
     assert data_source.type == "snowflake"
 
 
@@ -531,13 +531,13 @@ def test_get_catalog():
     assert (Catalog.list()["active"] == [False, True, False, False]).all()
 
 
-def test_activate():
+def test_activate(snowflake_feature_store):
     """
     Test Catalog.activate
     """
     # create catalogs & save to persistent
-    Catalog.create(name="grocery")
-    Catalog.create(name="creditcard")
+    Catalog.create(name="grocery", feature_store_name=snowflake_feature_store.name)
+    Catalog.create(name="creditcard", feature_store_name=snowflake_feature_store.name)
 
     # create entity in grocery catalog
     grocery_catalog = Catalog.activate("grocery")
@@ -560,14 +560,18 @@ def test_activate():
     "method_item",
     catalog_methods_to_test(),
 )
-def test_functions_are_called_from_active_catalog(method_item):
+def test_functions_are_called_from_active_catalog(method_item, snowflake_feature_store):
     """
     Test that catalog_obj.(list|get)_<x> functions are able to be called from the active, or inactive catalog.
     """
     method_name = method_item.class_method_delegated
     with patch.object(method_item.class_object, method_name):
-        credit_card_catalog = Catalog.create("creditcard")
-        grocery_catalog = Catalog.create(name="grocery")
+        credit_card_catalog = Catalog.create(
+            "creditcard", feature_store_name=snowflake_feature_store.name
+        )
+        grocery_catalog = Catalog.create(
+            name="grocery", feature_store_name=snowflake_feature_store.name
+        )
 
         # Verify that there's no error even though the credit card catalog is not the current active catalog.
         # Also verify that there's no change in the global activate catalog_id.
@@ -583,7 +587,7 @@ def test_functions_are_called_from_active_catalog(method_item):
         assert get_active_catalog_id() == credit_card_catalog.id
 
 
-def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors():
+def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors(snowflake_feature_store):
     """
     Verify that the catalog state doesn't change if the wrapped function errors.
     """
@@ -609,18 +613,18 @@ def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors():
             """
             raise TestCatalogError("test")
 
-    catalog_a = TestCatalog.create("catalog_a")
+    catalog_a = TestCatalog.create("catalog_a", snowflake_feature_store.name)
     assert get_active_catalog_id() == catalog_a.id
-    catalog_b = TestCatalog.create("catalog_b")
+    catalog_b = TestCatalog.create("catalog_b", snowflake_feature_store.name)
     assert get_active_catalog_id() == catalog_b.id
     with pytest.raises(TestCatalogError):
         catalog_a.throw_error_function()
     assert get_active_catalog_id() == catalog_b.id
 
 
-def test_catalog_name_synchronization_issue():
+def test_catalog_name_synchronization_issue(snowflake_feature_store):
     """Test catalog name synchronization issue."""
-    catalog = Catalog.create("random_catalog")
+    catalog = Catalog.create("random_catalog", snowflake_feature_store.name)
     cloned_catalog = Catalog.get("random_catalog")
     assert catalog.name == cloned_catalog.name == "random_catalog"
 

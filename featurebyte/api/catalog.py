@@ -32,7 +32,7 @@ from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
-from featurebyte.models.base import activate_catalog, get_active_catalog_id
+from featurebyte.models.base import PydanticObjectId, activate_catalog, get_active_catalog_id
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
@@ -66,6 +66,25 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     _list_schema = CatalogModel
     _get_schema = CatalogModel
     _list_fields = ["name", "created_at", "active"]
+
+    # pydantic instance variable (internal use)
+    internal_default_feature_store_ids: List[PydanticObjectId]
+
+    @property
+    def default_feature_store_ids(self) -> List[PydanticObjectId]:
+        """
+        Feature store IDs associated with the catalog. This should only have one ID, until we support multiple
+        feature stores at a later point.
+
+        Returns
+        -------
+        List[PydanticObjectId]
+            Feature store IDs
+        """
+        try:
+            return self.cached_model.default_feature_store_ids
+        except RecordRetrievalException:
+            return self.internal_default_feature_store_ids
 
     def _get_create_payload(self) -> Dict[str, Any]:
         data = CatalogCreate(**self.json_dict())
@@ -145,6 +164,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     def create(
         cls,
         name: str,
+        feature_store_name: str,
     ) -> Catalog:
         """
         Creates a Catalog object that allows team members to easily add, search, retrieve, and reuse tables,
@@ -159,6 +179,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         ----------
         name: str
             Name of catalog to create.
+        feature_store_name: str
+            Name of feature store to associate with the catalog that we are creating.
 
         Returns
         -------
@@ -168,9 +190,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Create a new catalog.
 
-        >>> catalog = fb.Catalog.create("new_catalog")  # doctest: +SKIP
+        >>> catalog = fb.Catalog.create("new_catalog", "feature_store_name")  # doctest: +SKIP
         """
-        catalog = cls(name=name)
+        feature_store = FeatureStore.get(feature_store_name)
+        catalog = cls(name=name, default_feature_store_ids=[feature_store.id])
         catalog.save()
         activate_catalog(catalog.id)
         return catalog
@@ -765,14 +788,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Deployment.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def get_data_source(self, feature_store_name: str) -> DataSource:
+    def get_data_source(self) -> DataSource:
         """
         Gets a data source based on the name of the feature store that the data source is associated with.
-
-        Parameters
-        ----------
-        feature_store_name: str
-            Feature store name.
 
         Returns
         -------
@@ -785,7 +803,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> data_source = catalog.get_data_source("playground")
         """
-        feature_store = FeatureStore.get(name=feature_store_name)
+        assert len(self.internal_default_feature_store_ids) == 1
+        feature_store = FeatureStore.get_by_id(id=self.internal_default_feature_store_ids[0])
         return feature_store.get_data_source()  # pylint: disable=no-member
 
     @update_and_reset_catalog

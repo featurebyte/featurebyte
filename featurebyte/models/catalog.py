@@ -8,11 +8,12 @@ from typing import List
 from datetime import datetime
 
 import pymongo
-from pydantic import StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
@@ -45,6 +46,11 @@ class CatalogModel(FeatureByteBaseDocumentModel):
     updated_at: datetime
         Datetime when the Catalog object was last updated
     """
+
+    default_feature_store_ids: List[PydanticObjectId] = Field(
+        default_factory=list,
+        description="List of default feature store IDs that are associated with the catalog.",
+    )
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """
