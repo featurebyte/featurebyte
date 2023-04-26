@@ -16,7 +16,7 @@ from mkautodoc.extension import trim_docstring
 from pydantic.fields import ModelField, Undefined
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.documentation.allowed_classes import allowed_classes
+from featurebyte.common.documentation.allowed_classes import nested_description_allowed_classes
 from featurebyte.common.documentation.constants import EMPTY_VALUE
 from featurebyte.common.documentation.doc_types import (
     Docstring,
@@ -309,10 +309,9 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         method_type = None
 
     # use proxy class if specified
-    autodoc_config = resource_class.__dict__.get("__fbautodoc__", FBAutoDoc())
+    autodoc_config: FBAutoDoc = resource_class.__dict__.get("__fbautodoc__", FBAutoDoc())
     if autodoc_config.proxy_class:
         proxy_path = autodoc_config.proxy_class
-    should_skip_params = autodoc_config.skip_params_in_class_docs
 
     # process signature
     parameters, return_type = get_params_from_signature(resource)
@@ -337,7 +336,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
     )
 
     # populate descriptions for class parameters
-    if resource_type == "class" and resource_name.lower() in allowed_classes:
+    if resource_type == "class" and resource_name.lower() in nested_description_allowed_classes:
         for parameter in parameters:
             param_name = parameter.name
             descriptor = resource_descriptor or class_descriptor
@@ -381,5 +380,6 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         examples=[_format_example(example) for example in docstring.examples],
         see_also=docstring.see_also.description if docstring.see_also else None,
         enum_values=_get_param_details(enum_possible_values, enum_desc),
-        should_skip_params_in_class_docs=should_skip_params,
+        should_skip_params_in_class_docs=autodoc_config.skip_params_and_signature_in_class_docs,
+        should_skip_signature_in_class_docs=autodoc_config.skip_params_and_signature_in_class_docs,
     )

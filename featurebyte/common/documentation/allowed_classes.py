@@ -4,7 +4,7 @@ Allowed classes module.
 A temporary hack to allow parameter descriptions to be parsed correctly.
 """
 
-allowed_classes = {
+nested_description_allowed_classes = {
     "featuregroup",
     "missingvalueimputation",
     "disguisedvalueimputation",

@@ -257,7 +257,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
             title_elem.text = ".".join([path, resource_details.name])
 
             # render autodoc
-            self.render_signature(autodoc_div, resource_details)
+            if not resource_details.should_skip_signature_in_class_docs:
+                self.render_signature(autodoc_div, resource_details)
             for line in block.splitlines():
                 docstring_elem = etree.SubElement(autodoc_div, "div")
                 docstring_elem.set("class", "autodoc-docstring")

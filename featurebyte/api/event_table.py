@@ -56,7 +56,10 @@ class EventTable(TableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.EventTable", skip_params_in_class_docs=True)
+    __fbautodoc__ = FBAutoDoc(
+        proxy_class="featurebyte.EventTable",
+        skip_params_and_signature_in_class_docs=True,
+    )
 
     # class variables
     _route = "/event_table"

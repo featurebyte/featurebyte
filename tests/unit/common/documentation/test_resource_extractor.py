@@ -88,14 +88,14 @@ class TestDocumentationEnum(StrEnum):
     NO_DESCRIPTION = "no desc"
 
 
-class DocClassWithProxyPathAndSkipParams:
+class DocClassWithFbAutoDocParams:
     """
     Doc class with FBAutoDoc proxy path, and skip params.
     """
 
     __fbautodoc__ = FBAutoDoc(
         proxy_class="autodoc_proxy",
-        skip_params_in_class_docs=True,
+        skip_params_and_signature_in_class_docs=True,
     )
 
 
@@ -142,6 +142,7 @@ def test_get_resource_details__enum_class():
             ),
         ],
         should_skip_params_in_class_docs=False,
+        should_skip_signature_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -173,6 +174,7 @@ def test_get_resource_details__class():
         see_also="Some text that normally references other resources.",
         enum_values=[],
         should_skip_params_in_class_docs=False,
+        should_skip_signature_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -205,6 +207,7 @@ def test_get_resource_details__method():
         see_also=None,
         enum_values=[],
         should_skip_params_in_class_docs=False,
+        should_skip_signature_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -233,6 +236,7 @@ def test_get_resource_details__pydantic_field():
         see_also=None,
         enum_values=[],
         should_skip_params_in_class_docs=False,
+        should_skip_signature_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -263,6 +267,7 @@ def test_get_resource_details__property():
         see_also=None,
         enum_values=[],
         should_skip_params_in_class_docs=False,
+        should_skip_signature_in_class_docs=False,
     )
     assert resource_details == expected_resource_details
 
@@ -279,7 +284,8 @@ def test_get_resource_details__proxy_paths():
 
     # Or infer via FBAutoDoc override
     resource_details = get_resource_details(
-        "tests.unit.common.documentation.test_resource_extractor.DocClassWithProxyPathAndSkipParams"
+        "tests.unit.common.documentation.test_resource_extractor.DocClassWithFbAutoDocParams"
     )
     assert resource_details.proxy_path == "autodoc_proxy"
     assert resource_details.should_skip_params_in_class_docs
+    assert resource_details.should_skip_signature_in_class_docs
