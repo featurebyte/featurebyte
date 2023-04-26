@@ -854,27 +854,11 @@ class FeatureList(
         """
         return FeatureListNamespace.list(include_id=include_id, entity=entity, table=table)
 
-    def list_features(
-        self,
-        primary_entity: Optional[Union[str, List[str]]] = None,
-        primary_table: Optional[Union[str, List[str]]] = None,
-    ) -> pd.DataFrame:
+    def list_features(self) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the features in a Feature List object, such as their
         names, versions, types, corresponding tables, related entities, creation dates, states of readiness and
         online availability.
-
-        Parameters
-        ----------
-        primary_entity: Optional[str]
-            This parameter accepts either a single string, a list of strings, or None (default) as input. It specifies
-            the primary entity or entities used to filter the results. When multiple entities are provided, the
-            resulting filtered list will include features associated with the combined set (union) of those entities.
-        primary_table: Optional[str]
-            Similar to primary_entity, this parameter accepts a single string, a list of strings, or None (default)
-            as input. It defines the primary table or tables used to filter the results. If multiple tables are
-            provided, the resulting filtered list will include features associated with the combined set (union) of
-            those tables.
 
         Returns
         -------
@@ -893,9 +877,7 @@ class FeatureList(
         --------
         - [FeatureList.list_versions](/reference/featurebyte.api.feature_list.FeatureList.list_versions/)
         """
-        return Feature.list_versions(
-            feature_list_id=self.id, primary_entity=primary_entity, primary_table=primary_table
-        )
+        return Feature.list_versions(feature_list_id=self.id)
 
     @typechecked
     def get_historical_features_sql(

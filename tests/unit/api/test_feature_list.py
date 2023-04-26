@@ -1036,6 +1036,7 @@ def test_list_features(saved_feature_list, float_feature):
         feature_version_list,
         pd.DataFrame(
             {
+                "id": [float_feature.id],
                 "name": [float_feature.name],
                 "version": [float_feature.version.to_str()],
                 "dtype": [float_feature.dtype],
@@ -1050,17 +1051,8 @@ def test_list_features(saved_feature_list, float_feature):
         ),
     )
 
-    feature_version_list = saved_feature_list.list_features(primary_table=["some_random_table"])
-    assert feature_version_list.shape[0] == 0
-
-    feature_version_list = saved_feature_list.list_features(primary_table="some_random_table")
-    assert feature_version_list.shape[0] == 0
-
-    feature_version_list = saved_feature_list.list_features(primary_entity=["some_random_entity"])
-    assert feature_version_list.shape[0] == 0
-
-    feature_version_list = saved_feature_list.list_features(primary_entity="some_random_entity")
-    assert feature_version_list.shape[0] == 0
+    feature_version_list = saved_feature_list.list_features()
+    assert feature_version_list.shape[0] == 1
 
 
 @freeze_time("2023-01-20 06:30:00")
