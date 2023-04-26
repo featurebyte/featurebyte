@@ -38,7 +38,7 @@ class RequestColumnNode(BaseNode):
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
-        raise RuntimeError("Request column node should not be used to derive input columns.")
+        return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
         self,
