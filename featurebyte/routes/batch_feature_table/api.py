@@ -3,7 +3,7 @@ BatchFeatureTable API routes
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -120,4 +120,4 @@ async def get_batch_feature_table_info(
     """
     controller = request.state.app_container.batch_feature_table_controller
     info = await controller.get_info(document_id=batch_feature_table_id, verbose=verbose)
-    return info
+    return cast(BatchFeatureTableInfo, info)

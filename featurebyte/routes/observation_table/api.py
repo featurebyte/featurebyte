@@ -3,7 +3,7 @@ ObservationTable API routes
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -120,4 +120,4 @@ async def get_observation_table_info(
     """
     controller = request.state.app_container.observation_table_controller
     info = await controller.get_info(document_id=observation_table_id, verbose=verbose)
-    return info
+    return cast(ObservationTableInfo, info)

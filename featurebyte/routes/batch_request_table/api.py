@@ -120,4 +120,4 @@ async def get_batch_request_table_info(
     """
     controller = request.state.app_container.batch_request_table_controller
     info = await controller.get_info(document_id=batch_request_table_id, verbose=verbose)
-    return info
+    return cast(BatchRequestTableInfo, info)
