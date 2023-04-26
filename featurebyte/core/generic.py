@@ -37,8 +37,10 @@ class QueryObject(FeatureByteBaseModel):
 
     graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
     node_name: str
-    tabular_source: TabularSource = Field(allow_mutation=False)
-    feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
+    tabular_source: Optional[TabularSource] = Field(allow_mutation=False, default=None)
+    feature_store: Optional[FeatureStoreModel] = Field(
+        exclude=True, allow_mutation=False, default=None
+    )
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node_name={self.node_name})"
