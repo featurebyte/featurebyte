@@ -61,7 +61,7 @@ def import_dataset(dataset_name: str) -> None:
         raise FileNotFoundError(path)
 
     # parse sql
-    hive_staging_path = f"file:///opt/spark/data/staging/datasets/{dataset_name}"
+    hive_staging_path = f"file:///opt/spark/data/staging/{dataset_name}"
     with open(path, encoding="utf8") as file_obj:
         sql = file_obj.read()
         sql = sql.format(staging_path=hive_staging_path)
@@ -84,6 +84,9 @@ def import_dataset(dataset_name: str) -> None:
 
         logger.debug(f"Extracting files to staging location: {download_folder}")
         with tarfile.open(archive_file) as file_obj:
+            base_objects = filter(
+                lambda x: "/" not in x.path, file_obj.getmembers()
+            )  # Filter root level paths
             file_obj.extractall(
                 download_folder,
                 members=filter(
@@ -95,10 +98,26 @@ def import_dataset(dataset_name: str) -> None:
         os.remove(archive_file)
 
         # Copy files to spark container
-        DockerClient().copy(
-            f"{download_folder}",
-            ("spark-thrift", "/opt/spark/data/staging/datasets"),
-        )
+        for base_object in base_objects:
+            base_path = base_object.path
+            if base_object.isdir():
+                logger.info(
+                    f"Copying folder from host:{download_folder}/{base_path} -> spark-thrift:/opt/spark/data/staging/{base_path}"
+                )
+                DockerClient().copy(
+                    f"{download_folder}/{base_path}",
+                    ("spark-thrift", f"/opt/spark/data/staging/{base_path}"),
+                )
+            elif base_object.isfile():
+                logger.info(
+                    f"Copying file from host:{download_folder}/{base_path} -> spark-thrift:/opt/spark/data/staging/{base_path}"
+                )
+                DockerClient().copy(
+                    f"{download_folder}/{base_path}",
+                    ("spark-thrift", f"/opt/spark/data/staging/"),
+                )
+            else:
+                raise ValueError(f"Unknown file type: {base_object}")
 
     # Call featurebyte-server container to import dataset
     sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")
