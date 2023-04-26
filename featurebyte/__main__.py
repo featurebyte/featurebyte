@@ -29,19 +29,17 @@ def start(
     app_name: ApplicationName = typer.Argument(
         default="featurebyte", help="Name of application to start"
     ),
-    local: bool = typer.Option(default=False, help="Do not pull new images from registry"),
 ) -> None:
     """Start application"""
-    start_app(app_name, local=local)
+    start_app(app_name)
 
 
 @app.command(name="playground")
 def playground(
-    local: bool = typer.Option(default=False, help="Do not pull new images from registry"),
     force_import: bool = typer.Option(default=False, help="Import datasets even if they exist"),
 ) -> None:
     """Start playground environment"""
-    start_playground(local, force_import=force_import)
+    start_playground(force_import=force_import)
 
 
 @app.callback(invoke_without_command=True)
@@ -49,7 +47,7 @@ def default(ctx: typer.Context) -> None:
     """Invoke default command"""
     if ctx.invoked_subcommand is not None:
         return
-    start_app(ApplicationName.FEATUREBYTE, local=False)
+    start_app(ApplicationName.FEATUREBYTE)
 
 
 @app.command(name="stop")
