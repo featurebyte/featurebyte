@@ -38,6 +38,10 @@ class CustomAdapter(_LoggerAdapter):
 
 
 class CustomFormatter(logging.Formatter):
+    """
+    Custom logging formatter
+    """
+
     colors = {
         "red": "\x1b[31;20m",
         "green": "\x1b[32;20m",
@@ -78,18 +82,19 @@ class CustomFormatter(logging.Formatter):
         return f"{color_code}{value}\x1b[0m"
 
     def format(self, record: logging.LogRecord) -> str:
+        record.msg = self.colorize(record.msg, self.level_colors.get(record.levelname, "grey"))
         record.levelname = self.colorize(
-            record.levelname, self.level_colors.get(record.levelname, "grey")
+            record.levelname.ljust(8), self.level_colors.get(record.levelname, "grey")
         )
         return super().format(record)
 
 
 NOTEBOOK_LOG_FORMATTER = CustomFormatter(
-    "\x1b[32;20m%(asctime)s\x1b[0m | \033[1m%(levelname)8s\x1b[0m | %(message)s",
-    "%Y-%m-%d %H:%M:%S",
+    "\x1b[32;20m%(asctime)s\x1b[0m | \033[1m%(levelname)s\x1b[0m | \033[1m%(message)s\x1b[0m",
+    "%H:%M:%S",
 )
 CONSOLE_LOG_FORMATTER = CustomFormatter(
-    "\x1b[32;20m%(asctime)s\x1b[0m | %(name)s | \033[1m%(levelname)8s\x1b[0m | %(funcName)s:%(lineno)d | %(message)s",
+    "%(asctime)s | %(levelname)s | %(name)s | %(funcName)s:%(lineno)d | %(message)s",
     "%Y-%m-%d %H:%M:%S",
 )
 

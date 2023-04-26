@@ -76,7 +76,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
                 database_name=location.table_details.database_name,
                 schema_name=location.table_details.schema_name,
             )
-            logger.debug("Creating a new BatchFeatureTable", extras=location.table_details.dict())
+            logger.debug("Creating a new BatchFeatureTable", extra=location.table_details.dict())
             batch_feature_table_model = BatchFeatureTableModel(
                 _id=payload.output_document_id,
                 user_id=self.payload.user_id,

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from asgiref.sync import async_to_sync
+import asyncio
 
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.base import User
@@ -61,7 +61,7 @@ def execute_task(self: Any, **payload: Any) -> None:
     # send initial progress to indicate task is started
     progress.put({"percent": 0})
     try:
-        async_to_sync(executor.execute)()
+        asyncio.run(executor.execute())
         # send final progress to indicate task is completed
         progress.put({"percent": 100})
     finally:
