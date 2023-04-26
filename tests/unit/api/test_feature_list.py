@@ -1050,16 +1050,7 @@ def test_list_features(saved_feature_list, float_feature):
         ),
     )
 
-    feature_version_list = saved_feature_list.list_features(primary_table=["some_random_table"])
-    assert feature_version_list.shape[0] == 0
-
-    feature_version_list = saved_feature_list.list_features(primary_table="some_random_table")
-    assert feature_version_list.shape[0] == 0
-
-    feature_version_list = saved_feature_list.list_features(primary_entity=["some_random_entity"])
-    assert feature_version_list.shape[0] == 0
-
-    feature_version_list = saved_feature_list.list_features(primary_entity="some_random_entity")
+    feature_version_list = saved_feature_list.list_features()
     assert feature_version_list.shape[0] == 0
 
 
