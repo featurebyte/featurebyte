@@ -37,8 +37,8 @@ from featurebyte.query_graph.node.nested import ChangeViewMetadata, ItemViewMeta
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
-class SouceTableData(BaseTableData):
-    """SouceTableData class"""
+class SourceTableData(BaseTableData):
+    """SourceTableData class"""
 
     type: Literal[TableDataType.SOURCE_TABLE] = Field(TableDataType.SOURCE_TABLE, const=True)
 

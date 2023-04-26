@@ -110,7 +110,7 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
                 yield
 
     def test_create_422__failed_entity_validation_check(self, test_api_client_persistent):
-        """Test that 422 is returned when observation table fails validation check"""
+        """Test that 422 is returned when payload fails validation check"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         payload = self.payload.copy()
