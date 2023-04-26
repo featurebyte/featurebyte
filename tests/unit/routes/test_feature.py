@@ -372,11 +372,12 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
             if api_object == "feature":
                 feature_ids.append(response.json()["_id"])
-            if api_object == "feature_list_id":
+            if api_object == "feature_list":
                 feature_list_id = payload["_id"]
 
         response = test_api_client.get(self.base_route, params={"feature_list_id": feature_list_id})
         response_dict = response.json()
+
         output_feature_ids = [feat["_id"] for feat in response_dict["data"]]
         assert response.status_code == HTTPStatus.OK
         assert response_dict["total"] == len(feature_ids)
@@ -432,7 +433,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         # delete feature
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.NO_CONTENT
+        assert response.status_code == HTTPStatus.OK
 
         # check that the feature & feature namespace are deleted
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
@@ -476,7 +477,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         # delete feature
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.NO_CONTENT
+        assert response.status_code == HTTPStatus.OK
 
         # check namespace after delete
         namespace_dict = test_api_client.get(f"/feature_namespace/{namespace_id}").json()

@@ -534,7 +534,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # delete feature list
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.NO_CONTENT
+        assert response.status_code == HTTPStatus.OK
 
         # check that feature list and feature list namespace are deleted
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
@@ -559,7 +559,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # delete feature list
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.NO_CONTENT
+        assert response.status_code == HTTPStatus.OK
 
         # check namespace after delete
         namespace_dict = test_api_client.get(f"/feature_list_namespace/{namespace_id}").json()
@@ -755,21 +755,21 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         with patch("featurebyte.sql.tile_registry.TileRegistry.execute") as _:
-            response = test_api_client.post(
+            with test_api_client.stream(
+                "POST",
                 f"{self.base_route}/historical_features",
                 data={"payload": json.dumps(featurelist_get_historical_features_payload)},
                 files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
-                stream=True,
-            )
-            assert response.status_code == HTTPStatus.OK, response.json()
+            ) as response:
+                assert response.status_code == HTTPStatus.OK
 
-        # test streaming download works
-        content = b""
-        for chunk in response.iter_content(chunk_size=8192):
-            content += chunk
+                # test streaming download works
+                content = b""
+                for chunk in response.iter_bytes():
+                    content += chunk
 
-        df = dataframe_from_arrow_stream(content)
-        assert_frame_equal(df, expected_df)
+                df = dataframe_from_arrow_stream(content)
+                assert_frame_equal(df, expected_df)
 
     def test_sql_200(self, test_api_client_persistent, featurelist_preview_payload):
         """Test featurelist sql (success)"""

@@ -793,7 +793,7 @@ class FeatureList(
 
         List FeatureList versions with the same name (calling from FeatureList object):
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list") # doctest: +SKIP
         >>> feature_list.list_versions()  # doctest: +SKIP
                            name feature_list_namespace_id  num_features  online_frac  deployed              created_at
         0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
@@ -1420,7 +1420,7 @@ class FeatureList(
 
         Retrieve shell script template when "language" is set to "sh"
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +SKIP
         >>> feature_list.get_online_serving_code(language="sh")  # doctest: +SKIP
             \\#!/bin/sh
             curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\

@@ -422,7 +422,7 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         Wait for async job to complete
         """
         task_submission = create_response.json()
-        if not create_response.ok:
+        if not create_response.is_success:
             raise AssertionError(f'Task submission failed: {task_submission["detail"]}')
         task_id = task_submission["id"]
 

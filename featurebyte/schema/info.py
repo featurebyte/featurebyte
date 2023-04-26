@@ -367,3 +367,9 @@ class CredentialInfo(CredentialBriefInfo, BaseInfo):
     """
 
     feature_store_info: FeatureStoreInfo
+
+
+class DeleteResponse(FeatureByteBaseModel):
+    """
+    Delete response
+    """

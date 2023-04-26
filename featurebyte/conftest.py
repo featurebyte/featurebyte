@@ -3,8 +3,17 @@ Pytest configuration file for doctest
 """
 import pandas
 import pytest
+from alive_progress import config_handler
 
 import featurebyte
+
+
+@pytest.fixture(autouse=True, scope="session")
+def init_conftest():
+    """
+    Removes all alive_progress bars from the console for test-docs
+    """
+    config_handler.set_global(disable=True)
 
 
 @pytest.fixture(autouse=True)

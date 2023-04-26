@@ -27,7 +27,7 @@ from featurebyte.schema.credential import (
     CredentialRead,
     CredentialUpdate,
 )
-from featurebyte.schema.info import CredentialInfo
+from featurebyte.schema.info import CredentialInfo, DeleteResponse
 
 router = APIRouter(prefix="/credential")
 
@@ -159,11 +159,11 @@ async def list_credential_audit_logs(
     return audit_doc_list
 
 
-@router.delete("/{credential_id}", status_code=HTTPStatus.NO_CONTENT)
+@router.delete("/{credential_id}", status_code=HTTPStatus.OK)
 async def delete_credential(
     request: Request,
     credential_id: PydanticObjectId,
-) -> None:
+) -> DeleteResponse:
     """
     Delete credential
     """
@@ -171,3 +171,4 @@ async def delete_credential(
     await controller.delete_credential(
         credential_id=credential_id,
     )
+    return DeleteResponse()
