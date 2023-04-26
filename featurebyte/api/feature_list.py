@@ -425,8 +425,7 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.feature_names
         ['InvoiceCount_60days']
 
@@ -464,8 +463,7 @@ class FeatureList(
         --------
         Get a FeatureList object that is already saved.
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         """
         if version is None:
             feature_list_namespace = FeatureListNamespace.get(name=name)
@@ -534,8 +532,7 @@ class FeatureList(
         --------
         Delete a FeatureList.
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.delete()  # doctest: +SKIP
         """
         self._delete()
@@ -823,10 +820,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.list_versions()  # doctest: +SKIP
-        Loading Feature(s)...
                            name feature_list_namespace_id  num_features  online_frac  deployed              created_at
         0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
         """
@@ -887,8 +882,7 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> display_columns = ["name", "version", "dtype", "primary_tables", "primary_entities"]
         >>> feature_list.list_features().sort_values("created_at")[display_columns]  # doctest: +SKIP
                           name  version  dtype    primary_tables   primary_entities
@@ -1021,8 +1015,7 @@ class FeatureList(
         ... })
 
         Retrieve materialized historical features.
-        >>> feature_list.get_historical_features(observation_set)  # doctest: +ELLIPSIS
-        Retrieving Historical Feature(s)...
+        >>> feature_list.get_historical_features(observation_set)
           POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days  InvoiceAmountAvg_60days
         0    2022-04-15  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
         1    2022-04-17  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
@@ -1144,8 +1137,7 @@ class FeatureList(
         --------
         Retrieve feature list & check its features.
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.list_features()[["name", "version"]]  # doctest: +SKIP
                           name  version
         0  InvoiceCount_60days  V230330
@@ -1173,8 +1165,7 @@ class FeatureList(
 
         Create new version of feature list without specifying feature (uses the current default versions of feature).
 
-        >>> new_feature_list = feature_list.create_new_version()  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> new_feature_list = feature_list.create_new_version()
         >>> new_feature_list.list_features()[["name", "version"]]  # doctest: +SKIP
                           name    version
         0  InvoiceCount_60days  V230330_1
@@ -1183,8 +1174,7 @@ class FeatureList(
 
         >>> new_feature_list = feature_list.create_new_version(
         ...   features=[fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)]
-        ... )  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        ... )
 
         Reset the default version mode of the feature to make original feature as default. Create a new version
         of feature list using original feature list should throw an error due to no change in feature list is detected.
@@ -1247,8 +1237,7 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.update_status(FeatureListStatus.TEMPLATE)
         """
         self.feature_list_namespace.update(
@@ -1276,8 +1265,7 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
 
         See Also
@@ -1305,8 +1293,7 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
         >>> feature_list.as_default_version()
 
@@ -1354,8 +1341,7 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> deployment = feature_list.deploy(make_production_ready=True)  # doctest: +SKIP
 
         See Also
@@ -1404,8 +1390,7 @@ class FeatureList(
         --------
         Retrieve python code template when "language" is set to "python"
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
-        Loading Feature(s)...
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.get_online_serving_code(language="python")  # doctest: +SKIP
             from typing import Any, Dict
             import pandas as pd

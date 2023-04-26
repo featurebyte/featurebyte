@@ -3,8 +3,14 @@ Pytest configuration file for doctest
 """
 import pandas
 import pytest
+from alive_progress import config_handler
 
 import featurebyte
+
+
+@pytest.fixture(autouse=True, scope="session")
+def init_conftest():
+    config_handler.set_global(disable=True)
 
 
 @pytest.fixture(autouse=True)
