@@ -19,7 +19,9 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
 
 
 class SnowflakeDetails(BaseDatabaseDetails):
-    """Model for Snowflake data source information."""
+    """
+    Model for details used to connect to a Snowflake data source.
+    """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SnowflakeDetails")
 
@@ -49,7 +51,9 @@ class SQLiteDetails(BaseDatabaseDetails):
 
 
 class DatabricksDetails(BaseDatabaseDetails):
-    """Model for Databricks data source information"""
+    """
+    Model for details used to connect to a Databricks data source.
+    """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")
 
@@ -58,7 +62,8 @@ class DatabricksDetails(BaseDatabaseDetails):
     )
     http_path: StrictStr = Field(description="Databricks compute resource URL.")
     featurebyte_catalog: StrictStr = Field(
-        description="Name of the database that holds metadata about the actual data. This is commonly filled as `hive_metastore`."
+        description="Name of the database that holds metadata about the actual data. This is commonly filled as "
+        "`hive_metastore`."
     )
     featurebyte_schema: StrictStr = Field(
         description="The name of the schema containing the tables and columns."
@@ -66,16 +71,18 @@ class DatabricksDetails(BaseDatabaseDetails):
     storage_type: StorageType = Field(
         description="Storage type of where we will be persisting the feature store to."
     )
-    storage_url: str = Field(
-        description="Storage URL of where we will be persisting the feature store to. upload"
-    )
-    storage_spark_url: str = Field(
-        description="Spark URL of where we will be persisting the feature store to. read (within databricks)"
+    storage_url: str = Field(description="URL of where we will be uploading our custom UDFs to.")
+    storage_spark_url: StrictStr = Field(
+        description="URL of where we will be reading our data from. Note that this technically points to the same "
+        "location as the storage_url. However, the format that the warehouse accepts differs between the read and "
+        "write path, and as such, we require two fields."
     )
 
 
 class SparkDetails(BaseDatabaseDetails):
-    """Model for Spark data source information"""
+    """
+    Model for details used to connect to a Spark data source.
+    """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SparkDetails")
 
@@ -83,16 +90,31 @@ class SparkDetails(BaseDatabaseDetails):
         default="127.0.0.1", description="The server where your spark cluster is hosted."
     )
     port: int = Field(default=10000, description="The port your spark cluster is hosted on.")
-    http_path: StrictStr = Field(default="cliservice")
+    http_path: StrictStr = Field(default="cliservice", description="Spark compute resource URL.")
     use_http_transport: bool = Field(
-        default=False
-    )  # configuration on whether to use http, default to Thrift
-    use_ssl: bool = Field(default=False)
-    storage_type: StorageType
-    storage_url: str
-    storage_spark_url: StrictStr
-    featurebyte_catalog: StrictStr
-    featurebyte_schema: StrictStr
+        default=False,
+        description="Configuration on whether to use HTTP as our transport layer. Defaults to Thrift",
+    )
+    use_ssl: bool = Field(
+        default=False,
+        description="Configuration on whether to use SSL. Only applicable if use_http_transport is set to True.",
+    )
+    storage_type: StorageType = Field(
+        description="Storage type of where we will be persisting the feature store to."
+    )
+    storage_url: str = Field(description="URL of where we will be uploading our custom UDFs to.")
+    storage_spark_url: StrictStr = Field(
+        description="URL of where we will be reading our data from. Note that this technically points to the same "
+        "location as the storage_url. However, the format that the warehouse accepts differs between the read and "
+        "write path, and as such, we require two fields."
+    )
+    featurebyte_catalog: StrictStr = Field(
+        description="Name of the database that holds metadata about the actual data. This is commonly filled as "
+        "`hive_metastore`."
+    )
+    featurebyte_schema: StrictStr = Field(
+        description="The name of the schema containing the tables and columns."
+    )
 
 
 class TestDatabaseDetails(BaseDatabaseDetails):
