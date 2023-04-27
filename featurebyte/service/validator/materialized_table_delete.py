@@ -37,6 +37,11 @@ async def check_delete_batch_request_table(
     Returns
     -------
     BatchRequestTableModel
+
+    Raises
+    ------
+    DocumentDeletionError
+        If the document cannot be deleted
     """
     document = await batch_request_table_service.get_document(document_id=document_id)
     reference_results = await batch_feature_table_service.list_documents(
@@ -74,6 +79,11 @@ async def check_delete_observation_table(
     Returns
     -------
     ObservationTableModel
+
+    Raises
+    ------
+    DocumentDeletionError
+        If the document cannot be deleted
     """
     document = await observation_table_service.get_document(document_id=document_id)
     reference_results = await historical_feature_table_service.list_documents(

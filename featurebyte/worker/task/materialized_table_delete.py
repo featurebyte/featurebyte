@@ -29,6 +29,10 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
     def task_payload(self) -> MaterializedTableDeleteTaskPayload:
         """
         Task payload
+
+        Returns
+        -------
+        MaterializedTableDeleteTaskPayload
         """
         return cast(MaterializedTableDeleteTaskPayload, self.payload)
 
