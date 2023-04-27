@@ -11,6 +11,10 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+from featurebyte.schema.worker.task.materialized_table_delete import (
+    MaterializedTableCollectionName,
+    MaterializedTableDeleteTaskPayload,
+)
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
@@ -35,6 +39,32 @@ class BaseMaterializedTableService(
     ):
         super().__init__(user, persistent, catalog_id)
         self.feature_store_service = feature_store_service
+
+    async def get_materialized_table_delete_task_payload(
+        self, document_id: ObjectId
+    ) -> MaterializedTableDeleteTaskPayload:
+        """
+        Get the materialized table delete task payload
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            The document id
+
+        Returns
+        -------
+        MaterializedTableDeleteTaskPayload
+        """
+        # check existence of the document first
+        await self.get_document(document_id=document_id)
+
+        # create the task payload & return
+        return MaterializedTableDeleteTaskPayload(
+            user_id=self.user.id,
+            catalog_id=self.catalog_id,
+            document_id=document_id,
+            collection_name=self.document_class.collection_name(),
+        )
 
     async def generate_materialized_table_location(
         self, get_credential: Any, feature_store_id: ObjectId

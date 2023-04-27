@@ -59,7 +59,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         await self.app_container.batch_request_table_service.delete_document(
             document_id=document.id
         )
-        return document
+        return cast(MaterializedTableModel, document)
 
     async def _delete_batch_feature_table(self) -> MaterializedTableModel:
         document = await self.app_container.batch_feature_table_service.get_document(
@@ -68,7 +68,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         await self.app_container.batch_feature_table_service.delete_document(
             document_id=document.id
         )
-        return document
+        return cast(MaterializedTableModel, document)
 
     async def _delete_observation_table(self) -> MaterializedTableModel:
         document = await self.app_container.observation_table_service.get_document(
@@ -87,7 +87,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
                 )
             )
         await self.app_container.observation_table_service.delete_document(document_id=document.id)
-        return document
+        return cast(MaterializedTableModel, document)
 
     async def _delete_historical_feature_table(self) -> MaterializedTableModel:
         document = await self.app_container.historical_feature_table_service.get_document(
@@ -96,7 +96,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         await self.app_container.historical_feature_table_service.delete_document(
             document_id=document.id
         )
-        return document
+        return cast(MaterializedTableModel, document)
 
     async def execute(self) -> Any:
         """
@@ -124,8 +124,8 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
                 )
                 db_session = await self.get_db_session(feature_store=feature_store)
                 await db_session.drop_table(
-                    table_name=deleted_document.location.table_name,
-                    schema_name=deleted_document.location.schema_name,
-                    database_name=deleted_document.location.database_name,
+                    table_name=deleted_document.location.table_details.table_name,
+                    schema_name=deleted_document.location.table_details.schema_name,  # type: ignore
+                    database_name=deleted_document.location.table_details.database_name,  # type: ignore
                 )
                 return
