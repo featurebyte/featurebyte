@@ -372,18 +372,18 @@ async def get_dataframe_from_materialized_table(session, materialized_table):
     return await session.execute_query(query)
 
 
-async def get_historical_features_async_dataframe_helper(
+async def compute_historical_feature_table_dataframe_helper(
     feature_list, df_observation_set, session, data_source, **kwargs
 ):
     """
-    Helper to call get_historical_features_async using DataFrame as input, converted to an
+    Helper to call compute_historical_feature_table using DataFrame as input, converted to an
     intermediate observation table
     """
     observation_table = await create_observation_table_from_dataframe(
         session, df_observation_set, data_source
     )
     historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
-    historical_feature_table = feature_list.get_historical_features_async(
+    historical_feature_table = feature_list.compute_historical_feature_table(
         observation_table, historical_feature_table_name, **kwargs
     )
     df_historical_features = await get_dataframe_from_materialized_table(

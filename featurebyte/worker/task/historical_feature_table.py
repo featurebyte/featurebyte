@@ -53,7 +53,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
             db_session=db_session, table_details=location.table_details
         ):
             preview_service: PreviewService = app_container.preview_service
-            await preview_service.get_historical_features(
+            await preview_service.compute_historical_features(
                 observation_set=observation_table_model,
                 featurelist_get_historical_features=payload.featurelist_get_historical_features,
                 get_credential=self.get_credential,

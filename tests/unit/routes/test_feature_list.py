@@ -738,7 +738,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         featurelist_get_historical_features_payload,
         mock_get_session,
     ):
-        """Test feature list get_historical_features"""
+        """Test feature list compute_historical_features"""
         test_api_client, _ = test_api_client_persistent
         observation_set = pd.DataFrame({"cust_id": [0, 1, 2], "POINT_IN_TIME": ["2022-04-01"] * 3})
         expected_df = pd.DataFrame({"a": [0, 1, 2]})

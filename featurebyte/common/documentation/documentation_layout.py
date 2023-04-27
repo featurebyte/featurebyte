@@ -353,7 +353,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, CONSTRUCTOR, "FeatureList"]),
         DocLayoutItem([FEATURE_LIST, CREATE_FEATURE_GROUP, "FeatureList.drop"]),
         DocLayoutItem([FEATURE_LIST, DEPLOY, "FeatureList.deploy"]),
-        DocLayoutItem([FEATURE_LIST, DEPLOY, "FeatureList.get_historical_features_async"]),
+        DocLayoutItem([FEATURE_LIST, DEPLOY, "FeatureList.compute_historical_feature_table"]),
         DocLayoutItem([FEATURE_LIST, SAVE, "FeatureList.save"]),
         DocLayoutItem([FEATURE_LIST, EXPLORE, "FeatureList.preview"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.created_at"]),
@@ -378,7 +378,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.list_versions"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_default_version_mode"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_status"]),
-        DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_historical_features"]),
+        DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_features"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_online_serving_code"]),
     ]
 
@@ -753,7 +753,7 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         The layout for the Deployment module.
     """
     return [
-        DocLayoutItem([DEPLOYMENT, GET, "Deployment.get_batch_features"]),
+        DocLayoutItem([DEPLOYMENT, GET, "Deployment.compute_batch_feature_table"]),
         DocLayoutItem([DEPLOYMENT, GET, "Deployment.get"]),
         DocLayoutItem([DEPLOYMENT, GET, "Deployment.get_by_id"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.enabled"]),

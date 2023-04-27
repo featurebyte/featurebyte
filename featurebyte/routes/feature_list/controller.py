@@ -280,7 +280,7 @@ class FeatureListController(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
 
-    async def get_historical_features(
+    async def compute_historical_features(
         self,
         observation_set: UploadFile,
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
@@ -309,7 +309,7 @@ class FeatureListController(
             Invalid request payload
         """
         try:
-            bytestream = await self.preview_service.get_historical_features(
+            bytestream = await self.preview_service.compute_historical_features(
                 observation_set=dataframe_from_arrow_stream(observation_set.file),
                 featurelist_get_historical_features=featurelist_get_historical_features,
                 get_credential=get_credential,

@@ -190,7 +190,7 @@ async def get_historical_features(
     """
     featurelist_get_historical_features = FeatureListGetHistoricalFeatures(**json.loads(payload))
     controller = request.state.app_container.feature_list_controller
-    result: StreamingResponse = await controller.get_historical_features(
+    result: StreamingResponse = await controller.compute_historical_features(
         observation_set=observation_set,
         featurelist_get_historical_features=featurelist_get_historical_features,
         get_credential=request.state.get_credential,

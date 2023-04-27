@@ -20,7 +20,7 @@ def mock_online_enable_service_update_data_warehouse():
 def batch_feature_table_fixture(deployment, batch_request_table_from_view):
     """BatchFeatureTable fixture"""
     deployment.enable()
-    batch_feature_table = deployment.get_batch_features(
+    batch_feature_table = deployment.compute_batch_feature_table(
         batch_request_table_from_view, "my_batch_feature_table"
     )
     return batch_feature_table

@@ -432,7 +432,7 @@ class PreviewService(BaseService):
 
         return dataframe_to_json(result)
 
-    async def get_historical_features(
+    async def compute_historical_features(
         self,
         observation_set: Union[pd.DataFrame, ObservationTableModel],
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,

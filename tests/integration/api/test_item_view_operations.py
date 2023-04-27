@@ -69,7 +69,7 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
     }
 
     # check historical features
-    df = item_aggregate_with_category_features.get_historical_features(
+    df = item_aggregate_with_category_features.compute_historical_features(
         pd.DataFrame(
             {
                 "POINT_IN_TIME": ["2001-11-15 10:00:00"] * 3,
@@ -136,7 +136,7 @@ def test_item_view_ops(item_table, expected_joined_event_item_dataframe):
         }
     )
     feature_list = FeatureList([feature], name="feature_list")
-    df_historical_features = feature_list.get_historical_features(df_training_events)
+    df_historical_features = feature_list.compute_historical_features(df_training_events)
     assert df_historical_features["count_30d"].tolist() == [
         '{\n  "TYPE_42": 4\n}',
         None,
@@ -244,7 +244,7 @@ def test_item_view_joined_with_dimension_view(
         }
     )
     feature_list = FeatureList([feature], name="feature_list")
-    df_historical_features = feature_list.get_historical_features(df_training_events)
+    df_historical_features = feature_list.compute_historical_features(df_training_events)
     assert df_historical_features.sort_values("üser id")[
         "most_frequent_item_type_30d"
     ].tolist() == ["type_10140", "type_1008", "type_11333", "type_10261", "type_10657"]

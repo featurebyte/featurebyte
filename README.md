@@ -130,9 +130,7 @@ feature_list = fb.FeatureList(
 )
 
 # Get training data
-train_df = feature_list.get_historical_features(
-    observation_set
-)
+train_df = feature_list.compute_historical_features(observation_set)
 
 # Deploy for online serving
 feature_list.deploy()

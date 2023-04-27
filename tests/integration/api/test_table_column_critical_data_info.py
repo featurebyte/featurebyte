@@ -110,7 +110,7 @@ def test_event_table_update_critical_data_info(event_table):
     df_training_events = pd.DataFrame(
         {"POINT_IN_TIME": pd.to_datetime(["2001-01-14 00:00:00"]), "cust_id": [938]}
     )
-    hist_feat = FeatureList([feature_group], name="feature_list").get_historical_features(
+    hist_feat = FeatureList([feature_group], name="feature_list").compute_historical_features(
         df_training_events
     )
     pd.testing.assert_frame_equal(feat_preview_df, hist_feat, check_dtype=False)
@@ -163,9 +163,9 @@ def test_item_table_update_critical_data_info(item_table):
             "order_id": ["T236", "T236"],
         }
     )
-    hist_feat = FeatureList([feature, window_feature], name="feature_list").get_historical_features(
-        df_training_events
-    )
+    hist_feat = FeatureList(
+        [feature, window_feature], name="feature_list"
+    ).compute_historical_features(df_training_events)
     assert list(hist_feat.columns) == [
         "POINT_IN_TIME",
         "üser id",

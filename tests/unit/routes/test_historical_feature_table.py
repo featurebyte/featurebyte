@@ -98,7 +98,7 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
     @pytest.fixture(autouse=True)
     def always_patched_get_historical_feature(self):
         """
-        Patch parts of get_historical_features that have coverage elsewhere and not relevant to unit
+        Patch parts of compute_historical_features that have coverage elsewhere and not relevant to unit
         testing the routes
         """
         with patch(

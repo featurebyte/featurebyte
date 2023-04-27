@@ -115,7 +115,7 @@ async def test_online_serving_sql(
             "üser id": user_ids,
         }
     )
-    df_historical = feature_list.get_historical_features(df_training_events)
+    df_historical = feature_list.compute_historical_features(df_training_events)
 
     try:
         # Run online store retrieval sql
@@ -196,7 +196,7 @@ def check_get_batch_features_async(
     """
     Check get_batch_features_async
     """
-    batch_feature_table = deployment.get_batch_features(
+    batch_feature_table = deployment.compute_batch_feature_table(
         batch_request_table=batch_request_table,
         batch_feature_table_name="batch_feature_table",
     )

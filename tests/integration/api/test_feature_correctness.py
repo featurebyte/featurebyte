@@ -378,7 +378,7 @@ def test_aggregate_over(
     check_feature_preview(feature_list, df_expected, dict_like_columns)
 
     tic = time.time()
-    df_historical_features = feature_list.get_historical_features(
+    df_historical_features = feature_list.compute_historical_features(
         observation_set,
         serving_names_mapping={"üser id": "ÜSER ID"},
     )
@@ -450,7 +450,7 @@ def test_aggregate_asat(
     feature_list = FeatureList(features, name="feature_list")
 
     # Check historical features
-    df_historical_features = feature_list.get_historical_features(
+    df_historical_features = feature_list.compute_historical_features(
         scd_observation_set,
         serving_names_mapping={"user_status": "User Status"},
     )

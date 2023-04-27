@@ -105,7 +105,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
             "featurebyte.api.feature_list.dataframe_from_arrow_stream"
         ) as mock_from_arrow_stream:
             mock_from_arrow_stream.return_value = pd.DataFrame({InternalName.ROW_INDEX: []})
-            flist.get_historical_features(dataframe)
+            flist.compute_historical_features(dataframe)
 
     # check the case when response status code is not OK
     with patch("requests.sessions.Session.post") as mock_post:
@@ -113,7 +113,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
         mock_response.status_code = 500
         mock_response.text = "Connection broken: InvalidChunkLength(got length b'', 0 bytes read)"
         with pytest.raises(RecordRetrievalException) as exc:
-            flist.get_historical_features(dataframe)
+            flist.compute_historical_features(dataframe)
 
     expected_msg = (
         "Connection broken: InvalidChunkLength(got length b'', 0 bytes read)\n"
@@ -128,7 +128,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
 def test_feature_list__get_historical_features__iteration_logic(
     single_feat_flist, mocked_compute_tiles_on_demand, max_batch_size
 ):
-    """Check get_historical_features iteration logic"""
+    """Check compute_historical_features iteration logic"""
     flist = single_feat_flist
     row_number = 9
     dataframe = pd.DataFrame(
@@ -148,7 +148,7 @@ def test_feature_list__get_historical_features__iteration_logic(
             mock_response = mock_post.return_value
             mock_response.status_code = 200
             mock_response.context = ""
-            flist.get_historical_features(dataframe, max_batch_size=max_batch_size)
+            flist.compute_historical_features(dataframe, max_batch_size=max_batch_size)
 
     # check that no training events are missed
     training_events_table = []

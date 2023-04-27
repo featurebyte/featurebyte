@@ -22,8 +22,8 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.node.schema import ColumnSpec
 from tests.util.helper import (
     assert_preview_result_equal,
+    compute_historical_feature_table_dataframe_helper,
     fb_assert_frame_equal,
-    get_historical_features_async_dataframe_helper,
     get_lagged_series_pandas,
     iet_entropy,
 )
@@ -652,14 +652,14 @@ async def test_get_historical_features(
     )
 
     if use_async_workflow:
-        df_historical_features = await get_historical_features_async_dataframe_helper(
+        df_historical_features = await compute_historical_feature_table_dataframe_helper(
             feature_list=feature_list,
             df_observation_set=df_training_events,
             session=session,
             data_source=data_source,
         )
     else:
-        df_historical_features = feature_list.get_historical_features(df_training_events)
+        df_historical_features = feature_list.compute_historical_features(df_training_events)
 
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
     fb_assert_frame_equal(
@@ -672,7 +672,7 @@ async def test_get_historical_features(
     if not use_async_workflow:
         # check that making multiple request calls produces the same result
         max_batch_size = int((len(df_training_events) / 2.0) + 1)
-        df_historical_multi = feature_list.get_historical_features(
+        df_historical_multi = feature_list.compute_historical_features(
             df_training_events, max_batch_size=max_batch_size
         )
         sort_cols = list(df_training_events.columns)
@@ -712,7 +712,7 @@ async def _test_get_historical_features_with_serving_names(
     assert "new_user id" in df_historical_expected
 
     if use_async_workflow:
-        df_historical_features = await get_historical_features_async_dataframe_helper(
+        df_historical_features = await compute_historical_feature_table_dataframe_helper(
             feature_list=feature_list,
             df_observation_set=df_training_events,
             session=session,
@@ -720,7 +720,7 @@ async def _test_get_historical_features_with_serving_names(
             serving_names_mapping=mapping,
         )
     else:
-        df_historical_features = feature_list.get_historical_features(
+        df_historical_features = feature_list.compute_historical_features(
             df_training_events,
             serving_names_mapping=mapping,
         )
@@ -1243,11 +1243,11 @@ def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
 
     # This request triggers tile table creation
     observations_set = pd.DataFrame({"POINT_IN_TIME": ["2001-01-02 10:00:00"], "üser id": 1})
-    _ = feature_list_1.get_historical_features(observations_set)
+    _ = feature_list_1.compute_historical_features(observations_set)
 
     # This request causes the tile values corresponding to latest event timestamp to be added to the
     # same tile table
-    df = feature_list_2.get_historical_features(observations_set)
+    df = feature_list_2.compute_historical_features(observations_set)
 
     expected_feature_value = pd.Timestamp("2001-01-02 08:42:19.000673+0000", tz="UTC")
     if source_type == "spark":
