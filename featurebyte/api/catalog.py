@@ -205,6 +205,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     def get_or_create(
         cls,
         name: str,
+        feature_store_name: str,
     ) -> Catalog:
         """
         Create and return an instance of a catalog. If a catalog with the same name already exists,
@@ -214,6 +215,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         ----------
         name: str
             Name of catalog to get or create.
+        feature_store_name: str
+            Name of feature store to associate with the catalog that we are creating.
 
         Returns
         -------
@@ -238,7 +241,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             activate_catalog(catalog.id)
             return catalog
         except RecordRetrievalException:
-            return Catalog.create(name=name)
+            return Catalog.create(name=name, feature_store_name=feature_store_name)
 
     @classmethod
     def get_active(cls) -> Catalog:
@@ -806,7 +809,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> data_source = catalog.get_data_source("playground")
         """
-        assert len(self.internal_default_feature_store_ids) > 0
+        assert len(self.internal_default_feature_store_ids) == 1
         feature_store = FeatureStore.get_by_id(id=self.internal_default_feature_store_ids[0])
         return feature_store.get_data_source()  # pylint: disable=no-member
 

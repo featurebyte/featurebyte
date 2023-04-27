@@ -495,7 +495,9 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         Create catalog
         """
         test_api_client, _ = test_api_client_persistent
-        response = test_api_client.post("/catalog", json={"name": "Test"})
+        response = test_api_client.post(
+            "/catalog", json={"name": "Test", "default_feature_store_ids": []}
+        )
         assert response.status_code == HTTPStatus.CREATED
         return ObjectId(response.json()["_id"])
 
