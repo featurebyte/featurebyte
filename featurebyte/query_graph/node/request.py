@@ -22,7 +22,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     StatementT,
     VariableNameGenerator,
     VarNameExpressionStr,
-    get_object_class_from_function_call,
 )
 
 
