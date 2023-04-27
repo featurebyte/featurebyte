@@ -21,6 +21,7 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.deployment import (
     DeploymentCreate,
+    DeploymentInfo,
     DeploymentList,
     DeploymentSummary,
     DeploymentUpdate,
@@ -110,6 +111,22 @@ async def list_deployment_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.get("/{deployment_id}/info", response_model=DeploymentInfo)
+async def get_deployment_info(
+    request: Request,
+    deployment_id: PydanticObjectId,
+    verbose: bool = False,
+) -> DeploymentInfo:
+    """
+    Get Deployment Info
+    """
+    controller = request.state.app_container.deployment_controller
+    deployment_info: DeploymentInfo = await controller.get_info(
+        document_id=deployment_id, verbose=verbose
+    )
+    return deployment_info
 
 
 @router.get("/summary/", response_model=DeploymentSummary)

@@ -1,18 +1,13 @@
 """
 Tests for BatchFeatureTable routes
 """
-import json
-from contextlib import contextmanager
 from http import HTTPStatus
-from unittest import mock
 from unittest.mock import patch
 
-import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from tests.unit.routes.base import BaseAsyncApiTestSuite
 
 
@@ -58,44 +53,22 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
 
     @pytest.fixture(autouse=True)
     def mock_online_enable_service_update_data_warehouse(self):
-        """Mock _update_data_warehouse method in OnlineEnableService to make it a no-op"""
+        """Mock update_data_warehouse method in OnlineEnableService to make it a no-op"""
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 
-    @contextmanager
-    def patch_snowflake_execute_query(self, query_map, handle_batch_request_table_query):
-        """Patch SnowflakeSession.execute_query to return mock data"""
-
-        def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
-            _ = timeout
-            if handle_batch_request_table_query and query.startswith(
-                'SHOW COLUMNS IN "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_'
-            ):
-                # return a cust_id column for batch request table to pass validation
-                res = [
-                    {
-                        "column_name": "cust_id",
-                        "data_type": json.dumps({"type": "FIXED", "scale": 0}),
-                    }
-                ]
-            else:
-                res = query_map.get(query)
-
-            if res is not None:
-                return pd.DataFrame(res)
-            return None
-
-        with mock.patch(
-            "featurebyte.session.snowflake.SnowflakeSession.execute_query"
-        ) as mock_execute_query:
-            mock_execute_query.side_effect = side_effect
-            yield mock_execute_query
-
     @pytest.fixture(autouse=True)
-    def auto_patch_snowflake_execute_query(self, snowflake_connector, snowflake_query_map):
+    def auto_patch_snowflake_execute_query(
+        self,
+        snowflake_connector,
+        snowflake_query_map,
+        snowflake_execute_query_batch_request_table_patcher,
+    ):
         """Patch SnowflakeSession.execute_query to return mock data"""
         _ = snowflake_connector
-        with self.patch_snowflake_execute_query(snowflake_query_map, True) as mock_execute_query:
+        with snowflake_execute_query_batch_request_table_patcher(
+            snowflake_query_map, True
+        ) as mock_execute_query:
             yield mock_execute_query
 
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
@@ -142,11 +115,14 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
             yield payload
 
     def test_create_422__batch_request_table_failed_validation_check(
-        self, test_api_client_persistent, snowflake_query_map
+        self,
+        test_api_client_persistent,
+        snowflake_query_map,
+        snowflake_execute_query_batch_request_table_patcher,
     ):
         """Test create 422 for batch request table failed validation check"""
         test_api_client, _ = test_api_client_persistent
-        with self.patch_snowflake_execute_query(snowflake_query_map, False):
+        with snowflake_execute_query_batch_request_table_patcher(snowflake_query_map, False):
             self.setup_creation_route(test_api_client)
 
             # check that columns_info is empty as we are mocking the query
@@ -161,3 +137,23 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
         assert response.json()["detail"] == (
             'Required entities are not provided in the request: customer (serving name: "cust_id")'
         )
+
+    def test_info_200(self, test_api_client_persistent, create_success_response):
+        """Test info route"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict == {
+            "name": self.payload["name"],
+            "deployment_name": 'Deployment (feature_list: "sf_feature_list")',
+            "batch_request_table_name": "batch_request_table",
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": response_dict["table_details"]["table_name"],
+            },
+            "created_at": response_dict["created_at"],
+            "updated_at": None,
+        }

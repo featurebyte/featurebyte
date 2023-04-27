@@ -22,7 +22,11 @@ from featurebyte.query_graph.model.feature_job_setting import (
     TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.schema.batch_feature_table import BatchFeatureTableInfo
+from featurebyte.schema.batch_request_table import BatchRequestTableInfo
+from featurebyte.schema.deployment import DeploymentInfo
 from featurebyte.schema.feature import FeatureBriefInfoList
+from featurebyte.schema.historical_feature_table import HistoricalFeatureTableInfo
 from featurebyte.schema.info import (
     CatalogInfo,
     CredentialInfo,
@@ -41,13 +45,18 @@ from featurebyte.schema.info import (
     SCDTableInfo,
     TableBriefInfoList,
 )
+from featurebyte.schema.observation_table import ObservationTableInfo
 from featurebyte.schema.relationship_info import RelationshipInfoInfo
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.table import TableList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.batch_feature_table import BatchFeatureTableService
+from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -57,8 +66,10 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
@@ -73,7 +84,7 @@ class InfoService(BaseService):
     InfoService class is responsible for rendering the info of a specific api object.
     """
 
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,too-many-lines
 
     def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
         super().__init__(user, persistent, catalog_id)
@@ -120,6 +131,38 @@ class InfoService(BaseService):
         )
         self.relationship_info_service = RelationshipInfoService(
             user=user, persistent=persistent, catalog_id=catalog_id
+        )
+        self.context_service = ContextService(
+            user=user, persistent=persistent, catalog_id=catalog_id
+        )
+        self.observation_table_service = ObservationTableService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            feature_store_service=self.feature_store_service,
+            context_service=self.context_service,
+        )
+        self.historical_feature_table_service = HistoricalFeatureTableService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            feature_store_service=self.feature_store_service,
+        )
+        self.deployment_service = DeploymentService(
+            user=user, persistent=persistent, catalog_id=catalog_id
+        )
+        self.batch_request_table_service = BatchRequestTableService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            feature_store_service=self.feature_store_service,
+            context_service=self.context_service,
+        )
+        self.batch_feature_table_service = BatchFeatureTableService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            feature_store_service=self.feature_store_service,
         )
         self.user_service = UserService(user=user, persistent=persistent, catalog_id=catalog_id)
 
@@ -869,4 +912,173 @@ class InfoService(BaseService):
             else None,
             created_at=credential.created_at,
             updated_at=credential.updated_at,
+        )
+
+    async def get_observation_table_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> ObservationTableInfo:
+        """
+        Get observation table info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        ObservationTableInfo
+        """
+        _ = verbose
+        observation_table = await self.observation_table_service.get_document(
+            document_id=document_id
+        )
+        feature_store = await self.feature_store_service.get_document(
+            document_id=observation_table.location.feature_store_id
+        )
+        return ObservationTableInfo(
+            name=observation_table.name,
+            type=observation_table.request_input.type,
+            feature_store_name=feature_store.name,
+            table_details=observation_table.location.table_details,
+            created_at=observation_table.created_at,
+            updated_at=observation_table.updated_at,
+        )
+
+    async def get_historical_feature_table_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> HistoricalFeatureTableInfo:
+        """
+        Get historical feature table info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        HistoricalFeatureTableInfo
+        """
+        _ = verbose
+        historical_feature_table = await self.historical_feature_table_service.get_document(
+            document_id=document_id
+        )
+        observation_table = await self.observation_table_service.get_document(
+            document_id=historical_feature_table.observation_table_id
+        )
+        feature_list = await self.feature_list_service.get_document(
+            document_id=historical_feature_table.feature_list_id
+        )
+        return HistoricalFeatureTableInfo(
+            name=historical_feature_table.name,
+            feature_list_name=feature_list.name,
+            feature_list_version=feature_list.version.to_str(),
+            observation_table_name=observation_table.name,
+            table_details=historical_feature_table.location.table_details,
+            created_at=historical_feature_table.created_at,
+            updated_at=historical_feature_table.updated_at,
+        )
+
+    async def get_deployment_info(self, document_id: ObjectId, verbose: bool) -> DeploymentInfo:
+        """
+        Get deployment info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        DeploymentInfo
+        """
+        _ = verbose
+        deployment = await self.deployment_service.get_document(document_id=document_id)
+        feature_list = await self.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
+        )
+        return DeploymentInfo(
+            name=deployment.name,
+            feature_list_name=feature_list.name,
+            feature_list_version=feature_list.version.to_str(),
+            num_feature=len(feature_list.feature_ids),
+            enabled=deployment.enabled,
+            created_at=deployment.created_at,
+            updated_at=deployment.updated_at,
+        )
+
+    async def get_batch_request_table_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> BatchRequestTableInfo:
+        """
+        Get batch request table info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        BatchRequestTableInfo
+        """
+        _ = verbose
+        batch_request_table = await self.batch_request_table_service.get_document(
+            document_id=document_id
+        )
+        feature_store = await self.feature_store_service.get_document(
+            document_id=batch_request_table.location.feature_store_id
+        )
+        return BatchRequestTableInfo(
+            name=batch_request_table.name,
+            type=batch_request_table.request_input.type,
+            feature_store_name=feature_store.name,
+            table_details=batch_request_table.location.table_details,
+            created_at=batch_request_table.created_at,
+            updated_at=batch_request_table.updated_at,
+        )
+
+    async def get_batch_feature_table_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> BatchFeatureTableInfo:
+        """
+        Get batch feature table info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        BatchFeatureTableInfo
+        """
+        _ = verbose
+        batch_feature_table = await self.batch_feature_table_service.get_document(
+            document_id=document_id
+        )
+        batch_request_table = await self.batch_request_table_service.get_document(
+            document_id=batch_feature_table.batch_request_table_id
+        )
+        deployment = await self.deployment_service.get_document(
+            document_id=batch_feature_table.deployment_id
+        )
+        return BatchFeatureTableInfo(
+            name=batch_feature_table.name,
+            deployment_name=deployment.name,
+            batch_request_table_name=batch_request_table.name,
+            table_details=batch_feature_table.location.table_details,
+            created_at=batch_feature_table.created_at,
+            updated_at=batch_feature_table.updated_at,
         )

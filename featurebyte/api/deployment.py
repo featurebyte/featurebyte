@@ -41,13 +41,13 @@ class Deployment(ApiObject):
         "name",
         "feature_list_name",
         "feature_list_version",
-        "num_features",
+        "num_feature",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("catalog_id", Catalog, "catalog"),
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_name", "name", True),
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_version", "version", True),
-        ForeignKeyMapping("feature_list_id", FeatureList, "num_features", "num_features", True),
+        ForeignKeyMapping("feature_list_id", FeatureList, "num_feature", "num_feature", True),
     ]
 
     @property

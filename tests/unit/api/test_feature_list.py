@@ -572,7 +572,7 @@ def test_list(saved_feature_list):
             {
                 "id": [saved_feature_list.id],
                 "name": [saved_feature_list_namespace.name],
-                "num_features": 1,
+                "num_feature": 1,
                 "status": [saved_feature_list_namespace.status],
                 "deployed": [saved_feature_list.deployed],
                 "readiness_frac": 0.0,
@@ -615,7 +615,7 @@ def test_list_versions(saved_feature_list):
                     flist_1.feature_list_namespace_id,
                     saved_feature_list.feature_list_namespace.id,
                 ],
-                "num_features": [2, 2, 1],
+                "num_feature": [2, 2, 1],
                 "online_frac": [0.0] * 3,
                 "deployed": [False, False, saved_feature_list.deployed],
                 "created_at": [
@@ -635,7 +635,7 @@ def test_list_versions(saved_feature_list):
                 "name": [saved_feature_list.name],
                 "version": [saved_feature_list.version.to_str()],
                 "feature_list_namespace_id": [saved_feature_list.feature_list_namespace.id],
-                "num_features": 1,
+                "num_feature": 1,
                 "online_frac": 0.0,
                 "deployed": [saved_feature_list.deployed],
                 "created_at": [saved_feature_list.created_at],
@@ -802,7 +802,7 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
                 "name",
                 "feature_list_name",
                 "feature_list_version",
-                "num_features",
+                "num_feature",
             ]
         ),
     )
@@ -817,7 +817,7 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     expected_deployment_name = f'Deployment (feature_list: "{feature_list.name}", version: {feature_list.version.to_str()})'
     assert_frame_equal(
         deployments[
-            ["catalog", "name", "feature_list_name", "feature_list_version", "num_features"]
+            ["catalog", "name", "feature_list_name", "feature_list_version", "num_feature"]
         ],
         pd.DataFrame(
             [
@@ -826,7 +826,7 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
                     "name": expected_deployment_name,
                     "feature_list_name": feature_list.name,
                     "feature_list_version": feature_list.version.to_str(),
-                    "num_features": len(feature_list.feature_names),
+                    "num_feature": len(feature_list.feature_names),
                 }
             ]
         ),

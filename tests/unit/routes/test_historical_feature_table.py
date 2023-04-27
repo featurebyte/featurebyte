@@ -1,6 +1,7 @@
 """
 Tests for HistoricalFeatureTable routes
 """
+import copy
 from http import HTTPStatus
 from unittest.mock import patch
 
@@ -113,7 +114,7 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
         """Test that 422 is returned when payload fails validation check"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
-        payload = self.payload.copy()
+        payload = copy.deepcopy(self.payload)
         payload["featurelist_get_historical_features"]["serving_names_mapping"] = {
             "random_name": "random_name"
         }
@@ -123,3 +124,25 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
         assert response.json()["detail"] == (
             "Unexpected serving names provided in serving_names_mapping: random_name"
         )
+
+    def test_info_200(self, test_api_client_persistent, create_success_response):
+        """Test info route"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        response_dict = response.json()
+        assert isinstance(response_dict["feature_list_version"], str)
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict == {
+            "name": self.payload["name"],
+            "feature_list_name": "sf_feature_list",
+            "feature_list_version": response_dict["feature_list_version"],
+            "observation_table_name": "observation_table",
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": response_dict["table_details"]["table_name"],
+            },
+            "created_at": response_dict["created_at"],
+            "updated_at": None,
+        }

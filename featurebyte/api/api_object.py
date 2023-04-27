@@ -221,7 +221,6 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return cls(
             **cls._get_object_dict_by_name(name=name, other_params=other_params),
             **cls._get_init_params(),
-            saved=True,
             _validate_schema=True,
         )
 
@@ -285,7 +284,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ApiObjectT
             Deserialized object
         """
-        return cls(**object_dict, **cls._get_init_params(), saved=True, _validate_schema=True)
+        return cls(**object_dict, **cls._get_init_params(), _validate_schema=True)
 
     @classmethod
     def _get_by_id(
@@ -606,7 +605,6 @@ class ApiObject(FeatureByteBaseDocumentModel):
                 self,
                 **object_dict,
                 **self._get_init_params_from_object(),
-                saved=True,
             )
         elif response.status_code == HTTPStatus.NOT_FOUND and allow_update_local:
             for key, value in update_payload.items():
@@ -938,7 +936,6 @@ class SavableApiObject(ApiObject):
             self,
             **object_dict,
             **self._get_init_params_from_object(),
-            saved=True,
         )
 
 

@@ -122,7 +122,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     _get_schema = FeatureListNamespaceModel
     _list_fields = [
         "name",
-        "num_features",
+        "num_feature",
         "status",
         "deployed",
         "readiness_frac",
@@ -218,7 +218,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         # replace id with default_feature_list_id
         feature_lists["id"] = feature_lists["default_feature_list_id"]
 
-        feature_lists["num_features"] = feature_lists.feature_namespace_ids.apply(len)
+        feature_lists["num_feature"] = feature_lists.feature_namespace_ids.apply(len)
         feature_lists["readiness_frac"] = feature_lists.readiness_distribution.apply(
             lambda readiness_distribution: FeatureReadinessDistribution(
                 __root__=readiness_distribution
@@ -315,7 +315,7 @@ class FeatureList(
         "name",
         "version",
         "feature_list_namespace_id",
-        "num_features",
+        "num_feature",
         "online_frac",
         "deployed",
         "created_at",
@@ -760,9 +760,9 @@ class FeatureList(
         feature_lists["version"] = feature_lists["version"].apply(
             lambda version_dict: VersionIdentifier(**version_dict).to_str()
         )
-        feature_lists["num_features"] = feature_lists.feature_ids.apply(len)
+        feature_lists["num_feature"] = feature_lists.feature_ids.apply(len)
         feature_lists["online_frac"] = (
-            feature_lists.online_enabled_feature_ids.apply(len) / feature_lists["num_features"]
+            feature_lists.online_enabled_feature_ids.apply(len) / feature_lists["num_feature"]
         )
         return feature_lists
 
@@ -789,15 +789,15 @@ class FeatureList(
         List saved FeatureList versions (calling from FeatureList class):
 
         >>> FeatureList.list_versions()  # doctest: +SKIP
-                           name feature_list_namespace_id  num_features  online_frac  deployed              created_at
-        0  invoice_feature_list  641d2f94f8d79eb6fee0a335             1          0.0     False 2023-03-24 05:05:24.875
+                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at
+        0  invoice_feature_list  641d2f94f8d79eb6fee0a335            1          0.0     False 2023-03-24 05:05:24.875
 
         List FeatureList versions with the same name (calling from FeatureList object):
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list") # doctest: +SKIP
         >>> feature_list.list_versions()  # doctest: +SKIP
-                           name feature_list_namespace_id  num_features  online_frac  deployed              created_at
-        0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
+                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at
+        0  invoice_feature_list  641d02af94ede33779acc6c8            1          0.0     False 2023-03-24 01:53:51.515
 
         See Also
         --------
@@ -823,8 +823,8 @@ class FeatureList(
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.list_versions()  # doctest: +SKIP
-                           name feature_list_namespace_id  num_features  online_frac  deployed              created_at
-        0  invoice_feature_list  641d02af94ede33779acc6c8             1          0.0     False 2023-03-24 01:53:51.515
+                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at
+        0  invoice_feature_list  641d02af94ede33779acc6c8            1          0.0     False 2023-03-24 01:53:51.515
         """
         return self._list(include_id=include_id, params={"name": self.name})
 
@@ -1190,7 +1190,7 @@ class FeatureList(
         )
         if response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=response)
-        return FeatureList(**response.json(), **self._get_init_params(), saved=True)
+        return FeatureList(**response.json(), **self._get_init_params())
 
     @typechecked
     def update_status(
