@@ -25,8 +25,11 @@ We use `task` to manage our build and development scripts and `docker` to manage
 
 ---
 
-```bash
-task install
+### Installing dependencies and pre-commit hook
+
+```shell
+$ task install
+$ task init
 ```
 
 To activate your `virtualenv` run `poetry shell`.
@@ -36,14 +39,6 @@ To activate your `virtualenv` run `poetry shell`.
 Run `task init` to install precommit hooks and
 validate that you have all the required dependencies to develop.
 
-## Codestyle
-
-### Formatting
-
-Apply automatic code formatting by running this command:
-```commandline
-task format
-```
 
 ### Checks
 
@@ -55,6 +50,19 @@ Many checks are configured for this project:
 
 Command `task lint` applies all checks.
 
+---
+
+## Testing
+
+We use `pytest` to run tests. To run tests use `task test` command.
+
+* Command `task test` will run all tests
+* Command `test unit` will run unit tests
+
+**NOTE: You will be unable to run snowflake or databricks tests because you do not have a connection to the databases.**
+
+Open a pull request with your changes and said tests will run in the CI environment.
+
 ### Before submitting
 
 Before submitting your code please do the following steps:
@@ -65,20 +73,8 @@ Before submitting your code please do the following steps:
 4. Run `task format` to format your changes.
 5. Run `task lint` to ensure that types, security and docstrings are okay.
 
-## Creating a Pull Request
 
-We use [`Release Drafter`](https://github.com/marketplace/actions/release-drafter) to draft release notes from pull requests as they get merged. Label your pull request according to the table below to track changes under the correct category.
-
-|        **Pull Request Label**         | **Category in Release Notes** |
-|:-------------------------------------:|:-----------------------------:|
-|       `enhancement`, `feature`        |          🚀 Features          |
-| `bug`, `refactoring`, `bugfix`, `fix` |    🔧 Fixes & Refactoring     |
-|       `build`, `ci`, `testing`        |    📦 Build System & CI/CD    |
-|              `breaking`               |      💥 Breaking Changes      |
-|            `documentation`            |       📝 Documentation        |
-|            `dependencies`             |    ⬆️ Dependencies updates    |
-
-## Checking documention
+### Checking documentation
 
 To check documentation locally run `task docs` command. It will build documentation and start a server listening on port `localhost:8000`.
 
