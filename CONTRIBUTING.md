@@ -1,18 +1,29 @@
 # How to contribute
 
-## Python
-Python 3.8 or higher is required.
+---
 
-## Java
+## System Requirements
+
+---
+
+### Python
+
+We use `python` >=3.8 with `poetry` to manage the dependencies. </br><small>Refer to [poetry](https://python-poetry.org/docs/#installation) for installation instructions.</small>
+
+### Java
+
 Java 11 or higher is required.
 
-## Dependencies
+### Build tools
 
-We use `poetry` to manage the [dependencies](https://github.com/python-poetry/poetry).
+We use `task` to manage our build and development scripts and `docker` to manage the environment.
+</br><small>Refer to [taskfile](https://taskfile.dev/#/usage?id=installation) for installation instructions.</small>
+</br><small>Refer to [docker](https://docs.docker.com/get-docker/) for installation instructions.</small>
 
-We use `task` to manage our build scripts. Refer to [taskfile.dev](https://taskfile.dev/#/usage?id=installation) for installation instructions.
 
-To install dependencies and prepare [`pre-commit`](https://pre-commit.com/) hooks you would need to run `install` command:
+## Init Development environment
+
+---
 
 ```bash
 task install

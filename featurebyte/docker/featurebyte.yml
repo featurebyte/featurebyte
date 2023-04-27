@@ -45,8 +45,7 @@ services:
         condition: service_healthy
     ports:
       - "0.0.0.0:8088:8088"
-    command:
-      - "server"
+    command: ["bash", "/docker-entrypoint.sh", "server"]
     environment:
       - "FEATUREBYTE_HOME=/app/.featurebyte"
       - "MPLCONFIGDIR=/app/matplotlib"
@@ -87,8 +86,7 @@ services:
       - "MONGODB_URI=mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0"
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
-    command:
-      - "worker"
+    command: ["bash", "/docker-entrypoint.sh", "worker"]
     volumes:
       - files-data:/app/.featurebyte/data/files
       - staging-data:/data/staging
