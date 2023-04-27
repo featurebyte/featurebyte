@@ -296,9 +296,6 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         size, and seed for sampling control. By default, the materialization process occurs before any cleaning
         operations that were defined at the column level.
 
-        It's important to keep in mind that views originating from tables in a Snowflake data warehouse do not allow
-        the use of a seed.
-
         Parameters
         ----------
         size: int

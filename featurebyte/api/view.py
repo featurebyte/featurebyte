@@ -102,9 +102,6 @@ class ViewColumn(Series, SampleMixin):
         size, and seed for sampling control. The materialization process occurs after any cleaning operations that
         were defined either at the table level or during the view's creation.
 
-        It's important to keep in mind that views originating from tables in a Snowflake data warehouse do not allow
-        the use of a seed.
-
         Parameters
         ----------
         size: int
@@ -668,9 +665,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Returns a DataFrame that contains a random selection of rows of the view based on a specified time range,
         size, and seed for sampling control. The materialization process occurs after any cleaning operations that
         were defined either at the table level or during the view's creation.
-
-        It's important to keep in mind that views originating from tables in a Snowflake data warehouse do not allow
-        the use of a seed.
 
         Parameters
         ----------
