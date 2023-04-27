@@ -66,6 +66,8 @@ class QueryGraph(QueryGraphModel):
         target_op_struct = operation_structure_info.operation_structure_map[node_name]
         node_name_to_input_node = OrderedDict()
         for column in target_op_struct.iterate_source_columns_or_aggregations():
+            if self.get_node_by_name(column.node_name).type == NodeType.REQUEST_COLUMN:
+                continue
             # get_input_node performs a depth-first search to find the input node
             # during the search, it will traverse the left input node first before the right input node.
             # This is important because left input node is the main table for all existing join operations.

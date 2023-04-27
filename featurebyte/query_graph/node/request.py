@@ -1,7 +1,7 @@
 """
 Request data related node classes
 """
-from typing import List, Literal, Sequence
+from typing import List, Literal, Sequence, Tuple
 
 from pydantic import BaseModel, Field, StrictStr
 
@@ -15,6 +15,13 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureBranchState,
     OperationStructureInfo,
+)
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    ClassEnum,
+    CodeGenerationConfig,
+    StatementT,
+    VariableNameGenerator,
+    VarNameExpressionStr,
 )
 
 
@@ -68,3 +75,21 @@ class RequestColumnNode(BaseNode):
             output_category=NodeOutputCategory.FEATURE,
             row_index_lineage=(self.name,),
         )
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        statements: List[StatementT] = []
+        var_name = var_name_generator.convert_to_variable_name("request_col")
+        obj = ClassEnum.REQUEST_COLUMN(
+            self.parameters.column_name,
+            self.parameters.dtype,
+            _method_name="create_request_column",
+        )
+        statements.append((var_name, obj))
+        return statements, var_name

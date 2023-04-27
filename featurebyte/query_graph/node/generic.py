@@ -1383,6 +1383,10 @@ class AliasNode(BaseNode):
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expr = input_var_name_expressions[0]
+        if isinstance(var_name_expr, VariableNameStr):
+            # Always convert into an ExpressionStr to avoid setting name to a temporary feature e.g.
+            # (feat_1 - feat_2).dt.day.name = "new_name"
+            var_name_expr = ExpressionStr(str(var_name_expr))
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expr,
             var_name_generator=var_name_generator,

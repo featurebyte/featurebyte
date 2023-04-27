@@ -834,22 +834,14 @@ def test_date_add_operator__scalar_timedelta(timestamp_series, right_side_op):
     ]
 
 
-def test_binary_op_between_different_series_classes_not_allowed(dataframe, float_series):
+def test_binary_op_between_different_series_classes_not_allowed(float_series, float_feature):
     """
-    Test binary operation between Series of different types is not allowed
+    Test binary operation between Series of incompatible types is not allowed
     """
-
-    class DifferentSeries(Series):
-        pass
-
-    another_dataframe = dataframe.copy()
-    another_dataframe.__dict__.update({"_series_class": DifferentSeries})
-    series_different_type = another_dataframe["VALUE"]
-
     with pytest.raises(TypeError) as exc:
-        _ = float_series + series_different_type
+        _ = float_series + float_feature
 
-    assert str(exc.value) == "Operation between Series and DifferentSeries is not supported"
+    assert str(exc.value) == "Operation between Series and Feature is not supported"
 
 
 def assert_series_attributes_equal(left, right):
