@@ -807,7 +807,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get data source.
 
-        >>> catalog = Catalog.get("playground")
         >>> data_source = catalog.get_data_source()
         """
         assert len(self.internal_default_feature_store_ids) == 1
