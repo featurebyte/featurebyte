@@ -353,7 +353,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, CONSTRUCTOR, "FeatureList"]),
         DocLayoutItem([FEATURE_LIST, CREATE_FEATURE_GROUP, "FeatureList.drop"]),
         DocLayoutItem([FEATURE_LIST, DEPLOY, "FeatureList.deploy"]),
-        DocLayoutItem([FEATURE_LIST, DEPLOY, "FeatureList.get_historical_features_async"]),
+        DocLayoutItem([FEATURE_LIST, DEPLOY, "FeatureList.compute_historical_feature_table"]),
         DocLayoutItem([FEATURE_LIST, SAVE, "FeatureList.save"]),
         DocLayoutItem([FEATURE_LIST, EXPLORE, "FeatureList.preview"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.created_at"]),

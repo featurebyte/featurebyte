@@ -863,7 +863,7 @@ def historical_feature_table_fixture(float_feature, observation_table_from_sourc
     """
     feature_list = FeatureList([float_feature], name="feature_list_for_historical_feature_table")
     feature_list.save()
-    historical_feature_table = feature_list.get_historical_features_async(
+    historical_feature_table = feature_list.compute_historical_feature_table(
         observation_table_from_source, "my_historical_feature_table"
     )
     return historical_feature_table

@@ -22,8 +22,8 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.node.schema import ColumnSpec
 from tests.util.helper import (
     assert_preview_result_equal,
+    compute_historical_feature_table_dataframe_helper,
     fb_assert_frame_equal,
-    get_historical_features_async_dataframe_helper,
     get_lagged_series_pandas,
     iet_entropy,
 )
@@ -652,7 +652,7 @@ async def test_get_historical_features(
     )
 
     if use_async_workflow:
-        df_historical_features = await get_historical_features_async_dataframe_helper(
+        df_historical_features = await compute_historical_feature_table_dataframe_helper(
             feature_list=feature_list,
             df_observation_set=df_training_events,
             session=session,
@@ -712,7 +712,7 @@ async def _test_get_historical_features_with_serving_names(
     assert "new_user id" in df_historical_expected
 
     if use_async_workflow:
-        df_historical_features = await get_historical_features_async_dataframe_helper(
+        df_historical_features = await compute_historical_feature_table_dataframe_helper(
             feature_list=feature_list,
             df_observation_set=df_training_events,
             session=session,

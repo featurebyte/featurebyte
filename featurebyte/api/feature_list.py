@@ -1051,7 +1051,7 @@ class FeatureList(
 
         return pd.concat(output, ignore_index=True)
 
-    def get_historical_features_async(
+    def compute_historical_feature_table(
         self,
         observation_table: ObservationTable,
         historical_feature_table_name: str,
