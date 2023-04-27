@@ -752,8 +752,9 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         The layout for the Deployment module.
     """
     return [
-        DocLayoutItem([DEPLOYMENT, GET, "Deployment.get"]),
-        DocLayoutItem([DEPLOYMENT, GET, "Deployment.get_by_id"]),
+        DocLayoutItem([DEPLOYMENT, CLASS_METHODS, "Deployment.get"]),
+        DocLayoutItem([DEPLOYMENT, CLASS_METHODS, "Deployment.get_by_id"]),
+        DocLayoutItem([DEPLOYMENT, CLASS_METHODS, "Deployment.list"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.enabled"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.name"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.catalog"]),
@@ -761,11 +762,10 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_version"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.num_features"]),
         DocLayoutItem([DEPLOYMENT, LINEAGE, "Deployment.feature_list_id"]),
-        DocLayoutItem([DEPLOYMENT, LIST, "Deployment.list"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
         DocLayoutItem([DEPLOYMENT, SERVE, "Deployment.compute_batch_feature_table"]),
-        DocLayoutItem([DEPLOYMENT, SERVE, "FeatureList.get_online_serving_code"]),
+        DocLayoutItem([DEPLOYMENT, SERVE, "Deployment.get_online_serving_code"]),
     ]
 
 
