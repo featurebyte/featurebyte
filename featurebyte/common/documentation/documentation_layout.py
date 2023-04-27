@@ -678,6 +678,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SnowflakeDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SparkDetails"]),
+        DocLayoutItem([UTILITY_CLASSES, CREDENTIAL]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "AccessTokenCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
