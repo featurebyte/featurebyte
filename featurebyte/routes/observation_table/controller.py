@@ -6,7 +6,7 @@ from __future__ import annotations
 from bson import ObjectId
 
 from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
@@ -19,7 +19,9 @@ from featurebyte.service.observation_table import ObservationTableService
 
 
 class ObservationTableController(
-    BaseDocumentController[ObservationTableModel, ObservationTableService, ObservationTableList],
+    BaseMaterializedTableController[
+        ObservationTableModel, ObservationTableService, ObservationTableList
+    ],
 ):
     """
     ObservationTable Controller
