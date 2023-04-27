@@ -38,12 +38,14 @@ class FeatureReadiness(OrderedStrEnum):
 
 
 class DefaultVersionMode(StrEnum):
-    """Default feature setting mode"""
+    """
+    Default feature setting mode.
+    """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DefaultVersionMode")
 
-    AUTO = "AUTO"
-    MANUAL = "MANUAL"
+    AUTO = "AUTO", "Automatically select the version to use."
+    MANUAL = "MANUAL", "Manually select the version to use."
 
 
 class FrozenFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
