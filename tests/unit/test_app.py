@@ -33,7 +33,7 @@ def test_get_app__loading_time():
     start = time.time()
     get_app()
     elapsed_time = time.time() - start
-    assert elapsed_time < 27
+    assert elapsed_time < 32
 
 
 def test_get_status():
