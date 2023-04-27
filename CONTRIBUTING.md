@@ -23,7 +23,6 @@ We use `task` to manage our build and development scripts and `docker` to manage
 
 ## Init Development environment
 
----
 
 ### Installing dependencies and pre-commit hook
 
