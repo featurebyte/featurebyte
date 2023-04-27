@@ -17,6 +17,7 @@ from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog_decorator import update_and_reset_catalog
 from featurebyte.api.catalog_get_by_id_mixin import CatalogGetByIdMixin
 from featurebyte.api.data_source import DataSource
+from featurebyte.api.deployment import Deployment
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
@@ -739,6 +740,29 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return BatchFeatureTable.list(include_id=include_id)
 
     @update_and_reset_catalog
+    def list_deployments(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        List saved deployments.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of deployments.
+
+        Examples
+        --------
+        List saved deployments.
+
+        >>> deployments = catalog.list_deployments()
+        """
+        return Deployment.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def get_data_source(self, feature_store_name: str) -> DataSource:
         """
         Gets a data source based on the name of the feature store that the data source is associated with.
@@ -901,6 +925,29 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> relationship = catalog.get_relationship("relationship_name")  # doctest: +SKIP
         """
         return Relationship.get(name=name)
+
+    @update_and_reset_catalog
+    def get_deployment(self, name: str) -> Deployment:
+        """
+        Gets a Deployment object by name.
+
+        Parameters
+        ----------
+        name: str
+            Deployment name.
+
+        Returns
+        -------
+        Deployment
+            Deployment object.
+
+        Examples
+        --------
+        Get a saved deployment.
+
+        >>> deployment = catalog.get_deployment("deployment_name")  # doctest: +SKIP
+        """
+        return Deployment.get(name=name)
 
     @update_and_reset_catalog
     def get_feature_job_setting_analysis(self, name: str) -> FeatureJobSettingAnalysis:

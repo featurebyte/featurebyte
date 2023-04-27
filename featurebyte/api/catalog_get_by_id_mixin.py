@@ -11,6 +11,7 @@ from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog_decorator import update_and_reset_catalog
 from featurebyte.api.data_source import DataSource
+from featurebyte.api.deployment import Deployment
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
@@ -380,3 +381,28 @@ class CatalogGetByIdMixin:
         >>> batch_feature_table = catalog.get_batch_feature_table_by_id(ObjectId())  # doctest: +SKIP
         """
         return BatchFeatureTable.get_by_id(id=id)
+
+    @update_and_reset_catalog
+    def get_deployment_by_id(
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> Deployment:
+        """
+        Get deployment by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Deployment id.
+
+        Returns
+        -------
+        Deployment
+            Deployment object.
+
+        Examples
+        --------
+        Get a saved deployment.
+
+        >>> deployment = catalog.get_deployment_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return Deployment.get_by_id(id=id)

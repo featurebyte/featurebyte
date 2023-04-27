@@ -379,6 +379,8 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_default_version_mode"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_status"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_features"]),
+        # TODO: get_online_serving_code should be under deployment. Requires code mv first.
+        DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_online_serving_code"]),
     ]
 
 
@@ -624,6 +626,9 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, GET, "Catalog.get_batch_request_table_by_id"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_batch_feature_table"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_batch_feature_table_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_deployment"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_deployment_by_id"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_deployments"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_relationships"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_feature_lists"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_entities"]),
@@ -765,7 +770,6 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
         DocLayoutItem([DEPLOYMENT, SERVE, "Deployment.compute_batch_feature_table"]),
-        DocLayoutItem([DEPLOYMENT, SERVE, "Deployment.get_online_serving_code"]),
     ]
 
 

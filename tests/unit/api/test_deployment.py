@@ -27,7 +27,6 @@ def test_list(deployment):
                 "feature_list_name": "my_feature_list",
                 "feature_list_version": f'V{pd.Timestamp.now().strftime("%y%m%d")}',
                 "num_feature": 1,
-                "catalog": "default",
             }
         ]
     )

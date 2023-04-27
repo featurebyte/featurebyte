@@ -88,6 +88,7 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_historical_feature_tables", HistoricalFeatureTable, "list"),
         MethodMetadata("list_batch_request_tables", BatchRequestTable, "list"),
         MethodMetadata("list_batch_feature_tables", BatchFeatureTable, "list"),
+        MethodMetadata("list_deployments", Deployment, "list"),
     ]
 
 
@@ -105,6 +106,7 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_historical_feature_table", HistoricalFeatureTable, "get"),
         MethodMetadata("get_batch_request_table", BatchRequestTable, "get"),
         MethodMetadata("get_batch_feature_table", BatchFeatureTable, "get"),
+        MethodMetadata("get_deployment", Deployment, "get"),
     ]
 
 
@@ -132,6 +134,7 @@ def catalog_get_by_id_list():
         MethodMetadata("get_historical_feature_table_by_id", HistoricalFeatureTable, "get_by_id"),
         MethodMetadata("get_batch_request_table_by_id", BatchRequestTable, "get_by_id"),
         MethodMetadata("get_batch_feature_table_by_id", BatchFeatureTable, "get_by_id"),
+        MethodMetadata("get_deployment_by_id", Deployment, "get_by_id"),
     ]
 
 
