@@ -515,10 +515,11 @@ def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayout
     -------
     List[DocLayoutItem]
     """
-    assert series_type in {"ViewColumn", "Feature"}
+    assert series_type in {VIEW_COLUMN, FEATURE}
     return [
         DocLayoutItem([series_type, TRANSFORM, f"{series_type}.dt.{field}"])
         for field in [
+            "tz_offset",
             "year",
             "quarter",
             "month",
@@ -560,17 +561,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.astype"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.abs"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.ceil"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.year"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.quarter"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.month"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.week"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.day"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.day_of_week"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.hour"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.minute"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.second"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.millisecond"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.microsecond"]),
+        *_get_datetime_accessor_properties_layout(VIEW_COLUMN),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.exp"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.fillna"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.floor"]),
