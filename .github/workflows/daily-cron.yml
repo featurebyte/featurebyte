@@ -80,7 +80,7 @@ jobs:
           git config --global user.email "featurebyte[bot]@users.noreply.github.com"
       - name: "Removing Tags"
         run: |
-          export CUTOFF_DATE=$(date --date="-30days" +%Y-%m-%d)
+          export CUTOFF_DATE=$(date --date="-14days" +%Y-%m-%d)
           export EXPIRED_TAGS=$(git for-each-ref --format '%(creatordate:short) %(refname)' refs/tags | grep -v "release/" | awk -v "CUTOFF_DATE=$CUTOFF_DATE" '{ if ($1 < CUTOFF_DATE) print $2; }')
 
           echo "### Expired tags" >> $GITHUB_STEP_SUMMARY
