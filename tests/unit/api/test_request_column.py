@@ -50,12 +50,12 @@ def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature, u
     assert new_feature.feature_store == latest_event_timestamp_feature.feature_store
     assert new_feature.tabular_source == latest_event_timestamp_feature.tabular_source
 
-    # new_feature.save()
-    # loaded_feature = Feature.get(new_feature.name)
-    # check_sdk_code_generation(
-    #     loaded_feature,
-    #     to_use_saved_data=True,
-    #     fixture_path="tests/fixtures/sdk_code/feature_with_request_column.py",
-    #     update_fixtures=update_fixtures,
-    #     table_id=new_feature.table_ids[0],
-    # )
+    new_feature.save()
+    loaded_feature = Feature.get(new_feature.name)
+    check_sdk_code_generation(
+        loaded_feature,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/feature_with_request_column.py",
+        update_fixtures=update_fixtures,
+        table_id=new_feature.table_ids[0],
+    )

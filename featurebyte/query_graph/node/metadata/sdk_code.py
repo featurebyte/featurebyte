@@ -232,6 +232,7 @@ class ClassEnum(Enum):
     FEATURE_JOB_SETTING = ("featurebyte", "FeatureJobSetting")
     TO_TIMEDELTA = ("featurebyte", "to_timedelta")
     COLUMN_CLEANING_OPERATION = ("featurebyte", "ColumnCleaningOperation")
+    REQUEST_COLUMN = ("featurebyte.api.request_column", "RequestColumn")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
