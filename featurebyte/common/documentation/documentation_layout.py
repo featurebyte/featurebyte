@@ -752,7 +752,6 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         The layout for the Deployment module.
     """
     return [
-        DocLayoutItem([DEPLOYMENT, GET, "Deployment.compute_batch_feature_table"]),
         DocLayoutItem([DEPLOYMENT, GET, "Deployment.get"]),
         DocLayoutItem([DEPLOYMENT, GET, "Deployment.get_by_id"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.enabled"]),
@@ -765,6 +764,7 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         DocLayoutItem([DEPLOYMENT, LIST, "Deployment.list"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
+        DocLayoutItem([DEPLOYMENT, SERVE, "Deployment.compute_batch_feature_table"]),
         DocLayoutItem([DEPLOYMENT, SERVE, "FeatureList.get_online_serving_code"]),
     ]
 
