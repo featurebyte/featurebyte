@@ -125,12 +125,36 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
             "Unexpected serving names provided in serving_names_mapping: random_name"
         )
 
-    def test_observation_table_delete_422__observation_table_failed_validation_check(
-        self, test_api_client_persistent, create_success_response
+    @pytest.mark.asyncio
+    async def test_observation_table_delete_422__observation_table_failed_validation_check(
+        self, test_api_client_persistent, create_success_response, user_id
     ):
         """Test delete 422 for observation table failed validation check"""
-        test_api_client, _ = test_api_client_persistent
-        historical_feature_table_id = create_success_response.json()["_id"]
+        test_api_client, persistent = test_api_client_persistent
+        create_success_response_dict = create_success_response.json()
+        historical_feature_table_id = create_success_response_dict["_id"]
+
+        # insert another document to historical feature table to make sure the query filter is correct
+        payload = copy.deepcopy(self.payload)
+        payload["_id"] = ObjectId()
+        payload["name"] = "random_name"
+        await persistent.insert_one(
+            collection_name="historical_feature_table",
+            document={
+                **payload,
+                "_id": ObjectId(),
+                "catalog_id": DEFAULT_CATALOG_ID,
+                "user_id": user_id,
+                "observation_table_id": ObjectId(),  # different batch request table id
+                "columns_info": [],
+                "location": create_success_response_dict["location"],
+                "feature_list_id": ObjectId(),
+            },
+            user_id=user_id,
+        )
+        response = test_api_client.get(self.base_route)
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["total"] == 2
 
         # try to delete observation table
         observation_table_id = self.payload["observation_table_id"]
@@ -139,7 +163,7 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
         assert response_dict["detail"] == (
             f"Cannot delete Observation Table {observation_table_id} because it is referenced by "
-            f"Historical Feature Table {historical_feature_table_id}"
+            f"1 Historical Feature Table(s): ['{historical_feature_table_id}']"
         )
 
     def test_info_200(self, test_api_client_persistent, create_success_response):

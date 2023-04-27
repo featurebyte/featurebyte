@@ -80,30 +80,25 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         """
         Execute Deployment Create & Update Task
         """
-        payload = cast(MaterializedTableDeleteTaskPayload, self.payload)
-        table_action_pairs = [
-            (MaterializedTableCollectionName.BATCH_REQUEST, self._delete_batch_request_table),
-            (MaterializedTableCollectionName.BATCH_FEATURE, self._delete_batch_feature_table),
-            (MaterializedTableCollectionName.OBSERVATION, self._delete_observation_table),
-            (
-                MaterializedTableCollectionName.HISTORICAL_FEATURE,
-                self._delete_historical_feature_table,
-            ),
-        ]
+        # table to delete action mapping
+        table_to_delete_action = {
+            MaterializedTableCollectionName.BATCH_REQUEST: self._delete_batch_request_table,
+            MaterializedTableCollectionName.BATCH_FEATURE: self._delete_batch_feature_table,
+            MaterializedTableCollectionName.OBSERVATION: self._delete_observation_table,
+            MaterializedTableCollectionName.HISTORICAL_FEATURE: self._delete_historical_feature_table,
+        }
 
-        for table_name, delete_table in table_action_pairs:
-            if payload.collection_name == table_name:
-                # delete document stored at mongo
-                deleted_document = await delete_table()
+        # delete document stored at mongo
+        deleted_document = await table_to_delete_action[self.task_payload.collection_name]()
 
-                # delete table stored at data warehouse
-                feature_store = await self.app_container.feature_store_service.get_document(
-                    document_id=deleted_document.location.feature_store_id
-                )
-                db_session = await self.get_db_session(feature_store=feature_store)
-                await db_session.drop_table(
-                    table_name=deleted_document.location.table_details.table_name,
-                    schema_name=deleted_document.location.table_details.schema_name,  # type: ignore
-                    database_name=deleted_document.location.table_details.database_name,  # type: ignore
-                )
-                return
+        # delete table stored at data warehouse
+        feature_store = await self.app_container.feature_store_service.get_document(
+            document_id=deleted_document.location.feature_store_id
+        )
+        db_session = await self.get_db_session(feature_store=feature_store)
+        await db_session.drop_table(
+            table_name=deleted_document.location.table_details.table_name,
+            schema_name=deleted_document.location.table_details.schema_name,  # type: ignore
+            database_name=deleted_document.location.table_details.database_name,  # type: ignore
+        )
+        return
