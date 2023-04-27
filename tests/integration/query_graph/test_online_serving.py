@@ -115,7 +115,7 @@ async def test_online_serving_sql(
             "üser id": user_ids,
         }
     )
-    df_historical = feature_list.get_historical_features(df_training_events)
+    df_historical = feature_list.compute_historical_features(df_training_events)
 
     try:
         # Run online store retrieval sql

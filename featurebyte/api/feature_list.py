@@ -572,7 +572,7 @@ class FeatureList(
         observation_set: pd.DataFrame,
     ) -> Optional[pd.DataFrame]:
         """
-        Materializes a FeatureList using a small observation set of up to 50 rows. Unlike get_historical_features,
+        Materializes a FeatureList using a small observation set of up to 50 rows. Unlike compute_historical_features,
         this method does not store partial aggregations (tiles) to speed up future computation. Instead, it computes
         the features on the fly, and should be used only for small observation sets for debugging or prototyping
         unsaved features.
@@ -930,7 +930,7 @@ class FeatureList(
 
     @enforce_observation_set_row_order
     @typechecked
-    def get_historical_features(
+    def compute_historical_features(
         self,
         observation_set: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
@@ -998,7 +998,7 @@ class FeatureList(
         ... })
 
         Retrieve materialized historical features.
-        >>> feature_list.get_historical_features(observation_set)
+        >>> feature_list.compute_historical_features(observation_set)
           POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days  InvoiceAmountAvg_60days
         0    2022-04-15  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333
         1    2022-04-17  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                  9.0                10.223333

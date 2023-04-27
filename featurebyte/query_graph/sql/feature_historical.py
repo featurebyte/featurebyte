@@ -440,6 +440,6 @@ async def get_historical_features(
         source_type=session.source_type,
     )
     await session.execute_query_long_running(query)
-    logger.debug(f"get_historical_features in total took {time.time() - tic_:.2f}s")
+    logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
 
     return None

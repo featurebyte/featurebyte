@@ -259,7 +259,7 @@ def test_historical_features(
     observations_set = observations_set_with_expected_features[
         ["POINT_IN_TIME", "serving_event_id"]
     ]
-    df = feature_list_with_child_entities.get_historical_features(observations_set)
+    df = feature_list_with_child_entities.compute_historical_features(observations_set)
     df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
     pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
@@ -278,7 +278,7 @@ def test_historical_features_with_serving_names_mapping(
     observations_set = observations_set_with_expected_features[
         ["POINT_IN_TIME", "new_serving_event_id"]
     ]
-    df = feature_list_with_child_entities.get_historical_features(
+    df = feature_list_with_child_entities.compute_historical_features(
         observations_set,
         serving_names_mapping={"serving_event_id": "new_serving_event_id"},
     )
@@ -365,6 +365,6 @@ def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_f
     expected = observations_set.copy()
     expected["user_city_changes_count_4w"] = [0, 1, 2]
 
-    df = feature_list.get_historical_features(observations_set)
+    df = feature_list.compute_historical_features(observations_set)
 
     pd.testing.assert_frame_equal(df, expected, check_dtype=False)

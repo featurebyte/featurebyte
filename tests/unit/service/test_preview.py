@@ -180,7 +180,7 @@ async def test_preview_featurelist__missing_entity(
 @pytest.fixture
 def mock_get_historical_features():
     """
-    Mock the core get_historical_features function that the service calls
+    Mock the core compute_historical_features function that the service calls
     """
     with patch(
         "featurebyte.service.preview.SessionManagerService.get_feature_store_session"
@@ -200,7 +200,7 @@ async def test_get_historical_features__feature_list_not_deployed(
     mock_get_historical_features,
 ):
     """
-    Test get_historical_features when feature list is not deployed
+    Test compute_historical_features when feature list is not deployed
     """
     featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
         feature_list_id=production_ready_feature_list.id,
@@ -208,7 +208,7 @@ async def test_get_historical_features__feature_list_not_deployed(
     )
     training_events = pd.DataFrame({"cust_id": [1], "POINT_IN_TIME": ["2022-01-01"]})
 
-    await preview_service.get_historical_features(
+    await preview_service.compute_historical_features(
         training_events,
         featurelist_get_historical_features,
         get_credential,
@@ -226,7 +226,7 @@ async def test_get_historical_features__feature_list_not_saved(
     mock_get_historical_features,
 ):
     """
-    Test get_historical_features when feature list is not saved
+    Test compute_historical_features when feature list is not saved
     """
     feature_list = FeatureList([Feature(**production_ready_feature.dict())], name="mylist")
     featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
@@ -235,7 +235,7 @@ async def test_get_historical_features__feature_list_not_saved(
     )
     training_events = pd.DataFrame({"cust_id": [1], "POINT_IN_TIME": ["2022-01-01"]})
 
-    await preview_service.get_historical_features(
+    await preview_service.compute_historical_features(
         training_events,
         featurelist_get_historical_features,
         get_credential,
@@ -253,7 +253,7 @@ async def test_get_historical_features__feature_list_deployed(
     mock_get_historical_features,
 ):
     """
-    Test get_historical_features when feature list is deployed
+    Test compute_historical_features when feature list is deployed
     """
     featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
         feature_list_id=deployed_feature_list.id,
@@ -261,7 +261,7 @@ async def test_get_historical_features__feature_list_deployed(
     )
     training_events = pd.DataFrame({"cust_id": [1], "POINT_IN_TIME": ["2022-01-01"]})
 
-    await preview_service.get_historical_features(
+    await preview_service.compute_historical_features(
         training_events,
         featurelist_get_historical_features,
         get_credential,

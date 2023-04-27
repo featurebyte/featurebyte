@@ -163,8 +163,8 @@ async def test_data_warehouse_migration_v6(
         "üser id": 1,
     }
     observations_set = pd.DataFrame([preview_param])
-    _ = feature_list_1.get_historical_features(observations_set)
-    _ = feature_list_2.get_historical_features(observations_set)
+    _ = feature_list_1.compute_historical_features(observations_set)
+    _ = feature_list_2.compute_historical_features(observations_set)
 
     # Get tile id to check (both features should have the same tile id)
     expected_tile_id = get_tile_id(features_1["test_data_warehouse_migration_v6_feature_count"])

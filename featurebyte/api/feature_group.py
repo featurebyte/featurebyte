@@ -209,7 +209,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     ) -> Optional[pd.DataFrame]:
         """
         Materializes a FeatureGroup object using a small observation set of up to 50 rows. Unlike
-        get_historical_features, this method does not store partial aggregations (tiles) to speed up future
+        compute_historical_features, this method does not store partial aggregations (tiles) to speed up future
         computation. Instead, it computes the features on the fly, and should be used only for small observation
         sets for debugging or prototyping unsaved features.
 
@@ -264,7 +264,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         --------
         - [Feature.preview](/reference/featurebyte.api.feature.Feature.preview/):
           Preview feature group.
-        - [FeatureList.get_historical_features](/reference/featurebyte.api.feature_list.FeatureList.get_historical_features/):
+        - [FeatureList.compute_historical_features](/reference/featurebyte.api.feature_list.FeatureList.compute_historical_features/):
           Get historical features from a feature list.
         """
         tic = time.time()

@@ -29,12 +29,12 @@ def test_features_without_entity(event_table):
 
     # Test historical features with on demand tile generation
     df_features_1 = (
-        feature_list_1.get_historical_features(df)
+        feature_list_1.compute_historical_features(df)
         .sort_values("POINT_IN_TIME")
         .reset_index(drop=True)
     )
     df_features_2 = (
-        feature_list_2.get_historical_features(df)
+        feature_list_2.compute_historical_features(df)
         .sort_values("POINT_IN_TIME")
         .reset_index(drop=True)
     )
@@ -52,12 +52,12 @@ def test_features_without_entity(event_table):
 
         # Test getting historical requests
         df_features_deployed_1 = (
-            feature_list_1.get_historical_features(df)
+            feature_list_1.compute_historical_features(df)
             .sort_values("POINT_IN_TIME")
             .reset_index(drop=True)
         )
         df_features_deployed_2 = (
-            feature_list_2.get_historical_features(df)
+            feature_list_2.compute_historical_features(df)
             .sort_values("POINT_IN_TIME")
             .reset_index(drop=True)
         )

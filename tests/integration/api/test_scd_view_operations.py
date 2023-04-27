@@ -390,7 +390,7 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     )
     expected = observations_set.copy()
     expected["Current Number of Users With This Status"] = [0, 1, 2, 2, 1, 1, 0, 0, 0, 0]
-    df = feature_list.get_historical_features(observations_set)
+    df = feature_list.compute_historical_features(observations_set)
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     if source_type == "databricks":
         df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
@@ -435,7 +435,7 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     )
     expected = observations_set.copy()
     expected["Current Number of Users"] = [8, 8, 9, 9, 9, 9, 9, 9, 9, 9]
-    df = feature_list.get_historical_features(observations_set)
+    df = feature_list.compute_historical_features(observations_set)
     df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     if source_type == "databricks":
@@ -492,7 +492,7 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table, so
 
     # check historical features
     observations_set = pd.DataFrame([preview_param])
-    df = feature_list.get_historical_features(observations_set)
+    df = feature_list.compute_historical_features(observations_set)
     df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     if source_type == "databricks":
