@@ -767,11 +767,11 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         DocLayoutItem([DEPLOYMENT, GET, "Deployment.get_by_id"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.enabled"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.name"]),
-        # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_id"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.catalog"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_name"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_version"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.num_features"]),
+        DocLayoutItem([DEPLOYMENT, LINEAGE, "Deployment.feature_list_id"]),
         DocLayoutItem([DEPLOYMENT, LIST, "Deployment.list"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
@@ -857,11 +857,13 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_id"]
         ),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.feature_list_id"]),
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.feature_store_name"]),
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_name"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.created_at"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.updated_at"]),
+        DocLayoutItem(
+            [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.feature_list_id"]
+        ),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.id"]),
     ]
 
