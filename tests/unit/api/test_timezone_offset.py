@@ -3,7 +3,7 @@ Unit tests for timezone offset related functionality in API objects
 """
 import textwrap
 
-from featurebyte import MissingValueImputation
+from featurebyte import FeatureJobSetting, MissingValueImputation
 from featurebyte.api.feature import Feature
 from tests.util.helper import check_sdk_code_generation
 
@@ -265,7 +265,9 @@ def test_feature_using_timezone_offset_with_cleaning_operations(
         method="count",
         windows=["7d"],
         feature_names=["timestamp_hour_counts_7d"],
-        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
     )["timestamp_hour_counts_7d"]
     feature.save()
 

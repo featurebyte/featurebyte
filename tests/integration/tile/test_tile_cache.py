@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from featurebyte import FeatureJobSetting
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.tile.tile_cache import OnDemandTileComputeRequest, TileCache
@@ -22,11 +23,11 @@ def feature_for_tile_cache_tests_fixture(event_table, groupby_category):
         method="count",
         windows=["48h"],
         feature_names=["SESSION_COUNT_48h"],
-        feature_job_setting={
-            "blind_spot": "45m",
-            "frequency": "1h",
-            "time_modulo_frequency": "30m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="45m",
+            frequency="1h",
+            time_modulo_frequency="30m",
+        ),
     )
     yield feature_group["SESSION_COUNT_48h"]
 

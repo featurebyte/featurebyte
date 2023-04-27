@@ -5,6 +5,7 @@ import copy
 
 import pytest
 
+from featurebyte import FeatureJobSetting
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.enum import DBVarType, SourceType
@@ -142,11 +143,11 @@ def aggregate_kwargs_fixture():
         method="sum",
         windows=["30m", "2h", "1d"],
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
     )
     return aggregate_kwargs
 
@@ -244,9 +245,12 @@ def test_tile_table_id__agg_parameters(
 ):
     """Test tile table IDs are expected given different aggregate() parameters"""
     feature_job_setting_params = {"frequency", "blind_spot", "time_modulo_frequency"}
+    existing_fjs = aggregate_kwargs["feature_job_setting"]
+    existing_fjs_dict = existing_fjs.json_dict()
     for key in overrides:
         if key in feature_job_setting_params:
-            aggregate_kwargs["feature_job_setting"][key] = overrides[key]
+            existing_fjs_dict[key] = overrides[key]
+    aggregate_kwargs["feature_job_setting"] = FeatureJobSetting(**existing_fjs_dict)
     aggregate_kwargs.update(
         {key: val for key, val in overrides.items() if key not in feature_job_setting_params}
     )

@@ -3,6 +3,7 @@ Unit tests for aggregate_over
 """
 import pytest
 
+from featurebyte import FeatureJobSetting
 from featurebyte.enum import DBVarType
 from featurebyte.models import FeatureModel
 from tests.util.helper import get_node
@@ -31,7 +32,9 @@ def test_aggregate_over__latest_method_output_vartype(
         method="latest",
         windows=["1h"],
         feature_names=["feat_1h"],
-        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
     )
     assert feature_group["feat_1h"].dtype == expected_dtype
 
@@ -45,7 +48,9 @@ def test_unbounded_window__valid(snowflake_event_view_with_entity, cust_id_entit
         method="latest",
         windows=[None],
         feature_names=["feat_latest"],
-        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
     )
     feature_dict = feature_group["feat_latest"].dict()
     node = get_node(feature_dict["graph"], "groupby_1")
@@ -62,7 +67,7 @@ def test_unbounded_window__non_latest(snowflake_event_view_with_entity):
             method="sum",
             windows=[None],
             feature_names=["feat_latest"],
-            feature_job_setting=dict(
+            feature_job_setting=FeatureJobSetting(
                 blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
             ),
         )
@@ -79,7 +84,7 @@ def test_unbounded_window__category_not_supported(snowflake_event_view_with_enti
             method="latest",
             windows=[None],
             feature_names=["feat_latest"],
-            feature_job_setting=dict(
+            feature_job_setting=FeatureJobSetting(
                 blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
             ),
         )
@@ -95,7 +100,9 @@ def test_unbounded_window__composite_keys(snowflake_event_view_with_entity):
         method="latest",
         windows=[None],
         feature_names=["feat_latest"],
-        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
     )
     feature_dict = feature_group["feat_latest"].dict()
     node = get_node(feature_dict["graph"], "groupby_1")
@@ -111,7 +118,9 @@ def test_empty_groupby_keys(snowflake_event_view_with_entity):
         method="count",
         windows=["30d"],
         feature_names=["feat_count"],
-        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
     )
     feature_dict = feature_group["feat_count"].dict()
     node = get_node(feature_dict["graph"], "groupby_1")
