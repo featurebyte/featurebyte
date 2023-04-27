@@ -1371,7 +1371,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ObservationTable
             ObservationTable object.
         """
-        assert self.feature_store is not None
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = ObservationTableCreate(
             name=name,
@@ -1401,7 +1400,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         BatchRequestTable
             BatchRequestTable object.
         """
-        assert self.feature_store is not None
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = BatchRequestTableCreate(
             name=name,
