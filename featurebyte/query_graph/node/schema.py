@@ -19,14 +19,26 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
 
 
 class SnowflakeDetails(BaseDatabaseDetails):
-    """Model for Snowflake data source information"""
+    """Model for Snowflake data source information."""
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SnowflakeDetails")
 
-    account: StrictStr
-    warehouse: StrictStr
-    database: StrictStr
-    sf_schema: StrictStr  # schema shadows a BaseModel attribute
+    account: StrictStr = Field(
+        description="The host account name which can be found using one of the following "
+        "formats:\n"
+        "- For Amazon Web Services US West, use`<account>.snowflakecomputing.com`\n"
+        "- For all other regions on Amazon Web Services, use `<account>.<region>.snowflakecomputing.com`\n"
+        "- For all regions on Microsoft Azure, use `<account>.<region>.azure.snowflakecomputing.com`"
+    )
+    warehouse: StrictStr = Field(
+        description="The name of the warehouse containing the schema tables and columns."
+    )
+    database: StrictStr = Field(
+        description="The name of the database containing the schema tables and columns."
+    )
+    sf_schema: StrictStr = Field(
+        description="The name of the schema containing the database, tables and columns."
+    )
 
 
 class SQLiteDetails(BaseDatabaseDetails):
@@ -45,9 +57,15 @@ class DatabricksDetails(BaseDatabaseDetails):
     http_path: StrictStr
     featurebyte_catalog: StrictStr
     featurebyte_schema: StrictStr
-    storage_type: StorageType
-    storage_url: str
-    storage_spark_url: str
+    storage_type: StorageType = Field(
+        description="Storage type of where we will be persisting the feature store to."
+    )
+    storage_url: str = Field(
+        description="Storage URL of where we will be persisting the feature store to."
+    )
+    storage_spark_url: str = Field(
+        description="Spark URL of where we will be persisting the feature store to."
+    )
 
 
 class SparkDetails(BaseDatabaseDetails):
