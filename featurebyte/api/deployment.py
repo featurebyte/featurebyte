@@ -9,6 +9,7 @@ from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.deployment import DeploymentUpdate
@@ -60,6 +61,17 @@ class Deployment(ApiObject):
         bool
         """
         return self.cached_model.enabled
+
+    @property
+    def feature_list_id(self) -> PydanticObjectId:
+        """
+        Feature list ID associated with this deployment.
+
+        Returns
+        -------
+        PydanticObjectId
+        """
+        return self.cached_model.feature_list_id
 
     def enable(self) -> None:
         """
