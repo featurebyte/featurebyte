@@ -1,38 +1,37 @@
 """
 Materialized Table Mixin
 """
-from typing import Optional, Protocol, Union
+from typing import ClassVar, Optional, Union
 
+import os
+import tempfile
 from http import HTTPStatus
 from pathlib import Path
+
+import pandas as pd
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.utils import parquet_from_arrow_stream
 from featurebyte.config import Configurations
-from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.exception import RecordRetrievalException
+from featurebyte.models.materialized_table import MaterializedTableModel
 
 
-class HasLocation(Protocol):
-    """
-    Class with location attribute / property
-    """
-
-    location: TabularSource
-
-
-class MaterializedTableMixin:
+class MaterializedTableMixin(MaterializedTableModel):
     """
     Mixin for Materialized Table
     """
 
-    def download(self: HasLocation, output_path: Optional[Union[str, Path]] = None) -> Path:
+    _route: ClassVar[str] = ""
+
+    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
         """
         Downloads the table from the database
 
         Parameters
         ----------
         output_path: Optional[Union[str, Path]]
-            Location to save downloaded report
+            Location to save downloaded parquet file
 
         Returns
         -------
@@ -42,6 +41,8 @@ class MaterializedTableMixin:
         ------
         FileExistsError
             File already exists at output path
+        RecordRetrievalException
+            Error retrieving record from API
         """
         file_name = f"{self.location.table_details.table_name}.parquet"
         output_path = output_path or Path(f"./{file_name}")
@@ -55,9 +56,21 @@ class MaterializedTableMixin:
         num_rows = source_table.shape()[0]
 
         client = Configurations().get_client()
-        response = client.post(
-            "/feature_store/download", json=self.location.json_dict(), stream=True
-        )
-        assert response.status_code == HTTPStatus.OK, response.json()
+        response = client.get(f"{self._route}/pyarrow_table/{self.id}", stream=True)
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
         parquet_from_arrow_stream(response=response, output_path=output_path, num_rows=num_rows)
         return output_path
+
+    def to_pandas(self) -> pd.DataFrame:
+        """
+        Converts the table to pandas dataframe
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "temp.parquet")
+            self.download(output_path=output_path)
+            return pd.read_parquet(output_path)

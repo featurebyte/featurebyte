@@ -21,6 +21,7 @@ from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.info import InfoService
+from featurebyte.service.preview import PreviewService
 
 
 class BatchFeatureTableController(
@@ -37,6 +38,7 @@ class BatchFeatureTableController(
     def __init__(
         self,
         service: BatchFeatureTableService,
+        preview_service: PreviewService,
         feature_store_service: FeatureStoreService,
         feature_list_service: FeatureListService,
         batch_request_table_service: BatchRequestTableService,
@@ -45,7 +47,7 @@ class BatchFeatureTableController(
         info_service: InfoService,
         task_controller: TaskController,
     ):
-        super().__init__(service)
+        super().__init__(service=service, preview_service=preview_service)
         self.feature_store_service = feature_store_service
         self.feature_list_service = feature_list_service
         self.batch_request_table_service = batch_request_table_service

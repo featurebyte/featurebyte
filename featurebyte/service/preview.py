@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator, Callable, Dict, Optional, Tuple, Union
 
+import os
+
 import pandas as pd
 from bson import ObjectId
 
@@ -50,7 +52,9 @@ from featurebyte.session.base import BaseSession
 
 # This time is used as an arbitrary value to use in scenarios where we don't have any time provided in previews.
 ARBITRARY_TIME = pd.Timestamp(1970, 1, 1, 12)
-MAX_TABLE_CELLS = 10000000 * 300  # 10 million rows, 300 columns
+MAX_TABLE_CELLS = int(
+    os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
+)  # 10 million rows, 300 columns
 
 
 class PreviewService(BaseService):

@@ -19,6 +19,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.info import InfoService
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.preview import PreviewService
 
 
 class HistoricalFeatureTableController(
@@ -35,13 +36,14 @@ class HistoricalFeatureTableController(
     def __init__(
         self,
         service: HistoricalFeatureTableService,
+        preview_service: PreviewService,
         feature_store_service: FeatureStoreService,
         observation_table_service: ObservationTableService,
         entity_validation_service: EntityValidationService,
         info_service: InfoService,
         task_controller: TaskController,
     ):
-        super().__init__(service)
+        super().__init__(service=service, preview_service=preview_service)
         self.feature_store_service = feature_store_service
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service

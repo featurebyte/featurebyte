@@ -1,9 +1,10 @@
 """
 Base class for materialized table routes
 """
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from bson import ObjectId
+from starlette.responses import StreamingResponse
 
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
@@ -16,6 +17,7 @@ from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.preview import PreviewService
 
 MaterializedTableDocumentT = TypeVar(
     "MaterializedTableDocumentT",
@@ -43,6 +45,10 @@ class BaseMaterializedTableController(
     """
 
     task_controller: TaskController
+
+    def __init__(self, service: Any, preview_service: PreviewService) -> None:
+        super().__init__(service)
+        self.preview_service = preview_service
 
     async def _verify_delete_operation(self, document_id: ObjectId) -> None:
         """
@@ -73,3 +79,35 @@ class BaseMaterializedTableController(
         )
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
+
+    async def download_materialized_table(
+        self,
+        document_id: ObjectId,
+        get_credential: Any,
+    ) -> StreamingResponse:
+        """
+        Download materialized table as pyarrow table
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            ID of materialized table to download
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        StreamingResponse
+            StreamingResponse object
+        """
+        batch_feature_table = await self.service.get_document(document_id=document_id)
+        bytestream = await self.preview_service.download_table(
+            location=batch_feature_table.location,
+            get_credential=get_credential,
+        )
+        assert bytestream is not None
+
+        return StreamingResponse(
+            bytestream,
+            media_type="application/octet-stream",
+        )

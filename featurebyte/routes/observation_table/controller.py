@@ -17,6 +17,7 @@ from featurebyte.schema.task import Task
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.info import InfoService
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.preview import PreviewService
 from featurebyte.service.validator.materialized_table_delete import check_delete_observation_table
 
 
@@ -34,11 +35,12 @@ class ObservationTableController(
     def __init__(
         self,
         service: ObservationTableService,
+        preview_service: PreviewService,
         historical_feature_table_service: HistoricalFeatureTableService,
         info_service: InfoService,
         task_controller: TaskController,
     ):
-        super().__init__(service)
+        super().__init__(service=service, preview_service=preview_service)
         self.historical_feature_table_service = historical_feature_table_service
         self.info_service = info_service
         self.task_controller = task_controller

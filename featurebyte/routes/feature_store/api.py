@@ -8,12 +8,10 @@ from typing import Any, Dict, List, Optional, cast
 from http import HTTPStatus
 
 from fastapi import APIRouter, Query, Request
-from starlette.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -275,19 +273,3 @@ async def get_data_description(
             sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
         ),
     )
-
-
-@router.post("/download")
-async def download_table(
-    request: Request,
-    location: TabularSource,
-) -> StreamingResponse:
-    """
-    Retrieve historical features
-    """
-    controller = request.state.app_container.feature_store_controller
-    result: StreamingResponse = await controller.download_table(
-        location=location,
-        get_credential=request.state.get_credential,
-    )
-    return result

@@ -4,14 +4,22 @@ BaseApiTestSuite
 # pylint: disable=too-many-lines
 import copy
 import json
+import os
+import tempfile
+import textwrap
 from datetime import datetime
 from http import HTTPStatus
+from pathlib import Path
 from time import sleep
+from unittest.mock import Mock
 
+import pandas as pd
 import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.common.utils import dataframe_to_arrow_bytes, parquet_from_arrow_stream
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.table import TableCreate
@@ -1160,3 +1168,69 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.delete(f"{self.base_route}/{str(ObjectId())}")
         assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+    def test_download_422(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
+        """Test download (failed)"""
+        test_api_client, _ = test_api_client_persistent
+        assert create_success_response.status_code == HTTPStatus.OK
+        result = create_success_response.json()
+        doc_id = result["_id"]
+
+        expected_df = pd.DataFrame({"colA": [1, 2, 3]})
+
+        async def mock_get_async_query_stream(query):
+            _ = query
+            yield dataframe_to_arrow_bytes(expected_df)
+
+        mock_session = mock_get_session.return_value
+        mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
+        mock_session.execute_query.return_value = pd.DataFrame({"row_count": [300 * 10000000]})
+        mock_session.list_table_schema.return_value = {"colA": DBVarType.INT}
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        response = test_api_client.get(f"{self.base_route}/pyarrow_table/{doc_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {"detail": "Table size (3000000000, 1) exceeds download limit."}
+
+    def test_download(self, test_api_client_persistent, create_success_response, mock_get_session):
+        """Test download (success)"""
+        test_api_client, _ = test_api_client_persistent
+        assert create_success_response.status_code == HTTPStatus.OK
+        result = create_success_response.json()
+        doc_id = result["_id"]
+        table_name = result["location"]["table_details"]["table_name"]
+
+        expected_df = pd.DataFrame({"colA": [1, 2, 3]})
+
+        async def mock_get_async_query_stream(query):
+            _ = query
+            yield dataframe_to_arrow_bytes(expected_df)
+
+        mock_session = mock_get_session.return_value
+        mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
+        mock_session.execute_query.return_value = pd.DataFrame({"row_count": [3]})
+        mock_session.list_table_schema.return_value = {"colA": DBVarType.INT}
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        with test_api_client.stream("GET", f"{self.base_route}/pyarrow_table/{doc_id}") as response:
+            assert response.status_code == HTTPStatus.OK
+            # monkey patch iter_content to iter_bytes to mimick requests behavior
+            response.iter_content = response.iter_bytes
+            with tempfile.TemporaryDirectory() as temp_dir:
+                output_path = Path(os.path.join(temp_dir, "test.parquet"))
+                parquet_from_arrow_stream(response=response, output_path=output_path, num_rows=3)
+                downloaded_df = pd.read_parquet(output_path)
+        pd.testing.assert_frame_equal(downloaded_df, expected_df)
+
+        assert (
+            mock_session.get_async_query_stream.call_args[0][0]
+            == textwrap.dedent(
+                f"""
+                SELECT
+                  *
+                FROM "sf_database"."sf_schema"."{table_name}"
+                """
+            ).strip()
+        )

@@ -8,6 +8,7 @@ from typing import Optional, cast
 from http import HTTPStatus
 
 from fastapi import APIRouter, Request
+from starlette.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
@@ -133,3 +134,18 @@ async def get_batch_feature_table_info(
     controller = request.state.app_container.batch_feature_table_controller
     info = await controller.get_info(document_id=batch_feature_table_id, verbose=verbose)
     return cast(BatchFeatureTableInfo, info)
+
+
+@router.get("/pyarrow_table/{batch_feature_table_id}")
+async def download_table_as_pyarrow_table(
+    request: Request, batch_feature_table_id: PydanticObjectId
+) -> StreamingResponse:
+    """
+    Download BatchFeatureTable as pyarrow table
+    """
+    controller = request.state.app_container.batch_feature_table_controller
+    result: StreamingResponse = await controller.download_materialized_table(
+        document_id=batch_feature_table_id,
+        get_credential=request.state.get_credential,
+    )
+    return result

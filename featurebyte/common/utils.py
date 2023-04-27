@@ -57,7 +57,7 @@ class ResponseStream:
             return data
         except StopIteration:
             self.closed = True
-            return b""
+            return self._bytes
 
 
 def get_version() -> str:

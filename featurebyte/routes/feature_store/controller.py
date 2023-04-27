@@ -6,12 +6,10 @@ from __future__ import annotations
 from typing import Any, List
 
 from bson.objectid import ObjectId
-from starlette.responses import StreamingResponse
 
 from featurebyte.logger import logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.credential import CredentialCreate
@@ -399,34 +397,3 @@ class FeatureStoreController(
             document_id=document_id, verbose=verbose
         )
         return info_document
-
-    async def download_table(
-        self,
-        location: TabularSource,
-        get_credential: Any,
-    ) -> StreamingResponse:
-        """
-        Get historical features for Feature List
-
-        Parameters
-        ----------
-        location: TabularSource
-            Location of table to download
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        StreamingResponse
-            StreamingResponse object
-        """
-        bytestream = await self.preview_service.download_table(
-            location=location,
-            get_credential=get_credential,
-        )
-        assert bytestream is not None
-
-        return StreamingResponse(
-            bytestream,
-            media_type="application/octet-stream",
-        )

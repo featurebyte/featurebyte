@@ -13,26 +13,19 @@ from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte import FeatureStore
-from featurebyte.common.utils import (
-    dataframe_from_arrow_stream,
-    dataframe_from_json,
-    dataframe_to_arrow_bytes,
-)
-from featurebyte.enum import DBVarType
+from featurebyte.common.utils import dataframe_from_json
 from featurebyte.exception import CredentialsError
 from featurebyte.models.credential import (
     CredentialModel,
     S3StorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from tests.unit.routes.base import BaseApiTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-methods
+class TestFeatureStoreApi(BaseApiTestSuite):
     """
     TestFeatureStoreApi
     """
@@ -693,73 +686,3 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert credential_dict["feature_store_id"] == payload["_id"]
         assert credential_dict["database_credential_type"] == "USERNAME_PASSWORD"
         assert credential_dict["storage_credential_type"] == "S3"
-
-    def test_download_422(self, test_api_client_persistent, data_sample_payload, mock_get_session):
-        """Test download (failed)"""
-        test_api_client, _ = test_api_client_persistent
-        _ = data_sample_payload
-
-        expected_df = pd.DataFrame({"colA": [1, 2, 3]})
-
-        async def mock_get_async_query_stream(query):
-            _ = query
-            yield dataframe_to_arrow_bytes(expected_df)
-
-        mock_session = mock_get_session.return_value
-        mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
-        mock_session.execute_query.return_value = pd.DataFrame({"row_count": [300 * 10000000]})
-        mock_session.list_table_schema.return_value = {"colA": DBVarType.INT}
-        mock_session.generate_session_unique_id = Mock(return_value="1")
-
-        tabular_source = TabularSource(
-            feature_store_id=self.payload["_id"],
-            table_details=TableDetails(
-                database_name="sf_database",
-                schema_name="sf_schema",
-                table_name="sf_table",
-            ),
-        )
-        response = test_api_client.post("/feature_store/download", json=tabular_source.json_dict())
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": "Table size (3000000000, 1) exceeds download limit."}
-
-    def test_download(self, test_api_client_persistent, data_sample_payload, mock_get_session):
-        """Test download (success)"""
-        test_api_client, _ = test_api_client_persistent
-        _ = data_sample_payload
-
-        expected_df = pd.DataFrame({"colA": [1, 2, 3]})
-
-        async def mock_get_async_query_stream(query):
-            _ = query
-            yield dataframe_to_arrow_bytes(expected_df)
-
-        mock_session = mock_get_session.return_value
-        mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
-        mock_session.execute_query.return_value = pd.DataFrame({"row_count": [3]})
-        mock_session.list_table_schema.return_value = {"colA": DBVarType.INT}
-        mock_session.generate_session_unique_id = Mock(return_value="1")
-
-        tabular_source = TabularSource(
-            feature_store_id=self.payload["_id"],
-            table_details=TableDetails(
-                database_name="sf_database",
-                schema_name="sf_schema",
-                table_name="sf_table",
-            ),
-        )
-        response = test_api_client.post("/feature_store/download", json=tabular_source.json_dict())
-        assert response.status_code == HTTPStatus.OK
-        downloaded_df = dataframe_from_arrow_stream(response.content)
-        pd.testing.assert_frame_equal(downloaded_df, expected_df)
-
-        assert (
-            mock_session.get_async_query_stream.call_args[0][0]
-            == textwrap.dedent(
-                """
-                SELECT
-                  *
-                FROM "sf_database"."sf_schema"."sf_table"
-                """
-            ).strip()
-        )
