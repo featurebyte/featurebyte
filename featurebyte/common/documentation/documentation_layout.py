@@ -845,9 +845,6 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([HISTORICAL_FEATURE_TABLE]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.name"]),
-        DocLayoutItem(
-            [HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_id"]
-        ),
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.feature_store_name"]),
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_name"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.created_at"]),
@@ -856,6 +853,9 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
             [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.feature_list_id"]
         ),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.id"]),
+        DocLayoutItem(
+            [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.observation_table_id"]
+        ),
     ]
 
 
