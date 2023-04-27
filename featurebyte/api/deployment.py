@@ -9,6 +9,7 @@ from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.deployment import DeploymentUpdate
@@ -41,13 +42,13 @@ class Deployment(ApiObject):
         "name",
         "feature_list_name",
         "feature_list_version",
-        "num_features",
+        "num_feature",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("catalog_id", Catalog, "catalog"),
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_name", "name", True),
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_version", "version", True),
-        ForeignKeyMapping("feature_list_id", FeatureList, "num_features", "num_features", True),
+        ForeignKeyMapping("feature_list_id", FeatureList, "num_feature", "num_feature", True),
     ]
 
     @property
@@ -60,6 +61,17 @@ class Deployment(ApiObject):
         bool
         """
         return self.cached_model.enabled
+
+    @property
+    def feature_list_id(self) -> PydanticObjectId:
+        """
+        Feature list ID associated with this deployment.
+
+        Returns
+        -------
+        PydanticObjectId
+        """
+        return self.cached_model.feature_list_id
 
     def enable(self) -> None:
         """

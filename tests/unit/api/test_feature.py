@@ -194,11 +194,11 @@ def test_feature_deserialization(
         method="sum",
         windows=["30m", "2h", "1d"],
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
     )
     same_float_feature_dict = feature_group["sum_1d"].dict(
         exclude={"id": True, "feature_namespace_id": True}
@@ -730,11 +730,11 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
     snowflake_event_table_with_entity.col_binary.as_entity("binary")
 
     event_view = snowflake_event_table_with_entity.get_view()
-    feature_job_setting = {
-        "blind_spot": "10m",
-        "frequency": "30m",
-        "time_modulo_frequency": "5m",
-    }
+    feature_job_setting = FeatureJobSetting(
+        blind_spot="10m",
+        frequency="30m",
+        time_modulo_frequency="5m",
+    )
     feature_group_by_cust_id = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
@@ -1168,11 +1168,11 @@ def feature_with_clean_column_names_fixture(saved_event_table, cust_id_entity):
         method="sum",
         windows=["30m"],
         feature_names=["sum_30m"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
     )["sum_30m"]
     return feature, col_names
 
@@ -1230,6 +1230,7 @@ def test_feature_definition(feature_with_clean_column_names):
     from bson import ObjectId
     from featurebyte import ColumnCleaningOperation
     from featurebyte import EventTable
+    from featurebyte import FeatureJobSetting
     from featurebyte import MissingValueImputation
 
 
@@ -1254,11 +1255,9 @@ def test_feature_definition(feature_with_clean_column_names):
         method="sum",
         windows=["30m"],
         feature_names=["sum_30m"],
-        feature_job_setting={
-            "blind_spot": "600s",
-            "frequency": "1800s",
-            "time_modulo_frequency": "300s",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
+        ),
         skip_fill_na=True,
     )
     feat = grouped["sum_30m"]
@@ -1317,11 +1316,11 @@ def test_feature_create_new_version__multiple_event_table(
         method="count",
         windows=["30m"],
         feature_names=["count_30m"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
     )["count_30m"]
     feature.save()
 

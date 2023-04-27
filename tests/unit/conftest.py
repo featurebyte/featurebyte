@@ -5,6 +5,7 @@ Common test fixtures used across unit test directories
 import json
 import tempfile
 import traceback
+from contextlib import contextmanager
 from datetime import datetime
 from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
@@ -799,6 +800,42 @@ def patched_observation_table_service():
         yield
 
 
+@pytest.fixture(name="snowflake_execute_query_batch_request_table_patcher")
+def snowflake_execute_query_batch_reqeust_table_patcher():
+    """Fixture to patch SnowflakeSession.execute_query to return mock data for batch request table"""
+
+    @contextmanager
+    def patch_snowflake_execute_query(query_map, handle_batch_request_table_query):
+        """Patch SnowflakeSession.execute_query to return mock data"""
+
+        def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
+            _ = timeout
+            if handle_batch_request_table_query and query.startswith(
+                'SHOW COLUMNS IN "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_'
+            ):
+                # return a cust_id column for batch request table to pass validation
+                res = [
+                    {
+                        "column_name": "cust_id",
+                        "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                    }
+                ]
+            else:
+                res = query_map.get(query)
+
+            if res is not None:
+                return pd.DataFrame(res)
+            return None
+
+        with mock.patch(
+            "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+        ) as mock_execute_query:
+            mock_execute_query.side_effect = side_effect
+            yield mock_execute_query
+
+    return patch_snowflake_execute_query
+
+
 @pytest.fixture(name="observation_table_from_source")
 def observation_table_from_source_fixture(
     snowflake_database_table, patched_observation_table_service
@@ -847,11 +884,11 @@ def feature_group_feature_job_setting():
     """
     Get feature group feature job setting
     """
-    return {
-        "blind_spot": "10m",
-        "frequency": "30m",
-        "time_modulo_frequency": "5m",
-    }
+    return FeatureJobSetting(
+        blind_spot="10m",
+        frequency="30m",
+        time_modulo_frequency="5m",
+    )
 
 
 @pytest.fixture(name="feature_group")
@@ -865,9 +902,7 @@ def feature_group_fixture(
     FeatureList fixture
     """
     snowflake_event_table_with_entity.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            **feature_group_feature_job_setting,
-        )
+        feature_job_setting=feature_group_feature_job_setting,
     )
     global_graph = GlobalQueryGraph()
     assert id(global_graph.nodes) == id(grouped_event_view.view_obj.graph.nodes)
@@ -977,11 +1012,11 @@ def agg_per_category_feature_fixture(snowflake_event_view_with_entity):
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
     yield features["sum_1d"]
@@ -996,11 +1031,11 @@ def count_per_category_feature_group_fixture(snowflake_event_view_with_entity):
     features = grouped.aggregate_over(
         method="count",
         windows=["30m", "2h", "1d"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
         feature_names=["counts_30m", "counts_2h", "counts_1d"],
     )
     yield features
@@ -1016,11 +1051,11 @@ def sum_per_category_feature_fixture(snowflake_event_view_with_entity):
         value_column="col_float",
         method="sum",
         windows=["30m"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
         feature_names=["sum_30m"],
     )
     yield features["sum_30m"]
@@ -1103,11 +1138,11 @@ def mock_snowflake_feature(
         method="sum",
         windows=["30m"],
         feature_names=["sum_30m"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
     )
     feature = feature_group["sum_30m"]
     feature.__dict__["online_enabled"] = False
@@ -1138,11 +1173,11 @@ def mock_snowflake_feature_list_model(
         method="sum",
         windows=["30m"],
         feature_names=["sum_30m"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
     )
     feature = feature_group["sum_30m"]
 
@@ -1256,7 +1291,11 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         group_by_col="cust_id",
         window="24h",
         name="iet_entropy_24h",
-        feature_job_setting={"frequency": "6h", "time_modulo_frequency": "3h", "blind_spot": "3h"},
+        feature_job_setting=FeatureJobSetting(
+            frequency="6h",
+            time_modulo_frequency="3h",
+            blind_spot="3h",
+        ),
     )
     snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
     item_view = snowflake_item_table.get_view(event_suffix="_event_table")

@@ -128,6 +128,10 @@ def catalog_get_by_id_list():
         MethodMetadata("get_feature_store_by_id", FeatureStore, "get_by_id"),
         MethodMetadata("get_entity_by_id", Entity, "get_by_id"),
         MethodMetadata("get_periodic_task_by_id", PeriodicTask, "get_by_id"),
+        MethodMetadata("get_observation_table_by_id", ObservationTable, "get_by_id"),
+        MethodMetadata("get_historical_feature_table_by_id", HistoricalFeatureTable, "get_by_id"),
+        MethodMetadata("get_batch_request_table_by_id", BatchRequestTable, "get_by_id"),
+        MethodMetadata("get_batch_feature_table_by_id", BatchFeatureTable, "get_by_id"),
     ]
 
 

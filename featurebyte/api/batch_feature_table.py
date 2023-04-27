@@ -8,6 +8,7 @@ from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
+from featurebyte.schema.batch_feature_table import BatchFeatureTableListRecord
 
 
 class BatchFeatureTable(BatchFeatureTableModel, ApiObject):
@@ -18,7 +19,7 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject):
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.BatchFeatureTable")
 
     _route = "/batch_feature_table"
-    _list_schema = BatchFeatureTableModel
+    _list_schema = BatchFeatureTableListRecord
     _get_schema = BatchFeatureTableModel
     _list_fields = [
         "name",

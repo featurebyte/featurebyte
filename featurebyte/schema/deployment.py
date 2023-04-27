@@ -8,7 +8,11 @@ from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
+from featurebyte.schema.common.base import (
+    BaseDocumentServiceUpdateSchema,
+    BaseInfo,
+    PaginationMixin,
+)
 
 
 class DeploymentCreate(FeatureByteBaseModel):
@@ -44,3 +48,14 @@ class DeploymentSummary(FeatureByteBaseModel):
 
     num_feature_list: int
     num_feature: int
+
+
+class DeploymentInfo(BaseInfo):
+    """
+    Schema for deployment info
+    """
+
+    feature_list_name: str
+    feature_list_version: str
+    num_feature: int
+    enabled: bool

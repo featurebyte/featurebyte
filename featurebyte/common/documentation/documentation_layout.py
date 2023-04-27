@@ -466,6 +466,8 @@ def _get_view_layout() -> List[DocLayoutItem]:
             [VIEW, CREATE_FEATURE, "view.groupby"],
             doc_path_override="api.view.GroupByMixin.groupby.md",
         ),
+        DocLayoutItem([VIEW, CREATE_TABLE, "View.create_observation_table"]),
+        DocLayoutItem([VIEW, CREATE_TABLE, "View.create_batch_request_table"]),
         DocLayoutItem([VIEW, JOIN, "EventView.add_feature"]),
         DocLayoutItem([VIEW, JOIN, "ItemView.join_event_table_attributes"]),
         DocLayoutItem([VIEW, JOIN, "View.join"]),
@@ -515,10 +517,11 @@ def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayout
     -------
     List[DocLayoutItem]
     """
-    assert series_type in {"ViewColumn", "Feature"}
+    assert series_type in {VIEW_COLUMN, FEATURE}
     return [
         DocLayoutItem([series_type, TRANSFORM, f"{series_type}.dt.{field}"])
         for field in [
+            "tz_offset",
             "year",
             "quarter",
             "month",
@@ -560,17 +563,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.astype"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.abs"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.ceil"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.year"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.quarter"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.month"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.week"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.day"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.day_of_week"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.hour"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.minute"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.second"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.millisecond"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.microsecond"]),
+        *_get_datetime_accessor_properties_layout(VIEW_COLUMN),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.exp"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.fillna"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.floor"]),
@@ -624,11 +617,23 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, GET, "Catalog.get_relationship"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_relationship_by_id"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_feature_job_setting_analysis_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_observation_table"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_observation_table_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_historical_feature_table"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_historical_feature_table_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_batch_request_table"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_batch_request_table_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_batch_feature_table"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_batch_feature_table_by_id"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_relationships"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_feature_lists"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_entities"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_features"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_tables"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_observation_tables"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_historical_feature_tables"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_batch_request_tables"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_batch_feature_tables"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.created_at"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.info"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.name"]),
@@ -700,6 +705,8 @@ def _get_source_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_event_table"]),
         DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_item_table"]),
         DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_scd_table"]),
+        DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_observation_table"]),
+        DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_batch_request_table"]),
         DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.describe"]),
         DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.preview"]),
         DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.sample"]),
@@ -746,7 +753,17 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         The layout for the Deployment module.
     """
     return [
+        DocLayoutItem([DEPLOYMENT, GET, "Deployment.get_batch_features"]),
+        DocLayoutItem([DEPLOYMENT, GET, "Deployment.get"]),
+        DocLayoutItem([DEPLOYMENT, GET, "Deployment.get_by_id"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.enabled"]),
+        DocLayoutItem([DEPLOYMENT, INFO, "Deployment.name"]),
+        # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.catalog"]),
+        # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_name"]),
+        # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_version"]),
+        # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.num_features"]),
+        DocLayoutItem([DEPLOYMENT, LINEAGE, "Deployment.feature_list_id"]),
+        DocLayoutItem([DEPLOYMENT, LIST, "Deployment.list"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
     ]
@@ -763,10 +780,14 @@ def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([BATCH_FEATURE_TABLE]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.deployment_id"]),
+        # DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.feature_store_name"]),
+        # DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.batch_request_table_name"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.name"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.created_at"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.updated_at"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.id"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.batch_request_table_id"]),
     ]
 
 
@@ -782,6 +803,9 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([OBSERVATION_TABLE]),
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.name"]),
+        DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.context_id"]),
+        # DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.type"]),
+        # DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.feature_store_name"]),
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.created_at"]),
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.updated_at"]),
         DocLayoutItem([OBSERVATION_TABLE, LINEAGE, "ObservationTable.id"]),
@@ -799,6 +823,9 @@ def _get_batch_request_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([BATCH_REQUEST_TABLE]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.context_id"]),
+        # DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.type"]),
+        # DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.feature_store_name"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.name"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.created_at"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.updated_at"]),
@@ -818,8 +845,16 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([HISTORICAL_FEATURE_TABLE]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.name"]),
+        DocLayoutItem(
+            [HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_id"]
+        ),
+        # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.feature_store_name"]),
+        # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_name"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.created_at"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.updated_at"]),
+        DocLayoutItem(
+            [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.feature_list_id"]
+        ),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.id"]),
     ]
 

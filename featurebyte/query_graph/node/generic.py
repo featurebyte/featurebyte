@@ -29,14 +29,17 @@ from featurebyte.query_graph.node.metadata.operation import (
     ViewDataColumn,
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
+    ClassEnum,
     CodeGenerationConfig,
     ExpressionStr,
+    ObjectClass,
     RightHandSide,
     StatementT,
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionStr,
+    get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
 from featurebyte.query_graph.util import append_to_lineage
@@ -541,29 +544,26 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         )
         keys = ValueStr.create(self.parameters.keys)
         category = ValueStr.create(self.parameters.value_by)
-        value_column = ValueStr.create(self.parameters.parent)
-        method = ValueStr.create(self.parameters.agg_func)
-        windows = ValueStr.create(self.parameters.windows)
-        feature_names = ValueStr.create(self.parameters.names)
-        feature_job_setting = {
-            "blind_spot": f"{self.parameters.blind_spot}s",
-            "frequency": f"{self.parameters.frequency}s",
-            "time_modulo_frequency": f"{self.parameters.time_modulo_frequency}s",
-        }
-        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
-        agg = (
-            f"aggregate_over(value_column={value_column}, "
-            f"method={method}, "
-            f"windows={windows}, "
-            f"feature_names={feature_names}, "
-            f"feature_job_setting={feature_job_setting}, "
-            f"skip_fill_na=True)"
+        feature_job_setting: ObjectClass = ClassEnum.FEATURE_JOB_SETTING(
+            blind_spot=f"{self.parameters.blind_spot}s",
+            frequency=f"{self.parameters.frequency}s",
+            time_modulo_frequency=f"{self.parameters.time_modulo_frequency}s",
         )
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
         out_var_name = var_name_generator.generate_variable_name(
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
         )
-        statements.append((out_var_name, ExpressionStr(f"{grouped}.{agg}")))
+        expression = get_object_class_from_function_call(
+            callable_name=f"{grouped}.aggregate_over",
+            value_column=self.parameters.parent,
+            method=self.parameters.agg_func,
+            windows=self.parameters.windows,
+            feature_names=self.parameters.names,
+            feature_job_setting=feature_job_setting,
+            skip_fill_na=True,
+        )
+        statements.append((out_var_name, expression))
         return statements, out_var_name
 
 

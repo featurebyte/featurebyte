@@ -175,3 +175,20 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
         assert response_dict["enabled"] is False
+
+    def test_info_200(self, test_api_client_persistent, create_success_response):
+        """Test info route"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict == {
+            "name": 'Deployment (feature_list: "sf_feature_list")',
+            "feature_list_name": "sf_feature_list",
+            "feature_list_version": response_dict["feature_list_version"],
+            "num_feature": 1,
+            "enabled": False,
+            "created_at": response_dict["created_at"],
+            "updated_at": None,
+        }
