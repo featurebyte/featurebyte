@@ -99,7 +99,7 @@ services:
   spark-thrift:
     networks:
       - featurebyte
-    image: featurebyte/cluster-apache-spark:3.3.1
+    image: featurebyte/cluster-apache-spark:3.3.2
     container_name: spark-thrift
     ports:
       - "0.0.0.0:10000:10000"
