@@ -7,6 +7,8 @@ from typing import Any
 
 from bson import ObjectId
 
+from featurebyte.api.batch_feature_table import BatchFeatureTable
+from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog_decorator import update_and_reset_catalog
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.entity import Entity
@@ -14,6 +16,8 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.historical_feature_table import HistoricalFeatureTable
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.table import Table
@@ -276,3 +280,103 @@ class CatalogGetByIdMixin:
         >>> periodic_task = catalog.get_periodic_task_by_id(ObjectId())  # doctest: +SKIP
         """
         return PeriodicTask.get_by_id(id=id)
+
+    @update_and_reset_catalog
+    def get_observation_table_by_id(
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> ObservationTable:
+        """
+        Get observation table by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Observation table id.
+
+        Returns
+        -------
+        ObservationTable
+            Observation table object.
+
+        Examples
+        --------
+        Get a saved observation table.
+
+        >>> observation_table = catalog.get_observation_table_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return ObservationTable.get_by_id(id=id)
+
+    @update_and_reset_catalog
+    def get_historical_feature_table_by_id(
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> HistoricalFeatureTable:
+        """
+        Get historical feature table by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Historical feature table id.
+
+        Returns
+        -------
+        HistoricalFeatureTable
+            Historical feature table object.
+
+        Examples
+        --------
+        Get a saved historical feature table.
+
+        >>> historiacl_feature_table = catalog.get_historical_feature_table_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return HistoricalFeatureTable.get_by_id(id=id)
+
+    @update_and_reset_catalog
+    def get_batch_request_table_by_id(
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> BatchRequestTable:
+        """
+        Get batch request table by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Batch request table id.
+
+        Returns
+        -------
+        BatchRequestTable
+            Batch request table object.
+
+        Examples
+        --------
+        Get a saved batch request table.
+
+        >>> batch_request_table = catalog.get_batch_request_table_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return BatchRequestTable.get_by_id(id=id)
+
+    @update_and_reset_catalog
+    def get_batch_feature_table_by_id(
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> BatchFeatureTable:
+        """
+        Get batch feature table task by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Batch feature table id.
+
+        Returns
+        -------
+        BatchFeatureTable
+            Batch feature table object.
+
+        Examples
+        --------
+        Get a saved batch feature table.
+
+        >>> batch_feature_table = catalog.get_batch_feature_table_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return BatchFeatureTable.get_by_id(id=id)
