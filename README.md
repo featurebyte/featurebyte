@@ -32,23 +32,21 @@ With FeatureByte SDK, data scientists and data engineers can speed up experiment
 
 ## :hammer_and_pick: Installation
 
-### 1. Standalone Installation
-
 Local installation of the FeatureByte service is the easiest way to get started with the FeatureByte SDK.
 It is a single-user installation that can be used to prototype features locally with your data warehouse.
 
-**1.1. Hardware Requirements:**
+**Hardware Requirements:**
 
 We recommend the following minimal hardware for running the local service
 
 * Intel, AMD or Apple Silicon processor with 4 cpu cores
 * 8GB of RAM
 
-**1.2. Software Requirements**
+**Software Requirements**
 
 * Docker service
 
-**1.3. Install featurebyte Package**
+**Install featurebyte Package**
 
 * To avoid potential conflicts with other packages it is strongly recommended to use a virtual environment (venv) or a conda environment.
 
@@ -56,23 +54,18 @@ We recommend the following minimal hardware for running the local service
 pip install featurebyte
 ```
 
-**1.4. Launch the playground environment with python, or from the command shell**
+**Launch the playground environment with python, or from the command shell**
 
 ```python
 import featurebyte as fb
 fb.playground()
 ```
 
-**1.5. Cleaning Up**
+**Cleaning Up**
 
 ```python
 fb.stop()
 ```
-
-### 2. Hosted Service & High Availability Installation
-
-Refer to <a href="https://docs.featurebyte.com/0.1/get_started/installation/">Documentation</a>
-
 
 ## 📝 Documentation
 
