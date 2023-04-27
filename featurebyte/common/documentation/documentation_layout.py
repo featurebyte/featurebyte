@@ -780,14 +780,14 @@ def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([BATCH_FEATURE_TABLE]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.deployment_id"]),
         # DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.feature_store_name"]),
         # DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.batch_request_table_name"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.name"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.created_at"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.updated_at"]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.id"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.batch_request_table_id"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.deployment_id"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.id"]),
     ]
 
 
