@@ -405,6 +405,7 @@ app_container_config.add_controller(
         "deployment_service",
         "context_service",
         "feature_list_service",
+        "info_service",
         "task_controller",
     ],
 )

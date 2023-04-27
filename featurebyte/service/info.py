@@ -24,6 +24,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.batch_feature_table import BatchFeatureTableInfo
 from featurebyte.schema.batch_request_table import BatchRequestTableInfo
+from featurebyte.schema.deployment import DeploymentInfo
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableInfo
 from featurebyte.schema.info import (
@@ -134,9 +135,6 @@ class InfoService(BaseService):
         self.context_service = ContextService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.deployment_service = DeploymentService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
         self.observation_table_service = ObservationTableService(
             user=user,
             persistent=persistent,
@@ -149,6 +147,9 @@ class InfoService(BaseService):
             persistent=persistent,
             catalog_id=catalog_id,
             feature_store_service=self.feature_store_service,
+        )
+        self.deployment_service = DeploymentService(
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.batch_request_table_service = BatchRequestTableService(
             user=user,
@@ -981,6 +982,35 @@ class InfoService(BaseService):
             table_details=historical_feature_table.location.table_details,
             created_at=historical_feature_table.created_at,
             updated_at=historical_feature_table.updated_at,
+        )
+
+    async def get_deployment_info(self, document_id: ObjectId, verbose: bool) -> DeploymentInfo:
+        """
+        Get deployment info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        DeploymentInfo
+        """
+        deployment = await self.deployment_service.get_document(document_id=document_id)
+        feature_list = await self.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
+        )
+        return DeploymentInfo(
+            name=deployment.name,
+            feature_list_name=feature_list.name,
+            feature_list_version=feature_list.version.to_str(),
+            num_feature=len(feature_list.feature_ids),
+            enabled=deployment.enabled,
+            created_at=deployment.created_at,
+            updated_at=deployment.updated_at,
         )
 
     async def get_batch_request_table_info(
