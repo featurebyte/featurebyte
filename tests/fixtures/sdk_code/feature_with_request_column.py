@@ -22,7 +22,7 @@ grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     skip_fill_na=True,
 )
 feat = grouped["latest_event_timestamp_90d"]
-feat_1 = RequestColumn.create_request_column("POINT_IN_TIME", "TIMESTAMP")
-feat_2 = (feat_1 - feat).dt.day
-feat_2.name = "Time Since Last Event (days)"
-output = feat_2
+request_col = RequestColumn.create_request_column("POINT_IN_TIME", "TIMESTAMP")
+feat_1 = (request_col - feat).dt.day
+feat_1.name = "Time Since Last Event (days)"
+output = feat_1

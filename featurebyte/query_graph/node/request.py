@@ -85,10 +85,7 @@ class RequestColumnNode(BaseNode):
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         statements: List[StatementT] = []
-        var_name = var_name_generator.generate_variable_name(
-            node_output_type=operation_structure.output_type,
-            node_output_category=operation_structure.output_category,
-        )
+        var_name = var_name_generator.convert_to_variable_name("request_col")
         obj = ClassEnum.REQUEST_COLUMN(
             self.parameters.column_name,
             self.parameters.dtype,
