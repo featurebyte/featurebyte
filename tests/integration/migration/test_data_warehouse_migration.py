@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import Feature, FeatureList
+from featurebyte import Feature, FeatureJobSetting, FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV6
 from featurebyte.models.base import DEFAULT_CATALOG_ID
@@ -137,22 +137,22 @@ async def test_data_warehouse_migration_v6(
         method="count",
         windows=["7d"],
         feature_names=["test_data_warehouse_migration_v6_feature_count"],
-        feature_job_setting={
-            "frequency": "42m",
-            "blind_spot": "5m",
-            "time_modulo_frequency": "10m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            frequency="42m",
+            blind_spot="5m",
+            time_modulo_frequency="10m",
+        ),
     )
     features_2 = event_view.groupby("ÜSER ID").aggregate_over(
         value_column="ËVENT_TIMESTAMP",
         method="latest",
         windows=["7d"],
         feature_names=["test_data_warehouse_migration_v6_feature_latest_event_time"],
-        feature_job_setting={
-            "frequency": "42m",
-            "blind_spot": "5m",
-            "time_modulo_frequency": "10m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            frequency="42m",
+            blind_spot="5m",
+            time_modulo_frequency="10m",
+        ),
     )
     feature_list_1 = FeatureList([features_1], name="test_data_warehouse_migration_v6_list_1")
     feature_list_1.save()

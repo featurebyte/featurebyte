@@ -2,6 +2,7 @@
 from bson import ObjectId
 from featurebyte import ColumnCleaningOperation
 from featurebyte import EventTable
+from featurebyte import FeatureJobSetting
 from featurebyte import MissingValueImputation
 
 event_table = EventTable.get_by_id(ObjectId("{table_id}"))
@@ -24,11 +25,9 @@ grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     method="sum",
     windows=["1d"],
     feature_names=["sum_1d"],
-    feature_job_setting={{
-        "blind_spot": "2700s",
-        "frequency": "1800s",
-        "time_modulo_frequency": "900s",
-    }},
+    feature_job_setting=FeatureJobSetting(
+        blind_spot="2700s", frequency="1800s", time_modulo_frequency="900s"
+    ),
     skip_fill_na=True,
 )
 feat = grouped["sum_1d"]

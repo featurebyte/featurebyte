@@ -82,7 +82,8 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
 ]
 description = "Python Library for FeatureOps"
-homepage = "https://github.com/featurebyte/featurebyte"
+documentation = "https://docs.featurebyte.com"
+homepage = "https://featurebyte.com"
 include = [
     "featurebyte/sql/spark/*.jar",
 ]
@@ -108,7 +109,7 @@ cryptography = "^40.0.2"
 databricks-cli = { version = "^0.17.3", optional = true }
 databricks-sql-connector = "^2.5.0"
 fastapi = { version =  "^0.95.1", optional = true }
-featurebyte-freeware = { version = "^0.2.13", optional = true, allow-prereleases = true }
+featurebyte-freeware = { version = "^0.2.14", optional = true }
 humanize = "^4.4.0"
 importlib_metadata = { version = "^4.5.0", python = "^3.8"}
 jinja2 = { version = "^3.1.2", optional = true }

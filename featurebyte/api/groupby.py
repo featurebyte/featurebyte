@@ -3,10 +3,11 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from typeguard import typechecked
 
+from featurebyte import FeatureJobSetting
 from featurebyte.api.asat_aggregator import AsAtAggregator
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
@@ -92,7 +93,7 @@ class GroupBy:
         windows: Optional[List[Optional[str]]] = None,
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
-        feature_job_setting: Optional[Dict[str, str]] = None,
+        feature_job_setting: Optional[FeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
     ) -> FeatureGroup:
@@ -143,7 +144,7 @@ class GroupBy:
             Output feature names
         timestamp_column: Optional[str]
             Timestamp column used to specify the window (if not specified, event table timestamp is used)
-        feature_job_setting: Optional[Dict[str, str]]
+        feature_job_setting: Optional[FeatureJobSetting]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
         fill_value: OptionalScalar

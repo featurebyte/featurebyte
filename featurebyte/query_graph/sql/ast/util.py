@@ -46,7 +46,12 @@ def prepare_binary_op_input_nodes(
         # Swap left & right objects if the operation from the right object
         left_node, right_node = right_node, left_node
 
-    assert table_node is not None
+    if table_node is None:
+        # In this case, the left node is a column from the request data. The right node must be from
+        # a feature and has a valid table node.
+        assert right_node.table_node is not None
+        table_node = right_node.table_node
+
     return table_node, left_node, right_node
 
 

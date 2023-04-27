@@ -3,7 +3,7 @@ This module contains window aggregator related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, List, Optional, Type, cast
 
 from featurebyte.api.base_aggregator import BaseAggregator
 from featurebyte.api.change_view import ChangeView
@@ -42,7 +42,7 @@ class WindowAggregator(BaseAggregator):
         windows: Optional[List[Optional[str]]] = None,
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
-        feature_job_setting: Optional[Dict[str, str]] = None,
+        feature_job_setting: Optional[FeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
     ) -> FeatureGroup:
@@ -62,7 +62,7 @@ class WindowAggregator(BaseAggregator):
             Output feature names
         timestamp_column: Optional[str]
             Timestamp column used to specify the window (if not specified, event table timestamp is used)
-        feature_job_setting: Optional[Dict[str, str]]
+        feature_job_setting: Optional[FeatureJobSetting]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
         fill_value: OptionalScalar
@@ -129,7 +129,7 @@ class WindowAggregator(BaseAggregator):
         method: Optional[str],
         windows: Optional[list[Optional[str]]],
         feature_names: Optional[list[str]],
-        feature_job_setting: Optional[Dict[str, str]],
+        feature_job_setting: Optional[FeatureJobSetting],
         fill_value: OptionalScalar,
         skip_fill_na: bool,
     ) -> None:
@@ -168,37 +168,21 @@ class WindowAggregator(BaseAggregator):
                     validate_window(window, parsed_feature_job_setting.frequency)
 
     def _get_job_setting_params(
-        self, feature_job_setting: Optional[dict[str, str]]
+        self, feature_job_setting: Optional[FeatureJobSetting]
     ) -> FeatureJobSetting:
-        feature_job_setting = feature_job_setting or {}
-        frequency = feature_job_setting.get("frequency")
-        time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
-        blind_spot = feature_job_setting.get("blind_spot")
+        if feature_job_setting is not None:
+            return feature_job_setting
 
-        # Check that feature job setting is not specified partially (must be all or nothing)
-        settings_overridden = [
-            frequency is not None,
-            time_modulo_frequency is not None,
-            blind_spot is not None,
-        ]
-        is_settings_provided = any(settings_overridden)
-        if is_settings_provided and not all(settings_overridden):
+        # Return default if no feature_job_setting is provided.
+        default_setting = self.view.default_feature_job_setting
+        if default_setting is None:
             raise ValueError(
-                "All of frequency, time_modulo_frequency and blind_spot must be specified in"
-                " feature_job_setting"
+                f"feature_job_setting is required as the {type(self.view).__name__} does not "
+                "have a default feature job setting"
             )
-
-        if not is_settings_provided:
-            default_setting = self.view.default_feature_job_setting
-            if default_setting is None:
-                raise ValueError(
-                    f"feature_job_setting is required as the {type(self.view).__name__} does not "
-                    "have a default feature job setting"
-                )
-            frequency = default_setting.frequency
-            time_modulo_frequency = default_setting.time_modulo_frequency
-            blind_spot = default_setting.blind_spot
-
+        frequency = default_setting.frequency
+        time_modulo_frequency = default_setting.time_modulo_frequency
+        blind_spot = default_setting.blind_spot
         return FeatureJobSetting(
             frequency=frequency,
             time_modulo_frequency=time_modulo_frequency,
@@ -213,7 +197,7 @@ class WindowAggregator(BaseAggregator):
         feature_names: Optional[list[str]],
         timestamp_column: Optional[str] = None,
         value_by_column: Optional[str] = None,
-        feature_job_setting: Optional[dict[str, str]] = None,
+        feature_job_setting: Optional[FeatureJobSetting] = None,
     ) -> dict[str, Any]:
         parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
         return {

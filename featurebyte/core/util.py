@@ -111,8 +111,43 @@ class SeriesBinaryOperator:
             output_var_type=output_var_type,
             right_op=right_op,
             additional_node_params=additional_node_params,
-            **self.input_series.binary_op_series_params(self.other),
         )
+
+
+def construct_binary_op_series_output(
+    input_series: FrozenSeries, other: FrozenSeries, node_name: str, output_var_type: DBVarType
+) -> FrozenSeriesT:
+    """
+    Construct the output series for binary operation between two series.
+
+    Parameters
+    ----------
+    input_series : FrozenSeries
+        Input series
+    other : FrozenSeries
+        Other series
+    node_name : str
+        Node name
+    output_var_type : DBVarType
+        Output variable type
+
+    Returns
+    -------
+    FrozenSeriesT
+    """
+    if input_series.binary_op_output_class_priority <= other.binary_op_output_class_priority:
+        output_type_series, other_series = input_series, other
+    else:
+        output_type_series, other_series = other, input_series
+    kwargs = output_type_series.binary_op_series_params(other_series)
+    return type(output_type_series)(  # type: ignore[return-value]
+        feature_store=output_type_series.feature_store,
+        tabular_source=output_type_series.tabular_source,
+        node_name=node_name,
+        name=None,
+        dtype=output_var_type,
+        **kwargs,
+    )
 
 
 def series_binary_operation(
@@ -122,7 +157,6 @@ def series_binary_operation(
     output_var_type: DBVarType,
     right_op: bool = False,
     additional_node_params: dict[str, Any] | None = None,
-    **kwargs: Any,
 ) -> FrozenSeriesT:
     """
     Apply binary operation between a Series and another object
@@ -141,31 +175,25 @@ def series_binary_operation(
         whether the binary operation is from right object or not
     additional_node_params: dict[str, Any] | None
         additional parameters to include as node parameters
-    kwargs : Any
-        Other series parameters
 
     Returns
     -------
     FrozenSeriesT
     """
+    # pylint: disable=import-outside-toplevel
+    from featurebyte.core.series import FrozenSeries
+
     node_params: dict[str, Any] = {"right_op": right_op} if right_op else {}
     if additional_node_params is not None:
         node_params.update(additional_node_params)
-    if isinstance(other, type(input_series)):
+    if isinstance(other, FrozenSeries):
         node = input_series.graph.add_operation(
             node_type=node_type,
             node_params=node_params,
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[input_series.node, other.node],
         )
-        return type(input_series)(
-            feature_store=input_series.feature_store,
-            tabular_source=input_series.tabular_source,
-            node_name=node.name,
-            name=None,
-            dtype=output_var_type,
-            **kwargs,
-        )
+        return construct_binary_op_series_output(input_series, other, node.name, output_var_type)
     other = cast(AllSupportedValueTypes, other)
     node_params["value"] = get_value_parameter(other)
     node = input_series.graph.add_operation(
@@ -174,6 +202,7 @@ def series_binary_operation(
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[input_series.node],
     )
+    kwargs = input_series.binary_op_series_params(other)
     return type(input_series)(
         feature_store=input_series.feature_store,
         tabular_source=input_series.tabular_source,

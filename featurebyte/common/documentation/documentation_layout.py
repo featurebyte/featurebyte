@@ -517,10 +517,11 @@ def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayout
     -------
     List[DocLayoutItem]
     """
-    assert series_type in {"ViewColumn", "Feature"}
+    assert series_type in {VIEW_COLUMN, FEATURE}
     return [
         DocLayoutItem([series_type, TRANSFORM, f"{series_type}.dt.{field}"])
         for field in [
+            "tz_offset",
             "year",
             "quarter",
             "month",
@@ -562,17 +563,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.astype"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.abs"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.ceil"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.year"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.quarter"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.month"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.week"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.day"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.day_of_week"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.hour"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.minute"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.second"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.millisecond"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.dt.microsecond"]),
+        *_get_datetime_accessor_properties_layout(VIEW_COLUMN),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.exp"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.fillna"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.floor"]),
@@ -767,11 +758,11 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         DocLayoutItem([DEPLOYMENT, GET, "Deployment.get_by_id"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.enabled"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.name"]),
-        # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_id"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.catalog"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_name"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_version"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.num_features"]),
+        DocLayoutItem([DEPLOYMENT, LINEAGE, "Deployment.feature_list_id"]),
         DocLayoutItem([DEPLOYMENT, LIST, "Deployment.list"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
@@ -857,11 +848,13 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_id"]
         ),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.feature_list_id"]),
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.feature_store_name"]),
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_name"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.created_at"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.updated_at"]),
+        DocLayoutItem(
+            [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.feature_list_id"]
+        ),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.id"]),
     ]
 

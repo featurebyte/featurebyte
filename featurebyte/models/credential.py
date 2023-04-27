@@ -103,7 +103,7 @@ class BaseDatabaseCredential(BaseCredential):
 
 class UsernamePasswordCredential(BaseDatabaseCredential):
     """
-    Username / Password credential
+    Data class for a username and password credential.
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UsernamePasswordCredential")
@@ -111,13 +111,13 @@ class UsernamePasswordCredential(BaseDatabaseCredential):
     type: Literal[DatabaseCredentialType.USERNAME_PASSWORD] = Field(
         DatabaseCredentialType.USERNAME_PASSWORD, const=True
     )
-    username: StrictStr
-    password: StrictStr
+    username: StrictStr = Field(description="Username of your account.")
+    password: StrictStr = Field(description="Password of your account.")
 
 
 class AccessTokenCredential(BaseDatabaseCredential):
     """
-    Access token credential
+    Data class for an access token credential.
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AccessTokenCredential")
@@ -125,7 +125,7 @@ class AccessTokenCredential(BaseDatabaseCredential):
     type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(
         DatabaseCredentialType.ACCESS_TOKEN, const=True
     )
-    access_token: StrictStr
+    access_token: StrictStr = Field(description="The access token used to connect.")
 
 
 DatabaseCredential = Annotated[
@@ -153,14 +153,19 @@ class BaseStorageCredential(BaseCredential):
 
 class S3StorageCredential(BaseStorageCredential):
     """
-    S3 storage credential
+    Data class for a S3 storage credential.
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.S3StorageCredential")
 
     type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
-    s3_access_key_id: StrictStr
-    s3_secret_access_key: StrictStr
+    s3_access_key_id: StrictStr = Field(
+        description="S3 access key ID used for connecting to your S3 store."
+    )
+    s3_secret_access_key: StrictStr = Field(
+        description="S3 secret access key used for connecting to your S3 store. "
+        "Avoid storing this in plain text, or in a public repository."
+    )
 
 
 StorageCredential = Annotated[

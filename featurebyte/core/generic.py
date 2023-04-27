@@ -19,6 +19,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
@@ -94,6 +95,18 @@ class QueryObject(FeatureByteBaseModel):
         for node in dfs_traversal(pruned_flattened_graph, pruned_flattened_node):
             out.append(node.type)
         return out
+
+    @property
+    def output_category(self) -> NodeOutputCategory:
+        """
+        Returns the output type of the current node (view or feature)
+
+        Returns
+        -------
+        NodeOutputCategory
+        """
+        operation_structure = self.graph.extract_operation_structure(self.node)
+        return operation_structure.output_category
 
     @root_validator
     @classmethod

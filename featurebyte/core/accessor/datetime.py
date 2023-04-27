@@ -471,7 +471,6 @@ class DatetimeAccessor:
                 node_type=self._node_type,
                 output_var_type=var_type,
                 additional_node_params=node_params,
-                **self._obj.binary_op_series_params(timezone_offset),
             )
 
         if isinstance(timezone_offset, str):

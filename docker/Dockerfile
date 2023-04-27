@@ -13,7 +13,7 @@ RUN pip install poetry==1.3.1 && \
     python -m venv /opt/venv && \
     poetry config virtualenvs.create false && \
     . /opt/venv/bin/activate && \
-    poetry install -n --sync --extras=server
+    poetry install -n --extras=server --without dev,docs,lint
 
 # Moving featurebyte source code
 COPY ./featurebyte /app/featurebyte
@@ -46,5 +46,3 @@ COPY ./docker/entrypoint.sh /docker-entrypoint.sh
 COPY ./docker/migration.py /scripts/migration.py
 RUN chmod +x /docker-entrypoint.sh
 RUN chown -R 1000:1000 /app
-
-ENTRYPOINT ["/docker-entrypoint.sh"]

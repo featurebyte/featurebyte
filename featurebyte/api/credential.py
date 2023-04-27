@@ -24,11 +24,14 @@ from featurebyte.schema.credential import CredentialCreate, CredentialRead, Cred
 @typechecked
 class Credential(DeletableApiObject, SavableApiObject):
     """
-    Credential class
+    Credential class is the data model used to represent your credentials that are persisted.
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Credential")
+    __fbautodoc__ = FBAutoDoc(
+        proxy_class="featurebyte.Credential",
+        skip_params_and_signature_in_class_docs=True,
+    )
 
     # class variables
     _route = "/credential"

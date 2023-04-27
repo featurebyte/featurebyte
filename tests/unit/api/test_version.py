@@ -28,11 +28,11 @@ def feature_group_fixture(
         method="sum",
         windows=["30m", "2h", "4h"],
         feature_names=["amt_sum_30m", "amt_sum_2h", "amt_sum_4h"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m",
+            frequency="30m",
+            time_modulo_frequency="5m",
+        ),
     )
     return feature_group
 
