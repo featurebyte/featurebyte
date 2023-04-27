@@ -379,7 +379,6 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_default_version_mode"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_status"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_features"]),
-        DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_online_serving_code"]),
     ]
 
 
@@ -766,6 +765,7 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         DocLayoutItem([DEPLOYMENT, LIST, "Deployment.list"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
+        DocLayoutItem([DEPLOYMENT, SERVE, "FeatureList.get_online_serving_code"]),
     ]
 
 
