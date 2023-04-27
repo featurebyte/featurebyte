@@ -14,7 +14,7 @@ from featurebyte.models.base import (
     PydanticObjectId,
 )
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
-from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseInfo, PaginationMixin
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 

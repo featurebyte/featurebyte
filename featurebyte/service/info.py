@@ -999,6 +999,7 @@ class InfoService(BaseService):
         -------
         DeploymentInfo
         """
+        _ = verbose
         deployment = await self.deployment_service.get_document(document_id=document_id)
         feature_list = await self.feature_list_service.get_document(
             document_id=deployment.feature_list_id

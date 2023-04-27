@@ -9,7 +9,7 @@ from pydantic import Field
 
 from featurebyte.models.observation_table import ObservationInput, ObservationTableModel
 from featurebyte.models.request_input import RequestInputType
-from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseInfo, PaginationMixin
 from featurebyte.schema.request_table import BaseRequestTableCreate, BaseRequestTableListRecord
 

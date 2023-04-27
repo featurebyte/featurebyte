@@ -14,7 +14,7 @@ from featurebyte.models.base import (
     PydanticObjectId,
 )
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
-from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseInfo, PaginationMixin
 
 
