@@ -6,7 +6,7 @@ from __future__ import annotations
 from bson import ObjectId
 
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
-from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableCreate,
@@ -22,7 +22,7 @@ from featurebyte.service.observation_table import ObservationTableService
 
 
 class HistoricalFeatureTableController(
-    BaseDocumentController[
+    BaseMaterializedTableController[
         HistoricalFeatureTableModel, HistoricalFeatureTableService, HistoricalFeatureTableList
     ],
 ):

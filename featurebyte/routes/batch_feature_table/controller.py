@@ -6,7 +6,7 @@ from __future__ import annotations
 from bson import ObjectId
 
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
-from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.batch_feature_table import (
     BatchFeatureTableCreate,
@@ -24,7 +24,9 @@ from featurebyte.service.info import InfoService
 
 
 class BatchFeatureTableController(
-    BaseDocumentController[BatchFeatureTableModel, BatchFeatureTableService, BatchFeatureTableList],
+    BaseMaterializedTableController[
+        BatchFeatureTableModel, BatchFeatureTableService, BatchFeatureTableList
+    ],
 ):
     """
     BatchFeatureTable Controller

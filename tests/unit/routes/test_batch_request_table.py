@@ -6,17 +6,17 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from tests.unit.routes.base import BaseAsyncApiTestSuite
+from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
-class TestBatchRequestTableApi(BaseAsyncApiTestSuite):
+class TestBatchRequestTableApi(BaseMaterializedTableTestSuite):
     """
     Tests for BatchRequestTable route
     """
 
     class_name = "BatchRequestTable"
     base_route = "/batch_request_table"
-    payload = BaseAsyncApiTestSuite.load_payload(
+    payload = BaseMaterializedTableTestSuite.load_payload(
         "tests/fixtures/request_payloads/batch_request_table.json"
     )
 

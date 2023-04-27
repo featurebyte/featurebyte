@@ -61,6 +61,18 @@ async def get_batch_feature_table(
     return batch_feature_table
 
 
+@router.delete("/{batch_feature_table_id}", response_model=Task)
+async def delete_batch_feature_table(
+    request: Request, batch_feature_table_id: PydanticObjectId
+) -> Task:
+    """
+    Delete BatchFeatureTable
+    """
+    controller = request.state.app_container.batch_feature_table_controller
+    task: Task = await controller.delete_materialized_table(document_id=batch_feature_table_id)
+    return task
+
+
 @router.get("", response_model=BatchFeatureTableList)
 async def list_batch_feature_tables(
     request: Request,

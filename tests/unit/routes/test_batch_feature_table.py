@@ -1,6 +1,7 @@
 """
 Tests for BatchFeatureTable routes
 """
+import copy
 from http import HTTPStatus
 from unittest.mock import patch
 
@@ -8,17 +9,17 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from tests.unit.routes.base import BaseAsyncApiTestSuite
+from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
-class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
+class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
     """
     Tests for BatchFeatureTable route
     """
 
     class_name = "BatchFeatureTable"
     base_route = "/batch_feature_table"
-    payload = BaseAsyncApiTestSuite.load_payload(
+    payload = BaseMaterializedTableTestSuite.load_payload(
         "tests/fixtures/request_payloads/batch_feature_table.json"
     )
     random_id = str(ObjectId())
@@ -136,6 +137,45 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
             'Required entities are not provided in the request: customer (serving name: "cust_id")'
+        )
+
+    @pytest.mark.asyncio
+    async def test_batch_request_table_delete_422__batch_request_table_failed_validation_check(
+        self, test_api_client_persistent, create_success_response, user_id
+    ):
+        """Test delete 422 for batch request table failed validation check"""
+        test_api_client, persistent = test_api_client_persistent
+        create_success_response_dict = create_success_response.json()
+        batch_feature_table_id = create_success_response_dict["_id"]
+
+        # insert another document to batch feature table to make sure the query filter is correct
+        payload = copy.deepcopy(self.payload)
+        payload["_id"] = ObjectId()
+        payload["name"] = "random_name"
+        await persistent.insert_one(
+            collection_name="batch_feature_table",
+            document={
+                **payload,
+                "catalog_id": DEFAULT_CATALOG_ID,
+                "user_id": user_id,
+                "batch_request_table_id": ObjectId(),  # different batch request table id
+                "columns_info": [],
+                "location": create_success_response_dict["location"],
+            },
+            user_id=user_id,
+        )
+        response = test_api_client.get(self.base_route)
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["total"] == 2
+
+        # try to delete batch request table
+        batch_request_table_id = self.payload["batch_request_table_id"]
+        response = test_api_client.delete(f"/batch_request_table/{batch_request_table_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == (
+            f"Cannot delete Batch Request Table {batch_request_table_id} because it is referenced by "
+            f"1 Batch Feature Table(s): ['{batch_feature_table_id}']"
         )
 
     def test_info_200(self, test_api_client_persistent, create_success_response):

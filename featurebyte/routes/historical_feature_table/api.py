@@ -61,6 +61,18 @@ async def get_historical_feature_table(
     return historical_feature_table
 
 
+@router.delete("/{historical_feature_table_id}", response_model=Task)
+async def delete_historical_feature_table(
+    request: Request, historical_feature_table_id: PydanticObjectId
+) -> Task:
+    """
+    Delete HistoricalFeatureTable
+    """
+    controller = request.state.app_container.historical_feature_table_controller
+    task: Task = await controller.delete_materialized_table(document_id=historical_feature_table_id)
+    return task
+
+
 @router.get("", response_model=HistoricalFeatureTableList)
 async def list_historical_feature_tables(
     request: Request,

@@ -7,17 +7,17 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from tests.unit.routes.base import BaseAsyncApiTestSuite
+from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
-class TestObservationTableApi(BaseAsyncApiTestSuite):
+class TestObservationTableApi(BaseMaterializedTableTestSuite):
     """
     Tests for ObservationTable route
     """
 
     class_name = "ObservationTable"
     base_route = "/observation_table"
-    payload = BaseAsyncApiTestSuite.load_payload(
+    payload = BaseMaterializedTableTestSuite.load_payload(
         "tests/fixtures/request_payloads/observation_table.json"
     )
     async_create = True

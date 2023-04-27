@@ -61,6 +61,18 @@ async def get_observation_table(
     return observation_table
 
 
+@router.delete("/{observation_table_id}", response_model=Task)
+async def delete_observation_table(
+    request: Request, observation_table_id: PydanticObjectId
+) -> Task:
+    """
+    Delete ObservationTable by submitting a deletion task
+    """
+    controller = request.state.app_container.observation_table_controller
+    task: Task = await controller.delete_materialized_table(document_id=observation_table_id)
+    return task
+
+
 @router.get("", response_model=ObservationTableList)
 async def list_observation_tables(
     request: Request,
