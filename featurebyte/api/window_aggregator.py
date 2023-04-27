@@ -3,7 +3,7 @@ This module contains window aggregator related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, List, Optional, Type, cast
 
 from featurebyte.api.base_aggregator import BaseAggregator
 from featurebyte.api.change_view import ChangeView
