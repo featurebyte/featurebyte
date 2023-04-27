@@ -196,7 +196,7 @@ def check_get_batch_features_async(
     """
     Check get_batch_features_async
     """
-    batch_feature_table = deployment.get_batch_features(
+    batch_feature_table = deployment.compute_batch_feature_table(
         batch_request_table=batch_request_table,
         batch_feature_table_name="batch_feature_table",
     )
