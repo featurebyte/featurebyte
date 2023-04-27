@@ -4,7 +4,7 @@ Integration tests for the on-demand features.
 import pandas as pd
 
 from featurebyte.api.feature_group import FeatureGroup
-from featurebyte.api.request_column import point_in_time
+from featurebyte.api.request_column import RequestColumn
 from tests.util.helper import fb_assert_frame_equal
 
 
@@ -21,7 +21,7 @@ def test_on_demand_feature_with_point_in_time(event_table):
         feature_names=["latest_event_timestamp_90d"],
     )["latest_event_timestamp_90d"]
 
-    feature = (point_in_time - latest_timestamp).dt.hour
+    feature = (RequestColumn.point_in_time() - latest_timestamp).dt.hour
     feature.name = "num_hour_since_last_event"
 
     feature_group = FeatureGroup([latest_timestamp, feature])

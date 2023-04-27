@@ -5,7 +5,7 @@ from typing import List, Literal, Sequence, Tuple
 
 from pydantic import BaseModel, Field, StrictStr
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.metadata.operation import (
@@ -86,10 +86,15 @@ class RequestColumnNode(BaseNode):
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         statements: List[StatementT] = []
         var_name = var_name_generator.convert_to_variable_name("request_col")
-        obj = ClassEnum.REQUEST_COLUMN(
-            self.parameters.column_name,
-            self.parameters.dtype,
-            _method_name="create_request_column",
-        )
+        if self.parameters.column_name == SpecialColumnName.POINT_IN_TIME:
+            obj = ClassEnum.REQUEST_COLUMN(
+                _method_name="point_in_time",
+            )
+        else:
+            obj = ClassEnum.REQUEST_COLUMN(
+                self.parameters.column_name,
+                self.parameters.dtype,
+                _method_name="create_request_column",
+            )
         statements.append((var_name, obj))
         return statements, var_name
