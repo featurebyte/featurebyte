@@ -110,6 +110,7 @@ async def test_online_enabled__without_snowflake_scheduling(
             assert len(tasks) == 0
 
         finally:
+            await feature_manager_no_sf_scheduling.online_disable(online_feature_spec)
             await session.execute_query(
                 f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
             )
