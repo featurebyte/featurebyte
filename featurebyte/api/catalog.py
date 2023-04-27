@@ -118,7 +118,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get info of a catalog object
 
-        >>> catalog = fb.Catalog.get_or_create("grocery")  # doctest: +SKIP
+        >>> catalog = fb.Catalog.get_or_create("grocery", "playground")  # doctest: +SKIP
         >>> catalog.info()  # doctest: +SKIP
         """
         return super().info(verbose)
@@ -226,7 +226,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Create a new catalog
 
-        >>> catalog = fb.Catalog.get_or_create("grocery")
+        >>> catalog = fb.Catalog.get_or_create("grocery", "playground")
         >>> fb.Catalog.list()[["name", "active"]]
               name  active
         0  grocery    True
@@ -807,7 +807,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get data source.
 
-        >>> data_source = catalog.get_data_source("playground")
+        >>> catalog = Catalog.get("playground")
+        >>> data_source = catalog.get_data_source()
         """
         assert len(self.internal_default_feature_store_ids) == 1
         feature_store = FeatureStore.get_by_id(id=self.internal_default_feature_store_ids[0])
