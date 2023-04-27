@@ -12,7 +12,6 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.worker.task.materialized_table_delete import (
-    MaterializedTableCollectionName,
     MaterializedTableDeleteTaskPayload,
 )
 from featurebyte.service.base_document import BaseDocumentService
@@ -55,10 +54,6 @@ class BaseMaterializedTableService(
         -------
         MaterializedTableDeleteTaskPayload
         """
-        # check existence of the document first
-        await self.get_document(document_id=document_id)
-
-        # create the task payload & return
         return MaterializedTableDeleteTaskPayload(
             user_id=self.user.id,
             catalog_id=self.catalog_id,

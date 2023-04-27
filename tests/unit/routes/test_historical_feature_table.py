@@ -10,17 +10,17 @@ from bson.objectid import ObjectId
 from sqlglot import expressions
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from tests.unit.routes.base import BaseAsyncApiTestSuite
+from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
-class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
+class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
     """
     Tests for HistoricalFeatureTable route
     """
 
     class_name = "HistoricalFeatureTable"
     base_route = "/historical_feature_table"
-    payload = BaseAsyncApiTestSuite.load_payload(
+    payload = BaseMaterializedTableTestSuite.load_payload(
         "tests/fixtures/request_payloads/historical_feature_table.json"
     )
     random_id = str(ObjectId())
@@ -123,6 +123,23 @@ class TestHistoricalFeatureTableApi(BaseAsyncApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
             "Unexpected serving names provided in serving_names_mapping: random_name"
+        )
+
+    def test_observation_table_delete_422__observation_table_failed_validation_check(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete 422 for observation table failed validation check"""
+        test_api_client, _ = test_api_client_persistent
+        historical_feature_table_id = create_success_response.json()["_id"]
+
+        # try to delete observation table
+        observation_table_id = self.payload["observation_table_id"]
+        response = test_api_client.delete(f"/observation_table/{observation_table_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == (
+            f"Cannot delete Observation Table {observation_table_id} because it is referenced by "
+            f"Historical Feature Table {historical_feature_table_id}"
         )
 
     def test_info_200(self, test_api_client_persistent, create_success_response):

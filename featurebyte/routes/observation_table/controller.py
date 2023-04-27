@@ -14,8 +14,10 @@ from featurebyte.schema.observation_table import (
     ObservationTableList,
 )
 from featurebyte.schema.task import Task
+from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.info import InfoService
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.validator.materialized_table_delete import check_delete_observation_table
 
 
 class ObservationTableController(
@@ -32,10 +34,12 @@ class ObservationTableController(
     def __init__(
         self,
         service: ObservationTableService,
+        historical_feature_table_service: HistoricalFeatureTableService,
         info_service: InfoService,
         task_controller: TaskController,
     ):
         super().__init__(service)
+        self.historical_feature_table_service = historical_feature_table_service
         self.info_service = info_service
         self.task_controller = task_controller
 
@@ -58,6 +62,13 @@ class ObservationTableController(
         payload = await self.service.get_observation_table_task_payload(data=data)
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
+
+    async def _verify_delete_operation(self, document_id: ObjectId) -> None:
+        await check_delete_observation_table(
+            observation_table_service=self.service,
+            historical_feature_table_service=self.historical_feature_table_service,
+            document_id=document_id,
+        )
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> ObservationTableInfo:
         """

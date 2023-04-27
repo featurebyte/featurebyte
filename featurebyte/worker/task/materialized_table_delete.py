@@ -5,13 +5,14 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from bson import ObjectId
-
-from featurebyte.exception import DocumentDeletionError
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.schema.worker.task.materialized_table_delete import (
     MaterializedTableCollectionName,
     MaterializedTableDeleteTaskPayload,
+)
+from featurebyte.service.validator.materialized_table_delete import (
+    check_delete_batch_request_table,
+    check_delete_observation_table,
 )
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
@@ -31,33 +32,14 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         """
         return cast(MaterializedTableDeleteTaskPayload, self.payload)
 
-    @staticmethod
-    def _get_error_message(
-        document_id: ObjectId, table_name: str, ref_table_name: str, ref_document_id: ObjectId
-    ) -> str:
-        return (
-            f"Cannot delete {table_name} Table {document_id} because it is referenced by "
-            f"{ref_table_name} Table {ref_document_id}"
-        )
-
     async def _delete_batch_request_table(self) -> MaterializedTableModel:
-        document = await self.app_container.batch_request_table_service.get_document(
-            document_id=self.task_payload.document_id
+        document = await check_delete_batch_request_table(
+            batch_request_table_service=self.app_container.batch_request_table_service,
+            batch_feature_table_service=self.app_container.batch_feature_table_service,
+            document_id=self.task_payload.document_id,
         )
-        reference_results = self.app_container.batch_feature_table_service.list_documents(
-            query={"batch_request_table_id": document.id}
-        )
-        if reference_results["total"]:
-            raise DocumentDeletionError(
-                self._get_error_message(
-                    document_id=document.id,
-                    table_name="Batch Request",
-                    ref_table_name="Batch Feature",
-                    ref_document_id=reference_results["data"][0]["_id"],
-                )
-            )
         await self.app_container.batch_request_table_service.delete_document(
-            document_id=document.id
+            document_id=self.task_payload.document_id
         )
         return cast(MaterializedTableModel, document)
 
@@ -71,22 +53,14 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         return cast(MaterializedTableModel, document)
 
     async def _delete_observation_table(self) -> MaterializedTableModel:
-        document = await self.app_container.observation_table_service.get_document(
+        document = await check_delete_observation_table(
+            observation_table_service=self.app_container.observation_table_service,
+            historical_feature_table_service=self.app_container.historical_feature_table_service,
+            document_id=self.task_payload.document_id,
+        )
+        await self.app_container.observation_table_service.delete_document(
             document_id=self.task_payload.document_id
         )
-        reference_results = self.app_container.historical_feature_table_service.list_documents(
-            query={"observation_table_id": document.id}
-        )
-        if reference_results["total"]:
-            raise DocumentDeletionError(
-                self._get_error_message(
-                    document_id=document.id,
-                    table_name="Observation",
-                    ref_table_name="Historical Feature",
-                    ref_document_id=reference_results["data"][0]["_id"],
-                )
-            )
-        await self.app_container.observation_table_service.delete_document(document_id=document.id)
         return cast(MaterializedTableModel, document)
 
     async def _delete_historical_feature_table(self) -> MaterializedTableModel:

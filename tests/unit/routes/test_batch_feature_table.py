@@ -8,17 +8,17 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from tests.unit.routes.base import BaseAsyncApiTestSuite
+from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
-class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
+class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
     """
     Tests for BatchFeatureTable route
     """
 
     class_name = "BatchFeatureTable"
     base_route = "/batch_feature_table"
-    payload = BaseAsyncApiTestSuite.load_payload(
+    payload = BaseMaterializedTableTestSuite.load_payload(
         "tests/fixtures/request_payloads/batch_feature_table.json"
     )
     random_id = str(ObjectId())
@@ -136,6 +136,23 @@ class TestBatchFeatureTableApi(BaseAsyncApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
             'Required entities are not provided in the request: customer (serving name: "cust_id")'
+        )
+
+    def test_batch_request_table_delete_422__batch_request_table_failed_validation_check(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete 422 for batch request table failed validation check"""
+        test_api_client, _ = test_api_client_persistent
+        batch_feature_table_id = create_success_response.json()["_id"]
+
+        # try to delete batch request table
+        batch_request_table_id = self.payload["batch_request_table_id"]
+        response = test_api_client.delete(f"/batch_request_table/{batch_request_table_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == (
+            f"Cannot delete Batch Request Table {batch_request_table_id} because it is referenced by "
+            f"Batch Feature Table {batch_feature_table_id}"
         )
 
     def test_info_200(self, test_api_client_persistent, create_success_response):

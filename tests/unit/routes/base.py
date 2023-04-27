@@ -1131,3 +1131,32 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         # test bench_size_boundary
         response_page_size_boundary = test_api_client.get("/table", params={"page_size": 100})
         assert response_page_size_boundary.status_code == HTTPStatus.OK
+
+
+class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
+    """
+    Base test suite for materialized table which includes tests for delete materialized table
+    """
+
+    def test_delete_200(self, test_api_client_persistent, create_success_response):
+        """Test delete route (success)"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # check that the task is completed with success
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["status"] == "SUCCESS", response_dict
+
+        # check that the table is deleted
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+    def test_delete_404(self, test_api_client_persistent):
+        """Test delete route (404)"""
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.delete(f"{self.base_route}/{str(ObjectId())}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
