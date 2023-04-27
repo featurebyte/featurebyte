@@ -1230,6 +1230,7 @@ def test_feature_definition(feature_with_clean_column_names):
     from bson import ObjectId
     from featurebyte import ColumnCleaningOperation
     from featurebyte import EventTable
+    from featurebyte import FeatureJobSetting
     from featurebyte import MissingValueImputation
 
 
@@ -1254,11 +1255,9 @@ def test_feature_definition(feature_with_clean_column_names):
         method="sum",
         windows=["30m"],
         feature_names=["sum_30m"],
-        feature_job_setting={
-            "blind_spot": "600s",
-            "frequency": "1800s",
-            "time_modulo_frequency": "300s",
-        },
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="600s", frequency="1800s", time_modulo_frequency="300s"
+        ),
         skip_fill_na=True,
     )
     feat = grouped["sum_30m"]
