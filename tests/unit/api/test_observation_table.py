@@ -48,10 +48,6 @@ def test_info(observation_table_from_source):
             "schema_name": "sf_schema",
             "table_name": info_dict["table_details"]["table_name"],
         },
-        "columns_info": [
-            {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
-            {"name": "cust_id", "dtype": "INT"},
-        ],
         "created_at": info_dict["created_at"],
         "updated_at": None,
     }

@@ -61,4 +61,3 @@ class BatchFeatureTableInfo(BaseInfo):
     batch_request_table_name: str
     deployment_name: str
     table_details: TableDetails
-    columns_info: List[ColumnSpec]

@@ -91,7 +91,6 @@ class TestBatchRequestTableApi(BaseAsyncApiTestSuite):
                 "schema_name": "sf_schema",
                 "table_name": response_dict["table_details"]["table_name"],
             },
-            "columns_info": [],
             "created_at": response_dict["created_at"],
             "updated_at": None,
         }

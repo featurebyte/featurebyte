@@ -56,7 +56,6 @@ def test_info(batch_request_table_from_view):
             "schema_name": "sf_schema",
             "table_name": info_dict["table_details"]["table_name"],
         },
-        "columns_info": [{"name": "cust_id", "dtype": "INT"}],
         "created_at": info_dict["created_at"],
         "updated_at": None,
     }

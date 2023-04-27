@@ -942,7 +942,6 @@ class InfoService(BaseService):
             type=observation_table.request_input.type,
             feature_store_name=feature_store.name,
             table_details=observation_table.location.table_details,
-            columns_info=observation_table.columns_info,
             created_at=observation_table.created_at,
             updated_at=observation_table.updated_at,
         )
@@ -980,7 +979,6 @@ class InfoService(BaseService):
             feature_list_version=feature_list.version.to_str(),
             observation_table_name=observation_table.name,
             table_details=historical_feature_table.location.table_details,
-            columns_info=historical_feature_table.columns_info,
             created_at=historical_feature_table.created_at,
             updated_at=historical_feature_table.updated_at,
         )
@@ -1014,7 +1012,6 @@ class InfoService(BaseService):
             type=batch_request_table.request_input.type,
             feature_store_name=feature_store.name,
             table_details=batch_request_table.location.table_details,
-            columns_info=batch_request_table.columns_info,
             created_at=batch_request_table.created_at,
             updated_at=batch_request_table.updated_at,
         )
@@ -1051,7 +1048,6 @@ class InfoService(BaseService):
             deployment_name=deployment.name,
             batch_request_table_name=batch_request_table.name,
             table_details=batch_feature_table.location.table_details,
-            columns_info=batch_feature_table.columns_info,
             created_at=batch_feature_table.created_at,
             updated_at=batch_feature_table.updated_at,
         )

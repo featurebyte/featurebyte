@@ -47,7 +47,6 @@ def test_info(historical_feature_table):
             "schema_name": "sf_schema",
             "table_name": info_dict["table_details"]["table_name"],
         },
-        "columns_info": [],
         "created_at": info_dict["created_at"],
         "updated_at": None,
     }

@@ -63,4 +63,3 @@ class HistoricalFeatureTableInfo(BaseInfo):
     feature_list_name: str
     feature_list_version: str
     table_details: TableDetails
-    columns_info: List[ColumnSpec]
