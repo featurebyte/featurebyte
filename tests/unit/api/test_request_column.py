@@ -3,6 +3,7 @@ RequestColumn unit tests
 """
 import pytest
 
+from featurebyte import FeatureJobSetting
 from featurebyte.api.feature import Feature
 from featurebyte.api.request_column import RequestColumn, point_in_time
 from tests.util.helper import check_sdk_code_generation
@@ -18,7 +19,9 @@ def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity):
         method="latest",
         windows=["90d"],
         feature_names=["latest_event_timestamp_90d"],
-        feature_job_setting=dict(blind_spot="1h", frequency="1h", time_modulo_frequency="30m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1h", frequency="1h", time_modulo_frequency="30m"
+        ),
     )["latest_event_timestamp_90d"]
     return feature
 
