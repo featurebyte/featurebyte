@@ -61,6 +61,20 @@ async def get_batch_request_table(
     return batch_request_table
 
 
+@router.delete("/{batch_request_table_id}", response_model=Task)
+async def delete_batch_request_table(
+    request: Request, batch_request_table_id: PydanticObjectId
+) -> Task:
+    """
+    Delete BatchRequestTable
+    """
+    controller = request.state.app_container.batch_request_table_controller
+    task_delete: Task = await controller.delete_materialized_table(
+        document_id=batch_request_table_id
+    )
+    return task_delete
+
+
 @router.get("", response_model=BatchRequestTableList)
 async def list_batch_request_tables(
     request: Request,
