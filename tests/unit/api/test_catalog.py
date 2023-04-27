@@ -242,7 +242,6 @@ def test_all_methods_are_exposed_in_catalog(method_list):
     excluded_children = {
         Catalog,  # accessible as part of Catalog.get
         Credential,  # accessible as part of Credential.get
-        Deployment,  # accessible as part of fb.list_deployments
         DimensionTable,  # accessible as part of catalog.(list|get)_table
         EventTable,  # accessible as part of catalog.(list|get)_table
         FeatureJobMixin,
