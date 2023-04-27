@@ -157,6 +157,7 @@ async def online_enabled_feature_spec_fixture(
 
         yield online_feature_spec, schedule_time
 
+        await feature_manager_no_sf_scheduling.online_disable(online_feature_spec)
         await session.execute_query(
             f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
         )
