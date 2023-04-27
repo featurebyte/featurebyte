@@ -6,6 +6,10 @@ from __future__ import annotations
 from typing import Any
 
 import asyncio
+import threading
+
+import gevent
+import gevent.event
 
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.base import User
@@ -15,6 +19,33 @@ from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import celery
 from featurebyte.worker.task.base import TASK_MAP
+
+
+def run_async(func: Any, *args: Any, **kwargs: Any) -> None:
+    """
+    Run async function in both async and non-async context
+    Parameters
+    ----------
+    func: Any
+        Function to run
+    args: Any
+        Positional arguments
+    kwargs: Any
+        Keyword arguments
+    Returns
+    -------
+    Any
+        result from function call
+    """
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+    future = loop.create_task(func(*args, **kwargs))
+    event = gevent.event.Event()
+    future.add_done_callback(lambda _: event.set())
+    event.wait()
+    return future.result()
 
 
 class TaskExecutor:
@@ -61,7 +92,7 @@ def execute_task(self: Any, **payload: Any) -> None:
     # send initial progress to indicate task is started
     progress.put({"percent": 0})
     try:
-        asyncio.run(executor.execute())
+        run_async(executor.execute)
         # send final progress to indicate task is completed
         progress.put({"percent": 100})
     finally:

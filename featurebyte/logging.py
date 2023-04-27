@@ -1,7 +1,7 @@
 """
 Logging formatting
 """
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import Any, Optional
 
 import logging
 import sys
@@ -9,32 +9,33 @@ import sys
 from featurebyte.common.env_util import is_notebook
 from featurebyte.config import Configurations
 
-if TYPE_CHECKING:
-    _LoggerAdapter = logging.LoggerAdapter[logging.Logger]
-else:
-    _LoggerAdapter = logging.LoggerAdapter
 
-
-class CustomAdapter(_LoggerAdapter):
+class CustomLogger(logging.Logger):
     """
-    Custom logging adapter to capture extra field
+    Custom logger to capture extra field
     """
 
-    def process(self, msg: str, kwargs: Any) -> Tuple[str, Any]:
+    def _log(self, level: int, msg: object, *args: Any, **kwargs: Any) -> None:
         """
-        Process message
+        Log message
+
         Parameters
         ----------
-        msg: str
+        level: int
+            Log level
+        msg: object
             Message
+        args: Any
+            Arguments
         kwargs: Any
             Keyword arguments
-        Returns
-        -------
-        Tuple[str, Any]
         """
         extra = kwargs.pop("extra", None)
-        return f"{msg} | {extra}" if extra else msg, kwargs
+        msg = f"{msg} | {extra}" if extra else msg
+        return super()._log(level, msg, *args, **kwargs)
+
+
+logging.setLoggerClass(CustomLogger)
 
 
 class CustomFormatter(logging.Formatter):
@@ -93,13 +94,13 @@ NOTEBOOK_LOG_FORMATTER = CustomFormatter(
     "\x1b[32;20m%(asctime)s\x1b[0m | \033[1m%(levelname)s\x1b[0m | \033[1m%(message)s\x1b[0m",
     "%H:%M:%S",
 )
-CONSOLE_LOG_FORMATTER = CustomFormatter(
-    "%(asctime)s | %(levelname)s | %(name)s | %(funcName)s:%(lineno)d | %(message)s",
+CONSOLE_LOG_FORMATTER = logging.Formatter(
+    "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s",
     "%Y-%m-%d %H:%M:%S",
 )
 
 
-def get_logger(logger_name: str, configurations: Optional[Configurations] = None) -> _LoggerAdapter:
+def get_logger(logger_name: str, configurations: Optional[Configurations] = None) -> logging.Logger:
     """
     Get logger
 
@@ -112,14 +113,13 @@ def get_logger(logger_name: str, configurations: Optional[Configurations] = None
 
     Returns
     -------
-    _LoggerAdapter
+    logging.Logger
     """
     configurations = configurations or Configurations()
     is_notebook_env = is_notebook()
+    formatter: logging.Formatter = CONSOLE_LOG_FORMATTER
     if is_notebook_env:
         formatter = NOTEBOOK_LOG_FORMATTER
-    else:
-        formatter = CONSOLE_LOG_FORMATTER
 
     console_handler = logging.StreamHandler(stream=sys.stderr)
     console_handler.setFormatter(formatter)
@@ -129,7 +129,20 @@ def get_logger(logger_name: str, configurations: Optional[Configurations] = None
     if logger.hasHandlers():
         logger.handlers.clear()
     logger.addHandler(console_handler)
-    return CustomAdapter(logger, {"extra": None})
+    return logger
+
+
+def reconfigure_loggers(configurations: Configurations) -> None:
+    """
+    Reconfigure all loggers with configurations.
+
+    Parameters
+    ----------
+    configurations: Configurations
+        Configurations to use
+    """
+    for name in logging.root.manager.loggerDict:  # pylint: disable=no-member
+        logging.getLogger(name).setLevel(configurations.logging.level)
 
 
 __all__ = ["get_logger"]

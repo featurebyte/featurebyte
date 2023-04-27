@@ -116,7 +116,7 @@ def get_active_profile() -> Profile:
     conf = Configurations()
     if not conf.profile:
         logger.error(
-            f"No profile found. Please update your configuration file at {conf.config_file_path}"
+            "No profile found. Please update your configuration file at {conf.config_file_path}"
         )
         raise InvalidSettingsError("No profile found")
 

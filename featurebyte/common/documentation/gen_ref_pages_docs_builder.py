@@ -668,7 +668,7 @@ def _get_markdown_file_path_for_doc_layout_item(
         return proxied_path_to_markdown_path[item_path]
     elif DEBUG_MODE:
         print("key not found", item_path)
-    logger.warning("Unable to find markdown path for some paths", item_path=item_path)
+    logger.warning("Unable to find markdown path for some paths", {"item_path": item_path})
     return MISSING_DEBUG_MARKDOWN
 
 

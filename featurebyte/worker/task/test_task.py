@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import asyncio
+
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.test import TestTaskPayload
 from featurebyte.worker.task.base import BaseTask
@@ -25,5 +27,6 @@ class TestTask(BaseTask):
         """
         logger.debug("Test task started")
         for percent in range(0, 100, 20):
+            await asyncio.sleep(50)
             self.update_progress(percent=percent)
         logger.debug("Test task completed")
