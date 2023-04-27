@@ -82,7 +82,9 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
 ]
 description = "Python Library for FeatureOps"
-homepage = "https://github.com/featurebyte/featurebyte"
+homepage = "https://featurebyte.com"
+repository = "https://github.com/featurebyte/featurebyte"
+documentation = "https://docs.featurebyte.com"
 include = [
     "featurebyte/sql/spark/*.jar",
 ]
