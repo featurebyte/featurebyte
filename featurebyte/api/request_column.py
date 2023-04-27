@@ -3,16 +3,29 @@ RequestColumn related classes for on-demand features
 """
 from __future__ import annotations
 
+from typing import Optional
+
+from pydantic import Field
+
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType, SpecialColumnName
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.common_table import TabularSource
 
 
 class RequestColumn(Series):
     """
     RequestColumn class
     """
+
+    tabular_source: Optional[TabularSource] = Field(  # type: ignore[assignment]
+        allow_mutation=False, default=None
+    )
+    feature_store: Optional[FeatureStoreModel] = Field(  # type: ignore[assignment]
+        exclude=True, allow_mutation=False, default=None
+    )
 
     @classmethod
     def create_request_column(cls, column_name: str, column_dtype: DBVarType) -> RequestColumn:
