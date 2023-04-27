@@ -53,18 +53,24 @@ class DatabricksDetails(BaseDatabaseDetails):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")
 
-    host: StrictStr
-    http_path: StrictStr
-    featurebyte_catalog: StrictStr
-    featurebyte_schema: StrictStr
+    host: StrictStr = Field(
+        description="Databricks host. This is typically the URL you use to go to to access your databricks environment."
+    )
+    http_path: StrictStr = Field(description="Databricks compute resource URL.")
+    featurebyte_catalog: StrictStr = Field(
+        description="Name of the database that holds metadata about the actual data. This is commonly filled as `hive_metastore`."
+    )
+    featurebyte_schema: StrictStr = Field(
+        description="The name of the schema containing the tables and columns."
+    )
     storage_type: StorageType = Field(
         description="Storage type of where we will be persisting the feature store to."
     )
     storage_url: str = Field(
-        description="Storage URL of where we will be persisting the feature store to."
+        description="Storage URL of where we will be persisting the feature store to. upload"
     )
     storage_spark_url: str = Field(
-        description="Spark URL of where we will be persisting the feature store to."
+        description="Spark URL of where we will be persisting the feature store to. read (within databricks)"
     )
 
 
@@ -73,10 +79,14 @@ class SparkDetails(BaseDatabaseDetails):
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SparkDetails")
 
-    host: StrictStr = Field(default="127.0.0.1")
-    port: int = Field(default=10000)
+    host: StrictStr = Field(
+        default="127.0.0.1", description="The server where your spark cluster is hosted."
+    )
+    port: int = Field(default=10000, description="The port your spark cluster is hosted on.")
     http_path: StrictStr = Field(default="cliservice")
-    use_http_transport: bool = Field(default=False)
+    use_http_transport: bool = Field(
+        default=False
+    )  # configuration on whether to use http, default to Thrift
     use_ssl: bool = Field(default=False)
     storage_type: StorageType
     storage_url: str
