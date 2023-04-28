@@ -141,7 +141,7 @@ async def test_online_serving_sql(
         )
 
         # Check online_features route
-        check_online_features_route(feature_list, config, df_historical, columns)
+        check_online_features_route(deployment, config, df_historical, columns)
 
         # check get batch features
         batch_request_table = await create_batch_request_table_from_dataframe(
@@ -166,7 +166,7 @@ async def test_online_serving_sql(
         assert deployment.enabled is False
 
 
-def check_online_features_route(feature_list, config, df_historical, columns):
+def check_online_features_route(deployment, config, df_historical, columns):
     """
     Online enable a feature and call the online features endpoint
     """
@@ -178,7 +178,7 @@ def check_online_features_route(feature_list, config, df_historical, columns):
 
     tic = time.time()
     res = client.post(
-        f"/feature_list/{str(feature_list.id)}/online_features",
+        f"/deployment/{deployment.id}/online_features",
         json=data.json_dict(),
     )
     assert res.status_code == 200
