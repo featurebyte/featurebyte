@@ -39,7 +39,7 @@ def get_operation_structure_cache_key(obj: QueryObjectT) -> Any:
     Returns the cache key QueryObject's OperationStructure cache.
 
     The cache is used for OperationStructure which is derived from graph, so the hash key is based
-    on the graph instance (local or global), node name, and any additional arguments.
+    on the graph instance (local or global) and node name.
 
     Parameters
     ----------
@@ -90,7 +90,7 @@ class QueryObject(FeatureByteBaseModel):
     )
     def operation_structure(self) -> OperationStructure:
         """
-        Returns the operation structure of the node
+        Returns the operation structure of the current node
 
         Returns
         -------
