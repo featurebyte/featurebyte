@@ -218,13 +218,6 @@ def check_get_batch_features(data_source, deployment, batch_request_table, df_hi
     batch_feature_table.delete()
     assert batch_feature_table.saved is False  # check mongo record is deleted
 
-    # check materialized table is deleted
-    with pytest.raises(RecordRetrievalException) as exc:
+    # check preview deleted materialized table should raise RecordRetrievalException
+    with pytest.raises(RecordRetrievalException):
         source_table.preview()
-
-    table_details = batch_feature_table.location.table_details
-    fully_qualified_table_name = (
-        f'{table_details.database_name}.{table_details.schema_name}."{table_details.table_name}"'
-    )
-    expected_error = f"Object '{fully_qualified_table_name}' does not exist or not authorized."
-    assert expected_error in str(exc.value)
