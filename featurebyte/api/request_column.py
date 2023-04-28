@@ -44,6 +44,14 @@ class RequestColumn(Series):
         -------
         RequestColumn
         """
+        if not (
+            column_name == SpecialColumnName.POINT_IN_TIME and column_dtype == DBVarType.TIMESTAMP
+        ):
+            raise NotImplementedError(
+                "Currently only POINT_IN_TIME column is supported. Please use"
+                " RequestColumn.point_in_time() instead."
+            )
+
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.REQUEST_COLUMN,
             node_params={"column_name": column_name, "dtype": column_dtype},

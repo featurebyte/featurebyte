@@ -6,6 +6,7 @@ import pytest
 from featurebyte import FeatureJobSetting
 from featurebyte.api.feature import Feature
 from featurebyte.api.request_column import RequestColumn
+from featurebyte.enum import DBVarType
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -71,3 +72,12 @@ def test_request_column_preview_sql_blocked():
     """
     with pytest.raises(NotImplementedError):
         _ = RequestColumn.point_in_time().preview_sql()
+
+
+def test_request_column_non_point_in_time_blocked():
+    """
+    Test non-point-in-time request column is blocked
+    """
+    with pytest.raises(NotImplementedError) as exc:
+        _ = RequestColumn.create_request_column("foo", DBVarType.FLOAT)
+    assert "Currently only POINT_IN_TIME column is supported" in str(exc.value)

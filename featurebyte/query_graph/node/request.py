@@ -91,10 +91,6 @@ class RequestColumnNode(BaseNode):
                 _method_name="point_in_time",
             )
         else:
-            obj = ClassEnum.REQUEST_COLUMN(
-                self.parameters.column_name,
-                self.parameters.dtype,
-                _method_name="create_request_column",
-            )
+            raise NotImplementedError("Currently only POINT_IN_TIME column is supported")
         statements.append((var_name, obj))
         return statements, var_name
