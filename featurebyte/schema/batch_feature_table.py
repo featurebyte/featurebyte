@@ -16,6 +16,7 @@ from featurebyte.models.base import (
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseInfo, PaginationMixin
+from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
 
 
 class BatchFeatureTableCreate(FeatureByteBaseModel):
@@ -38,7 +39,7 @@ class BatchFeatureTableList(PaginationMixin):
     data: List[BatchFeatureTableModel]
 
 
-class BatchFeatureTableListRecord(FeatureByteBaseDocumentModel):
+class BatchFeatureTableListRecord(BaseMaterializedTableListRecord):
     """
     Schema for listing historical feature tables as a DataFrame
     """

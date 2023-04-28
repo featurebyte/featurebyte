@@ -26,11 +26,13 @@ def test_list():
         "name",
         "feature_store_name",
         "observation_table_name",
+        "shape",
         "created_at",
     ]
     assert df["name"].tolist() == ["my_historical_feature_table"]
     assert df["feature_store_name"].tolist() == ["sf_featurestore"]
     assert df["observation_table_name"].tolist() == ["observation_table_from_source_table"]
+    assert (df["shape"] == (500, 1)).all()
 
 
 def test_delete(historical_feature_table):

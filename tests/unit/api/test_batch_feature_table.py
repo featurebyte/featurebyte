@@ -45,6 +45,7 @@ def test_list(batch_feature_table):
                 "name": "my_batch_feature_table",
                 "feature_store_name": "sf_featurestore",
                 "batch_request_table_name": "batch_request_table_from_event_view",
+                "shape": (500, 1),
                 "created_at": batch_feature_table.created_at,
             }
         ]

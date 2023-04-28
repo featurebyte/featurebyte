@@ -6,12 +6,9 @@ from typing import Any, Dict, Optional
 from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
 
-from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
-    FeatureByteBaseModel,
-    PydanticObjectId,
-)
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.request_input import RequestInputType
+from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
 
 
 class BaseRequestTableCreate(FeatureByteBaseModel):
@@ -25,7 +22,7 @@ class BaseRequestTableCreate(FeatureByteBaseModel):
     context_id: Optional[PydanticObjectId]
 
 
-class BaseRequestTableListRecord(FeatureByteBaseDocumentModel):
+class BaseRequestTableListRecord(BaseMaterializedTableListRecord):
     """
     This model determines the schema when listing tables.
     """
@@ -35,7 +32,7 @@ class BaseRequestTableListRecord(FeatureByteBaseDocumentModel):
 
     @root_validator(pre=True)
     @classmethod
-    def _extract_location(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_base_request_table_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         values["type"] = values["request_input"]["type"]
         values["feature_store_id"] = values["location"]["feature_store_id"]
         return values

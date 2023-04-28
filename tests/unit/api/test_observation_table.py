@@ -25,6 +25,7 @@ def test_list():
         "id",
         "name",
         "type",
+        "shape",
         "feature_store_name",
         "created_at",
     ]
@@ -34,6 +35,7 @@ def test_list():
     ]
     assert (df["feature_store_name"] == "sf_featurestore").all()
     assert df["type"].tolist() == ["view", "source_table"]
+    assert (df["shape"] == (100, 2)).all()
 
 
 def test_delete(observation_table_from_view):
