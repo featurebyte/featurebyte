@@ -287,11 +287,11 @@ def start_spark() -> None:
     _start_app(ApplicationName.SPARK, verbose=False)
 
 
-def stop() -> None:
+def stop(clean=False) -> None:
     """
     Stop all applications
     """
-    _stop_app(verbose=False)
+    _stop_app(clean=clean, verbose=False)
 
 
 def playground(

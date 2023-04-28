@@ -51,9 +51,11 @@ def default(ctx: typer.Context) -> None:
 
 
 @app.command(name="stop")
-def stop() -> None:
+def stop(
+    clean: bool = typer.Option(default=False, help="Remove all volumes and containers"),
+) -> None:
     """Stop all applications"""
-    stop_app()
+    stop_app(clean=clean)
 
 
 @app.command(name="logs")
