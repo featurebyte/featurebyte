@@ -57,6 +57,7 @@ from featurebyte.models.credential import (
     UsernamePasswordCredential,
 )
 from featurebyte.models.feature import DefaultVersionMode
+from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
@@ -474,6 +475,7 @@ __all__ = [
     "UsernamePasswordCredential",
     # enums
     "AggFunc",
+    "FeatureListStatus",
     "SourceType",
     "StorageType",
     # imputation related classes
