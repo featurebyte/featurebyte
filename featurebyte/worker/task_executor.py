@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any
 
 import asyncio
-import threading
 
 import gevent
 import gevent.event
@@ -21,7 +20,7 @@ from featurebyte.worker import celery
 from featurebyte.worker.task.base import TASK_MAP
 
 
-def run_async(func: Any, *args: Any, **kwargs: Any) -> None:
+def run_async(func: Any, *args: Any, **kwargs: Any) -> Any:
     """
     Run async function in both async and non-async context
     Parameters
@@ -75,8 +74,7 @@ class TaskExecutor:
         await self.task.execute()
 
 
-@celery.task(bind=True)
-def execute_task(self: Any, **payload: Any) -> None:
+async def execute_task(self: Any, **payload: Any) -> Any:
     """
     Execute Celery task
 
@@ -86,15 +84,58 @@ def execute_task(self: Any, **payload: Any) -> None:
         Celery Task
     payload: Any
         Task payload
+
+    Returns
+    -------
+    Any
     """
     progress = Progress(user_id=payload.get("user_id"), task_id=self.request.id)
     executor = TaskExecutor(payload=payload, progress=progress)
     # send initial progress to indicate task is started
     progress.put({"percent": 0})
     try:
-        run_async(executor.execute)
+        return_val = await executor.execute()
         # send final progress to indicate task is completed
         progress.put({"percent": 100})
+        return return_val
     finally:
         # indicate stream is closed
         progress.put({"percent": -1})
+
+
+@celery.task(bind=True)
+def execute_io_task(self: Any, **payload: Any) -> Any:
+    """
+    Execute Celery task
+
+    Parameters
+    ----------
+    self: Any
+        Celery Task
+    payload: Any
+        Task payload
+
+    Returns
+    -------
+    Any
+    """
+    return asyncio.run(execute_task(self, **payload))
+
+
+@celery.task(bind=True)
+def execute_cpu_task(self: Any, **payload: Any) -> Any:
+    """
+    Execute Celery task
+
+    Parameters
+    ----------
+    self: Any
+        Celery Task
+    payload: Any
+        Task payload
+
+    Returns
+    -------
+    Any
+    """
+    return asyncio.run(execute_task(self, **payload))

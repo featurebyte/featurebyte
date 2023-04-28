@@ -28,7 +28,11 @@ celery = Celery(
 celery.conf.task_track_started = True
 
 # task queues and routing
-celery.conf.task_routes = {"worker.*": "celery"}
+celery.conf.task_routes = {
+    "featurebyte.worker.task_executor.execute_cpu_task": {"queue": "cpu_task"},
+    "featurebyte.worker.task_executor.execute_io_task": {"queue": "io_task"},
+}
+
 celery.conf.broker_transport_options = {
     "priority_steps": list(range(3)),
     "sep": ":",

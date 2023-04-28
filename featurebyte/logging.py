@@ -32,7 +32,7 @@ class CustomLogger(logging.Logger):
         """
         extra = kwargs.pop("extra", None)
         msg = f"{msg} | {extra}" if extra else msg
-        return super()._log(level, msg, *args, **kwargs)
+        super()._log(level, msg, *args, **kwargs)
 
 
 logging.setLoggerClass(CustomLogger)

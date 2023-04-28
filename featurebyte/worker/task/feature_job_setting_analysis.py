@@ -153,7 +153,6 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         analysis_result = analysis_data.pop("analysis_result")
         document.update(**analysis_data)
         document["analysis_result"].update(analysis_result)
-        logger.debug(document)
         analysis = FeatureJobSettingsAnalysisResult.from_dict(document)
 
         # run backtest

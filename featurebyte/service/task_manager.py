@@ -126,7 +126,7 @@ class TaskManager(AbstractTaskManager):
         assert self.user.id == payload.user_id
         kwargs = payload.json_dict()
         kwargs["task_output_path"] = payload.task_output_path
-        task = celery.send_task("featurebyte.worker.task_executor.execute_task", kwargs=kwargs)
+        task = celery.send_task(payload.task, kwargs=kwargs)
         return cast(TaskId, task.id)
 
     async def get_task(self, task_id: str) -> Task | None:
@@ -156,6 +156,7 @@ class TaskManager(AbstractTaskManager):
         )
 
         if document:
+            logger.debug("Task document", extra={"document": document})
             output_path = document.get("kwargs", {}).get("task_output_path")
             payload = document.get("kwargs", {})
             traceback = document.get("traceback")
@@ -226,12 +227,12 @@ class TaskManager(AbstractTaskManager):
         assert self.user.id == payload.user_id
         periodic_task = PeriodicTask(
             name=name,
-            task="featurebyte.worker.task_executor.execute_task",
+            task=payload.task,
             interval=interval,
             args=[],
             kwargs=payload.json_dict(),
             start_after=start_after,
-            queue="celery:1",
+            queue=payload.queue,
         )
         periodic_task_service = PeriodicTaskService(
             user=self.user,
@@ -270,7 +271,7 @@ class TaskManager(AbstractTaskManager):
         assert self.user.id == payload.user_id
         periodic_task = PeriodicTask(
             name=name,
-            task="featurebyte.worker.task_executor.execute_task",
+            task=payload.task,
             crontab=crontab,
             args=[],
             kwargs=payload.json_dict(),

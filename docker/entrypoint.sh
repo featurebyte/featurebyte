@@ -44,8 +44,9 @@ _main() {
     # Running as normal user
     echo "Starting process: $1"
     if [ "$1" = 'worker' ]; then
-      celery --app featurebyte.worker.start.celery beat --loglevel=DEBUG --scheduler featurebyte.worker.schedulers.MongoScheduler &
-      celery --app featurebyte.worker.start.celery worker --pool=gevent -c 1000 --loglevel=DEBUG
+      celery --app featurebyte.worker.celery beat --loglevel=DEBUG --scheduler featurebyte.worker.schedulers.MongoScheduler &
+      celery --app featurebyte.worker.start.celery worker -Q cpu_task,io_task --loglevel=DEBUG --pool=prefork
+      #celery --app featurebyte.worker.start.celery worker -Q io_task --loglevel=DEBUG --pool=gevent -c 1000
     elif [ "$1" = 'server' ]; then
       python /scripts/migration.py
       uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --timeout-keep-alive=300 --log-level=$LOG_LEVEL
