@@ -73,9 +73,13 @@ def db_session_fixture():
         return {"POINT_IN_TIME": "TIMESTAMP", "cust_id": "VARCHAR"}
 
     async def execute_query(*args, **kwargs):
-        _ = args
+        query = args[0]
         _ = kwargs
-        return pd.DataFrame({"max_time": ["2023-01-15T10:00:00+08:00"]})
+        if "MAX" in query:
+            return pd.DataFrame({"max_time": ["2023-01-15T10:00:00+08:00"]})
+        if "COUNT(*)" in query:
+            return pd.DataFrame({"row_count": [1000]})
+        raise NotImplementedError(f"Unexpected query: {query}")
 
     mock_db_session = Mock(
         name="mock_session",
@@ -153,6 +157,7 @@ async def test_validate__most_recent_point_in_time(
             {"name": "cust_id", "dtype": "VARCHAR"},
         ],
         "most_recent_point_in_time": "2023-01-15T02:00:00",
+        "num_rows": 1000,
     }
 
 

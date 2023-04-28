@@ -196,6 +196,7 @@ async def batch_request_table_fixture(app_container, test_dir):
                     ),
                 ),
                 columns_info=[{"name": "cust_id", "dtype": "INT"}],
+                num_rows=500,
             )
         )
         return document
