@@ -5,17 +5,24 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator, Callable, Dict, Optional, Tuple, Union
 
+import os
+
 import pandas as pd
 from bson import ObjectId
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import DocumentNotFoundError, MissingPointInTimeColumnError
+from featurebyte.exception import (
+    DocumentNotFoundError,
+    LimitExceededError,
+    MissingPointInTimeColumnError,
+)
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
@@ -24,6 +31,7 @@ from featurebyte.query_graph.sql.feature_historical import (
 )
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
 from featurebyte.schema.feature import FeaturePreview, FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
@@ -44,6 +52,9 @@ from featurebyte.session.base import BaseSession
 
 # This time is used as an arbitrary value to use in scenarios where we don't have any time provided in previews.
 ARBITRARY_TIME = pd.Timestamp(1970, 1, 1, 12)
+MAX_TABLE_CELLS = int(
+    os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
+)  # 10 million rows, 300 columns
 
 
 class PreviewService(BaseService):
@@ -609,3 +620,65 @@ class PreviewService(BaseService):
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
         )
         return sql_to_string(expr, source_type=source_type)
+
+    async def download_table(
+        self,
+        location: TabularSource,
+        get_credential: Any,
+    ) -> Optional[AsyncGenerator[bytes, None]]:
+        """
+        Download table from location.
+
+        Parameters
+        ----------
+        location: TabularSource
+            Location to download from
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        AsyncGenerator[bytes, None]
+            Asynchronous bytes generator
+
+        Raises
+        ------
+        LimitExceededError
+            Table size exceeds the limit.
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=location.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store,
+            get_credential=get_credential,
+        )
+
+        # check size of the table
+        sql_expr = get_source_count_expr(source=location.table_details)
+        sql = sql_to_string(
+            sql_expr,
+            source_type=db_session.source_type,
+        )
+        result = await db_session.execute_query(sql)
+        assert result is not None
+        columns = await db_session.list_table_schema(**location.table_details.json_dict())
+        shape = (result["row_count"].iloc[0], len(columns))
+
+        logger.debug(
+            "Downloading table from feature store",
+            extra={
+                "location": location.json_dict(),
+                "shape": shape,
+            },
+        )
+
+        if shape[0] * shape[0] > MAX_TABLE_CELLS:
+            raise LimitExceededError(f"Table size {shape} exceeds download limit.")
+
+        sql_expr = get_source_expr(source=location.table_details)
+        sql = sql_to_string(
+            sql_expr,
+            source_type=db_session.source_type,
+        )
+        return db_session.get_async_query_stream(sql)

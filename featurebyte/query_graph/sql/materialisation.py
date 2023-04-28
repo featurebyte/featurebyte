@@ -35,6 +35,28 @@ def get_source_expr(
     return expressions.select("*").from_(get_fully_qualified_table_name(source.dict()))
 
 
+def get_source_count_expr(
+    source: TableDetails,
+) -> Select:
+    """
+    Construct SQL query to get the row count of a source table
+
+    Parameters
+    ----------
+    source: TableDetails
+        Source table details
+
+    Returns
+    -------
+    Select
+    """
+    return expressions.select(
+        expressions.alias_(
+            expressions.Count(this=expressions.Star()), alias="row_count", quoted=True
+        )
+    ).from_(get_fully_qualified_table_name(source.dict()))
+
+
 def get_view_expr(
     graph: QueryGraphModel,
     node_name: str,

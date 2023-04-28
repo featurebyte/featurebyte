@@ -367,6 +367,7 @@ app_container_config.add_controller(
     ObservationTableController,
     [
         "observation_table_service",
+        "preview_service",
         "historical_feature_table_service",
         "info_service",
         "task_controller",
@@ -377,6 +378,7 @@ app_container_config.add_controller(
     HistoricalFeatureTableController,
     [
         "historical_feature_table_service",
+        "preview_service",
         "feature_store_service",
         "observation_table_service",
         "entity_validation_service",
@@ -389,6 +391,7 @@ app_container_config.add_controller(
     BatchRequestTableController,
     [
         "batch_request_table_service",
+        "preview_service",
         "batch_feature_table_service",
         "info_service",
         "task_controller",
@@ -399,6 +402,7 @@ app_container_config.add_controller(
     BatchFeatureTableController,
     [
         "batch_feature_table_service",
+        "preview_service",
         "feature_store_service",
         "feature_list_service",
         "batch_request_table_service",
