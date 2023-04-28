@@ -285,6 +285,7 @@ def _get_resource_detail_for_pure_fn(resource_descriptor: str) -> ResourceDetail
     Raises
     ------
     ValueError
+        If the resource descriptor is invalid
 
     Returns
     -------
