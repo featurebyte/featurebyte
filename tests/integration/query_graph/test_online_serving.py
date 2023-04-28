@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from featurebyte import FeatureList
+from featurebyte import FeatureList, RecordRetrievalException
 from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
@@ -149,13 +149,17 @@ async def test_online_serving_sql(
             df=df_entities,
             data_source=data_source,
         )
-        check_get_batch_features_async(
+        check_get_batch_features(
             data_source,
             deployment,
             batch_request_table,
             df_historical,
             columns,
         )
+
+        # clear batch request table
+        batch_request_table.delete()
+        assert batch_request_table.saved is False
 
     finally:
         deployment.disable()
@@ -190,9 +194,7 @@ def check_online_features_route(feature_list, config, df_historical, columns):
     fb_assert_frame_equal(df_expected, df, dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"])
 
 
-def check_get_batch_features_async(
-    data_source, deployment, batch_request_table, df_historical, columns
-):
+def check_get_batch_features(data_source, deployment, batch_request_table, df_historical, columns):
     """
     Check get_batch_features_async
     """
@@ -211,3 +213,18 @@ def check_get_batch_features_async(
         preview_df[columns],
         dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
     )
+
+    # delete batch feature table and check the materialized table is deleted
+    batch_feature_table.delete()
+    assert batch_feature_table.saved is False  # check mongo record is deleted
+
+    # check materialized table is deleted
+    with pytest.raises(RecordRetrievalException) as exc:
+        source_table.preview()
+
+    table_details = batch_feature_table.location.table_details
+    fully_qualified_table_name = (
+        f'{table_details.database_name}.{table_details.schema_name}."{table_details.table_name}"'
+    )
+    expected_error = f"Object '{fully_qualified_table_name}' does not exist or not authorized."
+    assert expected_error in str(exc.value)
