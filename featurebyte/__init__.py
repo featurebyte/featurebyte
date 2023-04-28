@@ -78,7 +78,6 @@ from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
 
-
 logger = get_logger(__name__)
 
 
@@ -287,7 +286,7 @@ def start_spark() -> None:
     _start_app(ApplicationName.SPARK, verbose=False)
 
 
-def stop(clean=False) -> None:
+def stop(clean: bool = False) -> None:
     """
     Stop all applications
     """
