@@ -379,6 +379,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_default_version_mode"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_status"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_features"]),
+        # TODO: get_online_serving_code should be under deployment. Requires code mv first.
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_online_serving_code"]),
     ]
 
@@ -625,6 +626,9 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, GET, "Catalog.get_batch_request_table_by_id"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_batch_feature_table"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_batch_feature_table_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_deployment"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_deployment_by_id"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_deployments"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_relationships"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_feature_lists"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_entities"]),
@@ -662,6 +666,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "TableCleaningOperation"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "DefaultVersionMode"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "FeatureListStatus"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
         DocLayoutItem(
@@ -753,9 +758,9 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         The layout for the Deployment module.
     """
     return [
-        DocLayoutItem([DEPLOYMENT, GET, "Deployment.compute_batch_feature_table"]),
-        DocLayoutItem([DEPLOYMENT, GET, "Deployment.get"]),
-        DocLayoutItem([DEPLOYMENT, GET, "Deployment.get_by_id"]),
+        DocLayoutItem([DEPLOYMENT, CLASS_METHODS, "Deployment.get"]),
+        DocLayoutItem([DEPLOYMENT, CLASS_METHODS, "Deployment.get_by_id"]),
+        DocLayoutItem([DEPLOYMENT, CLASS_METHODS, "Deployment.list"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.enabled"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.name"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.catalog"]),
@@ -763,9 +768,9 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_version"]),
         # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.num_features"]),
         DocLayoutItem([DEPLOYMENT, LINEAGE, "Deployment.feature_list_id"]),
-        DocLayoutItem([DEPLOYMENT, LIST, "Deployment.list"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
+        DocLayoutItem([DEPLOYMENT, SERVE, "Deployment.compute_batch_feature_table"]),
     ]
 
 
@@ -780,14 +785,14 @@ def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([BATCH_FEATURE_TABLE]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.deployment_id"]),
         # DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.feature_store_name"]),
         # DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.batch_request_table_name"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.name"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.created_at"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.updated_at"]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.id"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.batch_request_table_id"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.deployment_id"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.id"]),
     ]
 
 
@@ -845,9 +850,6 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([HISTORICAL_FEATURE_TABLE]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.name"]),
-        DocLayoutItem(
-            [HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_id"]
-        ),
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.feature_store_name"]),
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_name"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.created_at"]),
@@ -856,6 +858,9 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
             [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.feature_list_id"]
         ),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.id"]),
+        DocLayoutItem(
+            [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.observation_table_id"]
+        ),
     ]
 
 

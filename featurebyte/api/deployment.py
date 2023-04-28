@@ -6,7 +6,6 @@ from __future__ import annotations
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
-from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import PydanticObjectId
@@ -38,14 +37,12 @@ class Deployment(ApiObject):
     _get_schema = DeploymentModel
     _update_schema_class = DeploymentUpdate
     _list_fields = [
-        "catalog",
         "name",
         "feature_list_name",
         "feature_list_version",
         "num_feature",
     ]
     _list_foreign_keys = [
-        ForeignKeyMapping("catalog_id", Catalog, "catalog"),
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_name", "name", True),
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_version", "version", True),
         ForeignKeyMapping("feature_list_id", FeatureList, "num_feature", "num_feature", True),

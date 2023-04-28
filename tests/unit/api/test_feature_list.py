@@ -798,7 +798,6 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
         pd.DataFrame(
             columns=[
                 "id",
-                "catalog",
                 "name",
                 "feature_list_name",
                 "feature_list_version",
@@ -816,13 +815,10 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     deployments = list_deployments(include_id=True)
     expected_deployment_name = f'Deployment (feature_list: "{feature_list.name}", version: {feature_list.version.to_str()})'
     assert_frame_equal(
-        deployments[
-            ["catalog", "name", "feature_list_name", "feature_list_version", "num_feature"]
-        ],
+        deployments[["name", "feature_list_name", "feature_list_version", "num_feature"]],
         pd.DataFrame(
             [
                 {
-                    "catalog": "default",
                     "name": expected_deployment_name,
                     "feature_list_name": feature_list.name,
                     "feature_list_version": feature_list.version.to_str(),

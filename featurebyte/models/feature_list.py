@@ -13,6 +13,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 from typeguard import typechecked
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.base import (
@@ -31,6 +32,8 @@ from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
 
 class FeatureListStatus(OrderedStrEnum):
     """FeatureList status"""
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureListStatus")
 
     DEPRECATED = "DEPRECATED"
     DRAFT = "DRAFT"
