@@ -476,7 +476,6 @@ def test_info(saved_feature_list):
         "version_count": 1,
         "production_ready_fraction": {"this": 0.0, "default": 0.0},
         "deployed": False,
-        "serving_endpoint": None,
         "catalog_name": "default",
     }
     assert info_dict.items() > expected_info.items(), info_dict
@@ -1119,90 +1118,6 @@ def test_get_feature_jobs_status(
 
     if update_fixtures:
         raise ValueError("Fixtures updated. Please run test again without --update-fixtures flag")
-
-
-@patch("featurebyte.core.mixin.SampleMixin.preview")
-def test_get_online_serving_code(mock_preview, feature_list):
-    """Test feature get_online_serving_code"""
-    mock_preview.return_value = pd.DataFrame(
-        {"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]}
-    )
-    feature_list.save()
-    assert feature_list.saved is True
-    deployment = feature_list.deploy(make_production_ready=True)
-    deployment.enable()
-    assert deployment.enabled is True
-    assert (
-        feature_list.get_online_serving_code().strip()
-        == textwrap.dedent(
-            f'''
-            from typing import Any, Dict
-
-            import pandas as pd
-            import requests
-
-
-            def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
-                """
-                Send POST request to online serving endpoint
-
-                Parameters
-                ----------
-                entity_serving_names: Dict[str, Any]
-                    Entity serving name values to used for serving request
-
-                Returns
-                -------
-                pd.DataFrame
-                """
-                response = requests.post(
-                    url="http://localhost:8080/feature_list/{feature_list.id}/online_features",
-                    params={{"catalog_id": "63eda344d0313fb925f7883a"}},
-                    headers={{"Content-Type": "application/json", "Authorization": "Bearer token"}},
-                    json={{"entity_serving_names": entity_serving_names}},
-                )
-                assert response.status_code == 200, response.json()
-                return pd.DataFrame.from_dict(response.json()["features"])
-
-
-            request_features([{{"cust_id": "sample_cust_id"}}])
-            '''
-        ).strip()
-    )
-    url = (
-        f"http://localhost:8080/feature_list/{feature_list.id}/online_features"
-        f"?catalog_id={feature_list.catalog_id}"
-    )
-    assert (
-        feature_list.get_online_serving_code(language="sh").strip()
-        == textwrap.dedent(
-            f"""
-            #!/bin/sh
-
-            curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
-                '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
-                {url}
-            """
-        ).strip()
-    )
-
-
-def test_get_online_serving_code_not_deployed(feature_list):
-    """Test feature get_online_serving_code on undeployed feature list"""
-    with pytest.raises(FeatureListNotOnlineEnabledError) as exc:
-        feature_list.get_online_serving_code()
-    assert "Feature list is not deployed." in str(exc.value)
-
-
-def test_get_online_serving_code_unsupported_language(feature_list):
-    """Test feature get_online_serving_code with unsupported language"""
-    feature_list.save()
-    deployment = feature_list.deploy(make_production_ready=True)
-    deployment.enable()
-    assert deployment.enabled is True
-    with pytest.raises(NotImplementedError) as exc:
-        feature_list.get_online_serving_code(language="java")
-    assert "Supported languages: ['python', 'sh']" in str(exc.value)
 
 
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")

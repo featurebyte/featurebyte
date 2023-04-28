@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 from featurebyte import Deployment, FeatureList
-from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import assert_preview_result_equal, make_online_request
 
 
@@ -447,7 +447,7 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
 
-    data = FeatureListGetOnlineFeatures(entity_serving_names=[{"row_number": 1}])
+    data = OnlineFeaturesRequestPayload(entity_serving_names=[{"row_number": 1}])
     res = config.get_client().post(
         f"/feature_list/{str(feature_list.id)}/online_features",
         json=data.json_dict(),

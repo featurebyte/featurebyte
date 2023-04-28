@@ -4,7 +4,7 @@ Integration test for online enabling features
 import pytest
 
 from featurebyte import FeatureList
-from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 
 
 @pytest.fixture(name="online_enabled_feature_list", scope="module")
@@ -64,7 +64,7 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
         # Check feature request
         client = config.get_client()
         entity_serving_names = [{"order_id": "T1"}]
-        data = FeatureListGetOnlineFeatures(entity_serving_names=entity_serving_names)
+        data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
         res = client.post(
             f"/feature_list/{str(feature_list.id)}/online_features",
             json=data.json_dict(),

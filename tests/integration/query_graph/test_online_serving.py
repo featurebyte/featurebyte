@@ -12,7 +12,7 @@ from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_expr
-from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
 
 
@@ -174,7 +174,7 @@ def check_online_features_route(feature_list, config, df_historical, columns):
 
     user_ids = [5, -999]
     entity_serving_names = [{"üser id": user_id} for user_id in user_ids]
-    data = FeatureListGetOnlineFeatures(entity_serving_names=entity_serving_names)
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
 
     tic = time.time()
     res = client.post(

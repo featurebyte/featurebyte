@@ -6,7 +6,7 @@ import pytest
 import pytest_asyncio
 
 from featurebyte import Entity, FeatureList, Table
-from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 
 table_prefix = "TEST_SERVING_PARENT_FEATURES"
 
@@ -291,7 +291,7 @@ def test_online_features(config, feature_list_with_child_entities):
     """
     Test requesting online features
     """
-    data = FeatureListGetOnlineFeatures(entity_serving_names=[{"serving_event_id": 1}])
+    data = OnlineFeaturesRequestPayload(entity_serving_names=[{"serving_event_id": 1}])
     res = config.get_client().post(
         f"/feature_list/{str(feature_list_with_child_entities.id)}/online_features",
         json=data.json_dict(),
@@ -335,9 +335,14 @@ def test_online_serving_code_uses_primary_entity(
     Check that online serving code is based on primary entity
     """
     time.sleep(1)
-    online_serving_code = feature_list_with_parent_child_features.get_online_serving_code("python")
+    deployment = feature_list_with_parent_child_features.deploy(make_production_ready=True)
+    deployment.enable()
+    online_serving_code = deployment.get_online_serving_code("python")
     expected_signature = 'request_features([{"serving_cust_id": 1000}])'
     assert expected_signature in online_serving_code
+
+    # Clean up
+    deployment.disable()
 
 
 def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_feature):

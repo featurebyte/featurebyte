@@ -20,15 +20,12 @@ from typing import (
 )
 
 import collections
-import json
-import os.path
 from http import HTTPStatus
 
 import numpy as np
 import pandas as pd
 from alive_progress import alive_bar
 from bson.objectid import ObjectId
-from jinja2 import Template
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
@@ -48,13 +45,11 @@ from featurebyte.api.feature_job import FeatureJobMixin, FeatureJobStatusResult
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.api.table import Table
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import (
-    CodeStr,
     dataframe_from_arrow_stream,
     dataframe_to_arrow_bytes,
     enforce_observation_set_row_order,
@@ -62,7 +57,6 @@ from featurebyte.common.utils import (
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
-    FeatureListNotOnlineEnabledError,
     RecordCreationException,
     RecordRetrievalException,
 )
@@ -1349,135 +1343,6 @@ class FeatureList(
         from featurebyte.api.deployment import Deployment  # pylint: disable=import-outside-toplevel
 
         return Deployment.get_by_id(ObjectId(output["_id"]))
-
-    def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
-        """
-        Retrieves either Python or shell script template for serving online features from a deployed featurelist,
-        defaulted to python.
-
-        Parameters
-        ----------
-        language: Literal["python", "sh"]
-            Language for which to get code template
-
-        Returns
-        -------
-        str
-
-        Raises
-        ------
-        FeatureListNotOnlineEnabledError
-            Feature list not deployed
-        NotImplementedError
-            Serving code not available
-
-        Examples
-        --------
-        Retrieve python code template when "language" is set to "python"
-
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.get_online_serving_code(language="python")  # doctest: +SKIP
-            from typing import Any, Dict
-            import pandas as pd
-            import requests
-            def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
-                "
-                Send POST request to online serving endpoint
-                Parameters
-                ----------
-                entity_serving_names: Dict[str, Any]
-                    Entity serving name values to used for serving request
-                Returns
-                -------
-                pd.DataFrame
-                "
-                response = requests.post(
-                    url="http://localhost:8080/feature_list/{feature_list.id}/online_features",
-                    params={{"catalog_id": "63eda344d0313fb925f7883a"}},
-                    headers={{"Content-Type": "application/json", "Authorization": "Bearer token"}},
-                    json={{"entity_serving_names": entity_serving_names}},
-                )
-                assert response.status_code == 200, response.json()
-                return pd.DataFrame.from_dict(response.json()["features"])
-            request_features([{{"cust_id": "sample_cust_id"}}])
-
-        Retrieve shell script template when "language" is set to "sh"
-
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +SKIP
-        >>> feature_list.get_online_serving_code(language="sh")  # doctest: +SKIP
-            \\#!/bin/sh
-            curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
-                '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
-                http://localhost:8080/feature_list/641cf594f74f839cf9297884/online_features?catalog_id=63eda344d0313fb925f7883a
-
-        See Also
-        --------
-        - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/)
-        """
-        if not self.deployed:
-            raise FeatureListNotOnlineEnabledError("Feature list is not deployed.")
-
-        templates = {"python": "python.tpl", "sh": "shell.tpl"}
-        template_file = templates.get(language)
-        if not template_file:
-            raise NotImplementedError(f"Supported languages: {list(templates.keys())}")
-
-        # get entities and tables used for the feature list
-        num_rows = 1
-        info = self.info()
-        entities = {
-            Entity.get(entity["name"]).id: {"serving_name": entity["serving_names"]}
-            for entity in info["primary_entity"]
-        }
-        for tabular_source in info["tables"]:
-            data = Table.get(tabular_source["name"])
-            entity_columns = [
-                column for column in data.columns_info if column.entity_id in entities
-            ]
-            if entity_columns:
-                sample_data = data.preview(num_rows)
-                for column in entity_columns:
-                    entities[column.entity_id]["sample_value"] = sample_data[column.name].to_list()
-
-        entity_serving_names = json.dumps(
-            [
-                {
-                    entity["serving_name"][0]: entity["sample_value"][row_idx]
-                    for entity in entities.values()
-                }
-                for row_idx in range(num_rows)
-            ]
-        )
-
-        # construct serving url
-        current_profile = Configurations().profile
-        assert current_profile
-        serving_endpoint = info["serving_endpoint"]
-        headers = {"Content-Type": "application/json"}
-        if current_profile.api_token:
-            headers["Authorization"] = f"Bearer {current_profile.api_token}"
-        header_params = " ".join([f"-H '{key}: {value}'" for key, value in headers.items()])
-        serving_url = f"{current_profile.api_url}{serving_endpoint}"
-
-        # populate template
-        with open(
-            file=os.path.join(
-                os.path.dirname(__file__), f"templates/online_serving/{template_file}"
-            ),
-            mode="r",
-            encoding="utf-8",
-        ) as file_object:
-            template = Template(file_object.read())
-
-        return CodeStr(
-            template.render(
-                catalog_id=self.catalog_id,
-                headers=json.dumps(headers),
-                header_params=header_params,
-                serving_url=serving_url,
-                entity_serving_names=entity_serving_names,
-            )
-        )
 
     # descriptors
     list_versions: ClassVar[ClassInstanceMethodDescriptor] = ClassInstanceMethodDescriptor(

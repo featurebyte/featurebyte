@@ -296,14 +296,13 @@ app_container_config.add_controller(
     [
         "feature_list_service",
         "feature_list_namespace_service",
+        "feature_service",
         "feature_readiness_service",
         "deploy_service",
         "preview_service",
         "version_service",
         "info_service",
-        "online_serving_service",
         "feature_store_warehouse_service",
-        "feature_service",
     ],
 )
 app_container_config.add_controller(
@@ -419,6 +418,7 @@ app_container_config.add_controller(
         "deployment_service",
         "context_service",
         "feature_list_service",
+        "online_serving_service",
         "info_service",
         "task_controller",
     ],

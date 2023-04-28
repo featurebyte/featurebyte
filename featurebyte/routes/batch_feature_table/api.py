@@ -23,11 +23,8 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.batch_feature_table import (
-    BatchFeatureTableCreate,
-    BatchFeatureTableInfo,
-    BatchFeatureTableList,
-)
+from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate, BatchFeatureTableList
+from featurebyte.schema.info import BatchFeatureTableInfo
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/batch_feature_table")

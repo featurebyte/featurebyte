@@ -19,6 +19,7 @@ from featurebyte.models.feature_list import (
     FeatureTypeFeatureCount,
 )
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.models.request_input import RequestInputType
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
@@ -313,7 +314,6 @@ class FeatureListInfo(NamespaceInfo):
     production_ready_fraction: ProductionReadyFractionComparison
     versions_info: Optional[FeatureListBriefInfoList]
     deployed: bool
-    serving_endpoint: Optional[str]
 
 
 class FeatureListNamespaceInfo(NamespaceInfo):
@@ -369,7 +369,54 @@ class CredentialInfo(CredentialBriefInfo, BaseInfo):
     feature_store_info: FeatureStoreInfo
 
 
-class DeleteResponse(FeatureByteBaseModel):
+class ObservationTableInfo(BaseInfo):
     """
-    Delete response
+    ObservationTable info schema
     """
+
+    type: RequestInputType
+    feature_store_name: str
+    table_details: TableDetails
+
+
+class HistoricalFeatureTableInfo(BaseInfo):
+    """
+    Schema for historical feature table info
+    """
+
+    observation_table_name: str
+    feature_list_name: str
+    feature_list_version: str
+    table_details: TableDetails
+
+
+class DeploymentInfo(BaseInfo):
+    """
+    Schema for deployment info
+    """
+
+    feature_list_name: str
+    feature_list_version: str
+    num_feature: int
+    enabled: bool
+    serving_endpoint: Optional[str]
+
+
+class BatchRequestTableInfo(BaseInfo):
+    """
+    BatchRequestTable info schema
+    """
+
+    type: RequestInputType
+    feature_store_name: str
+    table_details: TableDetails
+
+
+class BatchFeatureTableInfo(BaseInfo):
+    """
+    Schema for batch feature table info
+    """
+
+    batch_request_table_name: str
+    deployment_name: str
+    table_details: TableDetails

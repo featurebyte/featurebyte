@@ -10,9 +10,9 @@ from featurebyte.routes.common.base_materialized_table import BaseMaterializedTa
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableCreate,
-    HistoricalFeatureTableInfo,
     HistoricalFeatureTableList,
 )
+from featurebyte.schema.info import HistoricalFeatureTableInfo
 from featurebyte.schema.task import Task
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService

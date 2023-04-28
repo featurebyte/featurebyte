@@ -1,6 +1,8 @@
 """
 Base info related schema
 """
+from __future__ import annotations
+
 from typing import Any, List, Optional
 
 from datetime import datetime
@@ -49,3 +51,9 @@ class PaginationMixin(FeatureByteBaseModel):
     page_size: int = Field(default=10, gt=0, le=100)
     total: int
     data: List[Any]
+
+
+class DeleteResponse(FeatureByteBaseModel):
+    """
+    Delete response
+    """

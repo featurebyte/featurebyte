@@ -23,11 +23,8 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.observation_table import (
-    ObservationTableCreate,
-    ObservationTableInfo,
-    ObservationTableList,
-)
+from featurebyte.schema.info import ObservationTableInfo
+from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableList
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/observation_table")

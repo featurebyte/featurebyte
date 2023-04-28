@@ -3,21 +3,27 @@ Deployment API route controller
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
+
+from http import HTTPStatus
+from http.client import HTTPException
 
 from bson import ObjectId
 
+from featurebyte.exception import FeatureListNotOnlineEnabledError
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.deployment import (
     DeploymentCreate,
-    DeploymentInfo,
     DeploymentList,
     DeploymentSummary,
     DeploymentUpdate,
+    OnlineFeaturesResponseModel,
 )
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
+from featurebyte.schema.info import DeploymentInfo
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
@@ -28,6 +34,7 @@ from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.info import InfoService
+from featurebyte.service.online_serving import OnlineServingService
 
 
 class DeploymentController(
@@ -44,12 +51,14 @@ class DeploymentController(
         service: DeploymentService,
         context_service: ContextService,
         feature_list_service: FeatureListService,
+        online_serving_service: OnlineServingService,
         info_service: InfoService,
         task_controller: TaskController,
     ):
         super().__init__(service)
         self.context_service = context_service
         self.feature_list_service = feature_list_service
+        self.online_serving_service = online_serving_service
         self.info_service = info_service
         self.task_controller = task_controller
 
@@ -133,6 +142,47 @@ class DeploymentController(
             document_id=document_id, verbose=verbose
         )
         return info_document
+
+    async def compute_online_features(
+        self,
+        deployment_id: ObjectId,
+        data: OnlineFeaturesRequestPayload,
+        get_credential: Any,
+    ) -> OnlineFeaturesResponseModel:
+        """
+        Get historical features for Feature List
+
+        Parameters
+        ----------
+        deployment_id: ObjectId
+            Id of the Feature List
+        data: OnlineFeaturesRequestPayload
+            Online features request data
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        OnlineFeaturesResponseModel
+
+        Raises
+        ------
+        HTTPException
+            Invalid request payload
+        """
+        feature_list = await self.service.get_document(deployment_id)
+        try:
+            result = await self.online_serving_service.get_online_features_from_feature_list(
+                feature_list=feature_list,
+                request_data=data.entity_serving_names,
+                get_credential=get_credential,
+            )
+        except (FeatureListNotOnlineEnabledError, RuntimeError) as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc
+        assert result is not None, result
+        return result
 
     async def get_deployment_summary(self) -> DeploymentSummary:
         """

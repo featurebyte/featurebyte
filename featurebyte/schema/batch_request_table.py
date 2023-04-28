@@ -6,9 +6,7 @@ from __future__ import annotations
 from typing import List
 
 from featurebyte.models.batch_request_table import BatchRequestInput, BatchRequestTableModel
-from featurebyte.models.request_input import RequestInputType
-from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.schema.common.base import BaseInfo, PaginationMixin
+from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.request_table import BaseRequestTableCreate, BaseRequestTableListRecord
 
 
@@ -32,13 +30,3 @@ class BatchRequestTableListRecord(BaseRequestTableListRecord):
     """
     This model determines the schema when listing batch request tables via BatchRequestTable.list()
     """
-
-
-class BatchRequestTableInfo(BaseInfo):
-    """
-    BatchRequestTable info schema
-    """
-
-    type: RequestInputType
-    feature_store_name: str
-    table_details: TableDetails

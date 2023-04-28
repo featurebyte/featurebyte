@@ -8,11 +8,8 @@ from bson import ObjectId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
-from featurebyte.schema.observation_table import (
-    ObservationTableCreate,
-    ObservationTableInfo,
-    ObservationTableList,
-)
+from featurebyte.schema.info import ObservationTableInfo
+from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableList
 from featurebyte.schema.task import Task
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.info import InfoService

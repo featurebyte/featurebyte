@@ -22,14 +22,13 @@ from featurebyte.query_graph.model.feature_job_setting import (
     TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from featurebyte.schema.batch_feature_table import BatchFeatureTableInfo
-from featurebyte.schema.batch_request_table import BatchRequestTableInfo
-from featurebyte.schema.deployment import DeploymentInfo
 from featurebyte.schema.feature import FeatureBriefInfoList
-from featurebyte.schema.historical_feature_table import HistoricalFeatureTableInfo
 from featurebyte.schema.info import (
+    BatchFeatureTableInfo,
+    BatchRequestTableInfo,
     CatalogInfo,
     CredentialInfo,
+    DeploymentInfo,
     DimensionTableInfo,
     EntityBriefInfoList,
     EntityInfo,
@@ -41,11 +40,12 @@ from featurebyte.schema.info import (
     FeatureListNamespaceInfo,
     FeatureNamespaceInfo,
     FeatureStoreInfo,
+    HistoricalFeatureTableInfo,
     ItemTableInfo,
+    ObservationTableInfo,
     SCDTableInfo,
     TableBriefInfoList,
 )
-from featurebyte.schema.observation_table import ObservationTableInfo
 from featurebyte.schema.relationship_info import RelationshipInfoInfo
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.table import TableList
@@ -733,9 +733,6 @@ class InfoService(BaseService):
             },
             versions_info=versions_info,
             deployed=feature_list.deployed,
-            serving_endpoint=f"/feature_list/{feature_list.id}/online_features"
-            if feature_list.deployed
-            else None,
         )
 
     def _get_primary_entity_from_entities(self, entities: dict[str, Any]) -> dict[str, Any]:
@@ -1010,6 +1007,9 @@ class InfoService(BaseService):
             feature_list_version=feature_list.version.to_str(),
             num_feature=len(feature_list.feature_ids),
             enabled=deployment.enabled,
+            serving_endpoint=(
+                f"/deployment/{deployment.id}/online_features" if deployment.enabled else None
+            ),
             created_at=deployment.created_at,
             updated_at=deployment.updated_at,
         )

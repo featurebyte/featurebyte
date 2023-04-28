@@ -26,18 +26,19 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
     VersionQuery,
 )
+from featurebyte.schema.common.base import DeleteResponse
+from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
-    FeatureListGetOnlineFeatures,
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListSQL,
     FeatureListUpdate,
-    OnlineFeaturesResponseModel,
+    OnlineFeaturesRequestPayload,
 )
-from featurebyte.schema.info import DeleteResponse, FeatureListInfo
+from featurebyte.schema.info import FeatureListInfo
 
 router = APIRouter(prefix="/feature_list")
 
@@ -231,28 +232,6 @@ async def get_historical_features_sql(
             featurelist_get_historical_features=featurelist_get_historical_features,
         ),
     )
-
-
-@router.post(
-    "/{feature_list_id}/online_features",
-    response_model=OnlineFeaturesResponseModel,
-    response_class=ORJSONResponse,
-)
-async def get_online_features(
-    request: Request,
-    feature_list_id: PydanticObjectId,
-    data: FeatureListGetOnlineFeatures,
-) -> OnlineFeaturesResponseModel:
-    """
-    Retrieve online features
-    """
-    controller = request.state.app_container.feature_list_controller
-    result = await controller.get_online_features(
-        feature_list_id=feature_list_id,
-        data=data,
-        get_credential=request.state.get_credential,
-    )
-    return cast(OnlineFeaturesResponseModel, result)
 
 
 @router.get("/{feature_list_id}/feature_job_logs", response_model=Dict[str, Any])

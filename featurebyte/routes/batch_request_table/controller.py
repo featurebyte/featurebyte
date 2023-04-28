@@ -8,11 +8,8 @@ from bson import ObjectId
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
-from featurebyte.schema.batch_request_table import (
-    BatchRequestTableCreate,
-    BatchRequestTableInfo,
-    BatchRequestTableList,
-)
+from featurebyte.schema.batch_request_table import BatchRequestTableCreate, BatchRequestTableList
+from featurebyte.schema.info import BatchRequestTableInfo
 from featurebyte.schema.task import Task
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
