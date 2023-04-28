@@ -85,9 +85,10 @@ def get_params(
             if render_kw_only_separator:
                 render_kw_only_separator = False
                 params.append(RawParameterDetails("*", None, None))
-        params.append(
-            RawParameterDetails(value, type_hints.get(parameter.name, Undefined), default)
-        )
+        hinted_type = type_hints.get(parameter.name, Undefined)
+        if hinted_type == Undefined:
+            hinted_type = parameter.annotation
+        params.append(RawParameterDetails(value, hinted_type, default))
     return params
 
 
@@ -235,7 +236,13 @@ def _get_param_details(
             raw_parameter_detail.name,
             raw_parameter_detail.param_type,
         )
-        param_type_string = format_param_type(param_type) if param_type else None
+        # If the type is already a string, just use that as the type.
+        # If we pass it into format_param_type, the returned value will be enclosed in quotes, such as `'"str"'`, which
+        # looks weird.
+        if type(param_type) == str:
+            param_type_string = param_type
+        else:
+            param_type_string = format_param_type(param_type) if param_type else None
         details.append(
             ParameterDetails(
                 name=param_name,
