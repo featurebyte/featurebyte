@@ -333,7 +333,7 @@ def list_deployments(
     --------
     >>> fb.list_deployments()
     Empty DataFrame
-    Columns: [catalog, name, feature_list_name, feature_list_version, num_feature]
+    Columns: [name, feature_list_name, feature_list_version, num_feature]
     Index: []
 
     See Also
