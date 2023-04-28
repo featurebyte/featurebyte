@@ -51,6 +51,7 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup gradle cache
         uses: actions/cache@v3
         with:
@@ -81,6 +82,7 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -133,6 +135,7 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -185,6 +188,7 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -260,6 +264,7 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -312,6 +317,7 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -356,6 +362,7 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
