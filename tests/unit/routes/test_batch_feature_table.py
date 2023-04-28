@@ -104,21 +104,19 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
     def test_create_422__batch_request_table_failed_validation_check(
         self,
         test_api_client_persistent,
-        snowflake_query_map,
-        snowflake_execute_query_batch_request_table_patcher,
+        snowflake_execute_query_invalid_batch_request_table,
     ):
         """Test create 422 for batch request table failed validation check"""
         test_api_client, _ = test_api_client_persistent
-        with snowflake_execute_query_batch_request_table_patcher(snowflake_query_map, False):
-            self.setup_creation_route(test_api_client)
+        self.setup_creation_route(test_api_client)
 
-            # check that columns_info is empty as we are mocking the query
-            batch_request_table_id = self.payload["batch_request_table_id"]
-            response = test_api_client.get(f"/batch_request_table/{batch_request_table_id}")
-            assert response.json()["columns_info"] == []
+        # check that columns_info is empty as we are mocking the query
+        batch_request_table_id = self.payload["batch_request_table_id"]
+        response = test_api_client.get(f"/batch_request_table/{batch_request_table_id}")
+        assert response.json()["columns_info"] == []
 
-            # check that create fails
-            response = test_api_client.post(self.base_route, json=self.payload)
+        # check that create fails
+        response = test_api_client.post(self.base_route, json=self.payload)
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
