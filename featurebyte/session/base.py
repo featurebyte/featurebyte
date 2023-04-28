@@ -34,13 +34,16 @@ from featurebyte.common.utils import (
 )
 from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.exception import QueryExecutionTimeOut
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 
 MINUTES_IN_SECONDS = 60
 HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
 DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 10 * MINUTES_IN_SECONDS
 LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
+
+
+logger = get_logger(__name__)
 
 
 class RunThread(threading.Thread):

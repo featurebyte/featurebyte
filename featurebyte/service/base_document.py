@@ -17,7 +17,7 @@ from featurebyte.exception import (
     DocumentNotFoundError,
     QueryNotSupportedError,
 )
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteCatalogBaseDocumentModel,
@@ -35,6 +35,9 @@ RAW_QUERY_FILTER_WARNING = (
     "Using raw query filter breaks application logic. "
     "It should only be used when absolutely necessary."
 )
+
+
+logger = get_logger(__name__)
 
 
 class BaseDocumentService(

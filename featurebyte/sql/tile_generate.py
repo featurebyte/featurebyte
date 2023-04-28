@@ -6,10 +6,12 @@ from typing import Optional
 import dateutil.parser
 
 from featurebyte.common import date_util
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
+
+logger = get_logger(__name__)
 
 
 class TileGenerate(TileCommon):

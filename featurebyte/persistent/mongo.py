@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, AsyncIterator, Iterable, List, Literal, Optional, Tuple, cast
 
+import asyncio
 from contextlib import asynccontextmanager
 
 import pymongo
@@ -39,6 +40,9 @@ class MongoDB(Persistent):
         self._client = client or AsyncIOMotorClient(uri, uuidRepresentation="standard")
         self._db = self._client[self._database]
         self._session: Any = None
+        # ensure client uses current loop
+        if hasattr(self._client, "get_io_loop"):
+            self._client.get_io_loop = asyncio.get_running_loop
 
     async def _insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """

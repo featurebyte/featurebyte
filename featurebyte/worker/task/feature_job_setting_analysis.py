@@ -12,7 +12,7 @@ from featurebyte_freeware.feature_job_analysis.analysis import (
 from featurebyte_freeware.feature_job_analysis.database import EventDataset
 from featurebyte_freeware.feature_job_analysis.schema import FeatureJobSetting
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisData,
     FeatureJobSettingAnalysisModel,
@@ -26,6 +26,8 @@ from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAn
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.manager import SessionManager
 from featurebyte.worker.task.base import BaseTask
+
+logger = get_logger(__name__)
 
 
 class FeatureJobSettingAnalysisTask(BaseTask):
@@ -151,7 +153,6 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         analysis_result = analysis_data.pop("analysis_result")
         document.update(**analysis_data)
         document["analysis_result"].update(analysis_result)
-        logger.debug(document)
         analysis = FeatureJobSettingsAnalysisResult.from_dict(document)
 
         # run backtest

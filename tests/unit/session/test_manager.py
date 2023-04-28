@@ -1,15 +1,17 @@
 """
 Tests for SessionManager class
 """
+import logging
 from unittest.mock import Mock, patch
 
 import pytest
-from loguru import logger
 from pytest import LogCaptureFixture
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.query_graph.node.schema import SQLiteDetails
-from featurebyte.session.manager import SessionManager, session_cache
+from featurebyte.session.manager import SessionManager
+from featurebyte.session.manager import logger as session_logger
+from featurebyte.session.manager import session_cache
 
 
 @pytest.fixture(autouse=True, name="caplog_handle")
@@ -17,12 +19,16 @@ def caplog_handle_fixture(caplog: LogCaptureFixture):
     """
     Log captured emitted output
     """
-    handler_id = logger.add(caplog.handler, level="DEBUG", format="{message}")
+    original_level = session_logger.level
+    session_logger.setLevel(logging.DEBUG)
+    session_logger.addHandler(caplog.handler)
     yield caplog
     try:
-        logger.remove(handler_id)
+        session_logger.removeHandler(caplog.handler)
     except ValueError:
         pass
+    finally:
+        session_logger.setLevel(original_level)
 
 
 @pytest.fixture(name="session_manager")

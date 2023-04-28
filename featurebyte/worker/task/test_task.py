@@ -5,9 +5,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.test import TestTaskPayload
 from featurebyte.worker.task.base import BaseTask
+
+logger = get_logger(__name__)
 
 
 class TestTask(BaseTask):

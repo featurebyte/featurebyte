@@ -10,9 +10,11 @@ from pydantic import Field
 from featurebyte.api.view import GroupByMixin, RawMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.node.generic import SCDBaseParameters
+
+logger = get_logger(__name__)
 
 
 class SCDViewColumn(ViewColumn):

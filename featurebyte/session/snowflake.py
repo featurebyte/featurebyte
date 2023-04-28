@@ -23,11 +23,13 @@ from snowflake.connector.pandas_tools import write_pandas
 from featurebyte.common.utils import create_new_arrow_stream_writer, pa_table_to_record_batches
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CredentialsError
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
+
+logger = get_logger(__name__)
 
 
 class SnowflakeSession(BaseSession):

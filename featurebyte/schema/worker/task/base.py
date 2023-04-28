@@ -11,7 +11,17 @@ from enum import Enum
 from bson.objectid import ObjectId
 from pydantic import Field
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+
+
+class TaskType(StrEnum):
+    """
+    Task type enum
+    """
+
+    CPU_TASK = "cpu_task"
+    IO_TASK = "io_task"
 
 
 class BaseTaskPayload(FeatureByteBaseModel):
@@ -24,6 +34,8 @@ class BaseTaskPayload(FeatureByteBaseModel):
     output_document_id: PydanticObjectId = Field(default_factory=ObjectId)
     output_collection_name: ClassVar[Optional[str]] = None
     command: ClassVar[Optional[Enum]] = None
+    task_type: TaskType = Field(default=TaskType.IO_TASK)
+    priority: int = Field(default=0, ge=0, le=3)  # 0 is the highest priority
 
     class Config:
         """
@@ -32,6 +44,39 @@ class BaseTaskPayload(FeatureByteBaseModel):
 
         # With `frozen` flag enable, all the object attributes are immutable.
         frozen = True
+
+    @property
+    def task(self) -> str:
+        """
+        Get task function to execute
+
+        Returns
+        -------
+        str
+        """
+        task_map = {
+            TaskType.CPU_TASK: "featurebyte.worker.task_executor.execute_cpu_task",
+            TaskType.IO_TASK: "featurebyte.worker.task_executor.execute_io_task",
+        }
+        return task_map[self.task_type]
+
+    @property
+    def queue(self) -> str:
+        """
+        Get queue to use for task
+
+        Returns
+        -------
+        str
+        """
+        queue_map = {
+            TaskType.CPU_TASK: "cpu_task",
+            TaskType.IO_TASK: "io_task",
+        }
+        queue_name = queue_map[self.task_type]
+        if self.priority > 0:
+            queue_name = f"{queue_name}:{self.priority}"
+        return queue_name
 
     @property
     def task_output_path(self) -> Optional[str]:

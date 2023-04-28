@@ -8,11 +8,13 @@ from typing import Any, cast
 import importlib
 import json
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.tile import TileTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.manager import SessionManager
 from featurebyte.worker.task.base import BaseTask
+
+logger = get_logger(__name__)
 
 
 class TileTask(BaseTask):

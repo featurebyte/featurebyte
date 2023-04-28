@@ -14,7 +14,7 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.exception import TileScheduleNotSupportedError
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
@@ -26,6 +26,7 @@ from featurebyte.tile.scheduler import TileScheduler
 from featurebyte.tile.sql_template import tm_retrieve_tile_job_audit_logs
 
 TILE_COMPUTE_PROGRESS_MAX_PERCENT = 90  #  Progress percentage to report at end of tile computation
+logger = get_logger(__name__)
 
 
 class TileManager(BaseModel):

@@ -13,7 +13,7 @@ from cachetools import TTLCache
 from pydantic import BaseModel
 
 from featurebyte.enum import SourceType
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
@@ -31,6 +31,9 @@ SOURCE_TYPE_SESSION_MAP = {
 }
 
 session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
+
+
+logger = get_logger(__name__)
 
 
 async def get_new_session(item: str, credential_params: str) -> BaseSession:

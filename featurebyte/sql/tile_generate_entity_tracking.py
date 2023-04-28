@@ -3,10 +3,12 @@ Tile Generate entity tracking Job script
 """
 from typing import Any, List
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
 from featurebyte.sql.common import construct_create_table_query, retry_sql
+
+logger = get_logger(__name__)
 
 
 class TileGenerateEntityTracking(BaselSqlModel):

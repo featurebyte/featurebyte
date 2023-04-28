@@ -11,7 +11,7 @@ import pandas as pd
 from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.base import DEFAULT_CATALOG_ID
@@ -20,6 +20,8 @@ from featurebyte.persistent.base import Persistent
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.session.base import BaseSession
+
+logger = get_logger(__name__)
 
 
 class TileColumnTypeExtractor:

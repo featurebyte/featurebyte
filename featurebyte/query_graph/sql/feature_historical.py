@@ -15,7 +15,7 @@ from sqlglot import expressions
 
 from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
@@ -34,6 +34,9 @@ from featurebyte.tile.manager import TILE_COMPUTE_PROGRESS_MAX_PERCENT
 from featurebyte.tile.tile_cache import TileCache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
+
+
+logger = get_logger(__name__)
 
 
 class ObservationSet(ABC):

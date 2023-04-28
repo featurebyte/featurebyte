@@ -51,7 +51,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
 
         # check celery task submission
         celery.send_task.assert_called_with(
-            "featurebyte.worker.task_executor.execute_task",
+            payload.task,
             kwargs={
                 "user_id": str(user_id),
                 "output_document_id": str(payload.output_document_id),
@@ -59,6 +59,8 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
                 "catalog_id": str(payload.catalog_id),
                 "output_collection_name": payload.output_collection_name,
                 "task_output_path": payload.task_output_path,
+                "task_type": "io_task",
+                "priority": 0,
             },
         )
 
