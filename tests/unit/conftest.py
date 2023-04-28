@@ -790,6 +790,7 @@ def patched_observation_table_service():
                 {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
                 {"name": "cust_id", "dtype": "INT"},
             ],
+            "num_rows": 100,
             "most_recent_point_in_time": "2023-01-15 10:00:00",
         }
 
@@ -818,6 +819,12 @@ def snowflake_execute_query_batch_reqeust_table_patcher():
                     {
                         "column_name": "cust_id",
                         "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                    }
+                ]
+            elif "COUNT(*)" in query:
+                res = [
+                    {
+                        "row_count": 500,
                     }
                 ]
             else:

@@ -29,7 +29,8 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask):
             document_id=payload.feature_store_id
         )
         db_session = await self.get_db_session(feature_store)
-        location = await self.app_container.batch_request_table_service.generate_materialized_table_location(
+        service = self.app_container.batch_request_table_service
+        location = await service.generate_materialized_table_location(
             self.get_credential,
             payload.feature_store_id,
         )
@@ -40,10 +41,8 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask):
         )
 
         async with self.drop_table_on_error(db_session, location.table_details):
-            table_schema = await db_session.list_table_schema(
-                table_name=location.table_details.table_name,
-                database_name=location.table_details.database_name,
-                schema_name=location.table_details.schema_name,
+            columns_info, num_rows = await service.get_columns_info_and_num_rows(
+                db_session, location.table_details
             )
             logger.debug("Creating a new BatchRequestTable", extras=location.table_details.dict())
             batch_request_table = BatchRequestTableModel(
@@ -53,9 +52,8 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask):
                 location=location,
                 context_id=payload.context_id,
                 request_input=payload.request_input,
-                columns_info=[
-                    ColumnSpec(name=name, dtype=var_type) for name, var_type in table_schema.items()
-                ],
+                columns_info=columns_info,
+                num_rows=num_rows,
             )
             await self.app_container.batch_request_table_service.create_document(
                 batch_request_table

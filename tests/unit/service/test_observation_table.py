@@ -44,6 +44,7 @@ def observation_table_from_source_table_fixture(event_table):
             {"name": "b", "dtype": "INT"},
             {"name": "c", "dtype": "INT"},
         ],
+        num_rows=1000,
         most_recent_point_in_time="2023-01-15T10:00:00",
     )
 
@@ -117,6 +118,7 @@ async def test_validate__missing_point_in_time(observation_table_service, table_
         name="mock_session",
         spec=BaseSession,
         list_table_schema=Mock(side_effect=mock_list_table_schema),
+        source_type=SourceType.SNOWFLAKE,
     )
     with pytest.raises(MissingPointInTimeColumnError):
         await observation_table_service.validate_materialized_table_and_get_metadata(
@@ -169,6 +171,7 @@ async def test_validate__supported_type_point_in_time(observation_table_service,
         name="mock_session",
         spec=BaseSession,
         list_table_schema=Mock(side_effect=mock_list_table_schema),
+        source_type=SourceType.SNOWFLAKE,
     )
     with pytest.raises(UnsupportedPointInTimeColumnTypeError) as exc:
         await observation_table_service.validate_materialized_table_and_get_metadata(

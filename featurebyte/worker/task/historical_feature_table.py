@@ -60,10 +60,11 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
                 output_table_details=location.table_details,
                 progress_callback=self.update_progress,
             )
-            table_schema = await db_session.list_table_schema(
-                table_name=location.table_details.table_name,
-                database_name=location.table_details.database_name,
-                schema_name=location.table_details.schema_name,
+            (
+                columns_info,
+                num_rows,
+            ) = await historical_feature_table_service.get_columns_info_and_num_rows(
+                db_session, location.table_details
             )
             logger.debug(
                 "Creating a new HistoricalFeatureTable", extras=location.table_details.dict()
@@ -75,8 +76,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
                 location=location,
                 observation_table_id=payload.observation_table_id,
                 feature_list_id=payload.featurelist_get_historical_features.feature_list_id,
-                columns_info=[
-                    ColumnSpec(name=name, dtype=var_type) for name, var_type in table_schema.items()
-                ],
+                columns_info=columns_info,
+                num_rows=num_rows,
             )
             await historical_feature_table_service.create_document(historical_feature_table)

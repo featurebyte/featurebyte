@@ -58,20 +58,6 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 
-    @pytest.fixture(autouse=True)
-    def auto_patch_snowflake_execute_query(
-        self,
-        snowflake_connector,
-        snowflake_query_map,
-        snowflake_execute_query_batch_request_table_patcher,
-    ):
-        """Patch SnowflakeSession.execute_query to return mock data"""
-        _ = snowflake_connector
-        with snowflake_execute_query_batch_request_table_patcher(
-            snowflake_query_map, True
-        ) as mock_execute_query:
-            yield mock_execute_query
-
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """
         Setup for post route
@@ -160,6 +146,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
                 "user_id": user_id,
                 "batch_request_table_id": ObjectId(),  # different batch request table id
                 "columns_info": [],
+                "num_rows": 500,
                 "location": create_success_response_dict["location"],
             },
             user_id=user_id,

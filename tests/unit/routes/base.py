@@ -11,6 +11,7 @@ from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
 from time import sleep
+from unittest import mock
 from unittest.mock import Mock
 
 import pandas as pd
@@ -23,6 +24,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.table import TableCreate
+from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 
 
 class BaseApiTestSuite:
@@ -1234,3 +1236,39 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
                 """
             ).strip()
         )
+
+    @pytest.fixture(autouse=True)
+    def auto_patch_snowflake_execute_query(
+        self,
+        snowflake_connector,
+        snowflake_query_map,
+    ):
+        """Patch SnowflakeSession.execute_query to return mock data"""
+        _ = snowflake_connector
+
+        def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
+            _ = timeout
+            if query.startswith('SHOW COLUMNS IN "sf_database"."sf_schema"'):
+                res = [
+                    {
+                        "column_name": "cust_id",
+                        "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                    }
+                ]
+            elif "COUNT(*)" in query:
+                res = [
+                    {
+                        "row_count": 500,
+                    }
+                ]
+            else:
+                res = snowflake_query_map.get(query)
+            if res is not None:
+                return pd.DataFrame(res)
+            return None
+
+        with mock.patch(
+            "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+        ) as mock_execute_query:
+            mock_execute_query.side_effect = side_effect
+            yield mock_execute_query

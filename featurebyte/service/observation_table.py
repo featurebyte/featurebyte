@@ -124,7 +124,7 @@ class ObservationTableService(
 
     @staticmethod
     async def validate_materialized_table_and_get_metadata(
-        db_session: BaseSession, destination: TableDetails
+        db_session: BaseSession, table_details: TableDetails
     ) -> Dict[str, Any]:
         """
         Validate and get additional metadata for the materialized observation table.
@@ -133,7 +133,7 @@ class ObservationTableService(
         ----------
         db_session: BaseSession
             Database session
-        destination: TableDetails
+        table_details: TableDetails
             Table details of the materialized table
 
         Returns
@@ -147,23 +147,19 @@ class ObservationTableService(
         UnsupportedPointInTimeColumnTypeError
             If the point in time column is not of timestamp type.
         """
-        table_schema = await db_session.list_table_schema(
-            table_name=destination.table_name,
-            database_name=destination.database_name,
-            schema_name=destination.schema_name,
+        columns_info, num_rows = await ObservationTableService.get_columns_info_and_num_rows(
+            db_session=db_session,
+            table_details=table_details,
         )
-        columns_info = [
-            ColumnSpec(name=column_name, dtype=var_type)
-            for column_name, var_type in table_schema.items()
-        ]
+        columns_info_mapping = {info.name: info for info in columns_info}
 
-        if SpecialColumnName.POINT_IN_TIME not in table_schema:
+        if SpecialColumnName.POINT_IN_TIME not in columns_info_mapping:
             raise MissingPointInTimeColumnError(
                 f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
             )
 
-        point_in_time_dtype = table_schema[SpecialColumnName.POINT_IN_TIME]
-        if table_schema[SpecialColumnName.POINT_IN_TIME] not in {
+        point_in_time_dtype = columns_info_mapping[SpecialColumnName.POINT_IN_TIME].dtype
+        if point_in_time_dtype not in {
             DBVarType.TIMESTAMP,
             DBVarType.TIMESTAMP_TZ,
         }:
@@ -173,9 +169,10 @@ class ObservationTableService(
 
         most_recent_point_in_time = await ObservationTableService.get_most_recent_point_in_time(
             db_session=db_session,
-            destination=destination,
+            destination=table_details,
         )
         return {
             "columns_info": columns_info,
+            "num_rows": num_rows,
             "most_recent_point_in_time": most_recent_point_in_time,
         }
