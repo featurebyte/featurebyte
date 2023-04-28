@@ -443,24 +443,15 @@ def test_get_feature_entity_col(production_ready_feature):
 
 
 @pytest.fixture(name="feature_with_entity_ids")
-def get_feature_with_entity_ids(snowflake_feature_store):
+def get_feature_with_entity_ids(float_feature):
     """
     Get a function that helps us create test features with configurable entity IDs.
     """
 
     def get_feature(entity_ids):
-        return Feature(
-            entity_ids=entity_ids,
-            dtype=DBVarType.INT,
-            node_name="input_1",
-            tabular_source=TabularSource(
-                feature_store_id=PydanticObjectId(ObjectId()),
-                table_details=TableDetails(
-                    table_name="random",
-                ),
-            ),
-            feature_store=snowflake_feature_store,
-        )
+        feature = float_feature.copy()
+        feature.__dict__.update({"entity_ids": entity_ids[:]})
+        return feature
 
     return get_feature
 
