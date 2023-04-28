@@ -25,10 +25,10 @@ def user():
     return user
 
 
-@pytest.fixture(name="deployed_feature_list", scope="module")
-def deployed_feature_list_fixture(event_table):
+@pytest.fixture(name="deployed_feature_list_deployment", scope="module")
+def deployed_feature_list_and_deployment_fixture(event_table):
     """
-    Fixture for a deployed feature list
+    Fixture for a deployed feature list & deployment
     """
     event_view = event_table.get_view()
     event_view["ÀMOUNT"].fillna(0)
@@ -55,7 +55,7 @@ def deployed_feature_list_fixture(event_table):
         deployment = features.deploy(make_production_ready=True)
         deployment.enable()
 
-        yield features
+        yield features, deployment
 
 
 @pytest.fixture(name="migration_service")
@@ -109,7 +109,7 @@ async def patch_list_tables_to_exclude_datasets(session, dataset_registration_he
 async def test_drop_all_and_recreate(
     config,
     session,
-    deployed_feature_list,
+    deployed_feature_list_deployment,
     migration_service,
     feature_store,
     periodic_service,
@@ -118,6 +118,7 @@ async def test_drop_all_and_recreate(
     Test dropping all objects first then use WorkingSchemaService to restore it
     """
     snowflake_session = session
+    deployed_feature_list, deployment = deployed_feature_list_deployment
 
     async def _list_objects(obj):
         query = f"SHOW {obj} IN {snowflake_session.database_name}.{snowflake_session.schema_name}"
@@ -158,7 +159,7 @@ async def test_drop_all_and_recreate(
     client = config.get_client()
 
     # Make an online request for reference
-    res = make_online_request(client, deployed_feature_list, entity_serving_names)
+    res = make_online_request(client, deployment, entity_serving_names)
     assert res.status_code == 200
     expected_online_result = res.json()
     original_tasks, task_ids = await _get_tasks()
@@ -181,7 +182,7 @@ async def test_drop_all_and_recreate(
     assert num_tasks == 0
 
     # Check online requests can no longer be made
-    res = make_online_request(client, deployed_feature_list, entity_serving_names)
+    res = make_online_request(client, deployment, entity_serving_names)
     assert res.status_code == 500
     assert "SQL compilation error" in res.json()["detail"]
 
@@ -195,6 +196,6 @@ async def test_drop_all_and_recreate(
     assert restored_metadata["MIGRATION_VERSION"] == 8
 
     # Check online request can be made and produces same result
-    res = make_online_request(client, deployed_feature_list, entity_serving_names)
+    res = make_online_request(client, deployment, entity_serving_names)
     assert res.status_code == 200
     assert res.json() == expected_online_result

@@ -380,8 +380,6 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_default_version_mode"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_status"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_features"]),
-        # TODO: get_online_serving_code should be under deployment. Requires code mv first.
-        DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.get_online_serving_code"]),
     ]
 
 
@@ -790,6 +788,7 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
         DocLayoutItem([DEPLOYMENT, SERVE, "Deployment.compute_batch_feature_table"]),
+        DocLayoutItem([DEPLOYMENT, SERVE, "Deployment.get_online_serving_code"]),
     ]
 
 

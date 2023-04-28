@@ -10,8 +10,7 @@ from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
-from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.schema.common.base import BaseInfo, PaginationMixin
+from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
 
@@ -49,14 +48,3 @@ class HistoricalFeatureTableListRecord(BaseMaterializedTableListRecord):
     def _extract(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         values["feature_store_id"] = values["location"]["feature_store_id"]
         return values
-
-
-class HistoricalFeatureTableInfo(BaseInfo):
-    """
-    Schema for historical feature table info
-    """
-
-    observation_table_name: str
-    feature_list_name: str
-    feature_list_version: str
-    table_details: TableDetails

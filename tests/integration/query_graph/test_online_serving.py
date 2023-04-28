@@ -12,7 +12,7 @@ from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_expr
-from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
 
 
@@ -141,7 +141,7 @@ async def test_online_serving_sql(
         )
 
         # Check online_features route
-        check_online_features_route(feature_list, config, df_historical, columns)
+        check_online_features_route(deployment, config, df_historical, columns)
 
         # check get batch features
         batch_request_table = await create_batch_request_table_from_dataframe(
@@ -166,7 +166,7 @@ async def test_online_serving_sql(
         assert deployment.enabled is False
 
 
-def check_online_features_route(feature_list, config, df_historical, columns):
+def check_online_features_route(deployment, config, df_historical, columns):
     """
     Online enable a feature and call the online features endpoint
     """
@@ -174,11 +174,11 @@ def check_online_features_route(feature_list, config, df_historical, columns):
 
     user_ids = [5, -999]
     entity_serving_names = [{"üser id": user_id} for user_id in user_ids]
-    data = FeatureListGetOnlineFeatures(entity_serving_names=entity_serving_names)
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
 
     tic = time.time()
     res = client.post(
-        f"/feature_list/{str(feature_list.id)}/online_features",
+        f"/deployment/{deployment.id}/online_features",
         json=data.json_dict(),
     )
     assert res.status_code == 200

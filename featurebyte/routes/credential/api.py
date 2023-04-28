@@ -21,13 +21,14 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DeleteResponse
 from featurebyte.schema.credential import (
     CredentialCreate,
     CredentialList,
     CredentialRead,
     CredentialUpdate,
 )
-from featurebyte.schema.info import CredentialInfo, DeleteResponse
+from featurebyte.schema.info import CredentialInfo
 
 router = APIRouter(prefix="/credential")
 

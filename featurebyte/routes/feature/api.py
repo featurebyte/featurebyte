@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
     VersionQuery,
 )
+from featurebyte.schema.common.base import DeleteResponse
 from featurebyte.schema.feature import (
     FeatureCreate,
     FeatureModelResponse,
@@ -31,7 +32,7 @@ from featurebyte.schema.feature import (
     FeatureSQL,
     FeatureUpdate,
 )
-from featurebyte.schema.info import DeleteResponse, FeatureInfo
+from featurebyte.schema.info import FeatureInfo
 
 router = APIRouter(prefix="/feature")
 

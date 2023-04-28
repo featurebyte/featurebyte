@@ -7,8 +7,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import Deployment, FeatureList
-from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from featurebyte import FeatureList
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import assert_preview_result_equal, make_online_request
 
 
@@ -265,7 +265,7 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
         deployment.enable()
         params = preview_params.copy()
         params.pop("POINT_IN_TIME")
-        online_result = make_online_request(config.get_client(), feature_list, [params])
+        online_result = make_online_request(config.get_client(), deployment, [params])
         assert online_result.json()["features"] == [
             {
                 "üser id": 1,
@@ -320,7 +320,7 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
         deployment.enable()
         params = preview_params.copy()
         params.pop("POINT_IN_TIME")
-        online_result = make_online_request(config.get_client(), feature_list, [params])
+        online_result = make_online_request(config.get_client(), deployment, [params])
         assert online_result.json()["features"] == [
             {"üser id": 1, "Current User Status Offset 90d": "STÀTUS_CODE_39"}
         ]
@@ -447,9 +447,9 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
 
-    data = FeatureListGetOnlineFeatures(entity_serving_names=[{"row_number": 1}])
+    data = OnlineFeaturesRequestPayload(entity_serving_names=[{"row_number": 1}])
     res = config.get_client().post(
-        f"/feature_list/{str(feature_list.id)}/online_features",
+        f"/deployment/{deployment.id}/online_features",
         json=data.json_dict(),
     )
     assert res.status_code == 200

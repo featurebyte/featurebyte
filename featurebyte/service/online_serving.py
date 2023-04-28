@@ -14,7 +14,7 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.online_serving import get_online_features
-from featurebyte.schema.feature_list import OnlineFeaturesResponseModel
+from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService

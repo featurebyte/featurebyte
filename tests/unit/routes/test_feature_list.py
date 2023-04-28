@@ -455,7 +455,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert negative_response.json()["total"] == 0, negative_response.json()
 
     def test_update_200__deploy_with_make_production_ready(
-        self, test_api_client_persistent, create_success_response, api_object_to_id
+        self, test_api_client_persistent, create_success_response
     ):
         """Test update (success) with make production ready"""
         test_api_client, _ = test_api_client_persistent
@@ -487,7 +487,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
         version = get_version()
-        feature_list_id = api_object_to_id["feature_list_single"]
         expected_info_response = {
             "name": "sf_feature_list",
             "entities": [
@@ -505,7 +504,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "production_ready_fraction": {"this": 1.0, "default": 1.0},
             "versions_info": None,
             "deployed": True,
-            "serving_endpoint": f"/feature_list/{feature_list_id}/online_features",
             "catalog_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
@@ -649,7 +647,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "version": {"this": version, "default": version},
             "production_ready_fraction": {"this": 0, "default": 0},
             "deployed": False,
-            "serving_endpoint": None,
             "catalog_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
@@ -794,126 +791,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         groupby_node["names"] = ["sum_30m"]
         groupby_node["windows"] = ["30m"]
         assert feature_clusters[0] == expected_feature_cluster
-
-    def test_get_online_features__200(
-        self,
-        test_api_client_persistent,
-        create_success_response,
-        mock_get_session,
-    ):
-        """Test feature list get_online_features"""
-        test_api_client, _ = test_api_client_persistent
-
-        async def mock_execute_query(query):
-            _ = query
-            return pd.DataFrame([{"cust_id": 1, "feature_value": 123.0}])
-
-        mock_session = mock_get_session.return_value
-        mock_session.execute_query = mock_execute_query
-
-        # Deploy feature list
-        feature_list_doc = create_success_response.json()
-        self._make_production_ready_and_deploy(test_api_client, feature_list_doc)
-
-        # Request online features
-        feature_list_id = feature_list_doc["_id"]
-        data = {"entity_serving_names": [{"cust_id": 1}]}
-        response = test_api_client.post(
-            f"{self.base_route}/{feature_list_id}/online_features",
-            data=json.dumps(data),
-        )
-        assert response.status_code == HTTPStatus.OK, response.content
-
-        # Check result
-        assert response.json() == {"features": [{"cust_id": 1.0, "feature_value": 123.0}]}
-
-    def test_get_online_features__not_deployed(
-        self,
-        test_api_client_persistent,
-        create_success_response,
-    ):
-        """Test feature list get_online_features"""
-        test_api_client, _ = test_api_client_persistent
-        feature_list_doc = create_success_response.json()
-
-        # Request online features before deploying
-        feature_list_id = feature_list_doc["_id"]
-        data = {"entity_serving_names": [{"cust_id": 1}]}
-        response = test_api_client.post(
-            f"{self.base_route}/{feature_list_id}/online_features",
-            data=json.dumps(data),
-        )
-
-        # Check error
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": "Feature List is not online enabled"}
-
-    @pytest.mark.parametrize(
-        "num_rows, expected_msg",
-        [
-            (1000, "ensure this value has at most 50 items"),
-            (0, "ensure this value has at least 1 items"),
-        ],
-    )
-    def test_get_online_features__invalid_number_of_rows(
-        self,
-        test_api_client_persistent,
-        create_success_response,
-        num_rows,
-        expected_msg,
-    ):
-        """Test feature list get_online_features with invalid number of rows"""
-        test_api_client, _ = test_api_client_persistent
-        feature_list_doc = create_success_response.json()
-
-        # Request online features before deploying
-        feature_list_id = feature_list_doc["_id"]
-        data = {"entity_serving_names": [{"cust_id": 1}] * num_rows}
-        response = test_api_client.post(
-            f"{self.base_route}/{feature_list_id}/online_features",
-            data=json.dumps(data),
-        )
-
-        # Check error
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"][0]["msg"] == expected_msg
-
-    @pytest.mark.parametrize(
-        "missing_value",
-        [np.nan, float("nan"), float("inf")],
-    )
-    def test_get_online_features__nan(
-        self,
-        test_api_client_persistent,
-        create_success_response,
-        mock_get_session,
-        missing_value,
-    ):
-        """Test feature list get_online_features"""
-        test_api_client, _ = test_api_client_persistent
-
-        async def mock_execute_query(query):
-            _ = query
-            return pd.DataFrame([{"cust_id": 1, "feature_value": missing_value}])
-
-        mock_session = mock_get_session.return_value
-        mock_session.execute_query = mock_execute_query
-
-        # Deploy feature list
-        feature_list_doc = create_success_response.json()
-        self._make_production_ready_and_deploy(test_api_client, feature_list_doc)
-
-        # Request online features
-        feature_list_id = feature_list_doc["_id"]
-        data = {"entity_serving_names": [{"cust_id": 1}]}
-        response = test_api_client.post(
-            f"{self.base_route}/{feature_list_id}/online_features",
-            data=json.dumps(data),
-        )
-        assert response.status_code == HTTPStatus.OK, response.content
-
-        # Check result
-        assert response.json() == {"features": [{"cust_id": 1.0, "feature_value": None}]}
 
     @freeze_time("2022-01-02 10:00:00")
     def test_get_feature_job_logs_200(

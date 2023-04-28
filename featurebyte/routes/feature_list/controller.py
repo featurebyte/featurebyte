@@ -15,7 +15,6 @@ from fastapi.responses import StreamingResponse
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
     DocumentDeletionError,
-    FeatureListNotOnlineEnabledError,
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
     TooRecentPointInTimeError,
@@ -29,13 +28,11 @@ from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
-    FeatureListGetOnlineFeatures,
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListSQL,
     FeatureListUpdate,
-    OnlineFeaturesResponseModel,
 )
 from featurebyte.schema.info import FeatureListInfo
 from featurebyte.service.deploy import DeployService
@@ -45,7 +42,6 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
-from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
@@ -65,25 +61,23 @@ class FeatureListController(
         self,
         service: FeatureListService,
         feature_list_namespace_service: FeatureListNamespaceService,
+        feature_service: FeatureService,
         feature_readiness_service: FeatureReadinessService,
         deploy_service: DeployService,
         preview_service: PreviewService,
         version_service: VersionService,
         info_service: InfoService,
-        online_serving_service: OnlineServingService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
-        feature_service: FeatureService,
     ):
         super().__init__(service)
         self.feature_list_namespace_service = feature_list_namespace_service
+        self.feature_service = feature_service
         self.feature_readiness_service = feature_readiness_service
         self.deploy_service = deploy_service
         self.preview_service = preview_service
         self.version_service = version_service
         self.info_service = info_service
-        self.online_serving_service = online_serving_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
-        self.feature_service = feature_service
 
     async def create_feature_list(
         self, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
@@ -403,47 +397,6 @@ class FeatureListController(
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
-
-    async def get_online_features(
-        self,
-        feature_list_id: ObjectId,
-        data: FeatureListGetOnlineFeatures,
-        get_credential: Any,
-    ) -> OnlineFeaturesResponseModel:
-        """
-        Get historical features for Feature List
-
-        Parameters
-        ----------
-        feature_list_id: ObjectId
-            Id of the Feature List
-        data: FeatureListGetOnlineFeatures
-            FeatureListGetHistoricalFeatures object
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        OnlineFeaturesResponseModel
-
-        Raises
-        ------
-        HTTPException
-            Invalid request payload
-        """
-        feature_list = await self.service.get_document(feature_list_id)
-        try:
-            result = await self.online_serving_service.get_online_features_from_feature_list(
-                feature_list=feature_list,
-                request_data=data.entity_serving_names,
-                get_credential=get_credential,
-            )
-        except (FeatureListNotOnlineEnabledError, RuntimeError) as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
-            ) from exc
-        assert result is not None, result
-        return result
 
     async def get_feature_job_logs(
         self, feature_list_id: ObjectId, hour_limit: int, get_credential: Any

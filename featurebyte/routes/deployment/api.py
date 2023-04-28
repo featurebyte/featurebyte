@@ -1,11 +1,12 @@
 """
 Deployment API routes
 """
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
 from fastapi import APIRouter, Request
+from fastapi.responses import ORJSONResponse
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
@@ -21,11 +22,13 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.deployment import (
     DeploymentCreate,
-    DeploymentInfo,
     DeploymentList,
     DeploymentSummary,
     DeploymentUpdate,
+    OnlineFeaturesResponseModel,
 )
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
+from featurebyte.schema.info import DeploymentInfo
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/deployment")
@@ -127,6 +130,28 @@ async def get_deployment_info(
         document_id=deployment_id, verbose=verbose
     )
     return deployment_info
+
+
+@router.post(
+    "/{deployment_id}/online_features",
+    response_model=OnlineFeaturesResponseModel,
+    response_class=ORJSONResponse,
+)
+async def compute_online_features(
+    request: Request,
+    deployment_id: PydanticObjectId,
+    data: OnlineFeaturesRequestPayload,
+) -> OnlineFeaturesResponseModel:
+    """
+    Compute online features
+    """
+    controller = request.state.app_container.deployment_controller
+    result = await controller.compute_online_features(
+        deployment_id=deployment_id,
+        data=data,
+        get_credential=request.state.get_credential,
+    )
+    return cast(OnlineFeaturesResponseModel, result)
 
 
 @router.get("/summary/", response_model=DeploymentSummary)

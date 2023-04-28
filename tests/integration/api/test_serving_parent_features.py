@@ -6,7 +6,7 @@ import pytest
 import pytest_asyncio
 
 from featurebyte import Entity, FeatureList, Table
-from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 
 table_prefix = "TEST_SERVING_PARENT_FEATURES"
 
@@ -148,8 +148,8 @@ def customer_num_city_change_feature_fixture(tables):
     return feature
 
 
-@pytest.fixture(name="feature_list_with_child_entities", scope="module")
-def feature_list_with_child_entities_fixture(country_feature, mock_task_manager):
+@pytest.fixture(name="feature_list_deployment_with_child_entities", scope="module")
+def feature_list_deployment_with_child_entities_fixture(country_feature, mock_task_manager):
     _ = mock_task_manager
 
     feature_list = FeatureList([country_feature], name=f"{table_prefix}_country_list")
@@ -158,7 +158,8 @@ def feature_list_with_child_entities_fixture(country_feature, mock_task_manager)
     try:
         deployment = feature_list.deploy(make_production_ready=True)
         deployment.enable()
-        yield feature_list
+        assert deployment.enabled is True
+        yield feature_list, deployment
     finally:
         if deployment:
             deployment.disable()
@@ -180,6 +181,7 @@ def feature_list_with_parent_child_features_fixture(
     try:
         deployment = feature_list.deploy(make_production_ready=True)
         deployment.enable()
+        assert deployment.enabled is True
         yield feature_list
     finally:
         if deployment:
@@ -199,7 +201,9 @@ def feature_list_with_parent_child_features_fixture(
         ("2022-01-01 10:00:00", {"serving_event_id": 1}, np.nan),
     ],
 )
-def test_preview(feature_list_with_child_entities, point_in_time, provided_entity, expected):
+def test_preview(
+    feature_list_deployment_with_child_entities, point_in_time, provided_entity, expected
+):
     """
     Test serving parent features requiring multiple joins with different types of table
     """
@@ -213,12 +217,13 @@ def test_preview(feature_list_with_child_entities, point_in_time, provided_entit
     )
 
     # Preview feature
-    feature = feature_list_with_child_entities["Country Name"]
+    feature_list, deployment = feature_list_deployment_with_child_entities
+    feature = feature_list["Country Name"]
     df = feature.preview(pd.DataFrame([preview_params]))
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
     # Preview feature list
-    df = feature_list_with_child_entities.preview(pd.DataFrame([preview_params]))
+    df = feature_list.preview(pd.DataFrame([preview_params]))
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
 
@@ -250,7 +255,7 @@ def observations_set_with_expected_features_fixture():
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_historical_features(
-    feature_list_with_child_entities,
+    feature_list_deployment_with_child_entities,
     observations_set_with_expected_features,
 ):
     """
@@ -259,14 +264,15 @@ def test_historical_features(
     observations_set = observations_set_with_expected_features[
         ["POINT_IN_TIME", "serving_event_id"]
     ]
-    df = feature_list_with_child_entities.compute_historical_features(observations_set)
+    feature_list, deployment = feature_list_deployment_with_child_entities
+    df = feature_list.compute_historical_features(observations_set)
     df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
     pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_historical_features_with_serving_names_mapping(
-    feature_list_with_child_entities,
+    feature_list_deployment_with_child_entities,
     observations_set_with_expected_features,
 ):
     """
@@ -278,7 +284,8 @@ def test_historical_features_with_serving_names_mapping(
     observations_set = observations_set_with_expected_features[
         ["POINT_IN_TIME", "new_serving_event_id"]
     ]
-    df = feature_list_with_child_entities.compute_historical_features(
+    feature_list, deployment = feature_list_deployment_with_child_entities
+    df = feature_list.compute_historical_features(
         observations_set,
         serving_names_mapping={"serving_event_id": "new_serving_event_id"},
     )
@@ -287,13 +294,14 @@ def test_historical_features_with_serving_names_mapping(
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_online_features(config, feature_list_with_child_entities):
+def test_online_features(config, feature_list_deployment_with_child_entities):
     """
     Test requesting online features
     """
-    data = FeatureListGetOnlineFeatures(entity_serving_names=[{"serving_event_id": 1}])
+    data = OnlineFeaturesRequestPayload(entity_serving_names=[{"serving_event_id": 1}])
+    _, deployment = feature_list_deployment_with_child_entities
     res = config.get_client().post(
-        f"/feature_list/{str(feature_list_with_child_entities.id)}/online_features",
+        f"/deployment/{deployment.id}/online_features",
         json=data.json_dict(),
     )
     assert res.status_code == 200
@@ -335,9 +343,18 @@ def test_online_serving_code_uses_primary_entity(
     Check that online serving code is based on primary entity
     """
     time.sleep(1)
-    online_serving_code = feature_list_with_parent_child_features.get_online_serving_code("python")
+    deployment = feature_list_with_parent_child_features.deploy(
+        make_production_ready=True,
+        deployment_name="deployment_for_testing_online_serving_uses_primary_entity",
+    )
+    deployment.enable()
+    assert deployment.enabled is True
+    online_serving_code = deployment.get_online_serving_code("python")
     expected_signature = 'request_features([{"serving_cust_id": 1000}])'
     assert expected_signature in online_serving_code
+
+    # Clean up
+    deployment.disable()
 
 
 def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_feature):

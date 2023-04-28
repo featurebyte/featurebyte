@@ -74,7 +74,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
         - [Feature.preview](/reference/featurebyte.api.feature.Feature.preview/)
         - [FeatureList.preview](/reference/featurebyte.api.feature_list.FeatureList.preview/)
         - [FeatureList.compute_historical_features](/reference/featurebyte.api.feature_list.FeatureList.compute_historical_features/)
-        - [FeatureList.get_online_serving_code](/reference/featurebyte.api.feature_list.FeatureList.get_online_serving_code/)
+        - [Deployment.get_online_serving_code](/reference/featurebyte.api.deployment.Deployment.get_online_serving_code/)
         """
         try:
             return self.cached_model.serving_names

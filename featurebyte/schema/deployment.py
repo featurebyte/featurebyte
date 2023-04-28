@@ -1,18 +1,16 @@
 """
 Pydantic schemas for handling API payloads for deployment routes
 """
-from typing import List, Optional
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
-from featurebyte.schema.common.base import (
-    BaseDocumentServiceUpdateSchema,
-    BaseInfo,
-    PaginationMixin,
-)
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
 class DeploymentCreate(FeatureByteBaseModel):
@@ -50,12 +48,9 @@ class DeploymentSummary(FeatureByteBaseModel):
     num_feature: int
 
 
-class DeploymentInfo(BaseInfo):
+class OnlineFeaturesResponseModel(FeatureByteBaseModel):
     """
-    Schema for deployment info
+    Response model for online features
     """
 
-    feature_list_name: str
-    feature_list_version: str
-    num_feature: int
-    enabled: bool
+    features: List[Dict[str, Any]]

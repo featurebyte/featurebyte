@@ -22,7 +22,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
-from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 
 
 def reset_global_graph():
@@ -329,13 +329,13 @@ def iet_entropy(view, group_by_col, window, name, feature_job_setting=None):
     return feature
 
 
-def make_online_request(client, feature_list, entity_serving_names):
+def make_online_request(client, deployment, entity_serving_names):
     """
     Helper function to make an online request via REST API
     """
-    data = FeatureListGetOnlineFeatures(entity_serving_names=entity_serving_names)
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
     res = client.post(
-        f"/feature_list/{str(feature_list.id)}/online_features",
+        f"/deployment/{deployment.id}/online_features",
         json=data.json_dict(),
     )
     return res

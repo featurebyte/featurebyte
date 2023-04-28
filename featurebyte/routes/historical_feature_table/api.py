@@ -25,9 +25,9 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableCreate,
-    HistoricalFeatureTableInfo,
     HistoricalFeatureTableList,
 )
+from featurebyte.schema.info import HistoricalFeatureTableInfo
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/historical_feature_table")

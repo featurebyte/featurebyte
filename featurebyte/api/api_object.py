@@ -842,6 +842,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
             raise RecordUpdateException(response=update_response)
         if update_response.json():
             self._poll_async_task(task_response=update_response, delay=delay, retrieve_result=False)
+        # call get to update the object cache as retrieve result is False
+        self.get_by_id(self.id)
 
 
 class SavableApiObject(ApiObject):
