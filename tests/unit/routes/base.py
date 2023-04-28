@@ -1151,7 +1151,7 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         doc_id = create_success_response.json()["_id"]
         response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.status_code == HTTPStatus.ACCEPTED, response.json()
 
         # check that the task is completed with success
         response = self.wait_for_results(test_api_client, response)
