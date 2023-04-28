@@ -100,9 +100,9 @@ class BaseMaterializedTableController(
         StreamingResponse
             StreamingResponse object
         """
-        batch_feature_table = await self.service.get_document(document_id=document_id)
+        table = await self.service.get_document(document_id=document_id)
         bytestream = await self.preview_service.download_table(
-            location=batch_feature_table.location,
+            location=table.location,
             get_credential=get_credential,
         )
         assert bytestream is not None

@@ -1,8 +1,6 @@
 """
 Unit tests for HistoricalFeatureTable class
 """
-from unittest import mock
-
 import pytest
 
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
