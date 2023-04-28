@@ -2,6 +2,7 @@
 Unit test for Series
 """
 import textwrap
+from contextlib import contextmanager
 from unittest.mock import patch
 
 import numpy as np
@@ -1210,10 +1211,15 @@ def test_operation_structure_cache(float_series):
     """
     new_series = (float_series + 123.45) * 678.90
 
+    @contextmanager
+    def _patch_operation_structure_extractor():
+        with patch("featurebyte.query_graph.graph.OperationStructureExtractor") as mock_cls:
+            assert mock_cls.call_count == 0
+            mock_cls.side_effect = OperationStructureExtractor
+            yield mock_cls
+
     # Check repeated access does not trigger recalculation of operation structure
-    with patch("featurebyte.query_graph.graph.OperationStructureExtractor") as mock_cls:
-        assert mock_cls.call_count == 0
-        mock_cls.side_effect = OperationStructureExtractor
+    with _patch_operation_structure_extractor() as mock_cls:
         op_struct_1 = new_series.operation_structure
         op_struct_2 = new_series.operation_structure
         _ = new_series.row_index_lineage
@@ -1223,16 +1229,12 @@ def test_operation_structure_cache(float_series):
 
     # Check another series pointing at the same node can reuse the same cached operation structure
     another_series = (float_series + 123.45) * 678.90
-    with patch("featurebyte.query_graph.graph.OperationStructureExtractor") as mock_cls:
-        assert mock_cls.call_count == 0
-        mock_cls.side_effect = OperationStructureExtractor
+    with _patch_operation_structure_extractor() as mock_cls:
         _ = another_series.operation_structure
     assert mock_cls.call_count == 0
 
     # Check that cache is invalidated when series is modified in-place
     new_series.fillna(0)
-    with patch("featurebyte.query_graph.graph.OperationStructureExtractor") as mock_cls:
-        assert mock_cls.call_count == 0
-        mock_cls.side_effect = OperationStructureExtractor
+    with _patch_operation_structure_extractor() as mock_cls:
         _ = new_series.operation_structure
     assert mock_cls.call_count == 1
