@@ -156,7 +156,6 @@ class TaskManager(AbstractTaskManager):
         )
 
         if document:
-            logger.debug("Task document", extra={"document": document})
             output_path = document.get("kwargs", {}).get("task_output_path")
             payload = document.get("kwargs", {})
             traceback = document.get("traceback")
