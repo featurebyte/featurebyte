@@ -1,12 +1,9 @@
 name: test
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
-## GCR_PYPI_CREDENTIALS_RW_B64   | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
-## GCR_DOCKER_CREDENTIALS_R_B64  | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Docker     ] read
 ## SLACK_OAUTH                   | Slack App OAUTH Token           | [Slack                          ] write message
 ## SNOWFLAKE_PASSWORD            | Snowflake password              | [Snowflake                      ] password
 ## GIST_SECRET                   | Github Gist Token               | [Github | Gist                  ] Write
-## DATABRICKS_TOKEN              | Databricks access token         | [Databricks                     ] password
 on:
   workflow_dispatch:
   pull_request:
