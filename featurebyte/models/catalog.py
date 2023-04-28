@@ -8,8 +8,9 @@ from typing import List
 from datetime import datetime
 
 import pymongo
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, validator
 
+from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -50,6 +51,11 @@ class CatalogModel(FeatureByteBaseDocumentModel):
     default_feature_store_ids: List[PydanticObjectId] = Field(
         default_factory=list,
         description="List of default feature store IDs that are associated with the catalog.",
+    )
+
+    # pydantic validators
+    _sort_ids_validator = validator("default_feature_store_ids", allow_reuse=True)(
+        construct_sort_validator()
     )
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
