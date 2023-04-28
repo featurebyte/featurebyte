@@ -7,7 +7,6 @@ from typing import Any, cast
 
 from featurebyte.logger import logger
 from featurebyte.models.batch_request_table import BatchRequestTableModel
-from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.schema.worker.task.batch_request_table import BatchRequestTableTaskPayload
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin

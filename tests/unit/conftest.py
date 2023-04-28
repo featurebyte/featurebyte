@@ -5,7 +5,6 @@ Common test fixtures used across unit test directories
 import json
 import tempfile
 import traceback
-from contextlib import contextmanager
 from datetime import datetime
 from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
@@ -807,6 +806,7 @@ def snowflake_execute_query_invalid_batch_request_table(snowflake_connector, sno
     Fixture to patch SnowflakeSession.execute_query to return invalid shcema for batch request table
     creation task (missing a required entity column)
     """
+    _ = snowflake_connector
 
     def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
         _ = timeout
@@ -898,6 +898,7 @@ def historical_feature_table_fixture(
     """
     Fixture for a HistoricalFeatureTable
     """
+    _ = snowflake_execute_query_for_materialized_table
     feature_list = FeatureList([float_feature], name="feature_list_for_historical_feature_table")
     feature_list.save()
     with patch(

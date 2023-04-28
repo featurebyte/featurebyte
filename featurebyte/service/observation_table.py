@@ -16,7 +16,7 @@ from featurebyte.exception import (
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.materialisation import get_most_recent_point_in_time_sql
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload

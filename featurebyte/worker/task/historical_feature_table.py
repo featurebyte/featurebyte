@@ -7,7 +7,6 @@ from typing import Any, cast
 
 from featurebyte.logger import logger
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
-from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )

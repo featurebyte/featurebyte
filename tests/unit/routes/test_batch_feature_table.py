@@ -107,6 +107,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         snowflake_execute_query_invalid_batch_request_table,
     ):
         """Test create 422 for batch request table failed validation check"""
+        _ = snowflake_execute_query_invalid_batch_request_table
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 

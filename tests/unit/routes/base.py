@@ -11,7 +11,6 @@ from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
 from time import sleep
-from unittest import mock
 from unittest.mock import Mock
 
 import pandas as pd
@@ -24,7 +23,6 @@ from featurebyte.enum import DBVarType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.table import TableCreate
-from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 
 
 class BaseApiTestSuite:
