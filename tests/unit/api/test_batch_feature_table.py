@@ -73,9 +73,7 @@ def test_delete(batch_feature_table):
 def test_info(batch_feature_table):
     """Test info method"""
     info_dict = batch_feature_table.info()
-    assert info_dict["deployment_name"].startswith(
-        'Deployment (feature_list: "my_feature_list", version: V'
-    )
+    assert info_dict["deployment_name"].startswith("Deployment with my_feature_list_V")
     assert info_dict["table_details"]["table_name"].startswith("BATCH_FEATURE_TABLE_")
     assert info_dict == {
         "name": "my_batch_feature_table",

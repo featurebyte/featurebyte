@@ -38,7 +38,7 @@ def test_info(deployment):
     info_dict = deployment.info()
     expected_version = f'V{pd.Timestamp.now().strftime("%y%m%d")}'
     assert info_dict == {
-        "name": f'Deployment (feature_list: "my_feature_list", version: {expected_version})',
+        "name": f"Deployment with my_feature_list_{expected_version}",
         "feature_list_name": "my_feature_list",
         "feature_list_version": expected_version,
         "num_feature": 1,

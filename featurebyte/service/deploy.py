@@ -366,8 +366,7 @@ class DeployService(BaseService):
         """
         feature_list = await self.feature_list_service.get_document(document_id=feature_list_id)
         default_deployment_name = (
-            f'Deployment (feature_list: "{feature_list.name}", '
-            f"version: {feature_list.version.to_str()})"
+            f"Deployment with {feature_list.name}_{feature_list.version.to_str()}"
         )
         await self.update_feature_list(
             feature_list_id=feature_list_id,

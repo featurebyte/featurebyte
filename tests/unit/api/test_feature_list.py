@@ -813,7 +813,9 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
     deployments = list_deployments(include_id=True)
-    expected_deployment_name = f'Deployment (feature_list: "{feature_list.name}", version: {feature_list.version.to_str()})'
+    expected_deployment_name = (
+        f"Deployment with {feature_list.name}_{feature_list.version.to_str()}"
+    )
     assert_frame_equal(
         deployments[["name", "feature_list_name", "feature_list_version", "num_feature"]],
         pd.DataFrame(
