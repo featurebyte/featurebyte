@@ -9,16 +9,14 @@ from bson import ObjectId
 
 from featurebyte import MissingValueImputation
 from featurebyte.core.frame import Frame
-from featurebyte.core.generic import QueryObject
 from featurebyte.enum import DBVarType
 from featurebyte.models import DimensionTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
-from tests.util.helper import add_groupby_operation
+from tests.util.helper import add_groupby_operation, reset_global_graph
 
 
 @pytest.fixture(name="global_graph")
@@ -26,9 +24,7 @@ def global_query_graph():
     """
     Empty query graph fixture
     """
-    GlobalGraphState.reset()
-    QueryObject._operation_structure_cache.clear()
-    yield GlobalQueryGraph()
+    yield reset_global_graph()
 
 
 @pytest.fixture(name="input_details")

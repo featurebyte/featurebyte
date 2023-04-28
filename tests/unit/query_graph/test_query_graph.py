@@ -9,14 +9,14 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.transform.reconstruction import (
     GroupByNode,
     add_pruning_sensitive_operation,
 )
-from tests.util.helper import get_node
+from tests.util.helper import get_node, reset_global_graph
 
 
 def check_internal_state_after_deserialization(graph):
@@ -112,7 +112,7 @@ def test_serialization_deserialization__clean_global_graph(graph_four_nodes):
     assert graph == deserialized_graph
 
     # clean up global query graph state & load the deserialized graph to the clean global query graph
-    GlobalGraphState.reset()
+    reset_global_graph()
     new_global_graph = GlobalQueryGraph()
     assert new_global_graph.nodes == []
     new_global_graph.load(graph)
