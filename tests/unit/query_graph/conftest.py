@@ -9,6 +9,7 @@ from bson import ObjectId
 
 from featurebyte import MissingValueImputation
 from featurebyte.core.frame import Frame
+from featurebyte.core.generic import QueryObject
 from featurebyte.enum import DBVarType
 from featurebyte.models import DimensionTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
@@ -26,6 +27,7 @@ def global_query_graph():
     Empty query graph fixture
     """
     GlobalGraphState.reset()
+    QueryObject._operation_structure_cache.clear()
     yield GlobalQueryGraph()
 
 

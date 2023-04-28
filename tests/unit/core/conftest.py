@@ -6,6 +6,7 @@ import textwrap
 import pytest
 
 from featurebyte.core.frame import Frame
+from featurebyte.core.generic import QueryObject
 from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import DBVarType
@@ -23,6 +24,8 @@ def global_query_graph():
     Empty query graph fixture
     """
     GlobalGraphState.reset()
+    # Resetting GlobalGraph invalidates the QueryObject's operation structure cache
+    QueryObject._operation_structure_cache.clear()
     yield GlobalQueryGraph()
 
 
