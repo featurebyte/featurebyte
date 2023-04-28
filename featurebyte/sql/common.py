@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional
 
 import asyncio
+from random import randint
 
 import pandas as pd
 
@@ -64,8 +65,8 @@ def construct_create_table_query(
 async def retry_sql(
     session: BaseSession,
     sql: str,
-    retry_num: int = 3,
-    sleep_interval: int = 1,
+    retry_num: int = 10,
+    sleep_interval: int = 5,
 ) -> pd.DataFrame | None:
     """
     Retry sql operation
@@ -101,6 +102,7 @@ async def retry_sql(
                 logger.error(f"Error with sql: {err}")
                 raise err
 
-        await asyncio.sleep(sleep_interval)
+        random_interval = randint(1, sleep_interval)
+        await asyncio.sleep(random_interval)
 
     return None
