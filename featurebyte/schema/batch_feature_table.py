@@ -8,14 +8,11 @@ from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
 
-from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
-    FeatureByteBaseModel,
-    PydanticObjectId,
-)
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseInfo, PaginationMixin
+from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
 
 
 class BatchFeatureTableCreate(FeatureByteBaseModel):
@@ -38,7 +35,7 @@ class BatchFeatureTableList(PaginationMixin):
     data: List[BatchFeatureTableModel]
 
 
-class BatchFeatureTableListRecord(FeatureByteBaseDocumentModel):
+class BatchFeatureTableListRecord(BaseMaterializedTableListRecord):
     """
     Schema for listing historical feature tables as a DataFrame
     """

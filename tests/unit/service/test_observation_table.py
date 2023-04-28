@@ -44,6 +44,7 @@ def observation_table_from_source_table_fixture(event_table):
             {"name": "b", "dtype": "INT"},
             {"name": "c", "dtype": "INT"},
         ],
+        num_rows=1000,
         most_recent_point_in_time="2023-01-15T10:00:00",
     )
 
@@ -72,9 +73,13 @@ def db_session_fixture():
         return {"POINT_IN_TIME": "TIMESTAMP", "cust_id": "VARCHAR"}
 
     async def execute_query(*args, **kwargs):
-        _ = args
+        query = args[0]
         _ = kwargs
-        return pd.DataFrame({"max_time": ["2023-01-15T10:00:00+08:00"]})
+        if "MAX" in query:
+            return pd.DataFrame({"max_time": ["2023-01-15T10:00:00+08:00"]})
+        if "COUNT(*)" in query:
+            return pd.DataFrame({"row_count": [1000]})
+        raise NotImplementedError(f"Unexpected query: {query}")
 
     mock_db_session = Mock(
         name="mock_session",
@@ -117,6 +122,7 @@ async def test_validate__missing_point_in_time(observation_table_service, table_
         name="mock_session",
         spec=BaseSession,
         list_table_schema=Mock(side_effect=mock_list_table_schema),
+        source_type=SourceType.SNOWFLAKE,
     )
     with pytest.raises(MissingPointInTimeColumnError):
         await observation_table_service.validate_materialized_table_and_get_metadata(
@@ -151,6 +157,7 @@ async def test_validate__most_recent_point_in_time(
             {"name": "cust_id", "dtype": "VARCHAR"},
         ],
         "most_recent_point_in_time": "2023-01-15T02:00:00",
+        "num_rows": 1000,
     }
 
 
@@ -169,6 +176,7 @@ async def test_validate__supported_type_point_in_time(observation_table_service,
         name="mock_session",
         spec=BaseSession,
         list_table_schema=Mock(side_effect=mock_list_table_schema),
+        source_type=SourceType.SNOWFLAKE,
     )
     with pytest.raises(UnsupportedPointInTimeColumnTypeError) as exc:
         await observation_table_service.validate_materialized_table_and_get_metadata(

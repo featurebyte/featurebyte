@@ -5,7 +5,6 @@ Common test fixtures used across unit test directories
 import json
 import tempfile
 import traceback
-from contextlib import contextmanager
 from datetime import datetime
 from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
@@ -790,6 +789,7 @@ def patched_observation_table_service():
                 {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
                 {"name": "cust_id", "dtype": "INT"},
             ],
+            "num_rows": 100,
             "most_recent_point_in_time": "2023-01-15 10:00:00",
         }
 
@@ -800,40 +800,75 @@ def patched_observation_table_service():
         yield
 
 
-@pytest.fixture(name="snowflake_execute_query_batch_request_table_patcher")
-def snowflake_execute_query_batch_reqeust_table_patcher():
-    """Fixture to patch SnowflakeSession.execute_query to return mock data for batch request table"""
+@pytest.fixture(name="snowflake_execute_query_invalid_batch_request_table")
+def snowflake_execute_query_invalid_batch_request_table(snowflake_connector, snowflake_query_map):
+    """
+    Fixture to patch SnowflakeSession.execute_query to return invalid shcema for batch request table
+    creation task (missing a required entity column)
+    """
+    _ = snowflake_connector
 
-    @contextmanager
-    def patch_snowflake_execute_query(query_map, handle_batch_request_table_query):
-        """Patch SnowflakeSession.execute_query to return mock data"""
+    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
+        _ = timeout
+        # By not handling the SHOW COLUMNS query specifically, the schema will be empty and
+        # missing a required entity column "cust_id"
+        if "COUNT(*)" in query:
+            res = [
+                {
+                    "row_count": 500,
+                }
+            ]
+        else:
+            res = snowflake_query_map.get(query)
 
-        def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
-            _ = timeout
-            if handle_batch_request_table_query and query.startswith(
-                'SHOW COLUMNS IN "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_'
-            ):
-                # return a cust_id column for batch request table to pass validation
-                res = [
-                    {
-                        "column_name": "cust_id",
-                        "data_type": json.dumps({"type": "FIXED", "scale": 0}),
-                    }
-                ]
-            else:
-                res = query_map.get(query)
+        if res is not None:
+            return pd.DataFrame(res)
+        return None
 
-            if res is not None:
-                return pd.DataFrame(res)
-            return None
+    with mock.patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
+        mock_execute_query.side_effect = side_effect
+        yield mock_execute_query
 
-        with mock.patch(
-            "featurebyte.session.snowflake.SnowflakeSession.execute_query"
-        ) as mock_execute_query:
-            mock_execute_query.side_effect = side_effect
-            yield mock_execute_query
 
-    return patch_snowflake_execute_query
+@pytest.fixture(name="snowflake_execute_query_for_materialized_table")
+def snowflake_execute_query_for_materialized_table_fixture(
+    snowflake_connector,
+    snowflake_query_map,
+):
+    """
+    Extended version of the default execute_query mock to handle more queries expected when running
+    materialized table creation tasks.
+    """
+    _ = snowflake_connector
+
+    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS):
+        _ = timeout
+        if query.startswith('SHOW COLUMNS IN "sf_database"."sf_schema"'):
+            res = [
+                {
+                    "column_name": "cust_id",
+                    "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                }
+            ]
+        elif "COUNT(*)" in query:
+            res = [
+                {
+                    "row_count": 500,
+                }
+            ]
+        else:
+            res = snowflake_query_map.get(query)
+        if res is not None:
+            return pd.DataFrame(res)
+        return None
+
+    with mock.patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
+        mock_execute_query.side_effect = side_effect
+        yield mock_execute_query
 
 
 @pytest.fixture(name="observation_table_from_source")
@@ -857,15 +892,21 @@ def observation_table_from_view_fixture(snowflake_event_view, patched_observatio
 
 
 @pytest.fixture(name="historical_feature_table")
-def historical_feature_table_fixture(float_feature, observation_table_from_source):
+def historical_feature_table_fixture(
+    float_feature, observation_table_from_source, snowflake_execute_query_for_materialized_table
+):
     """
     Fixture for a HistoricalFeatureTable
     """
+    _ = snowflake_execute_query_for_materialized_table
     feature_list = FeatureList([float_feature], name="feature_list_for_historical_feature_table")
     feature_list.save()
-    historical_feature_table = feature_list.compute_historical_feature_table(
-        observation_table_from_source, "my_historical_feature_table"
-    )
+    with patch(
+        "featurebyte.query_graph.sql.feature_historical.compute_tiles_on_demand",
+    ):
+        historical_feature_table = feature_list.compute_historical_feature_table(
+            observation_table_from_source, "my_historical_feature_table"
+        )
     return historical_feature_table
 
 

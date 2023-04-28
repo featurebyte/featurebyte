@@ -26,6 +26,7 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         "name",
         "feature_store_name",
         "batch_request_table_name",
+        "shape",
         "created_at",
     ]
     _list_foreign_keys = [

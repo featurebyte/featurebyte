@@ -24,6 +24,7 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
     _list_fields = [
         "name",
         "type",
+        "shape",
         "feature_store_name",
         "created_at",
     ]
