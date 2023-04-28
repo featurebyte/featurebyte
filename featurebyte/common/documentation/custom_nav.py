@@ -50,6 +50,7 @@ from featurebyte.common.documentation.constants import (
     TRANSFORM,
     TYPE,
     UTILITY_CLASSES,
+    UTILITY_METHODS,
     VIEW,
     VIEW_COLUMN,
     WAREHOUSE,
@@ -84,6 +85,7 @@ class BetaWave3Nav(Nav):
         BATCH_REQUEST_TABLE,
         BATCH_FEATURE_TABLE,
         UTILITY_CLASSES,
+        UTILITY_METHODS,
     ]
 
     _custom_second_level_order = [
