@@ -93,7 +93,7 @@ class RequestColumnNode(BaseNode):
         else:
             obj = ClassEnum.REQUEST_COLUMN(
                 self.parameters.column_name,
-                ClassEnum.DB_VAR_TYPE(_attribute_name=self.parameters.dtype.name),
+                self.parameters.dtype,
                 _method_name="create_request_column",
             )
         statements.append((var_name, obj))

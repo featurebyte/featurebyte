@@ -117,7 +117,6 @@ class ObjectClass(BaseModel):
     positional_args: List[Any]
     keyword_args: Dict[str, Any]
     callable_name: Optional[str] = Field(default=None)
-    attribute_name: Optional[str] = Field(default=None)
 
     def __str__(self) -> str:
         params: List[Union[VariableNameStr, ExpressionStr, ValueStr, str]] = []
@@ -136,9 +135,6 @@ class ObjectClass(BaseModel):
         params_str = ", ".join(params)
 
         if self.class_name is not None:
-            # Accessing an attribute
-            if self.attribute_name:
-                return f"{self.class_name}.{self.attribute_name}"
             # Calling a class constructor or a classmethod
             if self.callable_name:
                 return f"{self.class_name}.{self.callable_name}({params_str})"
@@ -237,21 +233,15 @@ class ClassEnum(Enum):
     TO_TIMEDELTA = ("featurebyte", "to_timedelta")
     COLUMN_CLEANING_OPERATION = ("featurebyte", "ColumnCleaningOperation")
     REQUEST_COLUMN = ("featurebyte.api.request_column", "RequestColumn")
-    DB_VAR_TYPE = ("featurebyte.enum", "DBVarType")
 
     def __call__(
-        self,
-        *args: Any,
-        _method_name: Optional[str] = None,
-        _attribute_name: Optional[str] = None,
-        **kwargs: Any,
+        self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
     ) -> ObjectClass:
         module_path, class_name = self.value
         return ObjectClass(
             module_path=module_path,
             class_name=class_name,
             callable_name=_method_name,
-            attribute_name=_attribute_name,
             positional_args=args,
             keyword_args=kwargs,
         )

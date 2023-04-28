@@ -6,7 +6,6 @@ import pytest
 from featurebyte import FeatureJobSetting
 from featurebyte.api.feature import Feature
 from featurebyte.api.request_column import RequestColumn
-from featurebyte.enum import DBVarType
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -72,19 +71,3 @@ def test_request_column_preview_sql_blocked():
     """
     with pytest.raises(NotImplementedError):
         _ = RequestColumn.point_in_time().preview_sql()
-
-
-def test_float_request_column(float_feature, update_fixtures):
-    """
-    Test request column with other dtype
-    """
-    request_column = RequestColumn.create_request_column("transaction_value", DBVarType.FLOAT)
-    new_feature = float_feature > (request_column * 1.2)
-    new_feature.name = "Historical Value Larger Than Transaction Value"
-    check_sdk_code_generation(
-        new_feature,
-        to_use_saved_data=True,
-        fixture_path="tests/fixtures/sdk_code/feature_with_float_request_column.py",
-        update_fixtures=update_fixtures,
-        table_id=new_feature.table_ids[0],
-    )
