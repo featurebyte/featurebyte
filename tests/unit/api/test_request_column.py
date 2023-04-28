@@ -5,7 +5,8 @@ import pytest
 
 from featurebyte import FeatureJobSetting
 from featurebyte.api.feature import Feature
-from featurebyte.api.request_column import RequestColumn, point_in_time
+from featurebyte.api.request_column import RequestColumn
+from featurebyte.enum import DBVarType
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -30,6 +31,7 @@ def test_point_in_time_request_column():
     """
     Test point_in_time request column
     """
+    point_in_time = RequestColumn.point_in_time()
     assert isinstance(point_in_time, RequestColumn)
     node_dict = point_in_time.node.dict()
     assert node_dict == {
@@ -44,7 +46,7 @@ def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature, u
     """
     Test an on-demand feature involving point in time
     """
-    new_feature = (point_in_time - latest_event_timestamp_feature).dt.day
+    new_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
     new_feature.name = "Time Since Last Event (days)"
     assert isinstance(new_feature, Feature)
 
@@ -69,4 +71,13 @@ def test_request_column_preview_sql_blocked():
     Test preview_sql() is blocked for RequestColumn
     """
     with pytest.raises(NotImplementedError):
-        _ = point_in_time.preview_sql()
+        _ = RequestColumn.point_in_time().preview_sql()
+
+
+def test_request_column_non_point_in_time_blocked():
+    """
+    Test non-point-in-time request column is blocked
+    """
+    with pytest.raises(NotImplementedError) as exc:
+        _ = RequestColumn.create_request_column("foo", DBVarType.FLOAT)
+    assert "Currently only POINT_IN_TIME column is supported" in str(exc.value)

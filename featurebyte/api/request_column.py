@@ -43,7 +43,20 @@ class RequestColumn(Series):
         Returns
         -------
         RequestColumn
+
+        Raises
+        ------
+        NotImplementedError
+            If the request column is not the POINT_IN_TIME column
         """
+        if not (
+            column_name == SpecialColumnName.POINT_IN_TIME and column_dtype == DBVarType.TIMESTAMP
+        ):
+            raise NotImplementedError(
+                "Currently only POINT_IN_TIME column is supported. Please use"
+                " RequestColumn.point_in_time() instead."
+            )
+
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.REQUEST_COLUMN,
             node_params={"column_name": column_name, "dtype": column_dtype},
@@ -58,6 +71,19 @@ class RequestColumn(Series):
             dtype=column_dtype,
         )
 
+    @classmethod
+    def point_in_time(cls) -> RequestColumn:
+        """
+        Get a RequestColumn that represents the POINT_IN_TIME column in the request data
+
+        Returns
+        -------
+        RequestColumn
+        """
+        return RequestColumn.create_request_column(
+            SpecialColumnName.POINT_IN_TIME.value, DBVarType.TIMESTAMP
+        )
+
     @property
     def binary_op_output_class_priority(self) -> int:
         return 1
@@ -69,8 +95,3 @@ class RequestColumn(Series):
         # But there are many tests that require Series to have preview_sql(), so the change is not
         # trivial. Raising NotImplementedError() specifically for RequestColumn for now.
         raise NotImplementedError("preview_sql is not supported for RequestColumn")
-
-
-point_in_time = RequestColumn.create_request_column(
-    SpecialColumnName.POINT_IN_TIME.value, DBVarType.TIMESTAMP
-)
