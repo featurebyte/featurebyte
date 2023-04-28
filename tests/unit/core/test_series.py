@@ -1210,12 +1210,29 @@ def test_operation_structure_cache(float_series):
     """
     new_series = (float_series + 123.45) * 678.90
 
+    # Check repeated access does not trigger recalculation of operation structure
     with patch("featurebyte.query_graph.graph.OperationStructureExtractor") as mock_cls:
+        assert mock_cls.call_count == 0
         mock_cls.side_effect = OperationStructureExtractor
         op_struct_1 = new_series.operation_structure
         op_struct_2 = new_series.operation_structure
         _ = new_series.row_index_lineage
         _ = new_series.output_category
-
     assert op_struct_1 == op_struct_2
+    assert mock_cls.call_count == 1
+
+    # Check another series pointing at the same node can reuse the same cached operation structure
+    another_series = (float_series + 123.45) * 678.90
+    with patch("featurebyte.query_graph.graph.OperationStructureExtractor") as mock_cls:
+        assert mock_cls.call_count == 0
+        mock_cls.side_effect = OperationStructureExtractor
+        _ = another_series.operation_structure
+    assert mock_cls.call_count == 0
+
+    # Check that cache is invalidated when series is modified in-place
+    new_series.fillna(0)
+    with patch("featurebyte.query_graph.graph.OperationStructureExtractor") as mock_cls:
+        assert mock_cls.call_count == 0
+        mock_cls.side_effect = OperationStructureExtractor
+        _ = new_series.operation_structure
     assert mock_cls.call_count == 1

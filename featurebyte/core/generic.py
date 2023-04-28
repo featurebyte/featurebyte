@@ -50,7 +50,8 @@ def get_operation_structure_cache_key(obj: QueryObjectT) -> Any:
     -------
     Any
     """
-    return hashkey(id(obj.graph), obj.node_name)
+    graph_identity = 0 if isinstance(obj.graph, GlobalQueryGraph) else id(obj.graph)
+    return hashkey(graph_identity, obj.node_name)
 
 
 class QueryObject(FeatureByteBaseModel):
