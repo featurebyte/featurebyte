@@ -254,25 +254,6 @@ def _get_param_details(
     return details
 
 
-def _get_short_description_from_docstring(docstring: Docstring) -> str:
-    """
-    Helper function to get short description from docstring.
-
-    Parameters
-    ----------
-    docstring: Docstring
-        Docstring object
-
-    Returns
-    -------
-    str
-    """
-    short_description = docstring.short_description
-    if not short_description:
-        short_description = docstring.description
-    return short_description
-
-
 def _get_resource_detail_for_pure_fn(resource_descriptor: str) -> ResourceDetails:
     """
     Extract a resource detail for a pure function.
