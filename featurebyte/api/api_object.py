@@ -710,7 +710,11 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
     @classmethod
     def _poll_async_task(
-        cls, task_response: Response, delay: float = POLLING_INTERVAL, retrieve_result: bool = True
+        cls,
+        task_response: Response,
+        delay: float = POLLING_INTERVAL,
+        retrieve_result: bool = True,
+        has_output_url: bool = True,
     ) -> dict[str, Any]:
         response_dict = task_response.json()
         status = response_dict["status"]
@@ -757,7 +761,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         output_url = response_dict.get("output_path")
         if output_url is None and task_get_response:
             output_url = task_get_response.json().get("output_path")
-        if output_url is None:
+        if output_url is None and has_output_url:
             raise RecordRetrievalException(response=task_get_response or task_response)
 
         if not retrieve_result:

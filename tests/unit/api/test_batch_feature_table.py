@@ -6,7 +6,8 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from featurebyte import BatchFeatureTable
+from featurebyte.api.batch_feature_table import BatchFeatureTable
+from featurebyte.exception import RecordRetrievalException
 
 
 @pytest.fixture(autouse=True)
@@ -49,12 +50,30 @@ def test_list(batch_feature_table):
     pd.testing.assert_frame_equal(df, expected)
 
 
+def test_delete(batch_feature_table):
+    """
+    Test delete method
+    """
+    # check table can be retrieved before deletion
+    _ = BatchFeatureTable.get(batch_feature_table.name)
+
+    batch_feature_table.delete()
+
+    # check the deleted batch feature table is not found anymore
+    with pytest.raises(RecordRetrievalException) as exc:
+        BatchFeatureTable.get(batch_feature_table.name)
+
+    expected_msg = (
+        f'BatchFeatureTable (name: "{batch_feature_table.name}") not found. '
+        f"Please save the BatchFeatureTable object first."
+    )
+    assert expected_msg in str(exc.value)
+
+
 def test_info(batch_feature_table):
     """Test info method"""
     info_dict = batch_feature_table.info()
-    assert info_dict["deployment_name"].startswith(
-        'Deployment (feature_list: "my_feature_list", version: V'
-    )
+    assert info_dict["deployment_name"].startswith("Deployment with my_feature_list_V")
     assert info_dict["table_details"]["table_name"].startswith("BATCH_FEATURE_TABLE_")
     assert info_dict == {
         "name": "my_batch_feature_table",

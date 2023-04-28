@@ -62,7 +62,7 @@ async def get_batch_feature_table(
     return batch_feature_table
 
 
-@router.delete("/{batch_feature_table_id}", response_model=Task)
+@router.delete("/{batch_feature_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED)
 async def delete_batch_feature_table(
     request: Request, batch_feature_table_id: PydanticObjectId
 ) -> Task:

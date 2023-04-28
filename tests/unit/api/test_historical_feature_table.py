@@ -4,6 +4,7 @@ Unit tests for HistoricalFeatureTable class
 import pytest
 
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
+from featurebyte.exception import RecordRetrievalException
 
 
 def test_get(historical_feature_table):
@@ -30,6 +31,26 @@ def test_list():
     assert df["name"].tolist() == ["my_historical_feature_table"]
     assert df["feature_store_name"].tolist() == ["sf_featurestore"]
     assert df["observation_table_name"].tolist() == ["observation_table_from_source_table"]
+
+
+def test_delete(historical_feature_table):
+    """
+    Test delete method
+    """
+    # check table can be retrieved before deletion
+    _ = HistoricalFeatureTable.get(historical_feature_table.name)
+
+    historical_feature_table.delete()
+
+    # check the deleted batch feature table is not found anymore
+    with pytest.raises(RecordRetrievalException) as exc:
+        HistoricalFeatureTable.get(historical_feature_table.name)
+
+    expected_msg = (
+        f'HistoricalFeatureTable (name: "{historical_feature_table.name}") not found. '
+        f"Please save the HistoricalFeatureTable object first."
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_info(historical_feature_table):

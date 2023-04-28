@@ -62,7 +62,9 @@ async def get_historical_feature_table(
     return historical_feature_table
 
 
-@router.delete("/{historical_feature_table_id}", response_model=Task)
+@router.delete(
+    "/{historical_feature_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED
+)
 async def delete_historical_feature_table(
     request: Request, historical_feature_table_id: PydanticObjectId
 ) -> Task:

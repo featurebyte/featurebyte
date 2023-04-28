@@ -3,6 +3,7 @@ Unit tests for ObservationTable class
 """
 import pytest
 
+from featurebyte import RecordRetrievalException
 from featurebyte.api.observation_table import ObservationTable
 
 
@@ -33,6 +34,26 @@ def test_list():
     ]
     assert (df["feature_store_name"] == "sf_featurestore").all()
     assert df["type"].tolist() == ["view", "source_table"]
+
+
+def test_delete(observation_table_from_view):
+    """
+    Test delete method
+    """
+    # check table can be retrieved before deletion
+    _ = ObservationTable.get(observation_table_from_view.name)
+
+    observation_table_from_view.delete()
+
+    # check the deleted batch feature table is not found anymore
+    with pytest.raises(RecordRetrievalException) as exc:
+        ObservationTable.get(observation_table_from_view.name)
+
+    expected_msg = (
+        f'ObservationTable (name: "{observation_table_from_view.name}") not found. '
+        f"Please save the ObservationTable object first."
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_info(observation_table_from_source):

@@ -2,7 +2,9 @@
 Unit tests for BatchRequestTable class
 """
 import pandas as pd
+import pytest
 
+from featurebyte import RecordRetrievalException
 from featurebyte.api.batch_request_table import BatchRequestTable
 
 
@@ -39,6 +41,26 @@ def test_list(batch_request_table_from_source, batch_request_table_from_view):
         ]
     )
     pd.testing.assert_frame_equal(df, expected)
+
+
+def test_delete(batch_request_table_from_source):
+    """
+    Test delete method
+    """
+    # check table can be retrieved before deletion
+    _ = BatchRequestTable.get(batch_request_table_from_source.name)
+
+    batch_request_table_from_source.delete()
+
+    # check the deleted batch feature table is not found anymore
+    with pytest.raises(RecordRetrievalException) as exc:
+        BatchRequestTable.get(batch_request_table_from_source.name)
+
+    expected_msg = (
+        f'BatchRequestTable (name: "{batch_request_table_from_source.name}") not found. '
+        f"Please save the BatchRequestTable object first."
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_info(batch_request_table_from_view):
