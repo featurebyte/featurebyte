@@ -151,7 +151,9 @@ class Deployment(ApiObject):
         Retrieve python code template when "language" is set to "python"
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.get_online_serving_code(language="python")  # doctest: +SKIP
+        >>> deployment = feature_list.deploy()  # doctest: +SKIP
+        >>> deployment.enable()  # doctest: +SKIP
+        >>> deployment.get_online_serving_code(language="python")  # doctest: +SKIP
             from typing import Any, Dict
             import pandas as pd
             import requests
@@ -167,7 +169,7 @@ class Deployment(ApiObject):
                 pd.DataFrame
                 "
                 response = requests.post(
-                    url="http://localhost:8080/feature_list/{feature_list.id}/online_features",
+                    url="http://localhost:8080/deployment/{deployment.id}/online_features",
                     params={{"catalog_id": "63eda344d0313fb925f7883a"}},
                     headers={{"Content-Type": "application/json", "Authorization": "Bearer token"}},
                     json={{"entity_serving_names": entity_serving_names}},
@@ -178,16 +180,19 @@ class Deployment(ApiObject):
 
         Retrieve shell script template when "language" is set to "sh"
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +SKIP
-        >>> feature_list.get_online_serving_code(language="sh")  # doctest: +SKIP
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> deployment = feature_list.deploy()  # doctest: +SKIP
+        >>> deployment.enable()  # doctest: +SKIP
+        >>> deployment.get_online_serving_code(language="sh")  # doctest: +SKIP
             \\#!/bin/sh
             curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
                 '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
-                http://localhost:8080/feature_list/641cf594f74f839cf9297884/online_features?catalog_id=63eda344d0313fb925f7883a
+                http://localhost:8080/deployment/641cf594f74f839cf9297884/online_features?catalog_id=63eda344d0313fb925f7883a
 
         See Also
         --------
         - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/)
+        - [Deployment.enable](/reference/featurebyte.api.deployment.Deployment.enable/)
         """
         if not self.enabled:
             raise FeatureListNotOnlineEnabledError("Deployment is not enabled.")
