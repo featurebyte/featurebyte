@@ -335,7 +335,10 @@ def test_online_serving_code_uses_primary_entity(
     Check that online serving code is based on primary entity
     """
     time.sleep(1)
-    deployment = feature_list_with_parent_child_features.deploy(make_production_ready=True)
+    deployment = feature_list_with_parent_child_features.deploy(
+        make_production_ready=True,
+        deployment_name="deployment_for_testing_online_serving_uses_primary_entity"
+    )
     deployment.enable()
     online_serving_code = deployment.get_online_serving_code("python")
     expected_signature = 'request_features([{"serving_cust_id": 1000}])'
