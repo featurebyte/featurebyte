@@ -125,19 +125,19 @@ def test_get_resource_details__enum_class():
         enum_values=[
             ParameterDetails(
                 name="TEST",
-                type=None,
+                type="",
                 default="None",
                 description="test field 1",
             ),
             ParameterDetails(
                 name="TEST2",
-                type=None,
+                type="",
                 default="None",
                 description="test field 2",
             ),
             ParameterDetails(
                 name="NO DESC",
-                type=None,
+                type="",
                 default="None",
                 description="Test documentation for enum classes.",
             ),
