@@ -66,7 +66,7 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
         entity_serving_names = [{"order_id": "T1"}]
         data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
         res = client.post(
-            f"/feature_list/{str(feature_list.id)}/online_features",
+            f"/deployment/{deployment.id}/online_features",
             json=data.json_dict(),
         )
     finally:

@@ -15,7 +15,6 @@ from fastapi.responses import StreamingResponse
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
     DocumentDeletionError,
-    FeatureListNotOnlineEnabledError,
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
     TooRecentPointInTimeError,
@@ -26,7 +25,6 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
@@ -35,7 +33,6 @@ from featurebyte.schema.feature_list import (
     FeatureListPreview,
     FeatureListSQL,
     FeatureListUpdate,
-    OnlineFeaturesRequestPayload,
 )
 from featurebyte.schema.info import FeatureListInfo
 from featurebyte.service.deploy import DeployService
@@ -45,7 +42,6 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
-from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 

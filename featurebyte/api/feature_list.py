@@ -1325,7 +1325,7 @@ class FeatureList(
 
         See Also
         --------
-        - [FeatureList.get_online_serving_code](/reference/featurebyte.api.feature_list.FeatureList.get_online_serving_code/)
+        - [Deployment.get_online_serving_code](/reference/featurebyte.api.deployment.Deployment.get_online_serving_code/)
         """
         self.update(
             update_payload={

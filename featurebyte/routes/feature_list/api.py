@@ -10,7 +10,7 @@ import json
 from http import HTTPStatus
 
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
-from fastapi.responses import ORJSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureListModel
@@ -27,7 +27,6 @@ from featurebyte.routes.common.schema import (
     VersionQuery,
 )
 from featurebyte.schema.common.base import DeleteResponse
-from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
@@ -36,7 +35,6 @@ from featurebyte.schema.feature_list import (
     FeatureListPreview,
     FeatureListSQL,
     FeatureListUpdate,
-    OnlineFeaturesRequestPayload,
 )
 from featurebyte.schema.info import FeatureListInfo
 

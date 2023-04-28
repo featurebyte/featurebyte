@@ -6,9 +6,9 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from http import HTTPStatus
-from http.client import HTTPException
 
 from bson import ObjectId
+from fastapi import HTTPException
 
 from featurebyte.exception import FeatureListNotOnlineEnabledError
 from featurebyte.models.deployment import DeploymentModel
@@ -170,7 +170,8 @@ class DeploymentController(
         HTTPException
             Invalid request payload
         """
-        feature_list = await self.service.get_document(deployment_id)
+        document = await self.service.get_document(deployment_id)
+        feature_list = await self.feature_list_service.get_document(document.feature_list_id)
         try:
             result = await self.online_serving_service.get_online_features_from_feature_list(
                 feature_list=feature_list,

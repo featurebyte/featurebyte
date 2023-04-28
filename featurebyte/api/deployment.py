@@ -194,6 +194,7 @@ class Deployment(ApiObject):
         - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/)
         - [Deployment.enable](/reference/featurebyte.api.deployment.Deployment.enable/)
         """
+        # pylint: disable=too-many-locals
         if not self.enabled:
             raise FeatureListNotOnlineEnabledError("Deployment is not enabled.")
 
@@ -253,7 +254,7 @@ class Deployment(ApiObject):
 
         return CodeStr(
             template.render(
-                catalog_id=self.cached_model.catalog_id,
+                catalog_id=feature_list.catalog_id,
                 headers=json.dumps(headers),
                 header_params=header_params,
                 serving_url=serving_url,
