@@ -594,9 +594,6 @@ def generate_documentation_for_docs(
     doc_items = DocItems()
     # create documentation page for each object
     for doc_group_key, doc_group_value in doc_groups.items():
-        # if "timedelta" in doc_group_key.module_path:
-        #     import pdb;
-        #     pdb.set_trace()
         path_components = doc_group_key.module_path.split(".")
         if should_skip_path(path_components):
             continue
