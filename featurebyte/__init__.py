@@ -289,6 +289,11 @@ def start_spark() -> None:
 def stop(clean: bool = False) -> None:
     """
     Stop all applications
+
+    Parameters
+    ----------
+    clean : bool
+        Whether to clean up all data, by default False
     """
     _stop_app(clean=clean, verbose=False)
 

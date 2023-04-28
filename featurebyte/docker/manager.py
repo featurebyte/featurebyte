@@ -252,6 +252,8 @@ def stop_app(clean: Optional[bool] = False, verbose: Optional[bool] = True) -> N
 
     Parameters
     ----------
+    clean : Optional[bool]
+        Whether to clean up all data, by default False
     verbose : Optional[bool]
         Print verbose output
     """
