@@ -796,7 +796,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def get_data_source(self) -> DataSource:
         """
-        Gets a data source based on the name of the feature store that the data source is associated with.
+        Gets the data source from the catalog to access source tables from the data warehouse.
 
         Returns
         -------
@@ -809,7 +809,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> data_source = catalog.get_data_source()
         """
-        assert len(self.internal_default_feature_store_ids) == 1
+        assert len(self.internal_default_feature_store_ids) == 1, "No default feature store is found. Please use " \
+                                                                  "an existing catalog, or create a new one and " \
+                                                                  "associate a feature store with it."
         feature_store = FeatureStore.get_by_id(id=self.internal_default_feature_store_ids[0])
         return feature_store.get_data_source()  # pylint: disable=no-member
 
