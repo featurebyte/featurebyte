@@ -12,7 +12,7 @@ from enum import Enum
 
 from docstring_parser import parse
 from docstring_parser.common import DocstringExample, DocstringRaises, DocstringReturns
-from mkautodoc.extension import trim_docstring
+from mkautodoc.extension import import_from_string, trim_docstring
 from pydantic.fields import ModelField, Undefined
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -254,6 +254,67 @@ def _get_param_details(
     return details
 
 
+def _get_resource_detail_for_pure_fn(resource_descriptor: str) -> ResourceDetails:
+    """
+    Extract a resource detail for a pure function.
+
+    Parameters
+    ----------
+    resource_descriptor: str
+        Fully qualified path to a resource
+
+    Raises
+    ------
+    ValueError
+        If the resource descriptor is invalid
+
+    Returns
+    -------
+    ResourceDetails
+    """
+    if "!!" not in resource_descriptor:
+        raise ValueError(f"Invalid resource descriptor: {resource_descriptor}")
+
+    parts = resource_descriptor.split("!!")
+    module_path = parts[0]
+    method_name = parts[1]
+
+    resource = import_from_string(module_path)
+    method_resource = getattr(resource, method_name)
+
+    docs = trim_docstring(getattr(method_resource, "__doc__", ""))
+    docstring = Docstring(parse(docs))
+
+    # process signature
+    parameters, return_type = get_params_from_signature(method_resource)
+    parameters_desc = (
+        {param.arg_name: param.description for param in docstring.params if param.description}
+        if docstring.params
+        else {}
+    )
+
+    return ResourceDetails(
+        name=method_name,
+        realname=method_name,
+        path=module_path,
+        proxy_path=None,
+        type="method",
+        base_classes=None,
+        method_type=None,
+        short_description=docstring.short_description,
+        long_description=docstring.long_description,
+        parameters=_get_param_details(parameters, parameters_desc),
+        returns=_get_return_param_details(docstring.returns, return_type),
+        raises=_get_raises_from_docstring(docstring.raises),
+        examples=[_format_example(example) for example in docstring.examples],
+        see_also=docstring.see_also.description if docstring.see_also else None,
+        enum_values=None,
+        should_skip_params_in_class_docs=False,
+        should_skip_signature_in_class_docs=False,
+        should_hide_keyword_only_params_in_class_docs=False,
+    )
+
+
 def get_resource_details(resource_descriptor: str) -> ResourceDetails:
     """
     Get details about a resource to be documented
@@ -267,6 +328,8 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
     -------
     ResourceDetails
     """
+    if "!!" in resource_descriptor:
+        return _get_resource_detail_for_pure_fn(resource_descriptor)
     # import resource
     parts = resource_descriptor.split("#")
     if len(parts) > 1:

@@ -58,6 +58,7 @@ from featurebyte.models.credential import (
 )
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
@@ -478,6 +479,7 @@ __all__ = [
     "FeatureListStatus",
     "SourceType",
     "StorageType",
+    "TableStatus",
     # imputation related classes
     "MissingValueImputation",
     "DisguisedValueImputation",

@@ -71,11 +71,14 @@ class DocGroupKey:
     """
 
     module_path: str
-    class_name: str
+    # This class name can be optional if we are dealing with a pure function that is not part of a class.
+    class_name: Optional[str] = None
     attribute_name: Optional[str] = None
 
     def _get_path_to_join(self) -> List[str]:
-        path_to_join = [self.module_path, self.class_name]
+        path_to_join = [self.module_path]
+        if self.class_name:
+            path_to_join.append(self.class_name)
         if self.attribute_name:
             path_to_join.append(self.attribute_name)
         return path_to_join
@@ -100,6 +103,7 @@ class DocGroupKey:
 
         Attributes will be delimited by the unique `::` identifier.
         Proxy paths will be delimited by the unique `#` identifier.
+        Pure methods will be delimited by the unique `!!` identifier.
 
         Parameters
         ----------
@@ -111,6 +115,10 @@ class DocGroupKey:
         str
             The object path used to identify this class or function.
         """
+        if not self.class_name:
+            # attribute_name must not be none if there is no class.
+            assert self.attribute_name is not None
+            return "!!".join([self.module_path, self.attribute_name])
         base_path = ".".join([self.module_path, self.class_name])
         if self.attribute_name:
             return "::".join([base_path, self.attribute_name])
@@ -498,6 +506,35 @@ def _get_accessor_metadata(doc_path: str) -> Optional[AccessorMetadata]:
     return None
 
 
+def _add_pure_methods_to_doc_groups(
+    doc_groups: Dict[DocGroupKey, DocGroupValue]
+) -> Dict[DocGroupKey, DocGroupValue]:
+    """
+    Add pure methods to the doc groups.
+
+    Parameters
+    ----------
+    doc_groups: Dict[DocGroupKey, DocGroupValue]
+        The doc groups.
+
+    Returns
+    -------
+    Dict[DocGroupKey, DocGroupValue]
+        The doc groups.
+    """
+    doc_groups[
+        DocGroupKey(
+            module_path="featurebyte.core.timedelta",
+            attribute_name="to_timedelta",
+        )
+    ] = DocGroupValue(
+        doc_group=[],
+        obj_type="method",
+        proxy_path="",
+    )
+    return doc_groups
+
+
 def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
     """
     This returns a dictionary of doc groups.
@@ -528,6 +565,7 @@ def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
                 )
         except ModuleNotFoundError:
             continue
+    doc_groups = _add_pure_methods_to_doc_groups(doc_groups)
     return doc_groups
 
 
