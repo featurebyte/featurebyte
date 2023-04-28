@@ -687,6 +687,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "FeatureListStatus"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TableStatus"]),
         DocLayoutItem(
             [UTILITY_CLASSES, GROUPBY, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
         ),
