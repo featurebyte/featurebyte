@@ -150,14 +150,14 @@ class DeploymentController(
         get_credential: Any,
     ) -> OnlineFeaturesResponseModel:
         """
-        Get historical features for Feature List
+        Compute online features for a given deployment ID.
 
         Parameters
         ----------
         deployment_id: ObjectId
-            Id of the Feature List
+            ID of deployment to compute online features
         data: OnlineFeaturesRequestPayload
-            Online features request data
+            Online features request payload
         get_credential: Any
             Get credential handler function
 
