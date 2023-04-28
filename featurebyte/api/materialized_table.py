@@ -1,7 +1,7 @@
 """
 Materialized Table Mixin
 """
-from typing import ClassVar, Optional, Union
+from typing import Any, Callable, ClassVar, Optional, Union
 
 import os
 import tempfile
@@ -13,7 +13,7 @@ import pandas as pd
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.utils import parquet_from_arrow_stream
 from featurebyte.config import Configurations
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.exception import RecordDeletionException, RecordRetrievalException
 from featurebyte.models.materialized_table import MaterializedTableModel
 
 
@@ -23,6 +23,7 @@ class MaterializedTableMixin(MaterializedTableModel):
     """
 
     _route: ClassVar[str] = ""
+    _poll_async_task: Callable[..., Any] = None
 
     def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
         """
@@ -74,3 +75,13 @@ class MaterializedTableMixin(MaterializedTableModel):
             output_path = os.path.join(temp_dir, "temp.parquet")
             self.download(output_path=output_path)
             return pd.read_parquet(output_path)
+
+    def delete(self) -> None:
+        """
+        Deletes the materialized table
+        """
+        client = Configurations().get_client()
+        response = client.delete(f"{self._route}/{self.id}")
+        if response.status_code != HTTPStatus.ACCEPTED:
+            raise RecordDeletionException(response)
+        self._poll_async_task(task_response=response, retrieve_result=False, has_output_url=False)

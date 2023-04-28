@@ -62,7 +62,7 @@ async def get_observation_table(
     return observation_table
 
 
-@router.delete("/{observation_table_id}", response_model=Task)
+@router.delete("/{observation_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED)
 async def delete_observation_table(
     request: Request, observation_table_id: PydanticObjectId
 ) -> Task:
