@@ -12,11 +12,10 @@ from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalGraphState
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails, TestDatabaseDetails
-from tests.util.helper import get_node
+from tests.util.helper import get_node, reset_global_graph
 
 
 class SimpleTestViewColumn(ViewColumn):
@@ -305,7 +304,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     Test left and inner join.
     """
     # reset between tests
-    GlobalGraphState.reset()
+    reset_global_graph()
     # setup
     col_info_a, col_info_b, col_info_c, col_info_d, col_info_e = (
         ColumnInfo(name="colA", dtype=DBVarType.INT),

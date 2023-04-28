@@ -6,8 +6,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, TypeVar, cast
 
 import json
+import operator
 from abc import abstractmethod
 
+from cachetools import LRUCache, cachedmethod
+from cachetools.keys import hashkey
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
@@ -19,7 +22,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
+from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
@@ -31,6 +34,26 @@ if TYPE_CHECKING:
 QueryObjectT = TypeVar("QueryObjectT", bound="QueryObject")
 
 
+def get_operation_structure_cache_key(obj: QueryObjectT) -> Any:
+    """
+    Returns the cache key QueryObject's OperationStructure cache.
+
+    The cache is used for OperationStructure which is derived from graph, so the hash key is based
+    on the graph instance (local or global) and node name.
+
+    Parameters
+    ----------
+    obj : QueryObjectT
+        Instance of the query object
+
+    Returns
+    -------
+    Any
+    """
+    graph_identity = 0 if isinstance(obj.graph, GlobalQueryGraph) else id(obj.graph)
+    return hashkey(graph_identity, obj.node_name)
+
+
 class QueryObject(FeatureByteBaseModel):
     """
     QueryObject class contains query graph, node, row index lineage & session.
@@ -40,6 +63,8 @@ class QueryObject(FeatureByteBaseModel):
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
+
+    _operation_structure_cache: Any = LRUCache(maxsize=1024)
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node_name={self.node_name})"
@@ -58,6 +83,21 @@ class QueryObject(FeatureByteBaseModel):
         """
         return self.graph.get_node_by_name(self.node_name)
 
+    @property  # type: ignore[misc]
+    @cachedmethod(
+        cache=operator.attrgetter("_operation_structure_cache"),
+        key=get_operation_structure_cache_key,
+    )
+    def operation_structure(self) -> OperationStructure:
+        """
+        Returns the operation structure of the current node
+
+        Returns
+        -------
+        OperationStructure
+        """
+        return self.graph.extract_operation_structure(self.node)
+
     @property
     def row_index_lineage(self) -> Tuple[str, ...]:
         """
@@ -67,8 +107,7 @@ class QueryObject(FeatureByteBaseModel):
         -------
         Tuple[str, ...]
         """
-        operation_structure = self.graph.extract_operation_structure(self.node)
-        return operation_structure.row_index_lineage
+        return self.operation_structure.row_index_lineage
 
     @property
     def node_types_lineage(self) -> list[NodeType]:
@@ -105,8 +144,7 @@ class QueryObject(FeatureByteBaseModel):
         -------
         NodeOutputCategory
         """
-        operation_structure = self.graph.extract_operation_structure(self.node)
-        return operation_structure.output_category
+        return self.operation_structure.output_category
 
     @root_validator
     @classmethod

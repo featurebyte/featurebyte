@@ -19,10 +19,20 @@ from featurebyte.api.source_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+
+
+def reset_global_graph():
+    """
+    Reset global graph state and get a new GlobalQueryGraph instance
+    """
+    GlobalGraphState.reset()
+    # Resetting GlobalGraph invalidates the QueryObject's operation structure cache
+    QueryObject._operation_structure_cache.clear()
+    return GlobalQueryGraph()
 
 
 def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixture=False):
