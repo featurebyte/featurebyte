@@ -23,7 +23,7 @@ class MaterializedTableMixin(MaterializedTableModel):
     """
 
     _route: ClassVar[str] = ""
-    _poll_async_task: Callable[..., Any] = None
+    _poll_async_task: Callable[..., Any]
 
     def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
         """
@@ -79,6 +79,11 @@ class MaterializedTableMixin(MaterializedTableModel):
     def delete(self) -> None:
         """
         Deletes the materialized table
+
+        Raises
+        ------
+        RecordDeletionException
+            When the record cannot be deleted properly
         """
         client = Configurations().get_client()
         response = client.delete(f"{self._route}/{self.id}")
