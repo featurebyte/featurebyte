@@ -43,6 +43,11 @@ class RequestColumn(Series):
         Returns
         -------
         RequestColumn
+
+        Raises
+        ------
+        NotImplementedError
+            If the request column is not the POINT_IN_TIME column
         """
         if not (
             column_name == SpecialColumnName.POINT_IN_TIME and column_dtype == DBVarType.TIMESTAMP
