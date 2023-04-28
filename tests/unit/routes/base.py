@@ -1234,3 +1234,8 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
                 """
             ).strip()
         )
+
+    @pytest.fixture(autouse=True)
+    def auto_patch_snowflake_execute_query(self, snowflake_execute_query_for_materialized_table):
+        """Patch SnowflakeSession.execute_query to return mock data"""
+        yield snowflake_execute_query_for_materialized_table

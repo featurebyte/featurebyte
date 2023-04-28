@@ -19,7 +19,7 @@ from featurebyte.common.utils import dataframe_from_json, validate_datetime_inpu
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
@@ -33,6 +33,9 @@ from featurebyte.schema.feature_store import (
 if TYPE_CHECKING:
     from featurebyte.core.frame import FrozenFrame
     from featurebyte.core.series import FrozenSeries
+
+
+logger = get_logger(__name__)
 
 
 def perf_logging(func: Any) -> Any:

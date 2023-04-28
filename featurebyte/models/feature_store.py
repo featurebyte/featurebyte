@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 import pymongo
 from pydantic import Field, StrictStr
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -78,6 +79,8 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
 
 class TableStatus(OrderedStrEnum):
     """Table status"""
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableStatus")
 
     DEPRECATED = "DEPRECATED"
     PUBLIC_DRAFT = "PUBLIC_DRAFT"

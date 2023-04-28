@@ -50,6 +50,7 @@ from featurebyte.common.documentation.constants import (
     TRANSFORM,
     TYPE,
     UTILITY_CLASSES,
+    UTILITY_METHODS,
     VIEW,
     VIEW_COLUMN,
     WAREHOUSE,
@@ -645,14 +646,31 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_utility_classes_layout() -> List[DocLayoutItem]:
+def _get_utility_methods_layout() -> List[DocLayoutItem]:
     """
-    The layout for the Enums used in featurebyte.
+    The layout for any utility methods used in featurebyte.
 
     Returns
     -------
     List[DocLayoutItem]
-        The layout for the Enums used in featurebyte.
+        The layout for the utility methods used in featurebyte.
+    """
+    return [
+        DocLayoutItem(
+            [UTILITY_METHODS, TRANSFORM, "to_timedelta"],
+            doc_path_override="core.timedelta.to_timedelta.md",
+        ),
+    ]
+
+
+def _get_utility_classes_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the utility classes used in featurebyte.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the utility classes used in featurebyte.
     """
     return [
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "MissingValueImputation"]),
@@ -667,6 +685,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "FeatureListStatus"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TableStatus"]),
         DocLayoutItem(
             [UTILITY_CLASSES, GROUPBY, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
         ),
@@ -886,6 +905,7 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_view_column_layout(),
         *_get_catalog_layout(),
         *_get_utility_classes_layout(),
+        *_get_utility_methods_layout(),
         *_get_source_table_layout(),
         *_get_feature_job_layout(),
         *_get_deployment_layout(),

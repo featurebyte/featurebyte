@@ -36,7 +36,7 @@ class TestPeriodicTaskApi(BaseApiTestSuite):
     base_route = "/periodic_task"
     payload = PeriodicTask(
         name="some task",
-        task="featurebyte.worker.task_executor.execute_task",
+        task="featurebyte.worker.task_executor.execute_io_task",
         interval=Interval(every=1, period="minutes"),
         args=[],
         kwargs={"some_key": "some_value"},

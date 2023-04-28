@@ -58,7 +58,6 @@ class LoggingSettings(BaseModel):
     """
 
     level: LogLevel = LogLevel.DEBUG
-    serialize: bool = False
 
 
 class LocalStorageSettings(BaseModel):
@@ -420,10 +419,10 @@ class Configurations:
             Invalid settings
         """
         # pylint: disable=import-outside-toplevel,cyclic-import
-        from featurebyte.logger import configure_logger, logger
+        from featurebyte.logging import reconfigure_loggers
 
         # configure logger
-        configure_logger(logger, self)
+        reconfigure_loggers(self)
 
         if self.profile:
             client = APIClient(api_url=self.profile.api_url, api_token=self.profile.api_token)

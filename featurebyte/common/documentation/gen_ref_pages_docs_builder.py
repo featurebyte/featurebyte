@@ -25,11 +25,14 @@ from featurebyte.common.documentation.doc_types import (
 )
 from featurebyte.common.documentation.documentation_layout import DocLayoutItem, get_overall_layout
 from featurebyte.common.documentation.resource_extractor import get_resource_details
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 
 DEBUG_MODE = os.environ.get("FB_DOCS_DEBUG_MODE", False)
 PATH_TO_DOCS_REPO = os.environ.get("FB_DOCS_REPO_PATH", None)
 MISSING_DEBUG_MARKDOWN = "missing.md"
+
+
+logger = get_logger(__name__)
 
 
 def get_missing_core_object_file_template(object_name: str, content: str) -> str:
@@ -71,11 +74,14 @@ class DocGroupKey:
     """
 
     module_path: str
-    class_name: str
+    # This class name can be optional if we are dealing with a pure function that is not part of a class.
+    class_name: Optional[str] = None
     attribute_name: Optional[str] = None
 
     def _get_path_to_join(self) -> List[str]:
-        path_to_join = [self.module_path, self.class_name]
+        path_to_join = [self.module_path]
+        if self.class_name:
+            path_to_join.append(self.class_name)
         if self.attribute_name:
             path_to_join.append(self.attribute_name)
         return path_to_join
@@ -100,6 +106,7 @@ class DocGroupKey:
 
         Attributes will be delimited by the unique `::` identifier.
         Proxy paths will be delimited by the unique `#` identifier.
+        Pure methods will be delimited by the unique `!!` identifier.
 
         Parameters
         ----------
@@ -111,6 +118,10 @@ class DocGroupKey:
         str
             The object path used to identify this class or function.
         """
+        if not self.class_name:
+            # attribute_name must not be none if there is no class.
+            assert self.attribute_name is not None
+            return "!!".join([self.module_path, self.attribute_name])
         base_path = ".".join([self.module_path, self.class_name])
         if self.attribute_name:
             return "::".join([base_path, self.attribute_name])
@@ -498,6 +509,35 @@ def _get_accessor_metadata(doc_path: str) -> Optional[AccessorMetadata]:
     return None
 
 
+def _add_pure_methods_to_doc_groups(
+    doc_groups: Dict[DocGroupKey, DocGroupValue]
+) -> Dict[DocGroupKey, DocGroupValue]:
+    """
+    Add pure methods to the doc groups.
+
+    Parameters
+    ----------
+    doc_groups: Dict[DocGroupKey, DocGroupValue]
+        The doc groups.
+
+    Returns
+    -------
+    Dict[DocGroupKey, DocGroupValue]
+        The doc groups.
+    """
+    doc_groups[
+        DocGroupKey(
+            module_path="featurebyte.core.timedelta",
+            attribute_name="to_timedelta",
+        )
+    ] = DocGroupValue(
+        doc_group=[],
+        obj_type="method",
+        proxy_path="",
+    )
+    return doc_groups
+
+
 def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
     """
     This returns a dictionary of doc groups.
@@ -528,6 +568,7 @@ def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
                 )
         except ModuleNotFoundError:
             continue
+    doc_groups = _add_pure_methods_to_doc_groups(doc_groups)
     return doc_groups
 
 
@@ -665,7 +706,7 @@ def _get_markdown_file_path_for_doc_layout_item(
         return proxied_path_to_markdown_path[item_path]
     elif DEBUG_MODE:
         print("key not found", item_path)
-    logger.warning("Unable to find markdown path for some paths", item_path=item_path)
+    logger.warning("Unable to find markdown path for some paths", {"item_path": item_path})
     return MISSING_DEBUG_MARKDOWN
 
 

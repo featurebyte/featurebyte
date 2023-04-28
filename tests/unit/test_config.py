@@ -18,7 +18,9 @@ from featurebyte.config import (
     Profile,
 )
 from featurebyte.exception import InvalidSettingsError
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def test_configurations():
@@ -91,15 +93,14 @@ def test_logging_level_change():
     Test logging level is consistent after local logging import in Configurations class
     """
     # pylint: disable=protected-access
-    # fix core log level to 10
-    logger._core.min_level = 10
+    logger.setLevel(10)
 
     config = Configurations("tests/fixtures/config/config.yaml")
     config.logging.level = 20
 
     # expect logging to adopt logging level specified in the config
     config.get_client()
-    assert logger._core.min_level == 20
+    assert logger.level == 20
 
 
 def test_default_local_storage():

@@ -3,9 +3,16 @@ This module contains TaskExecutor class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Awaitable
+
+import asyncio
+from threading import Thread
+from uuid import UUID
+
+import gevent
 
 from featurebyte.enum import WorkerCommand
+from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
@@ -13,6 +20,47 @@ from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import celery
 from featurebyte.worker.task.base import TASK_MAP
+
+logger = get_logger(__name__)
+
+
+def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
+    """
+    Start background event loop
+
+    Parameters
+    ----------
+    loop: AbstractEventLoop
+        Event loop to run
+    """
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+
+
+def run_async(coro: Awaitable[Any]) -> Any:
+    """
+    Run async function in both async and non-async context
+    Parameters
+    ----------
+    coro: Coroutine
+        Coroutine to run
+
+    Returns
+    -------
+    Any
+        result from function call
+    """
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        thread = Thread(target=start_background_loop, args=(loop,), daemon=True)
+        thread.start()
+    future = asyncio.run_coroutine_threadsafe(coro, loop)
+    event = gevent.event.Event()
+    future.add_done_callback(lambda _: event.set())
+    event.wait()
+    return future.result()
 
 
 class TaskExecutor:
@@ -42,8 +90,37 @@ class TaskExecutor:
         await self.task.execute()
 
 
+async def execute_task(request_id: UUID, **payload: Any) -> Any:
+    """
+    Execute Celery task
+
+    Parameters
+    ----------
+    request_id: UUID
+        Request ID
+    payload: Any
+        Task payload
+
+    Returns
+    -------
+    Any
+    """
+    progress = Progress(user_id=payload.get("user_id"), task_id=request_id)
+    executor = TaskExecutor(payload=payload, progress=progress)
+    # send initial progress to indicate task is started
+    progress.put({"percent": 0})
+    try:
+        return_val = await executor.execute()
+        # send final progress to indicate task is completed
+        progress.put({"percent": 100})
+        return return_val
+    finally:
+        # indicate stream is closed
+        progress.put({"percent": -1})
+
+
 @celery.task(bind=True)
-async def execute_task(self: Any, **payload: Any) -> None:
+def execute_io_task(self: Any, **payload: Any) -> Any:
     """
     Execute Celery task
 
@@ -53,15 +130,30 @@ async def execute_task(self: Any, **payload: Any) -> None:
         Celery Task
     payload: Any
         Task payload
+
+    Returns
+    -------
+    Any
     """
-    progress = Progress(user_id=payload.get("user_id"), task_id=self.request.id)
-    executor = TaskExecutor(payload=payload, progress=progress)
-    # send initial progress to indicate task is started
-    progress.put({"percent": 0})
-    try:
-        await executor.execute()
-        # send final progress to indicate task is completed
-        progress.put({"percent": 100})
-    finally:
-        # indicate stream is closed
-        progress.put({"percent": -1})
+    logger.debug("Received Request", extra={"request": self.request})
+    return run_async(execute_task(self.request.id, **payload))
+
+
+@celery.task(bind=True)
+def execute_cpu_task(self: Any, **payload: Any) -> Any:
+    """
+    Execute Celery task
+
+    Parameters
+    ----------
+    self: Any
+        Celery Task
+    payload: Any
+        Task payload
+
+    Returns
+    -------
+    Any
+    """
+    logger.debug("Received Request", extra={"request": self.request})
+    return asyncio.run(execute_task(self.request.id, **payload))

@@ -50,7 +50,7 @@ from featurebyte.exception import (
     InvalidSettingsError,
     RecordRetrievalException,
 )
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
     AccessTokenCredential,
     S3StorageCredential,
@@ -58,6 +58,7 @@ from featurebyte.models.credential import (
 )
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
@@ -76,6 +77,9 @@ from featurebyte.schema.deployment import DeploymentSummary
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
+
+
+logger = get_logger(__name__)
 
 
 def list_profiles() -> pd.DataFrame:
@@ -113,7 +117,7 @@ def get_active_profile() -> Profile:
     conf = Configurations()
     if not conf.profile:
         logger.error(
-            f"No profile found. Please update your configuration file at {conf.config_file_path}"
+            "No profile found. Please update your configuration file at {conf.config_file_path}"
         )
         raise InvalidSettingsError("No profile found")
 
@@ -478,6 +482,7 @@ __all__ = [
     "FeatureListStatus",
     "SourceType",
     "StorageType",
+    "TableStatus",
     # imputation related classes
     "MissingValueImputation",
     "DisguisedValueImputation",

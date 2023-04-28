@@ -58,20 +58,6 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 
-    @pytest.fixture(autouse=True)
-    def auto_patch_snowflake_execute_query(
-        self,
-        snowflake_connector,
-        snowflake_query_map,
-        snowflake_execute_query_batch_request_table_patcher,
-    ):
-        """Patch SnowflakeSession.execute_query to return mock data"""
-        _ = snowflake_connector
-        with snowflake_execute_query_batch_request_table_patcher(
-            snowflake_query_map, True
-        ) as mock_execute_query:
-            yield mock_execute_query
-
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """
         Setup for post route
@@ -118,21 +104,20 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
     def test_create_422__batch_request_table_failed_validation_check(
         self,
         test_api_client_persistent,
-        snowflake_query_map,
-        snowflake_execute_query_batch_request_table_patcher,
+        snowflake_execute_query_invalid_batch_request_table,
     ):
         """Test create 422 for batch request table failed validation check"""
+        _ = snowflake_execute_query_invalid_batch_request_table
         test_api_client, _ = test_api_client_persistent
-        with snowflake_execute_query_batch_request_table_patcher(snowflake_query_map, False):
-            self.setup_creation_route(test_api_client)
+        self.setup_creation_route(test_api_client)
 
-            # check that columns_info is empty as we are mocking the query
-            batch_request_table_id = self.payload["batch_request_table_id"]
-            response = test_api_client.get(f"/batch_request_table/{batch_request_table_id}")
-            assert response.json()["columns_info"] == []
+        # check that columns_info is empty as we are mocking the query
+        batch_request_table_id = self.payload["batch_request_table_id"]
+        response = test_api_client.get(f"/batch_request_table/{batch_request_table_id}")
+        assert response.json()["columns_info"] == []
 
-            # check that create fails
-            response = test_api_client.post(self.base_route, json=self.payload)
+        # check that create fails
+        response = test_api_client.post(self.base_route, json=self.payload)
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
@@ -160,6 +145,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
                 "user_id": user_id,
                 "batch_request_table_id": ObjectId(),  # different batch request table id
                 "columns_info": [],
+                "num_rows": 500,
                 "location": create_success_response_dict["location"],
             },
             user_id=user_id,

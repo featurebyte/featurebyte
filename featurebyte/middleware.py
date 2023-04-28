@@ -25,7 +25,9 @@ from featurebyte.exception import (
     RequiredEntityNotProvidedError,
     UnexpectedServingNamesMappingError,
 )
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class ExecutionContext:

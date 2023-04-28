@@ -2,7 +2,6 @@ name: publish
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
 ## GCR_PYPI_CREDENTIALS_RW_B64   | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
-## GCR_DOCKER_CREDENTIALS_R_B64  | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Docker     ] read
 ## SLACK_OAUTH                   | Slack App OAUTH Token           | [Slack                          ] write message
 on:
   push:

@@ -51,7 +51,7 @@ from featurebyte.exception import (
     NoJoinKeyFoundError,
     RepeatedColumnNamesError,
 )
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_request_table import ViewBatchRequestInput
 from featurebyte.models.observation_table import ViewObservationInput
@@ -70,6 +70,9 @@ else:
     GroupBy = TypeVar("GroupBy")
 
 ViewT = TypeVar("ViewT", bound="View")
+
+
+logger = get_logger(__name__)
 
 
 class ViewColumn(Series, SampleMixin):

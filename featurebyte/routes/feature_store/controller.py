@@ -7,7 +7,7 @@ from typing import Any, List
 
 from bson.objectid import ObjectId
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import ColumnSpec
@@ -29,6 +29,8 @@ from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.session.base import MetadataSchemaInitializer
+
+logger = get_logger(__name__)
 
 
 class FeatureStoreController(

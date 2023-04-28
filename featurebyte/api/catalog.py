@@ -31,11 +31,13 @@ from featurebyte.api.table import Table
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import activate_catalog, get_active_catalog_id
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
+
+logger = get_logger(__name__)
 
 
 class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin):
@@ -791,15 +793,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         """
         Gets a View object from the catalog based on the name of the table the view should be derived from.
 
-        You have the option to choose between two view construction modes: auto and manual, with auto being the
-        default mode.
-
-        When using the auto mode, the data accessed through the view is cleaned based on the default cleaning
-        operations specified in the catalog table and special columns such as the record creation timestamp that
-        are not intended for feature engineering are not included in the view columns.
-
-        In manual mode, the default cleaning operations are not applied, and you have the flexibility to define your
-        own cleaning operations.
+        The method doesn’t support the manual mode. If you want to create a view in manual mode, first obtain the table
+        and derive the view from the table.
 
         Parameters
         ----------

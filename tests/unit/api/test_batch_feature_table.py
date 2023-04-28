@@ -18,7 +18,9 @@ def mock_online_enable_service_update_data_warehouse():
 
 
 @pytest.fixture(name="batch_feature_table")
-def batch_feature_table_fixture(deployment, batch_request_table_from_view):
+def batch_feature_table_fixture(
+    deployment, batch_request_table_from_view, snowflake_execute_query_for_materialized_table
+):
     """BatchFeatureTable fixture"""
     deployment.enable()
     batch_feature_table = deployment.compute_batch_feature_table(
@@ -43,6 +45,7 @@ def test_list(batch_feature_table):
                 "name": "my_batch_feature_table",
                 "feature_store_name": "sf_featurestore",
                 "batch_request_table_name": "batch_request_table_from_event_view",
+                "shape": (500, 1),
                 "created_at": batch_feature_table.created_at,
             }
         ]

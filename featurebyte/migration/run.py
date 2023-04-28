@@ -9,7 +9,7 @@ import importlib
 import inspect
 
 from featurebyte.common.path_util import import_submodules
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, SchemaMetadataUpdate
 from featurebyte.migration.service import MigrationInfo
@@ -29,6 +29,9 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 BaseDocumentServiceT = BaseDocumentService[
     FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
 ]
+
+
+logger = get_logger(__name__)
 
 
 def _extract_migrate_method_marker(migrate_method: Any) -> MigrationInfo:

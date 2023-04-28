@@ -11,7 +11,7 @@ from bson import ObjectId
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import Document, QueryFilter
@@ -24,6 +24,9 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 if TYPE_CHECKING:
     from featurebyte.session.base import BaseSession
+
+
+logger = get_logger(__name__)
 
 
 class BaseMigrationServiceMixin(Protocol):

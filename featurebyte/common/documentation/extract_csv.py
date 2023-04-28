@@ -16,7 +16,9 @@ from featurebyte.common.documentation.resource_extractor import (
     ResourceDetails,
     get_resource_details,
 )
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass

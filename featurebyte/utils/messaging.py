@@ -10,9 +10,12 @@ from uuid import UUID
 import redis
 from bson.objectid import ObjectId
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 
 REDIS_URI = os.environ.get("REDIS_URI", "redis://localhost:6379")
+
+
+logger = get_logger(__name__)
 
 
 class Progress:

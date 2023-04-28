@@ -9,12 +9,14 @@ import dateutil.parser
 from pydantic import Field
 
 from featurebyte.enum import InternalName
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_monitor import TileMonitor
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
+
+logger = get_logger(__name__)
 
 
 class TileGenerateSchedule(TileCommon):

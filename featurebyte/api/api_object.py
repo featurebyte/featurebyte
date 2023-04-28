@@ -32,7 +32,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.schema.task import TaskStatus
 
@@ -41,6 +41,9 @@ ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
 POLLING_INTERVAL = 3
+
+
+logger = get_logger(__name__)
 
 
 def get_api_object_cache_key(

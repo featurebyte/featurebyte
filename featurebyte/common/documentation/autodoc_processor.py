@@ -126,7 +126,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
     # fbautodoc markdown pattern:
     # ::: {full_path_to_class}::{attribute_name}#{proxy_path}
-    RE = re.compile(r"(?:^|\n)::: ?([:a-zA-Z0-9_.#]*) *(?:\n|$)")
+    # ::: {full_path_to_class}!!{method_name} -> for pure functions
+    RE = re.compile(r"(?:^|\n)::: ?([:a-zA-Z0-9_.#!]*) *(?:\n|$)")
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

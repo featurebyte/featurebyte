@@ -18,9 +18,11 @@ from pyhive.hive import Cursor
 
 from featurebyte.common.utils import create_new_arrow_stream_writer
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.session.base_spark import BaseSparkSession
 from featurebyte.session.hive import AuthType, HiveConnection
+
+logger = get_logger(__name__)
 
 
 class SparkSession(BaseSparkSession):

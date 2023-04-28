@@ -10,7 +10,9 @@ from rich.pretty import pretty_repr
 
 from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class ProgressThread(threading.Thread):

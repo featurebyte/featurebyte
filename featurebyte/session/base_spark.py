@@ -15,7 +15,7 @@ from pydantic import PrivateAttr
 from featurebyte import StorageType
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.credential import StorageCredential
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 from featurebyte.session.simple_storage import (
@@ -24,6 +24,8 @@ from featurebyte.session.simple_storage import (
     S3SimpleStorage,
     SimpleStorage,
 )
+
+logger = get_logger(__name__)
 
 
 class BaseSparkSession(BaseSession, ABC):

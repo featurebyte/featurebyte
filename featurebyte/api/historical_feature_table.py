@@ -26,6 +26,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         "name",
         "feature_store_name",
         "observation_table_name",
+        "shape",
         "created_at",
     ]
     _list_foreign_keys = [

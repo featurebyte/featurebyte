@@ -11,8 +11,10 @@ from featurebyte.api.scd_view import SCDView
 from featurebyte.api.view import RawMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.query_graph.enum import GraphNodeType
+
+logger = get_logger(__name__)
 
 
 class DimensionViewColumn(ViewColumn):

@@ -14,7 +14,8 @@ from featurebyte.query_graph.enum import NodeType
 
 @typechecked
 def to_timedelta(series: Series, unit: TimedeltaSupportedUnitType) -> Series:
-    """Construct a timedelta Series that can be used to increment a datetime Series
+    """
+    Construct a timedelta Series that can be used to increment a datetime Series.
 
     Parameters
     ----------

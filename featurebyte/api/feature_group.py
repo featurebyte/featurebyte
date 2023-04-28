@@ -24,12 +24,14 @@ from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.core.series import Series
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.schema.feature_list import FeatureListPreview, FeatureListSQL
+
+logger = get_logger(__name__)
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):

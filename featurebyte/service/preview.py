@@ -17,7 +17,7 @@ from featurebyte.exception import (
     LimitExceededError,
     MissingPointInTimeColumnError,
 )
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
@@ -55,6 +55,9 @@ ARBITRARY_TIME = pd.Timestamp(1970, 1, 1, 12)
 MAX_TABLE_CELLS = int(
     os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
 )  # 10 million rows, 300 columns
+
+
+logger = get_logger(__name__)
 
 
 class PreviewService(BaseService):

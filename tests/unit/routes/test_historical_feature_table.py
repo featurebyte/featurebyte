@@ -147,6 +147,7 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
                 "user_id": user_id,
                 "observation_table_id": ObjectId(),  # different batch request table id
                 "columns_info": [],
+                "num_rows": 500,
                 "location": create_success_response_dict["location"],
                 "feature_list_id": ObjectId(),
             },

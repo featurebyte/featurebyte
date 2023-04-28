@@ -8,7 +8,7 @@ from typing import Any
 from bson import ObjectId
 from pydantic import PrivateAttr
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.feature import FeatureModel
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
@@ -16,6 +16,8 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
+
+logger = get_logger(__name__)
 
 
 async def drop_all_objects(session: BaseSession) -> None:
