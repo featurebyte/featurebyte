@@ -1,14 +1,61 @@
 """
 Integration test for online enabling features
 """
+import asyncio
+import os
+import subprocess
+import tempfile
+import time
+from textwrap import dedent
+
 import pytest
+import pytest_asyncio
+import requests
 
 from featurebyte import FeatureList
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
+from tests.integration.conftest import MONGO_CONNECTION
+from tests.integration.worker.conftest import RunThread
 
 
-@pytest.fixture(name="online_enabled_feature_list", scope="module")
-def online_enabled_feature_list_fixture(event_table, config):
+@pytest_asyncio.fixture(scope="function", name="app_service")
+async def app_service_fixture(persistent):
+    """
+    Start celery service for testing
+    """
+    # create new database for testing
+    env = os.environ.copy()
+    env.update({"MONGODB_URI": MONGO_CONNECTION, "MONGODB_DB": persistent._database})
+    with subprocess.Popen(
+        [
+            "uvicorn",
+            "featurebyte.app:app",
+            "--port=8080",
+        ],
+        env=env,
+        stdout=subprocess.PIPE,
+    ) as proc:
+        thread = RunThread(proc.stdout)
+        thread.daemon = True
+        thread.start()
+
+        # wait for service to start
+        start = time.time()
+        while time.time() - start < 20:
+            try:
+                response = requests.get("http://localhost:8080/status", timeout=1)
+                if response.status_code == 200:
+                    break
+            except requests.exceptions.ConnectionError:
+                pass
+            await asyncio.sleep(1)
+
+        yield persistent
+        proc.terminate()
+
+
+@pytest.fixture(name="online_enabled_feature_list_and_deployment", scope="module")
+def online_enabled_feature_list_and_deployment_fixture(event_table, config):
     """
     Fixture for an online enabled feature
 
@@ -38,7 +85,7 @@ def online_enabled_feature_list_fixture(event_table, config):
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
 
-    yield feature_list
+    yield feature_list, deployment
 
     deployment.disable()
 
@@ -77,3 +124,35 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
     assert res.json() == {
         "features": [{"order_id": "T1", "my_item_feature_for_online_enable_test": 3}]
     }
+
+
+def test_get_online_serving_code(online_enabled_feature_list_and_deployment, app_service):
+    """
+    Get the code for online serving
+    """
+    _, deployment = online_enabled_feature_list_and_deployment
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        # test python serving code
+        code_content = deployment.get_online_serving_code("python")
+        code_path = os.path.join(tempdir, "online_serving.py")
+        with open(code_path, "w", encoding="utf8") as file_obj:
+            file_obj.write(code_content)
+            last_line = code_content.split("\n")[-1]
+            file_obj.write(f"\nprint({last_line})")
+
+        result = subprocess.check_output(["python", code_path])
+        assert dedent(result.decode("utf8")) == (
+            "  PRODUCT_ACTION FEATURE_FOR_ONLINE_ENABLE_TESTING\n"
+            "0         detail                              None\n"
+        )
+
+        # test shell serving code
+        code_content = deployment.get_online_serving_code("sh")
+        code_path = os.path.join(tempdir, "online_serving.sh")
+        with open(code_path, "w", encoding="utf8") as file_obj:
+            file_obj.write(code_content)
+        result = subprocess.check_output(["sh", code_path])
+        assert result.decode("utf8") == (
+            '{"features":[{"PRODUCT_ACTION":"detail","FEATURE_FOR_ONLINE_ENABLE_TESTING":null}]}'
+        )
