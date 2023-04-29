@@ -65,6 +65,7 @@ fb.playground()
 
 ```python
 fb.stop()
+fb.stop(clean=True)  # To delete all docker volumes
 ```
 
 ## 📝 Documentation

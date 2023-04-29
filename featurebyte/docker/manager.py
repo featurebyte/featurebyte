@@ -246,17 +246,22 @@ def start_playground(datasets: Optional[List[str]] = None,
 
     logger.info(f"({step}/{num_steps}) Playground environment started successfully. Ready to go! 🚀")
 
-def stop_app(verbose: Optional[bool] = True) -> None:
+def stop_app(clean: Optional[bool] = False, verbose: Optional[bool] = True) -> None:
     """
     Stop application
 
     Parameters
     ----------
+    clean : Optional[bool]
+        Whether to clean up all data, by default False
     verbose : Optional[bool]
         Print verbose output
     """
     with get_docker_client() as docker:
-        docker.compose.down()
+        if clean:
+            docker.compose.down(remove_orphans=True, volumes=True)
+        else:
+            docker.compose.down()
     if verbose:
         message = (
         """
