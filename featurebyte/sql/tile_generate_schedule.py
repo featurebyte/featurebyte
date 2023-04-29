@@ -188,10 +188,10 @@ class TileGenerateSchedule(TileCommon):
 
         for spec in step_specs:
             try:
-                logger.info(f"Calling {spec['name']}\n")
+                logger.info(f"Calling {spec['name']}")
                 tile_ins: TileCommon = spec["trigger"]
                 await tile_ins.execute()
-                logger.info(f"End of calling {spec['name']}\n")
+                logger.info(f"End of calling {spec['name']}")
             except Exception as exception:
                 message = str(exception).replace("'", "")
                 fail_code = spec["status"]["fail"]
@@ -205,5 +205,5 @@ class TileGenerateSchedule(TileCommon):
 
             success_code = spec["status"]["success"]
             insert_sql = audit_insert_sql.replace("<STATUS>", success_code).replace("<MESSAGE>", "")
-            logger.info(f"success_insert_sql: {insert_sql}")
+            logger.debug(f"success_insert_sql: {insert_sql}")
             await retry_sql(self._session, insert_sql)
