@@ -18,12 +18,12 @@ from tests.integration.conftest import MONGO_CONNECTION
 from tests.integration.worker.conftest import RunThread
 
 
-@pytest_asyncio.fixture(scope="function", name="app_service")
+@pytest_asyncio.fixture(scope="session", name="app_service")
 async def app_service_fixture(persistent):
     """
-    Start celery service for testing
+    Start featurebyte service for testing
     """
-    # create new database for testing
+    # use the same database as persistent fixture
     env = os.environ.copy()
     env.update({"MONGODB_URI": MONGO_CONNECTION, "MONGODB_DB": persistent._database})
     with subprocess.Popen(
@@ -41,9 +41,9 @@ async def app_service_fixture(persistent):
 
         # wait for service to start
         start = time.time()
-        while time.time() - start < 20:
+        while time.time() - start < 30:
             try:
-                response = requests.get("http://localhost:8080/status", timeout=1)
+                response = requests.get("http://localhost:8080/status", timeout=5)
                 if response.status_code == 200:
                     break
             except requests.exceptions.ConnectionError:
