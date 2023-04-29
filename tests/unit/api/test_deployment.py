@@ -107,6 +107,7 @@ def test_get_online_serving_code(mock_preview, deployment):
     )
     deployment.enable()
     assert deployment.enabled is True
+    url = f"http://localhost:8080/deployment/{deployment.id}/online_features"
     assert (
         deployment.get_online_serving_code().strip()
         == textwrap.dedent(
@@ -131,9 +132,8 @@ def test_get_online_serving_code(mock_preview, deployment):
                 pd.DataFrame
                 """
                 response = requests.post(
-                    url="http://localhost:8080/deployment/{deployment.id}/online_features",
-                    params={{"catalog_id": "63eda344d0313fb925f7883a"}},
-                    headers={{"Content-Type": "application/json", "Authorization": "Bearer token"}},
+                    url="{url}",
+                    headers={{"Content-Type": "application/json", "active-catalog-id": "63eda344d0313fb925f7883a", "Authorization": "Bearer token"}},
                     json={{"entity_serving_names": entity_serving_names}},
                 )
                 assert response.status_code == 200, response.json()
@@ -144,18 +144,17 @@ def test_get_online_serving_code(mock_preview, deployment):
             '''
         ).strip()
     )
-    url = (
-        f"http://localhost:8080/deployment/{deployment.id}/online_features"
-        f"?catalog_id={deployment.cached_model.catalog_id}"
-    )
     assert (
         deployment.get_online_serving_code(language="sh").strip()
         == textwrap.dedent(
             f"""
             #!/bin/sh
 
-            curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
-                '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
+            curl -X POST \\
+                -H 'Content-Type: application/json' \\
+                -H 'active-catalog-id: 63eda344d0313fb925f7883a' \\
+                -H 'Authorization: Bearer token' \\
+                -d '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
                 {url}
             """
         ).strip()
