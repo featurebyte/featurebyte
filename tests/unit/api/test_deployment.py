@@ -7,7 +7,9 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
+import featurebyte as fb
 from featurebyte.api.deployment import Deployment
+from featurebyte.config import Configurations
 from featurebyte.exception import FeatureListNotOnlineEnabledError
 
 
@@ -68,6 +70,28 @@ def test_get_online_serving_code_unsupported_language(deployment):
     with pytest.raises(NotImplementedError) as exc:
         deployment.get_online_serving_code(language="java")
     assert "Supported languages: ['python', 'sh']" in str(exc.value)
+
+
+def test_list_deployment(deployment):
+    """
+    Test summarizing Deployment objects
+    """
+    config = Configurations()
+    client = config.get_client()
+
+    # enable deployment
+    deployment.enable()
+
+    fb.Catalog.get_active()
+    response = client.get("/deployment/summary/")
+    assert response.status_code == 200
+    assert response.json() == {"num_feature_list": 1, "num_feature": 1}
+
+    # make sure deployment can be retrieved in different catalog
+    catalog = fb.Catalog.create("another_catalog")
+    fb.Catalog.activate(catalog.name)
+    response = client.get("/deployment/summary/")
+    assert response.json() == {"num_feature_list": 1, "num_feature": 1}
 
 
 @patch("featurebyte.core.mixin.SampleMixin.preview")
