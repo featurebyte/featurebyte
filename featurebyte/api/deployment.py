@@ -170,8 +170,7 @@ class Deployment(ApiObject):
                 "
                 response = requests.post(
                     url="http://localhost:8080/deployment/{deployment.id}/online_features",
-                    params={{"catalog_id": "63eda344d0313fb925f7883a"}},
-                    headers={{"Content-Type": "application/json", "Authorization": "Bearer token"}},
+                    headers={{"Content-Type": "application/json", "active-catalog-id": "63eda344d0313fb925f7883a"}},
                     json={{"entity_serving_names": entity_serving_names}},
                 )
                 assert response.status_code == 200, response.json()
@@ -185,9 +184,12 @@ class Deployment(ApiObject):
         >>> deployment.enable()  # doctest: +SKIP
         >>> deployment.get_online_serving_code(language="sh")  # doctest: +SKIP
             \\#!/bin/sh
-            curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
-                '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
-                http://localhost:8080/deployment/641cf594f74f839cf9297884/online_features?catalog_id=63eda344d0313fb925f7883a
+            curl -X POST
+                -H 'Content-Type: application/json' \\
+                -H 'Authorization: Bearer token' \\
+                -H 'active-catalog-id: 63eda344d0313fb925f7883a' \\
+                -d '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
+                http://localhost:8080/deployment/641cf594f74f839cf9297884/online_features
 
         See Also
         --------
@@ -236,10 +238,13 @@ class Deployment(ApiObject):
         assert current_profile
         info = self.info()
         serving_endpoint = info["serving_endpoint"]
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "active-catalog-id": str(feature_list.catalog_id),
+        }
         if current_profile.api_token:
             headers["Authorization"] = f"Bearer {current_profile.api_token}"
-        header_params = " ".join([f"-H '{key}: {value}'" for key, value in headers.items()])
+        header_params = " \\\n    ".join([f"-H '{key}: {value}'" for key, value in headers.items()])
         serving_url = f"{current_profile.api_url}{serving_endpoint}"
 
         # populate template
@@ -254,7 +259,6 @@ class Deployment(ApiObject):
 
         return CodeStr(
             template.render(
-                catalog_id=feature_list.catalog_id,
                 headers=json.dumps(headers),
                 header_params=header_params,
                 serving_url=serving_url,
