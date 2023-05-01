@@ -70,11 +70,11 @@ warn_unused_ignores = true
 [tool.poetry]
 authors = ["FeatureByte <it-admin@featurebyte.com>"]
 classifiers = [
-  "Development Status :: 4 - Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Topic :: Software Development :: Libraries :: Python Modules",
-  "License :: Other/Proprietary License :: Elastic License 2.0",
+  "License :: Other/Proprietary License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
