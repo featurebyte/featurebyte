@@ -29,7 +29,9 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         try:
             await super().get_document(document_id=DEFAULT_CATALOG_ID)
         except DocumentNotFoundError:
-            await super().create_document(CatalogCreate(_id=DEFAULT_CATALOG_ID, name="default"))
+            await super().create_document(
+                CatalogCreate(_id=DEFAULT_CATALOG_ID, default_feature_store_ids=[], name="default")
+            )
 
     async def create_document(self, data: CatalogCreate) -> CatalogModel:
         await self._ensure_default_catalog_available()

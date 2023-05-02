@@ -67,13 +67,16 @@ class TestCatalogApi(BaseApiTestSuite):
             str(ObjectId()),
         )
         res_grocery = test_api_client.post(
-            self.base_route, json={"_id": catalog_id1, "name": "grocery"}
+            self.base_route,
+            json={"_id": catalog_id1, "name": "grocery", "default_feature_store_ids": []},
         )
         res_creditcard = test_api_client.post(
-            self.base_route, json={"_id": catalog_id2, "name": "creditcard"}
+            self.base_route,
+            json={"_id": catalog_id2, "name": "creditcard", "default_feature_store_ids": []},
         )
         res_healthcare = test_api_client.post(
-            self.base_route, json={"_id": catalog_id3, "name": "healthcare"}
+            self.base_route,
+            json={"_id": catalog_id3, "name": "healthcare", "default_feature_store_ids": []},
         )
         assert res_grocery.status_code == HTTPStatus.CREATED
         assert res_creditcard.status_code == HTTPStatus.CREATED

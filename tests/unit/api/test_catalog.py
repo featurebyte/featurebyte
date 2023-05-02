@@ -190,8 +190,8 @@ def test_get_data_source(snowflake_feature_store):
     """
     Test that get_data_source returns the correct data source.
     """
-    catalog = Catalog.get_active()
-    data_source = catalog.get_data_source(snowflake_feature_store.name)
+    catalog = Catalog.get_or_create("test", snowflake_feature_store.name)
+    data_source = catalog.get_data_source()
     assert data_source.type == "snowflake"
 
 
@@ -321,7 +321,7 @@ def catalog_fixture():
     """
     Catalog fixture
     """
-    catalog = Catalog(name="grocery")
+    catalog = Catalog(name="grocery", default_feature_store_ids=[])
     previous_id = catalog.id
     assert catalog.saved is False
     catalog.save()
@@ -350,7 +350,7 @@ def test_catalog__update_name(catalog):
     assert catalog.saved is True
 
     # test update name (non-saved object)
-    another_catalog = Catalog(name="CreditCard")
+    another_catalog = Catalog(name="CreditCard", default_feature_store_ids=[])
     with pytest.raises(RecordRetrievalException) as exc:
         Catalog.get("CreditCard")
     expected_msg = (
@@ -386,7 +386,7 @@ def test_catalog_creation(catalog):
     assert name_history[0].items() > {"name": "grocery"}.items()
 
     with pytest.raises(DuplicatedRecordException) as exc:
-        Catalog(name="grocery").save()
+        Catalog(name="grocery", default_feature_store_ids=[]).save()
     expected_msg = (
         'Catalog (name: "grocery") already exists. '
         'Get the existing object by `Catalog.get(name="grocery")`.'
@@ -421,6 +421,7 @@ def test_catalog_update_name(catalog):
             ("UPDATE", 'update: "grocery"', "name", "grocery", "Grocery"),
             ("UPDATE", 'update: "grocery"', "updated_at", None, catalog.updated_at.isoformat()),
             ("INSERT", 'insert: "grocery"', "created_at", np.nan, catalog.created_at.isoformat()),
+            ("INSERT", 'insert: "grocery"', "default_feature_store_ids", np.nan, []),
             ("INSERT", 'insert: "grocery"', "name", np.nan, "grocery"),
             ("INSERT", 'insert: "grocery"', "updated_at", np.nan, None),
             ("INSERT", 'insert: "grocery"', "user_id", np.nan, None),
@@ -432,7 +433,7 @@ def test_catalog_update_name(catalog):
     )
 
     # create another catalog
-    Catalog(name="creditcard").save()
+    Catalog(name="creditcard", default_feature_store_ids=[]).save()
 
     with pytest.raises(TypeError) as exc:
         catalog.update_name(type)
@@ -457,9 +458,9 @@ def test_get_catalog():
     Test Catalog.get function
     """
     # create catalogs & save to persistent
-    grocery_catalog = Catalog(name="grocery")
-    creditcard_catalog = Catalog(name="creditcard")
-    healthcare_catalog = Catalog(name="healthcare")
+    grocery_catalog = Catalog(name="grocery", default_feature_store_ids=[])
+    creditcard_catalog = Catalog(name="creditcard", default_feature_store_ids=[])
+    healthcare_catalog = Catalog(name="healthcare", default_feature_store_ids=[])
     grocery_catalog.save()
     creditcard_catalog.save()
     healthcare_catalog.save()
@@ -531,13 +532,13 @@ def test_get_catalog():
     assert (Catalog.list()["active"] == [False, True, False, False]).all()
 
 
-def test_activate():
+def test_activate(snowflake_feature_store):
     """
     Test Catalog.activate
     """
     # create catalogs & save to persistent
-    Catalog.create(name="grocery")
-    Catalog.create(name="creditcard")
+    Catalog.create(name="grocery", feature_store_name=snowflake_feature_store.name)
+    Catalog.create(name="creditcard", feature_store_name=snowflake_feature_store.name)
 
     # create entity in grocery catalog
     grocery_catalog = Catalog.activate("grocery")
@@ -560,15 +561,18 @@ def test_activate():
     "method_item",
     catalog_methods_to_test(),
 )
-def test_functions_are_called_from_active_catalog(method_item):
+def test_functions_are_called_from_active_catalog(method_item, snowflake_feature_store):
     """
     Test that catalog_obj.(list|get)_<x> functions are able to be called from the active, or inactive catalog.
     """
     method_name = method_item.class_method_delegated
+    credit_card_catalog = Catalog.create(
+        name="creditcard", feature_store_name=snowflake_feature_store.name
+    )
+    grocery_catalog = Catalog.create(
+        name="grocery", feature_store_name=snowflake_feature_store.name
+    )
     with patch.object(method_item.class_object, method_name):
-        credit_card_catalog = Catalog.create("creditcard")
-        grocery_catalog = Catalog.create(name="grocery")
-
         # Verify that there's no error even though the credit card catalog is not the current active catalog.
         # Also verify that there's no change in the global activate catalog_id.
         assert get_active_catalog_id() == grocery_catalog.id
@@ -583,7 +587,7 @@ def test_functions_are_called_from_active_catalog(method_item):
         assert get_active_catalog_id() == credit_card_catalog.id
 
 
-def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors():
+def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors(snowflake_feature_store):
     """
     Verify that the catalog state doesn't change if the wrapped function errors.
     """
@@ -609,18 +613,18 @@ def test_catalog_state_reverts_correctly_even_if_wrapped_function_errors():
             """
             raise TestCatalogError("test")
 
-    catalog_a = TestCatalog.create("catalog_a")
+    catalog_a = TestCatalog.create("catalog_a", snowflake_feature_store.name)
     assert get_active_catalog_id() == catalog_a.id
-    catalog_b = TestCatalog.create("catalog_b")
+    catalog_b = TestCatalog.create("catalog_b", snowflake_feature_store.name)
     assert get_active_catalog_id() == catalog_b.id
     with pytest.raises(TestCatalogError):
         catalog_a.throw_error_function()
     assert get_active_catalog_id() == catalog_b.id
 
 
-def test_catalog_name_synchronization_issue():
+def test_catalog_name_synchronization_issue(snowflake_feature_store):
     """Test catalog name synchronization issue."""
-    catalog = Catalog.create("random_catalog")
+    catalog = Catalog.create("random_catalog", snowflake_feature_store.name)
     cloned_catalog = Catalog.get("random_catalog")
     assert catalog.name == cloned_catalog.name == "random_catalog"
 

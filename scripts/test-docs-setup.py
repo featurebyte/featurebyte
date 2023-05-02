@@ -13,10 +13,11 @@ def setup() -> None:
     fb.playground(datasets=["doctest_grocery"])
 
     # create catalog
-    fb.Catalog.get_or_create("grocery")
+    feature_store = fb.FeatureStore.get("playground")
+    fb.Catalog.get_or_create("grocery", feature_store_name=feature_store.name)
     fb.Catalog.activate("grocery")
 
-    data_source = fb.FeatureStore.get("playground").get_data_source()
+    data_source = feature_store.get_data_source()
 
     # EventTable: GROCERYINVOICE
     if "GROCERYINVOICE" not in fb.Table.list()["name"].tolist():
