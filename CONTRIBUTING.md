@@ -1,10 +1,6 @@
 # How to contribute
 
----
-
 ## System Requirements
-
----
 
 ### Python
 
@@ -33,11 +29,10 @@ $ task init
 
 To activate your `virtualenv` run `poetry shell`.
 
-## Initializing
+### Initializing
 
 Run `task init` to install precommit hooks and
 validate that you have all the required dependencies to develop.
-
 
 ### Checks
 
@@ -48,8 +43,6 @@ Many checks are configured for this project:
 * Command `task lint-safety` command will look at the security of your code
 
 Command `task lint` applies all checks.
-
----
 
 ## Testing
 
