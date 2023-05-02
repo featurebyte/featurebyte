@@ -41,6 +41,7 @@ from featurebyte.common.documentation.constants import (
     MANAGE,
     OBSERVATION_TABLE,
     RELATIONSHIP,
+    REQUEST_COLUMN,
     SAVE,
     SERVE,
     SET_FEATURE_JOB,
@@ -118,6 +119,7 @@ class BetaWave3Nav(Nav):
         ENUMS,
         CLEANING_OPERATION,
         WAREHOUSE,
+        REQUEST_COLUMN,
     ]
 
     _custom_order_mapping = {

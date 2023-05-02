@@ -41,6 +41,7 @@ from featurebyte.common.documentation.constants import (
     MANAGE,
     OBSERVATION_TABLE,
     RELATIONSHIP,
+    REQUEST_COLUMN,
     SAVE,
     SERVE,
     SET_FEATURE_JOB,
@@ -709,6 +710,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "AccessTokenCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
+        DocLayoutItem([UTILITY_CLASSES, REQUEST_COLUMN, "RequestColumn.point_in_time"]),
     ]
 
 
