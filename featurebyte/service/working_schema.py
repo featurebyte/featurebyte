@@ -100,9 +100,9 @@ class WorkingSchemaService(BaseService):
                 use_raw_query_filter=True,
             )
 
-        async for feature_doc in online_enabled_feature_docs:
-            logger.info(f'Rescheduling jobs for online enabled feature: {feature_doc["name"]}')
-            feature = FeatureModel(**feature_doc)
-            await OnlineEnableService.update_data_warehouse_with_session(
-                session=session, feature=feature, task_manager=self._task_manager
-            )
+            async for feature_doc in online_enabled_feature_docs:
+                logger.info(f'Rescheduling jobs for online enabled feature: {feature_doc["name"]}')
+                feature = FeatureModel(**feature_doc)
+                await OnlineEnableService.update_data_warehouse_with_session(
+                    session=session, feature=feature, task_manager=self._task_manager
+                )
