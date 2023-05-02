@@ -23,7 +23,7 @@
 
 ---
 ### 🛑 Breaking changes 🛑
-+ `featurebyte` is now public
++ `featurebyte` is now available for early access
 
 ### 🚩 Deprecations 🚩
 
