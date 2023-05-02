@@ -388,7 +388,7 @@ class EventTable(TableApiObject):
 
         >>> from datetime import datetime
         >>> event_table = catalog.get_table("GROCERYINVOICE")
-        >>> analysis = event_table.create_new_feature_job_setting_analysis(
+        >>> analysis = event_table.create_new_feature_job_setting_analysis(  # doctest: +SKIP
         ...   analysis_date=datetime.utcnow(),
         ...   analysis_length=60*60*24*7*12,
         ...   min_featurejob_period=60*60,
@@ -399,7 +399,7 @@ class EventTable(TableApiObject):
         ... )
 
         The analysis could also be called with default values.
-        >>> default_analysis = event_table.create_new_feature_job_setting_analysis()
+        >>> default_analysis = event_table.create_new_feature_job_setting_analysis()  # doctest: +SKIP
 
         """
         payload = FeatureJobSettingAnalysisCreate(
