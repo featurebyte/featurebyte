@@ -19,6 +19,8 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
     Tests for HistoricalFeatureTable route
     """
 
+    wrap_payload_on_create = True
+
     class_name = "HistoricalFeatureTable"
     base_route = "/historical_feature_table"
     payload = BaseMaterializedTableTestSuite.load_payload(
@@ -79,16 +81,6 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
                 assert response.json()["status"] == "SUCCESS"
             else:
                 assert response.status_code == HTTPStatus.CREATED
-
-    def post(self, api_client, payload, **kwargs):
-        """Call post route with payload
-
-        The payload is passed via data instead of json since the route expects multipart/form-data
-        handling. Because of that, the payload is also wrapped in this format:
-        {"payload": payload_in_json}.
-        """
-        data = {"payload": json.dumps(payload)}
-        return api_client.post(f"{self.base_route}", data=data, **kwargs)
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""

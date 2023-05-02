@@ -37,6 +37,7 @@ class BaseApiTestSuite:
     class_name = None
     payload = None
     async_create = False
+    wrap_payload_on_create = False
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
     list_unprocessable_params_expected_detail_pairs = [
@@ -163,7 +164,15 @@ class BaseApiTestSuite:
 
     def post(self, api_client, payload, **kwargs):
         """Call post route with payload"""
-        return api_client.post(f"{self.base_route}", json=payload, **kwargs)
+
+        if self.wrap_payload_on_create:
+            # When set, the payload is passed via data instead of json since the route expects
+            # multipart/form-data handling. Because of that, the payload is also wrapped in this
+            # format: {"payload": payload_in_json}.
+            data = {"payload": json.dumps(payload)}
+            return api_client.post(self.base_route, data=data, **kwargs)
+
+        return api_client.post(self.base_route, json=payload, **kwargs)
 
     @pytest_asyncio.fixture()
     async def create_success_response(self, test_api_client_persistent):
