@@ -105,13 +105,12 @@ def import_dataset(dataset_name: str) -> None:
         # Delete archive file
         os.remove(archive_file)
 
+        # create temp destination folder in spark container
+        DockerClient().execute(
+            container="spark-thrift",
+            command=["mkdir", destination_folder],
+        )
         try:
-            # create temp destination folder in spark container
-            DockerClient().execute(
-                container="spark-thrift",
-                command=["mkdir", destination_folder],
-            )
-
             # Copy files to spark container
             for base_object in base_objects:
                 base_path = base_object.path
