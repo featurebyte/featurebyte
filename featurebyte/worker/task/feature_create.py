@@ -42,7 +42,7 @@ class FeatureCreateTask(BaseTask):
             **{
                 **payload.json_dict(),
                 "readiness": FeatureReadiness.DRAFT,
-                "version": await feature_service._get_feature_version(payload.name),
+                "version": await feature_service.generate_feature_version(payload.name),
                 "user_id": payload.user_id,
                 "catalog_id": payload.catalog_id,
             }

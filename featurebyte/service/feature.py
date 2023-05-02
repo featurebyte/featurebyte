@@ -84,7 +84,19 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             user=user, persistent=persistent, catalog_id=catalog_id
         )
 
-    async def _get_feature_version(self, name: str) -> VersionIdentifier:
+    async def generate_feature_version(self, name: str) -> VersionIdentifier:
+        """
+        Generate the feature version given the feature name
+
+        Parameters
+        ----------
+        name: str
+            Feature name
+
+        Returns
+        -------
+        VersionIdentifier
+        """
         version_name = get_version()
         query_result = await self.list_documents(
             query_filter={"name": name, "version.name": version_name}
@@ -125,7 +137,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             **{
                 **data.json_dict(),
                 "readiness": FeatureReadiness.DRAFT,
-                "version": await self._get_feature_version(data.name),
+                "version": await self.generate_feature_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
             }

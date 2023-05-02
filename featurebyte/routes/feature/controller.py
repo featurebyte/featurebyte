@@ -49,6 +49,7 @@ from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
 
+# pylint: disable=too-many-instance-attributes
 class FeatureController(
     BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList],
     DerivePrimaryEntityMixin,
@@ -72,6 +73,7 @@ class FeatureController(
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         task_controller: TaskController,
     ):
+        # pylint: disable=too-many-arguments
         super().__init__(service)
         self.feature_namespace_service = feature_namespace_service
         self.entity_service = entity_service
