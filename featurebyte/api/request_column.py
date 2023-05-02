@@ -8,6 +8,7 @@ from typing import Any, Optional
 from pydantic import Field
 from typeguard import typechecked
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -20,6 +21,8 @@ class RequestColumn(Series):
     """
     RequestColumn class
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.RequestColumn")
 
     tabular_source: Optional[TabularSource] = Field(  # type: ignore[assignment]
         allow_mutation=False, default=None
@@ -74,11 +77,28 @@ class RequestColumn(Series):
     @classmethod
     def point_in_time(cls) -> RequestColumn:
         """
-        Get a RequestColumn that represents the POINT_IN_TIME column in the request data
+        Get a RequestColumn that represents the POINT_IN_TIME column in the request data.
 
         Returns
         -------
         RequestColumn
+
+        Examples
+        --------
+        Create a feature that retrieves the timestamp of the latest invoice of a Customer.
+
+        >>> invoice_view = catalog.get_view("GROCERYINVOICE")
+        >>> latest_invoice = invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
+        ... value_column="Timestamp",
+        ...   method="latest",
+        ...   windows=[None],
+        ...   feature_names=["Customer Latest Visit"],
+        ... )
+        >>> # Create feature that computes the time since the latest invoice
+        >>> feature = (
+        ...    fb.RequestColumn.point_in_time() - latest_invoice["Customer Latest Visit"]
+        ... ).dt.hour
+        >>> feature.name = "Customer number of hours since last visit"
         """
         return RequestColumn.create_request_column(
             SpecialColumnName.POINT_IN_TIME.value, DBVarType.TIMESTAMP
