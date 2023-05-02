@@ -811,7 +811,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         Update table status
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
-        >>> event_table.update_status(TableStatus.PUBLIC_DRAFT)
+        >>> event_table.update_status(fb.TableStatus.PUBLIC_DRAFT)
         """
         self.update(update_payload={"status": str(status)}, allow_update_local=False)
 

@@ -322,7 +322,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a Catalog object that is already saved.
 
-        >>> catalog = fb.Catalog.get("catalog_name")  # doctest: +SKIP
+        >>> catalog = fb.Catalog.get(<catalog_name>)  # doctest: +SKIP
         """
         return super().get(name)
 
