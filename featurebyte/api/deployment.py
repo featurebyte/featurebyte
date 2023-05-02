@@ -85,12 +85,22 @@ class Deployment(ApiObject):
     def enable(self) -> None:
         """
         Enable the deployment.
+
+        Examples
+        --------
+        >>> deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
+        >>> deployment.enable()  # doctest: +SKIP
         """
         self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": True})
 
     def disable(self) -> None:
         """
         Disable the deployment.
+
+        Examples
+        --------
+        >>> deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
+        >>> deployment.disable()  # doctest: +SKIP
         """
         self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": False})
 
@@ -113,6 +123,14 @@ class Deployment(ApiObject):
         Returns
         -------
         BatchFeatureTable
+
+        Examples
+        --------
+        >>. deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
+        >>> batch_features = deployment.compute_batch_feature_table(  # doctest: +SKIP
+        ...   batch_request_table=batch_request_table,
+        ...   batch_feature_table_name = <batch_feature_table_name>
+        ... )
         """
         payload = BatchFeatureTableCreate(
             name=batch_feature_table_name,

@@ -72,7 +72,7 @@ class StringAccessor:
 
         Compute the length of each string element in the BrowserUserAgent column:
 
-        >>> view = catalog.get_table("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["BrowserUserAgentLength"] = view["BrowserUserAgent"].str.len()
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent  BrowserUserAgentLength
@@ -104,7 +104,7 @@ class StringAccessor:
 
         Convert the BrowserUserAgent column to lower case:
 
-        >>> view = catalog.get_table("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["BrowserUserAgentLower"] = view["BrowserUserAgent"].str.lower()
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent                              BrowserUserAgentLower
@@ -136,7 +136,7 @@ class StringAccessor:
 
         Convert the BrowserUserAgent column to upper case:
 
-        >>> view = catalog.get_table("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["BrowserUserAgentUpper"] = view["BrowserUserAgent"].str.upper()
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent                              BrowserUserAgentUpper
@@ -174,7 +174,7 @@ class StringAccessor:
 
         Remove leading and trailing "M" characters from the Title column:
 
-        >>> view = catalog.get_table("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["TitleStrip"] = view["Title"].str.strip("M")
         >>> view.preview(5).filter(regex="Title")
           Title TitleStrip
@@ -212,7 +212,7 @@ class StringAccessor:
 
         Remove leading "M" characters from the Title column:
 
-        >>> view = catalog.get_table("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["TitleStrip"] = view["Title"].str.lstrip("M")
         >>> view.preview(5).filter(regex="Title")
           Title TitleStrip
@@ -250,7 +250,7 @@ class StringAccessor:
 
         Remove leading "M" characters from the Title column:
 
-        >>> view = catalog.get_table("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["TitleStrip"] = view["Title"].str.rstrip(".")
         >>> view.preview(5).filter(regex="Title")
           Title TitleStrip
@@ -290,7 +290,7 @@ class StringAccessor:
 
         Replace "Windows" with "Win" in the BrowserUserAgent column:
 
-        >>> view = catalog.get_table("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["BrowserUserAgentNew"] = view["BrowserUserAgent"].str.replace("Windows", "Win")
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent                                BrowserUserAgentNew
@@ -332,7 +332,7 @@ class StringAccessor:
 
         Pad the Title column to 10 characters:
 
-        >>> view = catalog.get_table("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["PostalCodePadded"] = view["PostalCode"].str.pad(10, fillchar="0")
         >>> view.preview(5).filter(regex="PostalCode")
           PostalCode PostalCodePadded
@@ -372,7 +372,7 @@ class StringAccessor:
 
         Check whether the BrowserUserAgent column contains "x64":
 
-        >>> view = catalog.get_table("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["BrowserUserAgent_x64"] = view["BrowserUserAgent"].str.contains("x64")
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent  BrowserUserAgent_x64
@@ -421,7 +421,7 @@ class StringAccessor:
 
         Slice the first 10 characters from the BrowserUserAgent column:
 
-        >>> view = catalog.get_table("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["BrowserUserAgentSlice"] = view["BrowserUserAgent"].str.slice(0, 10)
         >>> view.preview(5).filter(regex="BrowserUserAgent")
                                             BrowserUserAgent BrowserUserAgentSlice

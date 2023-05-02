@@ -110,7 +110,7 @@ class CountDictAccessor:
 
         Create a new feature by calculating the entropy of the dictionary feature:
 
-        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> counts = catalog.get_feature("CustomerProductGroupCounts_7d")
         >>> new_feature = counts.cd.entropy()
         >>> new_feature.name = "CustomerProductGroupCountsEntropy_7d"
 
@@ -149,7 +149,7 @@ class CountDictAccessor:
 
         Create a new feature by retrieving the most frequent key of the dictionary feature:
 
-        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> counts = catalog.get_feature("CustomerProductGroupCounts_7d")
         >>> new_feature = counts.cd.most_frequent()
         >>> new_feature.name = "CustomerProductGroupCountsMostFrequent_7d"
 
@@ -193,7 +193,7 @@ class CountDictAccessor:
 
         Create a new feature by counting the number of keys in the dictionary feature:
 
-        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> counts = catalog.get_feature("CustomerProductGroupCounts_7d")
         >>> new_feature = counts.cd.unique_count()
         >>> new_feature.name = "CustomerProductGroupCountsUniqueCount_7d"
 
@@ -239,8 +239,8 @@ class CountDictAccessor:
         --------
         Create a similarity feature between two dictionary features:
 
-        >>> feature_1 = fb.Feature.get("CustomerProductGroupCounts_7d")
-        >>> feature_2 = fb.Feature.get("CustomerProductGroupCounts_90d")
+        >>> feature_1 = catalog.get_feature("CustomerProductGroupCounts_7d")
+        >>> feature_2 = catalog.get_feature("CustomerProductGroupCounts_90d")
         >>> similarity = feature_1.cd.cosine_similarity(feature_2)
         >>> similarity.name = "CustomerProductGroupCounts_7d_90d_similarity"
 
@@ -293,7 +293,7 @@ class CountDictAccessor:
         --------
         Create a new feature by getting the value for a particular key:
 
-        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> counts = catalog.get_feature("CustomerProductGroupCounts_7d")
         >>> new_feature = counts.cd.get_value("Chips et Tortillas")
         >>> new_feature.name = "Chips et Tortillas Value"
 
@@ -354,7 +354,7 @@ class CountDictAccessor:
         --------
         Create a new feature by computing the rank for a particular key:
 
-        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> counts = catalog.get_feature("CustomerProductGroupCounts_7d")
         >>> new_feature = counts.cd.get_rank("Chips et Tortillas")
         >>> new_feature.name = "Chips et Tortillas Rank"
 
@@ -412,7 +412,7 @@ class CountDictAccessor:
 
         Create a new feature by computing the relative frequency for a particular key:
 
-        >>> counts = fb.Feature.get("CustomerProductGroupCounts_7d")
+        >>> counts = catalog.get_feature("CustomerProductGroupCounts_7d")
         >>> new_feature = counts.cd.get_relative_frequency("Chips et Tortillas")
         >>> new_feature.name = "Chips et Tortillas Relative Frequency"
 

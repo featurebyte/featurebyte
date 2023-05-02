@@ -228,7 +228,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
         Examples
         --------
-        Get a FeatureStore object that is already saved.
+        Get a FeatureStore object by its Object ID.
 
         >>> fb.FeatureStore.get_by_id(<catalog_id>)  # doctest: +SKIP
         """
@@ -267,6 +267,12 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         -------
         DataSource
             DataSource object
+
+        Examples
+        --------
+        Get a data source from a feature store.
+
+        >>> data_source = fb.FeatureStore.get("playground").get_data_source()
 
         See Also
         --------

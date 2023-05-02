@@ -343,7 +343,7 @@ class ViewColumn(Series, SampleMixin):
         --------
         Convert a numerical series to a string series, and back to an int series.
 
-        >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> event_view = catalog.get_view("GROCERYINVOICE")
         >>> event_view["Amount"] = event_view["Amount"].astype(str)
         >>> event_view["Amount"] = event_view["Amount"].astype(int)
         """
@@ -482,7 +482,12 @@ class RawMixin(QueryObject, ABC):
     @property
     def raw(self) -> FrozenFrame:
         """
-        Return the raw input table view (without any cleaning operations applied)
+        Return the raw input table view (without any cleaning operations applied).
+
+        Examples
+        --------
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> items_view['Discount_missing'] = items_view.raw['Discount'].isnull()
 
         Returns
         -------
@@ -1293,7 +1298,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Examples
         --------
-        >>> import featurebyte as fb
         >>> features = dimension_view.as_features(  # doctest: +SKIP
         ...    column_names=["column_a", "column_b"],
         ...    feature_names=["Feature A", "Feature B"],
