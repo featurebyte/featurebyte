@@ -1,4 +1,4 @@
--- url: https://storage.googleapis.com/featurebyte-public-datasets/grocery.tar.gz
+-- url: https://storage.googleapis.com/featurebyte-public-datasets/grocery_20230502.tar.gz
 -- description: French Grocery Dataset
 
 DROP DATABASE IF EXISTS GROCERY CASCADE;
@@ -45,6 +45,7 @@ CREATE OR REPLACE VIEW GROCERY.GROCERYINVOICE(
     `GroceryInvoiceGuid`,
     `GroceryCustomerGuid`,
     `Timestamp`,
+    `tz_offset`,
     `record_available_at`,
     `Amount`
 ) as
