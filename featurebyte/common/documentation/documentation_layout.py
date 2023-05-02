@@ -710,6 +710,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "AccessTokenCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
+        DocLayoutItem([UTILITY_CLASSES, REQUEST_COLUMN, "RequestColumn.point_in_time"]),
     ]
 
 
@@ -891,20 +892,6 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_request_column_layout() -> List[DocLayoutItem]:
-    """
-    The layout for the RequestColumn module.
-
-    Returns
-    -------
-    List[DocLayoutItem]
-        The layout for the RequestColumn module.
-    """
-    return [
-        DocLayoutItem([REQUEST_COLUMN, INFO, "RequestColumn.point_in_time"]),
-    ]
-
-
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -936,5 +923,4 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_batch_request_table_layout(),
         *_get_observation_table_layout(),
         *_get_historical_feature_table_layout(),
-        *_get_request_column_layout(),
     ]

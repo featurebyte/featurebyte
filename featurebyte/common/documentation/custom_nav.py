@@ -77,7 +77,6 @@ class BetaWave3Nav(Nav):
         RELATIONSHIP,
         VIEW,
         VIEW_COLUMN,
-        REQUEST_COLUMN,
         FEATURE,
         FEATURE_GROUP,
         FEATURE_LIST,
@@ -120,6 +119,7 @@ class BetaWave3Nav(Nav):
         ENUMS,
         CLEANING_OPERATION,
         WAREHOUSE,
+        REQUEST_COLUMN,
     ]
 
     _custom_order_mapping = {
