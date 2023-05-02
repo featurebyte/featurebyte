@@ -10,6 +10,7 @@ import time
 from dataclasses import dataclass
 from functools import partial
 from http import HTTPStatus
+from itertools import groupby
 
 import pandas as pd
 from alive_progress import alive_bar
@@ -530,37 +531,41 @@ class ApiObject(FeatureByteBaseDocumentModel):
         -------
         DataFrame
         """
-        # populate object names using foreign keys
-        for foreign_key_mapping in cls._list_foreign_keys:
-            if foreign_key_mapping.use_list_versions:
-                assert hasattr(foreign_key_mapping.object_class, "list_versions")
-                object_list = foreign_key_mapping.object_class.list_versions(include_id=True)
+        key_func = lambda x: (x.foreign_key_field, x.object_class, x.use_list_versions)
+        list_foreign_keys = sorted(cls._list_foreign_keys, key=key_func)
+        for (
+            foreign_key_field,
+            object_class,
+            use_list_version,
+        ), foreign_key_mapping_group in groupby(list_foreign_keys, key=key_func):
+            if use_list_version:
+                object_list = object_class.list_versions(include_id=True)
             else:
-                object_list = foreign_key_mapping.object_class.list(include_id=True)
+                object_list = object_class.list(include_id=True)
 
-            if object_list.shape[0] > 0:
-                object_list.index = object_list.id
-                field_to_pull = (
-                    foreign_key_mapping.display_field_override
-                    if foreign_key_mapping.display_field_override
-                    else "name"
-                )
-                object_map = object_list[field_to_pull].to_dict()
-                foreign_key_field = foreign_key_mapping.foreign_key_field
-                if "." in foreign_key_field:
-                    # foreign_key is a dict
-                    foreign_key_field, object_id_field = foreign_key_field.split(".")
-                    mapping_function = partial(
-                        cls.map_dict_list_to_name, object_map, object_id_field
+            for foreign_key_mapping in foreign_key_mapping_group:
+                if object_list.shape[0] > 0:
+                    object_list.index = object_list.id
+                    field_to_pull = (
+                        foreign_key_mapping.display_field_override
+                        if foreign_key_mapping.display_field_override
+                        else "name"
                     )
+                    object_map = object_list[field_to_pull].to_dict()
+                    foreign_key_field = foreign_key_mapping.foreign_key_field
+                    if "." in foreign_key_field:
+                        # foreign_key is a dict
+                        foreign_key_field, object_id_field = foreign_key_field.split(".")
+                        mapping_function = partial(
+                            cls.map_dict_list_to_name, object_map, object_id_field
+                        )
+                    else:
+                        # foreign_key is an objectid
+                        mapping_function = partial(cls.map_object_id_to_name, object_map)
+                    new_field_values = item_list[foreign_key_field].apply(mapping_function)
                 else:
-                    # foreign_key is an objectid
-                    mapping_function = partial(cls.map_object_id_to_name, object_map)
-                new_field_values = item_list[foreign_key_field].apply(mapping_function)
-            else:
-                new_field_values = [[]] * item_list.shape[0]
-            item_list[foreign_key_mapping.new_field_name] = new_field_values
-
+                    new_field_values = [[]] * item_list.shape[0]
+                item_list[foreign_key_mapping.new_field_name] = new_field_values
         return item_list
 
     @typechecked
