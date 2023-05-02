@@ -37,7 +37,7 @@ from featurebyte.common.model_util import get_version
 from featurebyte.enum import AggFunc, DBVarType, InternalName
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.models.base import DEFAULT_CATALOG_ID, FeatureByteBaseModel, VersionIdentifier
+from featurebyte.models.base import DEFAULT_CATALOG_ID, VersionIdentifier
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
@@ -1408,17 +1408,15 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         ),
         context_id=context.id,
     )
-    historical_feature_table = {
-        "payload": HistoricalFeatureTableCreate(
-            name="historical_feature_table",
-            feature_store_id=snowflake_feature_store.id,
-            feature_list_id=feature_list.id,
-            observation_table_id=observation_table.id,
-            featurelist_get_historical_features=FeatureListGetHistoricalFeatures(
-                feature_clusters=feature_list._get_feature_clusters(),
-            ),
-        ).json()
-    }
+    historical_feature_table = HistoricalFeatureTableCreate(
+        name="historical_feature_table",
+        feature_store_id=snowflake_feature_store.id,
+        feature_list_id=feature_list.id,
+        observation_table_id=observation_table.id,
+        featurelist_get_historical_features=FeatureListGetHistoricalFeatures(
+            feature_clusters=feature_list._get_feature_clusters(),
+        ),
+    )
     batch_request_table = BatchRequestTableCreate(
         name="batch_request_table",
         feature_store_id=snowflake_feature_store.id,
@@ -1481,10 +1479,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         for schema, name in schema_payload_name_pairs:
             filename = f"{base_path}/{name}.json"
             with open(filename, "w") as fhandle:
-                if isinstance(schema, FeatureByteBaseModel):
-                    json_to_write = schema.json_dict()
-                else:
-                    json_to_write = schema
+                json_to_write = schema.json_dict()
                 json_to_write["_COMMENT"] = generated_comment
                 fhandle.write(json.dumps(json_to_write, indent=4, sort_keys=True))
             output_filenames.append(filename)
