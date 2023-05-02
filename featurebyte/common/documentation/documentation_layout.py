@@ -811,6 +811,8 @@ def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.batch_request_table_id"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.deployment_id"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.id"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, SAVE, "BatchFeatureTable.download"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, SAVE, "BatchFeatureTable.delete"]),
     ]
 
 
@@ -832,6 +834,8 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.created_at"]),
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.updated_at"]),
         DocLayoutItem([OBSERVATION_TABLE, LINEAGE, "ObservationTable.id"]),
+        DocLayoutItem([OBSERVATION_TABLE, SAVE, "ObservationTable.download"]),
+        DocLayoutItem([OBSERVATION_TABLE, SAVE, "ObservationTable.delete"]),
     ]
 
 
@@ -853,6 +857,8 @@ def _get_batch_request_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.created_at"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.updated_at"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, LINEAGE, "BatchRequestTable.id"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, SAVE, "BatchRequestTable.download"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, SAVE, "BatchRequestTable.delete"]),
     ]
 
 
@@ -872,6 +878,8 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_name"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.created_at"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.updated_at"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, SAVE, "HistoricalFeatureTable.download"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, SAVE, "HistoricalFeatureTable.delete"]),
         DocLayoutItem(
             [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.feature_list_id"]
         ),
