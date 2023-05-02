@@ -801,6 +801,7 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
                 "feature_list_name",
                 "feature_list_version",
                 "num_feature",
+                "enabled",
             ]
         ),
     )

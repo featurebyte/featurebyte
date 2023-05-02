@@ -53,6 +53,7 @@ class Deployment(ApiObject):
         "feature_list_name",
         "feature_list_version",
         "num_feature",
+        "enabled",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_name", "name", True),
