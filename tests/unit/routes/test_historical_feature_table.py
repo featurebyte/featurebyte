@@ -21,10 +21,8 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
 
     class_name = "HistoricalFeatureTable"
     base_route = "/historical_feature_table"
-    payload = json.loads(
-        BaseMaterializedTableTestSuite.load_payload(
-            "tests/fixtures/request_payloads/historical_feature_table.json"
-        )["payload"]
+    payload = BaseMaterializedTableTestSuite.load_payload(
+        "tests/fixtures/request_payloads/historical_feature_table.json"
     )
     random_id = str(ObjectId())
 
