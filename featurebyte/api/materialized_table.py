@@ -27,12 +27,12 @@ class MaterializedTableMixin(MaterializedTableModel):
 
     def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
         """
-        Downloads the table from the database
+        Downloads the table from the database.
 
         Parameters
         ----------
         output_path: Optional[Union[str, Path]]
-            Location to save downloaded parquet file
+            Location to save downloaded parquet file.
 
         Returns
         -------
@@ -41,9 +41,9 @@ class MaterializedTableMixin(MaterializedTableModel):
         Raises
         ------
         FileExistsError
-            File already exists at output path
+            File already exists at output path.
         RecordRetrievalException
-            Error retrieving record from API
+            Error retrieving record from API.
         """
         file_name = f"{self.location.table_details.table_name}.parquet"
         output_path = output_path or Path(f"./{file_name}")
@@ -78,7 +78,7 @@ class MaterializedTableMixin(MaterializedTableModel):
 
     def delete(self) -> None:
         """
-        Deletes the materialized table
+        Deletes the materialized table.
 
         Raises
         ------
