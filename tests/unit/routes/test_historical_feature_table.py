@@ -2,6 +2,7 @@
 Tests for HistoricalFeatureTable routes
 """
 import copy
+import json
 from http import HTTPStatus
 from unittest.mock import patch
 
@@ -20,8 +21,10 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
 
     class_name = "HistoricalFeatureTable"
     base_route = "/historical_feature_table"
-    payload = BaseMaterializedTableTestSuite.load_payload(
-        "tests/fixtures/request_payloads/historical_feature_table.json"
+    payload = json.loads(
+        BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/historical_feature_table.json"
+        )["payload"]
     )
     random_id = str(ObjectId())
 
@@ -79,6 +82,16 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
             else:
                 assert response.status_code == HTTPStatus.CREATED
 
+    def post(self, api_client, payload, **kwargs):
+        """Call post route with payload
+
+        The payload is passed via data instead of json since the route expects multipart/form-data
+        handling. Because of that, the payload is also wrapped in this format:
+        {"payload": payload_in_json}.
+        """
+        data = {"payload": json.dumps(payload)}
+        return api_client.post(f"{self.base_route}", data=data, **kwargs)
+
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
@@ -119,7 +132,7 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
             "random_name": "random_name"
         }
 
-        response = test_api_client.post(self.base_route, json=payload)
+        response = self.post(test_api_client, payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
             "Unexpected serving names provided in serving_names_mapping: random_name"

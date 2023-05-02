@@ -161,13 +161,17 @@ class BaseApiTestSuite:
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """Setup for post route"""
 
+    def post(self, api_client, payload, **kwargs):
+        """Call post route with payload"""
+        return api_client.post(f"{self.base_route}", json=payload, **kwargs)
+
     @pytest_asyncio.fixture()
     async def create_success_response(self, test_api_client_persistent):
         """Post route success response object"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         id_before = self.payload["_id"]
-        response = test_api_client.post(f"{self.base_route}", json=self.payload)
+        response = self.post(test_api_client, self.payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
         assert response_dict["_id"] == id_before
@@ -186,7 +190,7 @@ class BaseApiTestSuite:
         output = []
         for _, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
-            response = test_api_client.post(f"{self.base_route}", json=payload)
+            response = self.post(test_api_client, payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
             if self.async_create:
                 assert response.json()["status"] == "SUCCESS"
@@ -201,7 +205,7 @@ class BaseApiTestSuite:
         self.setup_creation_route(test_api_client)
         payload = {key: value for key, value in self.payload.items() if key != "_id"}
         assert "_id" not in payload
-        response = test_api_client.post(f"{self.base_route}", json=payload)
+        response = self.post(test_api_client, payload)
         assert response.status_code == HTTPStatus.CREATED
 
     def test_create_201__id_is_none(self, test_api_client_persistent):
@@ -210,7 +214,7 @@ class BaseApiTestSuite:
         self.setup_creation_route(test_api_client)
         payload = self.payload.copy()
         payload["_id"] = None
-        response = test_api_client.post(f"{self.base_route}", json=payload)
+        response = self.post(test_api_client, payload)
         assert response.status_code == HTTPStatus.CREATED
 
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
@@ -242,7 +246,7 @@ class BaseApiTestSuite:
         test_api_client, _ = test_api_client_persistent
 
         conflict_payload, expected_message = create_conflict_payload_expected_detail
-        response = test_api_client.post(f"{self.base_route}", json=conflict_payload)
+        response = self.post(test_api_client, conflict_payload)
         assert response.status_code == HTTPStatus.CONFLICT
         assert response.json()["detail"] == expected_message
 
@@ -256,7 +260,7 @@ class BaseApiTestSuite:
         _ = create_success_response
         test_api_client, _ = test_api_client_persistent
         unprocessable_payload, expected_detail = create_unprocessable_payload_expected_detail
-        response = test_api_client.post(f"{self.base_route}", json=unprocessable_payload)
+        response = self.post(test_api_client, unprocessable_payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == expected_detail
 
@@ -452,7 +456,7 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         id_before = self.payload["_id"]
-        response = test_api_client.post(self.base_route, json=self.payload)
+        response = self.post(test_api_client, self.payload)
 
         response = self.wait_for_results(test_api_client, response)
         response_dict = response.json()
