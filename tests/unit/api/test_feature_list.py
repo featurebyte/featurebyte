@@ -19,7 +19,6 @@ from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import InternalName
 from featurebyte.exception import (
     DuplicatedRecordException,
-    FeatureListNotOnlineEnabledError,
     ObjectHasBeenSavedError,
     RecordDeletionException,
     RecordRetrievalException,

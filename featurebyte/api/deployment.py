@@ -9,11 +9,13 @@ import json
 import os
 
 from jinja2 import Template
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.entity import Entity
+from featurebyte.api.feature_job import FeatureJobStatusResult
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.table import Table
 from featurebyte.common.doc_util import FBAutoDoc
@@ -95,6 +97,7 @@ class Deployment(ApiObject):
         """
         self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": False})
 
+    @typechecked
     def compute_batch_feature_table(
         self,
         batch_request_table: BatchRequestTable,
@@ -265,4 +268,28 @@ class Deployment(ApiObject):
                 serving_url=serving_url,
                 entity_serving_names=entity_serving_names,
             )
+        )
+
+    def get_feature_jobs_status(
+        self,
+        job_history_window: int = 1,
+        job_duration_tolerance: int = 60,
+    ) -> FeatureJobStatusResult:
+        """
+        Get the status of feature jobs in the associated feature list used for the deployment.
+
+        Parameters
+        ----------
+        job_history_window: int
+            History window in hours.
+        job_duration_tolerance: int
+            Maximum duration before job is considered later, in seconds.
+
+        Returns
+        -------
+        FeatureJobStatusResult
+        """
+        return FeatureList.get_by_id(self.feature_list_id).get_feature_jobs_status(
+            job_history_window=job_history_window,
+            job_duration_tolerance=job_duration_tolerance,
         )
