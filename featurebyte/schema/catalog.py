@@ -25,6 +25,7 @@ class CatalogCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
+    default_feature_store_ids: List[PydanticObjectId]
 
 
 class CatalogList(PaginationMixin):
