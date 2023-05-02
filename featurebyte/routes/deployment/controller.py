@@ -196,24 +196,26 @@ class DeploymentController(
         """
         feature_list_ids = set()
         feature_ids = set()
-        self.service.allow_use_raw_query_filter()
-        deployment_data = await self.service.list_documents(
-            page=1,
-            page_size=0,
-            query_filter={"enabled": True},
-            use_raw_query_filter=True,
-        )
+        with self.service.allow_use_raw_query_filter():
+            deployment_data = await self.service.list_documents(
+                page=1,
+                page_size=0,
+                query_filter={"enabled": True},
+                use_raw_query_filter=True,
+            )
+
         for doc in deployment_data["data"]:
             deployment_model = DeploymentModel(**doc)
             feature_list_ids.add(deployment_model.feature_list_id)
 
-        self.feature_list_service.allow_use_raw_query_filter()
-        async for doc in self.feature_list_service.list_documents_iterator(
-            query_filter={"_id": {"$in": list(feature_list_ids)}},
-            use_raw_query_filter=True,
-        ):
-            feature_list_model = FeatureListModel(**doc)
-            feature_ids.update(set(feature_list_model.feature_ids))
+        with self.feature_list_service.allow_use_raw_query_filter():
+            async for doc in self.feature_list_service.list_documents_iterator(
+                query_filter={"_id": {"$in": list(feature_list_ids)}},
+                use_raw_query_filter=True,
+            ):
+                feature_list_model = FeatureListModel(**doc)
+                feature_ids.update(set(feature_list_model.feature_ids))
+
         return DeploymentSummary(
             num_feature_list=len(feature_list_ids),
             num_feature=len(feature_ids),

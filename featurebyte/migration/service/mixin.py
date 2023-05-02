@@ -91,11 +91,11 @@ class BaseMigrationServiceMixin(Protocol):
         """
         # migrate all records and audit records
         if query_filter is None:
-            self.allow_use_raw_query_filter()
-            query_filter = dict(self._construct_list_query_filter(use_raw_query_filter=True))
-        to_iterate, page = True, 1
+            with self.allow_use_raw_query_filter():
+                query_filter = dict(self._construct_list_query_filter(use_raw_query_filter=True))
 
         logger.info(f'Start migrating all records (collection: "{self.collection_name}")')
+        to_iterate, page = True, 1
         while to_iterate:
             docs, total = await self.persistent.find(
                 collection_name=self.collection_name,
