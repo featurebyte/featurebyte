@@ -2,7 +2,7 @@
 
 ---
 
-## v0.2.0
+## v0.2.1
 
 ---
 
@@ -18,3 +18,17 @@
 ### 🧰 Bug fixes 🧰
 
 ---
+
+## v0.2.0
+
+---
+### 🛑 Breaking changes 🛑
++ `featurebyte` is now public
+
+### 🚩 Deprecations 🚩
+
+
+### 💡 Enhancements 💡
+
+
+### 🧰 Bug fixes 🧰
