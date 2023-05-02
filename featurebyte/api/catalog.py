@@ -809,11 +809,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         >>> data_source = catalog.get_data_source()
         """
-        assert len(self.internal_default_feature_store_ids) == 1, (
-            "No default feature store is found. Please use "
-            "an existing catalog, or create a new one and "
-            "associate a feature store with it."
-        )
+        assert (
+            len(self.internal_default_feature_store_ids) == 1
+        ), "No active catalog in this session. Please activate an existing catalog or create a new one to proceed."
         feature_store = FeatureStore.get_by_id(id=self.internal_default_feature_store_ids[0])
         return feature_store.get_data_source()  # pylint: disable=no-member
 
