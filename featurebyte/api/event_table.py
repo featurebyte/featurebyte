@@ -387,7 +387,7 @@ class EventTable(TableApiObject):
         - tolerance for late data is incresed to 0.5%.
 
         >>> from datetime import datetime
-        >>> event_table = catalog.get_table(""GROCERYINVOICE"")
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> analysis = event_table.create_new_feature_job_setting_analysis(
         ...   analysis_date=datetime.utcnow(),
         ...   analysis_length=60*60*24*7*12,

@@ -863,7 +863,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute exponential values for a Column in a View:
 
-        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view = catalog.get_view("INVOICEITEMS")
         >>> view["QuantityExp"] = view["Quantity"].exp()
         >>> view.preview(5).filter(regex="Quantity")
            Quantity  QuantityExp
