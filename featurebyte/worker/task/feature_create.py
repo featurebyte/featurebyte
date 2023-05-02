@@ -11,13 +11,15 @@ import os
 
 from bson import ObjectId
 
-from featurebyte.logger import logger
+from featurebyte.logging import get_logger
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 from featurebyte.schema.worker.task.feature_create import FeatureCreateTaskPayload
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.table import TableService
 from featurebyte.worker.task.base import BaseTask
+
+logger = get_logger(__name__)
 
 
 class FeatureCreateTask(BaseTask):
