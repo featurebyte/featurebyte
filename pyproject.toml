@@ -92,7 +92,7 @@ license = "Elastic License 2.0"
 name = "featurebyte"
 readme = "README.md"
 repository = "https://github.com/featurebyte/featurebyte"
-version = "0.2.0.rc1"
+version = "0.2.0rc1"
 
 [tool.poetry.dependencies]
 PyYAML = "^6.0"
@@ -113,7 +113,7 @@ featurebyte-freeware = { version = "^0.2.14", optional = true }
 gevent = {version = "^22.10.2", optional = true}
 humanize = "^4.4.0"
 importlib_metadata = { version = "^4.5.0", python = "^3.8"}
-jinja2 = { version = "^3.1.2", optional = true }
+jinja2 = "^3.1.2"
 lazy-object-proxy = "^1.7.1"
 motor = { version = "^3.0.0", optional = true }
 orjson = "^3.8.3"
@@ -141,7 +141,7 @@ websocket-client = "^1.5.1"
 wheel = "0.40.0"
 
 [tool.poetry.extras]
-server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "featurebyte-databricks-sql-connector", "featurebyte-freeware", "gevent"]
+server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "featurebyte-databricks-sql-connector", "featurebyte-freeware", "gevent"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
