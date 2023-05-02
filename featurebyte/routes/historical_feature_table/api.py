@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from typing import Optional, cast
 
+import json
 from http import HTTPStatus
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, File, Form, Request, UploadFile
 from starlette.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
@@ -36,14 +37,18 @@ router = APIRouter(prefix="/historical_feature_table")
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)
 async def create_historical_feature_table(
     request: Request,
-    data: HistoricalFeatureTableCreate,
+    payload: str = Form(),
+    observation_set: Optional[UploadFile] = None,
 ) -> Task:
     """
     Create HistoricalFeatureTable by submitting a materialization task
     """
+    data = HistoricalFeatureTableCreate(**json.loads(payload))
     controller = request.state.app_container.historical_feature_table_controller
     task_submit: Task = await controller.create_historical_feature_table(
         data=data,
+        observation_set=observation_set,
+        temp_storage=request.state.get_temp_storage(),
     )
     return task_submit
 

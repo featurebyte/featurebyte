@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from pathlib import Path
+
 from featurebyte.logging import get_logger
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.worker.task.historical_feature_table import (
@@ -38,10 +40,20 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
 
         app_container = self.app_container
 
-        observation_table_service: ObservationTableService = app_container.observation_table_service
-        observation_table_model = await observation_table_service.get_document(
-            payload.observation_table_id
-        )
+        if payload.observation_table_id is not None:
+            # ObservationTable as observation set
+            observation_table_service: ObservationTableService = (
+                app_container.observation_table_service
+            )
+            observation_set = await observation_table_service.get_document(
+                payload.observation_table_id
+            )
+        else:
+            # In-memory DataFrame as observation set
+            assert payload.observation_set_storage_path is not None
+            observation_set = await self.get_temp_storage().get_dataframe(
+                Path(payload.observation_set_storage_path)
+            )
 
         historical_feature_table_service: HistoricalFeatureTableService = (
             app_container.historical_feature_table_service
@@ -55,7 +67,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
         ):
             preview_service: PreviewService = app_container.preview_service
             await preview_service.compute_historical_features(
-                observation_set=observation_table_model,
+                observation_set=observation_set,
                 featurelist_get_historical_features=payload.featurelist_get_historical_features,
                 get_credential=self.get_credential,
                 output_table_details=location.table_details,

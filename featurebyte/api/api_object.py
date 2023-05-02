@@ -783,6 +783,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
         payload: dict[str, Any],
         delay: float = POLLING_INTERVAL,
         retrieve_result: bool = True,
+        is_payload_json: bool = True,
+        files: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """
         Post async task to the worker & retrieve the results (blocking)
@@ -809,7 +811,12 @@ class ApiObject(FeatureByteBaseDocumentModel):
             When unexpected creation failure
         """
         client = Configurations().get_client()
-        create_response = client.post(url=route, json=payload)
+        post_kwargs = {"url": route, "files": files}
+        if is_payload_json:
+            post_kwargs["json"] = payload
+        else:
+            post_kwargs["data"] = payload
+        create_response = client.post(**post_kwargs)  # type: ignore[arg-type]
         if create_response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=create_response)
         return cls._poll_async_task(

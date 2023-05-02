@@ -23,7 +23,7 @@ class HistoricalFeatureTableCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     feature_store_id: PydanticObjectId
-    observation_table_id: PydanticObjectId
+    observation_table_id: Optional[PydanticObjectId]
     featurelist_get_historical_features: FeatureListGetHistoricalFeatures
 
 

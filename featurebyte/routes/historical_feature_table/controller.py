@@ -3,8 +3,12 @@ HistoricalTable API route controller
 """
 from __future__ import annotations
 
-from bson import ObjectId
+from typing import Optional
 
+from bson import ObjectId
+from fastapi import UploadFile
+
+from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
@@ -20,6 +24,7 @@ from featurebyte.service.historical_feature_table import HistoricalFeatureTableS
 from featurebyte.service.info import InfoService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
+from featurebyte.storage import Storage
 
 
 class HistoricalFeatureTableController(
@@ -53,6 +58,8 @@ class HistoricalFeatureTableController(
     async def create_historical_feature_table(
         self,
         data: HistoricalFeatureTableCreate,
+        observation_set: Optional[UploadFile],
+        temp_storage: Storage,
     ) -> Task:
         """
         Create HistoricalFeatureTable by submitting an async historical feature request task
@@ -66,12 +73,23 @@ class HistoricalFeatureTableController(
         -------
         Task
         """
-        # Validate the observation_table_id
-        observation_table = await self.observation_table_service.get_document(
-            document_id=data.observation_table_id
-        )
+        # TODO: validate only either of observation_set and observation_table_id is set
+        # TODO: is the description "Observation set data in parquet format" accurate?
 
-        # feature cluster group feature graph by feature store ID, only single feature store is supported
+        # Validate the observation_table_id
+        if data.observation_table_id is not None:
+            observation_table = await self.observation_table_service.get_document(
+                document_id=data.observation_table_id
+            )
+            observation_set_dataframe = None
+            request_column_names = {col.name for col in observation_table.columns_info}
+        else:
+            assert observation_set is not None
+            observation_set_dataframe = dataframe_from_arrow_stream(observation_set.file)
+            request_column_names = set(observation_set_dataframe.columns)
+
+        # feature cluster group feature graph by feature store ID, only single feature store is
+        # supported
         feature_cluster = data.featurelist_get_historical_features.feature_clusters[0]
         feature_store = await self.feature_store_service.get_document(
             document_id=feature_cluster.feature_store_id
@@ -79,13 +97,15 @@ class HistoricalFeatureTableController(
         await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
-            request_column_names={col.name for col in observation_table.columns_info},
+            request_column_names=request_column_names,
             feature_store=feature_store,
             serving_names_mapping=data.featurelist_get_historical_features.serving_names_mapping,
         )
 
         # prepare task payload and submit task
-        payload = await self.service.get_historical_feature_table_task_payload(data=data)
+        payload = await self.service.get_historical_feature_table_task_payload(
+            data=data, storage=temp_storage, observation_set_dataframe=observation_set_dataframe
+        )
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
