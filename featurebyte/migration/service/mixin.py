@@ -3,9 +3,10 @@ MigrationServiceMixin class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Protocol
 
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 
 from bson import ObjectId
 
@@ -68,7 +69,8 @@ class BaseMigrationServiceMixin(Protocol):
         """
 
     @abstractmethod
-    def allow_use_raw_query_filter(self) -> None:
+    @contextmanager
+    def allow_use_raw_query_filter(self) -> Iterator[None]:
         """Activate use of raw query filter"""
 
     async def migrate_all_records(

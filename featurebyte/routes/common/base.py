@@ -132,7 +132,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
 
         Returns
         -------
-        dict[str, Any]
+        PaginationDocument
             List of documents fulfilled the filtering condition
         """
         document_data = await self.service.list_documents(

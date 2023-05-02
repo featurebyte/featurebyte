@@ -3,7 +3,7 @@ Deployment API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from http import HTTPStatus
 
@@ -16,6 +16,8 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.deployment import (
+    AllDeploymentList,
+    AllDeploymentListRecord,
     DeploymentCreate,
     DeploymentList,
     DeploymentSummary,
@@ -30,6 +32,7 @@ from featurebyte.schema.worker.task.deployment_create_update import (
     DeploymentCreateUpdateTaskPayload,
     UpdateDeploymentPayload,
 )
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.feature_list import FeatureListService
@@ -49,6 +52,7 @@ class DeploymentController(
     def __init__(
         self,
         service: DeploymentService,
+        catalog_service: CatalogService,
         context_service: ContextService,
         feature_list_service: FeatureListService,
         online_serving_service: OnlineServingService,
@@ -56,6 +60,7 @@ class DeploymentController(
         task_controller: TaskController,
     ):
         super().__init__(service)
+        self.catalog_service = catalog_service
         self.context_service = context_service
         self.feature_list_service = feature_list_service
         self.online_serving_service = online_serving_service
@@ -220,3 +225,76 @@ class DeploymentController(
             num_feature_list=len(feature_list_ids),
             num_feature=len(feature_ids),
         )
+
+    async def list_all_deployments(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        sort_by: str | None = "created_at",
+        sort_dir: Literal["asc", "desc"] = "desc",
+        enabled: bool | None = None,
+    ) -> AllDeploymentList:
+        """
+        List all deployments across all catalogs.
+
+        Parameters
+        ----------
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+        sort_by: str | None
+            Key used to sort the returning documents
+        sort_dir: "asc" or "desc"
+            Sorting the returning documents in ascending order or descending order
+        enabled: bool | None
+            Whether to return only enabled deployments
+
+        Returns
+        -------
+        AllDeploymentList
+        """
+        with self.service.allow_use_raw_query_filter():
+            deployment_data = await self.service.list_documents(
+                page=page,
+                page_size=page_size,
+                sort_by=sort_by,
+                sort_dir=sort_dir,
+                query_filter={"enabled": enabled} if enabled is not None else {},
+                use_raw_query_filter=True,
+            )
+
+        feature_list_ids = {doc["feature_list_id"] for doc in deployment_data["data"]}
+        with self.feature_list_service.allow_use_raw_query_filter():
+            feature_list_documents = await self.feature_list_service.list_documents(
+                page_size=0,
+                query_filter={"_id": {"$in": list(feature_list_ids)}},
+                use_raw_query_filter=True,
+            )
+            deployment_id_to_feature_list = {
+                doc["_id"]: FeatureListModel(**doc) for doc in feature_list_documents["data"]
+            }
+
+        catalog_ids = {doc["catalog_id"] for doc in deployment_data["data"]}
+        catalog_documents = await self.catalog_service.list_documents(
+            page_size=0, query_filter={"_id": {"$in": list(catalog_ids)}}
+        )
+        deployment_id_to_catalog_name = {
+            doc["_id"]: doc["name"] for doc in catalog_documents["data"]
+        }
+
+        output = []
+        for doc in deployment_data["data"]:
+            feature_list = deployment_id_to_feature_list[doc["feature_list_id"]]
+            output.append(
+                AllDeploymentListRecord(
+                    **doc,
+                    catalog_name=deployment_id_to_catalog_name[doc["catalog_id"]],
+                    feature_list_name=feature_list.name,
+                    feature_list_version=feature_list.version.to_str(),
+                    num_feature=len(feature_list.feature_ids),
+                )
+            )
+
+        deployment_data["data"] = output
+        return AllDeploymentList(**deployment_data)

@@ -364,7 +364,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return bool(response_dict["total"] > (page * response_dict["page_size"]))
 
     @classmethod
-    def _iterate_api_object_using_paginated_routes(
+    def iterate_api_object_using_paginated_routes(
         cls, route: str, params: dict[str, Any] | None = None
     ) -> Iterator[dict[str, Any]]:
         """
@@ -449,7 +449,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         """
         params = params or {}
         output = []
-        for item_dict in cls._iterate_api_object_using_paginated_routes(
+        for item_dict in cls.iterate_api_object_using_paginated_routes(
             route=cls._route, params={"page_size": PAGINATED_CALL_PAGE_SIZE, **params}
         ):
             output.append(cls._list_schema(**item_dict).dict())
@@ -652,7 +652,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             List of audit log
         """
         audit_records = []
-        for audit_record in self._iterate_api_object_using_paginated_routes(
+        for audit_record in self.iterate_api_object_using_paginated_routes(
             route=f"{self._route}/audit/{self.id}", params={"page_size": PAGINATED_CALL_PAGE_SIZE}
         ):
             audit_records.append(self._prepare_audit_record(audit_record))
