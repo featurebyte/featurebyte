@@ -531,13 +531,20 @@ class ApiObject(FeatureByteBaseDocumentModel):
         -------
         DataFrame
         """
-        key_func = lambda x: (x.foreign_key_field, x.object_class, x.use_list_versions)
-        list_foreign_keys = sorted(cls._list_foreign_keys, key=key_func)
+
+        def _key_func(foreign_key_mapping: ForeignKeyMapping) -> tuple[str, Any, bool]:
+            return (
+                foreign_key_mapping.foreign_key_field,
+                foreign_key_mapping.object_class,
+                foreign_key_mapping.use_list_versions,
+            )
+
+        list_foreign_keys = sorted(cls._list_foreign_keys, key=_key_func)
         for (
             foreign_key_field,
             object_class,
             use_list_version,
-        ), foreign_key_mapping_group in groupby(list_foreign_keys, key=key_func):
+        ), foreign_key_mapping_group in groupby(list_foreign_keys, key=_key_func):
             if use_list_version:
                 object_list = object_class.list_versions(include_id=True)
             else:
