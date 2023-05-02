@@ -320,7 +320,7 @@ def playground(
 
 
 def list_deployments(
-    include_id: Optional[bool] = False,
+    include_id: Optional[bool] = True,
 ) -> pd.DataFrame:
     """
     List all deployments across all catalogs.
