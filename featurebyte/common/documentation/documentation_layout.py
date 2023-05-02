@@ -41,6 +41,7 @@ from featurebyte.common.documentation.constants import (
     MANAGE,
     OBSERVATION_TABLE,
     RELATIONSHIP,
+    REQUEST_COLUMN,
     SAVE,
     SERVE,
     SET_FEATURE_JOB,
@@ -890,6 +891,20 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_request_column_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the RequestColumn module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the RequestColumn module.
+    """
+    return [
+        DocLayoutItem([REQUEST_COLUMN, INFO, "RequestColumn.point_in_time"]),
+    ]
+
+
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -921,4 +936,5 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_batch_request_table_layout(),
         *_get_observation_table_layout(),
         *_get_historical_feature_table_layout(),
+        *_get_request_column_layout(),
     ]

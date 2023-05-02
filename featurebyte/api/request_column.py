@@ -8,6 +8,7 @@ from typing import Any, Optional
 from pydantic import Field
 from typeguard import typechecked
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -20,6 +21,8 @@ class RequestColumn(Series):
     """
     RequestColumn class
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.RequestColumn")
 
     tabular_source: Optional[TabularSource] = Field(  # type: ignore[assignment]
         allow_mutation=False, default=None
@@ -74,7 +77,7 @@ class RequestColumn(Series):
     @classmethod
     def point_in_time(cls) -> RequestColumn:
         """
-        Get a RequestColumn that represents the POINT_IN_TIME column in the request data
+        Get a RequestColumn that represents the POINT_IN_TIME column in the request data.
 
         Returns
         -------
