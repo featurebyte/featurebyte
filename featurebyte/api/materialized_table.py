@@ -149,4 +149,5 @@ class MaterializedTableMixin(MaterializedTableModel):
     @property
     def _source_table(self) -> SourceTable:
         data_source = FeatureStore.get_by_id(self.location.feature_store_id).get_data_source()
-        return data_source.get_source_table(**self.location.table_details.json_dict())
+        source_table = data_source.get_source_table(**self.location.table_details.json_dict())
+        return source_table
