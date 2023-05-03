@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
+from featurebyte.models import EntityModel
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel
 from featurebyte.models.feature_list import (
@@ -20,6 +21,7 @@ from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.relationship_info import RelationshipInfoService
@@ -115,19 +117,37 @@ class FeatureListService(
     async def _extract_relationships_info(
         self, features: List[FeatureModel]
     ) -> List[EntityRelationshipInfo]:
-        entity_ids = set()
         relationship_info_service = RelationshipInfoService(
             user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
         )
+        entity_service = EntityService(
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+        )
+        entity_ids = set()
         for feature in features:
             entity_ids.update(feature.entity_ids)
+
+        ancestor_entity_ids = set(entity_ids)
+        async for entity_doc in entity_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(entity_ids)}}
+        ):
+            entity = EntityModel(**entity_doc)
+            ancestor_entity_ids.update(entity.ancestor_ids)
+
+        descendant_entity_ids = set(entity_ids)
+        async for entity_doc in entity_service.list_documents_iterator(
+            query_filter={"ancestor_ids": {"$in": list(entity_ids)}}
+        ):
+            entity = EntityModel(**entity_doc)
+            descendant_entity_ids.add(entity.id)
+
         relationships_info = [
             EntityRelationshipInfo(**relationship_info)
             async for relationship_info in relationship_info_service.list_documents_iterator(
                 query_filter={
                     "$or": [
-                        {"entity_id": {"$in": list(entity_ids)}},
-                        {"related_entity_id": {"$in": list(entity_ids)}},
+                        {"entity_id": {"$in": list(descendant_entity_ids)}},
+                        {"related_entity_id": {"$in": list(ancestor_entity_ids)}},
                     ]
                 }
             )
