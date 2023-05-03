@@ -42,6 +42,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
 
         if payload.observation_table_id is not None:
             # ObservationTable as observation set
+            assert payload.observation_set_storage_path is None
             observation_table_service: ObservationTableService = (
                 app_container.observation_table_service
             )

@@ -66,10 +66,12 @@ class HistoricalFeatureTableService(
         )
 
         if observation_set_dataframe is not None:
-            observation_set_storage_path = Path(
+            observation_set_storage_path = (
                 f"historical_feature_table/observation_set/{output_document_id}.parquet"
             )
-            await storage.put_dataframe(observation_set_dataframe, observation_set_storage_path)
+            await storage.put_dataframe(
+                observation_set_dataframe, Path(observation_set_storage_path)
+            )
         else:
             observation_set_storage_path = None
 
@@ -78,5 +80,5 @@ class HistoricalFeatureTableService(
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
-            observation_set_storage_path=str(observation_set_storage_path),
+            observation_set_storage_path=observation_set_storage_path,
         )

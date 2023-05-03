@@ -1077,9 +1077,9 @@ class FeatureList(
         feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id
         feature_table_create_params = HistoricalFeatureTableCreate(
             name=historical_feature_table_name,
-            observation_table_id=observation_table.id
-            if isinstance(observation_table, ObservationTable)
-            else None,
+            observation_table_id=(
+                observation_table.id if isinstance(observation_table, ObservationTable) else None
+            ),
             feature_store_id=feature_store_id,
             featurelist_get_historical_features=featurelist_get_historical_features,
         )
