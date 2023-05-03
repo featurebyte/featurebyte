@@ -416,6 +416,7 @@ app_container_config.add_controller(
     DeploymentController,
     [
         "deployment_service",
+        "catalog_service",
         "context_service",
         "feature_list_service",
         "online_serving_service",

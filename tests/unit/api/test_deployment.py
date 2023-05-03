@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+from freezegun import freeze_time
 
 import featurebyte as fb
 from featurebyte.api.deployment import Deployment
@@ -34,6 +35,7 @@ def test_list(deployment):
                 "feature_list_name": "my_feature_list",
                 "feature_list_version": f'V{pd.Timestamp.now().strftime("%y%m%d")}',
                 "num_feature": 1,
+                "enabled": False,
             }
         ]
     )
@@ -159,3 +161,17 @@ def test_get_online_serving_code(mock_preview, deployment):
             """
         ).strip()
     )
+
+
+@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@freeze_time("2023-01-20 03:20:00")
+def test_get_feature_jobs_status(mock_execute_query, deployment, feature_job_logs):
+    """Test get feature job status"""
+    mock_execute_query.return_value = feature_job_logs
+    feature_job_status = deployment.get_feature_jobs_status(
+        job_history_window=24, job_duration_tolerance=1700
+    )
+
+    fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
+    expected_session_logs = pd.read_parquet(fixture_path)
+    pd.testing.assert_frame_equal(feature_job_status.job_session_logs, expected_session_logs)
