@@ -170,5 +170,7 @@ Releases are versioned using the [Semantic Versions](https://semver.org/) specif
 This project is licensed under the terms of the `Elastic License 2.0` license. See [LICENSE](https://github.com/featurebyte/featurebyte/blob/main/LICENSE) for more details.
 
 ## :wrench: Contributing
-All contributions are welcomed. Please adhere to the [CODE_OF_CONDUCT](https://github.com/featurebyte/featurebyte/blob/main/CODE_OF_CONDUCT.md) and read the
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
+
+All contributions are welcomed. Please adhere to the [Code of Conduct](https://github.com/featurebyte/featurebyte/blob/main/CODE_OF_CONDUCT.md) and read the
 [Developer's Guide](https://github.com/featurebyte/featurebyte/blob/main/CONTRIBUTING.md) to get started.
