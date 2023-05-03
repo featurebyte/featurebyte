@@ -1389,13 +1389,14 @@ def test_list_unsaved_features(
     count_per_category_feature_group,
     sum_per_category_feature,
     count_per_category_feature,
+    snowflake_feature_store,
 ):
     """
     Test list_unsaved_features method
     """
     try:
         # create feature in new catalog
-        Catalog.create(name="test_catalog")
+        Catalog.create(name="test_catalog", feature_store_name=snowflake_feature_store.name)
         event_table = snowflake_database_table.create_event_table(
             name="sf_event_table",
             event_id_column="col_int",
