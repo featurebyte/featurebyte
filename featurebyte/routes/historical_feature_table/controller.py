@@ -5,8 +5,10 @@ from __future__ import annotations
 
 from typing import Optional
 
+from http import HTTPStatus
+
 from bson import ObjectId
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
@@ -77,8 +79,11 @@ class HistoricalFeatureTableController(
         -------
         Task
         """
-        # TODO: validate only either of observation_set and observation_table_id is set
-        # TODO: is the description "Observation set data in parquet format" accurate?
+        if data.observation_table_id is not None and observation_set is not None:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                detail="Only one of observation_set file and observation_table_id can be set",
+            )
 
         # Validate the observation_table_id
         if data.observation_table_id is not None:

@@ -5,10 +5,12 @@ import copy
 from http import HTTPStatus
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 from sqlglot import expressions
 
+from featurebyte.common.utils import dataframe_to_arrow_bytes
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
@@ -189,4 +191,24 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
             },
             "created_at": response_dict["created_at"],
             "updated_at": None,
+        }
+
+    def test_provide_both_observation_table_id_and_dataframe_not_allowed(
+        self, test_api_client_persistent
+    ):
+        """
+        Test that providing both observation_table_id and observation set DataFrame is not allowed
+        """
+        test_api_client, _ = test_api_client_persistent
+        df = pd.DataFrame(
+            {
+                "POINT_IN_TIME": ["2023-01-15 10:00:00"],
+                "CUST_ID": ["C1"],
+            }
+        )
+        files = {"observation_set": dataframe_to_arrow_bytes(df)}
+        response = self.post(test_api_client, self.payload, files=files)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {
+            "detail": "Only one of observation_set file and observation_table_id can be set"
         }
