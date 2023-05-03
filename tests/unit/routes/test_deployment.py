@@ -142,6 +142,58 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json() == {"num_feature_list": 1, "num_feature": 1}
 
+    def test_all_deployment_200(
+        self, test_api_client_persistent, create_success_response, catalog_id
+    ):
+        """Test listing all deployments"""
+        deployment_id = create_success_response.json()["_id"]
+        expected_version = f"V{pd.Timestamp.now().strftime('%y%m%d')}"
+        expected_response = {
+            "page": 1,
+            "page_size": 10,
+            "total": 1,
+            "data": [
+                {
+                    "_id": deployment_id,
+                    "name": 'Deployment (feature_list: "sf_feature_list")',
+                    "catalog_name": "default",
+                    "feature_list_name": "sf_feature_list",
+                    "feature_list_version": expected_version,
+                    "num_feature": 1,
+                }
+            ],
+        }
+
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.get("/deployment/all/?enabled=true")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == {"page": 1, "page_size": 10, "total": 0, "data": []}
+
+        response = test_api_client.get("/deployment/all/")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == expected_response
+
+        # enable deployment
+        self.enable_deployment(test_api_client, deployment_id, DEFAULT_CATALOG_ID)
+
+        # check all deployments again
+        response = test_api_client.get("/deployment/all/?enabled=true")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == expected_response
+
+        # check list deployments & all deployments again with different active catalog
+        response = test_api_client.get(
+            "/deployment/", headers={"active-catalog-id": str(catalog_id)}
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == {"page": 1, "page_size": 10, "total": 0, "data": []}
+
+        response = test_api_client.get(
+            "/deployment/all/?enabled=true", headers={"active-catalog-id": str(catalog_id)}
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == expected_response
+
     def test_update_200__enable_and_disable_deployment(
         self, test_api_client_persistent, create_success_response
     ):

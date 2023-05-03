@@ -5,7 +5,7 @@ from typing import Optional, cast
 
 from http import HTTPStatus
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import ORJSONResponse
 
 from featurebyte.models.base import PydanticObjectId
@@ -21,6 +21,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
 )
 from featurebyte.schema.deployment import (
+    AllDeploymentList,
     DeploymentCreate,
     DeploymentList,
     DeploymentSummary,
@@ -152,6 +153,29 @@ async def compute_online_features(
         get_credential=request.state.get_credential,
     )
     return cast(OnlineFeaturesResponseModel, result)
+
+
+@router.get("/all/")
+async def list_all_deployments(
+    request: Request,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    enabled: Optional[bool] = Query(default=None),
+) -> AllDeploymentList:
+    """
+    List All Deployments (Regardless of Catalog)
+    """
+    controller = request.state.app_container.deployment_controller
+    deployment_list: AllDeploymentList = await controller.list_all_deployments(
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        enabled=enabled,
+    )
+    return deployment_list
 
 
 @router.get("/summary/", response_model=DeploymentSummary)

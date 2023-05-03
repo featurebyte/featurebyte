@@ -91,18 +91,18 @@ class WorkingSchemaService(BaseService):
         self, feature_store_id: ObjectId, session: BaseSession
     ) -> None:
         # activate use of raw query filter to retrieve all documents regardless of catalog membership
-        self.feature_service.allow_use_raw_query_filter()
-        online_enabled_feature_docs = self.feature_service.list_documents_iterator(
-            query_filter={
-                "tabular_source.feature_store_id": feature_store_id,
-                "online_enabled": True,
-            },
-            use_raw_query_filter=True,
-        )
-
-        async for feature_doc in online_enabled_feature_docs:
-            logger.info(f'Rescheduling jobs for online enabled feature: {feature_doc["name"]}')
-            feature = FeatureModel(**feature_doc)
-            await OnlineEnableService.update_data_warehouse_with_session(
-                session=session, feature=feature, task_manager=self._task_manager
+        with self.feature_service.allow_use_raw_query_filter():
+            online_enabled_feature_docs = self.feature_service.list_documents_iterator(
+                query_filter={
+                    "tabular_source.feature_store_id": feature_store_id,
+                    "online_enabled": True,
+                },
+                use_raw_query_filter=True,
             )
+
+            async for feature_doc in online_enabled_feature_docs:
+                logger.info(f'Rescheduling jobs for online enabled feature: {feature_doc["name"]}')
+                feature = FeatureModel(**feature_doc)
+                await OnlineEnableService.update_data_warehouse_with_session(
+                    session=session, feature=feature, task_manager=self._task_manager
+                )
