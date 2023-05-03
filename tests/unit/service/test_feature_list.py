@@ -4,10 +4,15 @@ Test feature list service class
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte import FeatureJobSetting, TableFeatureJobSetting
 from featurebyte.exception import DocumentError, DocumentInconsistencyError
 from featurebyte.schema.entity import EntityCreate
-from featurebyte.schema.feature import FeatureCreate
-from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
+from featurebyte.schema.feature_list import (
+    FeatureListCreate,
+    FeatureListNewVersionCreate,
+    FeatureVersionInfo,
+)
 
 
 @pytest.mark.asyncio
@@ -72,6 +77,7 @@ async def test_feature_list__contains_relationships_info(
     dimension_table,
     item_table,
     table_columns_info_service,
+    version_service,
     feature,
 ):
     """Test feature list contains relationships info"""
@@ -114,4 +120,38 @@ async def test_feature_list__contains_relationships_info(
         "related_entity_id": parent_entity.id,
         "relationship_type": "child_parent",
         "relation_table_id": dimension_table.id,
+    }
+
+    # remove relationship and check relationship info is updated when create a new feature list version
+    await table_columns_info_service._remove_parent_entity_ids(
+        primary_entity_id=target_entity_id,
+        parent_entity_ids_to_remove=[parent_entity.id],
+    )
+    new_feature = await version_service.create_new_feature_version(
+        data=FeatureNewVersionCreate(
+            source_feature_id=feature.id,
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name="sf_event_table",
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                    ),
+                )
+            ],
+        )
+    )
+    feature_list = await version_service.create_new_feature_list_version(
+        data=FeatureListNewVersionCreate(
+            source_feature_list_id=feature_list.id,
+            features=[FeatureVersionInfo(name=new_feature.name, version=new_feature.version)],
+        )
+    )
+    relationships_info = feature_list.relationships_info
+    assert len(relationships_info) == 1, relationships_info
+    assert relationships_info[0].dict() == {
+        "id": relationships_info[0].id,
+        "entity_id": child_entity.id,
+        "related_entity_id": target_entity_id,
+        "relationship_type": "child_parent",
+        "relation_table_id": item_table.id,
     }
