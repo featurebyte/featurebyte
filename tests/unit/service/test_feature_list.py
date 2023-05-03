@@ -5,6 +5,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentError, DocumentInconsistencyError
+from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_list import FeatureListCreate
 
@@ -62,3 +63,55 @@ async def test_update_document__inconsistency_error(
         "same feature name(s)."
     )
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_feature_list__contains_relationships_info(
+    feature_list_service,
+    entity_service,
+    dimension_table,
+    item_table,
+    table_columns_info_service,
+    feature,
+):
+    """Test feature list contains relationships info"""
+    target_entity_id = feature.entity_ids[0]
+
+    # create a parent & child entity & associate them with the target entity
+    parent_entity = await entity_service.create_document(
+        data=EntityCreate(name="parent_entity", serving_name="parent_name")
+    )
+    child_entity = await entity_service.create_document(
+        data=EntityCreate(name="child_entity", serving_name="child_name")
+    )
+    await table_columns_info_service._add_new_child_parent_relationships(
+        entity_id=target_entity_id,
+        table_id=dimension_table.id,
+        parent_entity_ids_to_add=[parent_entity.id],
+    )
+    await table_columns_info_service._add_new_child_parent_relationships(
+        entity_id=child_entity.id,
+        table_id=item_table.id,
+        parent_entity_ids_to_add=[target_entity_id],
+    )
+
+    # check these relationships are included in the feature list
+    feature_list = await feature_list_service.create_document(
+        data=FeatureListCreate(name="my_feature_list", feature_ids=[feature.id])
+    )
+    relationships_info = feature_list.relationships_info
+    assert len(relationships_info) == 2, relationships_info
+    assert relationships_info[0].dict() == {
+        "id": relationships_info[0].id,
+        "entity_id": child_entity.id,
+        "related_entity_id": target_entity_id,
+        "relationship_type": "child_parent",
+        "relation_table_id": item_table.id,
+    }
+    assert relationships_info[1].dict() == {
+        "id": relationships_info[1].id,
+        "entity_id": target_entity_id,
+        "related_entity_id": parent_entity.id,
+        "relationship_type": "child_parent",
+        "relation_table_id": dimension_table.id,
+    }
