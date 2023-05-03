@@ -78,6 +78,11 @@ class HistoricalFeatureTableController(
         Returns
         -------
         Task
+
+        Raises
+        ------
+        HTTPException
+            If both observation_set and observation_table_id are set
         """
         if data.observation_table_id is not None and observation_set is not None:
             raise HTTPException(
