@@ -1057,8 +1057,9 @@ class FeatureList(
 
         Parameters
         ----------
-        observation_table: ObservationTable
-            Observation table with `POINT_IN_TIME` and serving names columns
+        observation_table: Union[ObservationTable, pd.DataFrame]
+            Observation set with `POINT_IN_TIME` and serving names columns. This can be either an
+            ObservationTable of a pandas DataFrame.
         historical_feature_table_name: str
             Name of the historical feature table to be created
         serving_names_mapping : Optional[Dict[str, str]]
