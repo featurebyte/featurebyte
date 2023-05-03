@@ -53,6 +53,18 @@ class SQLiteDetails(BaseDatabaseDetails):
 class DatabricksDetails(BaseDatabaseDetails):
     """
     Model for details used to connect to a Databricks data source.
+
+    Examples
+    --------
+    >>> details = fb.DatabricksDetails(
+    ...   host="<host_name>",
+    ...   http_path="<http_path>",
+    ...   featurebyte_catalog="hive_metastore",
+    ...   featurebyte_schema="<schema_name>"
+    ...   storage_type=fb.StorageType.S3,
+    ...   storage_url="<storage_url>",
+    ...   storage_spark_url="dbfs:/FileStore/<schema_name>",
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")

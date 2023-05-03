@@ -507,11 +507,17 @@ class SourceTable(AbstractTableData):
         --------
         Create an event table from a source table.
 
-        >>> grocery_invoice_table = event_source_table.create_event_table(  # doctest: +SKIP
+        >>> # Register GroceryInvoice as an event data
+        >>> source_table = ds.get_table(  # doctest: +SKIP
+        ...   database_name="spark_catalog",
+        ...   schema_name="GROCERY",
+        ...   table_name="GROCERYINVOICE"
+        ... )
+        >>> invoice_table = source_table.create_event_table(  # doctest: +SKIP
         ...   name="GROCERYINVOICE",
         ...   event_id_column="GroceryInvoiceGuid",
         ...   event_timestamp_column="Timestamp",
-        ...   record_creation_timestamp_column="record_available_at",
+        ...   record_creation_timestamp_column="record_available_at"
         ... )
         """
         # pylint: disable=import-outside-toplevel
@@ -578,11 +584,17 @@ class SourceTable(AbstractTableData):
         --------
         Create an item table from a source table.
 
-        >>> grocery_items_table = item_source_table.create_item_table(  # doctest: +SKIP
+        >>> # Register invoice items as an item table
+        >>> source_table = ds.get_table(  # doctest: +SKIP
+        ...   database_name="spark_catalog",
+        ...   schema_name="GROCERY",
+        ...   table_name="INVOICEITEMS"
+        ... )
+        >>> items_table.create_item_table(  # doctest: +SKIP
         ...   name="INVOICEITEMS",
         ...   event_id_column="GroceryInvoiceGuid",
         ...   item_id_column="GroceryInvoiceItemGuid",
-        ...   event_table_name="GROCERYINVOICE",
+        ...   event_table_name="GROCERYINVOICE"
         ... )
         """
         # pylint: disable=import-outside-toplevel
@@ -647,9 +659,15 @@ class SourceTable(AbstractTableData):
         --------
         Create a dimension table from a source table.
 
-        >>> grocery_product_table = dimension_source_table.create_dimension_table(  # doctest: +SKIP
-        ...   name="GROCERYPRODUCT",  # doctest: +SKIP
-        ...   dimension_id_column="GroceryProductGuid",
+        >>> # Register GroceryProduct as a dimension table
+        >>> source_table = ds.get_table(  # doctest: +SKIP
+        ...   database_name="spark_catalog",
+        ...   schema_name="GROCERY",
+        ...   table_name="GROCERYPRODUCT"
+        ... )
+        >>> product_table = source_table.create_dimension_table(  # doctest: +SKIP
+        ...   name="GROCERYPRODUCT,
+        ...   dimension_id_column="GroceryProductGuid"
         ... )
         """
         # pylint: disable=import-outside-toplevel
@@ -730,14 +748,20 @@ class SourceTable(AbstractTableData):
         --------
         Create a SCD table from a source table.
 
-        >>> grocery_customer_table = scd_source_table.create_scd_table(  # doctest: +SKIP
-        ...   name="GROCERYCUSTOMER",
-        ...   surrogate_key_column="RowID",
-        ...   natural_key_column="GroceryCustomerGuid",
-        ...   effective_timestamp_column="ValidFrom",
-        ...   current_flag_column="CurrentRecord",
-        ...   record_creation_timestamp_column="record_available_at",
-        ... )
+         >>> # Declare the grocery customer table
+         >>> source_table = ds.get_table(  # doctest: +SKIP
+         ...   database_name="spark_catalog",
+         ...   schema_name="GROCERY",
+         ...   table_name="GROCERYCUSTOMER"
+         ... )
+         >>> customer_table = source_table.create_scd_table(  # doctest: +SKIP
+         ...    name="GROCERYCUSTOMER",
+         ...    surrogate_key_column='RowID',
+         ...    natural_key_column="GroceryCustomerGuid",
+         ...    effective_timestamp_column="ValidFrom",
+         ...    current_flag_column ="CurrentRecord",
+         ...    record_creation_timestamp_column="record_available_at"
+         ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.scd_table import SCDTable

@@ -31,6 +31,13 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     a table. The metadata held by the object includes a report and recommendation for the configuration of the feature
     job setting of features associated with the table. Additionally, you can perform a backtest of a manually
     configured feature job setting.
+
+    Examples
+    --------
+    >>> analysis = invoice_table.create_new_feature_job_setting_analysis(  # doctest: +SKIP
+    ...   analysis_date=pd.Timestamp('2023-04-10'),
+    ...   analysis_length=3600*24*28,
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureJobSettingAnalysis")
@@ -99,6 +106,11 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     def display_report(self) -> None:
         """
         Displays analysis report.
+
+        Examples
+        --------
+        >>> analysis = fb.FeatureJobSettingAnalysis.get_by_id(<analysis_id>)  # doctest: +SKIP
+        >>> analysis.display_report()  # doctest: +SKIP
         """
         display_html_in_notebook(self.analysis_report)
 
@@ -120,6 +132,11 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         ------
         FileExistsError
             File already exists at output path
+
+        Examples
+        --------
+        >>> analysis = fb.FeatureJobSettingAnalysis.get_by_id(<analysis_id>)  # doctest: +SKIP
+        >>> analysis.download_report()  # doctest: +SKIP
         """
         client = Configurations().get_client()
         response = client.get(f"{self._route}/{self.id}/report")
@@ -143,6 +160,11 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         -------
         FeatureJobSetting
             Recommended feature job setting
+
+        Examples
+        --------
+        >>> analysis = fb.FeatureJobSettingAnalysis.get_by_id(<analysis_id>)  # doctest: +SKIP
+        >>> feature_job_setting = analysis.get_recommendation()  # doctest: +SKIP
         """
         info = self.info()
         return FeatureJobSetting(**info["recommendation"])
@@ -160,6 +182,17 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         Returns
         -------
         pd.DataFrame
+
+        Examples
+        --------
+        >>> analysis = fb.FeatureJobSettingAnalysis.get_by_id(<analysis_id>)  # doctest: +SKIP
+        >>> # Backtest a manual setting
+        >>> manual_setting = fb.FeatureJobSetting(  # doctest: +SKIP
+        ...   blind_spot="135s",
+        ...   frequency="60m",
+        ...   time_modulo_frequency="90s",
+        ... )
+        >>> backtest_result = analysis.backtest(feature_job_setting=manual_setting)  # doctest: +SKIP
         """
         payload = FeatureJobSettingAnalysisBacktest(
             feature_job_setting_analysis_id=self.id,
@@ -203,6 +236,11 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> analysis = fb.FeatureJobSettingAnalysis.get_by_id(<analysis_id>)  # doctest: +SKIP
+        >>> analysis.info()  # doctest: +SKIP
         """
         return super().info(verbose)
 
@@ -223,5 +261,9 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         -------
         FeatureJobSettingAnalysis
             FeatureJobSettingAnalysis object.
+
+        Examples
+        --------
+        >>> analysis = fb.FeatureJobSettingAnalysis.get_by_id(<analysis_id>)  # doctest: +SKIP
         """
         return cls._get_by_id(id=id)
