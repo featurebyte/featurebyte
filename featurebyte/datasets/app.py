@@ -9,6 +9,7 @@ import tempfile
 from urllib import request
 
 import typer
+from bson import ObjectId
 from python_on_whales.docker_client import DockerClient
 from rich.console import Console
 from rich.table import Table
@@ -63,8 +64,12 @@ def import_dataset(dataset_name: str) -> None:
     if not os.path.exists(path):
         raise FileNotFoundError(path)
 
+    # create temp id for import
+    temp_id = str(ObjectId())
+
     # parse sql
-    hive_staging_path = f"file:///opt/spark/data/staging/{dataset_name}"
+    destination_folder = f"/opt/spark/data/staging/{temp_id}"
+    hive_staging_path = f"file://{destination_folder}/{dataset_name}"
     with open(path, encoding="utf8") as file_obj:
         sql = file_obj.read()
         sql = sql.format(staging_path=hive_staging_path)
@@ -100,36 +105,49 @@ def import_dataset(dataset_name: str) -> None:
         # Delete archive file
         os.remove(archive_file)
 
-        # Copy files to spark container
-        for base_object in base_objects:
-            base_path = base_object.path
-            if base_object.isdir():
-                logger.info(
-                    f"Copying folder from host:{download_folder}/{base_path} -> spark-thrift:/opt/spark/data/staging/{base_path}"
-                )
-                DockerClient().copy(
-                    f"{download_folder}/{base_path}",
-                    ("spark-thrift", f"/opt/spark/data/staging/{base_path}"),
-                )
-            elif base_object.isfile():
-                logger.info(
-                    f"Copying file from host:{download_folder}/{base_path} -> spark-thrift:/opt/spark/data/staging/{base_path}"
-                )
-                DockerClient().copy(
-                    f"{download_folder}/{base_path}",
-                    ("spark-thrift", "/opt/spark/data/staging/"),
-                )
-            else:
-                raise ValueError(f"Unknown file type: {base_object}")
+        # create temp destination folder in spark container
+        DockerClient().execute(
+            container="spark-thrift",
+            command=["mkdir", destination_folder],
+        )
+        try:
+            # Copy files to spark container
+            for base_object in base_objects:
+                base_path = base_object.path
+                if base_object.isdir():
+                    logger.info(
+                        f"Copying folder from host:{download_folder}/{base_path} -> spark-thrift:{destination_folder}"
+                    )
 
-    # Call featurebyte-server container to import dataset
-    sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")
-    logger.info("Running spark commands to ingest dataset")
-    DockerClient().execute(
-        container="featurebyte-server",
-        command=["python", "-m", "featurebyte.datasets.__main__", sql_b64],
-    )
-    logger.info("Dataset successfully imported")
+                    DockerClient().copy(
+                        f"{download_folder}/{base_path}",
+                        ("spark-thrift", destination_folder),
+                    )
+                elif base_object.isfile():
+                    logger.info(
+                        f"Copying file from host:{download_folder}/{base_path} -> spark-thrift:{destination_folder}/{base_path}"
+                    )
+                    DockerClient().copy(
+                        f"{download_folder}/{base_path}",
+                        ("spark-thrift", destination_folder),
+                    )
+                else:
+                    raise ValueError(f"Unknown file type: {base_object}")
+
+            # Call featurebyte-server container to import dataset
+            sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")
+            logger.info("Running spark commands to ingest dataset")
+            DockerClient().execute(
+                container="featurebyte-server",
+                command=["python", "-m", "featurebyte.datasets.__main__", sql_b64],
+            )
+            logger.info("Dataset successfully imported")
+        finally:
+            # clean up staging folder
+            DockerClient().execute(
+                container="spark-thrift",
+                command=["rm", "-rf", destination_folder],
+            )
 
 
 if __name__ == "__main__":
