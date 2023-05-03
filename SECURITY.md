@@ -1,15 +1,15 @@
 # Security
 
+Thanks for helping make FeatureByte safe for everyone to use.
+
 ## 🔐 Reporting Security Issues
 
-> Do not open issues that might have security implications!
+> Please do not report security vulnerabilities via public issues, pull requests, or discussions!
 > It is critical that security related issues are reported privately so we have time to address them before they become public knowledge.
 
-Vulnerabilities can be reported by emailing core members:
+If you believe you have found a security vulnerability, please report it to us by sending an email to [it-admin[@]featurebyte.com](mailto:it-admin@featurebyte.com).
 
-- FeatureByte [it-admin@featurebyte.com](mailto:it-admin@featurebyte.com)
-
-Please include the requested information listed below (as much as you can provide) to help us better understand the nature and scope of the possible issue:
+Please include as much of the information listed below to help us better understand the nature and scope of the possible issue:
 
 - Type of issue (e.g. buffer overflow, SQL injection, cross-site scripting, etc.)
 - Full paths of source file(s) related to the manifestation of the issue
