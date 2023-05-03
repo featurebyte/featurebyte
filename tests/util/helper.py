@@ -383,15 +383,19 @@ async def get_dataframe_from_materialized_table(session, materialized_table):
 
 
 async def compute_historical_feature_table_dataframe_helper(
-    feature_list, df_observation_set, session, data_source, **kwargs
+    feature_list, df_observation_set, session, data_source, input_format, **kwargs
 ):
     """
     Helper to call compute_historical_feature_table using DataFrame as input, converted to an
     intermediate observation table
     """
-    observation_table = await create_observation_table_from_dataframe(
-        session, df_observation_set, data_source
-    )
+    if input_format == "table":
+        observation_table = await create_observation_table_from_dataframe(
+            session, df_observation_set, data_source
+        )
+    else:
+        observation_table = df_observation_set
+
     historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
     historical_feature_table = feature_list.compute_historical_feature_table(
         observation_table, historical_feature_table_name, **kwargs

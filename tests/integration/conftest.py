@@ -58,7 +58,7 @@ from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
-from featurebyte.storage import LocalStorage
+from featurebyte.storage import LocalStorage, LocalTempStorage
 from featurebyte.worker.task.base import TASK_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
@@ -1259,7 +1259,7 @@ def get_get_cred(credentials_mapping):
     return get_credential
 
 
-@pytest.fixture(name="storage", scope="module")
+@pytest.fixture(name="storage", scope="session")
 def storage_fixture():
     """
     Storage object fixture
@@ -1268,20 +1268,36 @@ def storage_fixture():
         yield LocalStorage(base_path=tempdir)
 
 
-@pytest.fixture(name="temp_storage", scope="module")
+@pytest.fixture(name="temp_storage", scope="session")
 def temp_storage_fixture():
     """
     Storage object fixture
     """
-    with tempfile.TemporaryDirectory() as tempdir:
-        yield LocalStorage(base_path=tempdir)
+    yield LocalTempStorage()
+
+
+@pytest.fixture(name="mock_app_callbacks", scope="session")
+def mock_app_callbacks(storage, temp_storage):
+    """
+    Mock app callbacks: get_credential, get_storage, get_temp_storage
+
+    This fixture is used such that these callbacks are consistent with those used in
+    mock_task_manager.
+    """
+    with mock.patch("featurebyte.app.get_storage") as mock_get_storage, mock.patch(
+        "featurebyte.app.get_temp_storage"
+    ) as mock_get_temp_storage:
+        mock_get_storage.return_value = storage
+        mock_get_temp_storage.return_value = temp_storage
+        yield
 
 
 @pytest.fixture(autouse=True, scope="module")
-def mock_task_manager(request, persistent, storage, temp_storage, get_cred):
+def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock_app_callbacks):
     """
     Mock celery task manager for testing
     """
+    _ = mock_app_callbacks
     if "disable_task_manager_mock" in request.keywords:
         yield
     else:

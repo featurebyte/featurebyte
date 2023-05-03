@@ -965,9 +965,12 @@ class InfoService(BaseService):
         historical_feature_table = await self.historical_feature_table_service.get_document(
             document_id=document_id
         )
-        observation_table = await self.observation_table_service.get_document(
-            document_id=historical_feature_table.observation_table_id
-        )
+        if historical_feature_table.observation_table_id is not None:
+            observation_table = await self.observation_table_service.get_document(
+                document_id=historical_feature_table.observation_table_id
+            )
+        else:
+            observation_table = None
         feature_list = await self.feature_list_service.get_document(
             document_id=historical_feature_table.feature_list_id
         )
@@ -975,7 +978,7 @@ class InfoService(BaseService):
             name=historical_feature_table.name,
             feature_list_name=feature_list.name,
             feature_list_version=feature_list.version.to_str(),
-            observation_table_name=observation_table.name,
+            observation_table_name=observation_table.name if observation_table else None,
             table_details=historical_feature_table.location.table_details,
             created_at=historical_feature_table.created_at,
             updated_at=historical_feature_table.updated_at,

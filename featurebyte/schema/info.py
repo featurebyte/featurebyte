@@ -384,7 +384,7 @@ class HistoricalFeatureTableInfo(BaseInfo):
     Schema for historical feature table info
     """
 
-    observation_table_name: str
+    observation_table_name: Optional[str]
     feature_list_name: str
     feature_list_version: str
     table_details: TableDetails

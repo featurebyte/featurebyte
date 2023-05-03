@@ -93,9 +93,9 @@ def mock_clients_fixture():
         def json(self):
             return self.response_dict
 
-    def post_side_effect(url, json):
+    def post_side_effect(url, **kwargs):
         """Post side effect"""
-        _ = json
+        _ = kwargs
         return {
             "/success_task_pending": FakeResponse(
                 status_code=HTTPStatus.CREATED,
