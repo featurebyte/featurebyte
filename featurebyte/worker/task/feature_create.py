@@ -14,6 +14,7 @@ from bson import ObjectId
 
 from featurebyte.config import Configurations
 from featurebyte.logging import get_logger
+from featurebyte.models.base import activate_catalog
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 from featurebyte.schema.worker.task.feature_create import FeatureCreateTaskPayload
@@ -76,13 +77,15 @@ class FeatureCreateTask(BaseTask):
                     "# featurebyte config file\n"
                     "profile:\n"
                     "  - name: worker\n"
-                    "    api_url: featurebyte-server:8088\n\n"
+                    "    api_url: http://featurebyte-server:8088\n\n"
                 )
 
             os.environ["SDK_EXECUTION_MODE"] = "SERVER"
             os.environ["FEATUREBYTE_HOME"] = temp_dir
             logger.debug(f"Configuration: {Configurations().profile}")
 
+            # activate the correct catalog before executing the code
+            activate_catalog(catalog_id=payload.catalog_id)
             with concurrent.futures.ThreadPoolExecutor() as pool:
                 await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
