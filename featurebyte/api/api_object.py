@@ -10,6 +10,7 @@ import time
 from dataclasses import dataclass
 from functools import partial
 from http import HTTPStatus
+from itertools import groupby
 
 import pandas as pd
 from alive_progress import alive_bar
@@ -364,7 +365,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return bool(response_dict["total"] > (page * response_dict["page_size"]))
 
     @classmethod
-    def _iterate_api_object_using_paginated_routes(
+    def iterate_api_object_using_paginated_routes(
         cls, route: str, params: dict[str, Any] | None = None
     ) -> Iterator[dict[str, Any]]:
         """
@@ -449,7 +450,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         """
         params = params or {}
         output = []
-        for item_dict in cls._iterate_api_object_using_paginated_routes(
+        for item_dict in cls.iterate_api_object_using_paginated_routes(
             route=cls._route, params={"page_size": PAGINATED_CALL_PAGE_SIZE, **params}
         ):
             output.append(cls._list_schema(**item_dict).dict())
@@ -530,37 +531,48 @@ class ApiObject(FeatureByteBaseDocumentModel):
         -------
         DataFrame
         """
-        # populate object names using foreign keys
-        for foreign_key_mapping in cls._list_foreign_keys:
-            if foreign_key_mapping.use_list_versions:
-                assert hasattr(foreign_key_mapping.object_class, "list_versions")
-                object_list = foreign_key_mapping.object_class.list_versions(include_id=True)
-            else:
-                object_list = foreign_key_mapping.object_class.list(include_id=True)
 
-            if object_list.shape[0] > 0:
-                object_list.index = object_list.id
-                field_to_pull = (
-                    foreign_key_mapping.display_field_override
-                    if foreign_key_mapping.display_field_override
-                    else "name"
-                )
-                object_map = object_list[field_to_pull].to_dict()
-                foreign_key_field = foreign_key_mapping.foreign_key_field
-                if "." in foreign_key_field:
-                    # foreign_key is a dict
-                    foreign_key_field, object_id_field = foreign_key_field.split(".")
-                    mapping_function = partial(
-                        cls.map_dict_list_to_name, object_map, object_id_field
+        def _key_func(foreign_key_mapping: ForeignKeyMapping) -> tuple[str, Any, bool]:
+            return (
+                foreign_key_mapping.foreign_key_field,
+                foreign_key_mapping.object_class,
+                foreign_key_mapping.use_list_versions,
+            )
+
+        list_foreign_keys = sorted(cls._list_foreign_keys, key=_key_func)
+        for (
+            foreign_key_field,
+            object_class,
+            use_list_version,
+        ), foreign_key_mapping_group in groupby(list_foreign_keys, key=_key_func):
+            if use_list_version:
+                object_list = object_class.list_versions(include_id=True)
+            else:
+                object_list = object_class.list(include_id=True)
+
+            for foreign_key_mapping in foreign_key_mapping_group:
+                if object_list.shape[0] > 0:
+                    object_list.index = object_list.id
+                    field_to_pull = (
+                        foreign_key_mapping.display_field_override
+                        if foreign_key_mapping.display_field_override
+                        else "name"
                     )
+                    object_map = object_list[field_to_pull].to_dict()
+                    foreign_key_field = foreign_key_mapping.foreign_key_field
+                    if "." in foreign_key_field:
+                        # foreign_key is a dict
+                        foreign_key_field, object_id_field = foreign_key_field.split(".")
+                        mapping_function = partial(
+                            cls.map_dict_list_to_name, object_map, object_id_field
+                        )
+                    else:
+                        # foreign_key is an objectid
+                        mapping_function = partial(cls.map_object_id_to_name, object_map)
+                    new_field_values = item_list[foreign_key_field].apply(mapping_function)
                 else:
-                    # foreign_key is an objectid
-                    mapping_function = partial(cls.map_object_id_to_name, object_map)
-                new_field_values = item_list[foreign_key_field].apply(mapping_function)
-            else:
-                new_field_values = [[]] * item_list.shape[0]
-            item_list[foreign_key_mapping.new_field_name] = new_field_values
-
+                    new_field_values = [[]] * item_list.shape[0]
+                item_list[foreign_key_mapping.new_field_name] = new_field_values
         return item_list
 
     @typechecked
@@ -652,7 +664,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             List of audit log
         """
         audit_records = []
-        for audit_record in self._iterate_api_object_using_paginated_routes(
+        for audit_record in self.iterate_api_object_using_paginated_routes(
             route=f"{self._route}/audit/{self.id}", params={"page_size": PAGINATED_CALL_PAGE_SIZE}
         ):
             audit_records.append(self._prepare_audit_record(audit_record))

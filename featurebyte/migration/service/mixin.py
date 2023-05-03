@@ -3,9 +3,10 @@ MigrationServiceMixin class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Protocol
 
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 
 from bson import ObjectId
 
@@ -68,7 +69,8 @@ class BaseMigrationServiceMixin(Protocol):
         """
 
     @abstractmethod
-    def allow_use_raw_query_filter(self) -> None:
+    @contextmanager
+    def allow_use_raw_query_filter(self) -> Iterator[None]:
         """Activate use of raw query filter"""
 
     async def migrate_all_records(
@@ -91,11 +93,11 @@ class BaseMigrationServiceMixin(Protocol):
         """
         # migrate all records and audit records
         if query_filter is None:
-            self.allow_use_raw_query_filter()
-            query_filter = dict(self._construct_list_query_filter(use_raw_query_filter=True))
-        to_iterate, page = True, 1
+            with self.allow_use_raw_query_filter():
+                query_filter = dict(self._construct_list_query_filter(use_raw_query_filter=True))
 
         logger.info(f'Start migrating all records (collection: "{self.collection_name}")')
+        to_iterate, page = True, 1
         while to_iterate:
             docs, total = await self.persistent.find(
                 collection_name=self.collection_name,

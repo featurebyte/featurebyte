@@ -19,7 +19,6 @@ from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import InternalName
 from featurebyte.exception import (
     DuplicatedRecordException,
-    FeatureListNotOnlineEnabledError,
     ObjectHasBeenSavedError,
     RecordDeletionException,
     RecordRetrievalException,
@@ -439,7 +438,7 @@ def test_deserialization(production_ready_feature, draft_feature):
     feature_list_dict["version"] = expected_version
 
     with patch(
-        "featurebyte.api.feature_list.FeatureList._iterate_api_object_using_paginated_routes"
+        "featurebyte.api.feature_list.FeatureList.iterate_api_object_using_paginated_routes"
     ) as mock_iterate:
         with patch("featurebyte.api.feature_store.FeatureStore._get_by_id") as mock_get_by_id:
             mock_get_by_id.return_value = production_ready_feature.feature_store
@@ -792,18 +791,21 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     Test that deploying a feature list that already has features that are production ready doesn't error.
     """
     deployments = list_deployments(include_id=True)
-    assert_frame_equal(
-        deployments,
-        pd.DataFrame(
-            columns=[
-                "id",
-                "name",
-                "feature_list_name",
-                "feature_list_version",
-                "num_feature",
-            ]
-        ),
+    expected = pd.DataFrame(
+        columns=[
+            "id",
+            "name",
+            "catalog_name",
+            "feature_list_name",
+            "feature_list_version",
+            "num_feature",
+        ]
     )
+    assert_frame_equal(deployments, expected)
+
+    # check list deployments without id
+    deployments = list_deployments(include_id=False)
+    assert_frame_equal(deployments, expected.drop(columns=["id"]))
 
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
@@ -816,11 +818,14 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
         f"Deployment with {feature_list.name}_{feature_list.version.to_str()}"
     )
     assert_frame_equal(
-        deployments[["name", "feature_list_name", "feature_list_version", "num_feature"]],
+        deployments[
+            ["name", "catalog_name", "feature_list_name", "feature_list_version", "num_feature"]
+        ],
         pd.DataFrame(
             [
                 {
                     "name": expected_deployment_name,
+                    "catalog_name": "default",
                     "feature_list_name": feature_list.name,
                     "feature_list_version": feature_list.version.to_str(),
                     "num_feature": len(feature_list.feature_names),

@@ -4,6 +4,7 @@
 /context
 /credential
 /deployment
+/deployment/all/
 /deployment/summary/
 /dimension_table
 /entity
@@ -14,8 +15,8 @@
 /feature_list_namespace
 /feature_namespace
 /feature_store
-/item_table
 /historical_feature_table
+/item_table
 /observation_table
 /periodic_task
 /relationship_info

@@ -48,6 +48,27 @@ class DeploymentSummary(FeatureByteBaseModel):
     num_feature: int
 
 
+class AllDeploymentListRecord(FeatureByteBaseModel):
+    """
+    Schema for all deployment list record
+    """
+
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
+    name: str
+    catalog_name: str
+    feature_list_name: str
+    feature_list_version: str
+    num_feature: int
+
+
+class AllDeploymentList(PaginationMixin):
+    """
+    Paginated list of Deployment
+    """
+
+    data: List[AllDeploymentListRecord]
+
+
 class OnlineFeaturesResponseModel(FeatureByteBaseModel):
     """
     Response model for online features

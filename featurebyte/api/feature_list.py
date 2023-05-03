@@ -608,7 +608,7 @@ class FeatureList(
                 title="Loading Feature(s)",
                 **get_alive_bar_additional_params(),
             ) as progress_bar:
-                for feature_dict in cls._iterate_api_object_using_paginated_routes(
+                for feature_dict in cls.iterate_api_object_using_paginated_routes(
                     route="/feature",
                     params={"feature_list_id": id_value, "page_size": PAGINATED_CALL_PAGE_SIZE},
                 ):

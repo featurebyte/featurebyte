@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
 
 import copy
+from contextlib import contextmanager
 
 import numpy as np
 import pandas as pd
@@ -57,14 +58,24 @@ class BaseDocumentService(
         self.catalog_id = catalog_id
         self._allow_to_use_raw_query_filter = False
 
-    def allow_use_raw_query_filter(self) -> None:
+    @contextmanager
+    def allow_use_raw_query_filter(self) -> Iterator[None]:
         """
         Activate use of raw query filter.
         This should be used ONLY when there is need to access all documents regardless of catalog membership.
         Valid use cases are table migration or table restoration.
+
+        Yields
+        -------
+        None
+            Enable use of raw query filter
         """
-        logger.warning(RAW_QUERY_FILTER_WARNING)
-        self._allow_to_use_raw_query_filter = True
+        try:
+            logger.warning(RAW_QUERY_FILTER_WARNING)
+            self._allow_to_use_raw_query_filter = True
+            yield
+        finally:
+            self._allow_to_use_raw_query_filter = False
 
     @property
     def collection_name(self) -> str:
