@@ -79,6 +79,11 @@ async def test_observation_table_from_view(event_table, scd_table, session, sour
     check_location_valid(observation_table, session)
     await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)
 
+    df_preview = observation_table.preview()
+    df_sample = observation_table.sample()
+    df_describe = observation_table.describe()
+    raise
+
 
 @pytest.mark.asyncio
 async def test_observation_table_cleanup(scd_table, session, source_type):
