@@ -5,7 +5,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.relationship import RelationshipInfo, RelationshipType
+from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
 
 
 def test_duplicate_primary_and_related_ids_throws_error():
@@ -14,7 +14,7 @@ def test_duplicate_primary_and_related_ids_throws_error():
     """
     id_1 = PydanticObjectId(ObjectId())
     with pytest.raises(ValueError) as exc:
-        RelationshipInfo(
+        RelationshipInfoModel(
             relationship_type=RelationshipType.CHILD_PARENT,
             entity_id=id_1,
             related_entity_id=id_1,

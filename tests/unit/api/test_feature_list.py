@@ -75,6 +75,7 @@ def test_feature_list_creation__success(
         "user_id": None,
         "feature_clusters": None,
         "catalog_id": DEFAULT_CATALOG_ID,
+        "relationships_info": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -182,6 +183,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "name": "my_feature_list",
         "feature_clusters": None,
         "catalog_id": DEFAULT_CATALOG_ID,
+        "relationships_info": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -539,6 +541,7 @@ def test_get_feature_list(saved_feature_list):
             ("name", "my_feature_list"),
             ("online_enabled_feature_ids", []),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
+            ("relationships_info", audit_history.new_value.iloc[9]),
             ("updated_at", None),
             ("user_id", None),
             ("version.name", saved_feature_list.version.name),

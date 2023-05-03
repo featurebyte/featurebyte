@@ -5,7 +5,7 @@ from typing import Any, Dict, Literal, Optional
 
 from bson import ObjectId
 
-from featurebyte.models.relationship import RelationshipInfo
+from featurebyte.models.relationship import RelationshipInfoModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.relationship_info import (
     RelationshipInfoCreate,
@@ -19,7 +19,7 @@ from featurebyte.service.table import TableService
 
 
 class RelationshipInfoController(
-    BaseDocumentController[RelationshipInfo, RelationshipInfoService, RelationshipInfoList]
+    BaseDocumentController[RelationshipInfoModel, RelationshipInfoService, RelationshipInfoList]
 ):
     """
     RelationshipInfo controller
@@ -43,7 +43,7 @@ class RelationshipInfoController(
     async def create_relationship_info(
         self,
         data: RelationshipInfoCreate,
-    ) -> RelationshipInfo:
+    ) -> RelationshipInfoModel:
         """
         Create RelationshipInfo at persistent
 
@@ -54,7 +54,7 @@ class RelationshipInfoController(
 
         Returns
         -------
-        RelationshipInfo
+        RelationshipInfoModel
             Newly created RelationshipInfo object
         """
         await self._validate_relationship_info_create(data)

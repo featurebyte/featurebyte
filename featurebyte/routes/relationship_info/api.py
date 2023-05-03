@@ -11,7 +11,7 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.models.relationship import RelationshipInfo
+from featurebyte.models.relationship import RelationshipInfoModel
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -31,15 +31,15 @@ from featurebyte.schema.relationship_info import (
 router = APIRouter(prefix="/relationship_info")
 
 
-@router.post("", response_model=RelationshipInfo, status_code=HTTPStatus.CREATED)
+@router.post("", response_model=RelationshipInfoModel, status_code=HTTPStatus.CREATED)
 async def create_relationship_info(
     request: Request, data: RelationshipInfoCreate
-) -> RelationshipInfo:
+) -> RelationshipInfoModel:
     """
     Create relationship info
     """
     controller = request.state.app_container.relationship_info_controller
-    relationship_info: RelationshipInfo = await controller.create_relationship_info(data=data)
+    relationship_info: RelationshipInfoModel = await controller.create_relationship_info(data=data)
     return relationship_info
 
 
@@ -68,15 +68,15 @@ async def list_relationship_info(
     return relationship_info_list
 
 
-@router.get("/{relationship_info_id}", response_model=RelationshipInfo)
+@router.get("/{relationship_info_id}", response_model=RelationshipInfoModel)
 async def get_relationship_info(
     request: Request, relationship_info_id: PydanticObjectId
-) -> RelationshipInfo:
+) -> RelationshipInfoModel:
     """
     Retrieve relationship info
     """
     controller = request.state.app_container.relationship_info_controller
-    relationship_info: RelationshipInfo = await controller.get(
+    relationship_info: RelationshipInfoModel = await controller.get(
         document_id=relationship_info_id,
     )
     return relationship_info
@@ -87,7 +87,7 @@ async def update_relationship_info(
     request: Request,
     relationship_info_id: PydanticObjectId,
     data: RelationshipInfoUpdate,
-) -> RelationshipInfo:
+) -> RelationshipInfoModel:
     """
     Update RelationshipInfo
     """
@@ -95,7 +95,7 @@ async def update_relationship_info(
     relationship_info = await controller.relationship_info_service.update_document(
         relationship_info_id, data
     )
-    return cast(RelationshipInfo, relationship_info)
+    return cast(RelationshipInfoModel, relationship_info)
 
 
 @router.get("/{relationship_info_id}/info", response_model=RelationshipInfoInfo)

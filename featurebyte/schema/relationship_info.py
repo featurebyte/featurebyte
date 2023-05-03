@@ -9,7 +9,7 @@ from bson import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.relationship import RelationshipInfo, RelationshipType
+from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -33,7 +33,7 @@ class RelationshipInfoList(PaginationMixin):
     Paginated list of RelationshipInfo
     """
 
-    data: List[RelationshipInfo]
+    data: List[RelationshipInfoModel]
 
 
 class RelationshipInfoUpdate(BaseDocumentServiceUpdateSchema):

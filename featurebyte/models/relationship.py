@@ -77,7 +77,7 @@ class RelationshipType(StrEnum):
     CHILD_PARENT = "child_parent"
 
 
-class RelationshipInfo(FeatureByteCatalogBaseDocumentModel):
+class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
     """
     Relationship info table model.
 

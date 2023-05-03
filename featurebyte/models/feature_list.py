@@ -25,6 +25,7 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
@@ -237,6 +238,18 @@ class FeatureCluster(FeatureByteBaseModel):
         return [self.graph.get_node_by_name(name) for name in self.node_names]
 
 
+class EntityRelationshipInfo(FeatureByteBaseModel):
+    """
+    Schema for entity relationship information (subset of existing RelationshipInfo)
+    """
+
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
+    relationship_type: RelationshipType
+    entity_id: PydanticObjectId
+    related_entity_id: PydanticObjectId
+    relation_table_id: PydanticObjectId
+
+
 class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """
     FrozenFeatureListNamespaceModel store all the attributes that are fixed after object construction.
@@ -441,6 +454,9 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
     )
     # DEV-556: no longer Optional once migrated
     feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)
+    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
+        allow_mutation=False, default=None
+    )
 
     # pydantic validators
     _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(
