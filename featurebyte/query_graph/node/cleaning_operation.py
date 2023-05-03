@@ -133,7 +133,7 @@ class MissingValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace missing value with 0
 
-    >>> MissingValueImputation(imputed_value=0) # doctest: +SKIP
+    >>> fb.MissingValueImputation(imputed_value=0) # doctest: +SKIP
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.MissingValueImputation")
@@ -168,7 +168,11 @@ class DisguisedValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace -999 with 0
 
-    >>> DisguisedValueImputation(disguised_values=[-999], imputed_value=0) # doctest: +SKIP
+    >>> fb.DisguisedValueImputation(disguised_values=[-999], imputed_value=0)  # doctest: +SKIP
+
+    Create an imputation rule to treat -1 and -96 as missing
+
+    >>> fb.DisguisedValueImputation(disguised_values=[-1, -96], imputed_value=None)  # doctest: +SKIP
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DisguisedValueImputation")
@@ -209,7 +213,7 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace value other than "buy" or "sell" to "missing"
 
-    >>> UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing") # doctest: +SKIP
+    >>> fb.UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing") # doctest: +SKIP
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UnexpectedValueImputation")
@@ -326,7 +330,7 @@ class StringValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace string value with 0
 
-    >>> StringValueImputation(imputed_value=0) # doctest: +SKIP
+    >>> fb,StringValueImputation(imputed_value=0) # doctest: +SKIP
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.StringValueImputation")

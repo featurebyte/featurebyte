@@ -322,7 +322,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a Catalog object that is already saved.
 
-        >>> catalog = fb.Catalog.get("catalog_name")  # doctest: +SKIP
+        >>> catalog = fb.Catalog.get(<catalog_name>)  # doctest: +SKIP
         """
         return super().get(name)
 
@@ -486,8 +486,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        List saved feature lists.
-
         >>> feature_lists = catalog.list_feature_lists()
         """
         return FeatureList.list(include_id=include_id, entity=entity, table=table)
@@ -516,8 +514,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        List saved tables.
-
         >>> tables = catalog.list_tables()
         """
         return Table.list(include_id=include_id, entity=entity)
@@ -649,8 +645,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        List saved entities.
-
         >>> entities = catalog.list_entities()
         """
         return Entity.list(include_id=include_id)
@@ -805,8 +799,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        Get data source.
-
         >>> data_source = catalog.get_data_source()
         """
         assert (
@@ -835,8 +827,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        Get an event view from an event table.
-
         >>> event_view = catalog.get_view("GROCERYINVOICE")
         """
         table = Table.get(name=table_name)
@@ -865,9 +855,15 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        Get a saved feature.
+        Get a default version of a feature by its name space.
 
         >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
+
+        Get a specific version of a feature by specifying its version name.
+
+        >>> feature = catalog.get_feature(  # doctest: +SKIP
+        ...   "InvoiceAmountAvg_60days", version=<version_name>
+        ... )
         """
         return Feature.get(name=name, version=version)
 
@@ -892,8 +888,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        Get a saved feature list.
-
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         """
         return FeatureList.get(name=name, version=version)
@@ -919,8 +913,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        Get a saved table.
-
         >>> item_table = catalog.get_table("INVOICEITEMS")
         """
         return Table.get(name=name)
@@ -988,8 +980,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        Get a saved feature job setting analysis.
-
         >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis("analysis_name")  # doctest: +SKIP
         """
         return FeatureJobSettingAnalysis.get(name=name)
@@ -1037,8 +1027,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        Get a saved entity.
-
         >>> entity = catalog.get_entity("grocerycustomer")
         """
         return Entity.get(name=name)

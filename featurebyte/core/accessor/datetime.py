@@ -174,7 +174,7 @@ class DatetimeAccessor:
         --------
         Compute the year component of a timestamp column:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["TimestampYear"] = view["Timestamp"].dt.year
         >>> view.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampYear
@@ -200,7 +200,7 @@ class DatetimeAccessor:
         --------
         Compute the quarter component of a timestamp column:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["TimestampQuarter"] = view["Timestamp"].dt.quarter
         >>> view.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampQuarter
@@ -226,7 +226,7 @@ class DatetimeAccessor:
         --------
         Compute the month component of a timestamp column:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["TimestampMonth"] = view["Timestamp"].dt.month
         >>> view.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampMonth
@@ -252,7 +252,7 @@ class DatetimeAccessor:
         --------
         Compute the week component of a timestamp column:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["TimestampWeek"] = view["Timestamp"].dt.week
         >>> view.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampWeek
@@ -281,7 +281,7 @@ class DatetimeAccessor:
         --------
         Compute the day component of a timestamp column:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["TimestampDay"] = view["Timestamp"].dt.day
         >>> view.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampDay
@@ -294,7 +294,7 @@ class DatetimeAccessor:
 
         Compute the interval since the previous event in terms of days:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["PreviousTimestamp"] = view["Timestamp"].lag("GroceryCustomerGuid")
         >>> view["DaysSincePreviousTimestamp"] = (view["Timestamp"] - view["PreviousTimestamp"]).dt.day
         >>> view.preview(5).filter(regex="Timestamp|Customer")
@@ -321,7 +321,7 @@ class DatetimeAccessor:
 
         Examples
         --------
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["TimestampDayOfWeek"] = view["Timestamp"].dt.day_of_week
         >>> view.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampDayOfWeek
@@ -350,7 +350,7 @@ class DatetimeAccessor:
         --------
         Compute the hour component of a timestamp column:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["TimestampHour"] = view["Timestamp"].dt.hour
         >>> view.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampHour
@@ -379,7 +379,7 @@ class DatetimeAccessor:
         --------
         Compute the minute component of a timestamp column:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["TimestampMinute"] = view["Timestamp"].dt.minute
         >>> view.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampMinute
@@ -409,7 +409,7 @@ class DatetimeAccessor:
 
         Compute the second component of a timestamp column:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["TimestampSecond"] = view["Timestamp"].dt.second
         >>> view.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampSecond

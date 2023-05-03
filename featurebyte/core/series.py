@@ -562,7 +562,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Examples
         --------
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
 
         >>> print(view["Timestamp"].is_datetime)
         True
@@ -582,7 +582,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Examples
         --------
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
 
         >>> print(view["Amount"].is_numeric)
         True
@@ -604,7 +604,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Filter a View based on whether a column has null values:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view_filtered = view[view["Amount"].isnull()]
         """
         return series_unary_operation(
@@ -628,7 +628,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Filter a View by removing rows where a column has null values:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view_filtered = view[view["Amount"].notnull()]
         """
         return ~self.isnull()
@@ -662,7 +662,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Convert a numerical series to a string series, and back to an int series.
 
-        >>> event_view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> event_view = catalog.get_view("GROCERYINVOICE")
         >>> event_view["Amount"] = event_view["Amount"].astype(str)
         >>> event_view["Amount"] = event_view["Amount"].astype(int)
         """
@@ -709,7 +709,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute absolute values for a Column in a View:
 
-        >>> view = fb.Table.get("GROCERYCUSTOMER").get_view()
+        >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["LongitudeAbs"] = view["Longitude"].abs()
         >>> view.preview(5).filter(regex="Longitude")
            Longitude  LongitudeAbs
@@ -721,7 +721,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute absolute values for a Feature:
 
-        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature_abs = feature.abs()
         """
         return series_unary_operation(
@@ -746,7 +746,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute square root values for a Column in a View:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["AmountSqrt"] = view["Amount"].sqrt()
         >>> view.preview(5).filter(regex="Amount")
            Amount  AmountSqrt
@@ -759,7 +759,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute square root values for a Feature:
 
-        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature_sqrt = feature.sqrt()
         """
         return series_unary_operation(
@@ -789,7 +789,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute exponential power values for a Column in a View:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["Amount^2"] = view["Amount"].pow(2)
         >>> view.preview(5).filter(regex="Amount")
            Amount   Amount^2
@@ -802,7 +802,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute exponential power values for a Feature:
 
-        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature_pow = feature.pow(2)
         """
         return self._binary_op(
@@ -825,7 +825,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute natural logarithm values for a Column in a View:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["AmountLog"] = view["Amount"].log()
         >>> view.preview(5).filter(regex="Amount")
           Amount  AmountLog
@@ -838,7 +838,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute natural logarithm values for a Feature:
 
-        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature_log = (feature + 1.0).log()
         """
         return series_unary_operation(
@@ -863,7 +863,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute exponential values for a Column in a View:
 
-        >>> view = fb.Table.get("INVOICEITEMS").get_view()
+        >>> view = catalog.get_view("INVOICEITEMS")
         >>> view["QuantityExp"] = view["Quantity"].exp()
         >>> view.preview(5).filter(regex="Quantity")
            Quantity  QuantityExp
@@ -876,7 +876,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute exponential values for a Feature:
 
-        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature_exp = feature.exp()
         """
         return series_unary_operation(
@@ -901,7 +901,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Round values for a Column in a View:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> column = view["Amount"].floor()
         >>> view["AmountFloor"] = view["Amount"].floor()
         >>> view.preview(5).filter(regex="Amount")
@@ -915,7 +915,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Round values for a Feature:
 
-        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature_floor = feature.floor()
         """
         return series_unary_operation(
@@ -940,7 +940,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         --------
         Compute rounded values for a Column in a View:
 
-        >>> view = fb.Table.get("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["AmountCeil"] = view["Amount"].ceil()
         >>> view.preview(5).filter(regex="Amount")
            Amount  AmountCeil
@@ -953,7 +953,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Compute rounded values for a Feature:
 
-        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature_ceil = feature.ceil()
         """
         return series_unary_operation(
@@ -1115,7 +1115,7 @@ class Series(FrozenSeries):
 
         Fill missing values in a column with 0:
 
-        >>> view = catalog.get_table("GROCERYINVOICE").get_view()
+        >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["Amount"].fillna(0)
 
 

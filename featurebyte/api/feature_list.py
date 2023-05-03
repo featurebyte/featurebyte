@@ -280,6 +280,15 @@ class FeatureList(
     this scenario, the primary entity is the card entity because it is a child of both the customer and customer
     city entities. However, if the feature list also contains features for a merchant and merchant city, the primary
     entity becomes a tuple of card and merchant.
+
+    Examples
+    --------
+    Create a feature list with two features.
+
+    >>> features = fb.FeatureList([
+    ...   catalog.get_feature("InvoiceCount_60days"),
+    ...   catalog.get_feature("InvoiceAmountAvg_60days"),
+    ... ], name="My new feature list")
     """
 
     # documentation metadata
@@ -1217,7 +1226,7 @@ class FeatureList(
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.update_status(FeatureListStatus.TEMPLATE)
+        >>> feature_list.update_status(fb.FeatureListStatus.TEMPLATE)
         """
         self.feature_list_namespace.update(
             update_payload={"status": str(status)}, allow_update_local=False

@@ -378,21 +378,28 @@ class EventTable(TableApiObject):
 
         Examples
         --------
+        Create new feature job setting analysis on the saved event table with the following configuration:
 
-        Create new feature job setting analysis on the saved event table. It could also be called without
-        any parameters with default values.
+        - analysis should cover the last 2 weeks,
+        - recommendation for the feature job frequency period should be at least one hour,
+        - recent late data warehouse updates should be excluded in the analysis, as it is expected they won't occur
+          again because your instances have been upsized
+        - tolerance for late data is incresed to 0.5%.
 
         >>> from datetime import datetime
         >>> event_table = catalog.get_table("GROCERYINVOICE")
-        >>> event_table.create_new_feature_job_setting_analysis(  # doctest: +SKIP
+        >>> analysis = event_table.create_new_feature_job_setting_analysis(  # doctest: +SKIP
         ...   analysis_date=datetime.utcnow(),
-        ...   analysis_length=3600,
-        ...   min_featurejob_period=100,
+        ...   analysis_length=60*60*24*7*12,
+        ...   min_featurejob_period=60*60,
         ...   exclude_late_job=True,
         ...   blind_spot_buffer_setting=10,
         ...   job_time_buffer_setting=5,
-        ...   late_data_allowance=0.1,
+        ...   late_data_allowance=0.5/100,
         ... )
+
+        The analysis could also be called with default values.
+        >>> default_analysis = event_table.create_new_feature_job_setting_analysis()  # doctest: +SKIP
 
         """
         payload = FeatureJobSettingAnalysisCreate(

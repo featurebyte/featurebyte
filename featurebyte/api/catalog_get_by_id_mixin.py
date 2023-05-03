@@ -103,7 +103,7 @@ class CatalogGetByIdMixin:
         --------
         Get a saved feature.
 
-        >>> feature = catalog.get_feature_by_id(ObjectId())  # doctest: +SKIP
+        >>> feature = catalog.get_feature_by_id(<Feature_Object_Id>)  # doctest: +SKIP
         """
         return Feature.get_by_id(id=id)
 
@@ -128,7 +128,7 @@ class CatalogGetByIdMixin:
         --------
         Get a saved feature list.
 
-        >>> feature_list = catalog.get_feature_list_by_id(ObjectId())  # doctest: +SKIP
+        >>> feature_list = catalog.get_feature_list_by_id(<Feature_Object_ID>)  # doctest: +SKIP
         """
         return FeatureList.get_by_id(id=id)
 
@@ -153,7 +153,7 @@ class CatalogGetByIdMixin:
         --------
         Get a saved table.
 
-        >>> item_table = catalog.get_table_by_id(ObjectId())  # doctest: +SKIP
+        >>> item_table = catalog.get_table_by_id(<table_Object_ID>)  # doctest: +SKIP
         """
         return Table.get_by_id(id=id)
 
@@ -178,7 +178,7 @@ class CatalogGetByIdMixin:
         --------
         Get a saved relationship.
 
-        >>> relationship = catalog.get_relationship_by_id(ObjectId())  # doctest: +SKIP
+        >>> relationship = catalog.get_relationship_by_id(<Relationship_Object_ID>)  # doctest: +SKIP
         """
         return Relationship.get_by_id(id=id)
 
@@ -253,7 +253,7 @@ class CatalogGetByIdMixin:
         --------
         Get a saved entity.
 
-        >>> entity = catalog.get_entity_by_id(ObjectId())  # doctest: +SKIP
+        >>> entity = catalog.get_entity_by_id(<Entity_Object_ID>)  # doctest: +SKIP
         """
         return Entity.get_by_id(id=id)
 
