@@ -1303,8 +1303,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
+        >>> feature_list = catalog.get_feature_list(<FeatureList_Object_ID>)  # doctest: +SKIP
+        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)  # doctest: +SKIP
 
         See Also
         --------
