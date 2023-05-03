@@ -8,9 +8,11 @@ from typing import Any, Dict, cast
 import asyncio
 import concurrent.futures
 import os
+import tempfile
 
 from bson import ObjectId
 
+from featurebyte.config import Configurations
 from featurebyte.logging import get_logger
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
@@ -66,10 +68,22 @@ class FeatureCreateTask(BaseTask):
         )
         definition = sdk_code_gen_state.code_generator.generate(to_format=True)
         code = f'{definition}output.save(_id="{payload.output_document_id}")'
-
         logger.debug(f"Prepare to execute feature definition: \n{code}")
-        os.environ["SDK_EXECUTION_MODE"] = "SERVER"
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
-        logger.debug("Complete feature create task")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with open(os.path.join(temp_dir, "config.yaml"), "w") as file_handle:
+                file_handle.write(
+                    "# featurebyte config file\n"
+                    "profile:\n"
+                    "  - name: worker\n"
+                    "    api_url: featurebyte-server:8088\n\n"
+                )
+
+            os.environ["SDK_EXECUTION_MODE"] = "SERVER"
+            os.environ["FEATUREBYTE_HOME"] = temp_dir
+            logger.debug(f"Configuration: {Configurations().profile}")
+
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                await asyncio.get_event_loop().run_in_executor(pool, exec, code)
+
+            logger.debug("Complete feature create task")
