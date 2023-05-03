@@ -316,19 +316,20 @@ def test_resource_details__change_view():
         type="method",
         base_classes=None,
         method_type=None,
-        short_description="Gets a ChangeView from a Slowly Changing Dimension (SCD) table. The view offers a "
-        "method to examine alterations",
-        long_description="that occur in a specific attribute within the natural key of the SCD table.\n\n"
-        "To create the ChangeView, you need to provide the name of the SCD column for which you want to track "
-        "changes\nthrough the track_changes_column parameter.\n\nOptionally,\n\n- you can define the default "
-        "Feature Job Setting for the View. Default is once a day, at the time of the\ncreation of the view.\n"
-        "- you can provide a `prefix` parameter to control how the views columns are named.\n\nThe resulting view "
-        "has 5 columns:\n\n- the natural key of the SCDView\n- past_<name_of_column_tracked>: value of the column "
-        "before the change\n- new_<name_of_column_tracked>: value of the column after the change\n- past_valid_"
-        "from_timestamp (equal to the effective timestamp of the SCD before the change)\n- new_valid_from_"
-        "timestamp (equal to the effective timestamp of the SCD after the change)\n\nThe ChangeView can be used "
-        "to create Aggregates of Changes Over a Window features, similar to Aggregates Over\na Window features "
-        "created from an Event View.",
+        short_description="Gets a ChangeView from a Slowly Changing Dimension (SCD) table. The view offers a method to "
+        "examine alterations",
+        long_description="that occur in a specific attribute within the natural key of the SCD table.\n\nTo create the "
+        "ChangeView, you need to provide the name of the SCD column for which you want to track "
+        "changes\nthrough the track_changes_column parameter.\n\nOptionally,\n\n- you can define the "
+        "default Feature Job Setting for the View. Default is once a day, at the time of the\n"
+        "creation of the view.\n- you can provide a `prefix` parameter to control how the views "
+        "columns are named.\n\nThe resulting view has 5 columns:\n\n- the natural key of the "
+        "SCDView\n- past_<name_of_column_tracked>: value of the column before the change\n- new_"
+        "<name_of_column_tracked>: value of the column after the change\n- past_valid_from_timestamp "
+        "(equal to the effective timestamp of the SCD before the change)\n- new_valid_from_timestamp "
+        "(equal to the effective timestamp of the SCD after the change)\n\nThe ChangeView can be "
+        "used to create Aggregates of Changes Over a Window features, similar to Aggregates Over\na "
+        "Window features created from an Event View.",
         parameters=[
             ParameterDetails(
                 name="track_changes_column",
@@ -340,18 +341,19 @@ def test_resource_details__change_view():
                 name="default_feature_job_setting",
                 type="Optional[FeatureJobSetting]",
                 default="None",
-                description="Default feature job setting to set with the FeatureJobSetting constructor. If "
-                "not provided, the default\nfeature job setting is daily, aligning with the view's creation time.",
+                description="Default feature job setting to set with the FeatureJobSetting constructor. If not "
+                "provided, the default\nfeature job setting is daily, aligning with the view's "
+                "creation time.",
             ),
             ParameterDetails(
                 name="prefixes",
                 type="Optional[Tuple[Optional[str], Optional[str]]]",
                 default="None",
                 description="Optional prefixes where each element indicates the prefix to add to the new column "
-                "names for the name of\nthe column that we want to track. The first prefix will be used for the "
-                "old, and the second for the new.\nIf not provided, the column names will be prefixed with the "
-                'default values of "past_", and "new_". At\nleast one of the values must not be None. If two '
-                "values are provided, they must be different.",
+                "names for the name of\nthe column that we want to track. The first prefix will be "
+                "used for the old, and the second for the new.\nIf not provided, the column names "
+                'will be prefixed with the default values of "past_", and "new_". At\nleast one of '
+                "the values must not be None. If two values are provided, they must be different.",
             ),
             ParameterDetails(
                 name="view_mode",
@@ -370,9 +372,9 @@ def test_resource_details__change_view():
                 type="Optional[List[ColumnCleaningOperation]]",
                 default="None",
                 description="List of cleaning operations to apply per column in manual mode only. Each element "
-                "in the list indicates the\ncleaning operations for a specific column. The association between "
-                "this column and the cleaning operations\nis established via the ColumnCleaningOperation "
-                "constructor.",
+                "in the list indicates the\ncleaning operations for a specific column. The "
+                "association between this column and the cleaning operations\nis established via "
+                "the ColumnCleaningOperation constructor.",
             ),
         ],
         returns=ParameterDetails(
@@ -383,10 +385,10 @@ def test_resource_details__change_view():
         ),
         raises=[],
         examples=[
-            "Get a ChangeView.\n",
-            '\n```pycon\n>>> scd_table = fb.Table.get("GROCERYCUSTOMER")\n>>> change_view = scd_table.'
-            'get_change_view(\n...     track_changes_column="CurrentRecord",\n...     prefixes=("previous_",'
-            ' "next_"),\n... )\n```\n',
+            "Get a ChangeView to track changes in Customer's State.\n",
+            '\n```pycon\n>>> scd_table = catalog.get_table("GROCERYCUSTOMER")\n>>> change_view = '
+            'scd_table.get_change_view(\n...   track_changes_column="State",\n...   prefixes=("previous_", '
+            '"next_"),\n... )\n```\n',
         ],
         see_also=None,
         enum_values=[],
