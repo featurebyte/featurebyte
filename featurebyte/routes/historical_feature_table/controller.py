@@ -68,6 +68,10 @@ class HistoricalFeatureTableController(
         ----------
         data: HistoricalFeatureTableCreate
             HistoricalFeatureTable creation payload
+        observation_set: Optional[UploadFile]
+            Observation set file
+        temp_storage: Storage
+            Storage instance
 
         Returns
         -------

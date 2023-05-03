@@ -2,7 +2,6 @@
 Tests for HistoricalFeatureTable routes
 """
 import copy
-import json
 from http import HTTPStatus
 from unittest.mock import patch
 

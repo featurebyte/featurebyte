@@ -48,6 +48,11 @@ class HistoricalFeatureTableService(
         ----------
         data: HistoricalFeatureTableCreate
             HistoricalFeatureTable creation payload
+        storage: Storage
+            Storage instance
+        observation_set_dataframe: Optional[pd.DataFrame]
+            Optional observation set DataFrame. If provided, the DataFrame will be stored in the
+            temp storage to be used by the HistoricalFeatureTable creation task.
 
         Returns
         -------

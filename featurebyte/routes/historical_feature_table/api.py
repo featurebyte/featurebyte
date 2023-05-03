@@ -8,7 +8,7 @@ from typing import Optional, cast
 import json
 from http import HTTPStatus
 
-from fastapi import APIRouter, File, Form, Request, UploadFile
+from fastapi import APIRouter, Form, Request, UploadFile
 from starlette.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId

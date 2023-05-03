@@ -799,6 +799,12 @@ class ApiObject(FeatureByteBaseDocumentModel):
             Delay used in polling the task
         retrieve_result: bool
             Whether to retrieve result from output_url
+        is_payload_json: bool
+            Whether the payload should be passed via the json parameter. If False, the payload will
+            be passed via the data parameter. Set this to False for routes that expects
+            multipart/form-data encoding.
+        files: Optional[dict[str, Any]]
+            Optional files to be passed to the request
 
         Returns
         -------
