@@ -1054,9 +1054,10 @@ class FeatureList(
 
         return pd.concat(output, ignore_index=True)
 
+    @typechecked
     def compute_historical_feature_table(
         self,
-        observation_table: ObservationTable,
+        observation_table: Union[ObservationTable, pd.DataFrame],
         historical_feature_table_name: str,
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> HistoricalFeatureTable:
@@ -1066,8 +1067,9 @@ class FeatureList(
 
         Parameters
         ----------
-        observation_table: ObservationTable
-            Observation table with `POINT_IN_TIME` and serving names columns
+        observation_table: Union[ObservationTable, pd.DataFrame]
+            Observation set with `POINT_IN_TIME` and serving names columns. This can be either an
+            ObservationTable of a pandas DataFrame.
         historical_feature_table_name: str
             Name of the historical feature table to be created
         serving_names_mapping : Optional[Dict[str, str]]
@@ -1083,14 +1085,24 @@ class FeatureList(
             serving_names_mapping=serving_names_mapping,
         )
         feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id
-        payload = HistoricalFeatureTableCreate(
+        feature_table_create_params = HistoricalFeatureTableCreate(
             name=historical_feature_table_name,
-            observation_table_id=observation_table.id,
+            observation_table_id=(
+                observation_table.id if isinstance(observation_table, ObservationTable) else None
+            ),
             feature_store_id=feature_store_id,
             featurelist_get_historical_features=featurelist_get_historical_features,
         )
+        if isinstance(observation_table, ObservationTable):
+            files = None
+        else:
+            assert isinstance(observation_table, pd.DataFrame)
+            files = {"observation_set": dataframe_to_arrow_bytes(observation_table)}
         historical_feature_table_doc = self.post_async_task(
-            route="/historical_feature_table", payload=payload.json_dict()
+            route="/historical_feature_table",
+            payload={"payload": feature_table_create_params.json()},
+            is_payload_json=False,
+            files=files,
         )
         return HistoricalFeatureTable.get_by_id(historical_feature_table_doc["_id"])
 
