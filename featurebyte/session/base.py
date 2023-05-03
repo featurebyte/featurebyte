@@ -285,7 +285,6 @@ class BaseSession(BaseModel):
         finally:
             cursor.close()
             input_pipe.close()
-            thread.join(timeout=1)
             logger.debug(
                 "Query completed",
                 extra={

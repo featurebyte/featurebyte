@@ -279,8 +279,10 @@ class FeatureJobMixin(ApiObject):
         if mask.any():
             feature_stats.loc[mask, "completed_jobs"] = 0
             feature_stats.loc[mask, "exceed_period"] = 0
+            feature_stats.loc[mask, "failed_jobs"] = 0
             feature_stats["completed_jobs"] = feature_stats["completed_jobs"].astype(int)
             feature_stats["exceed_period"] = feature_stats["exceed_period"].astype(int)
+            feature_stats["failed_jobs"] = feature_stats["failed_jobs"].astype(int)
             feature_stats.loc[mask, "last_completed"] = pd.NaT
 
         feature_stats["frac_late"] = feature_stats["frac_late"] / feature_stats["completed_jobs"]
