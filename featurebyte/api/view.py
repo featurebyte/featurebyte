@@ -243,6 +243,23 @@ class ViewColumn(Series, SampleMixin):
         ------
         ValueError
             If the column is a temporary column not associated with any View
+
+        Examples
+        --------
+        >>> customer_view = catalog.get_view("GROCERYCUSTOMER")
+        >>> # Extract operating system from BrowserUserAgent column
+        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains("Windows")
+        >>> # Create a feature from the OperatingSystemIsWindows column
+        >>> uses_windows = customer_view.OperatingSystemIsWindows.as_feature("UsesWindows")
+
+
+        If the view is a Slowly Changing Dimension View, you may also consider to create a feature that retrieves the
+        entity's attribute at a point-in-time prior to the point-in-time specified in the feature request by specifying
+        an offset.
+
+        >>> uses_windows_12w_ago = customer_view.OperatingSystemIsWindows.as_feature(
+        ...   "UsesWindows_12w_ago", offset="12w"
+        ... )
         """
         view = self._parent
         if view is None:
@@ -431,10 +448,38 @@ class GroupByMixin:
 
         Examples
         --------
-        Create GroupBy object from an event view
-        >>> transactions_view = transactions_data.get_view()  # doctest: +SKIP
-        >>> transactions_view.groupby("AccountID")  # doctest: +SKIP
-        GroupBy(EventView(node.name=input_1), keys=['AccountID'])
+        Groupby for Aggregate features.
+
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> # Group items by the column GroceryCustomerGuid that references the customer entity
+        >>> items_by_customer = items_view.groupby("GroceryCustomerGuid")  # doctest: +SKIP
+        >>> # Declare features that measure the discount received by customer
+        >>> customer_discounts = items_by_customer.aggregate_over(  # doctest: +SKIP
+        ...   "Discount",
+        ...   method=fb.AggFunc.SUM,
+        ...   feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
+        ...   fill_value=0,
+        ...   windows=['7d', '28d']
+        ... )
+
+
+        Groupby for Cross Aggregate features.
+
+        >>> # Join product view to items view
+        >>> product_view = catalog.get_view("GROCERYPRODUCT")
+        >>> items_view = items_view.join(product_view)  # doctest: +SKIP
+        >>> # Group items by the column GroceryCustomerGuid that references the customer entity
+        >>> # And use ProductGroup as the column to perform operations across
+        >>> items_by_customer_across_product_group = items_view.groupby(  # doctest: +SKIP
+        ...   by_keys="GroceryCustomerGuid", category="ProductGroup"
+        ... )
+        >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
+        >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(  # doctest: +SKIP
+        ...   "TotalCost",
+        ...   method=fb.AggFunc.SUM,
+        ...   feature_names=["CustomerInventory_28d"],
+        ...   windows=['28d']
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.groupby import GroupBy
