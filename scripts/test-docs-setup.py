@@ -173,7 +173,6 @@ def setup() -> None:
     FeatureList([invoice_count_60days], name="invoice_feature_list").save(
         conflict_resolution="retrieve"
     )
-    feature_list_object_id = FeatureList.get("invoice_feature_list").id
 
 
 if __name__ == "__main__":
