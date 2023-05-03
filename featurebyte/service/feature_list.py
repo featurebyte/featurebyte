@@ -3,7 +3,7 @@ FeatureListService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from bson.objectid import ObjectId
 
@@ -11,8 +11,11 @@ from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel
-from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
-from featurebyte.models.relationship import RelationshipInfoModel
+from featurebyte.models.feature_list import (
+    EntityRelationshipInfo,
+    FeatureListModel,
+    FeatureListNamespaceModel,
+)
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -75,12 +78,8 @@ class FeatureListService(
     async def _extract_feature_data(self, document: FeatureListModel) -> Dict[str, Any]:
         feature_store_id: Optional[ObjectId] = None
         feature_namespace_ids = set()
-        entity_ids = set()
         features = []
         feature_service = FeatureService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
-        relationship_info_service = RelationshipInfoService(
             user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
         )
         for feature_id in document.feature_ids:
@@ -104,14 +103,26 @@ class FeatureListService(
             # update feature_namespace_ids
             feature_namespace_ids.add(feature.feature_namespace_id)
 
-            # update entity_ids
-            entity_ids.update(feature.entity_ids)
-
             # store previous feature store id
             feature_store_id = feature.tabular_source.feature_store_id
 
+        derived_output = {
+            "feature_store_id": feature_store_id,
+            "features": features,
+        }
+        return derived_output
+
+    async def _extract_relationships_info(
+        self, features: List[FeatureModel]
+    ) -> List[EntityRelationshipInfo]:
+        entity_ids = set()
+        relationship_info_service = RelationshipInfoService(
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+        )
+        for feature in features:
+            entity_ids.update(feature.entity_ids)
         relationships_info = [
-            RelationshipInfoModel(**relationship_info)
+            EntityRelationshipInfo(**relationship_info)
             async for relationship_info in relationship_info_service.list_documents_iterator(
                 query_filter={
                     "$or": [
@@ -121,12 +132,7 @@ class FeatureListService(
                 }
             )
         ]
-        derived_output = {
-            "feature_store_id": feature_store_id,
-            "features": features,
-            "relationships_info": relationships_info,
-        }
-        return derived_output
+        return relationships_info
 
     async def _update_features(
         self, features: list[FeatureModel], feature_list_id: ObjectId
@@ -172,13 +178,14 @@ class FeatureListService(
 
             # check whether the feature(s) in the feature list saved to persistent or not
             feature_data = await self._extract_feature_data(document)
+            relationships_info = await self._extract_relationships_info(feature_data["features"])
 
             # update document with derived output
             document = FeatureListModel(
                 **{
                     **document.dict(by_alias=True),
                     "features": feature_data["features"],
-                    "relationships_info": feature_data["relationships_info"],
+                    "relationships_info": relationships_info,
                 }
             )
 
