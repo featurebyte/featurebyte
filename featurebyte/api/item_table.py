@@ -194,7 +194,7 @@ class ItemTable(TableApiObject):
         >>>     "GroceryInvoiceGuid",
         >>>     "GroceryCustomerGuid",
         >>>   ],
-        >>>)
+        >>> )
         """
         from featurebyte.api.item_view import ItemView  # pylint: disable=import-outside-toplevel
 
