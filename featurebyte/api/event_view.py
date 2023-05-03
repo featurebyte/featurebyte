@@ -399,10 +399,17 @@ class EventView(View, GroupByMixin, RawMixin):
         --------
         Add feature to an EventView.
 
-        >>> event_view = catalog.get_view("GROCERYINVOICE")
-        >>> feature = catalog.get_feature("InvoiceCount")
-        >>> event_view = event_view.add_feature("invoice_count", feature)
-
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> # Group items by the column GroceryInvoiceGuid that references the customer entity
+        >>> items_by_invoice = items_view.groupby("GroceryInvoiceGuid")  # doctest: +SKIP
+        >>> # Get the number of items in each invoice
+        >>> invoice_item_count = items_by_invoice.aggregate(  # doctest: +SKIP
+        ...   None,
+        ...   method=fb.AggFunc.COUNT,
+        ...   feature_name="InvoiceItemCount",
+        ... )
+        >>> event_view = catalog.get_view("GROCERYINVOICE")  # doctest: +SKIP
+        >>> event_view = event_view.add_feature("InvoiceItemCount", invoice_item_count)  # doctest: +SKIP
         """
         validate_type_is_feature(feature, "feature")
 

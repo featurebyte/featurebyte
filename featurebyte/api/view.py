@@ -1104,11 +1104,31 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Examples
         --------
-        Joining an EventView with a DimensionView.
+        Specify the column name in the caller to join on the natural (primary) key in the other_view.
 
-        >>> event_view = catalog.get_view("GROCERYINVOICE")
-        >>> dimension_view = catalog.get_view("GROCERYPRODUCT")
-        >>> event_view = event_view.join(dimension_view, on="GroceryCustomerGuid", how="inner", rsuffix="_dimension")
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> product_view = catalog.get_view("GROCERYPRODUCT")
+        >>> items_view_with_product_group = items_view.join(product_view, on="GroceryProductGuid")
+
+
+        Use the automated mode if one of the 2 following conditions are met:
+
+        - the name of the key column in the calling view is the same name as the natural (primary) key in the other view
+        - the natural (primary) key in the other view represents an entity that has been tagged in the 2 views.
+
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> product_view = catalog.get_view("GROCERYPRODUCT")
+        >>> items_view_with_product_group = items_view.join(product_view)
+
+
+        Use an inner join if you want the returned view to be filtered and contain only the rows that have matching
+        values in both views.
+
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> product_view = catalog.get_view("GROCERYPRODUCT")
+        >>> items_view_with_non_missing_product_group = items_view.join(
+        ...   product_view, on="GroceryProductGuid", how="inner"
+        ... )
         """
         self._validate_join(other_view, rsuffix, on=on)
 
@@ -1400,6 +1420,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         BatchRequestTable
             BatchRequestTable object.
+
+        Examples
+        --------
+        >>> batch_request_table = view[<entity_serving_name>].create_batch_request_table(  # doctest: +SKIP
+        ...   <batch_request_table_name>
+        ... )
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = BatchRequestTableCreate(

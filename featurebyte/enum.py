@@ -178,6 +178,18 @@ class AggFunc(StrEnum):
     The AggFunc enum class provides a way to represent various aggregation methods in your code. It helps reduce
     errors by defining a set of supported aggregation methods. Each enum constant corresponds to a specific
     aggregation method.
+
+    Examples
+    --------
+    >>> items_view = catalog.get_view("INVOICEITEMS")
+    >>> # Group items by the column GroceryInvoiceGuid that references the customer entity
+    >>> items_by_invoice = items_view.groupby("GroceryInvoiceGuid")
+    >>> # Get the number of items in each invoice
+    >>> invoice_item_count = items_by_invoice.aggregate(  # doctest: +SKIP
+    ...   None,
+    ...   method=fb.AggFunc.COUNT,
+    ...   feature_name="InvoiceItemCount",
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AggFunc")

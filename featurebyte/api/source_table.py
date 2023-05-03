@@ -666,7 +666,7 @@ class SourceTable(AbstractTableData):
         ...   table_name="GROCERYPRODUCT"
         ... )
         >>> product_table = source_table.create_dimension_table(  # doctest: +SKIP
-        ...   name="GROCERYPRODUCT,
+        ...   name="GROCERYPRODUCT",
         ...   dimension_id_column="GroceryProductGuid"
         ... )
         """
@@ -988,6 +988,18 @@ class SourceTable(AbstractTableData):
         Returns
         -------
         ObservationTable
+
+        Examples
+        --------
+        >>> ds = fb.FeatureStore.get(<feature_store_name>).get_data_source()  # doctest: +SKIP
+        >>> source_table = ds.get_source_table(  # doctest: +SKIP
+        ...   database_name="<data_base_name>",
+        ...   schema_name="<schema_name>",
+        ...   table_name=<table_name>
+        ... )
+        >>> observation_table = source_table.create_observation_table(  # doctest: +SKIP
+        ...   "<observation_table_name>", sample_rows = <desired_sample_size>
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.observation_table import ObservationTable
@@ -1018,6 +1030,18 @@ class SourceTable(AbstractTableData):
         Returns
         -------
         BatchRequestTable
+
+        Examples
+        --------
+        >>> data_source = fb.FeatureStore.get(<feature_store_name>).get_data_source()  # doctest: +SKIP
+        >>> source_table = data_source.get_source_table(
+        ...   database_name="<data_base_name>",
+        ...   schema_name="<schema_name>",
+        ...   table_name=<table_name>
+        ... )
+        >>> batch_request_table = view[<entity_serving_name>].create_batch_request_table(  # doctest: +SKIP
+        ...  <batch_request_table_name>
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.batch_request_table import BatchRequestTable

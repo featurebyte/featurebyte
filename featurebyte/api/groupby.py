@@ -35,6 +35,41 @@ class GroupBy:
     generate Cross Aggregate Features. These features involve aggregating data across categories of the categorical
     column, enabling the extraction of patterns in an entity across these categories. For instance, you can calculate
     the amount spent by a customer on each product category during a specific time period using this approach.
+
+    Examples
+    --------
+    Groupby for Aggregate features.
+
+    >>> items_view = catalog.get_view("INVOICEITEMS")
+    >>> # Group items by the column GroceryCustomerGuid that references the customer entity
+    >>> items_by_customer = items_view.groupby("GroceryCustomerGuid")
+    >>> # Declare features that measure the discount received by customer
+    >>> customer_discounts = items_by_customer.aggregate_over(  # doctest: +SKIP
+    ...   "Discount",
+    ...   method=fb.AggFunc.SUM,
+    ...   feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
+    ...   fill_value=0,
+    ...   windows=['7d', '28d']
+    ... )
+
+
+    Groupby for Cross Aggregate features
+
+    >>> # Join product view to items view
+    >>> product_view = catalog.get_view("GROCERYPRODUCT")
+    >>> items_view = items_view.join(product_view)
+    >>> # Group items by the column GroceryCustomerGuid that references the customer entity
+    >>> # And use ProductGroup as the column to perform operations across
+    >>> items_by_customer_across_product_group = items_view.groupby(  # doctest: +SKIP
+    ...   by_keys = "GroceryCustomerGuid", category="ProductGroup"
+    ... )
+    >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
+    >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(  # doctest: +SKIP
+    ...   "TotalCost",
+    ...   method=fb.AggFunc.SUM,
+    ...   feature_names=["CustomerInventory_28d"],
+    ...   windows=['28d']
+    ... )
     """
 
     # documentation metadata
@@ -158,15 +193,38 @@ class GroupBy:
 
         Examples
         --------
-        >>> import featurebyte as fb
-        >>> features = cc_transactions.groupby("AccountID").aggregate_over(  # doctest: +SKIP
-        ...    "Amount",
-        ...    method=fb.AggFunc.SUM,
-        ...    windows=["7d", "30d"],
-        ...    feature_names=["Total spend 7d", "Total spend 30d"],
+        Sum of discounts by grocerycustomer entity over the past 7 and 28 days.
+
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> # Group items by the column GroceryCustomerGuid that references the customer entity
+        >>> items_by_customer = items_view.groupby("GroceryCustomerGuid")  # doctest: +SKIP
+        >>> # Declare features that measure the discount received by customer
+        >>> customer_discounts = items_by_customer.aggregate_over(  # doctest: +SKIP
+        ...   "Discount",
+        ...   method=fb.AggFunc.SUM,
+        ...   feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
+        ...   fill_value=0,
+        ...   windows=['7d', '28d']
         ... )
-        >>> features.feature_names  # doctest: +SKIP
-        ['Total spend 7d', 'Total spend 30d']
+
+
+        Sum spent by grocerycustomer entity across product group over the past 28 days.
+
+        >>> # Join product view to items view
+        >>> product_view = catalog.get_view("GROCERYPRODUCT")
+        >>> items_view = items_view.join(product_view)  # doctest: +SKIP
+        >>> # Group items by the column GroceryCustomerGuid that references the customer entity
+        >>> # And use ProductGroup as the column to perform operations across
+        >>> items_by_customer_across_product_group = items_view.groupby(  # doctest: +SKIP
+        ...   by_keys="GroceryCustomerGuid", category="ProductGroup"
+        ... )
+        >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
+        >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(  # doctest: +SKIP
+        ...   "TotalCost",
+        ...   method=fb.AggFunc.SUM,
+        ...   feature_names=["CustomerInventory_28d"],
+        ...   windows=['28d']
+        ... )
 
         See Also
         --------
@@ -259,13 +317,27 @@ class GroupBy:
 
         Examples
         --------
-        >>> import featurebyte as fb
-        >>> feature = credit_card_accounts.groupby("CustomerID").aggregate_asat(  # doctest: +SKIP
-        ...    method=fb.AggFunc.COUNT,
-        ...    feature_name="Number of Credit Cards",
+        Count number of active cards per customer at a point-in-time.
+
+        >>> # Filter active cards
+        >>> cond = credit_card_accounts['status'] == "active"  # doctest: +SKIP
+        >>> # Group by customer
+        >>> active_credit_card_by_cust = credit_card_accounts[cond].groupby(  # doctest: +SKIP
+        ...   "CustomerID"
         ... )
-        >>> feature  # doctest: +SKIP
-        Feature(name=Number of Credit Cards, node_name=alias_1)
+        >>> feature = active_credit_card_by_cust.aggregate_asat(  # doctest: +SKIP
+        ...   method=fb.AggFunc.COUNT,
+        ...   feature_name="Number of Active Credit Cards",
+        ... )
+
+
+        Count number of active cards per customer 12 weeks prior to a point-in-time
+
+        >>> feature_12w_before = active_credit_card_by_cust.aggregate_asat(  # doctest: +SKIP
+        ...   method=fb.AggFunc.COUNT,
+        ...   feature_name="Number of Active Credit Cards 12 w before",
+        ...   offset="12w"
+        ... )
         """
         return AsAtAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
@@ -324,6 +396,18 @@ class GroupBy:
         Returns
         -------
         Feature
+
+        Examples
+        --------
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> # Group items by the column GroceryInvoiceGuid that references the customer entity
+        >>> items_by_invoice = items_view.groupby("GroceryInvoiceGuid")
+        >>> # Get the number of items in each invoice
+        >>> invoice_item_count = items_by_invoice.aggregate(  # doctest: +SKIP
+        ...   None,
+        ...   method=fb.AggFunc.COUNT,
+        ...   feature_name="InvoiceItemCount",
+        ... )
         """
         return SimpleAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names

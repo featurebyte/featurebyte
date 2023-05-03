@@ -145,11 +145,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        >>> catalog = Catalog.activate("default")
-        >>> catalog.list_tables()[["name", "type"]]
-        Empty DataFrame
-        Columns: [name, type]
-        Index: []
         >>> catalog = Catalog.activate("grocery")
         >>> catalog.list_tables()[["name", "type"]]
                         name             type
@@ -446,9 +441,16 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        List saved features.
+        List all features saved in the catalog.
 
         >>> features = catalog.list_features()
+
+
+        List all features having grocerycustomer or frenchstate as primary entity.
+
+        >>> customer_or_state_features = catalog.list_features(
+        ...   primary_entity = ["grocerycustomer", "frenchstate"]
+        ... )
         """
         return Feature.list(
             include_id=include_id, primary_entity=primary_entity, primary_table=primary_table
