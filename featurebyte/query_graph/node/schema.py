@@ -56,13 +56,13 @@ class DatabricksDetails(BaseDatabaseDetails):
 
     Examples
     --------
-    >>> details = fb.DatabricksDetails(
+    >>> details = fb.DatabricksDetails(  # doctest: +SKIP
     ...   host="<host_name>",
     ...   http_path="<http_path>",
     ...   featurebyte_catalog="hive_metastore",
-    ...   featurebyte_schema="<schema_name>"
+    ...   featurebyte_schema="<schema_name>",
     ...   storage_type=fb.StorageType.S3,
-    ...   storage_url="<storage_url>",
+    ...   storage_url="<url>",
     ...   storage_spark_url="dbfs:/FileStore/<schema_name>",
     ... )
     """
