@@ -15,6 +15,11 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
     Customized MongoDB Scheduler Entry
     """
 
+    def __init__(self, task: Any) -> None:
+        if not task.last_run_at and task.start_after:
+            task.last_run_at = task.start_after
+        super().__init__(task)
+
     def is_due(self) -> Any:
         if not self._task.enabled:
             return schedules.schedstate(False, 9999)  # move behind other tasks.
@@ -23,6 +28,7 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
                 return schedules.schedstate(
                     False, (self._task.start_after - datetime.datetime.now()).total_seconds()
                 )
+
         return super().is_due()
 
 
