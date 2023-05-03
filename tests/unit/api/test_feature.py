@@ -646,7 +646,7 @@ def test_create_new_version__with_data_cleaning_operations(
     check_sdk_code_generation(
         new_version,
         to_use_saved_data=True,
-        fixture_path="tests/fixtures/sdk_code/feature_time_based_with_data_cleaning_operations.py.jinja2",
+        fixture_path="tests/fixtures/sdk_code/feature_time_based_with_data_cleaning_operations.py",
         update_fixtures=update_fixtures,
         table_id=saved_feature.table_ids[0],
     )
