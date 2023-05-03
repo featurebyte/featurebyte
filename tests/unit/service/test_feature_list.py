@@ -106,21 +106,23 @@ async def test_feature_list__contains_relationships_info(
         data=FeatureListCreate(name="my_feature_list", feature_ids=[feature.id])
     )
     relationships_info = feature_list.relationships_info
-    assert len(relationships_info) == 2, relationships_info
-    assert relationships_info[0].dict() == {
-        "id": relationships_info[0].id,
-        "entity_id": child_entity.id,
-        "related_entity_id": target_entity_id,
-        "relationship_type": "child_parent",
-        "relation_table_id": item_table.id,
-    }
-    assert relationships_info[1].dict() == {
-        "id": relationships_info[1].id,
-        "entity_id": target_entity_id,
-        "related_entity_id": parent_entity.id,
-        "relationship_type": "child_parent",
-        "relation_table_id": dimension_table.id,
-    }
+    expected_relationships_info = [
+        {
+            "id": relationships_info[0].id,
+            "entity_id": child_entity.id,
+            "related_entity_id": target_entity_id,
+            "relationship_type": "child_parent",
+            "relation_table_id": item_table.id,
+        },
+        {
+            "id": relationships_info[1].id,
+            "entity_id": target_entity_id,
+            "related_entity_id": parent_entity.id,
+            "relationship_type": "child_parent",
+            "relation_table_id": dimension_table.id,
+        },
+    ]
+    assert relationships_info == expected_relationships_info
 
     # remove relationship and check relationship info is updated when create a new feature list version
     await table_columns_info_service._remove_parent_entity_ids(
@@ -140,13 +142,19 @@ async def test_feature_list__contains_relationships_info(
             ],
         )
     )
-    feature_list = await version_service.create_new_feature_list_version(
+    new_feature_list = await version_service.create_new_feature_list_version(
         data=FeatureListNewVersionCreate(
             source_feature_list_id=feature_list.id,
             features=[FeatureVersionInfo(name=new_feature.name, version=new_feature.version)],
         )
     )
-    relationships_info = feature_list.relationships_info
+
+    # check the relationship info in the source feature list first
+    feature_list = await feature_list_service.get_document(document_id=feature_list.id)
+    assert feature_list.relationships_info == expected_relationships_info
+
+    # check the newly created feature list
+    relationships_info = new_feature_list.relationships_info
     assert len(relationships_info) == 1, relationships_info
     assert relationships_info[0].dict() == {
         "id": relationships_info[0].id,
