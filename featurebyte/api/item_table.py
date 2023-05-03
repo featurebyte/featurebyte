@@ -163,10 +163,38 @@ class ItemTable(TableApiObject):
 
         Examples
         --------
-        Get an ItemView.
+        Get an ItemView in automated mode.
 
-        >>> item_table = fb.Table.get("INVOICEITEMS")
+        >>> item_table = catalog.get_table("INVOICEITEMS")
         >>> item_view = item_table.get_view()
+
+
+        Get an ItemView in manual mode.
+
+        >>> item_table = catalog.get_table("INVOICEITEMS")
+        >>> item_view = item_table.get_view(
+        >>>   event_suffix=None,
+        >>>   view_mode="manual",
+        >>>   drop_column_names=[],
+        >>>   column_cleaning_operations=[
+        >>>     fb.ColumnCleaningOperation(
+        >>>       column_name="Discount",
+        >>>       cleaning_operations=[
+        >>>         fb.MissingValueImputation(imputed_value=0),
+        >>>         fb.ValueBeyondEndpointImputation(
+        >>>           type="less_than", end_point=0, imputed_value=None
+        >>>         ),
+        >>>       ],
+        >>>     )
+        >>>   ],
+        >>>   event_drop_column_names=["record_available_at"],
+        >>>   event_column_cleaning_operations=[],
+        >>>   event_join_column_names=[
+        >>>     "Timestamp",
+        >>>     "GroceryInvoiceGuid",
+        >>>     "GroceryCustomerGuid",
+        >>>   ],
+        >>>)
         """
         from featurebyte.api.item_view import ItemView  # pylint: disable=import-outside-toplevel
 

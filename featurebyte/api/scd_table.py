@@ -143,10 +143,27 @@ class SCDTable(TableApiObject):
 
         Examples
         --------
-        Get a SCDView.
+        Get a SCDView in automated mode.
 
-        >>> scd_table = fb.Table.get("GROCERYCUSTOMER")
+        >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
         >>> scd_view = scd_table.get_view()
+
+
+        Get a SCDView in manual mode.
+
+        >>> scd_table = catalog.get_table(""GROCERYCUSTOMER"")
+        >>> scd_view = scd_table.get_view(
+        >>>   view_mode="manual",
+        >>>   drop_column_names=["record_available_at", "CurrentRecord"],
+        >>>   column_cleaning_operations=[
+        >>>     fb.ColumnCleaningOperation(
+        >>>       column_name="Gender",
+        >>>       cleaning_operations=[
+        >>>         fb.MissingValueImputation(imputed_value="Unknown"),
+        >>>       ],
+        >>>     )
+        >>>   ],
+        >>> )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.scd_view import SCDView
@@ -264,12 +281,12 @@ class SCDTable(TableApiObject):
 
         Examples
         --------
-        Get a ChangeView.
+        Get a ChangeView to track changes in Customer's State.
 
-        >>> scd_table = fb.Table.get("GROCERYCUSTOMER")
+        >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
         >>> change_view = scd_table.get_change_view(
-        ...     track_changes_column="CurrentRecord",
-        ...     prefixes=("previous_", "next_"),
+        ...   track_changes_column="State",
+        ...   prefixes=("previous_", "next_"),
         ... )
         """
         # pylint: disable=import-outside-toplevel

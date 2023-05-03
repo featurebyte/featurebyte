@@ -140,10 +140,30 @@ class EventTable(TableApiObject):
 
         Examples
         --------
-        Get an EventView.
+        Get an EventView in automated mode.
 
-        >>> event_table = fb.Table.get("GROCERYINVOICE")
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_view = event_table.get_view()
+
+
+        Get an EventView in manual mode.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_view = event_table.get_view(
+        ...   view_mode="manual",
+        ...   drop_column_names=["record_available_at"],
+        ...   column_cleaning_operations=[
+        ...     fb.ColumnCleaningOperation(
+        ...       column_name="Amount",
+        ...       cleaning_operations=[
+        ...         fb.MissingValueImputation(imputed_value=0),
+        ...         fb.ValueBeyondEndpointImputation(
+        ...           type="less_than", end_point=0, imputed_value=None
+        ...         )
+        ...       ],
+        ...     )
+        ...   ],
+        ... )
         """
         from featurebyte.api.event_view import EventView  # pylint: disable=import-outside-toplevel
 
