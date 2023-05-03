@@ -198,6 +198,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         --------
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table.status
+        'PUBLIC_DRAFT'
         """
         return self.cached_model.status
 

@@ -151,19 +151,19 @@ class SCDTable(TableApiObject):
 
         Get a SCDView in manual mode.
 
-        >>> scd_table = catalog.get_table(""GROCERYCUSTOMER"")
+        >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
         >>> scd_view = scd_table.get_view(
-        >>>   view_mode="manual",
-        >>>   drop_column_names=["record_available_at", "CurrentRecord"],
-        >>>   column_cleaning_operations=[
-        >>>     fb.ColumnCleaningOperation(
-        >>>       column_name="Gender",
-        >>>       cleaning_operations=[
-        >>>         fb.MissingValueImputation(imputed_value="Unknown"),
-        >>>       ],
-        >>>     )
-        >>>   ],
-        >>> )
+        ...   view_mode="manual",
+        ...   drop_column_names=["record_available_at", "CurrentRecord"],
+        ...   column_cleaning_operations=[
+        ...     fb.ColumnCleaningOperation(
+        ...       column_name="Gender",
+        ...       cleaning_operations=[
+        ...         fb.MissingValueImputation(imputed_value="Unknown"),
+        ...       ],
+        ...     )
+        ...   ],
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.scd_view import SCDView

@@ -268,6 +268,7 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
     >>> fb.ValueBeyondEndpointImputation(
     ...   type="less_than", end_point=1e6, imputed_value=None
     ... )
+    ValueBeyondEndpointImputation(imputed_value=None, type=less_than, end_point=1000000.0)
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ValueBeyondEndpointImputation")

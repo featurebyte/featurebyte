@@ -1439,7 +1439,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Examples
         --------
-        >>> observation_table = view[
+        >>> observation_table = view[  # doctest: +SKIP
         ...   ['POINT-IN-TIME', <entity_serving_name>]
         ... ].create_observation_table(
         ...   "<observation_table_name>", sample_rows=<desired_sample_size>

@@ -1034,7 +1034,7 @@ class SourceTable(AbstractTableData):
         Examples
         --------
         >>> data_source = fb.FeatureStore.get(<feature_store_name>).get_data_source()  # doctest: +SKIP
-        >>> source_table = data_source.get_source_table(
+        >>> source_table = data_source.get_source_table(  # doctest: +SKIP
         ...   database_name="<data_base_name>",
         ...   schema_name="<schema_name>",
         ...   table_name=<table_name>
