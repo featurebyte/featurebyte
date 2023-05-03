@@ -108,11 +108,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         return self._source_table.preview(limit=limit)
 
     @typechecked
-    def sample(
-        self,
-        size: int = 10,
-        seed: int = 1234,
-    ) -> pd.DataFrame:
+    def sample(self, size: int = 10, seed: int = 1234) -> pd.DataFrame:
         """
         Returns a DataFrame that contains a random selection of rows of the table based on a
         specified size and seed for sampling control.
@@ -129,18 +125,10 @@ class MaterializedTableMixin(MaterializedTableModel):
         pd.DataFrame
             Sampled rows from the table.
         """
-
-        return self._source_table.sample(
-            size=size,
-            seed=seed,
-        )
+        return self._source_table.sample(size=size, seed=seed)
 
     @typechecked
-    def describe(
-        self,
-        size: int = 0,
-        seed: int = 1234,
-    ) -> pd.DataFrame:
+    def describe(self, size: int = 0, seed: int = 1234) -> pd.DataFrame:
         """
         Returns descriptive statistics of the table columns.
 
@@ -156,10 +144,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         pd.DataFrame
             Summary of the table.
         """
-        return self._source_table.describe(
-            size=size,
-            seed=seed,
-        )
+        return self._source_table.describe(size=size, seed=seed)
 
     @property
     def _source_table(self) -> SourceTable:
