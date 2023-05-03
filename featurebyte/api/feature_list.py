@@ -1331,9 +1331,9 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list_by_id(feature_list_object_id)
-        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
-        >>> feature_list.as_default_version()
+        >>> feature_list = catalog.get_feature_list_by_id(<FeatureList_Object_ID>)  # doctest: +SKIP
+        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)  # doctest: +SKIP
+        >>> feature_list.as_default_version()  # doctest: +SKIP
 
         See Also
         --------

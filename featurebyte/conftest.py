@@ -35,10 +35,6 @@ def add_imports(doctest_namespace):
     feature = featurebyte.Feature.get("InvoiceCount_60days")
     doctest_namespace["invoice_count_60_days_feature_id"] = feature.id
 
-    # get feature list id
-    feature_list_object_id = featurebyte.FeatureList.get("invoice_feature_list")
-    doctest_namespace["feature_list_id"] = feature_list_object_id.id
-
 
 @pytest.fixture(autouse=True)
 def pandas_options():
