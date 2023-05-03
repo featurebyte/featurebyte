@@ -1,7 +1,7 @@
 """
 Tile Generate Schedule script
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime, timedelta
 
@@ -31,7 +31,7 @@ class TileGenerateSchedule(TileCommon):
     tile_end_date_placeholder: str
     tile_type: str
     monitor_periods: int
-    job_schedule_ts: str = Field(default=datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+    job_schedule_ts: Optional[str] = Field(default=None)
 
     # pylint: disable=too-many-locals,too-many-statements
     async def execute(self) -> None:
@@ -43,12 +43,12 @@ class TileGenerateSchedule(TileCommon):
         Exception
             Related exception from the triggered stored procedures if it fails
         """
-
-        last_tile_end_ts = dateutil.parser.isoparse(self.job_schedule_ts)
+        date_format = "%Y-%m-%d %H:%M:%S"
+        used_job_schedule_ts = self.job_schedule_ts or datetime.now().strftime(date_format)
+        last_tile_end_ts = dateutil.parser.isoparse(used_job_schedule_ts)
         cron_residue_seconds = self.tile_modulo_frequency_second % 60
         last_tile_end_ts = last_tile_end_ts.replace(second=cron_residue_seconds)
         last_tile_end_ts = last_tile_end_ts - timedelta(seconds=self.blind_spot_second)
-        date_format = "%Y-%m-%d %H:%M:%S"
 
         tile_type = self.tile_type.upper()
         lookback_period = self.frequency_minute * (self.monitor_periods + 1)
@@ -119,6 +119,16 @@ class TileGenerateSchedule(TileCommon):
 
         last_tile_start_ts = tile_end_ts - timedelta(minutes=self.frequency_minute)
         last_tile_start_str = last_tile_start_ts.strftime(date_format)
+
+        logger.info(
+            "Tile Schedule information",
+            extra={
+                "tile_id": tile_id,
+                "tile_start_ts_str": tile_start_ts_str,
+                "tile_end_ts_str": tile_end_ts_str,
+                "tile_type": tile_type,
+            },
+        )
 
         tile_monitor_ins = TileMonitor(
             session=self._session,
@@ -205,5 +215,4 @@ class TileGenerateSchedule(TileCommon):
 
             success_code = spec["status"]["success"]
             insert_sql = audit_insert_sql.replace("<STATUS>", success_code).replace("<MESSAGE>", "")
-            logger.debug(f"success_insert_sql: {insert_sql}")
             await retry_sql(self._session, insert_sql)
