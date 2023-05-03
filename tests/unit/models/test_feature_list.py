@@ -31,6 +31,7 @@ def feature_list_model_dict_fixture():
         "online_enabled_feature_ids": [],
         "feature_clusters": None,
         "catalog_id": DEFAULT_CATALOG_ID,
+        "relationships_info": None,
     }
 
 

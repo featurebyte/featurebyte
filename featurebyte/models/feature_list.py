@@ -3,7 +3,7 @@ This module contains Feature list related models
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, cast
 
 import functools
 from collections import defaultdict
@@ -25,6 +25,7 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
@@ -237,6 +238,18 @@ class FeatureCluster(FeatureByteBaseModel):
         return [self.graph.get_node_by_name(name) for name in self.node_names]
 
 
+class EntityRelationshipInfo(FeatureByteBaseModel):
+    """
+    Schema for entity relationship information (subset of existing RelationshipInfo)
+    """
+
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
+    relationship_type: RelationshipType
+    entity_id: PydanticObjectId
+    related_entity_id: PydanticObjectId
+    relation_table_id: PydanticObjectId
+
+
 class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """
     FrozenFeatureListNamespaceModel store all the attributes that are fixed after object construction.
@@ -441,6 +454,9 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
     )
     # DEV-556: no longer Optional once migrated
     feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)
+    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
+        allow_mutation=False, default=None
+    )
 
     # pydantic validators
     _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(
@@ -504,6 +520,31 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 )
             )
         return feature_clusters
+
+    @staticmethod
+    def derive_entity_relationships_info(
+        relationships_info: Optional[List[RelationshipInfoModel]],
+    ) -> Optional[List[EntityRelationshipInfo]]:
+        """
+        Derive entity relationships from entities
+
+        Parameters
+        ----------
+        relationships_info: Optional[List[RelationshipInfoModel]]
+            List of entities
+
+        Returns
+        -------
+        List of entity relationships
+        """
+        if relationships_info:
+            entity_relationships_info = []
+            for relationship_info in relationships_info:
+                entity_relationships_info.append(
+                    EntityRelationshipInfo(**relationship_info.json_dict())
+                )
+            return entity_relationships_info
+        return cast(List[EntityRelationshipInfo], relationships_info)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -574,6 +615,11 @@ class FeatureListModel(FrozenFeatureListModel):
             values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
             values["feature_clusters"] = cls.derive_feature_clusters(values["features"])
         return values
+
+    @validator("relationships_info")
+    @classmethod
+    def _validate_relationships_info(cls, value: Any) -> Any:
+        return cls.derive_entity_relationships_info(value)
 
     @validator("readiness_distribution")
     @classmethod

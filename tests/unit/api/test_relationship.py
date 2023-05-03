@@ -8,7 +8,7 @@ from bson import ObjectId
 from featurebyte import Entity
 from featurebyte.api.relationship import Relationship
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.relationship import RelationshipInfo, RelationshipType
+from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 
 
@@ -30,7 +30,7 @@ def persistable_relationship_info_fixture(relationship_info_service, snowflake_e
     user_entity = Entity(name="user", serving_names=["user_id"])
     user_entity.save()
 
-    async def save() -> RelationshipInfo:
+    async def save() -> RelationshipInfoModel:
         created_relationship = await relationship_info_service.create_document(
             RelationshipInfoCreate(
                 name="test_relationship",
