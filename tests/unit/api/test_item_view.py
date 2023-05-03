@@ -1064,7 +1064,7 @@ def test_sdk_code_generation(saved_item_table, saved_event_table, update_fixture
     check_sdk_code_generation(
         item_view,
         to_use_saved_data=to_use_saved_data,
-        fixture_path="tests/fixtures/sdk_code/item_view_with_column_clean_ops.py.jinja",
+        fixture_path="tests/fixtures/sdk_code/item_view_with_column_clean_ops.py",
         update_fixtures=update_fixtures,
         table_id=saved_item_table.id,
     )
