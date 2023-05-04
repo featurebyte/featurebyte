@@ -254,6 +254,37 @@ def _get_param_details(
     return details
 
 
+def _get_docstring_for_resource(resource: Any) -> Docstring:
+    """
+    Get docstring for resource.
+
+    Filters out comment lines in block docstrings that start with `# noqa` which is typically used to skip some
+    lint checks.
+
+    Parameters
+    ----------
+    resource: Any
+        Resource
+
+    Returns
+    -------
+    Docstring
+    """
+    docstring = getattr(resource, "__doc__", "")
+    if not docstring:
+        docs = ""
+    else:
+        split_string = docstring.split("\n")
+        filtered_string = []
+        for string in split_string:
+            stripped_string = string.strip()
+            if stripped_string.startswith("# noqa"):
+                continue
+            filtered_string.append(string)
+        docs = trim_docstring("\n".join(filtered_string))
+    return Docstring(parse(docs))
+
+
 def _get_resource_detail_for_pure_fn(resource_descriptor: str) -> ResourceDetails:
     """
     Extract a resource detail for a pure function.
@@ -282,8 +313,7 @@ def _get_resource_detail_for_pure_fn(resource_descriptor: str) -> ResourceDetail
     resource = import_from_string(module_path)
     method_resource = getattr(resource, method_name)
 
-    docs = trim_docstring(getattr(method_resource, "__doc__", ""))
-    docstring = Docstring(parse(docs))
+    docstring = _get_docstring_for_resource(method_resource)
 
     # process signature
     parameters, return_type = get_params_from_signature(method_resource)
@@ -387,8 +417,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
     parameters, return_type = get_params_from_signature(resource)
 
     # process docstring
-    docs = trim_docstring(getattr(resource, "__doc__", ""))
-    docstring = Docstring(parse(docs))
+    docstring = _get_docstring_for_resource(resource)
 
     # get parameter description from docstring
     short_description = docstring.short_description
