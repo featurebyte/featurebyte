@@ -170,12 +170,11 @@ class BaseRequestInput(FeatureByteBaseModel):
         referenced_columns += (
             list(self.columns_rename_mapping.keys()) if self.columns_rename_mapping else []
         )
-        available_columns_set = set(available_columns)
-        for column in referenced_columns:
-            if column not in available_columns_set:
-                raise ColumnNotFoundError(
-                    f"Column {column} not found (available: {available_columns})"
-                )
+        missing_columns = set(referenced_columns) - set(available_columns)
+        if missing_columns:
+            raise ColumnNotFoundError(
+                f"Columns {sorted(missing_columns)} not found (available: {available_columns})"
+            )
 
 
 class ViewRequestInput(BaseRequestInput):

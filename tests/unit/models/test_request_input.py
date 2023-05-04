@@ -164,7 +164,7 @@ async def test_materialize__invalid_columns(session, snowflake_database_table, d
     )
     with pytest.raises(ColumnNotFoundError) as exc:
         await request_input.materialize(session, destination_table, None)
-    assert "Column unknown_column not found" in str(exc.value)
+    assert "Columns ['unknown_column'] not found" in str(exc.value)
 
 
 @pytest.mark.asyncio
@@ -180,4 +180,4 @@ async def test_materialize__invalid_rename_mapping(
     )
     with pytest.raises(ColumnNotFoundError) as exc:
         await request_input.materialize(session, destination_table, None)
-    assert "Column unknown_column not found" in str(exc.value)
+    assert "Columns ['unknown_column'] not found" in str(exc.value)
