@@ -552,15 +552,26 @@ def run_test_conditional_assign_feature(feature_group):
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
 
-@pytest.mark.parametrize("use_async_workflow", [False, True])
+@pytest.mark.parametrize(
+    "in_out_formats",
+    [
+        ("dataframe", "dataframe"),
+        ("dataframe", "table"),
+        ("table", "table"),
+    ],
+)
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_get_historical_features(
-    session, data_source, feature_group, feature_group_per_category, use_async_workflow
+    session, data_source, feature_group, feature_group_per_category, in_out_formats
 ):
     """
     Test getting historical features from FeatureList
     """
+    input_format, output_format = in_out_formats
+    assert input_format in {"dataframe", "table"}
+    assert output_format in {"dataframe", "table"}
+
     feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     df_training_events = pd.DataFrame(
         {
@@ -651,12 +662,13 @@ async def test_get_historical_features(
         }
     )
 
-    if use_async_workflow:
+    if output_format == "table":
         df_historical_features = await compute_historical_feature_table_dataframe_helper(
             feature_list=feature_list,
             df_observation_set=df_training_events,
             session=session,
             data_source=data_source,
+            input_format=input_format,
         )
     else:
         df_historical_features = feature_list.compute_historical_features(df_training_events)
@@ -666,10 +678,10 @@ async def test_get_historical_features(
         df_historical_features,
         df_historical_expected,
         dict_like_columns=["COUNT_BY_ACTION_24h"],
-        sort_by_columns=["POINT_IN_TIME", "üser id"] if use_async_workflow else None,
+        sort_by_columns=["POINT_IN_TIME", "üser id"] if output_format == "table" else None,
     )
 
-    if not use_async_workflow:
+    if output_format == "dataframe":
         # check that making multiple request calls produces the same result
         max_batch_size = int((len(df_training_events) / 2.0) + 1)
         df_historical_multi = feature_list.compute_historical_features(
@@ -689,7 +701,8 @@ async def test_get_historical_features(
         df_historical_expected,
         session,
         data_source,
-        use_async_workflow,
+        input_format=input_format,
+        output_format=output_format,
     )
 
 
@@ -699,7 +712,8 @@ async def _test_get_historical_features_with_serving_names(
     df_historical_expected,
     session,
     data_source,
-    use_async_workflow,
+    input_format,
+    output_format,
 ):
     """Test getting historical features from FeatureList with alternative serving names"""
 
@@ -711,13 +725,14 @@ async def _test_get_historical_features_with_serving_names(
     assert "new_user id" in df_training_events
     assert "new_user id" in df_historical_expected
 
-    if use_async_workflow:
+    if output_format == "table":
         df_historical_features = await compute_historical_feature_table_dataframe_helper(
             feature_list=feature_list,
             df_observation_set=df_training_events,
             session=session,
             data_source=data_source,
             serving_names_mapping=mapping,
+            input_format=input_format,
         )
     else:
         df_historical_features = feature_list.compute_historical_features(
@@ -728,7 +743,7 @@ async def _test_get_historical_features_with_serving_names(
         df_historical_features,
         df_historical_expected,
         dict_like_columns=["COUNT_BY_ACTION_24h"],
-        sort_by_columns=["POINT_IN_TIME", "new_user id"] if use_async_workflow else None,
+        sort_by_columns=["POINT_IN_TIME", "new_user id"] if output_format == "table" else None,
     )
 
 

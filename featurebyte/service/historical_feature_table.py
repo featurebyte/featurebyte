@@ -3,6 +3,11 @@ HistoricalFeatureTableService class
 """
 from __future__ import annotations
 
+from typing import Optional
+
+from pathlib import Path
+
+import pandas as pd
 from bson import ObjectId
 
 from featurebyte.models.base import FeatureByteBaseDocumentModel
@@ -12,6 +17,7 @@ from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
 from featurebyte.service.materialized_table import BaseMaterializedTableService
+from featurebyte.storage import Storage
 
 
 class HistoricalFeatureTableService(
@@ -29,7 +35,10 @@ class HistoricalFeatureTableService(
         return "HistoricalFeatureTable"
 
     async def get_historical_feature_table_task_payload(
-        self, data: HistoricalFeatureTableCreate
+        self,
+        data: HistoricalFeatureTableCreate,
+        storage: Storage,
+        observation_set_dataframe: Optional[pd.DataFrame],
     ) -> HistoricalFeatureTableTaskPayload:
         """
         Validate and convert a HistoricalFeatureTableCreate schema to a HistoricalFeatureTableTaskPayload schema
@@ -39,6 +48,11 @@ class HistoricalFeatureTableService(
         ----------
         data: HistoricalFeatureTableCreate
             HistoricalFeatureTable creation payload
+        storage: Storage
+            Storage instance
+        observation_set_dataframe: Optional[pd.DataFrame]
+            Optional observation set DataFrame. If provided, the DataFrame will be stored in the
+            temp storage to be used by the HistoricalFeatureTable creation task.
 
         Returns
         -------
@@ -51,9 +65,20 @@ class HistoricalFeatureTableService(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
 
+        if observation_set_dataframe is not None:
+            observation_set_storage_path = (
+                f"historical_feature_table/observation_set/{output_document_id}.parquet"
+            )
+            await storage.put_dataframe(
+                observation_set_dataframe, Path(observation_set_storage_path)
+            )
+        else:
+            observation_set_storage_path = None
+
         return HistoricalFeatureTableTaskPayload(
             **data.dict(),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
+            observation_set_storage_path=observation_set_storage_path,
         )
