@@ -49,7 +49,6 @@ from featurebyte.exception import (
     FeatureByteException,
     InvalidSettingsError,
     RecordRetrievalException,
-    ResponseException,
 )
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
