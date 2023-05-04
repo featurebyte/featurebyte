@@ -54,7 +54,10 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
                 ):
                     # trigger and schedule next check
                     return True, next_check
-            elif not last_run_at or (now - last_run_at).total_seconds() > interval_seconds:
+            elif (
+                not last_run_at
+                or (now - last_run_at).total_seconds() > time_after_scheduled_seconds
+            ):
                 # trigger and schedule next check
                 return True, next_check
             return False, next_check
