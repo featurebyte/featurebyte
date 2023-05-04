@@ -3,7 +3,7 @@ RequestInput is the base class for all request input types.
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Dict, Literal, Optional
 
 from abc import abstractmethod
 
@@ -42,7 +42,7 @@ class BaseRequestInput(FeatureByteBaseModel):
     """
 
     columns: Optional[list[str]]
-    columns_rename_mapping: Optional[dict[str, str]]
+    columns_rename_mapping: Optional[Dict[str, str]]
 
     @abstractmethod
     def get_query_expr(self, source_type: SourceType) -> Select:
