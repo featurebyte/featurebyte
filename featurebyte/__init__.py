@@ -576,7 +576,8 @@ if is_notebook():
             if tb_obj and tb_obj.tb_next:
                 invoke_frame = tb_obj.tb_next
                 invoke_frame.tb_next = None
-                raise exc_cls(exc_obj, repackaged=True).with_traceback(invoke_frame) from None
+                exc_kwargs = {**exc_obj.__dict__, "repackaged": True}
+                raise exc_cls(**exc_kwargs).with_traceback(invoke_frame) from None
         default_showtraceback(cls, *args, **kwargs)
 
     IPython.core.interactiveshell.InteractiveShell.showtraceback = _showtraceback
