@@ -848,7 +848,7 @@ def test_create_observation_table_from_event_view__with_sample(
         observation_table = view.create_observation_table(
             "my_observation_table_from_event_view",
             sample_rows=100,
-            columns=["POINT_IN_TIME", "cust_id"],
+            columns=["event_timestamp", "cust_id"],
             columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
         )
 
@@ -865,7 +865,7 @@ def test_create_observation_table_from_event_view__with_sample(
           *
         FROM (
           SELECT
-            "POINT_IN_TIME" AS "POINT_IN_TIME",
+            "event_timestamp" AS "POINT_IN_TIME",
             "cust_id" AS "cust_id"
           FROM (
             SELECT
