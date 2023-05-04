@@ -196,8 +196,8 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
 
         Examples
         --------
-        >>> event_table = catalog.get_table("GROCERYINVOICE")
-        >>> event_table.status
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.status
         'PUBLIC_DRAFT'
         """
         return self.cached_model.status
@@ -629,9 +629,9 @@ class FeatureList(
         Preview the feature list with a small observation set.
 
         >>> features.preview(observation_set)
-        POINT_IN_TIME  GROCERYCUSTOMERGUID InvoiceCount_60days InvoiceAmountAvg_60days
-        0 2022-06-01 a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3  10.0 7.938
-        1 2022-06-02 ac479f28-e0ff-41a4-8e60-8678e670e80b 6.0 9.870
+            POINT_IN_TIME  GROCERYCUSTOMERGUID                   InvoiceCount_60days  InvoiceAmountAvg_60days
+        0   2022-06-01     a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3  10.0                 7.938
+        1   2022-06-02     ac479f28-e0ff-41a4-8e60-8678e670e80b  6.0                  9.870
         """
         return super().preview(observation_set=observation_set)
 
@@ -1304,7 +1304,7 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list(<FeatureList_Object_ID>)  # doctest: +SKIP
+        >>> feature_list = catalog.get_feature_list_by_id(<FeatureList_Object_ID>)  # doctest: +SKIP
         >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)  # doctest: +SKIP
 
         See Also

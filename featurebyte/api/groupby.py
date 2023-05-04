@@ -60,11 +60,11 @@ class GroupBy:
     >>> items_view = items_view.join(product_view)
     >>> # Group items by the column GroceryCustomerGuid that references the customer entity
     >>> # And use ProductGroup as the column to perform operations across
-    >>> items_by_customer_across_product_group = items_view.groupby(  # doctest: +SKIP
+    >>> items_by_customer_across_product_group = items_view.groupby(
     ...   by_keys = "GroceryCustomerGuid", category="ProductGroup"
     ... )
     >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
-    >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(  # doctest: +SKIP
+    >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(
     ...   "TotalCost",
     ...   method=fb.AggFunc.SUM,
     ...   feature_names=["CustomerInventory_28d"],
@@ -197,9 +197,9 @@ class GroupBy:
 
         >>> items_view = catalog.get_view("INVOICEITEMS")
         >>> # Group items by the column GroceryCustomerGuid that references the customer entity
-        >>> items_by_customer = items_view.groupby("GroceryCustomerGuid")  # doctest: +SKIP
+        >>> items_by_customer = items_view.groupby("GroceryCustomerGuid")
         >>> # Declare features that measure the discount received by customer
-        >>> customer_discounts = items_by_customer.aggregate_over(  # doctest: +SKIP
+        >>> customer_discounts = items_by_customer.aggregate_over(
         ...   "Discount",
         ...   method=fb.AggFunc.SUM,
         ...   feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
@@ -212,14 +212,14 @@ class GroupBy:
 
         >>> # Join product view to items view
         >>> product_view = catalog.get_view("GROCERYPRODUCT")
-        >>> items_view = items_view.join(product_view)  # doctest: +SKIP
+        >>> items_view = items_view.join(product_view)
         >>> # Group items by the column GroceryCustomerGuid that references the customer entity
         >>> # And use ProductGroup as the column to perform operations across
-        >>> items_by_customer_across_product_group = items_view.groupby(  # doctest: +SKIP
+        >>> items_by_customer_across_product_group = items_view.groupby(
         ...   by_keys="GroceryCustomerGuid", category="ProductGroup"
         ... )
         >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
-        >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(  # doctest: +SKIP
+        >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(
         ...   "TotalCost",
         ...   method=fb.AggFunc.SUM,
         ...   feature_names=["CustomerInventory_28d"],
