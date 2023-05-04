@@ -52,6 +52,7 @@ class LaggableViewColumn(ViewColumn):
         >>> event_view = catalog.get_view("GROCERYINVOICE")
         >>> lagged_column = event_view["Timestamp"].lag("GroceryCustomerGuid")
 
+
         Create a new column that indicates the 2nd prior event timestamp for a Customer.
 
         >>> lagged_2_column = event_view["Timestamp"].lag(
