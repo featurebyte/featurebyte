@@ -79,6 +79,13 @@ def test_info(observation_table_from_source):
     }
 
 
+def test_shape(observation_table_from_source):
+    """
+    Test shape method
+    """
+    assert observation_table_from_source.shape() == (100, 2)
+
+
 def test_data_source(observation_table_from_source):
     """
     Test the underlying SourceTable is constructed properly

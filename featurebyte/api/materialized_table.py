@@ -1,7 +1,7 @@
 """
 Materialized Table Mixin
 """
-from typing import Any, Callable, ClassVar, Optional, Union
+from typing import Any, Callable, ClassVar, Optional, Tuple, Union
 
 import os
 import tempfile
@@ -145,6 +145,16 @@ class MaterializedTableMixin(MaterializedTableModel):
             Summary of the table.
         """
         return self._source_table.describe(size=size, seed=seed)
+
+    def shape(self) -> Tuple[int, int]:
+        """
+        Returns the shape of the table.
+
+        Returns
+        -------
+        Tuple[int, int]
+        """
+        return self.num_rows, len(self.columns_info)
 
     @property
     def _source_table(self) -> SourceTable:
