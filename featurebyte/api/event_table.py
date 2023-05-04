@@ -329,7 +329,7 @@ class EventTable(TableApiObject):
 
         >>> fb.EventTable.get_by_id(<event_table_id>)  # doctest: +SKIP
         """
-        return super().get_by_id(id=id)
+        return cls._get_by_id(id=id)
 
     @typechecked
     def update_default_feature_job_setting(self, feature_job_setting: FeatureJobSetting) -> None:

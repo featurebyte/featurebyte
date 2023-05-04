@@ -370,4 +370,4 @@ class ItemTable(TableApiObject):
 
         >>> fb.ItemTable.get_by_id(<item_table_id>)  # doctest: +SKIP
         """
-        return super().get_by_id(id=id)
+        return cls._get_by_id(id=id)

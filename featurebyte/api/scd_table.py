@@ -472,4 +472,4 @@ class SCDTable(TableApiObject):
 
         >>> fb.SCDTable.get_by_id(<scd_table_id>)  # doctest: +SKIP
         """
-        return super().get_by_id(id=id)
+        return cls._get_by_id(id=id)

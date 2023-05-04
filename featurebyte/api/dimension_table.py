@@ -233,4 +233,4 @@ class DimensionTable(TableApiObject):
 
         >>> fb.DimensionTable.get_by_id(<dimension_table_id>)  # doctest: +SKIP
         """
-        return super().get_by_id(id=id)
+        return cls._get_by_id(id=id)
