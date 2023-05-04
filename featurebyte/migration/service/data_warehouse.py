@@ -52,19 +52,19 @@ class TileColumnTypeExtractor:
                 query_filter={}, use_raw_query_filter=True
             )
 
-        async for doc in feature_documents:
-            feature_model = ExtendedFeatureModel(**doc)
-            try:
-                tile_specs = feature_model.tile_specs
-            except:  # pylint: disable=bare-except
-                logger.exception(f"Failed to extract tile_specs for {doc}")
-                # For tile columns with no known type, they will be given a FLOAT type below
-                continue
-            for tile_spec in tile_specs:
-                for tile_column_name, tile_column_type in zip(
-                    tile_spec.value_column_names, tile_spec.value_column_types
-                ):
-                    tile_column_name_to_type[tile_column_name] = tile_column_type
+            async for doc in feature_documents:
+                feature_model = ExtendedFeatureModel(**doc)
+                try:
+                    tile_specs = feature_model.tile_specs
+                except:  # pylint: disable=bare-except
+                    logger.exception(f"Failed to extract tile_specs for {doc}")
+                    # For tile columns with no known type, they will be given a FLOAT type below
+                    continue
+                for tile_spec in tile_specs:
+                    for tile_column_name, tile_column_type in zip(
+                        tile_spec.value_column_names, tile_spec.value_column_types
+                    ):
+                        tile_column_name_to_type[tile_column_name] = tile_column_type
         return tile_column_name_to_type
 
     def get_tile_column_type(self, tile_column_name: str) -> str | None:

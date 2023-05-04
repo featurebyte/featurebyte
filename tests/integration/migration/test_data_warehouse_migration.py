@@ -9,7 +9,10 @@ from bson import ObjectId
 
 from featurebyte import Feature, FeatureJobSetting, FeatureList
 from featurebyte.enum import InternalName
-from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV6
+from featurebyte.migration.service.data_warehouse import (
+    DataWarehouseMigrationServiceV6,
+    TileColumnTypeExtractor,
+)
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 
 
@@ -232,3 +235,14 @@ async def test_data_warehouse_migration_v6(
         )
 
         assert await _get_migration_version() == 6
+
+
+@pytest.mark.asyncio
+async def test_tile_column_type_extractor_build_tile_column_name_to_type_mapping(
+    user,
+    persistent,
+):
+    """Test build_tile_column_name_to_type_mapping"""
+    extractor = TileColumnTypeExtractor(user=user, persistent=persistent)
+    await extractor.setup()
+    assert extractor.tile_column_name_to_type == {}
