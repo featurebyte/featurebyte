@@ -198,7 +198,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.status
-        'PUBLIC_DRAFT'
+        'TEMPLATE'
         """
         return self.cached_model.status
 
