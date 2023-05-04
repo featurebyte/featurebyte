@@ -416,11 +416,12 @@ class FeatureList(
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.info()
+        >>> info = feature_list.info()
+        >>> del info["created_at"]
+        >>> del info["updated_at"]
+        >>> info
         {
           'name': 'invoice_feature_list',
-          'created_at': '2023-05-04T08:23:45.974000',
-          'updated_at': '2023-05-04T08:27:34.798000',
           'entities': [
             {
               'name': 'grocerycustomer',

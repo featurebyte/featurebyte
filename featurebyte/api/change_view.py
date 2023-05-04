@@ -67,6 +67,8 @@ class ChangeViewColumn(LaggableViewColumn):
         Create a new column that indicates the prior past_State for a Customer
 
         >>> lagged_column = change_view["past_State"].lag("GroceryCustomerGuid")
+
+        # noqa: DAR402
         """
         return super().lag(entity_columns, offset)
 
