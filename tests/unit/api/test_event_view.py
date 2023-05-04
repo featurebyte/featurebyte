@@ -790,15 +790,19 @@ def test_sdk_code_generation(saved_event_table, update_fixtures):
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-def test_create_observation_table_from_event_view(snowflake_event_table, snowflake_execute_query):
+def test_create_observation_table_from_event_view__no_sample(
+    snowflake_event_table, snowflake_execute_query
+):
     """
     Test creating ObservationTable from an EventView
     """
     view = snowflake_event_table.get_view()
-    view["POINT_IN_TIME"] = view["event_timestamp"]
-    view = view[["POINT_IN_TIME", "cust_id"]]
 
-    observation_table = view.create_observation_table("my_observation_table_from_event_view")
+    observation_table = view.create_observation_table(
+        "my_observation_table_from_event_view",
+        columns=["event_timestamp", "cust_id"],
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+    )
 
     assert isinstance(observation_table, ObservationTable)
     assert observation_table.name == "my_observation_table_from_event_view"
@@ -810,30 +814,42 @@ def test_create_observation_table_from_event_view(snowflake_event_table, snowfla
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
-          "col_int" AS "col_int",
-          "event_timestamp" AS "event_timestamp",
-          "cust_id" AS "cust_id",
-          "event_timestamp" AS "POINT_IN_TIME"
-        FROM "sf_database"."sf_schema"."sf_table"
+          "event_timestamp" AS "POINT_IN_TIME",
+          "cust_id" AS "cust_id"
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+        )
         """,
     )
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-def test_create_observation_table_from_event_view(snowflake_event_table, snowflake_execute_query):
+def test_create_observation_table_from_event_view__with_sample(
+    snowflake_event_table, snowflake_execute_query
+):
     """
     Test creating ObservationTable from an EventView
     """
     view = snowflake_event_table.get_view()
-    view["POINT_IN_TIME"] = view["event_timestamp"]
-    view = view[["POINT_IN_TIME", "cust_id"]]
 
     with patch(
         "featurebyte.models.request_input.BaseRequestInput.get_row_count",
         AsyncMock(return_value=1000),
     ):
         observation_table = view.create_observation_table(
-            "my_observation_table_from_event_view", sample_rows=100
+            "my_observation_table_from_event_view",
+            sample_rows=100,
+            columns=["POINT_IN_TIME", "cust_id"],
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
         )
 
     assert isinstance(observation_table, ObservationTable)
@@ -849,11 +865,20 @@ def test_create_observation_table_from_event_view(snowflake_event_table, snowfla
           *
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "event_timestamp" AS "event_timestamp",
-            "cust_id" AS "cust_id",
-            "event_timestamp" AS "POINT_IN_TIME"
-          FROM "sf_database"."sf_schema"."sf_table"
+            "POINT_IN_TIME" AS "POINT_IN_TIME",
+            "cust_id" AS "cust_id"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "event_timestamp",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."sf_table"
+          )
         ) TABLESAMPLE(14.0)
         LIMIT 100
         """,
