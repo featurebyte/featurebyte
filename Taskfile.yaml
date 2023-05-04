@@ -77,15 +77,22 @@ tasks:
       - poetry run black .
       - poetry run toml-sort --all --in-place pyproject.toml poetry.lock
 
-  lint:
-    desc: "Run the linter"
+  lint-pr:
+    desc: "Run the linter, but without the safety check. This is run on every PR. Safety check will be run on deploy."
     deps:
       - task: install
     cmds:
       - task: lint-style
       - task: lint-type
-      - task: lint-safety
       - task: lint-bandit
+
+  lint:
+    desc: "Run ALL the linter checks."
+    deps:
+      - task: install
+    cmds:
+      - task: lint-pr
+      - task: lint-safety
 
   lint-style:
     desc: "Run the linter[style]"
