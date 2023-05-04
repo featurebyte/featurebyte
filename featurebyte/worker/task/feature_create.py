@@ -71,22 +71,12 @@ class FeatureCreateTask(BaseTask):
         code = f'{definition}output.save(_id="{payload.output_document_id}")'
         logger.debug(f"Prepare to execute feature definition: \n{code}")
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with open(os.path.join(temp_dir, "config.yaml"), "w") as file_handle:
-                file_handle.write(
-                    "# featurebyte config file\n"
-                    "profile:\n"
-                    "  - name: worker\n"
-                    "    api_url: http://featurebyte-server:8088\n\n"
-                )
+        os.environ["SDK_EXECUTION_MODE"] = "SERVER"
+        logger.debug(f"Configuration: {Configurations().profile}")
 
-            os.environ["SDK_EXECUTION_MODE"] = "SERVER"
-            os.environ["FEATUREBYTE_HOME"] = temp_dir
-            logger.debug(f"Configuration: {Configurations().profile}")
+        # activate the correct catalog before executing the code
+        activate_catalog(catalog_id=payload.catalog_id)
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
-            # activate the correct catalog before executing the code
-            activate_catalog(catalog_id=payload.catalog_id)
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                await asyncio.get_event_loop().run_in_executor(pool, exec, code)
-
-            logger.debug("Complete feature create task")
+        logger.debug("Complete feature create task")
