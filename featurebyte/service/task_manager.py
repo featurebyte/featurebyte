@@ -202,6 +202,7 @@ class TaskManager(AbstractTaskManager):
         name: str,
         payload: BaseTaskPayload,
         interval: Interval,
+        time_modulo_frequency_second: Optional[int] = None,
         start_after: Optional[datetime.datetime] = None,
     ) -> ObjectId:
         """
@@ -215,6 +216,8 @@ class TaskManager(AbstractTaskManager):
             Payload to use for scheduled task
         interval: Interval
             Interval specification
+        time_modulo_frequency_second: Optional[int]
+            Time modulo frequency in seconds
         start_after: Optional[datetime.datetime]
             Start after this time
 
@@ -224,13 +227,20 @@ class TaskManager(AbstractTaskManager):
             PeriodicTask ID
         """
         assert self.user.id == payload.user_id
+        if time_modulo_frequency_second:
+            last_run_at = datetime.datetime.utcnow()
+        else:
+            last_run_at = None
+
         periodic_task = PeriodicTask(
             name=name,
             task=payload.task,
             interval=interval,
             args=[],
             kwargs=payload.json_dict(),
+            time_modulo_frequency_second=time_modulo_frequency_second,
             start_after=start_after,
+            last_run_at=last_run_at,
             queue=payload.queue,
         )
         periodic_task_service = PeriodicTaskService(

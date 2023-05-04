@@ -3,8 +3,6 @@ FeatureByte Tile Scheduler
 """
 from typing import Any, Optional
 
-from datetime import datetime
-
 from bson import ObjectId
 from pydantic import BaseModel, PrivateAttr
 
@@ -38,7 +36,7 @@ class TileScheduler(BaseModel):
         self,
         job_id: str,
         interval_seconds: int,
-        start_after: datetime,
+        time_modulo_frequency_second: int,
         instance: Any,
         user_id: Optional[ObjectId],
         feature_store_id: ObjectId,
@@ -53,8 +51,8 @@ class TileScheduler(BaseModel):
             job id
         interval_seconds: int
             interval between runs
-        start_after: datetime
-            starting point for the interval calculation
+        time_modulo_frequency_second: int
+            time modulo frequency in seconds
         instance: Any
             instance of the class to be run
         user_id: Optional[ObjectId]
@@ -79,7 +77,7 @@ class TileScheduler(BaseModel):
             name=job_id,
             payload=payload,
             interval=Interval(every=interval_seconds, period="seconds"),
-            start_after=start_after,
+            time_modulo_frequency_second=time_modulo_frequency_second,
         )
 
     async def stop_job(self, job_id: str) -> None:
