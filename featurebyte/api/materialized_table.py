@@ -64,7 +64,7 @@ class MaterializedTableMixin(MaterializedTableModel):
 
     def to_pandas(self) -> pd.DataFrame:
         """
-        Converts the table to pandas dataframe
+        Converts the table to pandas dataframe.
 
         Returns
         -------

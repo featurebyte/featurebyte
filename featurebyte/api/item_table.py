@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, cast
 
+from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.api.base_table import TableApiObject
@@ -345,3 +346,28 @@ class ItemTable(TableApiObject):
     @property
     def timestamp_column(self) -> Optional[str]:
         return None
+
+    @classmethod
+    def get_by_id(  # pylint: disable=useless-parent-delegation
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> ItemTable:
+        """
+        Returns an ItemTable object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            ItemTable unique identifier ID.
+
+        Returns
+        -------
+        ItemTable
+            ItemTable object.
+
+        Examples
+        --------
+        Get an ItemTable object that is already saved.
+
+        >>> fb.ItemTable.get_by_id(<item_table_id>)  # doctest: +SKIP
+        """
+        return cls._get_by_id(id=id)

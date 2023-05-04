@@ -3,11 +3,13 @@ Deployment module
 """
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 import json
 import os
 
+import pandas as pd
+from bson import ObjectId
 from jinja2 import Template
 from typeguard import typechecked
 
@@ -192,7 +194,7 @@ class Deployment(ApiObject):
                 "
                 response = requests.post(
                     url="http://localhost:8080/deployment/{deployment.id}/online_features",
-                    headers={{"Content-Type": "application/json", "active-catalog-id": "63eda344d0313fb925f7883a"}},
+                    headers={{"Content-Type": "application/json", "active-catalog-id": "{catalog.id}"}},
                     json={{"entity_serving_names": entity_serving_names}},
                 )
                 assert response.status_code == 200, response.json()
@@ -209,9 +211,9 @@ class Deployment(ApiObject):
             curl -X POST
                 -H 'Content-Type: application/json' \\
                 -H 'Authorization: Bearer token' \\
-                -H 'active-catalog-id: 63eda344d0313fb925f7883a' \\
+                -H 'active-catalog-id: {catalog.id}' \\
                 -d '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
-                http://localhost:8080/deployment/641cf594f74f839cf9297884/online_features
+                http://localhost:8080/deployment/{deployment.id}/online_features
 
         See Also
         --------
@@ -311,3 +313,77 @@ class Deployment(ApiObject):
             job_history_window=job_history_window,
             job_duration_tolerance=job_duration_tolerance,
         )
+
+    @classmethod
+    def get(cls, name: str) -> Deployment:  # pylint: disable=useless-parent-delegation
+        """
+        Gets a Deployment object by its name.
+
+        Parameters
+        ----------
+        name: str
+            Name of the deployment to retrieve.
+
+        Returns
+        -------
+        Deployment
+            Deployment object.
+
+        Examples
+        --------
+        Get a Deployment object that is already saved.
+
+        >>> deployment = fb.Deployment.get(<deployment_name>)  # doctest: +SKIP
+        """
+        return super().get(name)
+
+    @classmethod
+    def get_by_id(  # pylint: disable=useless-parent-delegation
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> Deployment:
+        """
+        Returns a Deployment object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            Deployment unique identifier ID.
+
+        Returns
+        -------
+        Deployment
+            Deployment object.
+
+        Examples
+        --------
+        Get a Deployment object that is already saved.
+
+        >>> fb.Deployment.get_by_id(<deployment_id>)  # doctest: +SKIP
+        """
+        return cls._get_by_id(id=id)
+
+    @classmethod
+    def list(  # pylint: disable=useless-parent-delegation
+        cls, include_id: Optional[bool] = True
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame that lists the deployments by their names, feature list names, feature list versions,
+        number of features, and whether the features are enabled.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        DataFrame
+            Table of objects.
+
+        Examples
+        --------
+        List all deployments.
+
+        >>> deployments = fb.Deployment.list()
+        """
+        return super().list(include_id=include_id)

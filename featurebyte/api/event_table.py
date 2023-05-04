@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, 
 from datetime import datetime
 
 import pandas as pd
+from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
@@ -304,6 +305,31 @@ class EventTable(TableApiObject):
         list[dict[str, Any]]
         """
         return self._get_audit_history(field_name="default_feature_job_setting")
+
+    @classmethod
+    def get_by_id(  # pylint: disable=useless-parent-delegation
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> EventTable:
+        """
+        Returns an EventTable object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            EventTable unique identifier ID.
+
+        Returns
+        -------
+        EventTable
+            EventTable object.
+
+        Examples
+        --------
+        Get an EventTable object that is already saved.
+
+        >>> fb.EventTable.get_by_id(<event_table_id>)  # doctest: +SKIP
+        """
+        return cls._get_by_id(id=id)
 
     @typechecked
     def update_default_feature_job_setting(self, feature_job_setting: FeatureJobSetting) -> None:

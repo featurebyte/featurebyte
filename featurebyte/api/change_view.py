@@ -3,7 +3,7 @@ ChangeView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Tuple
+from typing import Any, ClassVar, List, Optional, Tuple, Union
 
 from datetime import datetime
 
@@ -26,6 +26,51 @@ class ChangeViewColumn(LaggableViewColumn):
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc()
+
+    @typechecked
+    def lag(
+        self: ChangeViewColumn, entity_columns: Union[str, List[str]], offset: int = 1
+    ) -> ChangeViewColumn:
+        """
+        Lag is a transform that enables the retrieval of the preceding value associated with a particular entity in
+        a view.
+
+        This makes it feasible to compute essential features, such as those that depend on inter-event time
+        and the proximity to the previous point.
+
+        Parameters
+        ----------
+        entity_columns : str | list[str]
+            Entity columns used when retrieving the lag value.
+        offset : int
+            The number of rows backward from which to retrieve a value.
+
+        Returns
+        -------
+        ChangeViewColumn
+
+        Raises
+        ------
+        ValueError
+            If a lag operation has already been applied to the column.
+
+        Examples
+        --------
+        Get a ChangeView to track changes in Customer's State.
+
+        >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
+        >>> change_view = scd_table.get_change_view(
+        ...   track_changes_column="State"
+        ... )
+
+
+        Create a new column that indicates the prior past_State for a Customer
+
+        >>> lagged_column = change_view["past_State"].lag("GroceryCustomerGuid")
+
+        # noqa: DAR402
+        """
+        return super().lag(entity_columns, offset)
 
 
 class ChangeView(View, GroupByMixin):

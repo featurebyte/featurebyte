@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, List, Literal, Optional, Tuple, Type, cast
 
+from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.api.base_table import TableApiObject
@@ -447,3 +448,28 @@ class SCDTable(TableApiObject):
         Optional[str]
         """
         return self.effective_timestamp_column
+
+    @classmethod
+    def get_by_id(  # pylint: disable=useless-parent-delegation
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> SCDTable:
+        """
+        Returns a SCDTable object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            SCDTable unique identifier ID.
+
+        Returns
+        -------
+        SCDTable
+            SCDTable object.
+
+        Examples
+        --------
+        Get a SCDTable object that is already saved.
+
+        >>> fb.SCDTable.get_by_id(<scd_table_id>)  # doctest: +SKIP
+        """
+        return cls._get_by_id(id=id)

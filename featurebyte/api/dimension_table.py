@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, List, Literal, Optional, Type, cast
 
+from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.api.base_table import TableApiObject
@@ -208,3 +209,28 @@ class DimensionTable(TableApiObject):
     @property
     def timestamp_column(self) -> Optional[str]:
         return None
+
+    @classmethod
+    def get_by_id(  # pylint: disable=useless-parent-delegation
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> DimensionTable:
+        """
+        Returns a DimensionTable object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            DimensionTable unique identifier ID.
+
+        Returns
+        -------
+        DimensionTable
+            DimensionTable object.
+
+        Examples
+        --------
+        Get a DimensionTable object that is already saved.
+
+        >>> fb.DimensionTable.get_by_id(<dimension_table_id>)  # doctest: +SKIP
+        """
+        return cls._get_by_id(id=id)

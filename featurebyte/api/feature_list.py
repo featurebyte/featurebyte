@@ -412,6 +412,63 @@ class FeatureList(
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> info = feature_list.info()
+        >>> del info["created_at"]
+        >>> del info["updated_at"]
+        >>> info
+        {
+          'name': 'invoice_feature_list',
+          'entities': [
+            {
+              'name': 'grocerycustomer',
+              'serving_names': [
+                'GROCERYCUSTOMERGUID'
+              ],
+              'catalog_name': 'grocery'
+            }
+          ],
+          'primary_entity': [
+            {
+              'name': 'grocerycustomer',
+              'serving_names': [
+                'GROCERYCUSTOMERGUID'
+              ],
+              'catalog_name': 'grocery'
+            }
+          ],
+          'tables': [
+            {
+              'name': 'GROCERYINVOICE',
+              'status': 'PUBLIC_DRAFT',
+              'catalog_name': 'grocery'
+            }
+          ],
+          'default_version_mode': 'AUTO',
+          'version_count': 3,
+          'catalog_name': 'grocery',
+          'dtype_distribution': [
+            {
+              'dtype': 'FLOAT',
+              'count': 1
+            }
+          ],
+          'status': 'DRAFT',
+          'feature_count': 1,
+          'version': {
+            'this': 'V230504',
+            'default': 'V230504'
+          },
+          'production_ready_fraction': {
+            'this': 1.0,
+            'default': 1.0
+          },
+          'versions_info': None,
+          'deployed': False
+        }
         """
         return super().info(verbose)
 
@@ -561,6 +618,14 @@ class FeatureList(
         -------
         FeatureGroup
             FeatureGroup object containing remaining feature(s)
+
+        Examples
+        --------
+        >>> feature_list = fb.FeatureList([
+        ...     catalog.get_feature("InvoiceCount_60days"),
+        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
+        ... ], name="feature_lists_invoice_features")
+        >>> amount_only_feature_list = feature_list.drop(["InvoiceCount_60days"])
         """
         return super().drop(items=items)
 
