@@ -563,17 +563,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
           relationship_type           entity   related_entity
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
-
-        List all child-parent relationships.
-
-        >>> catalog.list_relationships(relationship_type="child_parent")[[
-        ...     "relationship_type",
-        ...     "entity",
-        ...     "related_entity",
-        ... ]]
-          relationship_type           entity   related_entity
-        0      child_parent   groceryinvoice  grocerycustomer
-        1      child_parent  grocerycustomer      frenchstate
         """
         return Relationship.list(include_id=include_id, relationship_type=relationship_type)
 

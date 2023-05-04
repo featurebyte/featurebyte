@@ -192,7 +192,7 @@ class Deployment(ApiObject):
                 "
                 response = requests.post(
                     url="http://localhost:8080/deployment/{deployment.id}/online_features",
-                    headers={{"Content-Type": "application/json", "active-catalog-id": "63eda344d0313fb925f7883a"}},
+                    headers={{"Content-Type": "application/json", "active-catalog-id": "{catalog.id}"}},
                     json={{"entity_serving_names": entity_serving_names}},
                 )
                 assert response.status_code == 200, response.json()
@@ -209,9 +209,9 @@ class Deployment(ApiObject):
             curl -X POST
                 -H 'Content-Type: application/json' \\
                 -H 'Authorization: Bearer token' \\
-                -H 'active-catalog-id: 63eda344d0313fb925f7883a' \\
+                -H 'active-catalog-id: {catalog.id}' \\
                 -d '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
-                http://localhost:8080/deployment/641cf594f74f839cf9297884/online_features
+                http://localhost:8080/deployment/{deployment.id}/online_features
 
         See Also
         --------
