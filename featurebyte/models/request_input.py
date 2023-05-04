@@ -11,6 +11,7 @@ from pydantic import Field, StrictStr
 from sqlglot.expressions import Select
 
 from featurebyte.enum import SourceType, StrEnum
+from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -139,8 +140,10 @@ class BaseRequestInput(FeatureByteBaseModel):
         query_expr = self.get_query_expr(source_type=session.source_type)
 
         if self.columns is not None or self.columns_rename_mapping is not None:
+            available_columns = await self.get_column_names(session=session, query_expr=query_expr)
+            self._validate_columns_and_rename_mapping(available_columns)
             if self.columns is None:
-                columns = await self.get_column_names(session=session, query_expr=query_expr)
+                columns = available_columns
             else:
                 columns = self.columns
             query_expr = select_and_rename_columns(query_expr, columns, self.columns_rename_mapping)
@@ -161,6 +164,18 @@ class BaseRequestInput(FeatureByteBaseModel):
         )
 
         await session.execute_query(query)
+
+    def _validate_columns_and_rename_mapping(self, available_columns: list[str]) -> None:
+        referenced_columns = list(self.columns or [])
+        referenced_columns += (
+            list(self.columns_rename_mapping.keys()) if self.columns_rename_mapping else []
+        )
+        available_columns_set = set(available_columns)
+        for column in referenced_columns:
+            if column not in available_columns_set:
+                raise ColumnNotFoundError(
+                    f"Column {column} not found (available: {available_columns})"
+                )
 
 
 class ViewRequestInput(BaseRequestInput):

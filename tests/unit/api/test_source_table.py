@@ -189,6 +189,7 @@ def test_create_observation_table(snowflake_database_table, snowflake_execute_qu
     """
     Test creating ObservationTable from SourceTable
     """
+    # TODO: specify columns here
     observation_table = snowflake_database_table.create_observation_table("my_observation_table")
 
     # Check return type
