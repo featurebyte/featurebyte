@@ -211,7 +211,7 @@ class DimensionTable(TableApiObject):
         return None
 
     @classmethod
-    def get_by_id(  # pylint: disable=useless-parent-delegation
+    def get_by_id(
         cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> DimensionTable:
         """

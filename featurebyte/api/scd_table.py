@@ -450,9 +450,7 @@ class SCDTable(TableApiObject):
         return self.effective_timestamp_column
 
     @classmethod
-    def get_by_id(  # pylint: disable=useless-parent-delegation
-        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> SCDTable:
+    def get_by_id(cls, id: ObjectId) -> SCDTable:  # pylint: disable=redefined-builtin,invalid-name
         """
         Returns a SCDTable object by its unique identifier (ID).
 

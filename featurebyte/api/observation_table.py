@@ -34,7 +34,7 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
 
-    def to_pandas(self) -> pd.DataFrame:  # pylint: disable=useless-parent-delegation
+    def to_pandas(self) -> pd.DataFrame:
         """
         Converts the observation table to a pandas dataframe.
 

@@ -307,7 +307,7 @@ class EventTable(TableApiObject):
         return self._get_audit_history(field_name="default_feature_job_setting")
 
     @classmethod
-    def get_by_id(  # pylint: disable=useless-parent-delegation
+    def get_by_id(
         cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> EventTable:
         """
