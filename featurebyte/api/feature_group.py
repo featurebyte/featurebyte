@@ -187,6 +187,14 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         -------
         FeatureGroup
             FeatureGroup object containing remaining feature(s)
+
+        Examples
+        --------
+        >>> features = fb.FeatureGroup([
+        ...     catalog.get_feature("InvoiceCount_60days"),
+        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
+        ... ])
+        >>> amount_feature_group = features.drop(["InvoiceCount_60days"])
         """
         selected_feat_names = [
             feat_name for feat_name in self.feature_objects if feat_name not in items
@@ -379,6 +387,14 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         conflict_resolution: ConflictResolution
             "raise" raises error when then counters conflict error (default)
             "retrieve" handle conflict error by retrieving the object with the same name
+
+        Examples
+        --------
+        >>> features = fb.FeatureGroup([
+        ...     catalog.get_feature("InvoiceCount_60days"),
+        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
+        ... ])
+        >>> features.save()  # doctest: +SKIP
         """
         for feature_name in self.feature_names:
             self[feature_name].save(conflict_resolution=conflict_resolution)

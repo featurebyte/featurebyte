@@ -671,6 +671,12 @@ class Feature(
         -------
         FrozenSeriesT
             A new Series with converted variable type.
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> string_invoice_count_feature = feature.astype(str)
+        >>> float_invoice_count_feature = feature.astype(float)
         """
         return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
 

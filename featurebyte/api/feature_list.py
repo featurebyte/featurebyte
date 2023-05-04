@@ -412,6 +412,14 @@ class FeatureList(
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> features = fb.FeatureList([
+        ...    catalog.get_feature("InvoiceCount_60days"),
+        ...    catalog.get_feature("InvoiceAmountAvg_60days"),
+        ... ], name="My new feature list")
+        >>> features.info()
         """
         return super().info(verbose)
 
@@ -561,6 +569,14 @@ class FeatureList(
         -------
         FeatureGroup
             FeatureGroup object containing remaining feature(s)
+
+        Examples
+        --------
+        >>> feature_list = fb.FeatureList([
+        ...     catalog.get_feature("InvoiceCount_60days"),
+        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
+        ... ], name="feature_lists_invoice_features")
+        >>> amount_only_feature_list = feature_list.drop(["InvoiceCount_60days"])
         """
         return super().drop(items=items)
 
