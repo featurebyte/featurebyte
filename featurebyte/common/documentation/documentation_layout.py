@@ -106,6 +106,10 @@ def _get_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([TABLE]),
+        DocLayoutItem([TABLE, CLASS_METHODS, "EventTable.get_by_id"]),
+        DocLayoutItem([TABLE, CLASS_METHODS, "DimensionTable.get_by_id"]),
+        DocLayoutItem([TABLE, CLASS_METHODS, "SCDTable.get_by_id"]),
+        DocLayoutItem([TABLE, CLASS_METHODS, "ItemTable.get_by_id"]),
         DocLayoutItem(
             [TABLE, SET_FEATURE_JOB, "EventTable.create_new_feature_job_setting_analysis"]
         ),
