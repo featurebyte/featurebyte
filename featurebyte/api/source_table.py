@@ -973,6 +973,8 @@ class SourceTable(AbstractTableData):
         self,
         name: str,
         sample_rows: Optional[int] = None,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> ObservationTable:
         """
         Create an observation table from this source table.
@@ -984,6 +986,11 @@ class SourceTable(AbstractTableData):
         sample_rows: Optional[int]
             Optionally sample the source table to this number of rows before creating the
             observation table.
+        columns: Optional[list[str]]
+            Include only these columns when creating the observation table. If None, all columns are
+            included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the observation table. If None, no columns are renamed.
 
         Returns
         -------
@@ -1007,7 +1014,11 @@ class SourceTable(AbstractTableData):
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=SourceTableRequestInput(source=self.tabular_source),
+            request_input=SourceTableRequestInput(
+                source=self.tabular_source,
+                columns=columns,
+                columns_rename_mapping=columns_rename_mapping,
+            ),
             sample_rows=sample_rows,
         )
         observation_table_doc = ObservationTable.post_async_task(
@@ -1018,6 +1029,8 @@ class SourceTable(AbstractTableData):
     def create_batch_request_table(
         self,
         name: str,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> BatchRequestTable:
         """
         Create a batch request table from this source table.
@@ -1049,7 +1062,11 @@ class SourceTable(AbstractTableData):
         payload = BatchRequestTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=SourceTableRequestInput(source=self.tabular_source),
+            request_input=SourceTableRequestInput(
+                source=self.tabular_source,
+                columns=columns,
+                columns_rename_mapping=columns_rename_mapping,
+            ),
         )
         batch_request_table_doc = BatchRequestTable.post_async_task(
             route="/batch_request_table", payload=payload.json_dict()

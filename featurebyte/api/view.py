@@ -1419,7 +1419,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return FeatureGroup(features)
 
     def create_observation_table(
-        self, name: str, sample_rows: Optional[int] = None
+        self,
+        name: str,
+        sample_rows: Optional[int] = None,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> ObservationTable:
         """
         Create an ObservationTable from the View.
@@ -1449,7 +1453,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=ViewObservationInput(graph=pruned_graph, node_name=mapped_node.name),
+            request_input=ViewObservationInput(
+                graph=pruned_graph,
+                node_name=mapped_node.name,
+                columns=columns,
+                columns_rename_mapping=columns_rename_mapping,
+            ),
             sample_rows=sample_rows,
         )
         observation_table_doc = ObservationTable.post_async_task(
@@ -1460,6 +1469,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     def create_batch_request_table(
         self,
         name: str,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> BatchRequestTable:
         """
         Create a BatchRequestTable from the View.
@@ -1484,7 +1495,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         payload = BatchRequestTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=ViewBatchRequestInput(graph=pruned_graph, node_name=mapped_node.name),
+            request_input=ViewBatchRequestInput(
+                graph=pruned_graph,
+                node_name=mapped_node.name,
+                columns=columns,
+                columns_rename_mapping=columns_rename_mapping,
+            ),
         )
         batch_request_table_doc = BatchRequestTable.post_async_task(
             route="/batch_request_table", payload=payload.json_dict()

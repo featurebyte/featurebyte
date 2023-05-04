@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql.materialisation import (
     get_row_count_sql,
     get_source_expr,
     get_view_expr,
+    select_and_rename_columns,
 )
 from featurebyte.session.base import BaseSession
 
@@ -38,6 +39,9 @@ class BaseRequestInput(FeatureByteBaseModel):
     """
     BaseRequestInput is the base class for all RequestInput types
     """
+
+    columns: Optional[list[str]]
+    columns_rename_mapping: Optional[dict[str, str]]
 
     @abstractmethod
     def get_query_expr(self, source_type: SourceType) -> Select:
@@ -74,6 +78,27 @@ class BaseRequestInput(FeatureByteBaseModel):
         result = await session.execute_query(query)
         return int(result.iloc[0]["row_count"])  # type: ignore[union-attr]
 
+    @abstractmethod
+    async def get_column_names(self, session: BaseSession) -> list[str]:
+        """
+        Get the column names of the table query
+
+        Parameters
+        ----------
+        session: BaseSession
+            The session to use to get the column names
+        query_expr: Select
+            The query expression to get the column names for
+
+        Returns
+        -------
+        list[str]
+        """
+        query_expr = self.get_query_expr(session.source_type)
+        query = sql_to_string(query_expr.limit(1), source_type=session.source_type)
+        result = await session.execute_query(query)
+        return list(result.columns)  # type: ignore[union-attr]
+
     @staticmethod
     def get_sample_percentage_from_row_count(total_row_count: int, desired_row_count: int) -> float:
         """
@@ -95,7 +120,10 @@ class BaseRequestInput(FeatureByteBaseModel):
         return min(100.0, 100.0 * desired_row_count / total_row_count * 1.4)
 
     async def materialize(
-        self, session: BaseSession, destination: TableDetails, sample_rows: Optional[int]
+        self,
+        session: BaseSession,
+        destination: TableDetails,
+        sample_rows: Optional[int],
     ) -> None:
         """
         Materialize the request input table
@@ -109,8 +137,14 @@ class BaseRequestInput(FeatureByteBaseModel):
         sample_rows: Optional[int]
             The number of rows to sample. If None, no sampling is performed
         """
-
         query_expr = self.get_query_expr(source_type=session.source_type)
+
+        if self.columns is not None or self.columns_rename_mapping is not None:
+            if self.columns is None and self.columns_rename_mapping is not None:
+                columns = await self.get_column_names(session=session)
+            else:
+                columns = self.columns
+            query_expr = select_and_rename_columns(query_expr, columns, self.columns_rename_mapping)
 
         if sample_rows is not None:
             num_rows = await self.get_row_count(session=session, query_expr=query_expr)
