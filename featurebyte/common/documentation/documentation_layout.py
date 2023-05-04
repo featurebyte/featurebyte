@@ -838,6 +838,7 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([OBSERVATION_TABLE, LINEAGE, "ObservationTable.id"]),
         DocLayoutItem([OBSERVATION_TABLE, SAVE, "ObservationTable.download"]),
         DocLayoutItem([OBSERVATION_TABLE, SAVE, "ObservationTable.delete"]),
+        DocLayoutItem([OBSERVATION_TABLE, TRANSFORM, "ObservationTable.to_pandas"]),
     ]
 
 
@@ -861,6 +862,7 @@ def _get_batch_request_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([BATCH_REQUEST_TABLE, LINEAGE, "BatchRequestTable.id"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, SAVE, "BatchRequestTable.download"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, SAVE, "BatchRequestTable.delete"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, TRANSFORM, "BatchRequestTable.to_pandas"]),
     ]
 
 

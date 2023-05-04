@@ -3,6 +3,8 @@ ObservationTable class
 """
 from __future__ import annotations
 
+import pandas as pd
+
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
@@ -31,3 +33,18 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
     _list_foreign_keys = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
+
+    def to_pandas(self) -> pd.DataFrame:  # pylint: disable=useless-parent-delegation
+        """
+        Converts the observation table to a pandas dataframe.
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Examples
+        --------
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table.to_pandas()  # doctest: +SKIP
+        """
+        return super().to_pandas()

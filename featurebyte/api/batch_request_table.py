@@ -3,6 +3,8 @@ BatchRequestTable class
 """
 from __future__ import annotations
 
+import pandas as pd
+
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
@@ -31,3 +33,18 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
     _list_foreign_keys = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
+
+    def to_pandas(self) -> pd.DataFrame:  # pylint: disable=useless-parent-delegation
+        """
+        Converts the batch request table to a pandas dataframe.
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Examples
+        --------
+        >>> batch_request_table = catalog.get_batch_request_table("my_batch_request_table")  # doctest: +SKIP
+        >>> batch_request_table.to_pandas()  # doctest: +SKIP
+        """
+        return super().to_pandas()
