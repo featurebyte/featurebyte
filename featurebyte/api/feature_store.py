@@ -65,6 +65,11 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> feature = fb.Feature.get("InvoiceCount_60days")
+        >>> feature.info()
         """
         return super().info(verbose)
 
@@ -102,6 +107,23 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         Returns
         -------
         FeatureStore
+
+        Examples
+        --------
+        >>> feature_store = fb.FeatureStore.create(  # doctest: +SKIP
+        ...     name="playground",
+        ...     source_type=SourceType.SPARK,
+        ...     details=fb.SparkDetails(
+        ...         host="spark-thrift",
+        ...         http_path="cliservice",
+        ...         port=10000,
+        ...         storage_type="file",
+        ...         storage_url="/data/staging/featurebyte",
+        ...         storage_spark_url="file:///opt/spark/data/staging/featurebyte",
+        ...         featurebyte_catalog="spark_catalog",
+        ...         featurebyte_schema="playground",
+        ...     )
+        ... )
         """
         # Construct object, and save to persistent layer.
         feature_store = FeatureStore(

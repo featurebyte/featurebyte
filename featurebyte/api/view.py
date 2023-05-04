@@ -126,7 +126,12 @@ class ViewColumn(Series, SampleMixin):
         Examples
         --------
         Sample 3 rows of a column.
-        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].sample(3)
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].sample(
+        ...   size=3,
+        ...   seed=123,
+        ...   from_timestamp="2020-01-01",
+        ...   to_timestamp="2023-01-31"
+        ... )
           ProductGroup
         0       Épices
         1         Chat
@@ -204,7 +209,10 @@ class ViewColumn(Series, SampleMixin):
         Examples
         --------
         Get summary of a column.
-        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].describe()
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].describe(
+        ...   from_timestamp="2020-01-01",
+        ...   to_timestamp="2023-01-31"
+        ... )
                         ProductGroup
         dtype                VARCHAR
         unique                    87
@@ -655,7 +663,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Examples
         --------
         Get summary of a view.
-        >>> catalog.get_view("GROCERYPRODUCT").describe()
+        >>> catalog.get_view("GROCERYPRODUCT").describe(
+        ...   from_timestamp=datetime(2019, 1, 1),
+        ...   to_timestamp=datetime(2019, 1, 31),
+        ... )
                                     GroceryProductGuid        ProductGroup
         dtype                                  VARCHAR             VARCHAR
         unique                                   29099                  87
@@ -730,7 +741,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Examples
         --------
         Sample rows of a view.
-        >>> catalog.get_view("GROCERYPRODUCT").sample(3)
+        >>> catalog.get_view("GROCERYPRODUCT").sample(
+        ...   size=3,
+        ...   from_timestamp=datetime(2019, 1, 1),
+        ...   to_timestamp=datetime(2019, 1, 31),
+        ... )
                              GroceryProductGuid ProductGroup
         0  e890c5cb-689b-4caf-8e49-6b97bb9420c0       Épices
         1  5720e4df-2996-4443-a1bc-3d896bf98140         Chat
