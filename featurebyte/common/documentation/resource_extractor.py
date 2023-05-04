@@ -262,7 +262,7 @@ def _get_docstring_for_resource(resource: Any) -> Docstring:
     lint checks.
 
     Parameters
-    –---------
+    ----------
     resource: Any
         Resource
 
@@ -275,7 +275,12 @@ def _get_docstring_for_resource(resource: Any) -> Docstring:
         docs = ""
     else:
         split_string = docstring.split("\n")
-        filtered_string = [string for string in split_string if "# noqa:" not in string]
+        filtered_string = []
+        for string in split_string:
+            stripped_string = string.strip()
+            if stripped_string.startswith("# noqa"):
+                continue
+            filtered_string.append(string)
         docs = trim_docstring("\n".join(filtered_string))
     return Docstring(parse(docs))
 
