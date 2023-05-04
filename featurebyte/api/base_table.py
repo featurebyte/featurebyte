@@ -719,9 +719,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         return super().describe(size, seed, from_timestamp, to_timestamp, after_cleaning)
 
     @typechecked
-    def preview(  # pylint: disable=useless-parent-delegation
-        self, limit: int = 10, after_cleaning: bool = False
-    ) -> pd.DataFrame:
+    def preview(self, limit: int = 10, after_cleaning: bool = False) -> pd.DataFrame:
         """
         Returns a DataFrame that contains a selection of rows of the table. By default, the materialization process
         occurs before any cleaning operations that were defined at the table level.

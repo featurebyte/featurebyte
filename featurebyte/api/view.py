@@ -92,7 +92,7 @@ class ViewColumn(Series, SampleMixin):
             return None
         return self._parent.timestamp_column
 
-    def sample(  # pylint: disable=useless-parent-delegation
+    def sample(
         self,
         size: int = 10,
         seed: int = 1234,
@@ -142,9 +142,7 @@ class ViewColumn(Series, SampleMixin):
         return super().sample(size, seed, from_timestamp, to_timestamp, **kwargs)
 
     @typechecked
-    def preview(  # pylint: disable=useless-parent-delegation
-        self, limit: int = 10, **kwargs: Any
-    ) -> pd.DataFrame:
+    def preview(self, limit: int = 10, **kwargs: Any) -> pd.DataFrame:
         """
         Returns a DataFrame that contains a selection of rows of the view column. The materialization process occurs
         after any cleaning operations that were defined either at the table level or during the view's creation.
@@ -173,7 +171,7 @@ class ViewColumn(Series, SampleMixin):
         return super().preview(limit=limit, **kwargs)
 
     @typechecked
-    def describe(  # pylint: disable=useless-parent-delegation
+    def describe(
         self,
         size: int = 0,
         seed: int = 1234,
@@ -277,7 +275,7 @@ class ViewColumn(Series, SampleMixin):
         return cast(Feature, feature)
 
     @property
-    def is_datetime(self) -> bool:  # pylint: disable=useless-parent-delegation
+    def is_datetime(self) -> bool:
         """
         Returns whether the view column has a datetime data type.
 
@@ -297,7 +295,7 @@ class ViewColumn(Series, SampleMixin):
         return super().is_datetime
 
     @property
-    def is_numeric(self) -> bool:  # pylint: disable=useless-parent-delegation
+    def is_numeric(self) -> bool:
         """
         Returns whether the view column has a numeric data type.
 
@@ -317,9 +315,7 @@ class ViewColumn(Series, SampleMixin):
         return super().is_numeric
 
     @typechecked
-    def preview_sql(  # pylint: disable=useless-parent-delegation
-        self, limit: int = 10, **kwargs: Any
-    ) -> str:
+    def preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
         """
         Returns an SQL query for previewing the column data after applying the set of cleaning operations defined
         at the column level.
@@ -338,7 +334,7 @@ class ViewColumn(Series, SampleMixin):
         return super().preview_sql(limit=limit, **kwargs)
 
     @typechecked
-    def astype(  # pylint: disable=useless-parent-delegation
+    def astype(
         self: FrozenSeriesT,
         new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
     ) -> FrozenSeriesT:
@@ -367,9 +363,7 @@ class ViewColumn(Series, SampleMixin):
         return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
 
     @typechecked
-    def isin(  # pylint: disable=useless-parent-delegation
-        self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]
-    ) -> FrozenSeriesT:
+    def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
         """
         Identifies if each element is contained in a sequence of values represented by the `other` parameter.
 
@@ -598,7 +592,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return repr(self)
 
     @property
-    def columns(self) -> list[str]:  # pylint: disable=useless-parent-delegation
+    def columns(self) -> list[str]:
         """
         List the names of the columns in the view.
 
@@ -609,9 +603,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return super().columns
 
     @typechecked
-    def preview_sql(  # pylint: disable=useless-parent-delegation
-        self, limit: int = 10, **kwargs: Any
-    ) -> str:
+    def preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
         """
         Returns an SQL query for previewing the view raw data after applying the set of cleaning operations defined
         at the column level.
@@ -630,7 +622,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return super().preview_sql(limit=limit, **kwargs)
 
     @typechecked
-    def describe(  # pylint: disable=useless-parent-delegation
+    def describe(
         self,
         size: int = 0,
         seed: int = 1234,
@@ -676,9 +668,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
 
     @typechecked
-    def preview(  # pylint: disable=useless-parent-delegation
-        self, limit: int = 10, **kwargs: Any
-    ) -> pd.DataFrame:
+    def preview(self, limit: int = 10, **kwargs: Any) -> pd.DataFrame:
         """
         Returns a DataFrame that contains a selection of rows of the view. The materialization process occurs after
         any cleaning operations that were defined either at the table level or during the view's creation.
@@ -706,7 +696,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         """
         return super().preview(limit=limit, **kwargs)
 
-    def sample(  # pylint: disable=useless-parent-delegation
+    def sample(
         self,
         size: int = 10,
         seed: int = 1234,

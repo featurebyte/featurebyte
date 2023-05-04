@@ -92,9 +92,7 @@ class Table(TableListMixin):
         data_class = cls._data_type_to_cls_mapping[data.cached_model.type]
         return data_class.get_by_id(id)
 
-    def info(  # pylint: disable=useless-parent-delegation
-        self, verbose: bool = False
-    ) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of a Table object, depending on its type.
         The dictionary contains the following common keys:

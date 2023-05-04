@@ -93,9 +93,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         data = CatalogCreate(**self.json_dict())
         return data.json_dict()
 
-    def info(  # pylint: disable=useless-parent-delegation
-        self, verbose: bool = False
-    ) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of a Catalog object. The dictionary includes
         the following keys:
@@ -299,7 +297,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return self._get_audit_history(field_name="name")
 
     @classmethod
-    def get(cls, name: str) -> Catalog:  # pylint: disable=useless-parent-delegation
+    def get(cls, name: str) -> Catalog:
         """
         Gets a Catalog object by its name.
 
@@ -322,9 +320,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return super().get(name)
 
     @classmethod
-    def get_by_id(  # pylint: disable=useless-parent-delegation
-        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> Catalog:
+    def get_by_id(cls, id: ObjectId) -> Catalog:  # pylint: disable=redefined-builtin,invalid-name
         """
         Returns a Catalog object by its unique identifier (ID).
 
@@ -347,9 +343,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return super().get_by_id(id=id)
 
     @classmethod
-    def list(
-        cls, include_id: Optional[bool] = True
-    ) -> pd.DataFrame:  # pylint: disable=useless-parent-delegation
+    def list(cls, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         Returns a DataFrame containing information on catalogs such as their names, creation dates, and active status.
 

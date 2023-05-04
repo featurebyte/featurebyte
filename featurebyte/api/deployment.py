@@ -315,7 +315,7 @@ class Deployment(ApiObject):
         )
 
     @classmethod
-    def get(cls, name: str) -> Deployment:  # pylint: disable=useless-parent-delegation
+    def get(cls, name: str) -> Deployment:
         """
         Gets a Deployment object by its name.
 
@@ -338,7 +338,7 @@ class Deployment(ApiObject):
         return super().get(name)
 
     @classmethod
-    def get_by_id(  # pylint: disable=useless-parent-delegation
+    def get_by_id(
         cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> Deployment:
         """
@@ -363,9 +363,7 @@ class Deployment(ApiObject):
         return cls._get_by_id(id=id)
 
     @classmethod
-    def list(  # pylint: disable=useless-parent-delegation
-        cls, include_id: Optional[bool] = True
-    ) -> pd.DataFrame:
+    def list(cls, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         Returns a DataFrame that lists the deployments by their names, feature list names, feature list versions,
         number of features, and whether the features are enabled.

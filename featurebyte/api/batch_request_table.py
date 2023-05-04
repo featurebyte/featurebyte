@@ -34,7 +34,7 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
 
-    def to_pandas(self) -> pd.DataFrame:  # pylint: disable=useless-parent-delegation
+    def to_pandas(self) -> pd.DataFrame:
         """
         Converts the batch request table to a pandas dataframe.
 

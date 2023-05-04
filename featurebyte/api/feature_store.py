@@ -45,9 +45,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         data = FeatureStoreCreate(**self.json_dict())
         return data.json_dict()
 
-    def info(  # pylint: disable=useless-parent-delegation
-        self, verbose: bool = False
-    ) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of the feature store represented by the
         FeatureStore object. The dictionary contains the following keys:
@@ -187,7 +185,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
             )
 
     @classmethod
-    def get(cls, name: str) -> FeatureStore:  # pylint: disable=useless-parent-delegation
+    def get(cls, name: str) -> FeatureStore:
         """
         Gets a FeatureStore object by its name.
 
@@ -210,7 +208,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         return super().get(name)
 
     @classmethod
-    def get_by_id(  # pylint: disable=useless-parent-delegation
+    def get_by_id(
         cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> FeatureStore:
         """
@@ -235,9 +233,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         return cls._get_by_id(id=id)
 
     @classmethod
-    def list(  # pylint: disable=useless-parent-delegation
-        cls, include_id: Optional[bool] = True
-    ) -> DataFrame:
+    def list(cls, include_id: Optional[bool] = True) -> DataFrame:
         """
         Returns a DataFrame that lists the feature stores by their names, types and creation dates.
 

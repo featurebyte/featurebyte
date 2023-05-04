@@ -215,9 +215,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         response = client.get(f"{output_url}.parquet")
         return pd.read_parquet(path=BytesIO(response.content))
 
-    def info(  # pylint: disable=useless-parent-delegation
-        self, verbose: bool = False
-    ) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         The info method provides comprehensive details about a FeatureJobSettingAnalysis object, which encompasses:
 
@@ -245,7 +243,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         return super().info(verbose)
 
     @classmethod
-    def get_by_id(  # pylint: disable=useless-parent-delegation
+    def get_by_id(
         cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> FeatureJobSettingAnalysis:
         """
