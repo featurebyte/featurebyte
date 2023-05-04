@@ -4,7 +4,7 @@
 server = ["cachetools", "databricks-cli", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "featurebyte-freeware", "gevent"]
 
 [metadata]
-content-hash = "2aaed749c063020360071be43822bb0c9dc01988f7628033e0e2772f61658287"
+content-hash = "444dd38985885fca1f3f2abc30e4cc1b022ec9174bd8e2ca00508d258a0fd5f7"
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
 
@@ -1558,13 +1558,13 @@ tests = ["freezegun", "pytest", "pytest-cov"]
 category = "dev"
 description = "File identification library for Python"
 files = [
-    {file = "identify-2.5.23-py2.py3-none-any.whl", hash = "sha256:17d9351c028a781456965e781ed2a435755cac655df1ebd930f7186b54399312"},
-    {file = "identify-2.5.23.tar.gz", hash = "sha256:50b01b9d5f73c6b53e5fa2caf9f543d3e657a9d0bbdeb203ebb8d45960ba7433"},
+    {file = "identify-2.5.24-py2.py3-none-any.whl", hash = "sha256:986dbfb38b1140e763e413e6feb44cd731faf72d1909543178aa79b0e258265d"},
+    {file = "identify-2.5.24.tar.gz", hash = "sha256:0aac67d5b4812498056d28a9a512a483f5085cc28640b02b258a59dac34301d4"},
 ]
 name = "identify"
 optional = false
 python-versions = ">=3.7"
-version = "2.5.23"
+version = "2.5.24"
 
 [package.extras]
 license = ["ukkonen"]
@@ -3773,16 +3773,16 @@ pyyaml = "*"
 category = "main"
 description = "Python client for Redis database and key-value store"
 files = [
-    {file = "redis-4.5.4-py3-none-any.whl", hash = "sha256:2c19e6767c474f2e85167909061d525ed65bea9301c0770bb151e041b7ac89a2"},
-    {file = "redis-4.5.4.tar.gz", hash = "sha256:73ec35da4da267d6847e47f68730fdd5f62e2ca69e3ef5885c6a78a9374c3893"},
+    {file = "redis-5.0.0b2-py3-none-any.whl", hash = "sha256:d2798e8b797cb303a73a1ea78854d5757638a32d2ee5565eca3060803c7533e9"},
+    {file = "redis-5.0.0b2.tar.gz", hash = "sha256:a78bb2be0e1e40be2527fabe9e20f2d0a6e0e2e34d07bf92616e6d5dd5c88fbf"},
 ]
 name = "redis"
 optional = true
 python-versions = ">=3.7"
-version = "4.5.4"
+version = "5.0.0b2"
 
 [package.dependencies]
-async-timeout = {version = ">=4.0.2", markers = "python_version <= \"3.11.2\""}
+async-timeout = {version = ">=4.0.2", markers = "python_version < \"3.11\""}
 
 [package.extras]
 hiredis = ["hiredis (>=1.0.0)"]
@@ -4428,13 +4428,13 @@ version = "3.3.23.2"
 category = "dev"
 description = "Typing stubs for Markdown"
 files = [
-    {file = "types-Markdown-3.4.2.7.tar.gz", hash = "sha256:ecea668b1e5aaa8fb4f7067622af3c3341cb9145baa4d939b7c75d3e1eb26f7f"},
-    {file = "types_Markdown-3.4.2.7-py3-none-any.whl", hash = "sha256:7fd3ecb487f1d41c043fa24c00258ab7e1fe37585ee6ad016a1a3c03bca34f73"},
+    {file = "types-Markdown-3.4.2.8.tar.gz", hash = "sha256:f4114d44ebd660edfa5e68366971ff32c44c90dce584158faa1abe6bf8075bd8"},
+    {file = "types_Markdown-3.4.2.8-py3-none-any.whl", hash = "sha256:737594dc97dd38da72a2f90f5591c36a17003c913dd629a15145f3b221daf95d"},
 ]
 name = "types-markdown"
 optional = false
 python-versions = "*"
-version = "3.4.2.7"
+version = "3.4.2.8"
 
 [[package]]
 category = "dev"
