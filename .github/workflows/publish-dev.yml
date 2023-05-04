@@ -55,6 +55,8 @@ jobs:
       - name: Install dependencies
         run: |
           task install
+      - name: Lint Safety Check
+        run: task lint-safety
       - name: Authenticate to Google Cloud
         id: 'auth'
         uses: 'google-github-actions/auth@v1'

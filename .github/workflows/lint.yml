@@ -43,7 +43,7 @@ jobs:
         run: |
           sudo apt-get install libsasl2-dev gcc
       - name: Lint Checks
-        run: task lint
+        run: task lint-pr
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}
