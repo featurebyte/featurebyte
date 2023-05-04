@@ -3,7 +3,7 @@ RequestInput is the base class for all request input types.
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal, Optional, cast
 
 from abc import abstractmethod
 
@@ -78,7 +78,6 @@ class BaseRequestInput(FeatureByteBaseModel):
         result = await session.execute_query(query)
         return int(result.iloc[0]["row_count"])  # type: ignore[union-attr]
 
-    @abstractmethod
     async def get_column_names(self, session: BaseSession) -> list[str]:
         """
         Get the column names of the table query
@@ -140,7 +139,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         query_expr = self.get_query_expr(source_type=session.source_type)
 
         if self.columns is not None or self.columns_rename_mapping is not None:
-            if self.columns is None and self.columns_rename_mapping is not None:
+            if self.columns is None:
                 columns = await self.get_column_names(session=session)
             else:
                 columns = self.columns

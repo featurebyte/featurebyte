@@ -154,7 +154,10 @@ def select_and_rename_columns(
     Select
     """
     if columns_rename_mapping:
-        column_exprs = [alias_(col, columns_rename_mapping[col], quoted=True) for col in columns]
+        column_exprs = [
+            alias_(quoted_identifier(col), columns_rename_mapping.get(col, col), quoted=True)
+            for col in columns
+        ]
     else:
         column_exprs = [quoted_identifier(col) for col in columns]
     return select(*column_exprs).from_(table_expr.subquery())
