@@ -6,6 +6,7 @@ from bson.objectid import ObjectId
 
 from featurebyte import FeatureJobSetting, TableFeatureJobSetting
 from featurebyte.exception import DocumentError, DocumentInconsistencyError
+from featurebyte.models.entity import ParentEntity
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import (
@@ -70,35 +71,83 @@ async def test_update_document__inconsistency_error(
     assert expected_msg in str(exc.value)
 
 
+async def create_entity_family(
+    entity_service,
+    table_columns_info_service,
+    entity_relationship_service,
+    target_entity_id,
+    dimension_table,
+    item_table,
+):
+    """Create a family of entities"""
+    # create a parent & child entity & associate them with the target entity
+    parent_entity = await entity_service.create_document(
+        data=EntityCreate(name="parent_entity", serving_name="parent_name")
+    )
+    grand_parent_entity = await entity_service.create_document(
+        data=EntityCreate(name="grand_parent_entity", serving_name="grand_parent_name")
+    )
+    child_entity = await entity_service.create_document(
+        data=EntityCreate(name="child_entity", serving_name="child_name")
+    )
+    grand_child_entity = await entity_service.create_document(
+        data=EntityCreate(name="grand_child_entity", serving_name="grand_child_name")
+    )
+    sibling_entity = await entity_service.create_document(
+        data=EntityCreate(name="sibling_entity", serving_name="sibling_name")
+    )
+    unrelated_entity = await entity_service.create_document(
+        data=EntityCreate(name="unrelated_entity", serving_name="unrelated_name")
+    )
+    unrelated_parent_entity = await entity_service.create_document(
+        data=EntityCreate(name="unrelated_parent_entity", serving_name="unrelated_parent_name")
+    )
+    parent_child_table_triples = [
+        (target_entity_id, parent_entity.id, dimension_table),
+        (parent_entity.id, grand_parent_entity.id, dimension_table),
+        (child_entity.id, target_entity_id, item_table),
+        (grand_child_entity.id, child_entity.id, item_table),
+        (sibling_entity.id, parent_entity.id, dimension_table),
+        (unrelated_entity.id, unrelated_parent_entity.id, dimension_table),
+    ]
+    for child_id, parent_id, table in parent_child_table_triples:
+        await table_columns_info_service._add_new_child_parent_relationships(
+            entity_id=child_id,
+            table_id=table.id,
+            parent_entity_ids_to_add=[parent_id],
+        )
+        await entity_relationship_service.add_relationship(
+            parent=ParentEntity(id=parent_id, table_id=table.id, table_type=table.type),
+            child_id=child_id,
+        )
+        entity = await entity_service.get_document(document_id=child_id)
+        assert parent_id in entity.ancestor_ids
+
+    ancestor_ids = [grand_parent_entity.id, parent_entity.id]
+    descendant_ids = [child_entity.id, grand_child_entity.id]
+    return ancestor_ids, descendant_ids, [sibling_entity.id]
+
+
 @pytest.mark.asyncio
 async def test_feature_list__contains_relationships_info(
     feature_list_service,
     entity_service,
     dimension_table,
     item_table,
-    table_columns_info_service,
-    version_service,
     feature,
+    app_container,
 ):
     """Test feature list contains relationships info"""
     target_entity_id = feature.entity_ids[0]
 
     # create a parent & child entity & associate them with the target entity
-    parent_entity = await entity_service.create_document(
-        data=EntityCreate(name="parent_entity", serving_name="parent_name")
-    )
-    child_entity = await entity_service.create_document(
-        data=EntityCreate(name="child_entity", serving_name="child_name")
-    )
-    await table_columns_info_service._add_new_child_parent_relationships(
-        entity_id=target_entity_id,
-        table_id=dimension_table.id,
-        parent_entity_ids_to_add=[parent_entity.id],
-    )
-    await table_columns_info_service._add_new_child_parent_relationships(
-        entity_id=child_entity.id,
-        table_id=item_table.id,
-        parent_entity_ids_to_add=[target_entity_id],
+    ancestor_ids, descendant_ids, sibling_ids = await create_entity_family(
+        entity_service,
+        app_container.table_columns_info_service,
+        app_container.entity_relationship_service,
+        target_entity_id,
+        dimension_table,
+        item_table,
     )
 
     # check these relationships are included in the feature list
@@ -106,30 +155,23 @@ async def test_feature_list__contains_relationships_info(
         data=FeatureListCreate(name="my_feature_list", feature_ids=[feature.id])
     )
     relationships_info = feature_list.relationships_info
-    expected_relationships_info = [
-        {
-            "id": relationships_info[0].id,
-            "entity_id": child_entity.id,
-            "related_entity_id": target_entity_id,
-            "relationship_type": "child_parent",
-            "relation_table_id": item_table.id,
-        },
-        {
-            "id": relationships_info[1].id,
-            "entity_id": target_entity_id,
-            "related_entity_id": parent_entity.id,
-            "relationship_type": "child_parent",
-            "relation_table_id": dimension_table.id,
-        },
-    ]
-    assert relationships_info == expected_relationships_info
+    assert len(relationships_info) == 5
+    expected_entities = set(ancestor_ids + descendant_ids + sibling_ids + [target_entity_id])
+    for relationship_info in relationships_info:
+        assert relationship_info.entity_id in expected_entities
+        assert relationship_info.related_entity_id in expected_entities
+    expected_relationships_info = relationships_info
 
     # remove relationship and check relationship info is updated when create a new feature list version
-    await table_columns_info_service._remove_parent_entity_ids(
-        primary_entity_id=target_entity_id,
-        parent_entity_ids_to_remove=[parent_entity.id],
+    grand_parent_entity_id, parent_entity_id = ancestor_ids
+    await app_container.table_columns_info_service._remove_parent_entity_ids(
+        primary_entity_id=parent_entity_id,
+        parent_entity_ids_to_remove=[grand_parent_entity_id],
     )
-    new_feature = await version_service.create_new_feature_version(
+    await app_container.entity_relationship_service.remove_relationship(
+        parent_id=grand_parent_entity_id, child_id=parent_entity_id
+    )
+    new_feature = await app_container.version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature.id,
             table_feature_job_settings=[
@@ -142,7 +184,7 @@ async def test_feature_list__contains_relationships_info(
             ],
         )
     )
-    new_feature_list = await version_service.create_new_feature_list_version(
+    new_feature_list = await app_container.version_service.create_new_feature_list_version(
         data=FeatureListNewVersionCreate(
             source_feature_list_id=feature_list.id,
             features=[FeatureVersionInfo(name=new_feature.name, version=new_feature.version)],
@@ -155,11 +197,10 @@ async def test_feature_list__contains_relationships_info(
 
     # check the newly created feature list
     relationships_info = new_feature_list.relationships_info
-    assert len(relationships_info) == 1, relationships_info
-    assert relationships_info[0].dict() == {
-        "id": relationships_info[0].id,
-        "entity_id": child_entity.id,
-        "related_entity_id": target_entity_id,
-        "relationship_type": "child_parent",
-        "relation_table_id": item_table.id,
-    }
+    expected_entities = set(
+        entity_id for entity_id in expected_entities if entity_id != grand_parent_entity_id
+    )
+    assert len(relationships_info) == 4
+    for relationship_info in relationships_info:
+        assert relationship_info.entity_id in expected_entities
+        assert relationship_info.related_entity_id in expected_entities
