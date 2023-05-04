@@ -1456,7 +1456,10 @@ class FeatureList(
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> deployment = feature_list.deploy(make_production_ready=True)  # doctest: +SKIP
+        >>> deployment = feature_list.deploy(  # doctest: +SKIP
+        ...   deployment_name="new deploy",
+        ...   make_production_ready=True,
+        ... )
 
         See Also
         --------
