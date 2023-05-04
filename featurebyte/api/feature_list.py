@@ -417,6 +417,57 @@ class FeatureList(
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.info()
+        {
+          'name': 'invoice_feature_list',
+          'created_at': '2023-05-04T08:23:45.974000',
+          'updated_at': '2023-05-04T08:27:34.798000',
+          'entities': [
+            {
+              'name': 'grocerycustomer',
+              'serving_names': [
+                'GROCERYCUSTOMERGUID'
+              ],
+              'catalog_name': 'grocery'
+            }
+          ],
+          'primary_entity': [
+            {
+              'name': 'grocerycustomer',
+              'serving_names': [
+                'GROCERYCUSTOMERGUID'
+              ],
+              'catalog_name': 'grocery'
+            }
+          ],
+          'tables': [
+            {
+              'name': 'GROCERYINVOICE',
+              'status': 'PUBLIC_DRAFT',
+              'catalog_name': 'grocery'
+            }
+          ],
+          'default_version_mode': 'AUTO',
+          'version_count': 3,
+          'catalog_name': 'grocery',
+          'dtype_distribution': [
+            {
+              'dtype': 'FLOAT',
+              'count': 1
+            }
+          ],
+          'status': 'DRAFT',
+          'feature_count': 1,
+          'version': {
+            'this': 'V230504',
+            'default': 'V230504'
+          },
+          'production_ready_fraction': {
+            'this': 1.0,
+            'default': 1.0
+          },
+          'versions_info': None,
+          'deployed': False
+        }
         """
         return super().info(verbose)
 
