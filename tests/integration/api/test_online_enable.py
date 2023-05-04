@@ -41,7 +41,7 @@ async def app_service_fixture(persistent):
 
         # wait for service to start
         start = time.time()
-        while time.time() - start < 30:
+        while time.time() - start < 50:
             try:
                 response = requests.get("http://localhost:8080/status", timeout=5)
                 if response.status_code == 200:
