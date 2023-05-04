@@ -30,6 +30,7 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
+from featurebyte.api.request_column import RequestColumn
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.source_table import SourceTable
@@ -480,6 +481,7 @@ __all__ = [
     "ItemView",
     "ObservationTable",
     "Relationship",
+    "RequestColumn",
     "SCDTable",
     "SCDView",
     "SourceTable",

@@ -21,6 +21,7 @@ def test_all_init_items_are_exposed():
     # reason.
     excluded_items = {
         "PeriodicTask",  # Users won't use, but keeping for ease of internal use / debugging.
+        "RequestColumn",  # Will add in as a separate section when there's more functionality.
         "start",  # Users won't use, but keeping for ease of internal use / debugging.
         "stop",  # Users won't use, but keeping for ease of internal use / debugging.
         "playground",  # Utility method - should add.
