@@ -8,7 +8,6 @@ from typing import Any, Dict, cast
 import asyncio
 import concurrent.futures
 import os
-import tempfile
 
 from bson import ObjectId
 
