@@ -415,11 +415,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> features = fb.FeatureList([
-        ...    catalog.get_feature("InvoiceCount_60days"),
-        ...    catalog.get_feature("InvoiceAmountAvg_60days"),
-        ... ], name="My new feature list")
-        >>> features.info()
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.info()
         """
         return super().info(verbose)
 
