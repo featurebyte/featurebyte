@@ -41,6 +41,21 @@ async def check_materialized_table_accessible(
     assert num_rows == expected_num_rows
 
 
+def check_materialized_table_preview_methods(table):
+    """
+    Check that preview, sample and describe methods work on materialized tables
+    """
+    df_preview = table.preview(limit=15)
+    assert df_preview.shape[0] == 15
+
+    df_sample = table.sample(size=20)
+    assert df_sample.shape[0] == 20
+
+    df_describe = table.describe()
+    assert df_describe.shape[1] > 0
+    assert set(df_describe.index).issuperset(["top", "min", "max"])
+
+
 @pytest.mark.asyncio
 async def test_observation_table_from_source_table(
     data_source, feature_store, session, source_type
@@ -61,6 +76,8 @@ async def test_observation_table_from_source_table(
     check_location_valid(observation_table, session)
     await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)
 
+    check_materialized_table_preview_methods(observation_table)
+
 
 @pytest.mark.asyncio
 async def test_observation_table_from_view(event_table, scd_table, session, source_type):
@@ -78,6 +95,8 @@ async def test_observation_table_from_view(event_table, scd_table, session, sour
     assert observation_table.name == f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}"
     check_location_valid(observation_table, session)
     await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)
+
+    check_materialized_table_preview_methods(observation_table)
 
 
 @pytest.mark.asyncio

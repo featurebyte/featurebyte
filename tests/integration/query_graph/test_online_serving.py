@@ -150,7 +150,6 @@ async def test_online_serving_sql(
             data_source=data_source,
         )
         check_get_batch_features(
-            data_source,
             deployment,
             batch_request_table,
             df_historical,
@@ -194,7 +193,7 @@ def check_online_features_route(deployment, config, df_historical, columns):
     fb_assert_frame_equal(df_expected, df, dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"])
 
 
-def check_get_batch_features(data_source, deployment, batch_request_table, df_historical, columns):
+def check_get_batch_features(deployment, batch_request_table, df_historical, columns):
     """
     Check get_batch_features_async
     """
@@ -202,12 +201,7 @@ def check_get_batch_features(data_source, deployment, batch_request_table, df_hi
         batch_request_table=batch_request_table,
         batch_feature_table_name="batch_feature_table",
     )
-    source_table = data_source.get_source_table(
-        table_name=batch_feature_table.location.table_details.table_name,
-        schema_name=batch_feature_table.location.table_details.schema_name,
-        database_name=batch_feature_table.location.table_details.database_name,
-    )
-    preview_df = source_table.preview(limit=df_historical.shape[0])
+    preview_df = batch_feature_table.preview(limit=df_historical.shape[0])
     fb_assert_frame_equal(
         df_historical[columns],
         preview_df[columns],
@@ -220,4 +214,4 @@ def check_get_batch_features(data_source, deployment, batch_request_table, df_hi
 
     # check preview deleted materialized table should raise RecordRetrievalException
     with pytest.raises(RecordRetrievalException):
-        source_table.preview()
+        batch_feature_table.preview()
