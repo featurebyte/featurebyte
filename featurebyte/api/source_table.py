@@ -990,7 +990,8 @@ class SourceTable(AbstractTableData):
             Include only these columns when creating the observation table. If None, all columns are
             included.
         columns_rename_mapping: Optional[dict[str, str]]
-            Rename columns in the observation table. If None, no columns are renamed.
+            Rename columns in the source table using this mapping from old column names to new
+            column names when creating the observation table. If None, no columns are renamed.
 
         Returns
         -------
@@ -1005,7 +1006,9 @@ class SourceTable(AbstractTableData):
         ...   table_name=<table_name>
         ... )
         >>> observation_table = source_table.create_observation_table(  # doctest: +SKIP
-        ...   "<observation_table_name>", sample_rows = <desired_sample_size>
+        ...   "<observation_table_name>",
+        ...   sample_rows=10000,
+        ...   columns_mapping={"timestamp": "POINT_IN_TIME"},
         ... )
         """
         # pylint: disable=import-outside-toplevel
@@ -1039,6 +1042,12 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             Batch request table name.
+        columns: Optional[list[str]]
+            Include only these columns when creating the batch request table. If None, all columns
+            are included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the source table using this mapping from old column names to new
+            column names when creating the batch request table. If None, no columns are renamed.
 
         Returns
         -------

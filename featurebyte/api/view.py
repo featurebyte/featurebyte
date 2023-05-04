@@ -1435,6 +1435,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         sample_rows: Optional[int]
             Optionally sample the source table to this number of rows before creating the
             observation table.
+        columns: Optional[list[str]]
+            Include only these columns in the view when creating the observation table. If None, all
+            columns are included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the view using this mapping from old column names to new column names
+            when creating the observation table. If None, no columns are renamed.
 
         Returns
         -------
@@ -1443,10 +1449,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Examples
         --------
-        >>> observation_table = view[  # doctest: +SKIP
-        ...   ['POINT-IN-TIME', <entity_serving_name>]
-        ... ].create_observation_table(
-        ...   name="<observation_table_name>", sample_rows=<desired_sample_size>
+        >>> observation_table = view.create_observation_table(  # doctest: +SKIP
+        ...   name="<observation_table_name>",
+        ...   sample_rows=10000,
+        ...   columns=["timestamp", "<entity_serving_name>"],
+        ...   columns_rename_mapping={"timestamp": "POINT_IN_TIME"},
         ... )
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
@@ -1479,6 +1486,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ----------
         name: str
             Name of the BatchRequestTable.
+        columns: Optional[list[str]]
+            Include only these columns in the view when creating the batch request table. If None,
+            all columns are included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the view using this mapping from old column names to new column names
+            when creating the batch request table. If None, no columns are renamed.
 
         Returns
         -------
