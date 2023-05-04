@@ -129,9 +129,7 @@ class Feature(
         return values
 
     @typechecked
-    def isin(  # pylint: disable=useless-parent-delegation
-        self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]
-    ) -> FrozenSeriesT:
+    def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
         """
         Identifies if each element is contained in a sequence of values represented by the `other` parameter.
 
@@ -159,9 +157,7 @@ class Feature(
         """
         return super().isin(other)  # type: ignore[no-any-return,misc]
 
-    def info(  # pylint: disable=useless-parent-delegation
-        self, verbose: bool = False
-    ) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of an Feature object. The dictionary contains
         the following keys:
@@ -560,7 +556,7 @@ class Feature(
         return operation_structure.is_time_based
 
     @property
-    def is_datetime(self) -> bool:  # pylint: disable=useless-parent-delegation
+    def is_datetime(self) -> bool:
         """
         Returns whether the feature has a datetime data type.
 
@@ -571,7 +567,7 @@ class Feature(
         return super().is_datetime
 
     @property
-    def is_numeric(self) -> bool:  # pylint: disable=useless-parent-delegation
+    def is_numeric(self) -> bool:
         """
         Returns whether the feature has a numeric data type.
 
@@ -582,7 +578,7 @@ class Feature(
         return super().is_numeric
 
     @property
-    def saved(self) -> bool:  # pylint: disable=useless-parent-delegation
+    def saved(self) -> bool:
         """
         Returns whether the Feature object is saved and part of the catalog.
 
@@ -635,9 +631,7 @@ class Feature(
         return primary_entity
 
     @typechecked
-    def save(  # pylint: disable=useless-parent-delegation
-        self, conflict_resolution: ConflictResolution = "raise"
-    ) -> None:
+    def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
         """
         Adds a Feature object to the catalog.
 
@@ -654,7 +648,7 @@ class Feature(
         super().save(conflict_resolution=conflict_resolution)
 
     @typechecked
-    def astype(  # pylint: disable=useless-parent-delegation
+    def astype(
         self: FrozenSeriesT,
         new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
     ) -> FrozenSeriesT:

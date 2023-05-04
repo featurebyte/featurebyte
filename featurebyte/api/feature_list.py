@@ -342,7 +342,7 @@ class FeatureList(
         return feature_tile_specs
 
     @typechecked
-    def get_feature_jobs_status(  # pylint: disable=useless-parent-delegation
+    def get_feature_jobs_status(
         self,
         job_history_window: int = 1,
         job_duration_tolerance: int = 60,
@@ -373,9 +373,7 @@ class FeatureList(
             job_history_window=job_history_window, job_duration_tolerance=job_duration_tolerance
         )
 
-    def info(  # pylint: disable=useless-parent-delegation
-        self, verbose: bool = False
-    ) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of an FeatureList object. The dictionary
         contains the following keys:
@@ -605,7 +603,7 @@ class FeatureList(
         self._delete()
 
     @typechecked
-    def drop(self, items: List[str]) -> FeatureGroup:  # pylint: disable=useless-parent-delegation
+    def drop(self, items: List[str]) -> FeatureGroup:
         """
         Drops feature(s) from the original FeatureList and returns a new FeatureGroup object.
 
@@ -630,7 +628,7 @@ class FeatureList(
         return super().drop(items=items)
 
     @property
-    def saved(self) -> bool:  # pylint: disable=useless-parent-delegation
+    def saved(self) -> bool:
         """
         Returns whether the FeatureList object is saved and added to the catalog.
 
@@ -641,7 +639,7 @@ class FeatureList(
         return super().saved
 
     @typechecked
-    def preview(  # pylint: disable=useless-parent-delegation
+    def preview(
         self,
         observation_set: pd.DataFrame,
     ) -> Optional[pd.DataFrame]:
