@@ -193,6 +193,12 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         Returns
         -------
         FeatureListStatus
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.status
+        'TEMPLATE'
         """
         return self.cached_model.status
 
@@ -598,6 +604,34 @@ class FeatureList(
             The returned DataFrame will have the same number of rows, and include all columns from the observation set.
 
             **Note**: `POINT_IN_TIME` values will be converted to UTC time.
+
+        Examples
+        --------
+        Create a feature list with two features.
+
+        >>> features = fb.FeatureList([
+        ...    catalog.get_feature("InvoiceCount_60days"),
+        ...    catalog.get_feature("InvoiceAmountAvg_60days"),
+        ... ], name="My new feature list")
+
+
+        Prepare observation set with POINT_IN_TIME and serving names columns.
+
+        >>> observation_set = pd.DataFrame({
+        ...    "POINT_IN_TIME": ["2022-06-01 00:00:00", "2022-06-02 00:00:00"],
+        ...    "GROCERYCUSTOMERGUID": [
+        ...      "a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3",
+        ...      "ac479f28-e0ff-41a4-8e60-8678e670e80b",
+        ...    ],
+        ... })
+
+
+        Preview the feature list with a small observation set.
+
+        >>> features.preview(observation_set)
+            POINT_IN_TIME  GROCERYCUSTOMERGUID                   InvoiceCount_60days  InvoiceAmountAvg_60days
+        0   2022-06-01     a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3  10.0                 7.938
+        1   2022-06-02     ac479f28-e0ff-41a4-8e60-8678e670e80b  6.0                  9.870
         """
         return super().preview(observation_set=observation_set)
 
@@ -1078,6 +1112,23 @@ class FeatureList(
         Returns
         -------
         HistoricalFeatureTable
+
+        Examples
+        --------
+        >>> # Get the desired observation table
+        >>> observation_table = catalog.get_observation_table(<observation_table_name>)  # doctest: +SKIP
+        >>> # Get the desired feature list
+        >>> my_feature_list = catalog.get_feature_list(<feature_list_name>)  # doctest: +SKIP
+        >>> # Decide the name of the historical feature table
+        >>> training_table_name = (  # doctest: +SKIP
+        ...   '2y Features for Customer Purchase next 2w '
+        ...   'up to end 22 with Improved Feature List'
+        ... )
+        >>> # Compute the historical feature table
+        >>> training_table = my_feature_list.compute_historical_feature_table(  # doctest: +SKIP
+        ...   observation_table,
+        ...   historical_feature_table_name=training_table_name
+        ... )
         """
         featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
             feature_list_id=self.id,
@@ -1265,8 +1316,8 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
+        >>> feature_list = catalog.get_feature_list_by_id(<FeatureList_Object_ID>)  # doctest: +SKIP
+        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)  # doctest: +SKIP
 
         See Also
         --------
@@ -1293,9 +1344,9 @@ class FeatureList(
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
-        >>> feature_list.as_default_version()
+        >>> feature_list = catalog.get_feature_list_by_id(<FeatureList_Object_ID>)  # doctest: +SKIP
+        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)  # doctest: +SKIP
+        >>> feature_list.as_default_version()  # doctest: +SKIP
 
         See Also
         --------

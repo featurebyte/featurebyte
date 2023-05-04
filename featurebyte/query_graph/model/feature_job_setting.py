@@ -28,20 +28,18 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
     Examples
     --------
-    Configure a feature job to run daily at 12am
+    Consider a case study where a data warehouse refreshes each hour. The data refresh starts 10 seconds after the hour
+    and is usually finished within 2 minutes. Sometimes the data refresh misses the latest data, up to a maximum of the
+    last 30 seconds at the end of the hour. Therefore, an appropriate feature job settings could be:
 
-    >>> feature_job_setting = FeatureJobSetting( # doctest: +SKIP
-    ...   blind_spot="0"
-    ...   frequency="24h"
-    ...   time_modulo_frequency="0"
-    ... )
+    - frequency: 60m
+    = time_modulo_frequency: 10s + 2m + 5s (a safety buffer) = 135s
+    - blind_spot: 30s + 10s + 2m + 5s = 165s
 
-    Configure a feature job to run daily at 8am
-
-    >>> feature_job_setting = FeatureJobSetting( # doctest: +SKIP
-    ...   blind_spot="0"
-    ...   frequency="24h"
-    ...   time_modulo_frequency="8h"
+    >>> feature_job_setting = fb.FeatureJobSetting(  # doctest: +SKIP
+    ...  blind_spot="165s"
+    ...  frequency="60m"
+    ...  time_modulo_frequency="135s"
     ... )
     """
 
@@ -145,6 +143,37 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
     settings. The table_feature_job_settings parameter takes a list of these configurations. For each configuration,
     the TableFeatureJobSetting object establishes the relationship between the table involved and the corresponding
     feature job setting.
+
+    Examples
+    --------
+    Check feature job setting of this feature first:
+
+    >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
+    >>> feature.info()["table_feature_job_setting"]
+    {'this': [{'table_name': 'GROCERYINVOICE',
+     'feature_job_setting': {'blind_spot': '0s',
+     'frequency': '3600s',
+     'time_modulo_frequency': '90s'}}],
+     'default': [{'table_name': 'GROCERYINVOICE',
+     'feature_job_setting': {'blind_spot': '0s',
+     'frequency': '3600s',
+     'time_modulo_frequency': '90s'}}]}
+
+
+    Create a new feature with a different feature job setting:
+
+    >>> new_feature = feature.create_new_version(  # doctest: +SKIP
+    ...   table_feature_job_settings=[
+    ...     fb.TableFeatureJobSetting(
+    ...       table_name="GROCERYINVOICE",
+    ...       feature_job_setting=fb.FeatureJobSetting(
+    ...         blind_spot="60s",
+    ...         frequency="3600s",
+    ...         time_modulo_frequency="90s",
+    ...       )
+    ...     )
+    ...   ]
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableFeatureJobSetting")

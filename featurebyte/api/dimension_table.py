@@ -120,10 +120,27 @@ class DimensionTable(TableApiObject):
 
         Examples
         --------
-        Get a DimensionView.
+        Get a DimensionView in automated mode.
 
-        >>> dimension_table = fb.Table.get("GROCERYPRODUCT")
+        >>> dimension_table = catalog.get_table("GROCERYPRODUCT")
         >>> dimension_view = dimension_table.get_view()
+
+
+        Get a DimensionView in manual mode.
+
+        >>> dimension_table = catalog.get_table("GROCERYPRODUCT")
+        >>> dimension_view = dimension_table.get_view(
+        ...   view_mode="manual",
+        ...   drop_column_names=[],
+        ...   column_cleaning_operations=[
+        ...     fb.ColumnCleaningOperation(
+        ...       column_name="ProductGroup",
+        ...       cleaning_operations=[
+        ...         fb.MissingValueImputation(imputed_value="Unknown"),
+        ...       ],
+        ...     )
+        ...   ],
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.dimension_view import DimensionView

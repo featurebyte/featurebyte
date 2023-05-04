@@ -33,7 +33,13 @@ class FeatureListCreate(FeatureByteBaseModel):
 
 class FeatureVersionInfo(FeatureByteBaseModel):
     """
-    Feature version info
+    Feature version info.
+
+    Examples
+    --------
+    >>> new_feature_list = feature_list.create_new_version(  # doctest: +SKIP
+    ...   features=[fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)]
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureVersionInfo")

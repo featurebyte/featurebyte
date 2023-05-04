@@ -243,6 +243,23 @@ class ViewColumn(Series, SampleMixin):
         ------
         ValueError
             If the column is a temporary column not associated with any View
+
+        Examples
+        --------
+        >>> customer_view = catalog.get_view("GROCERYCUSTOMER")
+        >>> # Extract operating system from BrowserUserAgent column
+        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains("Windows")
+        >>> # Create a feature from the OperatingSystemIsWindows column
+        >>> uses_windows = customer_view.OperatingSystemIsWindows.as_feature("UsesWindows")
+
+
+        If the view is a Slowly Changing Dimension View, you may also consider to create a feature that retrieves the
+        entity's attribute at a point-in-time prior to the point-in-time specified in the feature request by specifying
+        an offset.
+
+        >>> uses_windows_12w_ago = customer_view.OperatingSystemIsWindows.as_feature(
+        ...   "UsesWindows_12w_ago", offset="12w"
+        ... )
         """
         view = self._parent
         if view is None:
@@ -431,10 +448,38 @@ class GroupByMixin:
 
         Examples
         --------
-        Create GroupBy object from an event view
-        >>> transactions_view = transactions_data.get_view()  # doctest: +SKIP
-        >>> transactions_view.groupby("AccountID")  # doctest: +SKIP
-        GroupBy(EventView(node.name=input_1), keys=['AccountID'])
+        Groupby for Aggregate features.
+
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> # Group items by the column GroceryCustomerGuid that references the customer entity
+        >>> items_by_customer = items_view.groupby("GroceryCustomerGuid")  # doctest: +SKIP
+        >>> # Declare features that measure the discount received by customer
+        >>> customer_discounts = items_by_customer.aggregate_over(  # doctest: +SKIP
+        ...   "Discount",
+        ...   method=fb.AggFunc.SUM,
+        ...   feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
+        ...   fill_value=0,
+        ...   windows=['7d', '28d']
+        ... )
+
+
+        Groupby for Cross Aggregate features.
+
+        >>> # Join product view to items view
+        >>> product_view = catalog.get_view("GROCERYPRODUCT")
+        >>> items_view = items_view.join(product_view)  # doctest: +SKIP
+        >>> # Group items by the column GroceryCustomerGuid that references the customer entity
+        >>> # And use ProductGroup as the column to perform operations across
+        >>> items_by_customer_across_product_group = items_view.groupby(  # doctest: +SKIP
+        ...   by_keys="GroceryCustomerGuid", category="ProductGroup"
+        ... )
+        >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
+        >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(  # doctest: +SKIP
+        ...   "TotalCost",
+        ...   method=fb.AggFunc.SUM,
+        ...   feature_names=["CustomerInventory_28d"],
+        ...   windows=['28d']
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.groupby import GroupBy
@@ -1104,11 +1149,31 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Examples
         --------
-        Joining an EventView with a DimensionView.
+        Specify the column name in the caller to join on the natural (primary) key in the other_view.
 
-        >>> event_view = catalog.get_view("GROCERYINVOICE")
-        >>> dimension_view = catalog.get_view("GROCERYPRODUCT")
-        >>> event_view = event_view.join(dimension_view, on="GroceryCustomerGuid", how="inner", rsuffix="_dimension")
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> product_view = catalog.get_view("GROCERYPRODUCT")
+        >>> items_view_with_product_group = items_view.join(product_view, on="GroceryProductGuid")
+
+
+        Use the automated mode if one of the 2 following conditions are met:
+
+        - the name of the key column in the calling view is the same name as the natural (primary) key in the other view
+        - the natural (primary) key in the other view represents an entity that has been tagged in the 2 views.
+
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> product_view = catalog.get_view("GROCERYPRODUCT")
+        >>> items_view_with_product_group = items_view.join(product_view)
+
+
+        Use an inner join if you want the returned view to be filtered and contain only the rows that have matching
+        values in both views.
+
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> product_view = catalog.get_view("GROCERYPRODUCT")
+        >>> items_view_with_non_missing_product_group = items_view.join(
+        ...   product_view, on="GroceryProductGuid", how="inner"
+        ... )
         """
         self._validate_join(other_view, rsuffix, on=on)
 
@@ -1371,6 +1436,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         ObservationTable
             ObservationTable object.
+
+        Examples
+        --------
+        >>> observation_table = view[  # doctest: +SKIP
+        ...   ['POINT-IN-TIME', <entity_serving_name>]
+        ... ].create_observation_table(
+        ...   name="<observation_table_name>", sample_rows=<desired_sample_size>
+        ... )
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = ObservationTableCreate(
@@ -1400,6 +1473,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         BatchRequestTable
             BatchRequestTable object.
+
+        Examples
+        --------
+        >>> batch_request_table = view[<entity_serving_name>].create_batch_request_table(  # doctest: +SKIP
+        ...   <batch_request_table_name>
+        ... )
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = BatchRequestTableCreate(

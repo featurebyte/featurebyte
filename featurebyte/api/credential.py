@@ -25,6 +25,15 @@ from featurebyte.schema.credential import CredentialCreate, CredentialRead, Cred
 class Credential(DeletableApiObject, SavableApiObject):
     """
     Credential class is the data model used to represent your credentials that are persisted.
+
+    Examples
+    --------
+    >>> credential = Credential(  # doctest: +SKIP
+    ...   name=feature_store.name,
+    ...   feature_store_id=feature_store.id,
+    ...   database_credential=database_credential,
+    ...   storage_credential=storage_credential,
+    ... )
     """
 
     # documentation metadata

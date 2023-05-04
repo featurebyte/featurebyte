@@ -104,6 +104,13 @@ class BaseDatabaseCredential(BaseCredential):
 class UsernamePasswordCredential(BaseDatabaseCredential):
     """
     Data class for a username and password credential.
+
+    Examples
+    --------
+    >>> username_password_credential = UsernamePasswordCredential(
+    ...   username="username",
+    ...   password="password",
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UsernamePasswordCredential")
@@ -118,6 +125,10 @@ class UsernamePasswordCredential(BaseDatabaseCredential):
 class AccessTokenCredential(BaseDatabaseCredential):
     """
     Data class for an access token credential.
+
+    Examples
+    --------
+    >>> access_token_credential = AccessTokenCredential(access_token="access_token")
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AccessTokenCredential")
@@ -154,6 +165,13 @@ class BaseStorageCredential(BaseCredential):
 class S3StorageCredential(BaseStorageCredential):
     """
     Data class for a S3 storage credential.
+
+    Examples
+    --------
+    >>> s3_storage_credential = S3StorageCredential(
+    ...   s3_access_key_id="access_key_id",
+    ...   s3_secret_access_key="s3_secret_access_key"
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.S3StorageCredential")

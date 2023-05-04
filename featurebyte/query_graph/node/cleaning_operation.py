@@ -258,9 +258,17 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
 
     Examples
     --------
-    Create an imputation rule to replace value less than 0 to 0
+    Create an imputation rule to replace value less than 0 to 0.
 
-    >>> ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0) # doctest: +SKIP
+    >>> fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0) # doctest: +SKIP
+
+
+    Create an imputation rule to ignore value higher than 1M.
+
+    >>> fb.ValueBeyondEndpointImputation(
+    ...   type="less_than", end_point=1e6, imputed_value=None
+    ... )
+    ValueBeyondEndpointImputation(imputed_value=None, type=less_than, end_point=1000000.0)
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ValueBeyondEndpointImputation")
@@ -373,6 +381,31 @@ class ColumnCleaningOperation(FeatureByteBaseModel):
     column_cleaning_operations parameter takes a list of these configurations. For each configuration, the
     ColumnCleaningOperation object establishes the relationship between the colum involved and the corresponding
     cleaning operations.
+
+    Examples
+    --------
+    Check table cleaning operation of this feature first:
+
+    >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
+    >>> feature.info()["table_cleaning_operation"]
+    {'this': [], 'default': []}
+
+
+    Create a new version of a feature with different table cleaning operations:
+
+    >>> new_feature = feature.create_new_version(  # doctest: +SKIP
+    ...   table_cleaning_operations=[
+    ...     fb.TableCleaningOperation(
+    ...       table_name="GROCERYINVOICE",
+    ...       column_cleaning_operations=[
+    ...         fb.ColumnCleaningOperation(
+    ...           column_name="Amount",
+    ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+    ...         )
+    ...       ],
+    ...     )
+    ...   ]
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.ColumnCleaningOperation")
@@ -397,6 +430,31 @@ class TableCleaningOperation(FeatureByteBaseModel):
     The table_cleaning_operations parameter takes a list of these configurations. For each configuration, the
     ColumnCleaningOperation object establishes the relationship between the table and the corresponding cleaning
     operations for the table.
+
+    Examples
+    --------
+    Check table cleaning operation of this feature first:
+
+    >>> feature = catalog.get_feature("InvoiceAmountAvg_60days")
+    >>> feature.info()["table_cleaning_operation"]
+    {'this': [], 'default': []}
+
+
+    Create a new version of a feature with different table cleaning operations:
+
+    >>> new_feature = feature.create_new_version(
+    ...   table_cleaning_operations=[
+    ...     fb.TableCleaningOperation(
+    ...       table_name="GROCERYINVOICE",
+    ...       column_cleaning_operations=[
+    ...         fb.ColumnCleaningOperation(
+    ...           column_name="Amount",
+    ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+    ...         )
+    ...       ],
+    ...     )
+    ...   ]
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TableCleaningOperation")

@@ -21,6 +21,15 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
 class SnowflakeDetails(BaseDatabaseDetails):
     """
     Model for details used to connect to a Snowflake data source.
+
+    Examples
+    --------
+    >>> details= fb.SnowflakeDetails(
+    ...   account="<account>",
+    ...   warehouse="snowflake",
+    ...   database="<database_name>",
+    ...   sf_schema="<schema_name>",
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SnowflakeDetails")
@@ -53,6 +62,18 @@ class SQLiteDetails(BaseDatabaseDetails):
 class DatabricksDetails(BaseDatabaseDetails):
     """
     Model for details used to connect to a Databricks data source.
+
+    Examples
+    --------
+    >>> details = fb.DatabricksDetails(
+    ...   host="<host_name>",
+    ...   http_path="<http_path>",
+    ...   featurebyte_catalog="hive_metastore",
+    ...   featurebyte_schema="<schema_name>",
+    ...   storage_type=fb.StorageType.S3,
+    ...   storage_url="<url>",
+    ...   storage_spark_url="dbfs:/FileStore/<schema_name>",
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DatabricksDetails")
@@ -82,6 +103,18 @@ class DatabricksDetails(BaseDatabaseDetails):
 class SparkDetails(BaseDatabaseDetails):
     """
     Model for details used to connect to a Spark data source.
+
+    Examples
+    --------
+    >>> details = fb.SparkDetails(
+    ...   host="<host>",
+    ...   port=10003,
+    ...   featurebyte_catalog="spark_catalog",
+    ...   featurebyte_schema="<schema_name>",
+    ...   storage_type=fb.StorageType.S3,
+    ...   storage_url="<storage_url>",
+    ...   storage_spark_url="gs://dataproc-cluster-staging/{<schema_name>}"
+    ... )
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.SparkDetails")
