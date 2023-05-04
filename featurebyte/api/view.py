@@ -1442,7 +1442,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         >>> observation_table = view[  # doctest: +SKIP
         ...   ['POINT-IN-TIME', <entity_serving_name>]
         ... ].create_observation_table(
-        ...   "<observation_table_name>", sample_rows=<desired_sample_size>
+        ...   name="<observation_table_name>", sample_rows=<desired_sample_size>
         ... )
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()

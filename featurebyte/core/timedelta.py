@@ -32,6 +32,13 @@ def to_timedelta(series: Series, unit: TimedeltaSupportedUnitType) -> Series:
     ------
     ValueError
         if input Series is not of INT type
+
+    Examples
+    --------
+    >>> items_view = catalog.get_view("INVOICEITEMS")
+    >>> items_view["DAYS_SINCE_LAST_INVOICE"] = to_timedelta(  # doctest: +SKIP
+    ...   items_view["DAYS_SINCE_LAST_INVOICE"], "days"
+    ... )
     """
     if series.dtype != DBVarType.INT:
         raise ValueError(f"to_timedelta only supports INT type series; got {series.dtype}")
