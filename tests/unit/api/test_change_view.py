@@ -13,6 +13,7 @@ import pytest
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
 from featurebyte.enum import SourceType
+from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import SCDTableData
@@ -736,3 +737,9 @@ def test_change_view_column_lag(snowflake_change_view):
         """
     ).strip()
     assert snowflake_change_view.preview_sql() == expected
+
+
+def test_update_to_production_ready(feature_from_change_view):
+    """Test updating a feature generated from change view to production ready"""
+    feature_from_change_view.update_readiness(readiness=FeatureReadiness.PRODUCTION_READY)
+    assert feature_from_change_view.readiness == FeatureReadiness.PRODUCTION_READY
