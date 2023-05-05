@@ -3,7 +3,7 @@ RequestInput is the base class for all request input types.
 """
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional, cast
 
 from abc import abstractmethod
 
@@ -24,6 +24,7 @@ from featurebyte.query_graph.sql.materialisation import (
     get_view_expr,
     select_and_rename_columns,
 )
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.session.base import BaseSession
 
 
@@ -79,8 +80,8 @@ class BaseRequestInput(FeatureByteBaseModel):
         result = await session.execute_query(query)
         return int(result.iloc[0]["row_count"])  # type: ignore[union-attr]
 
-    @staticmethod
-    async def get_column_names(session: BaseSession, query_expr: Select) -> list[str]:
+    @abstractmethod
+    async def get_column_names(self, session: BaseSession) -> list[str]:
         """
         Get the column names of the table query
 
@@ -95,9 +96,6 @@ class BaseRequestInput(FeatureByteBaseModel):
         -------
         list[str]
         """
-        query = sql_to_string(query_expr.limit(1), source_type=session.source_type)
-        result = await session.execute_query(query)
-        return list(result.columns)  # type: ignore[union-attr]
 
     @staticmethod
     def get_sample_percentage_from_row_count(total_row_count: int, desired_row_count: int) -> float:
@@ -140,7 +138,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         query_expr = self.get_query_expr(source_type=session.source_type)
 
         if self.columns is not None or self.columns_rename_mapping is not None:
-            available_columns = await self.get_column_names(session=session, query_expr=query_expr)
+            available_columns = await self.get_column_names(session=session)
             self._validate_columns_and_rename_mapping(available_columns)
             if self.columns is None:
                 columns = available_columns
@@ -196,6 +194,12 @@ class ViewRequestInput(BaseRequestInput):
     def get_query_expr(self, source_type: SourceType) -> Select:
         return get_view_expr(graph=self.graph, node_name=self.node_name, source_type=source_type)
 
+    async def get_column_names(self, session: BaseSession) -> list[str]:
+        node = self.graph.get_node_by_name(self.node_name)
+        op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
+        op_struct = op_struct_info.operation_structure_map[node.name]
+        return cast(list[str], [column.name for column in op_struct.columns])
+
 
 class SourceTableRequestInput(BaseRequestInput):
     """
@@ -213,3 +217,11 @@ class SourceTableRequestInput(BaseRequestInput):
     def get_query_expr(self, source_type: SourceType) -> Select:
         _ = source_type
         return get_source_expr(source=self.source.table_details)
+
+    async def get_column_names(self, session: BaseSession) -> list[str]:
+        table_schema = await session.list_table_schema(
+            table_name=self.source.table_details.table_name,
+            database_name=self.source.table_details.database_name,
+            schema_name=self.source.table_details.schema_name,
+        )
+        return list(table_schema.keys())
