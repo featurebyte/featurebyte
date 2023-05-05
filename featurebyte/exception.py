@@ -338,3 +338,9 @@ class LimitExceededError(FeatureByteException):
     """
     Raised when limit is exceeded
     """
+
+
+class ColumnNotFoundError(FeatureByteException):
+    """
+    Raised when a specified column is not found in the view or table
+    """

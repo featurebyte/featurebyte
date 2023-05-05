@@ -189,7 +189,11 @@ def test_create_observation_table(snowflake_database_table, snowflake_execute_qu
     """
     Test creating ObservationTable from SourceTable
     """
-    observation_table = snowflake_database_table.create_observation_table("my_observation_table")
+    observation_table = snowflake_database_table.create_observation_table(
+        "my_observation_table",
+        columns=["event_timestamp", "cust_id"],
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+    )
 
     # Check return type
     assert isinstance(observation_table, ObservationTable)
@@ -202,8 +206,13 @@ def test_create_observation_table(snowflake_database_table, snowflake_execute_qu
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
-          *
-        FROM "sf_database"."sf_schema"."sf_table"
+          "event_timestamp" AS "POINT_IN_TIME",
+          "cust_id" AS "cust_id"
+        FROM (
+          SELECT
+            *
+          FROM "sf_database"."sf_schema"."sf_table"
+        )
         """,
     )
 

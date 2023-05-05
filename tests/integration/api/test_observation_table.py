@@ -41,15 +41,17 @@ async def check_materialized_table_accessible(
     assert num_rows == expected_num_rows
 
 
-def check_materialized_table_preview_methods(table):
+def check_materialized_table_preview_methods(table, expected_columns):
     """
     Check that preview, sample and describe methods work on materialized tables
     """
     df_preview = table.preview(limit=15)
     assert df_preview.shape[0] == 15
+    assert df_preview.columns.tolist() == expected_columns
 
     df_sample = table.sample(size=20)
     assert df_sample.shape[0] == 20
+    assert df_sample.columns.tolist() == expected_columns
 
     df_describe = table.describe()
     assert df_describe.shape[1] > 0
@@ -76,7 +78,9 @@ async def test_observation_table_from_source_table(
     check_location_valid(observation_table, session)
     await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)
 
-    check_materialized_table_preview_methods(observation_table)
+    check_materialized_table_preview_methods(
+        observation_table, expected_columns=["POINT_IN_TIME", "User ID"]
+    )
 
 
 @pytest.mark.asyncio
@@ -87,16 +91,21 @@ async def test_observation_table_from_view(event_table, scd_table, session, sour
     view = event_table.get_view()
     scd_view = scd_table.get_view()
     view = view.join(scd_view, on="ÜSER ID")
-    view["POINT_IN_TIME"] = view[view.timestamp_column]
     sample_rows = 123
     observation_table = view.create_observation_table(
-        f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}", sample_rows=sample_rows
+        f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}",
+        sample_rows=sample_rows,
+        columns=[view.timestamp_column, "ÜSER ID"],
+        columns_rename_mapping={view.timestamp_column: "POINT_IN_TIME"},
     )
     assert observation_table.name == f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}"
     check_location_valid(observation_table, session)
     await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)
 
-    check_materialized_table_preview_methods(observation_table)
+    check_materialized_table_preview_methods(
+        observation_table,
+        expected_columns=["POINT_IN_TIME", "ÜSER ID"],
+    )
 
 
 @pytest.mark.asyncio

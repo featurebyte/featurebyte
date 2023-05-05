@@ -3,7 +3,7 @@ RequestInput is the base class for all request input types.
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from abc import abstractmethod
 
@@ -11,6 +11,7 @@ from pydantic import Field, StrictStr
 from sqlglot.expressions import Select
 
 from featurebyte.enum import SourceType, StrEnum
+from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -21,6 +22,7 @@ from featurebyte.query_graph.sql.materialisation import (
     get_row_count_sql,
     get_source_expr,
     get_view_expr,
+    select_and_rename_columns,
 )
 from featurebyte.session.base import BaseSession
 
@@ -38,6 +40,9 @@ class BaseRequestInput(FeatureByteBaseModel):
     """
     BaseRequestInput is the base class for all RequestInput types
     """
+
+    columns: Optional[List[str]]
+    columns_rename_mapping: Optional[Dict[str, str]]
 
     @abstractmethod
     def get_query_expr(self, source_type: SourceType) -> Select:
@@ -75,6 +80,26 @@ class BaseRequestInput(FeatureByteBaseModel):
         return int(result.iloc[0]["row_count"])  # type: ignore[union-attr]
 
     @staticmethod
+    async def get_column_names(session: BaseSession, query_expr: Select) -> list[str]:
+        """
+        Get the column names of the table query
+
+        Parameters
+        ----------
+        session: BaseSession
+            The session to use to get the column names
+        query_expr: Select
+            The query expression to get the column names for
+
+        Returns
+        -------
+        list[str]
+        """
+        query = sql_to_string(query_expr.limit(1), source_type=session.source_type)
+        result = await session.execute_query(query)
+        return list(result.columns)  # type: ignore[union-attr]
+
+    @staticmethod
     def get_sample_percentage_from_row_count(total_row_count: int, desired_row_count: int) -> float:
         """
         Get the sample percentage required to get the desired number of rows
@@ -95,7 +120,10 @@ class BaseRequestInput(FeatureByteBaseModel):
         return min(100.0, 100.0 * desired_row_count / total_row_count * 1.4)
 
     async def materialize(
-        self, session: BaseSession, destination: TableDetails, sample_rows: Optional[int]
+        self,
+        session: BaseSession,
+        destination: TableDetails,
+        sample_rows: Optional[int],
     ) -> None:
         """
         Materialize the request input table
@@ -109,8 +137,16 @@ class BaseRequestInput(FeatureByteBaseModel):
         sample_rows: Optional[int]
             The number of rows to sample. If None, no sampling is performed
         """
-
         query_expr = self.get_query_expr(source_type=session.source_type)
+
+        if self.columns is not None or self.columns_rename_mapping is not None:
+            available_columns = await self.get_column_names(session=session, query_expr=query_expr)
+            self._validate_columns_and_rename_mapping(available_columns)
+            if self.columns is None:
+                columns = available_columns
+            else:
+                columns = self.columns
+            query_expr = select_and_rename_columns(query_expr, columns, self.columns_rename_mapping)
 
         if sample_rows is not None:
             num_rows = await self.get_row_count(session=session, query_expr=query_expr)
@@ -128,6 +164,17 @@ class BaseRequestInput(FeatureByteBaseModel):
         )
 
         await session.execute_query(query)
+
+    def _validate_columns_and_rename_mapping(self, available_columns: list[str]) -> None:
+        referenced_columns = list(self.columns or [])
+        referenced_columns += (
+            list(self.columns_rename_mapping.keys()) if self.columns_rename_mapping else []
+        )
+        missing_columns = set(referenced_columns) - set(available_columns)
+        if missing_columns:
+            raise ColumnNotFoundError(
+                f"Columns {sorted(missing_columns)} not found (available: {available_columns})"
+            )
 
 
 class ViewRequestInput(BaseRequestInput):
