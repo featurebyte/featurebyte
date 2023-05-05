@@ -52,10 +52,15 @@ def run_async(coro: Awaitable[Any]) -> Any:
     """
     try:
         loop = asyncio.get_event_loop()
+        logger.debug("Use existing async loop", extra={"loop": loop})
     except RuntimeError:
         loop = asyncio.new_event_loop()
+        logger.debug("Create new async loop", extra={"loop": loop})
         thread = Thread(target=start_background_loop, args=(loop,), daemon=True)
         thread.start()
+
+    tasks = asyncio.all_tasks()
+    logger.debug("Asyncio tasks", extra={"num_tasks": len(tasks)})
     future = asyncio.run_coroutine_threadsafe(coro, loop)
     event = gevent.event.Event()
     future.add_done_callback(lambda _: event.set())
@@ -135,7 +140,6 @@ def execute_io_task(self: Any, **payload: Any) -> Any:
     -------
     Any
     """
-    logger.debug("Received Request", extra={"request": self.request})
     return run_async(execute_task(self.request.id, **payload))
 
 
@@ -155,5 +159,4 @@ def execute_cpu_task(self: Any, **payload: Any) -> Any:
     -------
     Any
     """
-    logger.debug("Received Request", extra={"request": self.request})
     return asyncio.run(execute_task(self.request.id, **payload))

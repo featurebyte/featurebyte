@@ -59,6 +59,7 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
     expires: Optional[datetime]
     start_after: Optional[datetime]
     last_run_at: Optional[datetime]
+    time_modulo_frequency_second: Optional[int]
     enabled: Optional[bool] = Field(default=True)
 
     total_run_count: Optional[int] = Field(default=0, min=0)

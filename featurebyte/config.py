@@ -57,7 +57,7 @@ class LoggingSettings(BaseModel):
     Settings for logging
     """
 
-    level: LogLevel = LogLevel.DEBUG
+    level: LogLevel = LogLevel.INFO
 
 
 class LocalStorageSettings(BaseModel):

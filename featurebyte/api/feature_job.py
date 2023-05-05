@@ -78,15 +78,42 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             # pylint: disable=import-outside-toplevel
             from matplotlib import pyplot as plt
 
+            def _strip_nulls(values: pd.Series) -> pd.Series:
+                """
+                Return series excluding empty values
+
+                Parameters
+                ----------
+                values: pd.Series
+                    Values to process
+
+                Returns
+                -------
+                pd.Series
+                """
+                return values[~pd.isnull(values)]
+
             # plot job time distribution
             fig = plt.figure(figsize=(15, 3))
+            if self.job_history_window <= 2:
+                freq_min = 1
+                bin_size = "1 min"
+            elif self.job_history_window <= 24:
+                freq_min = 30
+                bin_size = "30 min"
+            elif self.job_history_window <= 72:
+                freq_min = 60
+                bin_size = "1 hour"
+            else:
+                freq_min = 1440
+                bin_size = "1 day"
             bins = pd.date_range(
                 start=self.request_date - datetime.timedelta(hours=self.job_history_window),
                 end=self.request_date,
-                freq="H",
+                freq=f"{freq_min} min",
             ).to_list()
-            plt.hist(self.job_session_logs.COMPLETED, bins=bins, rwidth=0.7)
-            plt.title("Job distribution over time")
+            plt.hist(_strip_nulls(self.job_session_logs.COMPLETED), bins=bins, rwidth=0.7)
+            plt.title(f"Job distribution over time (bin size: {bin_size})")
             plt.axvline(x=self.request_date, color="red")
             buffer = BytesIO()
             fig.savefig(buffer, format="png", metadata={"Software": None})
@@ -104,18 +131,18 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             ax1.set_title(f"Job duration ({late_pct:.2f}% exceeds threshold)")
             ax1.set_xlabel("Duration in seconds")
             ax1.set_ylabel("Job count")
-            ax1.hist(self.job_session_logs.TOTAL_DURATION, rwidth=0.7)
+            ax1.hist(_strip_nulls(self.job_session_logs.TOTAL_DURATION), rwidth=0.7)
             ax1.axvline(x=self.job_duration_tolerance, color="red")
 
             ax2.set_title("Queue duration")
             ax2.set_xlabel("Queue duration in seconds")
             ax2.set_ylabel("Job count")
-            ax2.hist(self.job_session_logs.QUEUE_DURATION, rwidth=0.7)
+            ax2.hist(_strip_nulls(self.job_session_logs.QUEUE_DURATION), rwidth=0.7)
 
             ax3.set_title("Compute duration")
             ax3.set_xlabel("Compute duration in seconds")
             ax3.set_ylabel("Job count")
-            ax3.hist(self.job_session_logs.COMPUTE_DURATION, rwidth=0.7)
+            ax3.hist(_strip_nulls(self.job_session_logs.COMPUTE_DURATION), rwidth=0.7)
             buffer = BytesIO()
             fig.savefig(buffer, format="png", metadata={"Software": None})
             image_2 = base64.b64encode(buffer.getvalue()).decode("utf-8")
@@ -189,6 +216,7 @@ class FeatureJobMixin(ApiObject):
             right_on="aggregation_id",
             how="left",
         )
+        logs["FAILED"] = ~pd.isnull(logs["ERROR"])
         logs["PERIOD"] = logs["frequency_minute"] * 60
         logs["EXCEED_PERIOD"] = logs["TOTAL_DURATION"] > logs["PERIOD"]
 
@@ -209,6 +237,7 @@ class FeatureJobMixin(ApiObject):
                 frac_late=("IS_LATE", "sum"),
                 last_completed=("COMPLETED", "max"),
                 exceed_period=("EXCEED_PERIOD", "sum"),
+                failed_jobs=("FAILED", "sum"),
             )
             .reset_index()
         )
@@ -250,17 +279,19 @@ class FeatureJobMixin(ApiObject):
         if mask.any():
             feature_stats.loc[mask, "completed_jobs"] = 0
             feature_stats.loc[mask, "exceed_period"] = 0
+            feature_stats.loc[mask, "failed_jobs"] = 0
             feature_stats["completed_jobs"] = feature_stats["completed_jobs"].astype(int)
             feature_stats["exceed_period"] = feature_stats["exceed_period"].astype(int)
+            feature_stats["failed_jobs"] = feature_stats["failed_jobs"].astype(int)
             feature_stats.loc[mask, "last_completed"] = pd.NaT
 
         feature_stats["frac_late"] = feature_stats["frac_late"] / feature_stats["completed_jobs"]
         feature_stats.loc[feature_stats["completed_jobs"] == 0, "frac_late"] = np.nan
-        feature_stats["failed_jobs"] = (
-            # missing / incomplete + job duration exceed period
+        feature_stats["incomplete_jobs"] = (
+            # missing / incomplete
             feature_stats["expected_jobs"]
             - feature_stats["completed_jobs"]
-            + feature_stats["exceed_period"]
+            - feature_stats["failed_jobs"]
         )
         feature_stats.loc[feature_stats["last_completed"].isnull(), "last_completed"] = pd.NaT
         feature_stats["time_since_last"] = (utc_now - feature_stats["last_completed"]).apply(

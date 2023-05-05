@@ -3,21 +3,25 @@ Customized Hive Connection class
 """
 from typing import Any, Mapping, Optional
 
+import logging
 from ssl import CERT_NONE, create_default_context
 
 from pyhive import hive
 from pyhive.exc import OperationalError
 from pyhive.hive import Connection
-from pyhive.hive import Cursor as BaseCursor
-from thrift.protocol.TProtocol import TProtocolException
+from pyhive.hive import Cursor as BaseCursor  # pylint: disable=protected-access
+from pyhive.hive import _logger as hive_logger
 from thrift.transport.THttpClient import THttpClient
-from thrift.transport.TTransport import TTransportBase, TTransportException
+from thrift.transport.TTransport import TTransportBase
 from typeguard import typechecked
 
 from featurebyte.enum import StrEnum
 from featurebyte.logging import get_logger
 
 logger = get_logger(__name__)
+
+# keep hive logger quiet
+hive_logger.setLevel(logging.ERROR)
 
 
 class AuthType(StrEnum):
@@ -43,7 +47,7 @@ class Cursor(BaseCursor):
         """
         try:
             super().close()
-        except TProtocolException:
+        except Exception:  # pylint: disable=broad-except
             logger.error("Failed to close cursor", exc_info=True)
 
 
@@ -128,7 +132,7 @@ class HiveConnection(Connection):
         """
         try:
             super().close()
-        except TTransportException:
+        except Exception:  # pylint: disable=broad-except
             logger.error("Failed to close connection", exc_info=True)
 
     def cursor(self, *args: Any, **kwargs: Any) -> Cursor:

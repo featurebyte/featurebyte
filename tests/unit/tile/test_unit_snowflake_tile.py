@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 
 from featurebyte.common import date_util
-from featurebyte.models.tile import TileSpec
+from featurebyte.models.tile import TileSpec, TileType
 
 
 def test_construct_snowflaketile_time_modulo_error():
@@ -73,20 +73,14 @@ async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, ti
     Test schedule_online_tiles method in TileSnowflake
     """
     _ = mock_execute_query
-
-    schedule_time = datetime.utcnow()
-    next_job_time = date_util.get_next_job_datetime(
-        input_dt=schedule_time,
-        frequency_minutes=mock_snowflake_tile.frequency_minute,
-        time_modulo_frequency_seconds=mock_snowflake_tile.time_modulo_frequency_second,
-    )
-
     with mock.patch(
         "featurebyte.tile.manager.TileManager._schedule_tiles_custom"
     ) as mock_schedule_tiles_custom:
-        await tile_manager.schedule_online_tiles(mock_snowflake_tile, schedule_time=schedule_time)
+        await tile_manager.schedule_online_tiles(mock_snowflake_tile)
         kwargs = mock_schedule_tiles_custom.call_args.kwargs
-        assert kwargs["next_job_time"] == next_job_time
+        assert kwargs["tile_spec"] == mock_snowflake_tile
+        assert kwargs["tile_type"] == TileType.ONLINE
+        assert kwargs["monitor_periods"] == 10
 
 
 @pytest.mark.asyncio
@@ -97,21 +91,14 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
     """
     _ = mock_execute_query
 
-    schedule_time = datetime.utcnow()
-    next_job_time = date_util.get_next_job_datetime(
-        input_dt=schedule_time,
-        frequency_minutes=1440,
-        time_modulo_frequency_seconds=mock_snowflake_tile.time_modulo_frequency_second,
-    )
-
     with mock.patch(
         "featurebyte.tile.manager.TileManager._schedule_tiles_custom"
     ) as mock_schedule_tiles_custom:
-        await tile_manager.schedule_offline_tiles(
-            tile_spec=mock_snowflake_tile, schedule_time=schedule_time
-        )
+        await tile_manager.schedule_offline_tiles(tile_spec=mock_snowflake_tile)
         kwargs = mock_schedule_tiles_custom.call_args.kwargs
-        assert kwargs["next_job_time"] == next_job_time
+        assert kwargs["tile_spec"] == mock_snowflake_tile
+        assert kwargs["tile_type"] == TileType.OFFLINE
+        assert kwargs["offline_minutes"] == 1440
 
 
 @mock.patch("featurebyte.tile.manager.TileManager.generate_tiles")

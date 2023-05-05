@@ -1019,7 +1019,7 @@ def test_get_feature_jobs_status_incomplete_logs(
     """
     mock_execute_query.return_value = feature_job_logs[:1]
     job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
-    assert job_status_result.job_session_logs.shape == (1, 11)
+    assert job_status_result.job_session_logs.shape == (1, 12)
     expected_feature_job_summary = pd.DataFrame(
         {
             "aggregation_hash": {0: "aed233b0"},
@@ -1029,7 +1029,8 @@ def test_get_feature_jobs_status_incomplete_logs(
             "95 percentile": {0: np.nan},
             "frac_late": {0: np.nan},
             "exceed_period": {0: 0},
-            "failed_jobs": {0: 48},
+            "failed_jobs": {0: 0},
+            "incomplete_jobs": {0: 48},
             "time_since_last": {0: "NaT"},
         }
     )
@@ -1046,7 +1047,7 @@ def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, f
     """
     mock_execute_query.return_value = feature_job_logs[:0]
     job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
-    assert job_status_result.job_session_logs.shape == (0, 11)
+    assert job_status_result.job_session_logs.shape == (0, 12)
     expected_feature_job_summary = pd.DataFrame(
         {
             "aggregation_hash": {0: "aed233b0"},
@@ -1056,7 +1057,8 @@ def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, f
             "95 percentile": {0: np.nan},
             "frac_late": {0: np.nan},
             "exceed_period": {0: 0},
-            "failed_jobs": {0: 48},
+            "failed_jobs": {0: 0},
+            "incomplete_jobs": {0: 48},
             "time_since_last": {0: "NaT"},
         }
     )
@@ -1079,8 +1081,8 @@ def test_get_feature_jobs_status_feature_without_tile(
     feature.save()
     job_status_result = feature.get_feature_jobs_status()
     assert job_status_result.feature_tile_table.shape == (0, 2)
-    assert job_status_result.feature_job_summary.shape == (0, 9)
-    assert job_status_result.job_session_logs.shape == (0, 11)
+    assert job_status_result.feature_job_summary.shape == (0, 10)
+    assert job_status_result.job_session_logs.shape == (0, 12)
 
 
 def test_feature_synchronization(saved_feature):

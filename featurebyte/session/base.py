@@ -285,9 +285,13 @@ class BaseSession(BaseModel):
         finally:
             cursor.close()
             input_pipe.close()
-            thread.join(timeout=0)
-            query_shortened = query.strip()[:50].replace("\n", " ")
-            logger.debug(f"Query runtime ({query_shortened}...): {time.time() - start_time:.3f}s")
+            logger.debug(
+                "Query completed",
+                extra={
+                    "duration": time.time() - start_time,
+                    "query": query.strip()[:50].replace("\n", " "),
+                },
+            )
 
     async def get_working_schema_metadata(self) -> dict[str, Any]:
         """Retrieves the working schema version from the table registered in the
