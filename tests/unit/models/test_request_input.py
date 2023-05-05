@@ -167,7 +167,7 @@ async def test_materialize__invalid_rename_mapping(
 
 @pytest.mark.asyncio
 async def test_materialize__from_view_with_columns_and_renames(
-    session, snowflake_database_table, destination_table, snowflake_event_table
+    session, destination_table, snowflake_event_table
 ):
     """
     Test materializing from view

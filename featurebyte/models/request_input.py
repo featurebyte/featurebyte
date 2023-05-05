@@ -89,8 +89,6 @@ class BaseRequestInput(FeatureByteBaseModel):
         ----------
         session: BaseSession
             The session to use to get the column names
-        query_expr: Select
-            The query expression to get the column names for
 
         Returns
         -------
