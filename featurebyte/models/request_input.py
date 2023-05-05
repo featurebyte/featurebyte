@@ -3,7 +3,7 @@ RequestInput is the base class for all request input types.
 """
 from __future__ import annotations
 
-from typing import Dict, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from abc import abstractmethod
 
@@ -41,7 +41,7 @@ class BaseRequestInput(FeatureByteBaseModel):
     BaseRequestInput is the base class for all RequestInput types
     """
 
-    columns: Optional[list[str]]
+    columns: Optional[List[str]]
     columns_rename_mapping: Optional[Dict[str, str]]
 
     @abstractmethod
