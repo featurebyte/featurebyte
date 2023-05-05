@@ -10,6 +10,7 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
+from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -1097,3 +1098,9 @@ def test_join_event_table_attributes__with_multiple_assignments(snowflake_item_v
         "col_float",
     ]
     assert joined_view.columns == expected_columns
+
+
+def test_update_to_production_ready(item_event_saved_feature):
+    """Test updating feature to production ready"""
+    item_event_saved_feature.update_readiness(readiness=FeatureReadiness.PRODUCTION_READY)
+    assert item_event_saved_feature.readiness == FeatureReadiness.PRODUCTION_READY
