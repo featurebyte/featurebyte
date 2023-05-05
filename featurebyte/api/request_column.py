@@ -3,10 +3,9 @@ RequestColumn related classes for on-demand features
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import Field
-from typeguard import typechecked
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.series import Series
@@ -107,11 +106,3 @@ class RequestColumn(Series):
     @property
     def binary_op_output_class_priority(self) -> int:
         return 1
-
-    @typechecked
-    def preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
-        # preview_sql() is provided by QueryObject and requires feature_store. Ideally, it would be
-        # better to move preview_sql() out of QueryObject so RequestColumn doesn't have this method.
-        # But there are many tests that require Series to have preview_sql(), so the change is not
-        # trivial. Raising NotImplementedError() specifically for RequestColumn for now.
-        raise NotImplementedError("preview_sql is not supported for RequestColumn")
