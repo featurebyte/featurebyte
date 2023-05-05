@@ -15,6 +15,8 @@
 ### 💡 Enhancements 💡
 * Support using DataFrame as observation set in `compute_historical_feature_table()`
 * Support `preview`, `sample` and `describe` methods for materialised tables
+* Support `columns` and `columns_rename_mapping` parameters when creating observation table and
+  batch feature table
 
 
 ### 🧰 Bug fixes 🧰
