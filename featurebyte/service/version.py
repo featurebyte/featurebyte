@@ -7,13 +7,16 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
+from featurebyte.enum import TableDataType
 from featurebyte.exception import (
     DocumentError,
     NoChangesInFeatureVersionError,
     NoFeatureJobSettingInSourceError,
 )
+from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -94,35 +97,39 @@ class VersionService(BaseService):
                 data_feature_job_setting.table_name: data_feature_job_setting.feature_job_setting
                 for data_feature_job_setting in table_feature_job_settings
             }
-            table_id_to_doc: dict[ObjectId, dict[str, Any]] = {
-                doc["_id"]: doc
+            table_id_to_table: dict[ObjectId, ProxyTableModel] = {
+                # pylint: disable=abstract-class-instantiated
+                doc["_id"]: ProxyTableModel(**doc)  # type: ignore
                 async for doc in self.table_service.list_documents_iterator(
                     query_filter={"_id": {"$in": feature.table_ids}}
                 )
             }
             for (
                 group_by_node,
-                event_table_id,
+                table_id,
             ) in feature.graph.iterate_group_by_node_and_table_id_pairs(target_node=feature.node):
                 # prepare feature job setting
-                assert event_table_id is not None, "Event table ID should not be None."
-                table_doc = table_id_to_doc[event_table_id]
+                assert table_id is not None, "Table ID should not be None."
+                table = table_id_to_table[table_id]
                 feature_job_setting: Optional[FeatureJobSetting] = None
                 if use_source_settings:
-                    # use the (event) table source's default feature job setting
-                    feature_job_setting_dict = table_doc["default_feature_job_setting"]
-                    if feature_job_setting_dict:
-                        feature_job_setting = FeatureJobSetting(**feature_job_setting_dict)
-                    else:
-                        raise NoFeatureJobSettingInSourceError(
-                            f"No feature job setting found in source id {event_table_id}"
-                        )
+                    # use the event table source's default feature job setting if table is event table
+                    # otherwise, do not create a replacement node for the group by node
+                    if table.type == TableDataType.EVENT_TABLE:
+                        assert isinstance(table, EventTableModel)
+                        feature_job_setting = table.default_feature_job_setting
+                        if not feature_job_setting:
+                            raise NoFeatureJobSettingInSourceError(
+                                f"No feature job setting found in source id {table_id}"
+                            )
                 else:
                     # use the provided feature job setting
-                    feature_job_setting = table_name_to_feature_job_setting.get(table_doc["name"])
+                    assert table.name is not None, "Table name should not be None."
+                    feature_job_setting = table_name_to_feature_job_setting.get(table.name)
 
                 if feature_job_setting:
-                    # input node will be used when we need to support updating specific groupby node given event table ID
+                    # input node will be used when we need to support updating specific
+                    # GroupBy node given event table ID
                     parameters = {
                         **group_by_node.parameters.dict(),
                         **feature_job_setting.to_seconds(),
