@@ -192,11 +192,11 @@ class ViewRequestInput(BaseRequestInput):
     def get_query_expr(self, source_type: SourceType) -> Select:
         return get_view_expr(graph=self.graph, node_name=self.node_name, source_type=source_type)
 
-    async def get_column_names(self, session: BaseSession) -> list[str]:
+    async def get_column_names(self, session: BaseSession) -> List[str]:
         node = self.graph.get_node_by_name(self.node_name)
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
         op_struct = op_struct_info.operation_structure_map[node.name]
-        return cast(list[str], [column.name for column in op_struct.columns])
+        return cast(List[str], [column.name for column in op_struct.columns])
 
 
 class SourceTableRequestInput(BaseRequestInput):
