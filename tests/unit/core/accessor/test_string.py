@@ -5,6 +5,7 @@ import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from tests.util.helper import get_preview_sql_for_series
 
 
 def test_length_expression(varchar_series, expression_sql_template):
@@ -16,7 +17,7 @@ def test_length_expression(varchar_series, expression_sql_template):
     assert str_len.node.type == NodeType.LENGTH
     assert str_len.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression='LENGTH("PRODUCT_ACTION")')
-    assert str_len.preview_sql() == expected_sql
+    assert get_preview_sql_for_series(str_len) == expected_sql
 
 
 @pytest.mark.parametrize(
@@ -40,7 +41,7 @@ def test_str_case_expression(
     assert series.node.type == NodeType.STR_CASE
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
-    assert series.preview_sql() == expected_sql
+    assert get_preview_sql_for_series(series) == expected_sql
 
 
 @pytest.mark.parametrize(
@@ -68,7 +69,7 @@ def test_strip_expression(
     assert series.node.type == NodeType.TRIM
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
-    assert series.preview_sql() == expected_sql
+    assert get_preview_sql_for_series(series) == expected_sql
 
 
 def test_replace_expression(
@@ -85,7 +86,7 @@ def test_replace_expression(
     expected_sql = expression_sql_template.format(
         expression="REPLACE(\"PRODUCT_ACTION\", 'hello', 'kitty')"
     )
-    assert str_replace.preview_sql() == expected_sql
+    assert get_preview_sql_for_series(str_replace) == expected_sql
 
 
 @pytest.mark.parametrize(
@@ -135,7 +136,7 @@ def test_pad_expression(
     assert series.node.type == NodeType.PAD
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
-    assert series.preview_sql() == expected_sql
+    assert get_preview_sql_for_series(series) == expected_sql
 
 
 @pytest.mark.parametrize(
@@ -163,7 +164,7 @@ def test_contains_expression(
     assert series.node.type == NodeType.STR_CONTAINS
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
-    assert series.preview_sql() == expected_sql
+    assert get_preview_sql_for_series(series) == expected_sql
 
 
 @pytest.mark.parametrize(
@@ -191,7 +192,7 @@ def test_slice_expression(
     assert series.node.type == NodeType.SUBSTRING
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
-    assert series.preview_sql() == expected_sql
+    assert get_preview_sql_for_series(series) == expected_sql
 
 
 def test_slice_expression__step_size_not_supported_or_exception(varchar_series):
