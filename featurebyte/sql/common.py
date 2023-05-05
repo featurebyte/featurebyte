@@ -96,11 +96,14 @@ async def retry_sql(
     for i in range(retry_num):
         try:
             return await session.execute_query_long_running(sql)
-        except Exception as err:  # pylint: disable=broad-exception-caught
-            logger.warning(f"Problem with sql run {i} with sql: {sql}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                "SQL query failed",
+                extra={"attempt": i, "query": sql.strip()[:50].replace("\n", " ")},
+            )
             if i == retry_num - 1:
-                logger.error(f"Error with sql: {err}")
-                raise err
+                logger.error("SQL query failed", extra={"attempts": retry_num, "exception": exc})
+                raise
 
         random_interval = randint(1, sleep_interval)
         await asyncio.sleep(random_interval)

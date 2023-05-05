@@ -68,7 +68,8 @@ class SparkSession(BaseSparkSession):
         cursor.close()
 
     def __del__(self) -> None:
-        self._connection.close()
+        if self._connection:
+            self._connection.close()
 
     @classmethod
     def is_threadsafe(cls) -> bool:
