@@ -1,13 +1,14 @@
 """
 Tile Generate Schedule script
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime, timedelta
 
 import dateutil.parser
 from pydantic import Field
 
+from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.sql.common import retry_sql
@@ -31,7 +32,7 @@ class TileGenerateSchedule(TileCommon):
     tile_end_date_placeholder: str
     tile_type: str
     monitor_periods: int
-    job_schedule_ts: str = Field(default=datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+    job_schedule_ts: Optional[str] = Field(default=None)
 
     # pylint: disable=too-many-locals,too-many-statements
     async def execute(self) -> None:
@@ -43,13 +44,24 @@ class TileGenerateSchedule(TileCommon):
         Exception
             Related exception from the triggered stored procedures if it fails
         """
-
-        last_tile_end_ts = dateutil.parser.isoparse(self.job_schedule_ts)
-        cron_residue_seconds = self.tile_modulo_frequency_second % 60
-        last_tile_end_ts = last_tile_end_ts.replace(second=cron_residue_seconds)
-        last_tile_end_ts = last_tile_end_ts - timedelta(seconds=self.blind_spot_second)
         date_format = "%Y-%m-%d %H:%M:%S"
+        used_job_schedule_ts = self.job_schedule_ts or datetime.now().strftime(date_format)
+        candidate_last_tile_end_ts = dateutil.parser.isoparse(used_job_schedule_ts)
 
+        # derive the correct job schedule ts based on input job schedule ts
+        # the input job schedule ts might be between 2 intervals
+        last_tile_end_ts = self._derive_correct_job_ts(
+            candidate_last_tile_end_ts, self.frequency_minute, self.tile_modulo_frequency_second
+        )
+        logger.debug(
+            "Tile end ts details",
+            extra={
+                "last_tile_end_ts": last_tile_end_ts,
+                "candidate_last_tile_end_ts": candidate_last_tile_end_ts,
+            },
+        )
+
+        last_tile_end_ts = last_tile_end_ts - timedelta(seconds=self.blind_spot_second)
         tile_type = self.tile_type.upper()
         lookback_period = self.frequency_minute * (self.monitor_periods + 1)
         tile_id = self.tile_id.upper()
@@ -68,11 +80,14 @@ class TileGenerateSchedule(TileCommon):
             self._session,
             f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}' AND LAST_TILE_START_DATE_ONLINE IS NOT NULL",
         )
+
         if registry_df is not None and len(registry_df) > 0:
             registry_last_tile_start_ts = registry_df["LAST_TILE_START_DATE_ONLINE"].iloc[0]
             logger.info(f"Last tile start date from registry - {registry_last_tile_start_ts}")
 
-            if registry_last_tile_start_ts.timestamp() < tile_start_ts.timestamp():
+            if registry_last_tile_start_ts.strftime(date_format) < tile_start_ts.strftime(
+                date_format
+            ):
                 logger.info(
                     f"Use last tile start date from registry - {registry_last_tile_start_ts} instead of {tile_start_ts_str}"
                 )
@@ -117,8 +132,15 @@ class TileGenerateSchedule(TileCommon):
             f"{self.tile_start_date_placeholder}", "'" + tile_start_ts_str + "'"
         ).replace(f"{self.tile_end_date_placeholder}", "'" + tile_end_ts_str + "'")
 
-        last_tile_start_ts = tile_end_ts - timedelta(minutes=self.frequency_minute)
-        last_tile_start_str = last_tile_start_ts.strftime(date_format)
+        logger.info(
+            "Tile Schedule information",
+            extra={
+                "tile_id": tile_id,
+                "tile_start_ts_str": tile_start_ts_str,
+                "tile_end_ts_str": tile_end_ts_str,
+                "tile_type": tile_type,
+            },
+        )
 
         tile_monitor_ins = TileMonitor(
             session=self._session,
@@ -148,7 +170,7 @@ class TileGenerateSchedule(TileCommon):
             value_column_types=self.value_column_types,
             tile_type=self.tile_type,
             tile_start_date_column=InternalName.TILE_START_DATE,
-            last_tile_start_str=last_tile_start_str,
+            last_tile_start_str=tile_end_ts_str,
             tile_last_start_date_column=self.tile_last_start_date_column,
             aggregation_id=self.aggregation_id,
         )
@@ -188,10 +210,10 @@ class TileGenerateSchedule(TileCommon):
 
         for spec in step_specs:
             try:
-                logger.info(f"Calling {spec['name']}\n")
+                logger.info(f"Calling {spec['name']}")
                 tile_ins: TileCommon = spec["trigger"]
                 await tile_ins.execute()
-                logger.info(f"End of calling {spec['name']}\n")
+                logger.info(f"End of calling {spec['name']}")
             except Exception as exception:
                 message = str(exception).replace("'", "")
                 fail_code = spec["status"]["fail"]
@@ -205,5 +227,43 @@ class TileGenerateSchedule(TileCommon):
 
             success_code = spec["status"]["success"]
             insert_sql = audit_insert_sql.replace("<STATUS>", success_code).replace("<MESSAGE>", "")
-            logger.info(f"success_insert_sql: {insert_sql}")
             await retry_sql(self._session, insert_sql)
+
+    def _derive_correct_job_ts(
+        self, input_dt: datetime, frequency_minutes: int, time_modulo_frequency_seconds: int
+    ) -> datetime:
+        """
+        Derive correct job schedule datetime
+
+        Parameters
+        ----------
+        input_dt: datetime
+            input job schedule datetime
+        frequency_minutes: int
+            frequency in minutes
+        time_modulo_frequency_seconds: int
+            time modulo frequency in seconds
+
+        Returns
+        -------
+        datetime
+        """
+        input_dt = input_dt.replace(tzinfo=None)
+
+        next_job_time = date_util.get_next_job_datetime(
+            input_dt=input_dt,
+            frequency_minutes=frequency_minutes,
+            time_modulo_frequency_seconds=time_modulo_frequency_seconds,
+        )
+
+        logger.debug(
+            "Inside derive_correct_job_ts",
+            extra={"next_job_time": next_job_time, "input_dt": input_dt},
+        )
+
+        if next_job_time == input_dt:
+            # if next_job_time is same as input_dt, then return next_job_time
+            return next_job_time
+
+        # if next_job_time is not same as input_dt, then return (next_job_time - frequency_minutes)
+        return next_job_time - timedelta(minutes=frequency_minutes)

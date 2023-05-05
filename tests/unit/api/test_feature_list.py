@@ -1087,7 +1087,8 @@ def test_get_feature_jobs_status(
             "95 percentile": {0: 1574.2431},
             "frac_late": {0: 0.0},
             "exceed_period": {0: 0},
-            "failed_jobs": {0: 24},
+            "failed_jobs": {0: 1},
+            "incomplete_jobs": {0: 23},
             "time_since_last": {0: "29 minutes"},
         }
     )
@@ -1146,8 +1147,8 @@ def test_get_feature_jobs_status_feature_without_tile(
     feature_list.save()
     job_status_result = feature_list.get_feature_jobs_status()
     assert job_status_result.feature_tile_table.shape == (1, 2)
-    assert job_status_result.feature_job_summary.shape == (1, 9)
-    assert job_status_result.job_session_logs.shape == (0, 11)
+    assert job_status_result.feature_job_summary.shape == (1, 10)
+    assert job_status_result.job_session_logs.shape == (0, 12)
 
 
 def test_feature_list__check_feature_readiness_update(saved_feature_list, mock_api_object_cache):

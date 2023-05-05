@@ -123,9 +123,9 @@ class TileMonitor(TileCommon):
                     tile_type=self.tile_type,
                     aggregation_id=self.aggregation_id,
                 )
-                logger.info("\n\nCalling tile_registry.execute\n")
+                logger.info("Calling tile_registry.execute")
                 await tile_registry_ins.execute()
-                logger.info("\nEnd of calling tile_registry.execute\n\n")
+                logger.info("End of calling tile_registry.execute")
 
                 # spark does not support insert with partial columns
                 # need to use merge for insertion

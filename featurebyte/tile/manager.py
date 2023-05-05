@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
-from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.exception import TileScheduleNotSupportedError
 from featurebyte.logging import get_logger
@@ -230,7 +229,6 @@ class TileManager(BaseModel):
         self,
         tile_spec: TileSpec,
         monitor_periods: int = 10,
-        schedule_time: datetime = datetime.utcnow(),
     ) -> Optional[str]:
         """
         Schedule online tiles
@@ -241,23 +239,14 @@ class TileManager(BaseModel):
             the input TileSpec
         monitor_periods: int
             number of tile periods to monitor and re-generate. Default is 10
-        schedule_time: datetime
-            the moment of scheduling the job
 
         Returns
         -------
             generated sql to be executed or None if the tile job already exists
         """
-        next_job_time = date_util.get_next_job_datetime(
-            input_dt=schedule_time,
-            frequency_minutes=tile_spec.frequency_minute,
-            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-        )
-
         sql = await self._schedule_tiles_custom(
             tile_spec=tile_spec,
             tile_type=TileType.ONLINE,
-            next_job_time=next_job_time,
             monitor_periods=monitor_periods,
         )
 
@@ -267,7 +256,6 @@ class TileManager(BaseModel):
         self,
         tile_spec: TileSpec,
         offline_minutes: int = 1440,
-        schedule_time: datetime = datetime.utcnow(),
     ) -> Optional[str]:
         """
         Schedule offline tiles
@@ -278,24 +266,15 @@ class TileManager(BaseModel):
             the input TileSpec
         offline_minutes: int
             offline tile lookback minutes to monitor and re-generate. Default is 1440
-        schedule_time: datetime
-            the moment of scheduling the job
 
         Returns
         -------
             generated sql to be executed or None if the tile job already exists
         """
 
-        next_job_time = date_util.get_next_job_datetime(
-            input_dt=schedule_time,
-            frequency_minutes=offline_minutes,
-            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-        )
-
         sql = await self._schedule_tiles_custom(
             tile_spec=tile_spec,
             tile_type=TileType.OFFLINE,
-            next_job_time=next_job_time,
             offline_minutes=offline_minutes,
         )
 
@@ -305,7 +284,6 @@ class TileManager(BaseModel):
         self,
         tile_spec: TileSpec,
         tile_type: TileType,
-        next_job_time: datetime,
         offline_minutes: int = 1440,
         monitor_periods: int = 10,
     ) -> Optional[str]:
@@ -318,8 +296,6 @@ class TileManager(BaseModel):
             the input TileSpec
         tile_type: TileType
             ONLINE or OFFLINE
-        next_job_time: datetime
-            next tile job start time
         offline_minutes: int
             offline tile lookback minutes
         monitor_periods: int
@@ -376,7 +352,7 @@ class TileManager(BaseModel):
             await scheduler.start_job_with_interval(
                 job_id=job_id,
                 interval_seconds=interval_seconds,
-                start_after=next_job_time,
+                time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
                 instance=tile_schedule_ins,
                 user_id=tile_spec.user_id,
                 feature_store_id=tile_spec.feature_store_id,

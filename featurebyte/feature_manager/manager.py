@@ -80,7 +80,10 @@ class FeatureManager(BaseModel):
         schedule_time: datetime
             the moment of scheduling the job
         """
-        logger.info(f"online_enable: {feature_spec.feature.name}")
+        logger.info(
+            "online_enable",
+            extra={"feature_name": feature_spec.feature.name, "schedule_time": schedule_time},
+        )
 
         # insert records into tile-feature mapping table
         await self._update_tile_feature_mapping_table(feature_spec)
@@ -94,15 +97,11 @@ class FeatureManager(BaseModel):
                 tile_spec.feature_store_id = feature_spec.feature.tabular_source.feature_store_id
                 tile_spec.catalog_id = feature_spec.feature.catalog_id
 
-                await self._tile_manager.schedule_online_tiles(
-                    tile_spec=tile_spec, schedule_time=schedule_time
-                )
+                await self._tile_manager.schedule_online_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_online_tiles for {tile_spec.aggregation_id}")
 
                 # enable offline tiles scheduled job
-                await self._tile_manager.schedule_offline_tiles(
-                    tile_spec=tile_spec, schedule_time=schedule_time
-                )
+                await self._tile_manager.schedule_offline_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
             # generate historical tiles

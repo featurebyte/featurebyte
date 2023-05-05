@@ -47,19 +47,12 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     """
     tile_scheduler, tile_spec, job_id = scheduler_fixture
 
-    schedule_time = datetime.utcnow()
-    next_job_time = date_util.get_next_job_datetime(
-        input_dt=schedule_time,
-        frequency_minutes=tile_spec.frequency_minute,
-        time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-    )
-
-    await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
+    await tile_manager.schedule_online_tiles(tile_spec=tile_spec)
 
     job_details = await tile_scheduler.get_job_details(job_id=job_id)
     assert job_details is not None
     assert job_details.name == job_id
-    assert job_details.start_after == next_job_time
+    assert job_details.time_modulo_frequency_second == tile_spec.time_modulo_frequency_second
     assert job_details.interval == Interval(every=tile_spec.frequency_minute * 60, period="seconds")
 
     task_executor = TaskExecutor(payload=job_details.kwargs)
@@ -83,11 +76,10 @@ async def test_generate_tiles_with_scheduler__avoid_duplicate_tile(
     Test generate_tiles with scheduler - avoid duplicate tile job
     """
     tile_scheduler, tile_spec, job_id = scheduler_fixture
-    schedule_time = datetime.utcnow()
-    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
+    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec)
     assert sql is not None
 
-    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
+    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec)
     assert sql is None
 
 
@@ -100,12 +92,11 @@ async def test_generate_tiles_with_scheduler__tile_job_exists(
     Test generate_tiles with scheduler - test tile_job_exists
     """
     tile_scheduler, tile_spec, job_id = scheduler_fixture
-    schedule_time = datetime.utcnow()
 
     exists = await tile_manager.tile_job_exists(tile_spec=tile_spec)
     assert exists is False
 
-    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
+    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec)
     assert sql is not None
 
     exists = await tile_manager.tile_job_exists(tile_spec=tile_spec)
