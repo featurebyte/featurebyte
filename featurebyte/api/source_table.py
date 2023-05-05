@@ -949,6 +949,8 @@ class SourceTable(AbstractTableData):
         self,
         name: str,
         sample_rows: Optional[int] = None,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> ObservationTable:
         """
         Create an observation table from this source table.
@@ -960,10 +962,30 @@ class SourceTable(AbstractTableData):
         sample_rows: Optional[int]
             Optionally sample the source table to this number of rows before creating the
             observation table.
+        columns: Optional[list[str]]
+            Include only these columns when creating the observation table. If None, all columns are
+            included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the source table using this mapping from old column names to new
+            column names when creating the observation table. If None, no columns are renamed.
 
         Returns
         -------
         ObservationTable
+
+        Examples
+        --------
+        >>> ds = fb.FeatureStore.get(<feature_store_name>).get_data_source()  # doctest: +SKIP
+        >>> source_table = ds.get_source_table(  # doctest: +SKIP
+        ...   database_name="<data_base_name>",
+        ...   schema_name="<schema_name>",
+        ...   table_name=<table_name>
+        ... )
+        >>> observation_table = source_table.create_observation_table(  # doctest: +SKIP
+        ...   "<observation_table_name>",
+        ...   sample_rows=10000,
+        ...   columns_rename_mapping={"timestamp": "POINT_IN_TIME"},
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.observation_table import ObservationTable
@@ -971,7 +993,11 @@ class SourceTable(AbstractTableData):
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=SourceTableRequestInput(source=self.tabular_source),
+            request_input=SourceTableRequestInput(
+                source=self.tabular_source,
+                columns=columns,
+                columns_rename_mapping=columns_rename_mapping,
+            ),
             sample_rows=sample_rows,
         )
         observation_table_doc = ObservationTable.post_async_task(
@@ -982,6 +1008,8 @@ class SourceTable(AbstractTableData):
     def create_batch_request_table(
         self,
         name: str,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> BatchRequestTable:
         """
         Create a batch request table from this source table.
@@ -990,6 +1018,12 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             Batch request table name.
+        columns: Optional[list[str]]
+            Include only these columns when creating the batch request table. If None, all columns
+            are included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the source table using this mapping from old column names to new
+            column names when creating the batch request table. If None, no columns are renamed.
 
         Returns
         -------
@@ -1001,7 +1035,11 @@ class SourceTable(AbstractTableData):
         payload = BatchRequestTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=SourceTableRequestInput(source=self.tabular_source),
+            request_input=SourceTableRequestInput(
+                source=self.tabular_source,
+                columns=columns,
+                columns_rename_mapping=columns_rename_mapping,
+            ),
         )
         batch_request_table_doc = BatchRequestTable.post_async_task(
             route="/batch_request_table", payload=payload.json_dict()

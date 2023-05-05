@@ -1350,7 +1350,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return FeatureGroup(features)
 
     def create_observation_table(
-        self, name: str, sample_rows: Optional[int] = None
+        self,
+        name: str,
+        sample_rows: Optional[int] = None,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> ObservationTable:
         """
         Create an ObservationTable from the View.
@@ -1362,17 +1366,37 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         sample_rows: Optional[int]
             Optionally sample the source table to this number of rows before creating the
             observation table.
+        columns: Optional[list[str]]
+            Include only these columns in the view when creating the observation table. If None, all
+            columns are included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the view using this mapping from old column names to new column names
+            when creating the observation table. If None, no columns are renamed.
 
         Returns
         -------
         ObservationTable
             ObservationTable object.
+
+        Examples
+        --------
+        >>> observation_table = view.create_observation_table(  # doctest: +SKIP
+        ...   name="<observation_table_name>",
+        ...   sample_rows=10000,
+        ...   columns=["timestamp", "<entity_serving_name>"],
+        ...   columns_rename_mapping={"timestamp": "POINT_IN_TIME"},
+        ... )
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=ViewObservationInput(graph=pruned_graph, node_name=mapped_node.name),
+            request_input=ViewObservationInput(
+                graph=pruned_graph,
+                node_name=mapped_node.name,
+                columns=columns,
+                columns_rename_mapping=columns_rename_mapping,
+            ),
             sample_rows=sample_rows,
         )
         observation_table_doc = ObservationTable.post_async_task(
@@ -1383,6 +1407,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     def create_batch_request_table(
         self,
         name: str,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> BatchRequestTable:
         """
         Create a BatchRequestTable from the View.
@@ -1391,6 +1417,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ----------
         name: str
             Name of the BatchRequestTable.
+        columns: Optional[list[str]]
+            Include only these columns in the view when creating the batch request table. If None,
+            all columns are included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the view using this mapping from old column names to new column names
+            when creating the batch request table. If None, no columns are renamed.
 
         Returns
         -------
@@ -1401,7 +1433,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         payload = BatchRequestTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=ViewBatchRequestInput(graph=pruned_graph, node_name=mapped_node.name),
+            request_input=ViewBatchRequestInput(
+                graph=pruned_graph,
+                node_name=mapped_node.name,
+                columns=columns,
+                columns_rename_mapping=columns_rename_mapping,
+            ),
         )
         batch_request_table_doc = BatchRequestTable.post_async_task(
             route="/batch_request_table", payload=payload.json_dict()

@@ -7,7 +7,7 @@ import tempfile
 import traceback
 from datetime import datetime
 from unittest import mock
-from unittest.mock import Mock, PropertyMock, patch
+from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 from uuid import uuid4
 
 import pandas as pd
@@ -797,6 +797,9 @@ def patched_observation_table_service():
     with patch(
         "featurebyte.service.observation_table.ObservationTableService.validate_materialized_table_and_get_metadata",
         Mock(side_effect=mocked_get_additional_metadata),
+    ), patch(
+        "featurebyte.models.request_input.BaseRequestInput.get_column_names",
+        AsyncMock(return_value=["event_timestamp", "cust_id", "extra_col"]),
     ):
         yield
 

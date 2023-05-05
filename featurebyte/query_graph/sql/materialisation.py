@@ -3,8 +3,10 @@ SQL generation related to materialising tables such as ObservationTable
 """
 from __future__ import annotations
 
+from typing import Optional
+
 from sqlglot import expressions
-from sqlglot.expressions import Select
+from sqlglot.expressions import Select, alias_, select
 
 from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -128,3 +130,34 @@ def get_row_count_sql(table_expr: Select, source_type: SourceType) -> str:
         )
     ).from_(table_expr.subquery())
     return sql_to_string(expr, source_type=source_type)
+
+
+def select_and_rename_columns(
+    table_expr: Select,
+    columns: list[str],
+    columns_rename_mapping: Optional[dict[str, str]],
+) -> Select:
+    """
+    Select columns from a table expression
+
+    Parameters
+    ----------
+    table_expr: Select
+        Table expression
+    columns: list[str]
+        List of column names
+    columns_rename_mapping: dict[str, str]
+        Mapping from column names to new column names
+
+    Returns
+    -------
+    Select
+    """
+    if columns_rename_mapping:
+        column_exprs = [
+            alias_(quoted_identifier(col), columns_rename_mapping.get(col, col), quoted=True)
+            for col in columns
+        ]
+    else:
+        column_exprs = [quoted_identifier(col) for col in columns]
+    return select(*column_exprs).from_(table_expr.subquery())
