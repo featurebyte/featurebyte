@@ -417,7 +417,7 @@ class FeatureList(
         >>> info = feature_list.info()
         >>> del info["created_at"]
         >>> del info["updated_at"]
-        >>> info
+        >>> info  # doctest: +ELLIPSIS
         {
           'name': 'invoice_feature_list',
           'entities': [
@@ -457,8 +457,8 @@ class FeatureList(
           'status': 'DRAFT',
           'feature_count': 1,
           'version': {
-            'this': 'V230504',
-            'default': 'V230504'
+            'this': ...,
+            'default': ...
           },
           'production_ready_fraction': {
             'this': 1.0,
