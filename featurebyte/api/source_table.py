@@ -1008,7 +1008,7 @@ class SourceTable(AbstractTableData):
         >>> observation_table = source_table.create_observation_table(  # doctest: +SKIP
         ...   "<observation_table_name>",
         ...   sample_rows=10000,
-        ...   columns_mapping={"timestamp": "POINT_IN_TIME"},
+        ...   columns_rename_mapping={"timestamp": "POINT_IN_TIME"},
         ... )
         """
         # pylint: disable=import-outside-toplevel
