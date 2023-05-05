@@ -33,9 +33,15 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
             hasattr(self._task, "time_modulo_frequency_second")
             and self._task.time_modulo_frequency_second is not None
         ):
-            # handle due check for jobs with time modulo frequency
+            # handle due check for jobs with time modulo frequency:
+            # - attempt to launch a job as early as possible within the interval
+            # - if the last run was in the current interval, we are done
+
+            # get current time and last run time in utc
             now = datetime.datetime.utcnow()
             last_run_at = self._task.last_run_at.replace(tzinfo=None)
+
+            # compute total seconds since epoch shifted by time modulo frequency
             interval_seconds = datetime.timedelta(
                 **{self._task.interval.period: self._task.interval.every}
             ).total_seconds()
@@ -43,24 +49,19 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
                 now - self.epoch_time
             ).total_seconds() - self._task.time_modulo_frequency_second
 
-            # check if we are within trigger window
-            time_after_scheduled_seconds = total_seconds % interval_seconds
-            next_check = int(interval_seconds - time_after_scheduled_seconds)
-            if 0 <= time_after_scheduled_seconds < 5:
-                # check if job already ran in this window
-                if (
-                    last_run_at
-                    and (now - last_run_at).total_seconds() > time_after_scheduled_seconds
-                ):
-                    # trigger and schedule next check
-                    return True, next_check
-            elif (
-                not last_run_at
-                or (now - last_run_at).total_seconds() > time_after_scheduled_seconds
-            ):
-                # trigger and schedule next check
-                return True, next_check
-            return False, next_check
+            # how many seconds has elapsed since the start of the current interval
+            seconds_since_interval_start = total_seconds % interval_seconds
+
+            # how many seconds to next interval
+            seconds_to_next_interval = int(interval_seconds - seconds_since_interval_start)
+
+            # if the last run did not happen in the current interval, we are due
+            if (now - last_run_at).total_seconds() > seconds_since_interval_start:
+                # trigger and and check when next interval starts
+                return True, seconds_to_next_interval
+
+            # last run happened in the current interval, wait until next interval
+            return False, seconds_to_next_interval
 
         return super().is_due()
 
