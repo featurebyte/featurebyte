@@ -1,4 +1,4 @@
--- url: https://storage.googleapis.com/featurebyte-public-datasets/creditcard.tar.gz
+-- url: https://storage.googleapis.com/featurebyte-public-datasets/creditcard_20230506.tar.gz
 -- description: CreditCard Dataset
 
 DROP DATABASE IF EXISTS CREDITCARD CASCADE;
@@ -10,7 +10,8 @@ USING parquet OPTIONS (
     path '{staging_path}/BankCustomer.parquet'
 );
 CREATE TABLE CREDITCARD.__BANKCUSTOMER USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW CREDITCARD.BANKCUSTOMER(
+CREATE OR REPLACE VIEW CREDITCARD.BANKCUSTOMER AS
+SELECT
 	`RowID`,
 	`BankCustomerID`,
 	`ValidFrom`,
@@ -29,8 +30,7 @@ CREATE OR REPLACE VIEW CREDITCARD.BANKCUSTOMER(
 	`Longitude`,
 	`record_available_at`,
 	`closed_at`
-) as
-SELECT * FROM CREDITCARD.__BANKCUSTOMER
+FROM CREDITCARD.__BANKCUSTOMER
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate CardFraudStatus
@@ -39,15 +39,15 @@ USING parquet OPTIONS (
     path '{staging_path}/CardFraudStatus.parquet'
 );
 CREATE TABLE CREDITCARD.__CARDFRAUDSTATUS USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW CREDITCARD.CARDFRAUDSTATUS(
+CREATE OR REPLACE VIEW CREDITCARD.CARDFRAUDSTATUS AS
+SELECT
 	`RowID`,
 	`CardTransactionID`,
 	`Status`,
 	`ValidFrom`,
 	`ValidTo`,
 	`record_available_at`
-) as
-SELECT * FROM CREDITCARD.__CARDFRAUDSTATUS
+FROM CREDITCARD.__CARDFRAUDSTATUS
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate CardTransactions
@@ -56,15 +56,16 @@ USING parquet OPTIONS (
     path '{staging_path}/CardTransactions.parquet'
 );
 CREATE TABLE CREDITCARD.__CARDTRANSACTIONS USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW CREDITCARD.CARDTRANSACTIONS(
+CREATE OR REPLACE VIEW CREDITCARD.CARDTRANSACTIONS AS
+SELECT
 	`CardTransactionID`,
 	`AccountID`,
 	`Timestamp`,
-	`record_available_at`,
+	`tz_offset`,
 	`CardTransactionDescription`,
-	`Amount`
-) as
-SELECT * FROM CREDITCARD.__CARDTRANSACTIONS
+	`Amount`,
+	`record_available_at`
+FROM CREDITCARD.__CARDTRANSACTIONS
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate CreditCard
@@ -73,7 +74,8 @@ USING parquet OPTIONS (
     path '{staging_path}/CreditCard.parquet'
 );
 CREATE TABLE CREDITCARD.__CREDITCARD USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW CREDITCARD.CREDITCARD(
+CREATE OR REPLACE VIEW CREDITCARD.CREDITCARD AS
+SELECT
 	`RowID`,
 	`AccountID`,
 	`BankCustomerID`,
@@ -83,8 +85,7 @@ CREATE OR REPLACE VIEW CREDITCARD.CREDITCARD(
 	`CardExpiry`,
 	`CVV2`,
 	`closed_at`
-) as
-SELECT * FROM CREDITCARD.__CREDITCARD
+FROM CREDITCARD.__CREDITCARD
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate StateDetails
@@ -93,7 +94,9 @@ USING parquet OPTIONS (
     path '{staging_path}/StateDetails.parquet'
 );
 CREATE TABLE CREDITCARD.__STATEDETAILS USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW CREDITCARD.STATEDETAILS(
+CREATE OR REPLACE VIEW CREDITCARD.STATEDETAILS AS
+SELECT
+  `RowID`,
 	`StateGuid`,
 	`StateCode`,
 	`StateName`,
@@ -108,8 +111,7 @@ CREATE OR REPLACE VIEW CREDITCARD.STATEDETAILS(
 	`TotalPopulation`,
 	`ValidFrom`,
 	`record_available_at`
-) as
-SELECT * FROM CREDITCARD.__STATEDETAILS
+FROM CREDITCARD.__STATEDETAILS
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate CardTransactionGroups
