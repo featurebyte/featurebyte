@@ -17,6 +17,7 @@ from sqlglot import expressions
 from featurebyte import get_version
 from featurebyte.api.source_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
+from featurebyte.core.mixin import SampleMixin
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
@@ -419,3 +420,10 @@ def check_observation_table_creation_query(query, expected):
     query = re.sub(r"OBSERVATION_TABLE_\w{24}", "OBSERVATION_TABLE", query)
     expected = textwrap.dedent(expected).strip()
     assert query == expected
+
+
+def get_preview_sql_for_series(series_obj, *args, **kwargs):
+    """
+    Helper function to get the preview SQL for a series
+    """
+    return SampleMixin.preview_sql(series_obj, *args, **kwargs)

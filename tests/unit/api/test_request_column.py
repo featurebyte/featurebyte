@@ -66,14 +66,6 @@ def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature, u
     )
 
 
-def test_request_column_preview_sql_blocked():
-    """
-    Test preview_sql() is blocked for RequestColumn
-    """
-    with pytest.raises(NotImplementedError):
-        _ = RequestColumn.point_in_time().preview_sql()
-
-
 def test_request_column_non_point_in_time_blocked():
     """
     Test non-point-in-time request column is blocked

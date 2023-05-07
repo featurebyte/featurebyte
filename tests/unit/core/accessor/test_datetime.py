@@ -6,6 +6,7 @@ import pytest
 from featurebyte.core.accessor.datetime import DatetimeAccessor
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from tests.util.helper import get_preview_sql_for_series
 
 
 @pytest.mark.parametrize(
@@ -43,7 +44,7 @@ def test_datetime_property_extraction__timestamp(
     assert series.node.type == NodeType.DT_EXTRACT
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
-    assert series.preview_sql() == expected_sql
+    assert get_preview_sql_for_series(series) == expected_sql
 
 
 def test_accessor_getattr__timestamp(timestamp_series):
@@ -138,7 +139,7 @@ def test_datetime_property_extraction__timedelta(
     assert series.node.type == NodeType.TIMEDELTA_EXTRACT
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
-    assert series.preview_sql() == expected_sql
+    assert get_preview_sql_for_series(series) == expected_sql
 
 
 def test_accessor_getattr__timedelta(timedelta_series):
@@ -230,7 +231,7 @@ def test_datetime_property_extraction__timedelta_from_int(
     assert series.node.type == NodeType.TIMEDELTA_EXTRACT
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
-    assert series.preview_sql() == expected_sql
+    assert get_preview_sql_for_series(series) == expected_sql
 
 
 @pytest.mark.parametrize("property_name", ["millisecond", "microsecond"])

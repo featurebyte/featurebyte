@@ -12,7 +12,6 @@ from abc import abstractmethod
 from cachetools import LRUCache, cachedmethod
 from cachetools.keys import hashkey
 from pydantic import Field, root_validator
-from typeguard import typechecked
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -23,7 +22,6 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
-from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 
@@ -207,30 +205,6 @@ class QueryObject(FeatureByteBaseModel):
         }
         state = SDKCodeExtractor(graph=pruned_graph).extract(node=node, **extract_kwargs)
         return state.code_generator.generate(to_format=to_format)
-
-    def _preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
-        return GraphInterpreter(
-            pruned_graph, source_type=self.feature_store.type
-        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
-
-    @typechecked
-    def preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
-        """
-        Generate SQL query to preview the transformation output
-
-        Parameters
-        ----------
-        limit: int
-            maximum number of return rows
-        **kwargs: Any
-            Additional keyword parameters
-
-        Returns
-        -------
-        str
-        """
-        return self._preview_sql(limit=limit, **kwargs)
 
     def copy(
         self: QueryObjectT,

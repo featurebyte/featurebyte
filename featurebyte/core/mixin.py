@@ -22,8 +22,10 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
@@ -198,7 +200,7 @@ class HasExtractPrunedGraphAndNode(Protocol):
     feature_store: FeatureStoreModel
 
     @abstractmethod
-    def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraph, Node]:
+    def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
         Extract pruned graph & node from the global query graph
 
@@ -514,3 +516,24 @@ class SampleMixin:
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         return dataframe_from_json(response.json())
+
+    @typechecked
+    def preview_sql(self: HasExtractPrunedGraphAndNode, limit: int = 10, **kwargs: Any) -> str:
+        """
+        Generate SQL query to preview the transformation output
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        str
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        return GraphInterpreter(
+            pruned_graph, source_type=self.feature_store.type
+        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
