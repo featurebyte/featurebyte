@@ -4,7 +4,7 @@ SparkSession class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, Optional, OrderedDict
+from typing import Any, AsyncGenerator, Optional, OrderedDict
 
 import collections
 
@@ -16,7 +16,6 @@ from pydantic import Field
 from pyhive.exc import OperationalError
 from pyhive.hive import Cursor
 
-from featurebyte.common.utils import create_new_arrow_stream_writer
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.logging import get_logger
 from featurebyte.session.base_spark import BaseSparkSession
@@ -120,8 +119,7 @@ class SparkSession(BaseSparkSession):
                 )
         return column_name_type_map
 
-    @staticmethod
-    def _get_pyarrow_type(datatype: str) -> pa.types:
+    def _get_pyarrow_type(self, datatype: str) -> pa.types:
         """
         Get pyarrow type from Spark data type
 
@@ -166,8 +164,7 @@ class SparkSession(BaseSparkSession):
             pyarrow_type = pa.string()
         return pyarrow_type
 
-    @staticmethod
-    def _process_batch_data(data: pd.DataFrame, schema: Schema) -> pd.DataFrame:
+    def _process_batch_data(self, data: pd.DataFrame, schema: Schema) -> pd.DataFrame:
         """
         Process batch data before converting to PyArrow record batch.
 
@@ -193,8 +190,7 @@ class SparkSession(BaseSparkSession):
                 data[column] = pd.to_datetime(data[column])
         return data
 
-    @staticmethod
-    def _read_batch(cursor: Cursor, schema: Schema, batch_size: int = 1000) -> pa.RecordBatch:
+    def _read_batch(self, cursor: Cursor, schema: Schema, batch_size: int = 1000) -> pa.RecordBatch:
         """
         Fetch a batch of rows from a query result, returning them as a PyArrow record batch.
 
@@ -214,14 +210,13 @@ class SparkSession(BaseSparkSession):
         """
         results = cursor.fetchmany(batch_size)
         return pa.record_batch(
-            SparkSession._process_batch_data(
+            self._process_batch_data(
                 pd.DataFrame(results if results else None, columns=schema.names), schema
             ),
             schema=schema,
         )
 
-    @staticmethod
-    def fetchall_arrow(cursor: Cursor) -> pa.Table:
+    def fetchall_arrow(self, cursor: Cursor) -> pa.Table:
         """
         Fetch all (remaining) rows of a query result, returning them as a PyArrow table.
 
@@ -235,14 +230,11 @@ class SparkSession(BaseSparkSession):
         pa.Table
         """
         schema = pa.schema(
-            {
-                metadata[0]: SparkSession._get_pyarrow_type(metadata[1])
-                for metadata in cursor.description
-            }
+            {metadata[0]: self._get_pyarrow_type(metadata[1]) for metadata in cursor.description}
         )
         record_batches = []
         while True:
-            record_batch = SparkSession._read_batch(cursor, schema)
+            record_batch = self._read_batch(cursor, schema)
             record_batches.append(record_batch)
             if record_batch.num_rows == 0:
                 break
@@ -252,18 +244,13 @@ class SparkSession(BaseSparkSession):
         arrow_table = self.fetchall_arrow(cursor)
         return arrow_table.to_pandas()
 
-    def fetch_query_stream_impl(self, cursor: Any, output_pipe: Any) -> None:
-        # fetch results in batches and write to the stream
+    async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
+        # fetch results in batches
         schema = pa.schema(
-            {
-                metadata[0]: SparkSession._get_pyarrow_type(metadata[1])
-                for metadata in cursor.description
-            }
+            {metadata[0]: self._get_pyarrow_type(metadata[1]) for metadata in cursor.description}
         )
-        writer = create_new_arrow_stream_writer(output_pipe, schema)
         while True:
-            record_batch = SparkSession._read_batch(cursor, schema)
-            writer.write_batch(record_batch)
+            record_batch = self._read_batch(cursor, schema)
+            yield record_batch
             if record_batch.num_rows == 0:
                 break
-        writer.close()
