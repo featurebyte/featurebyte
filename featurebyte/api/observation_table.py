@@ -48,3 +48,56 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         >>> observation_table.to_pandas()  # doctest: +SKIP
         """
         return super().to_pandas()
+
+    def preview(self, limit: int = 10) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains a selection of rows of the observation table.
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preview rows of the table.
+        """
+        return super().preview(limit=limit)
+
+    def sample(self, size: int = 10, seed: int = 1234) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains a random selection of rows of the observation table based on a
+        specified size and seed for sampling control.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample.
+        seed: int
+            Seed to use for random sampling.
+
+        Returns
+        -------
+        pd.DataFrame
+            Sampled rows from the table.
+        """
+        return super().sample(size=size, seed=seed)
+
+    def describe(self, size: int = 0, seed: int = 1234) -> pd.DataFrame:
+        """
+        Returns descriptive statistics of the observation table.
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample. If 0, all rows will be used.
+        seed: int
+            Seed to use for random sampling.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary of the table.
+        """
+        return super().describe(size=size, seed=seed)
