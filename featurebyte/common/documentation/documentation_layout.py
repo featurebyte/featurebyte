@@ -809,6 +809,9 @@ def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([BATCH_FEATURE_TABLE]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, EXPLORE, "BatchFeatureTable.describe"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, EXPLORE, "BatchFeatureTable.preview"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, EXPLORE, "BatchFeatureTable.sample"]),
         # DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.feature_store_name"]),
         # DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.batch_request_table_name"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.name"]),
@@ -833,6 +836,9 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([OBSERVATION_TABLE]),
+        DocLayoutItem([OBSERVATION_TABLE, EXPLORE, "ObservationTable.describe"]),
+        DocLayoutItem([OBSERVATION_TABLE, EXPLORE, "ObservationTable.preview"]),
+        DocLayoutItem([OBSERVATION_TABLE, EXPLORE, "ObservationTable.sample"]),
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.name"]),
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.context_id"]),
         # DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.type"]),
@@ -857,6 +863,9 @@ def _get_batch_request_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([BATCH_REQUEST_TABLE]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, EXPLORE, "BatchRequestTable.describe"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, EXPLORE, "BatchRequestTable.preview"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, EXPLORE, "BatchRequestTable.sample"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.context_id"]),
         # DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.type"]),
         # DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.feature_store_name"]),
@@ -881,6 +890,9 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([HISTORICAL_FEATURE_TABLE]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, EXPLORE, "HistoricalFeatureTable.describe"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, EXPLORE, "HistoricalFeatureTable.preview"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, EXPLORE, "HistoricalFeatureTable.sample"]),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.name"]),
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.feature_store_name"]),
         # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_name"]),

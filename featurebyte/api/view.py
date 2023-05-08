@@ -1098,62 +1098,65 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         rsuffix: str = "",
     ) -> ViewT:
         """
-        Joins the current view with another view. The calling View can be of any type with the exception that columns
-        from a SCDView can’t be added to a DimensionView or a SCDView.
+        To join two views, use the join() method of the left view and specify the right view object in the other_view
+        parameter. The method will match rows from both views based on a shared key, which is either the primary key
+        of the right view or the natural key if the right view is a Slowly Changing Dimension (SCD) view.
 
-        When the other View is a SCDView, the record that is joined is the record active at the event_timestamp of
-        the EventView or ItemView.
+        If the shared key identifies an entity that is referenced in the left view or the column name of the shared
+        key is the same in both views, the join() method will automatically identify the column in the left view to
+        use for the join.
 
-        Supported Joins
-        ```
-        |  Main ↓ / Joined →  |   Event   |   SCD     |   Item    |   Dimension   |   Change       |
-        |---------------------|-----------|-----------|-----------|---------------|----------------|
-        |  Event              |   Y       |   Y       |   Y       |   Y           |   N            |
-        |  SCD                |   Y       |   Later   |   Y       |   Y           |   N            |
-        |  Item               |   Y       |   Y       |   Y       |   Y           |   N            |
-        |  Dimension          |   N       |   N       |   N       |   Y           |   N            |
-        |  Change             |   Y       |   Y       |   Y       |   Y           |   N            |
-        ```
+        By default, a left join is performed, and the resulting view will have the same number of rows as the left
+        view. However, you can set the how parameter to 'inner' to perform an inner join. In this case, the resulting
+        view will only contain rows where there is a match between the columns in both tables.
+
+        When the right view is an SCD view, the event timestamp of the left view determines which record of the right
+        view to join.
 
         Parameters
         ----------
         other_view: View
-            the other view that we want to join with. This should only be a SCDView, or DimensionView.
+            The right view that you want to join. Its primary key (natural key if the view is an SCD) must be
+            represented by a column in the left view.
         on: Optional[str]
-            Column name in the caller to join on the index in other_view. ‘on’ argument is optional if:
-            - the name of the key column in the calling view is the same name as the natural (primary) key in the
-              other view.
-            - the primary key of the Dimension View or the natural key of the SCD View is an entity that has been
-              tagged in the 2 views.
+            Column name in the left view to use for the join. Note the ‘on’ argument is optional if:
+            - the column name of the shared key is the same in both views.
+            - the shared key identifies an entity that is referenced in the left view and the columns in the two
+            views have been tagged with the entity reference.
         how: str
-            Argument is optional. Describes how we want to join the two views together. The default value is ‘left’,
-            which indicates a left join.
+            The argument is optional. The default value is ‘left’, which indicates a left join. The resulting view
+            will have the same number of rows as the left view. If ‘inner’ is selected, the resulting view will only
+            contain rows where there is a match between the columns in both tables.
         rsuffix: str
-            Argument is used if the two views have overlapping column names and disambiguates such column names after
-            join. The default rsuffix is an empty string - ''.
+            The argument is used if the two views have overlapping column names and disambiguates such column
+            names after join. The default rsuffix is an empty string - ''.
 
         Returns
         -------
         ViewT
-            The joined view which has the same type as this view.
+            The joined view. Its type is the same as the left view.
 
         Examples
         --------
-        Specify the column name in the caller to join on the natural (primary) key in the other_view.
-
-        >>> items_view = catalog.get_view("INVOICEITEMS")
-        >>> product_view = catalog.get_view("GROCERYPRODUCT")
-        >>> items_view_with_product_group = items_view.join(product_view, on="GroceryProductGuid")
-
-
         Use the automated mode if one of the 2 following conditions are met:
 
-        - the name of the key column in the calling view is the same name as the natural (primary) key in the other view
-        - the natural (primary) key in the other view represents an entity that has been tagged in the 2 views.
+        - the column name of the shared key is the same in both views.
+        - the shared key identifies an entity that is referenced in the left view and the columns in the two views
+        have been tagged with the entity reference.
 
         >>> items_view = catalog.get_view("INVOICEITEMS")
         >>> product_view = catalog.get_view("GROCERYPRODUCT")
         >>> items_view_with_product_group = items_view.join(product_view)
+
+
+        If not, specify the column name in the left view that represents the right view’s primary key (natural key if
+        the view is an SCD).
+
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> product_view = catalog.get_view("GROCERYPRODUCT")
+        >>> items_view_with_product_group = items_view.join(
+        ...   product_view, on="GroceryProductGuid"
+        ... )
 
 
         Use an inner join if you want the returned view to be filtered and contain only the rows that have matching
