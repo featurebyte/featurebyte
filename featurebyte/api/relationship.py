@@ -194,9 +194,7 @@ class Relationship(ApiObject):
         """
         self.update({"enabled": False}, allow_update_local=True, add_internal_prefix=True)
 
-    def info(  # pylint: disable=useless-parent-delegation
-        self, verbose: bool = False
-    ) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of the relationship represented by the
         Relationship object. The dictionary contains the following keys:

@@ -126,16 +126,20 @@ class ViewColumn(Series, SampleMixin):
         Examples
         --------
         Sample 3 rows of a column.
-        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].sample(
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].sample(3)
+          ProductGroup
+        0       Épices
+        1         Chat
+        2        Pains
+
+
+        Sample 3 rows of a column with timestamp.
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].sample(  # doctest: +SKIP
         ...   size=3,
         ...   seed=123,
         ...   from_timestamp="2020-01-01",
         ...   to_timestamp="2023-01-31"
         ... )
-          ProductGroup
-        0       Épices
-        1         Chat
-        2        Pains
 
         See Also
         --------
@@ -209,6 +213,10 @@ class ViewColumn(Series, SampleMixin):
         Examples
         --------
         Get summary of a column.
+        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].describe()
+
+
+        Get summary of a column with timestamp.
         >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].describe(
         ...   from_timestamp="2020-01-01",
         ...   to_timestamp="2023-01-31"
