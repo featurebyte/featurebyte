@@ -84,6 +84,9 @@ class DocLayoutItem:
     # the documentation repo.
     core_doc_path_override: Optional[str] = None
 
+    # Used to flag pure methods that aren't part of a class.
+    is_pure_method: Optional[bool] = False
+
     def get_api_path_override(self) -> str:
         if not self.menu_header:
             return ""
@@ -664,6 +667,7 @@ def _get_utility_methods_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [UTILITY_METHODS, TRANSFORM, "to_timedelta"],
             doc_path_override="core.timedelta.to_timedelta.md",
+            is_pure_method=True,
         ),
     ]
 
