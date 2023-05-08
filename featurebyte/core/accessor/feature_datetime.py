@@ -75,7 +75,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         3 2022-01-10 16:18:32           2022
         4 2022-01-12 17:36:23           2022
         """
-        return super().year
+        return super().year  # type: ignore[return-value]
 
     @property
     def quarter(self) -> Feature:
@@ -101,7 +101,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         3 2022-01-10 16:18:32                 1
         4 2022-01-12 17:36:23                 1
         """
-        return super().quarter
+        return super().quarter  # type: ignore[return-value]
 
     @property
     def month(self) -> Feature:
@@ -127,7 +127,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         3 2022-01-10 16:18:32               1
         4 2022-01-12 17:36:23               1
         """
-        return super().month
+        return super().month  # type: ignore[return-value]
 
     @property
     def week(self) -> Feature:
@@ -153,7 +153,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         3 2022-01-10 16:18:32              2
         4 2022-01-12 17:36:23              2
         """
-        return super().week
+        return super().week  # type: ignore[return-value]
 
     @property
     def day(self) -> Feature:
@@ -196,7 +196,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         3  007a07da-1525-49be-94d1-fc7251f46a66 2022-03-09 18:51:16 2022-02-04 13:06:35                   33.239363
         4  007a07da-1525-49be-94d1-fc7251f46a66 2022-03-15 15:08:34 2022-03-09 18:51:16                    5.845347
         """
-        return super().day
+        return super().day  # type: ignore[return-value]
 
     @property
     def day_of_week(self) -> Feature:
@@ -222,7 +222,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         3 2022-01-10 16:18:32                   0
         4 2022-01-12 17:36:23                   2
         """
-        return super().day_of_week
+        return super().day_of_week  # type: ignore[return-value]
 
     @property
     def hour(self) -> Feature:
@@ -251,7 +251,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         3 2022-01-10 16:18:32             16
         4 2022-01-12 17:36:23             17
         """
-        return super().hour
+        return super().hour  # type: ignore[return-value]
 
     @property
     def minute(self) -> Feature:
@@ -280,7 +280,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         3 2022-01-10 16:18:32               18
         4 2022-01-12 17:36:23               36
         """
-        return super().minute
+        return super().minute  # type: ignore[return-value]
 
     @property
     def second(self) -> Feature:
@@ -310,7 +310,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         3 2022-01-10 16:18:32             32.0
         4 2022-01-12 17:36:23             23.0
         """
-        return super().second
+        return super().second  # type: ignore[return-value]
 
     @property
     def millisecond(self) -> Feature:
@@ -325,7 +325,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Feature
             Feature containing the millisecond component values
         """
-        return super().millisecond
+        return super().millisecond  # type: ignore[return-value]
 
     @property
     def microsecond(self) -> Feature:
@@ -340,4 +340,4 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Feature
             Feature containing the microsecond component values
         """
-        return super().microsecond
+        return super().microsecond  # type: ignore[return-value]
