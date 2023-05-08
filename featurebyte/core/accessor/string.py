@@ -233,7 +233,7 @@ class StringAccessor:
     @typechecked
     def rstrip(self, to_strip: Optional[str] = None) -> FrozenSeries:
         """
-        Removes leading characters (whitespaces by default) from each string element.
+        Removes trailing characters (whitespaces by default) from each string element.
 
         Parameters
         ----------
@@ -248,7 +248,7 @@ class StringAccessor:
         Examples
         --------
 
-        Remove leading "M" characters from the Title column:
+        Remove trailing "M" characters from the Title column:
 
         >>> view = catalog.get_view("GROCERYCUSTOMER")
         >>> view["TitleStrip"] = view["Title"].str.rstrip(".")

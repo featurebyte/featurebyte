@@ -52,7 +52,7 @@ class FeatureStringAccessor(StringAccessor):
         Examples
         --------
 
-        Compute the length of each string element in the ProductGroup column:
+        Compute the length of each string element in the ProductGroupLookup feature:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
@@ -72,7 +72,7 @@ class FeatureStringAccessor(StringAccessor):
         Examples
         --------
 
-        Convert the ProductGroup column to lower case:
+        Convert the ProductGroupLookup feature to lower case:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
@@ -92,7 +92,7 @@ class FeatureStringAccessor(StringAccessor):
         Examples
         --------
 
-        Convert the ProductGroup column to upper case:
+        Convert the ProductGroupLookup feature to upper case:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
@@ -167,7 +167,7 @@ class FeatureStringAccessor(StringAccessor):
         Examples
         --------
 
-        Remove leading "M" characters from the Title column:
+        Remove trailing "M" characters from the Title column:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
@@ -194,7 +194,7 @@ class FeatureStringAccessor(StringAccessor):
         Examples
         --------
 
-        Replace "Windows" with "Win" in the ProductGroup column:
+        Replace "Windows" with "Win" in the ProductGroupLookup feature:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
@@ -227,7 +227,7 @@ class FeatureStringAccessor(StringAccessor):
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["PostalCodePadded"] = feature.str.pad(10, fillchar="0")
+        >>> feature_group["ProductGroupLookupPadded"] = feature.str.pad(10, fillchar="0")
         """
         return super().pad(width=width, side=side, fillchar=fillchar)
 
@@ -250,7 +250,7 @@ class FeatureStringAccessor(StringAccessor):
         Examples
         --------
 
-        Check whether the ProductGroup column contains "x64":
+        Check whether the ProductGroupLookup feature contains "x64":
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
@@ -286,7 +286,7 @@ class FeatureStringAccessor(StringAccessor):
         Examples
         --------
 
-        Slice the first 10 characters from the ProductGroup column:
+        Slice the first 10 characters from the ProductGroupLookup feature:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
