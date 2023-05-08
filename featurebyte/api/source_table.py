@@ -336,6 +336,16 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         1  5720e4df-2996-4443-a1bc-3d896bf98140         Chat
         2  96fc4d80-8cb0-4f1b-af01-e71ad7e7104a        Pains
 
+
+        Sample 3 rows from the table with timestamps.
+        >>> catalog.get_table("GROCERYINVOICE").sample(  # doctest: +SKIP
+        ...   size=3,
+        ...   seed=111,
+        ...   from_timestamp=datetime(2019, 1, 1),
+        ...   to_timestamp=datetime(2023, 12, 31),
+        ...   after_cleaning=True,
+        ... )
+
         See Also
         --------
         - [Table.preview](/reference/featurebyte.api.base_table.TableApiObject.preview/):

@@ -343,21 +343,20 @@ class EventTable(TableApiObject):
 
         Examples
         --------
-
-        Configure a feature job to run daily at 12am
+        Configure a feature job setting to run daily at 1:05 am with a blind spot of 10 minutes.
 
         >>> from featurebyte import FeatureJobSetting
         >>> new_feature_job_setting = FeatureJobSetting(
-        ...   blind_spot="0",
+        ...   blind_spot="10m",
         ...   frequency="24h",
-        ...   time_modulo_frequency="0",
+        ...   time_modulo_frequency="65m",
         ... )
 
-        Update default feature job setting to the new feature job setting
+
+        Update default feature job setting to the new feature job setting.
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
-        >>> event_table.update_default_feature_job_setting(new_feature_job_setting)
-
+        >>> event_table.update_default_feature_job_setting(new_feature_job_setting)  # doctest: +SKIP
         """
         self.update(
             update_payload={"default_feature_job_setting": feature_job_setting.dict()},

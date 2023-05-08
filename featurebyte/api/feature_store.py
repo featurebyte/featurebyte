@@ -54,7 +54,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         - `created_at`: The timestamp indicating when the feature store owas created.
         - `updated_at`: The timestamp indicating when the FeatureStore object was last updated.
         - `source`: The type of the feature store (Spark, Snowflake, DataBricks,...).
-        - `database_details`: details of the database used by the feature store."
+        - `database_details`: details of the database used by the feature store.
 
         Parameters
         ----------
@@ -65,6 +65,11 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> feature_store = fb.FeatureStore.get(<feature_store_name>)  # doctest: +SKIP
+        >>> feature_store.info()  # doctest: +SKIP
         """
         return super().info(verbose)
 
@@ -102,6 +107,23 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         Returns
         -------
         FeatureStore
+
+        Examples
+        --------
+        >>> feature_store = fb.FeatureStore.create(  # doctest: +SKIP
+        ...     name="playground",
+        ...     source_type=SourceType.SPARK,
+        ...     details=fb.SparkDetails(
+        ...         host="spark-thrift",
+        ...         http_path="cliservice",
+        ...         port=10000,
+        ...         storage_type="file",
+        ...         storage_url="/data/staging/featurebyte",
+        ...         storage_spark_url="file:///opt/spark/data/staging/featurebyte",
+        ...         featurebyte_catalog="spark_catalog",
+        ...         featurebyte_schema="playground",
+        ...     )
+        ... )
         """
         # Construct object, and save to persistent layer.
         feature_store = FeatureStore(

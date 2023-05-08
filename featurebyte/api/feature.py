@@ -603,11 +603,16 @@ class Feature(
         user. These operations may include feature job settings and cleaning operations inherited from tables metadata.
 
         The feature definition file serves as the basis for generating the final logical execution graph, which is
-        then transpiled into platform-specific SQL (e.g. SnowSQL, SparkSQL) for feature materialization."
+        then transpiled into platform-specific SQL (e.g. SnowSQL, SparkSQL) for feature materialization.
 
         Returns
         -------
         str
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature_definition = feature.definition
         """
         try:
             definition = self.cached_model.definition

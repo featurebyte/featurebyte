@@ -132,6 +132,15 @@ class ViewColumn(Series, SampleMixin):
         1         Chat
         2        Pains
 
+
+        Sample 3 rows of a column with timestamp.
+        >>> catalog.get_view("GROCERYINVOICE")["Amount"].sample(  # doctest: +SKIP
+        ...   size=3,
+        ...   seed=123,
+        ...   from_timestamp="2020-01-01",
+        ...   to_timestamp="2023-01-31"
+        ... )
+
         See Also
         --------
         - [ViewColumn.preview](/reference/featurebyte.api.view.ViewColumn.preview/):
@@ -213,6 +222,13 @@ class ViewColumn(Series, SampleMixin):
         entropy              4.13031
         top       Chips et Tortillas
         freq                  1319.0
+
+
+        Get summary of a column with timestamp.
+        >>> catalog.get_view("GROCERYINVOICE")["Amount"].describe(  # doctest: +SKIP
+        ...   from_timestamp="2020-01-01",
+        ...   to_timestamp="2023-01-31"
+        ... )
         """
         return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
 
@@ -664,6 +680,13 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         entropy                               6.214608             4.13031
         top       017fe5ed-80a2-4e70-ae48-78aabfdee856  Chips et Tortillas
         freq                                       1.0              1319.0
+
+
+        Get summary of a view with timestamp.
+        >>> catalog.get_view("GROCERYINVOICE").describe(  # doctest: +SKIP
+        ...   from_timestamp=datetime(2019, 1, 1),
+        ...   to_timestamp=datetime(2019, 1, 31),
+        ... )
         """
         return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
 
@@ -730,11 +753,19 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Examples
         --------
         Sample rows of a view.
-        >>> catalog.get_view("GROCERYPRODUCT").sample(3)
+        >>> catalog.get_view("GROCERYPRODUCT").sample(size=3)
                              GroceryProductGuid ProductGroup
         0  e890c5cb-689b-4caf-8e49-6b97bb9420c0       Épices
         1  5720e4df-2996-4443-a1bc-3d896bf98140         Chat
         2  96fc4d80-8cb0-4f1b-af01-e71ad7e7104a        Pains
+
+
+        Sample rows of a view with timestamp.
+        >>> catalog.get_view("GROCERYINVOICE").sample(  # doctest: +SKIP
+        ...   size=3,
+        ...   from_timestamp=datetime(2019, 1, 1),
+        ...   to_timestamp=datetime(2019, 1, 31),
+        ... )
 
         See Also
         --------

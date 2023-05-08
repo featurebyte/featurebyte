@@ -1,7 +1,7 @@
 """
 Relationships API object
 """
-from typing import Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 import pandas as pd
 from pydantic import Field
@@ -193,3 +193,32 @@ class Relationship(ApiObject):
         >>> relationship.disable()  # doctest: +SKIP
         """
         self.update({"enabled": False}, allow_update_local=True, add_internal_prefix=True)
+
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of the relationship represented by the
+        Relationship object. The dictionary contains the following keys:
+
+        - `relationship_type`: The relationship type
+        - `entity_id`: The main entity of the relationship
+        - `related_entity_id`: The entity that the relationship is related to
+        - `relation_table_id`: The table that maps the relationship
+        - `enabled`: Whether the relationship is enabled
+        - `updated_by`: Who the relationship was updated by
+
+        Parameters
+        ----------
+        verbose: bool
+            The parameter "verbose" in the current state of the code does not have any impact on the output.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> relationship = fb.Relationship.get(<relationship_name>)  # doctest: +SKIP
+        >>> relationship.info()  # doctest: +SKIP
+        """
+        return super().info(verbose)
