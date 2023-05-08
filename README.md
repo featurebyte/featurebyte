@@ -1,5 +1,4 @@
-# featurebyte
-
+<h1 align="center"> The modern Feature Engineering & Management platform</h1>
 <div align="center">
 
 [![Build status](https://github.com/featurebyte/featurebyte/workflows/build/badge.svg?branch=main&event=push)](https://github.com/featurebyte/featurebyte/actions?query=workflow%3Abuild)
@@ -13,96 +12,28 @@
 [![License](https://img.shields.io/github/license/featurebyte/featurebyte)](https://github.com/featurebyte/featurebyte/blob/main/LICENSE)
 ![Coverage Report](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/kchua78/773e2960183c0a6fe24c644d95d71fdb/raw/coverage.json)
 
-**Next Generation Feature Engineering and Management**
-
 </div>
 
-## Overview
+FeatureByte is a **free and source available feature platform** designed to:
 
-Created for data scientists and data engineers, the FeatureByte SDK is a free and source available platform that radically simplifies the creation and serving of state-of-the-art Machine Learning features. It empowers data scientists to build, deploy and share features and production-ready machine learning data pipelines in minutes — instead of weeks or months.
+* **Create state-of-the-art features, not data pipelines:** Create features for Machine Learning with just a few lines of code. Leave the plumbing and pipelining to FeatureByte. We take care of orchestrating the data ops - whether it’s time-window aggs or backfilling, so you can deliver more value from data.
 
-With FeatureByte SDK, data scientists and data engineers can speed up experimentation and deployment of more accurate ML models. By putting control in the hands of data scientists, FeatureByte accelerates innovation and frees up time for data engineers.
+* **Improve Accuracy through data:** Use the intuitive feature declaration framework to transform creative ideas into training data in minutes. Ditch the limitations of ad-hoc pipelines for features with much more scale, complexity and freshness.
 
-## 🚀 Features
+* **Streamline machine learning data pipelines:** Get more value from AI. Faster. Deploy and serve features in minutes, instead of weeks or months. Declare features in Python and automatically generate optimized data pipelines — all using tools you love like Jupyter Notebooks.
 
-* Feature Engineering Python SDK: Purpose-built for Machine Learning
-* Infrastructure Abstraction: Integrate seamlessly with scalable data platforms
-* Create features, not data pipelines: Leave the plumbing to FeatureByte
-* Centralized Feature Management: Manage feature engineering with one tool
+## Take charge of the entire ML feature lifecycle
 
-## :hammer_and_pick: Installation
+Feature Engineering and management doesn’t have to be complicated. Take charge of the entire ML feature lifecycle. With FeatureByte, you can **create, experiment, serve and manage your features in one tool**.
 
-Local installation of the FeatureByte service is the easiest way to get started with the FeatureByte SDK.
-It is a single-user installation that can be used to prototype features locally with your data warehouse.
+### Create
+- Create and share state-of-the-art ML features effortlessly
+- Search and reuse features to create feature lists tailored to your use case
 
-**Hardware Requirements:**
-
-We recommend the following minimal hardware for running the local service
-
-* Intel, AMD or Apple Silicon processor with 4 cpu cores
-* 8GB of RAM
-
-**Software Requirements**
-
-* Docker service
-
-**Install featurebyte Package**
-
-* To avoid potential conflicts with other packages it is strongly recommended to use a virtual environment (venv) or a conda environment.
-
-```bash
-pip install featurebyte
-```
-
-**Launch the playground environment with python, or from the command shell**
-
-```python
-import featurebyte as fb
-fb.playground()
-```
-
-**Cleaning Up**
-
-```python
-fb.stop()
-fb.stop(clean=True)  # To delete all docker volumes
-```
-
-## 📝 Documentation
-
-[//]: # (TODO: When documentation server is released, change the URL)
-Read the latest [documentation](https://docs.featurebyte.com).
-
-
-## :card_file_box: Examples
-
-#### Register and Annotate Data
-
-```python
-# Get table from data warehouse
-data_source = catalog.get_data_source(
-    "Spark Warehouse"
-)
-source_table = data_source.get_table(
-    database_name="RETAIL",
-    schema_name="PUBLIC",
-    table_name="INVOICE",
-)
-
-# Register table as event table
-invoices = source_table.create_event_table(
-    name="INVOICE",
-    event_id_column="InvoiceId",
-    event_timestamp_column="Timestamp",
-)
-```
-
-#### Create and Save Feature
-
-```python
+Create and Save Feature
+``` python
 # Get view from catalog
 invoices = catalog.get_view("INVOICES")
-
 # Customer average spend over past 5 weeks
 features = invoices.groupby(
     "CustomerId"
@@ -113,38 +44,70 @@ features = invoices.groupby(
     fill_value=0,
     windows=["5w"]
 )
-
 # Save feature
 features["AvgSpend5w"].save()
 ```
 
-#### Create and Deploy Feature List
+### Experiment
+- Immediately access historical features through automated backfilling - let FeatureByte handle the complexity of time-aware SQL
+- Experiment on live data at scale, innovating faster
+- Iterate rapidly with different feature lists to create more accurate models
 
-```python
-# Create feature list
-feature_list = fb.FeatureList(
-    [
-        catalog.get_feature("AvgSpend5w"),
-        catalog.get_feature("AvgSpend3w"),
-    ],
-    name="CustomerSpend",
+Experiment Featurelist
+``` python
+# Get feature list from the catalog
+feature_list = catalog.get_feature_list(
+    "200 Features on Active Customers"
 )
-
-# Get training data
-train_df = feature_list.compute_historical_features(observation_set)
-
-# Deploy for online serving
-feature_list.deploy()
+# Get an observation set from the catalog
+observation_set = catalog.get_observation_table(
+    "5M rows of active Customers in 2021-2022"
+)
+# Compute training data and
+# store it in the feature store for reuse and audit
+training = \
+    feature_list.compute_historical_feature_table(
+      observation_set,
+      name="Training set to predict purchases next 2w"
+    )
 ```
 
-#### Define Data Cleaning Policy on Table
+### Serve
+- Deploy AI data pipelines and serve features in minutes
+- Access features with low latency
+- Reduce costs and security risk by performing computations in your existing data platform
+- Ensure data consistency between model training and inferencing
 
-```python
+Deploy and Serve Feature List
+``` python
+# Get feature list from the catalog
+feature_list = catalog.get_feature_list(
+    "200 Features on Active Customers"
+)
+# Create deployment
+deployment = feature_list.deploy(
+    name="Features for customer purchases next 2w",
+)
+# Activate deployment
+deployment.enable()
+# Get shell script template for online serving
+deployment.get_online_serving_code(language="sh")
+```
+
+### Manage
+- Organize feature engineering assets with domain-specific catalogs
+- Centralize cleaning operations and feature job configurations
+- Differentiate features that are prototype versus production ready
+- Create new versions of your features to handle changes in data
+- Keep full lineage of your training data and features in production
+- Monitor the health of feature pipelines centrally
+
+``` python
 # Get table from catalog
-line_items = catalog.get_table("LINE_ITEM")
+items_table = catalog.get_table("GROCERYITEMS")
 
-# Discount cannot be negative
-line_items.Discount.update_critical_data_info(
+# Discount must not be negative
+items_table.Discount.update_critical_data_info(
     cleaning_operations=[
         fb.MissingValueImputation(
             imputed_value=0
@@ -157,6 +120,235 @@ line_items.Discount.update_critical_data_info(
     ]
 )
 ```
+
+Get an [overview of the typical workflow](https://docs.featurebyte.com/latest/about/workflow/) in FeatureByte.
+
+## Get started with Quick-Start and Deep-Dive Tutorials
+
+Discover FeatureByte via its tutorials. All you need is to install FeatureByte, activate Docker locally and run this command:
+``` python
+import featurebyte as fb
+fb.playground()
+```
+This will create a local Spark data warehouse with pre-populated data. Once the environment is ready, you can [download](https://docs.featurebyte.com/latest/get_started/tutorials/overview/#download-tutorials) and run notebooks from the [tutorials](https://docs.featurebyte.com/latest/get_started/tutorials/overview/) section.
+
+## Leverage your data warehouse
+
+FeatureByte is developed to integrate seamlessly with your **Snowflake, Databricks, or Spark** data warehouses, enhancing security and efficiency by bypassing large-scale outbound data transfers. This integration allows feature calculations to be performed within the data warehouse, leveraging scalability, stability, and efficiency.
+
+![Warehouse Diagram](./assets/images/Data%20Warehouse.png)
+
+FeatureByte utilizes your data warehouse as a:
+
+* data source.
+* compute engine to leverage its scalability, stability, and efficiency.
+* storage of partial aggregates (tiles) and precomputed feature values to support feature serving.
+
+More data warehouses will be supported soon!
+
+## Architecture
+
+![FeatureByte Architecture](./assets/images/system_architecture.png)
+The FeatureByte platform comprises the following components:
+- **Python SDK** (Python Module): Connects to the API service to provide feature authoring and management functionality through python classes and functions.
+- **FeatureByte Service** (Docker Containers):
+  - **API Service**: REST-API service that validates and executes requests, queries data warehouses, and stores data.
+  - **Worker**: Executes asynchronous or scheduled tasks.
+  - **MongoDB**: Store metadata for created assets.
+  - **Redis**: Broker and queue for workers, messenger service for publishing progress updates.
+- **Query Graph Transpiler** (Python Module): Construct data transformation steps as a query graph, which can be transpiled to platform-specific SQL.
+- **Source Tables** (Data Warehouse): Tables used as data sources for feature engineering.
+- **Feature Store** (Data Warehouse): Database that store data used to support feature serving.
+
+The **FeatureByte Service** can be installed in three different modes:
+
+* **Local installation:** The easiest way to get started with the FeatureByte SDK. It is a single-user installation that can be used to prototype features locally with your data warehouse.
+* **Hosted on a single server:** A light-weight option to support collaboration and job scheduling with limited scalability and availability. Multiple users can connect to the service using the FeatureByte SDK, and deploy features for production.
+* **High availability installation (coming soon):** The recommended way to run the service in production. Scale to a large number of users and deployed features, and provide highly available services.
+
+The FeatureByte Service runs on **Docker** for the first two installation modes, and is deployed on a **Kubernetes Cluster** for the high availability installation mode.
+
+Refer to the [installation](https://docs.featurebyte.com/latest/get_started/installation/) section of the documentation for more details.
+
+## FeatureByte SDK
+
+The FeatureByte Python SDK offers a comprehensive set of objects for feature engineering, simplifying the management and manipulation of tables, entities, views, features, feature lists and other necessary objects for feature serving.
+
+* Catalog objects help you organize your feature engineering assets per domain and maintain clarity and easy access to these assets.
+* Entity objects contain metadata on entity types represented or referenced by tables within your data warehouse.
+* Table objects centralize key metadata about the table type, important columns, default cleaning operations and default feature job configurations.
+* View objects work like SQL views and are local virtual tables that can be modified and joined to other views to prepare data before feature definition.
+* Feature objects contain the logical plan to compute a feature in the form of a feature definition file.
+* FeatureList objects are collection of Feature objects tailored to meet the needs of a particular use case.
+
+Refer to the [SDK overview](https://docs.featurebyte.com/latest/reference/core/feature_store/) for a complete list of the objects supported by the SDK and the SDK reference for more information about each object.
+
+## Feature Creation
+
+The SDK offers an intuitive declarative framework to create feature objects with different signal types, including timing, regularity, stability, diversity, and similarity in addition to the traditional recency, frequency and monetary types.
+
+<u>Features can be as simple as an entity’s attribute</u>
+
+``` python
+customer_view = catalog.get_view("GROCERYCUSTOMER")
+# Extract operating system from BrowserUserAgent column
+customer_view["OperatingSystemIsWindows"] = \
+    customer_view.BrowserUserAgent.str.contains("Windows")
+# Create a feature indicating whether the customer is using Windows
+uses_windows = customer_view.OperatingSystemIsWindows.as_feature("UsesWindows")
+```
+
+<u>Features can be more complex such as aggregations over a window</u>
+
+``` python
+invoice_view = catalog.get_view("GROCERYINVOICE")
+# Group invoices by the column GroceryCustomerGuid that references the customer entity
+invoices_by_customer = invoice_view.groupby("GroceryCustomerGuid")
+# Declare features of total spent by customer over the past 7 days and 28 days
+customer_purchases = invoices_by_customer.aggregate_over(
+    "Amount",
+    method=fb.AggFunc.SUM,
+    feature_names=["CustomerTotalSpent_7d", "CustomerTotalSpent_28d"],
+    fill_value=0,
+    windows=['7d', '28d']
+)
+```
+
+<u>To capture more complex signals, features can involve a series of joins and aggregates and be derived from multiple features</u>
+
+``` python
+# Get items and product view from the catalog
+items_view = catalog.get_view("INVOICEITEMS")
+product_view = catalog.get_view("GROCERYPRODUCT")
+# Join product view to items view
+items_view = items_view.join(product_view)
+# Get Customer purchases across product group over the past 4 weeks
+customer_inventory_28d = items_view.groupby(
+    by_keys = "GroceryCustomerGuid", category=”ProductGroup”
+).aggregate_over(
+   "TotalCost",
+    method=fb.AggFunc.SUM,
+    feature_names=["CustomerInventory_28d"],
+    windows=['28d']
+)
+# Get customer view and join it to items view
+customer_view = catalog.get_view("GROCERYCUSTOMER")
+items_view = items_view.join(customer_view)
+# Get Purchases of Customers living in the same state
+# across product group over the past 4 weeks
+state_inventory_28d = items_view.groupby(
+    by_keys="State", category="ProductGroup"
+).aggregate_over(
+   "TotalCost",
+    method=fb.AggFunc.SUM,
+    feature_names=["StateInventory_28d"],
+    windows=['28d']
+)
+# Create a feature that measures the similarity of a customer purchases
+# and purchases of customers living in the same state
+customer_state_similarity_28d = \
+    customer_inventory_28d["CustomerInventory_28d"].cd.cosine_similarity(
+        state_inventory_28d["StateInventory_28d"]
+    )
+# save the new feature
+customer_state_similarity_28d.name = \
+    "Customer Similarity with purchases in the same state over 28 days"
+customer_state_similarity_28d.save()
+```
+
+Once a feature is defined, you can obtain its feature definition file that is the source of truth and provides an explicit outline of the intended operations of the feature declaration, including those inherited but not explicitly declared by you.
+
+``` python
+customer_state_similarity_28d.definition
+```
+
+Refer to the SDK reference for the [Feature](https://docs.featurebyte.com/latest/reference/core/feature/) object for more information.
+
+## Time Travel
+
+Great Machine Learning models require great training data. Great training data require great features (columns) and great observation data points (rows). Great observation data points are historical data points that replicate the production environment. If predictions are expected to be any time, observation points-in-time should also be any time during a period covering at least one seasonal cycle.
+
+Observation data points are in FeatureByte in the form of observation sets that combine entity values and any past points-in-time you want to learn from.
+
+You can choose to get training data as a Pandas DataFrame or as a Table in the feature store that contains metadata on how the table was created for reuse or audit.
+
+``` python
+# Get feature list from the catalog
+feature_list = catalog.get_feature_list(
+    "200 Features on Active Customers"
+)
+# Create a new feature list that includes a new feature
+customer_state_similarity_28d = catalog.get_feature(
+    "Customer Similarity with purchases in the same state over 28 days"
+)
+new_feature_list = fb.FeatureList(
+    [feature_list, customer_state_similarity_28d],
+    name="Improved feature list with Customer State similarity"
+)
+# Get an observation set from the catalog
+observation_set = catalog.get_observation_table(
+    "5M of active Customers in 2021-2022"
+)
+# Compute training data and store it in the feature store for reuse and audit
+training_table = new_feature_list.compute_historical_feature_table(
+    observation_set,
+    name="Improved Data to predict purchases next 2w with 2021-2022 history"
+)
+```
+
+Refer to the SDK reference for the [FeatureList](https://docs.featurebyte.com/latest/reference/core/feature_list/), [ObservationTable](https://docs.featurebyte.com/latest/reference/core/observation_table/) and [HistoricalFeatureTable](https://docs.featurebyte.com/latest/reference/core/historical_feature_table/) objects, for more information.
+
+## Deploy when needed
+
+Once a feature list is deployed, the FeatureByte Service automatically orchestrates the pre-computation of feature values and stores them in an online feature store for online and batch serving.
+
+``` python
+# Get feature list from the catalog
+feature_list = catalog.get_feature_list(
+    "200 Features on Active Customers"
+)
+# Check Feature objects are PRODUCTION_READY.
+# A readiness metric of 100% should be returned.
+display(feature_list.production_ready_fraction)
+# Create deployment
+my_deployment = feature_list.deploy(
+    name="Deployment of 200 Features to predict customers purchases amount next 2 weeks",
+)
+# Activate deployment
+my_deployment.enable()
+```
+
+Use the REST API service to retrieve feature values from the online feature store for online serving or use the SDK to retrieve batch of feature values from the online feature store for batch serving.
+
+<u>For online serving</u>, the Deployment object provides REST API service templates that can be used to serve features. Python or shell script templates for the REST API service are retrieved from the Deployment object.
+
+For Python script:
+``` python
+deployment = catalog.get_deployment(
+    "Deployment of 200 Features to predict customers purchases amount next 2 weeks"
+)
+deployment.get_online_serving_code(language="python")
+```
+
+For Shell script:
+``` python
+deployment.get_online_serving_code(language="sh")
+```
+
+<u>For batch serving</u>, the Deployment object is used to retrieve feature values for a batch request table containing entities values.
+
+``` python
+from datetime import datetime
+batch_features = deployment.compute_batch_feature_table(
+    batch_request_table=batch_request_table,
+    batch_feature_table_name=
+        "Data to predict customers purchases next 2 w as of " +
+        datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+)
+```
+
+Refer to the SDK reference for the [Deployment](https://docs.featurebyte.com/latest/reference/core/deployment/), [BatchRequestTable](https://docs.featurebyte.com/latest/reference/core/batch_request_table/) and [BatchFeatureTable](https://docs.featurebyte.com/latest/reference/core/batch_feature_table/) objects, for more information.
+
 
 ## 📈 Releases
 
