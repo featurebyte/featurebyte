@@ -54,7 +54,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         - `created_at`: The timestamp indicating when the feature store owas created.
         - `updated_at`: The timestamp indicating when the FeatureStore object was last updated.
         - `source`: The type of the feature store (Spark, Snowflake, DataBricks,...).
-        - `database_details`: details of the database used by the feature store."
+        - `database_details`: details of the database used by the feature store.
 
         Parameters
         ----------
@@ -68,8 +68,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
         Examples
         --------
-        >>> feature = fb.Feature.get("InvoiceCount_60days")
-        >>> feature.info()
+        >>> feature_store = fb.FeatureStore.get(<feature_store_name>)  # doctest: +SKIP
+        >>> feature_store.info()  # doctest: +SKIP
         """
         return super().info(verbose)
 
