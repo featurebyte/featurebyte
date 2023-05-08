@@ -350,10 +350,16 @@ def get_accessor_to_classes_using() -> Dict[str, Any]:
         Dict mapping an accessor to its metadata.
     """
     return {
-        "StringAccessor": AccessorMetadata(
+        # Must include `string` prefix to avoid conflict with the `FeatureStringAccessor`.
+        "string.StringAccessor": AccessorMetadata(
+            classes_using_accessor=[
+                "featurebyte.ViewColumn",
+            ],
+            property_name="str",
+        ),
+        "FeatureStringAccessor": AccessorMetadata(
             classes_using_accessor=[
                 "featurebyte.Feature",
-                "featurebyte.ViewColumn",
             ],
             property_name="str",
         ),

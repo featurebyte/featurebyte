@@ -28,6 +28,7 @@ from featurebyte.common.utils import CodeStr, dataframe_from_json, enforce_obser
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
+from featurebyte.core.accessor.feature_string import FeatureStrAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
@@ -73,6 +74,7 @@ class Feature(
     CdAccessorMixin,
     FeatureJobMixin,
     FeatureDtAccessorMixin,
+    FeatureStrAccessorMixin,
 ):  # pylint: disable=too-many-public-methods
     """
     A feature is input data that is used to train Machine Learning models and compute predictions.
