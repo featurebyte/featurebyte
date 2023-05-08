@@ -44,7 +44,7 @@ class DocItemToRender:
     see_also: str
 
 
-def get_resource_details_for_path(path: str) -> ResourceDetails:
+def get_resource_details_for_path(path: str, is_pure_method: bool) -> ResourceDetails:
     """
     Get the resource details for a given path.
 
@@ -67,6 +67,8 @@ def get_resource_details_for_path(path: str) -> ResourceDetails:
         return get_resource_details(path)
 
     class_description = ".".join(split_path[:-1])
+    if is_pure_method:
+        return get_resource_details(f"{class_description}!!{split_path[-1]}")
     return get_resource_details(f"{class_description}::{split_path[-1]}")
 
 
@@ -159,7 +161,9 @@ def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
         if doc_path_override is not None:
             # handle those with explicit overrides
             link_without_md = doc_path_override.replace(".md", "")
-            resource_details = get_resource_details_for_path(link_without_md)
+            resource_details = get_resource_details_for_path(
+                link_without_md, bool(layout_item.is_pure_method)
+            )
             all_doc_items_to_generate.append(
                 DocItemToRender(
                     menu_item=" > ".join(layout_item.menu_header),
