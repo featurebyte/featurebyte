@@ -13,7 +13,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import OperationStructureExtractor
 from featurebyte.query_graph.node import construct_node
-from tests.util.helper import get_node
+from tests.util.helper import get_node, get_preview_sql_for_series
 
 
 def test__getitem__series_key(int_series, bool_series):
@@ -894,7 +894,7 @@ def test_notnull(bool_series, expression_sql_template):
             """
         ).strip()
     )
-    assert expected_sql == result.preview_sql()
+    assert expected_sql == get_preview_sql_for_series(result)
 
 
 def test_fillna(float_series):
@@ -947,7 +947,7 @@ def test_varchar_series_concat(varchar_series, scalar_input, expected_literal):
         output_series = varchar_series + "scalar_value"
     else:
         output_series = varchar_series + varchar_series
-    output_sql = output_series.preview_sql()
+    output_sql = get_preview_sql_for_series(output_series)
     assert (
         output_sql
         == textwrap.dedent(
@@ -1096,7 +1096,7 @@ def test_numeric_operations(
     assert new_series.node.type == expected_node_type
     assert new_series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=expected_expr)
-    assert expected_sql == new_series.preview_sql()
+    assert expected_sql == get_preview_sql_for_series(new_series)
 
 
 @pytest.mark.parametrize("method", ["sqrt", "abs", "floor", "ceil"])
@@ -1168,7 +1168,7 @@ def test_scalar_timestamp__valid(
         LIMIT 10
         """
     ).strip()
-    assert result.preview_sql() == expected
+    assert get_preview_sql_for_series(result) == expected
 
 
 def test_scalar_timestamp__with_tz(timestamp_series, scalar_timestamp_tz):
@@ -1190,7 +1190,7 @@ def test_scalar_timestamp__with_tz(timestamp_series, scalar_timestamp_tz):
         LIMIT 10
         """
     ).strip()
-    assert result.preview_sql() == expected
+    assert get_preview_sql_for_series(result) == expected
 
 
 def test_scalar_timestamp__invalid(timestamp_series, scalar_timestamp):

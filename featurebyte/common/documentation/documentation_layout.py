@@ -277,7 +277,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, LINEAGE, "Feature.graph"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.id"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.definition"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.preview_sql"]),
+        DocLayoutItem([FEATURE, LINEAGE, "Feature.sql"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.catalog_id"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.get_feature_jobs_status"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.as_default_version"]),
