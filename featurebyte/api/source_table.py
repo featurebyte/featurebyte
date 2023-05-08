@@ -981,8 +981,8 @@ class SourceTable(AbstractTableData):
 
         When you specify the columns and the columns_rename_mapping parameters, make sure that the table has:
 
-        - a column containing entity values with an accepted serving name.
-        - a column containing historical points-in-time in UTC. The column name must be "POINT-IN-TIME".
+        - column(s) containing entity values with an accepted serving name.
+        - a column containing historical points-in-time in UTC. The column name must be "POINT_IN_TIME".
 
         Parameters
         ----------
@@ -1073,7 +1073,7 @@ class SourceTable(AbstractTableData):
         ...   schema_name="<schema_name>",
         ...   table_name=<table_name>
         ... )
-        >>> batch_request_table = source_table.create_batch_request_table(  # docstest: +SKIP
+        >>> batch_request_table = source_table.create_batch_request_table(  # doctest: +SKIP
         ...   name="<batch_request_table_name>",
         ...   columns=[<entity_column_name>],
         ...   columns_rename_mapping={ <entity_column_name>: <entity_serving_name>, }

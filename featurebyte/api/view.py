@@ -1501,7 +1501,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Examples
         --------
-        >>> batch_request_table = view.create_batch_request_table(
+        >>> batch_request_table = view.create_batch_request_table(  # doctest: +SKIP
         ...   name="<batch_request_table_name>",
         ...   columns=[<entity_column_name>],
         ...   columns_rename_mapping={
