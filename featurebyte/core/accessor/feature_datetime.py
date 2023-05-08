@@ -12,6 +12,23 @@ else:
     Feature = TypeVar("Feature")
 
 
+class FeatureDtAccessorMixin:
+    """
+    FeatureDtAccessorMixin class
+    """
+
+    @property
+    def dt(self: Feature) -> FeatureDatetimeAccessor:  # type: ignore # pylint: disable=invalid-name
+        """
+        dt accessor object
+
+        Returns
+        -------
+        FeatureDatetimeAccessor
+        """
+        return FeatureDatetimeAccessor(self)
+
+
 class FeatureDatetimeAccessor(DatetimeAccessor):
     """
     DatetimeAccessor class used to manipulate datetime-like type Feature object.
@@ -66,8 +83,8 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Compute the year component of a timestamp column:
 
         >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampYear"] = feature["Timestamp"].dt.year
-        >>> feature.preview(5).filter(regex="Timestamp")
+        >>> feature["TimestampYear"] = feature["Timestamp"].dt.year  # doctest: +SKIP
+        >>> feature.preview(5).filter(regex="Timestamp")  # doctest: +SKIP
                     Timestamp  TimestampYear
         0 2022-01-03 12:28:58           2022
         1 2022-01-03 16:32:15           2022
@@ -91,9 +108,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the quarter component of a timestamp column:
 
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["TimestampQuarter"] = view["Timestamp"].dt.quarter
-        >>> view.preview(5).filter(regex="Timestamp")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampQuarter"] = feature["Timestamp"].dt.quarter  # doctest: +SKIP
+        >>> feature.preview(5).filter(regex="Timestamp")  # doctest: +SKIP
                     Timestamp  TimestampQuarter
         0 2022-01-03 12:28:58                 1
         1 2022-01-03 16:32:15                 1
@@ -117,9 +134,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the month component of a timestamp column:
 
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["TimestampMonth"] = view["Timestamp"].dt.month
-        >>> view.preview(5).filter(regex="Timestamp")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampMonth"] = feature["Timestamp"].dt.month  # doctest: +SKIP
+        >>> feature.preview(5).filter(regex="Timestamp")  # doctest: +SKIP
                     Timestamp  TimestampMonth
         0 2022-01-03 12:28:58               1
         1 2022-01-03 16:32:15               1
@@ -143,9 +160,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the week component of a timestamp column:
 
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["TimestampWeek"] = view["Timestamp"].dt.week
-        >>> view.preview(5).filter(regex="Timestamp")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampWeek"] = feature["Timestamp"].dt.week  # doctest: +SKIP
+        >>> feature.preview(5).filter(regex="Timestamp")  # doctest: +SKIP
                     Timestamp  TimestampWeek
         0 2022-01-03 12:28:58              1
         1 2022-01-03 16:32:15              1
@@ -172,9 +189,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the day component of a timestamp column:
 
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["TimestampDay"] = view["Timestamp"].dt.day
-        >>> view.preview(5).filter(regex="Timestamp")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampDay"] = feature["Timestamp"].dt.day  # doctest: +SKIP
+        >>> feature.preview(5).filter(regex="Timestamp")  # doctest: +SKIP
                     Timestamp  TimestampDay
         0 2022-01-03 12:28:58             3
         1 2022-01-03 16:32:15             3
@@ -185,10 +202,10 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
 
         Compute the interval since the previous event in terms of days:
 
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["PreviousTimestamp"] = view["Timestamp"].lag("GroceryCustomerGuid")
-        >>> view["DaysSincePreviousTimestamp"] = (view["Timestamp"] - view["PreviousTimestamp"]).dt.day
-        >>> view.preview(5).filter(regex="Timestamp|Customer")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["PreviousTimestamp"] = feature["Timestamp"].lag("GroceryCustomerGuid")  # doctest: +SKIP
+        >>> feature["DaysSincePreviousTimestamp"] = (feature["Timestamp"] - feature["PreviousTimestamp"]).dt.day  # doctest: +SKIP
+        >>> feature.preview(5).filter(regex="Timestamp|Customer")  # doctest: +SKIP
                             GroceryCustomerGuid           Timestamp   PreviousTimestamp  DaysSincePreviousTimestamp
         0  007a07da-1525-49be-94d1-fc7251f46a66 2022-01-07 12:02:17                 NaT                         NaN
         1  007a07da-1525-49be-94d1-fc7251f46a66 2022-01-11 19:46:41 2022-01-07 12:02:17                    4.322500
@@ -212,9 +229,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
 
         Examples
         --------
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["TimestampDayOfWeek"] = view["Timestamp"].dt.day_of_week
-        >>> view.preview(5).filter(regex="Timestamp")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampDayOfWeek"] = feature["Timestamp"].dt.day_of_week  # doctest: +SKIP
+        >>> feature.preview(5).filter(regex="Timestamp")  # doctest: +SKIP
                     Timestamp  TimestampDayOfWeek
         0 2022-01-03 12:28:58                   0
         1 2022-01-03 16:32:15                   0
@@ -241,9 +258,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the hour component of a timestamp column:
 
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["TimestampHour"] = view["Timestamp"].dt.hour
-        >>> view.preview(5).filter(regex="Timestamp")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampHour"] = feature["Timestamp"].dt.hour  # doctest: +SKIP
+        >>> feature.preview(5).filter(regex="Timestamp")  # doctest: +SKIP
                     Timestamp  TimestampHour
         0 2022-01-03 12:28:58             12
         1 2022-01-03 16:32:15             16
@@ -270,9 +287,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the minute component of a timestamp column:
 
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["TimestampMinute"] = view["Timestamp"].dt.minute
-        >>> view.preview(5).filter(regex="Timestamp")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampMinute"] = feature["Timestamp"].dt.minute  # doctest: +SKIP
+        >>> feature.preview(5).filter(regex="Timestamp")  # doctest: +SKIP
                     Timestamp  TimestampMinute
         0 2022-01-03 12:28:58               28
         1 2022-01-03 16:32:15               32
@@ -300,9 +317,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
 
         Compute the second component of a timestamp column:
 
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["TimestampSecond"] = view["Timestamp"].dt.second
-        >>> view.preview(5).filter(regex="Timestamp")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampSecond"] = feature["Timestamp"].dt.second  # doctest: +SKIP
+        >>> feature.preview(5).filter(regex="Timestamp")  # doctest: +SKIP
                     Timestamp  TimestampSecond
         0 2022-01-03 12:28:58             58.0
         1 2022-01-03 16:32:15             15.0
@@ -324,6 +341,14 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         -------
         Feature
             Feature containing the millisecond component values
+
+        Examples
+        --------
+
+        Compute the millisecond component of a timestamp column:
+
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampMillisecond"] = feature["Timestamp"].dt.millisecond  # doctest: +SKIP
         """
         return super().millisecond  # type: ignore[return-value]
 
@@ -339,5 +364,13 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         -------
         Feature
             Feature containing the microsecond component values
+
+        Examples
+        --------
+
+        Compute the millisecond component of a timestamp column:
+
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampMicrosecond"] = feature["Timestamp"].dt.microsecond  # doctest: +SKIP
         """
         return super().microsecond  # type: ignore[return-value]
