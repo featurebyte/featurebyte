@@ -142,7 +142,7 @@ This will create a local Spark data warehouse with pre-populated data. Once the 
 FeatureByte is developed to integrate seamlessly with your **Snowflake, Databricks, or Spark** data warehouses, enhancing security and efficiency by bypassing large-scale outbound data transfers. This integration allows feature calculations to be performed within the data warehouse, leveraging scalability, stability, and efficiency.
 
 <div align="center">
-  <img src="./assets/images/Data%20Warehouse.png" width="600" alt="Warehouse Diagram">
+  <img src="https://github.com/featurebyte/featurebyte/blob/main/assets/images/Data%20Warehouse.png" width="600" alt="Warehouse Diagram">
 </div>
 
 FeatureByte utilizes your data warehouse as a:
@@ -155,7 +155,7 @@ More data warehouses will be supported soon!
 
 ## Architecture
 
-![FeatureByte Architecture](./assets/images/system_architecture.png)
+![FeatureByte Architecture](https://github.com/featurebyte/featurebyte/blob/main/assets/images/system_architecture.png)
 The FeatureByte platform comprises the following components:
 - **FeatureByte SDK** (Python Package): Connects to the API service to provide feature authoring and management functionality through python classes and functions.
 - **FeatureByte Service** (Docker Containers):
