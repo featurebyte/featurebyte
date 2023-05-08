@@ -54,6 +54,8 @@ def get_resource_details_for_path(path: str, is_pure_method: bool) -> ResourceDe
     ----------
     path: str
         The path to get the resource details for
+    is_pure_method: bool
+        Whether the path is a pure method or not
 
     Returns
     -------
