@@ -65,9 +65,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the year component of a timestamp column:
 
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["TimestampYear"] = view["Timestamp"].dt.year
-        >>> view.preview(5).filter(regex="Timestamp")
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature["TimestampYear"] = feature["Timestamp"].dt.year
+        >>> feature.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampYear
         0 2022-01-03 12:28:58           2022
         1 2022-01-03 16:32:15           2022
