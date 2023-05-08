@@ -13,6 +13,41 @@ else:
 
 
 class FeatureDatetimeAccessor(DatetimeAccessor):
+    """
+    DatetimeAccessor class used to manipulate datetime-like type Feature object.
+
+    This allows you to access the datetime-like properties of the Feature values via the `.dt` attribute and the
+    regular Feature methods. The result will be a Feature with the same index as the original Feature.
+
+    If the input feature is a datetime-like type, the following properties are available:
+
+    - year
+    - quarter
+    - month
+    - week
+    - day
+    - day_of_week
+    - hour
+    - minute
+    - second
+
+    If the input feature is a time delta type, the following properties are available:
+
+    - day
+    - hour
+    - minute
+    - second
+    - millisecond
+    - microsecond
+
+    Examples
+    --------
+    Getting the year from a time series feature
+
+    >>> timeseries = feature["timestamps"]  # doctest: +SKIP
+    ... feature["time_year"] = timeseries.dt.year
+    """
+
     # documentation metadata
     __fbautodoc__ = FBAutoDoc()
 
