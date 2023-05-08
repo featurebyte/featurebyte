@@ -57,7 +57,7 @@ class FeatureStringAccessor(StringAccessor):
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["ProductGroupLength"] = feature.str.len()
         """
-        return super().len()
+        return super().len()  # type: ignore[return-value]
 
     def lower(self) -> Feature:
         """
@@ -76,7 +76,7 @@ class FeatureStringAccessor(StringAccessor):
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["ProductGroupLower"] = feature.str.lower()
         """
-        return super().lower()
+        return super().lower()  # type: ignore[return-value]
 
     def upper(self) -> Feature:
         """
@@ -95,7 +95,7 @@ class FeatureStringAccessor(StringAccessor):
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["ProductGroupUpper"] = feature.str.upper()
         """
-        return super().upper()
+        return super().upper()  # type: ignore[return-value]
 
     def strip(self, to_strip: Optional[str] = None) -> Feature:
         """
@@ -119,7 +119,7 @@ class FeatureStringAccessor(StringAccessor):
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["ProductGroupStrip"] = feature.str.strip("M")
         """
-        return super().strip(to_strip=to_strip)
+        return super().strip(to_strip=to_strip)  # type: ignore[return-value]
 
     def lstrip(self, to_strip: Optional[str] = None) -> Feature:
         """
@@ -143,7 +143,7 @@ class FeatureStringAccessor(StringAccessor):
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["ProductGroupStrip"] = feature.str.lstrip("M")
         """
-        return super().lstrip(to_strip=to_strip)
+        return super().lstrip(to_strip=to_strip)  # type: ignore[return-value]
 
     def rstrip(self, to_strip: Optional[str] = None) -> Feature:
         """
@@ -167,7 +167,7 @@ class FeatureStringAccessor(StringAccessor):
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["ProductGroupStrip"] = feature.str.rstrip(".")
         """
-        return super().rstrip(to_strip=to_strip)
+        return super().rstrip(to_strip=to_strip)  # type: ignore[return-value]
 
     def replace(self, pat: str, repl: str) -> Feature:
         """
@@ -193,7 +193,7 @@ class FeatureStringAccessor(StringAccessor):
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["ProductGroupNew"] = feature.str.replace("Windows", "Win")
         """
-        return super().replace(pat=pat, repl=repl)
+        return super().replace(pat=pat, repl=repl)  # type: ignore[return-value]
 
     def pad(self, width: int, side: Side = "left", fillchar: str = " ") -> Feature:
         """
@@ -221,7 +221,7 @@ class FeatureStringAccessor(StringAccessor):
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["ProductGroupLookupPadded"] = feature.str.pad(10, fillchar="0")
         """
-        return super().pad(width=width, side=side, fillchar=fillchar)
+        return super().pad(width=width, side=side, fillchar=fillchar)  # type: ignore[return-value]
 
     def contains(self, pat: str, case: bool = True) -> Feature:
         """
@@ -248,7 +248,7 @@ class FeatureStringAccessor(StringAccessor):
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["ProductGroup_x64"] = feature.str.contains("x64")
         """
-        return super().contains(pat=pat, case=case)
+        return super().contains(pat=pat, case=case)  # type: ignore[return-value]
 
     def slice(
         self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None
@@ -285,4 +285,4 @@ class FeatureStringAccessor(StringAccessor):
 
         # noqa: DAR402
         """
-        return super().slice(start=start, stop=stop, step=step)
+        return super().slice(start=start, stop=stop, step=step)  # type: ignore[return-value]
