@@ -59,7 +59,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the year component values
+            Feature containing the year component values
 
         Examples
         --------
@@ -85,7 +85,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the quarter component values
+            Feature containing the quarter component values
 
         Examples
         --------
@@ -111,7 +111,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the month component values
+            Feature containing the month component values
 
         Examples
         --------
@@ -137,7 +137,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the week component values
+            Feature containing the week component values
 
         Examples
         --------
@@ -166,7 +166,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the day of week component values
+            Feature containing the day of week component values
 
         Examples
         --------
@@ -208,7 +208,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the day of week component values
+            Feature containing the day of week component values
 
         Examples
         --------
@@ -235,7 +235,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the hour component values
+            Feature containing the hour component values
 
         Examples
         --------
@@ -264,7 +264,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the minute component values
+            Feature containing the minute component values
 
         Examples
         --------
@@ -293,7 +293,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the second component values
+            Feature containing the second component values
 
         Examples
         --------
@@ -323,7 +323,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the millisecond component values
+            Feature containing the millisecond component values
         """
         return super().millisecond
 
@@ -338,6 +338,6 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Returns
         -------
         Feature
-            Column or Feature containing the microsecond component values
+            Feature containing the microsecond component values
         """
         return super().microsecond
