@@ -363,10 +363,16 @@ def get_accessor_to_classes_using() -> Dict[str, Any]:
             ],
             property_name="cd",
         ),
-        "DatetimeAccessor": AccessorMetadata(
+        # Must include `datetime` prefix to avoid conflict with the `FeatureDatetimeAccessor`.
+        "datetime.DatetimeAccessor": AccessorMetadata(
+            classes_using_accessor=[
+                "featurebyte.ViewColumn",
+            ],
+            property_name="dt",
+        ),
+        "FeatureDatetimeAccessor": AccessorMetadata(
             classes_using_accessor=[
                 "featurebyte.Feature",
-                "featurebyte.ViewColumn",
             ],
             property_name="dt",
         ),
