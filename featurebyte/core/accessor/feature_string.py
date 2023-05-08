@@ -21,9 +21,9 @@ class FeatureStrAccessorMixin:
     """
 
     @property
-    def dt(self: Feature) -> StringAccessor:  # type: ignore # pylint: disable=invalid-name
+    def str(self: Feature) -> StringAccessor:  # type: ignore # pylint: disable=invalid-name
         """
-        dt accessor object
+        str accessor object
 
         Returns
         -------
@@ -34,7 +34,7 @@ class FeatureStrAccessorMixin:
 
 class FeatureStringAccessor(StringAccessor):
     """
-    StringAccessor class used to manipulate string type Feature objects
+    FeatureStringAccessor class used to manipulate string type Feature objects
     """
 
     # documentation metadata
