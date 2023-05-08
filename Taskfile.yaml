@@ -90,7 +90,7 @@ tasks:
   lint-style:
     desc: "Run the linter[style]"
     vars:
-      PYLINT_DISABLE_FOR_SRCS: 'too-few-public-methods,logging-fstring-interpolation'
+      PYLINT_DISABLE_FOR_SRCS: 'too-few-public-methods,logging-fstring-interpolation,useless-parent-delegation'
       PYLINT_DISABLE_FOR_TESTS: 'redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code'
       DARG_SOURCES:
         sh: |
