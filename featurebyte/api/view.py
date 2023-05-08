@@ -134,7 +134,7 @@ class ViewColumn(Series, SampleMixin):
 
 
         Sample 3 rows of a column with timestamp.
-        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].sample(  # doctest: +SKIP
+        >>> catalog.get_view("GROCERYINVOICE")["Amount"].sample(  # doctest: +SKIP
         ...   size=3,
         ...   seed=123,
         ...   from_timestamp="2020-01-01",
@@ -225,7 +225,7 @@ class ViewColumn(Series, SampleMixin):
 
 
         Get summary of a column with timestamp.
-        >>> catalog.get_view("GROCERYPRODUCT")["ProductGroup"].describe(  # doctest: +SKIP
+        >>> catalog.get_view("GROCERYINVOICE")["Amount"].describe(  # doctest: +SKIP
         ...   from_timestamp="2020-01-01",
         ...   to_timestamp="2023-01-31"
         ... )
@@ -683,7 +683,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
 
         Get summary of a view with timestamp.
-        >>> catalog.get_view("GROCERYPRODUCT").describe(  # doctest: +SKIP
+        >>> catalog.get_view("GROCERYINVOICE").describe(  # doctest: +SKIP
         ...   from_timestamp=datetime(2019, 1, 1),
         ...   to_timestamp=datetime(2019, 1, 31),
         ... )
@@ -761,7 +761,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
 
         Sample rows of a view with timestamp.
-        >>> catalog.get_view("GROCERYPRODUCT").sample(  # doctest: +SKIP
+        >>> catalog.get_view("GROCERYINVOICE").sample(  # doctest: +SKIP
         ...   size=3,
         ...   from_timestamp=datetime(2019, 1, 1),
         ...   to_timestamp=datetime(2019, 1, 31),

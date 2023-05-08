@@ -338,7 +338,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
 
 
         Sample 3 rows from the table with timestamps.
-        >>> catalog.get_table("GROCERYPRODUCT").sample(  # doctest: +SKIP
+        >>> catalog.get_table("GROCERYINVOICE").sample(  # doctest: +SKIP
         ...   size=3,
         ...   seed=111,
         ...   from_timestamp=datetime(2019, 1, 1),
