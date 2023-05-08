@@ -84,8 +84,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the year component of a timestamp column:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampYear"] = feature["Timestamp"].dt.year  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampYear"] = feature["Timestamp"].dt.year  # doctest: +SKIP
         """
         return super().year  # type: ignore[return-value]
 
@@ -103,8 +104,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the quarter component of a timestamp column:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampQuarter"] = feature["Timestamp"].dt.quarter  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampQuarter"] = feature["Timestamp"].dt.quarter  # doctest: +SKIP
         """
         return super().quarter  # type: ignore[return-value]
 
@@ -122,8 +124,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the month component of a timestamp column:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampMonth"] = feature["Timestamp"].dt.month  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampMonth"] = feature["Timestamp"].dt.month  # doctest: +SKIP
         """
         return super().month  # type: ignore[return-value]
 
@@ -141,8 +144,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the week component of a timestamp column:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampWeek"] = feature["Timestamp"].dt.week  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampWeek"] = feature["Timestamp"].dt.week  # doctest: +SKIP
         """
         return super().week  # type: ignore[return-value]
 
@@ -163,15 +167,17 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the day component of a timestamp column:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampDay"] = feature["Timestamp"].dt.day  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampDay"] = feature["Timestamp"].dt.day  # doctest: +SKIP
 
 
         Compute the interval since the previous event in terms of days:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["PreviousTimestamp"] = feature["Timestamp"].lag("GroceryCustomerGuid")  # doctest: +SKIP
-        >>> feature["DaysSincePreviousTimestamp"] = (feature["Timestamp"] - feature["PreviousTimestamp"]).dt.day  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["PreviousTimestamp"] = feature["Timestamp"].lag("GroceryCustomerGuid")  # doctest: +SKIP
+        >>> feature_group["DaysSincePreviousTimestamp"] = (feature["Timestamp"] - feature["PreviousTimestamp"]).dt.day  # doctest: +SKIP
         """
         return super().day  # type: ignore[return-value]
 
@@ -189,8 +195,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
 
         Examples
         --------
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampDayOfWeek"] = feature["Timestamp"].dt.day_of_week  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampDayOfWeek"] = feature["Timestamp"].dt.day_of_week  # doctest: +SKIP
         """
         return super().day_of_week  # type: ignore[return-value]
 
@@ -211,8 +218,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the hour component of a timestamp column:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampHour"] = feature["Timestamp"].dt.hour  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampHour"] = feature["Timestamp"].dt.hour  # doctest: +SKIP
         """
         return super().hour  # type: ignore[return-value]
 
@@ -233,8 +241,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the minute component of a timestamp column:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampMinute"] = feature["Timestamp"].dt.minute  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampMinute"] = feature["Timestamp"].dt.minute  # doctest: +SKIP
         """
         return super().minute  # type: ignore[return-value]
 
@@ -256,8 +265,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
 
         Compute the second component of a timestamp column:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampSecond"] = feature["Timestamp"].dt.second  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampSecond"] = feature["Timestamp"].dt.second  # doctest: +SKIP
         """
         return super().second  # type: ignore[return-value]
 
@@ -279,8 +289,9 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
 
         Compute the millisecond component of a timestamp column:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampMillisecond"] = feature["Timestamp"].dt.millisecond  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampMillisecond"] = feature["Timestamp"].dt.millisecond  # doctest: +SKIP
         """
         return super().millisecond  # type: ignore[return-value]
 
@@ -302,7 +313,8 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
 
         Compute the millisecond component of a timestamp column:
 
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature["TimestampMicrosecond"] = feature["Timestamp"].dt.microsecond  # doctest: +SKIP
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampMicrosecond"] = feature["Timestamp"].dt.microsecond  # doctest: +SKIP
         """
         return super().microsecond  # type: ignore[return-value]
