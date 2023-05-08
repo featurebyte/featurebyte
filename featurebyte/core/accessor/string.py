@@ -247,7 +247,6 @@ class StringAccessor:
 
         Examples
         --------
-
         Remove trailing "M" characters from the Title column:
 
         >>> view = catalog.get_view("GROCERYCUSTOMER")

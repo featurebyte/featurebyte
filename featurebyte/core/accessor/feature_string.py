@@ -51,7 +51,6 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-
         Compute the length of each string element in the ProductGroupLookup feature:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
@@ -71,7 +70,6 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-
         Convert the ProductGroupLookup feature to lower case:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
@@ -91,7 +89,6 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-
         Convert the ProductGroupLookup feature to upper case:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
@@ -116,7 +113,6 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-
         Remove leading and trailing "M" characters from the Title column:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
@@ -141,7 +137,6 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-
         Remove leading "M" characters from the Title column:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
@@ -166,7 +161,6 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-
         Remove trailing "M" characters from the Title column:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
@@ -193,7 +187,6 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-
         Replace "Windows" with "Win" in the ProductGroupLookup feature:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
@@ -222,7 +215,6 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-
         Pad the Title column to 10 characters:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
@@ -285,11 +277,12 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-
         Slice the first 10 characters from the ProductGroupLookup feature:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["ProductGroupSlice"] = feature.str.slice(0, 10)
+
+        # noqa: DAR402
         """
         return super().slice(start=start, stop=stop, step=step)
