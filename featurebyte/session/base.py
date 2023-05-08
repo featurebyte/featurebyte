@@ -6,19 +6,13 @@ from __future__ import annotations
 from typing import Any, AsyncGenerator, ClassVar, List, Optional, OrderedDict
 
 import asyncio
-
-try:
-    # fcntl is not available on Windows
-    import fcntl
-
-    FCNTL_AVAILABLE = True
-except ImportError:
-    FCNTL_AVAILABLE = False
-
+import contextvars
+import functools
 import os
-import threading
 import time
 from abc import ABC, abstractmethod
+from asyncio import events
+from io import BytesIO
 
 import aiofiles
 import pandas as pd
@@ -46,40 +40,30 @@ LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
 logger = get_logger(__name__)
 
 
-class RunThread(threading.Thread):
+async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> Any:
     """
-    Thread to execute query
+    Run blocking function in a thread pool and wait for the result.
+    From asyncio.to_thread implementation which is only available in Python 3.9
+
+    Parameters
+    ----------
+    func : Any
+        Function to run in a thread pool.
+    timeout : float
+        Timeout in seconds.
+    *args : Any
+        Positional arguments to `func`.
+    **kwargs : Any
+        Keyword arguments to `func`.
+
+    Returns
+    -------
+    Any
     """
-
-    def __init__(self, cursor: Any, query: str, out_fd: int, fetch_query_stream_impl: Any) -> None:
-        self.cursor = cursor
-        self.query = query
-        self.out_fd = out_fd
-        self.fetch_query_stream_impl = fetch_query_stream_impl
-        self.exception: Exception | None = None
-        self.is_terminated = False
-        super().__init__()
-
-    def run(self) -> None:
-        """
-        Run async function
-        """
-        try:
-            # execute query
-            self.cursor.execute(self.query)
-            if self.is_terminated:
-                return
-
-            # stream result back via pipe
-            if self.cursor.description:
-                output_pipe = os.fdopen(self.out_fd, "wb")
-                try:
-                    self.fetch_query_stream_impl(self.cursor, output_pipe)
-                finally:
-                    output_pipe.close()
-
-        except Exception as exc:  # pylint: disable=broad-except
-            self.exception = exc
+    loop = events.get_running_loop()
+    ctx = contextvars.copy_context()
+    func_call = functools.partial(ctx.run, func, *args, **kwargs)
+    return await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
 
 
 class BaseSession(BaseModel):
@@ -202,23 +186,25 @@ class BaseSession(BaseModel):
         OrderedDict[str, DBVarType]
         """
 
-    def fetch_query_stream_impl(self, cursor: Any, output_pipe: Any) -> None:
+    async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
         """
-        Stream results from cursor in batches
+        Stream pyarrow record batches from cursor
 
         Parameters
         ----------
         cursor : Any
             The connection cursor
-        output_pipe: Any
-            Output pipe buffer
+
+        Yields
+        ------
+        pa.RecordBatch
+            Pyarrow record batch
         """
         # fetch all results into a single dataframe and write batched records to the stream
         dataframe = self.fetch_query_result_impl(cursor)
         table = pa.Table.from_pandas(dataframe)
-        writer = create_new_arrow_stream_writer(output_pipe, table.schema)
         for batch in pa_table_to_record_batches(table):
-            writer.write_batch(batch)
+            yield batch
 
     async def get_async_query_stream(
         self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
@@ -240,51 +226,46 @@ class BaseSession(BaseModel):
 
         Raises
         ------
-        exception
-            Exception raised during query execution
         QueryExecutionTimeOut
             Query execution timed out
         """
-
-        cursor = self.connection.cursor()
-        in_fd, out_fd = os.pipe()
-        input_pipe = os.fdopen(in_fd, "rb")
-        if FCNTL_AVAILABLE:
-            # set pipe to non-blocking if fcntl is available
-            fcntl.fcntl(input_pipe, fcntl.F_SETFL, os.O_NONBLOCK)
-        thread = RunThread(cursor, query, out_fd, self.fetch_query_stream_impl)
-        thread.daemon = True
-        thread.start()
-
         start_time = time.time()
-
+        cursor = self.connection.cursor()
+        buffer = BytesIO()
+        writer = None
         try:
-            while True:
-                # check for timeout
-                if timeout and time.time() - start_time > timeout:
-                    thread.is_terminated = True
-                    raise QueryExecutionTimeOut(f"Execution timeout {timeout}s exceeded.")
+            # execute in separate thread
+            await to_thread(cursor.execute, timeout, query)
+            if not cursor.description:
+                return
 
-                # read data from the pipe
-                chunk = input_pipe.read()
+            batches = self.fetch_query_stream_impl(cursor)
+            async for batch in batches:
+                if not writer:
+                    writer = create_new_arrow_stream_writer(buffer, batch.schema)
+                writer.write_batch(batch)
+                buffer.flush()
+                buffer.seek(0)
+                chunk = buffer.getvalue()
                 if chunk:
                     yield chunk
+                    buffer.seek(0)
+                    buffer.truncate(0)
 
-                if not thread.is_alive():
-                    # read any remaining data from the pipe
-                    chunk = input_pipe.read()
-                    if chunk:
-                        yield chunk
-                    break
+                # check for timeout
+                if timeout and time.time() - start_time > timeout:
+                    raise QueryExecutionTimeOut(f"Execution timeout {timeout}s exceeded.")
 
-                # asynchronous sleep
                 await asyncio.sleep(0.1)
 
-            if thread.exception:
-                raise thread.exception
+        except asyncio.exceptions.TimeoutError as exc:
+            # raise timeout error
+            raise QueryExecutionTimeOut(f"Execution timeout {timeout}s exceeded.") from exc
         finally:
+            if writer:
+                writer.close()
+            buffer.close()
             cursor.close()
-            input_pipe.close()
             logger.debug(
                 "Query completed",
                 extra={
