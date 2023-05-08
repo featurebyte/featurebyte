@@ -169,6 +169,20 @@ def setup() -> None:
     )
     invoice_count.save(conflict_resolution="retrieve")
 
+    # Feature: Latest Invoice Timestamp by User
+    invoice_latest_timestamp_90d = grocery_invoice_view.groupby(
+        "GroceryCustomerGuid"
+    ).aggregate_over(
+        value_column="Timestamp",
+        method="latest",
+        feature_names=["CustomerLatestInvoiceTimestamp"],
+        windows=["90d"],
+    )[
+        "CustomerLatestInvoiceTimestamp"
+    ]
+    invoice_latest_timestamp_90d.save(conflict_resolution="retrieve")
+    invoice_latest_timestamp_90d.update_readiness("PRODUCTION_READY")
+
     # FeatureList:
     FeatureList([invoice_count_60days], name="invoice_feature_list").save(
         conflict_resolution="retrieve"
