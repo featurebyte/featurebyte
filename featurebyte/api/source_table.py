@@ -977,7 +977,12 @@ class SourceTable(AbstractTableData):
         columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> ObservationTable:
         """
-        Create an observation table from this source table.
+        Creates an ObservationTable from the SourceTable.
+
+        When you specify the columns and the columns_rename_mapping parameters, make sure that the table has:
+
+        - a column containing entity values with an accepted serving name.
+        - a column containing historical points-in-time in UTC. The column name must be "POINT-IN-TIME".
 
         Parameters
         ----------
@@ -1006,9 +1011,13 @@ class SourceTable(AbstractTableData):
         ...   table_name=<table_name>
         ... )
         >>> observation_table = source_table.create_observation_table(  # doctest: +SKIP
-        ...   "<observation_table_name>",
-        ...   sample_rows=10000,
-        ...   columns_rename_mapping={"timestamp": "POINT_IN_TIME"},
+        ...   name="<observation_table_name>",
+        ...   sample_rows=desired_sample_size,
+        ...   columns=[<timestamp_column_name>, <entity_column_name>],
+        ...   columns_rename_mapping={
+        ...     timestamp_column_name: "POINT_IN_TIME",
+        ...     entity_column_name: <entity_serving_name>,
+        ...   },
         ... )
         """
         # pylint: disable=import-outside-toplevel
@@ -1036,7 +1045,10 @@ class SourceTable(AbstractTableData):
         columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> BatchRequestTable:
         """
-        Create a batch request table from this source table.
+        Creates an BatchRequestTable from the SourceTable.
+
+        When you specify the columns and the columns_rename_mapping parameters, make sure that the table has a column
+        containing entity values with an accepted serving name.
 
         Parameters
         ----------
@@ -1061,8 +1073,10 @@ class SourceTable(AbstractTableData):
         ...   schema_name="<schema_name>",
         ...   table_name=<table_name>
         ... )
-        >>> batch_request_table = view[<entity_serving_name>].create_batch_request_table(  # doctest: +SKIP
-        ...  <batch_request_table_name>
+        >>> batch_request_table = source_table.create_batch_request_table(  # docstest: +SKIP
+        ...   name="<batch_request_table_name>",
+        ...   columns=[<entity_column_name>],
+        ...   columns_rename_mapping={ <entity_column_name>: <entity_serving_name>, }
         ... )
         """
         # pylint: disable=import-outside-toplevel

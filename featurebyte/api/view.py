@@ -1419,7 +1419,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> ObservationTable:
         """
-        Create an ObservationTable from the View.
+        Creates an ObservationTable from the View.
+
+        When you specify the columns and the columns_rename_mapping parameters, make sure that the table has:
+
+        - a column containing entity values with an accepted serving name.
+        - a column containing historical points-in-time in UTC. The column name must be "POINT-IN-TIME".
 
         Parameters
         ----------
@@ -1473,7 +1478,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> BatchRequestTable:
         """
-        Create a BatchRequestTable from the View.
+        Creates an BatchRequestTable from the View.
+
+        When you specify the columns and the columns_rename_mapping parameters, make sure that the table has a
+        column containing entity values with an accepted serving name.
 
         Parameters
         ----------
@@ -1493,8 +1501,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Examples
         --------
-        >>> batch_request_table = view[<entity_serving_name>].create_batch_request_table(  # doctest: +SKIP
-        ...   <batch_request_table_name>
+        >>> batch_request_table = view.create_batch_request_table(
+        ...   name="<batch_request_table_name>",
+        ...   columns=[<entity_column_name>],
+        ...   columns_rename_mapping={
+        ...     <entity_column_name>: <entity_serving_name>,
+        ...   }
         ... )
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
