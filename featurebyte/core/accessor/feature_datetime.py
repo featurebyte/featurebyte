@@ -20,7 +20,7 @@ class FeatureDtAccessorMixin:
     """
 
     @property
-    def dt(self: Feature) -> FeatureDatetimeAccessor:  # type: ignore # pylint: disable=invalid-name
+    def dt(self: Feature) -> DatetimeAccessor:  # type: ignore # pylint: disable=invalid-name
         """
         dt accessor object
 

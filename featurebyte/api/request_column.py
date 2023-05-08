@@ -8,7 +8,6 @@ from typing import Optional
 from pydantic import Field
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -17,7 +16,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 
 
-class RequestColumn(Series, DtAccessorMixin):
+class RequestColumn(Series):
     """
     RequestColumn class
     """

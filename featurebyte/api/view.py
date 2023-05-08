@@ -41,7 +41,6 @@ from featurebyte.common.join_utils import (
 )
 from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import ScalarSequence
-from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
 from featurebyte.core.mixin import SampleMixin
@@ -76,7 +75,7 @@ ViewT = TypeVar("ViewT", bound="View")
 logger = get_logger(__name__)
 
 
-class ViewColumn(Series, SampleMixin, DtAccessorMixin):
+class ViewColumn(Series, SampleMixin):
     """
     ViewColumn class that is the base class of columns returned from any View. It is a series-like object that
     can be used to create features, or perform operations with other series-like objects.
