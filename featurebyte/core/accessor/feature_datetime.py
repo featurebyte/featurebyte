@@ -163,14 +163,6 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
         >>> feature_group = fb.FeatureGroup([feature])
         >>> feature_group["TimestampDay"] = feature.dt.day
-
-
-        Compute the interval since the previous event in terms of days:
-
-        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["PreviousTimestamp"] = feature.lag("GroceryCustomerGuid")
-        >>> feature_group["DaysSincePreviousTimestamp"] = (feature - feature_group["PreviousTimestamp"]).dt.day
         """
         return super().day  # type: ignore[return-value]
 
