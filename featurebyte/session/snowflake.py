@@ -3,13 +3,14 @@ SnowflakeSession class
 """
 from __future__ import annotations
 
-from typing import Any, OrderedDict
+from typing import Any, AsyncGenerator, OrderedDict
 
 import collections
 import datetime
 import json
 
 import pandas as pd
+import pyarrow as pa
 from pydantic import Field
 from snowflake import connector
 from snowflake.connector.errors import (
@@ -20,7 +21,7 @@ from snowflake.connector.errors import (
 )
 from snowflake.connector.pandas_tools import write_pandas
 
-from featurebyte.common.utils import create_new_arrow_stream_writer, pa_table_to_record_batches
+from featurebyte.common.utils import pa_table_to_record_batches
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
@@ -165,34 +166,22 @@ class SnowflakeSession(BaseSession):
                 return super().fetch_query_result_impl(cursor)
         return None
 
-    def fetch_query_stream_impl(self, cursor: Any, output_pipe: Any) -> None:
-        """
-        Stream results from cursor in batches
-
-        Parameters
-        ----------
-        cursor : Any
-            The connection cursor
-        output_pipe: Any
-            Output pipe buffer
-        """
+    async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
         # fetch results in batches and write to the stream
         try:
-            writer = None
+            counter = 0
             for table in cursor.fetch_arrow_batches():
-                if not writer:
-                    writer = create_new_arrow_stream_writer(output_pipe, table.schema)
                 for batch in pa_table_to_record_batches(table):
-                    writer.write_batch(batch)
-            if not writer:
+                    counter += 1
+                    yield batch
+            if counter == 0:
                 # Arrow batch is empty, need to return empty table with schema
                 table = cursor.get_result_batches()[0].to_arrow()
-                batch = pa_table_to_record_batches(table)[0]
-                writer = create_new_arrow_stream_writer(output_pipe, batch.schema)
-                writer.write_batch(batch)
-            writer.close()
+                yield pa_table_to_record_batches(table)[0]
         except NotSupportedError:
-            super().fetch_query_stream_impl(cursor, output_pipe)
+            batches = super().fetch_query_stream_impl(cursor)
+            async for batch in batches:
+                yield batch
 
     async def register_table(
         self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
