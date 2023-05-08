@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Awaitable
 
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 from uuid import UUID
 
@@ -55,6 +56,7 @@ def run_async(coro: Awaitable[Any]) -> Any:
         logger.debug("Use existing async loop", extra={"loop": loop})
     except RuntimeError:
         loop = asyncio.new_event_loop()
+        loop.set_default_executor(ThreadPoolExecutor(max_workers=1000))
         logger.debug("Create new async loop", extra={"loop": loop})
         thread = Thread(target=start_background_loop, args=(loop,), daemon=True)
         thread.start()
