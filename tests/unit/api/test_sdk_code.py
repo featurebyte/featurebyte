@@ -337,3 +337,77 @@ def test_sdk_code_generation__item_view_cosine_similarity_feature(
     # check the main input nodes
     primary_input_nodes = output.graph.get_primary_input_nodes(node_name=output.node_name)
     assert [node.parameters.id for node in primary_input_nodes] == [saved_item_table.id]
+
+
+def test_sdk_code_generation__fraction_feature(
+    saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
+):
+    """Test SDK code generation for assign node special case"""
+    # tag entities
+    saved_item_table.event_id_col.as_entity(transaction_entity.name)
+
+    # create views
+    item_view = saved_item_table.get_view(event_suffix="_event_table")
+    total_amt = item_view.groupby(["event_id_col"]).aggregate(
+        value_column="item_amount",
+        method=AggFunc.SUM,
+        feature_name="sum_item_amount",
+    )
+    total_amt[total_amt.isnull()] = 0
+
+    event_view = saved_event_table.get_view()
+    joined_view = event_view.add_feature(
+        new_column_name="sum_item_amt",
+        feature=total_amt,
+        entity_column="cust_id",
+    )
+    grouped = joined_view.groupby("cust_id").aggregate_over(
+        value_column="sum_item_amt",
+        method=AggFunc.SUM,
+        windows=["30d"],
+        feature_names=["sum_item_amt_over_30d"],
+    )
+
+    joined_view["sum_item_amt_plus_one"] = joined_view["sum_item_amt"] + 1
+    grouped_1 = joined_view.groupby("cust_id").aggregate_over(
+        value_column="sum_item_amt_plus_one",
+        method=AggFunc.SUM,
+        windows=["30d"],
+        feature_names=["sum_item_amt_plus_one_over_30d"],
+    )
+
+    feat = grouped["sum_item_amt_over_30d"] / grouped_1["sum_item_amt_plus_one_over_30d"]
+    feat.name = "fraction"
+    feat.save()
+
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=True,
+        to_format=True,
+        update_fixtures=update_fixtures,
+        table_id=saved_event_table.id,
+        item_table_id=saved_item_table.id,
+    )
+
+
+def test_sdk_code__operation_system_feature(saved_scd_table, cust_id_entity, update_fixtures):
+    """
+    Test get_feature_jobs_status for feature without tile
+    """
+    saved_scd_table["col_text"].as_entity(cust_id_entity.name)
+    scd_view = saved_scd_table.get_view()
+    scd_view["os_type"] = "unknown"
+    mask_window = scd_view["os_type"].str.contains("window")
+    mask_mac = scd_view["os_type"].str.contains("mac")
+    scd_view.os_type[mask_window] = "window"
+    scd_view.os_type[mask_mac] = "mac"
+    feat = scd_view.os_type.as_feature(feature_name="os_type")
+    feat.save()
+
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=True,
+        to_format=True,
+        update_fixtures=update_fixtures,
+        table_id=saved_scd_table.id,
+    )
