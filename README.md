@@ -17,10 +17,11 @@
 FeatureByte is a **free and source available feature platform** designed to:
 
 * **Create state-of-the-art features, not data pipelines:** Create features for Machine Learning with just a few lines of code. Leave the plumbing and pipelining to FeatureByte. We take care of orchestrating the data ops - whether it’s time-window aggs or backfilling, so you can deliver more value from data.
-
 * **Improve Accuracy through data:** Use the intuitive feature declaration framework to transform creative ideas into training data in minutes. Ditch the limitations of ad-hoc pipelines for features with much more scale, complexity and freshness.
-
 * **Streamline machine learning data pipelines:** Get more value from AI. Faster. Deploy and serve features in minutes, instead of weeks or months. Declare features in Python and automatically generate optimized data pipelines — all using tools you love like Jupyter Notebooks.
+
+
+
 
 ## Take charge of the entire ML feature lifecycle
 
@@ -30,7 +31,6 @@ Feature Engineering and management doesn’t have to be complicated. Take charge
 - Create and share state-of-the-art ML features effortlessly
 - Search and reuse features to create feature lists tailored to your use case
 
-Create and Save Feature
 ``` python
 # Get view from catalog
 invoices = catalog.get_view("INVOICES")
@@ -53,7 +53,6 @@ features["AvgSpend5w"].save()
 - Experiment on live data at scale, innovating faster
 - Iterate rapidly with different feature lists to create more accurate models
 
-Experiment Featurelist
 ``` python
 # Get feature list from the catalog
 feature_list = catalog.get_feature_list(
@@ -78,7 +77,6 @@ training = \
 - Reduce costs and security risk by performing computations in your existing data platform
 - Ensure data consistency between model training and inferencing
 
-Deploy and Serve Feature List
 ``` python
 # Get feature list from the catalog
 feature_list = catalog.get_feature_list(
@@ -124,8 +122,15 @@ items_table.Discount.update_critical_data_info(
 Get an [overview of the typical workflow](https://docs.featurebyte.com/latest/about/workflow/) in FeatureByte.
 
 ## Get started with Quick-Start and Deep-Dive Tutorials
+Discover FeatureByte via its tutorials. All you need is to install the FeatureByte SDK.
 
-Discover FeatureByte via its tutorials. All you need is to install FeatureByte, activate Docker locally and run this command:
+Install FeatureByte SDK with pip:
+```shell
+pip install featurebyte
+```
+**Note**: To avoid potential conflicts with other packages it is strongly recommended to use a [virtual environment](https://docs.python.org/3/tutorial/venv.html) or a [conda environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html).
+
+Run the following python code to start the FeatureByte services locally with [Docker](https://docs.docker.com/engine/install/).
 ``` python
 import featurebyte as fb
 fb.playground()
@@ -136,7 +141,9 @@ This will create a local Spark data warehouse with pre-populated data. Once the 
 
 FeatureByte is developed to integrate seamlessly with your **Snowflake, Databricks, or Spark** data warehouses, enhancing security and efficiency by bypassing large-scale outbound data transfers. This integration allows feature calculations to be performed within the data warehouse, leveraging scalability, stability, and efficiency.
 
-![Warehouse Diagram](./assets/images/Data%20Warehouse.png)
+<div align="center">
+  <img src="./assets/images/Data%20Warehouse.png" width="600" alt="Warehouse Diagram">
+</div>
 
 FeatureByte utilizes your data warehouse as a:
 
@@ -150,20 +157,25 @@ More data warehouses will be supported soon!
 
 ![FeatureByte Architecture](./assets/images/system_architecture.png)
 The FeatureByte platform comprises the following components:
-- **Python SDK** (Python Module): Connects to the API service to provide feature authoring and management functionality through python classes and functions.
+- **FeatureByte SDK** (Python Package): Connects to the API service to provide feature authoring and management functionality through python classes and functions.
 - **FeatureByte Service** (Docker Containers):
   - **API Service**: REST-API service that validates and executes requests, queries data warehouses, and stores data.
   - **Worker**: Executes asynchronous or scheduled tasks.
   - **MongoDB**: Store metadata for created assets.
   - **Redis**: Broker and queue for workers, messenger service for publishing progress updates.
-- **Query Graph Transpiler** (Python Module): Construct data transformation steps as a query graph, which can be transpiled to platform-specific SQL.
+- **Query Graph Transpiler** (Python Package): Construct data transformation steps as a query graph, which can be transpiled to platform-specific SQL.
 - **Source Tables** (Data Warehouse): Tables used as data sources for feature engineering.
 - **Feature Store** (Data Warehouse): Database that store data used to support feature serving.
 
+## FeatureByte Service Deployment Options
 The **FeatureByte Service** can be installed in three different modes:
 
 * **Local installation:** The easiest way to get started with the FeatureByte SDK. It is a single-user installation that can be used to prototype features locally with your data warehouse.
+
+
 * **Hosted on a single server:** A light-weight option to support collaboration and job scheduling with limited scalability and availability. Multiple users can connect to the service using the FeatureByte SDK, and deploy features for production.
+
+
 * **High availability installation (coming soon):** The recommended way to run the service in production. Scale to a large number of users and deployed features, and provide highly available services.
 
 The FeatureByte Service runs on **Docker** for the first two installation modes, and is deployed on a **Kubernetes Cluster** for the high availability installation mode.
@@ -174,20 +186,21 @@ Refer to the [installation](https://docs.featurebyte.com/latest/get_started/inst
 
 The FeatureByte Python SDK offers a comprehensive set of objects for feature engineering, simplifying the management and manipulation of tables, entities, views, features, feature lists and other necessary objects for feature serving.
 
-* Catalog objects help you organize your feature engineering assets per domain and maintain clarity and easy access to these assets.
-* Entity objects contain metadata on entity types represented or referenced by tables within your data warehouse.
-* Table objects centralize key metadata about the table type, important columns, default cleaning operations and default feature job configurations.
-* View objects work like SQL views and are local virtual tables that can be modified and joined to other views to prepare data before feature definition.
-* Feature objects contain the logical plan to compute a feature in the form of a feature definition file.
-* FeatureList objects are collection of Feature objects tailored to meet the needs of a particular use case.
+* [**Catalog**](https://docs.featurebyte.com/latest/reference/core/catalog/) objects help you organize your feature engineering assets per domain and maintain clarity and easy access to these assets.
+* [**Entity**](https://docs.featurebyte.com/latest/reference/core/entity/) objects contain metadata on entity types represented or referenced by tables within your data warehouse.
+* [**Table**](https://docs.featurebyte.com/latest/reference/core/table/) objects centralize key metadata about the table type, important columns, default cleaning operations and default feature job configurations.
+* [**View**](https://docs.featurebyte.com/latest/reference/core/view/) objects work like SQL views and are local virtual tables that can be modified and joined to other views to prepare data before feature definition.
+* [**Feature**](https://docs.featurebyte.com/latest/reference/core/feature/) objects contain the logical plan to compute a feature in the form of a feature definition file.
+* [**FeatureList**](https://docs.featurebyte.com/latest/reference/core/feature_list/) objects are collection of Feature objects tailored to meet the needs of a particular use case.
 
-Refer to the [SDK overview](https://docs.featurebyte.com/latest/reference/core/feature_store/) for a complete list of the objects supported by the SDK and the SDK reference for more information about each object.
+Refer to the [SDK overview](https://docs.featurebyte.com/latest/about/sdk_overview/) for a complete list of the objects supported by the SDK and the SDK reference for more information about each object.
 
 ## Feature Creation
 
 The SDK offers an intuitive declarative framework to create feature objects with different signal types, including timing, regularity, stability, diversity, and similarity in addition to the traditional recency, frequency and monetary types.
 
-<u>Features can be as simple as an entity’s attribute</u>
+### Examples
+Features can be as simple as an entity’s attribute:
 
 ``` python
 customer_view = catalog.get_view("GROCERYCUSTOMER")
@@ -198,7 +211,7 @@ customer_view["OperatingSystemIsWindows"] = \
 uses_windows = customer_view.OperatingSystemIsWindows.as_feature("UsesWindows")
 ```
 
-<u>Features can be more complex such as aggregations over a window</u>
+Features can be more complex such as aggregations over a window:
 
 ``` python
 invoice_view = catalog.get_view("GROCERYINVOICE")
@@ -214,7 +227,7 @@ customer_purchases = invoices_by_customer.aggregate_over(
 )
 ```
 
-<u>To capture more complex signals, features can involve a series of joins and aggregates and be derived from multiple features</u>
+To capture more complex signals, features can involve a series of joins and aggregates and be derived from multiple features:
 
 ``` python
 # Get items and product view from the catalog
@@ -256,6 +269,7 @@ customer_state_similarity_28d.name = \
 customer_state_similarity_28d.save()
 ```
 
+### Feature Definition
 Once a feature is defined, you can obtain its feature definition file that is the source of truth and provides an explicit outline of the intended operations of the feature declaration, including those inherited but not explicitly declared by you.
 
 ``` python
@@ -294,6 +308,8 @@ training_table = new_feature_list.compute_historical_feature_table(
     observation_set,
     name="Improved Data to predict purchases next 2w with 2021-2022 history"
 )
+# Download training data as a Pandas DataFrame
+training_df = training_table.to_pandas()
 ```
 
 Refer to the SDK reference for the [FeatureList](https://docs.featurebyte.com/latest/reference/core/feature_list/), [ObservationTable](https://docs.featurebyte.com/latest/reference/core/observation_table/) and [HistoricalFeatureTable](https://docs.featurebyte.com/latest/reference/core/historical_feature_table/) objects, for more information.
@@ -309,7 +325,7 @@ feature_list = catalog.get_feature_list(
 )
 # Check Feature objects are PRODUCTION_READY.
 # A readiness metric of 100% should be returned.
-display(feature_list.production_ready_fraction)
+print(feature_list.production_ready_fraction)
 # Create deployment
 my_deployment = feature_list.deploy(
     name="Deployment of 200 Features to predict customers purchases amount next 2 weeks",
@@ -320,9 +336,10 @@ my_deployment.enable()
 
 Use the REST API service to retrieve feature values from the online feature store for online serving or use the SDK to retrieve batch of feature values from the online feature store for batch serving.
 
-<u>For online serving</u>, the Deployment object provides REST API service templates that can be used to serve features. Python or shell script templates for the REST API service are retrieved from the Deployment object.
+### Online Serving
+For online serving, the Deployment object provides REST API service templates that can be used to serve features. Python or shell script templates for the REST API service are retrieved from the Deployment object.
 
-For Python script:
+Get online scoring code as a Python script:
 ``` python
 deployment = catalog.get_deployment(
     "Deployment of 200 Features to predict customers purchases amount next 2 weeks"
@@ -330,12 +347,13 @@ deployment = catalog.get_deployment(
 deployment.get_online_serving_code(language="python")
 ```
 
-For Shell script:
+Get online scoring code as a Shell script:
 ``` python
 deployment.get_online_serving_code(language="sh")
 ```
 
-<u>For batch serving</u>, the Deployment object is used to retrieve feature values for a batch request table containing entities values.
+### Batch Serving
+For batch serving, the Deployment object is used to retrieve feature values for a batch request table containing entities values.
 
 ``` python
 from datetime import datetime
@@ -345,23 +363,25 @@ batch_features = deployment.compute_batch_feature_table(
         "Data to predict customers purchases next 2 w as of " +
         datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 )
+# Download batch feature values as a Pandas DataFrame
+batch_features_df = batch_features.to_pandas()
 ```
 
 Refer to the SDK reference for the [Deployment](https://docs.featurebyte.com/latest/reference/core/deployment/), [BatchRequestTable](https://docs.featurebyte.com/latest/reference/core/batch_request_table/) and [BatchFeatureTable](https://docs.featurebyte.com/latest/reference/core/batch_feature_table/) objects, for more information.
 
 
-## 📈 Releases
+## Releases
 
-You can see the list of available releases on the [GitHub Releases](https://github.com/featurebyte/featurebyte/releases) page.
+You can see the list of available releases on the [Change Log](https://github.com/featurebyte/featurebyte/blob/main/CHANGELOG.md) page.
 Releases are versioned using the [Semantic Versions](https://semver.org/) specification.
 
-## 🛡 License
+## License
 
 [![License](https://img.shields.io/github/license/featurebyte/featurebyte)](https://github.com/featurebyte/featurebyte/blob/main/LICENSE)
 
 This project is licensed under the terms of the `Elastic License 2.0` license. See [LICENSE](https://github.com/featurebyte/featurebyte/blob/main/LICENSE) for more details.
 
-## :wrench: Contributing
+## Contributing
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
 
 All contributions are welcomed. Please adhere to the [Code of Conduct](https://github.com/featurebyte/featurebyte/blob/main/CODE_OF_CONDUCT.md) and read the
