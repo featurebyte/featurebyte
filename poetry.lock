@@ -4,7 +4,7 @@
 server = ["aioredis", "boto3", "cachetools", "celery", "celerybeat-mongo", "databricks-cli", "databricks-sql-connector", "fastapi", "featurebyte-freeware", "gevent", "motor", "pdfkit", "pyhive", "redis", "sasl", "smart-open", "snowflake-connector-python", "thrift-sasl", "uvicorn"]
 
 [metadata]
-content-hash = "5115264bc962e123a03a7a65f12392f50de948fcf5ad3a08321cad8bee4319ba"
+content-hash = "c6d83893aa6a4c57e6d01326750c413d3919341b2640aeab3805fdd909862365"
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
 
@@ -4359,6 +4359,18 @@ all = ["colorama (>=0.4.3,<0.5.0)", "rich (>=10.11.0,<13.0.0)", "shellingham (>=
 dev = ["autoflake (>=1.3.1,<2.0.0)", "flake8 (>=3.8.3,<4.0.0)", "pre-commit (>=2.17.0,<3.0.0)"]
 doc = ["cairosvg (>=2.5.2,<3.0.0)", "mdx-include (>=1.4.1,<2.0.0)", "mkdocs (>=1.1.2,<2.0.0)", "mkdocs-material (>=8.1.4,<9.0.0)", "pillow (>=9.3.0,<10.0.0)"]
 test = ["black (>=22.3.0,<23.0.0)", "coverage (>=6.2,<7.0)", "isort (>=5.0.6,<6.0.0)", "mypy (==0.910)", "pytest (>=4.4.0,<8.0.0)", "pytest-cov (>=2.10.0,<5.0.0)", "pytest-sugar (>=0.9.4,<0.10.0)", "pytest-xdist (>=1.32.0,<4.0.0)", "rich (>=10.11.0,<13.0.0)", "shellingham (>=1.3.0,<2.0.0)"]
+
+[[package]]
+category = "dev"
+description = "Typing stubs for aiofiles"
+files = [
+    {file = "types-aiofiles-23.1.0.2.tar.gz", hash = "sha256:ea0a659f7cdd689a65a4e56170299d5d3c848b46984789b5302567f843a51462"},
+    {file = "types_aiofiles-23.1.0.2-py3-none-any.whl", hash = "sha256:7d8fbfd999aea9cf65231b413552f230b8cbd13eb4f0947b251d337629e10f42"},
+]
+name = "types-aiofiles"
+optional = false
+python-versions = "*"
+version = "23.1.0.2"
 
 [[package]]
 category = "dev"
