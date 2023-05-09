@@ -1,4 +1,4 @@
--- url: https://storage.googleapis.com/featurebyte-public-datasets/healthcare.tar.gz
+-- url: https://storage.googleapis.com/featurebyte-public-datasets/healthcare_20230509.tar.gz
 -- description: Healthcare Dataset
 
 DROP DATABASE IF EXISTS HEALTHCARE CASCADE;
@@ -10,7 +10,8 @@ USING parquet OPTIONS (
     path '{staging_path}/Allergy.parquet'
 );
 CREATE TABLE HEALTHCARE.__ALLERGY USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW HEALTHCARE.ALLERGY(
+CREATE OR REPLACE VIEW HEALTHCARE.ALLERGY AS
+SELECT
   `AllergyGuid`,
   `PatientGuid`,
   `StartDate`,
@@ -18,8 +19,7 @@ CREATE OR REPLACE VIEW HEALTHCARE.ALLERGY(
   `ReactionName`,
   `Severity`,
   `record_available_at`
-) as
-SELECT * FROM HEALTHCARE.__ALLERGY
+FROM HEALTHCARE.__ALLERGY
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate Diagnosis
@@ -28,7 +28,8 @@ USING parquet OPTIONS (
     path '{staging_path}/Diagnosis.parquet'
 );
 CREATE TABLE HEALTHCARE.__DIAGNOSIS USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW HEALTHCARE.DIAGNOSIS(
+CREATE OR REPLACE VIEW HEALTHCARE.DIAGNOSIS AS
+SELECT
   `RowID`,
   `DiagnosisGuid`,
   `PatientGuid`,
@@ -39,8 +40,7 @@ CREATE OR REPLACE VIEW HEALTHCARE.DIAGNOSIS(
   `Acute`,
   `record_available_at`,
   `closedAt`
-) as
-SELECT * FROM HEALTHCARE.__DIAGNOSIS
+FROM HEALTHCARE.__DIAGNOSIS
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate LabObservation
@@ -49,7 +49,8 @@ USING parquet OPTIONS (
     path '{staging_path}/LabObservation.parquet'
 );
 CREATE TABLE HEALTHCARE.__LABOBSERVATION USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW HEALTHCARE.LABOBSERVATION(
+CREATE OR REPLACE VIEW HEALTHCARE.LABOBSERVATION AS
+SELECT
   `LabObservationGuid`,
   `LabResultGuid`,
   `HL7Text`,
@@ -59,8 +60,7 @@ CREATE OR REPLACE VIEW HEALTHCARE.LABOBSERVATION(
   `AbnormalFlags`,
   `IsAbnormalValue`,
   `record_available_at`
-) as
-SELECT * FROM HEALTHCARE.__LABOBSERVATION
+FROM HEALTHCARE.__LABOBSERVATION
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate LabResult
@@ -69,13 +69,14 @@ USING parquet OPTIONS (
     path '{staging_path}/LabResult.parquet'
 );
 CREATE TABLE HEALTHCARE.__LABRESULT USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW HEALTHCARE.LABRESULT(
+CREATE OR REPLACE VIEW HEALTHCARE.LABRESULT AS
+SELECT
   `LabResultGuid`,
   `PatientGuid`,
   `ReportDate`,
+  `tz_offset`,
   `record_available_at`
-) as
-SELECT * FROM HEALTHCARE.__LABRESULT
+FROM HEALTHCARE.__LABRESULT
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate Patient
@@ -84,7 +85,8 @@ USING parquet OPTIONS (
     path '{staging_path}/Patient.parquet'
 );
 CREATE TABLE HEALTHCARE.__PATIENT USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW HEALTHCARE.PATIENT(
+CREATE OR REPLACE VIEW HEALTHCARE.PATIENT AS
+SELECT
   `RowID`,
   `PatientGuid`,
   `Gender`,
@@ -92,10 +94,7 @@ CREATE OR REPLACE VIEW HEALTHCARE.PATIENT(
   `StateCode`,
   `ValidFrom`,
   `record_available_at`,
-  `CurrentRecord`
-) as
-SELECT `RowID`, `PatientGuid`, `Gender`, `DateOfBirth`, `StateCode`, `ValidFrom`, `record_available_at`,
-LAG(`ValidFrom`) OVER (PARTITION BY `PatientGuid` ORDER BY `ValidFrom` DESC) IS NULL AS `CurrentRecord`
+  LAG(`ValidFrom`) OVER (PARTITION BY `PatientGuid` ORDER BY `ValidFrom` DESC) IS NULL AS `CurrentRecord`
 FROM HEALTHCARE.__PATIENT
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
@@ -105,17 +104,14 @@ USING parquet OPTIONS (
     path '{staging_path}/PatientSmokingStatus.parquet'
 );
 CREATE TABLE HEALTHCARE.__PATIENTSMOKINGSTATUS USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW HEALTHCARE.PATIENTSMOKINGSTATUS(
+CREATE OR REPLACE VIEW HEALTHCARE.PATIENTSMOKINGSTATUS AS
+SELECT
   `PatientSmokingStatusGuid`,
   `PatientGuid`,
   `Description`,
   `NISTcode`,
   `ValidFrom`,
   `record_available_at`,
-  `CurrentRecord`
-) as
-SELECT
-  `PatientSmokingStatusGuid`, `PatientGuid`, `Description`, `NISTcode`, `ValidFrom`, `record_available_at`,
   LAG(`ValidFrom`) OVER (PARTITION BY `PatientSmokingStatusGuid` ORDER BY `ValidFrom` DESC) IS NULL AS `CurrentRecord`
 FROM HEALTHCARE.__PATIENTSMOKINGSTATUS
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
@@ -126,10 +122,12 @@ USING parquet OPTIONS (
     path '{staging_path}/Prescription.parquet'
 );
 CREATE TABLE HEALTHCARE.__PRESCRIPTION USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW HEALTHCARE.PRESCRIPTION(
+CREATE OR REPLACE VIEW HEALTHCARE.PRESCRIPTION AS
+SELECT
   `PrescriptionGuid`,
   `PatientGuid`,
   `PrescriptionDate`,
+  `tz_offset`,
   `Quantity`,
   `NumberOfRefills`,
   `RefillAsNeeded`,
@@ -139,8 +137,7 @@ CREATE OR REPLACE VIEW HEALTHCARE.PRESCRIPTION(
   `MedicationStrength`,
   `Schedule`,
   `record_available_at`
-) as
-SELECT * FROM HEALTHCARE.__PRESCRIPTION
+FROM HEALTHCARE.__PRESCRIPTION
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate StateDetails
@@ -149,7 +146,8 @@ USING parquet OPTIONS (
     path '{staging_path}/StateDetails.parquet'
 );
 CREATE TABLE HEALTHCARE.__STATEDETAILS USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW HEALTHCARE.STATEDETAILS(
+CREATE OR REPLACE VIEW HEALTHCARE.STATEDETAILS AS
+SELECT
   `StateGuid`,
   `StateCode`,
   `StateName`,
@@ -164,8 +162,7 @@ CREATE OR REPLACE VIEW HEALTHCARE.STATEDETAILS(
   `TotalPopulation`,
   `ValidFrom`,
   `record_available_at`
-) as
-SELECT * FROM HEALTHCARE.__STATEDETAILS
+FROM HEALTHCARE.__STATEDETAILS
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate Visit
@@ -174,10 +171,12 @@ USING parquet OPTIONS (
     path '{staging_path}/Visit.parquet'
 );
 CREATE TABLE HEALTHCARE.__VISIT USING DELTA AS SELECT * FROM temp_table;
-CREATE OR REPLACE VIEW HEALTHCARE.VISIT(
+CREATE OR REPLACE VIEW HEALTHCARE.VISIT AS
+SELECT
   `VisitGuid`,
   `PatientGuid`,
   `VisitDate`,
+  `tz_offset`,
   `Height`,
   `Weight`,
   `BMI`,
@@ -187,8 +186,7 @@ CREATE OR REPLACE VIEW HEALTHCARE.VISIT(
   `Temperature`,
   `PhysicianSpecialty`,
   `record_available_at`
-) as
-SELECT * FROM HEALTHCARE.__VISIT
+FROM HEALTHCARE.__VISIT
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 
 -- populate Icd9Hierarchy
