@@ -9,7 +9,7 @@
 [![Security: bandit](https://img.shields.io/badge/security-bandit-green.svg)](https://github.com/PyCQA/bandit)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/featurebyte/featurebyte/blob/main/.pre-commit-config.yaml)
 [![Semantic Versions](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--versions-e10079.svg)](https://github.com/featurebyte/featurebyte/releases)
-[![License](https://img.shields.io/github/license/featurebyte/featurebyte)](https://github.com/featurebyte/featurebyte/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-elastic%202.0-yellowgreen)](https://github.com/featurebyte/featurebyte/blob/main/LICENSE)
 ![Coverage Report](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/kchua78/773e2960183c0a6fe24c644d95d71fdb/raw/coverage.json)
 
 </div>
@@ -142,7 +142,7 @@ This will create a local Spark data warehouse with pre-populated data. Once the 
 FeatureByte is developed to integrate seamlessly with your **Snowflake, Databricks, or Spark** data warehouses, enhancing security and efficiency by bypassing large-scale outbound data transfers. This integration allows feature calculations to be performed within the data warehouse, leveraging scalability, stability, and efficiency.
 
 <div align="center">
-  <img src="./assets/images/Data%20Warehouse.png" width="600" alt="Warehouse Diagram">
+  <img src="https://github.com/featurebyte/featurebyte/blob/main/assets/images/Data%20Warehouse.png" width="600" alt="Warehouse Diagram">
 </div>
 
 FeatureByte utilizes your data warehouse as a:
@@ -155,7 +155,7 @@ More data warehouses will be supported soon!
 
 ## Architecture
 
-![FeatureByte Architecture](./assets/images/system_architecture.png)
+![FeatureByte Architecture](https://github.com/featurebyte/featurebyte/blob/main/assets/images/system_architecture.png)
 The FeatureByte platform comprises the following components:
 - **FeatureByte SDK** (Python Package): Connects to the API service to provide feature authoring and management functionality through python classes and functions.
 - **FeatureByte Service** (Docker Containers):
@@ -377,7 +377,7 @@ Releases are versioned using the [Semantic Versions](https://semver.org/) specif
 
 ## License
 
-[![License](https://img.shields.io/github/license/featurebyte/featurebyte)](https://github.com/featurebyte/featurebyte/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-elastic%202.0-yellowgreen)](https://github.com/featurebyte/featurebyte/blob/main/LICENSE)
 
 This project is licensed under the terms of the `Elastic License 2.0` license. See [LICENSE](https://github.com/featurebyte/featurebyte/blob/main/LICENSE) for more details.
 
