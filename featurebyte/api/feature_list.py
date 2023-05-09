@@ -1112,7 +1112,7 @@ class FeatureList(
 
         Retrieve materialized historical features with serving names mapping.
         >>> historical_features = feature_list.compute_historical_features(
-        ...   observation_set=observation_set
+        ...   observation_set=observation_set,
         ...   serving_names_mapping={"GROCERYCUSTOMERGUID": "CUSTOMERGUID"}
         ... )
 
