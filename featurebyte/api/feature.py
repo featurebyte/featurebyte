@@ -1126,7 +1126,7 @@ class Feature(
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> new_feature = feature.isnull()
         """
-        return super().isnull()  # type: ignore
+        return super().isnull()
 
     def notnull(self) -> Feature:
         """
@@ -1142,7 +1142,7 @@ class Feature(
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> new_feature = feature.notnull()
         """
-        return super().notnull()  # type: ignore
+        return super().notnull()
 
     # descriptors
     list_versions: ClassVar[ClassInstanceMethodDescriptor] = ClassInstanceMethodDescriptor(
