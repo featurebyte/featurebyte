@@ -96,7 +96,7 @@ def test_codestr_format():
     assert str(code) == "import featurebyte"
     assert code._repr_html_() == (
         '<div style="margin:30px; padding: 20px; border:1px solid #aaa">'
-        '<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span>'
+        '<div class="highlight"><pre style="line-height: 125%;"><span></span>'
         '<span style="color: #008000; font-weight: bold">import</span> '
         '<span style="color: #0000FF; font-weight: bold">featurebyte</span>\n'
         "</pre></div>\n</div>"
