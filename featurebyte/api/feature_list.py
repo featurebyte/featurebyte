@@ -1109,6 +1109,13 @@ class FeatureList(
         6    2022-04-27  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 9.715000
         7    2022-04-29  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 9.715000
 
+
+        Retrieve materialized historical features with serving names mapping.
+        >>> historical_features = feature_list.compute_historical_features(
+        ...   observation_set=observation_set
+        ...   serving_names_mapping={"GROCERYCUSTOMERGUID": "CUSTOMERGUID"}
+        ... )
+
         See Also
         --------
         - [FeatureGroup.preview](/reference/featurebyte.api.feature_group.FeatureGroup.preview/):
@@ -1189,8 +1196,9 @@ class FeatureList(
         ... )
         >>> # Compute the historical feature table
         >>> training_table = my_feature_list.compute_historical_feature_table(  # doctest: +SKIP
-        ...   observation_table,
+        ...   observation_table=observation_table,
         ...   historical_feature_table_name=training_table_name
+        ...   serving_names_mapping={"GROCERYCUSTOMERGUID": "CUSTOMERGUID"}
         ... )
         """
         featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
