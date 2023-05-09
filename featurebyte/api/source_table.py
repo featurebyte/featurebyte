@@ -338,7 +338,13 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
 
 
         Sample 3 rows from the table with timestamps.
-        >>> catalog.get_table("GROCERYINVOICE").sample(  # doctest: +SKIP
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
+        ... )
+        >>> event_table.sample(  # doctest: +SKIP
         ...   size=3,
         ...   seed=111,
         ...   from_timestamp=datetime(2019, 1, 1),
@@ -394,15 +400,11 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         Examples
         --------
         Get a summary of a view.
-        >>> catalog.get_table("GROCERYPRODUCT").describe()
-                                    GroceryProductGuid        ProductGroup
-        dtype                                  VARCHAR             VARCHAR
-        unique                                   29099                  87
-        %missing                                   0.0                 0.0
-        %empty                                       0                   0
-        entropy                               6.214608             4.13031
-        top       017fe5ed-80a2-4e70-ae48-78aabfdee856  Chips et Tortillas
-        freq                                       1.0              1319.0
+
+        >>> description = catalog.get_table("GROCERYINVOICE").describe(
+        ...   from_timestamp=datetime(2019, 1, 1),
+        ...   to_timestamp=datetime(2019, 12, 31),
+        ... )
 
         See Also
         --------

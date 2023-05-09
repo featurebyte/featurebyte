@@ -1112,6 +1112,38 @@ class Feature(
         """
         assert_is_lookup_feature(self.node_types_lineage)
 
+    def isnull(self) -> Feature:
+        """
+        Returns a boolean Feature indicating whether each element is missing.
+
+        Returns
+        -------
+        Feature
+            Feature with boolean values
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> new_feature = feature.isnull()
+        """
+        return super().isnull()  # type: ignore
+
+    def notnull(self) -> Feature:
+        """
+        Returns a boolean Feature indicating whether each element is not null.
+
+        Returns
+        -------
+        Feature
+            Feature with boolean values
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> new_feature = feature.notnull()
+        """
+        return super().notnull()  # type: ignore
+
     # descriptors
     list_versions: ClassVar[ClassInstanceMethodDescriptor] = ClassInstanceMethodDescriptor(
         class_method=_list_versions,
