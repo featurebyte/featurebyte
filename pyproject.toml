@@ -107,7 +107,7 @@ celery = { version = "^5.2.6", extras = ["redis"], optional = true }
 celerybeat-mongo = { version = "^0.2.0", optional = true }
 cryptography = "^40.0.2"
 databricks-cli = { version = "^0.17.3", optional = true }
-databricks-sql-connector = "^2.5.0"
+databricks-sql-connector = { version = "^2.5.0", optional = true }
 fastapi = { version =  "^0.95.1", optional = true }
 featurebyte-freeware = { version = "^0.2.14", optional = true }
 gevent = {version = "^22.10.2", optional = true}
@@ -141,7 +141,7 @@ websocket-client = "^1.5.1"
 wheel = "0.40.0"
 
 [tool.poetry.extras]
-server = ["cachetools", "databricks-cli", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "featurebyte-databricks-sql-connector", "featurebyte-freeware", "gevent"]
+server = ["cachetools", "databricks-cli", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
