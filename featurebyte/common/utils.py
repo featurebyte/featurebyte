@@ -412,7 +412,9 @@ class CodeStr(str):
     def _repr_html_(self) -> str:
         lexer = pygments.lexers.get_lexer_by_name("python")
         highlighted_code = pygments.highlight(
-            str(self).strip(), lexer=lexer, formatter=HtmlFormatter(noclasses=True)
+            str(self).strip(),
+            lexer=lexer,
+            formatter=HtmlFormatter(noclasses=True, nobackground=True),
         )
         return (
             '<div style="margin:30px; padding: 20px; border:1px solid #aaa">'
