@@ -90,7 +90,7 @@ class TileManager(BaseModel):
                 tile_spec=tile_spec, temp_entity_table=entity_table
             )
             logger.debug(
-                f"Done update_tile_entity_tracker.",
+                "Done update_tile_entity_tracker",
                 extra={"tile_id": tile_spec.tile_id, "duration": time.time() - tic},
             )
 
