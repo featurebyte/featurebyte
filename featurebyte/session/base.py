@@ -437,6 +437,7 @@ class BaseSession(BaseModel):
         table_name: str,
         schema_name: str,
         database_name: str,
+        if_exists: bool = False,
     ) -> None:
         """
         Drop a table
@@ -449,12 +450,18 @@ class BaseSession(BaseModel):
             Schema name
         database_name : str
             Database name
+        if_exists : bool
+            If True, drop the table only if it exists
         """
         fully_qualified_table_name = get_fully_qualified_table_name(
             {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
         )
         query = sql_to_string(
-            expressions.Drop(this=expressions.Table(this=fully_qualified_table_name), kind="TABLE"),
+            expressions.Drop(
+                this=expressions.Table(this=fully_qualified_table_name),
+                kind="TABLE",
+                exists=if_exists,
+            ),
             source_type=self.source_type,
         )
         await self.execute_query(query)

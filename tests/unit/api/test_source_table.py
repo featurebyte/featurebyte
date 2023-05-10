@@ -271,5 +271,5 @@ def test_bad_materialized_tables_cleaned_up(
 
     assert "RuntimeError: Something went wrong" in str(exc.value)
     assert snowflake_execute_query.call_args[0][0].startswith(
-        'DROP TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE_'
+        'DROP TABLE IF EXISTS "sf_database"."sf_schema"."OBSERVATION_TABLE_'
     )
