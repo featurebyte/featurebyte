@@ -104,6 +104,11 @@ class MockDatabricksConnection:
         mock_arrow_table.to_pandas.return_value = df
         return mock_arrow_table
 
+    def fetchmany_arrow(self, size):
+        mock_dataframe = self.fetchall_arrow().to_pandas()
+        for i in range(mock_dataframe.shape[0], size):
+            yield mock_dataframe.iloc[i:size]
+
     def execute(self, *args, **kwargs):
         self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
         self.result_rows = [
