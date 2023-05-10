@@ -12,6 +12,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
+    CodeGenerationContext,
     CodeGenerator,
     ExpressionStr,
     VariableNameGenerator,
@@ -162,7 +163,9 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
                 var_name_generator=global_state.var_name_generator,
                 operation_structure=op_struct,
                 config=global_state.code_generation_config,
-                as_info_str=node.name in global_state.as_info_str_node_names,
+                context=CodeGenerationContext(
+                    as_info_str=node.name in global_state.as_info_str_node_names
+                ),
             )
 
         # update global state

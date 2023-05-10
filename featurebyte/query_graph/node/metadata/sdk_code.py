@@ -323,6 +323,19 @@ class CodeGenerationConfig(BaseModel):
     max_expression_length: int = Field(default=40)
 
 
+class CodeGenerationContext(BaseModel):
+    """
+    CodeGenerationContext is used to store the context information during code generation. Code generation context
+    include information that need to be passed to the next code generation step.
+    """
+
+    # Whether to output current node output as info string or not. This is used to pass the information to the next
+    # code generation step. For example, for the ConditionalNode -> AssignNode structure, ConditionalNode will pass
+    # the mask variable & value to the AssignNode, and AssignNode will use the mask variable & value to generate the
+    # assignment statement.
+    as_info_str: bool
+
+
 class VariableNameGenerator(BaseModel):
     """
     VariableNameGenerator class is used to generate the variable name given the characteristics of the

@@ -17,6 +17,7 @@ from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationConfig,
+    CodeGenerationContext,
     ExpressionStr,
     StatementT,
     ValueStr,
@@ -56,7 +57,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         ts_operand: str = input_var_name_expressions[0].as_input()
 
@@ -122,7 +123,7 @@ class DateDifference(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         left_operand: str = input_var_name_expressions[0].as_input()
         right_operand = input_var_name_expressions[1].as_input()
@@ -158,7 +159,7 @@ class TimeDelta(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expression = input_var_name_expressions[0]
         statements: List[StatementT] = []
@@ -201,7 +202,7 @@ class DateAdd(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         left_operand: str = input_var_name_expressions[0].as_input()
         right_operand = input_var_name_expressions[1].as_input()

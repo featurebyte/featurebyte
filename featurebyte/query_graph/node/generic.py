@@ -33,6 +33,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationConfig,
+    CodeGenerationContext,
     ExpressionStr,
     InfoStr,
     ObjectClass,
@@ -125,7 +126,7 @@ class ProjectNode(BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=input_var_name_expressions[0],
@@ -222,7 +223,7 @@ class FilterNode(BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expr = input_var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
@@ -370,7 +371,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expr = input_var_name_expressions[0]
         column_name = self.parameters.name
@@ -445,7 +446,7 @@ class LagNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         col_name = input_var_name_expressions[0].as_input()
         entity_columns = ValueStr.create(self.parameters.entity_columns)
@@ -544,7 +545,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=input_var_name_expressions[0],
@@ -640,7 +641,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         # Note: this node is a special case as the output of this node is not a complete SDK code.
         # Currently, `item_view.groupby(...).aggregate()` will generate ItemGroupbyNode + ProjectNode.
@@ -786,7 +787,7 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=input_var_name_expressions[0],
@@ -1006,7 +1007,7 @@ class JoinNode(BasePrunableNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         left_statements, left_var_name = self._convert_expression_to_variable(
             var_name_expression=input_var_name_expressions[0],
@@ -1133,7 +1134,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         new_column_name = ValueStr.create(self.parameters.name)
         feature = input_var_name_expressions[1]
@@ -1240,7 +1241,7 @@ class TrackChangesNode(BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         raise NotImplementedError()
 
@@ -1308,7 +1309,7 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         # Note: this node is a special case as the output of this node is not a complete SDK code.
         # Currently, `scd_view.groupby(...).aggregate_asat()` will generate AggregateAsAtNode + ProjectNode.
@@ -1403,7 +1404,7 @@ class AliasNode(BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expr = input_var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
@@ -1449,7 +1450,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expr = input_var_name_expressions[0]
         mask_var_name_expr = input_var_name_expressions[1]
@@ -1472,7 +1473,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         if len(input_var_name_expressions) == 3:
             value = input_var_name_expressions[2]
 
-        if as_info_str:
+        if context:
             # This is to handle the case where `View[<column>][<condition>] = <value>` is used.
             # Since there is no single line in SDK code to generate conditional expression, we output info instead
             # and delay the generation of SDK code to the assign node. This method only generates the conditional part,

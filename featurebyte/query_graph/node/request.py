@@ -19,6 +19,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationConfig,
+    CodeGenerationContext,
     StatementT,
     VariableNameGenerator,
     VarNameExpressionStr,
@@ -82,7 +83,7 @@ class RequestColumnNode(BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-        as_info_str: bool = False,
+        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         statements: List[StatementT] = []
         var_name = var_name_generator.convert_to_variable_name("request_col", node_name=self.name)
