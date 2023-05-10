@@ -1,7 +1,7 @@
 """
 Extract documentation into a CSV file.
 """
-from typing import Dict, List
+from typing import Dict, List, Literal
 
 import csv
 from dataclasses import dataclass
@@ -30,9 +30,11 @@ class DocItemToRender:
     """
 
     menu_item: str
+    # eg. class, method, property
+    item_type: Literal["class", "property", "method", "missing"]
     # eg. FeatureStore, FeatureStore.list
     class_method_or_attribute: str
-    # ilnk to docs, eg: http://127.0.0.1:8000/reference/featurebyte.api.feature_store.FeatureStore/
+    # link to docs, eg: http://127.0.0.1:8000/reference/featurebyte.api.feature_store.FeatureStore/
     link: str
     # the current docstring
     docstring_description: str
@@ -169,6 +171,7 @@ def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
             all_doc_items_to_generate.append(
                 DocItemToRender(
                     menu_item=" > ".join(layout_item.menu_header),
+                    item_type=resource_details.type,
                     class_method_or_attribute=link_without_md,
                     link=f"http://127.0.0.1:8000/reference/{link_without_md}",
                     **extract_details_for_rendering(resource_details),
@@ -180,6 +183,7 @@ def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
             all_doc_items_to_generate.append(
                 DocItemToRender(
                     menu_item=" > ".join(layout_item.menu_header),
+                    item_type=doc_item.resource_details.type,
                     class_method_or_attribute=doc_item.class_method_or_attribute,
                     link=doc_item.link,
                     **extract_details_for_rendering(doc_item.resource_details),
@@ -191,6 +195,7 @@ def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
         all_doc_items_to_generate.append(
             DocItemToRender(
                 menu_item=" > ".join(layout_item.menu_header),
+                item_type="missing",
                 class_method_or_attribute="missing",
                 link="missing",
                 docstring_description="missing",
