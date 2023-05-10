@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, List, Optional, Tuple
 
+import time
 from datetime import datetime
 
 import numpy as np
@@ -75,15 +76,22 @@ class TileManager(BaseModel):
             progress_callback(0, f"0/{num_jobs} completed")
 
         for index, (tile_spec, entity_table) in enumerate(tile_inputs):
+            tic = time.time()
             await self.generate_tiles(
                 tile_spec=tile_spec, tile_type=TileType.OFFLINE, start_ts_str=None, end_ts_str=None
             )
-            logger.debug(f"Done generating tiles for {tile_spec}")
+            logger.debug(
+                f"Done generating tiles for {tile_spec.tile_id}. Elapsed: {time.time() - tic:.2f}s"
+            )
 
+            tic = time.time()
             await self.update_tile_entity_tracker(
                 tile_spec=tile_spec, temp_entity_table=entity_table
             )
-            logger.debug(f"Done update_tile_entity_tracker for {tile_spec}")
+            logger.debug(
+                f"Done update_tile_entity_tracker for {tile_spec.tile_id}."
+                f" Elapsed: {time.time() - tic:.2f}s"
+            )
 
             if progress_callback:
                 progress_callback(
