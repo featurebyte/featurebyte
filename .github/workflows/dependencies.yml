@@ -7,6 +7,12 @@ on:
     types: [opened, reopened, synchronize, labeled, unlabeled]
     branches:
       - main
+      - release/*
+
+permissions:
+  contents: write
+  repository-projects: read
+  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -54,4 +60,15 @@ jobs:
           awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > main.PKG-INFO
 
       - name: Diff dependencies
-        run: diff -u branch.PKG-INFO main.PKG-INFO
+        run: |
+          echo "DIFF=$(diff -u branch.PKG-INFO main.PKG-INFO)" >> $GITHUB_ENV
+          diff -u branch.PKG-INFO main.PKG-INFO
+
+      - uses: mshick/add-pr-comment@v2
+        if: failure()
+        with:
+          message: |
+            **Diff**
+            ```diff
+            ${{ env.DIFF }}
+            ```
