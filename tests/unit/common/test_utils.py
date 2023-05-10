@@ -8,6 +8,7 @@ import toml
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.utils import (
+    CodeStr,
     dataframe_from_arrow_stream,
     dataframe_from_json,
     dataframe_to_arrow_bytes,
@@ -85,3 +86,18 @@ def test_get_version():
     """
     data = toml.load("pyproject.toml")
     assert get_version() == data["tool"]["poetry"]["version"]
+
+
+def test_codestr_format():
+    """
+    Test CodeStr formatting
+    """
+    code = CodeStr("import featurebyte")
+    assert str(code) == "import featurebyte"
+    assert code._repr_html_() == (
+        '<div style="margin:30px; padding: 20px; border:1px solid #aaa">'
+        '<div class="highlight"><pre style="line-height: 125%;"><span></span>'
+        '<span style="color: #008000; font-weight: bold">import</span> '
+        '<span style="color: #0000FF; font-weight: bold">featurebyte</span>\n'
+        "</pre></div>\n</div>"
+    )
