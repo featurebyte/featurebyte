@@ -384,6 +384,7 @@ def test_sdk_code_generation__fraction_feature(
         feat,
         to_use_saved_data=True,
         to_format=True,
+        fixture_path="tests/fixtures/sdk_code/feature_fraction.py",
         update_fixtures=update_fixtures,
         table_id=saved_event_table.id,
         item_table_id=saved_item_table.id,
@@ -409,6 +410,7 @@ def test_sdk_code_generation__operating_system_feature(
         feat,
         to_use_saved_data=True,
         to_format=True,
+        fixture_path="tests/fixtures/sdk_code/feature_operating_system.py",
         update_fixtures=update_fixtures,
         table_id=saved_scd_table.id,
     )
