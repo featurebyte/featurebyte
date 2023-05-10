@@ -2,7 +2,7 @@
 
 ---
 
-## v0.2.1
+## v0.2.2 (Unreleased)
 
 ---
 
@@ -13,14 +13,20 @@
 
 
 ### 💡 Enhancements 💡
+
 * Support using DataFrame as observation set in `compute_historical_feature_table()`
 * Support `preview`, `sample` and `describe` methods for materialised tables
 * Support `columns` and `columns_rename_mapping` parameters when creating observation table and
   batch feature table
 * Update healthcare demo dataset to include timezone columns
 
+### 🧰 Bug fixes 🧰
+
+## v0.2.1
 
 ### 🧰 Bug fixes 🧰
+
+* Removed additional dependencies specified in featurebyte client
 
 ---
 
@@ -28,12 +34,5 @@
 
 ---
 ### 🛑 Breaking changes 🛑
+
 + `featurebyte` is now available for early access
-
-### 🚩 Deprecations 🚩
-
-
-### 💡 Enhancements 💡
-
-
-### 🧰 Bug fixes 🧰
