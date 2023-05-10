@@ -257,6 +257,27 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         -------
         pd.DataFrame
             Preview rows of the table column.
+
+        Examples
+        --------
+        Preview a table without cleaning operations.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> description = event_table.preview(limit=5)
+
+
+        Preview a table after cleaning operations have been applied.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
+        ... )
+        >>> description = event_table.preview(
+        ...   limit=5,
+        ...   after_cleaning=True
+        ... )
         """
         return self.parent.preview(limit=limit, after_cleaning=after_cleaning)[[self.info.name]]
 
@@ -313,6 +334,27 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         -------
         pd.DataFrame
             Sampled rows from the table column.
+
+        Examples
+        --------
+        Sample 3 rows from the table.
+        >>> sample = catalog.get_table("GROCERYINVOICE")["Amount"].sample(3)
+
+
+        Sample 3 rows from the table with timestamps after cleaning operations have been applied.
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
+        ... )
+        >>> event_table["Amount"].sample(  # doctest: +SKIP
+        ...   size=3,
+        ...   seed=111,
+        ...   from_timestamp=datetime(2019, 1, 1),
+        ...   to_timestamp=datetime(2023, 12, 31),
+        ...   after_cleaning=True,
+        ... )
         """
         return self.parent.sample(
             size=size,
@@ -352,6 +394,31 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         -------
         pd.DataFrame
             Summary of the table column.
+
+        Examples
+        --------
+        Describe a table without cleaning operations
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> description = event_table["Amount"].describe(
+        ...   from_timestamp=datetime(2020, 1, 1),
+        ...   to_timestamp=datetime(2020, 1, 31),
+        ... )
+
+
+        Describe a table after cleaning operations have been applied.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
+        ... )
+        >>> description = event_table["Amount"].describe(
+        ...   from_timestamp=datetime(2020, 1, 1),
+        ...   to_timestamp=datetime(2020, 1, 31),
+        ...   after_cleaning=True
+        ... )
         """
         return self.parent.describe(
             size=size,
@@ -460,6 +527,11 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         -------
         List[ColumnInfo]
             List of column information.
+
+        Examples
+        --------
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> column_info = event_table.columns_info
 
         See Also
         --------
@@ -715,6 +787,29 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         -------
         pd.DataFrame
             Summary of the table.
+
+        Examples
+        --------
+        Describe a table without cleaning operations
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> description = event_table.describe(
+        ...   from_timestamp=datetime(2020, 1, 1),
+        ...   to_timestamp=datetime(2020, 1, 31),
+        ... )
+
+
+        Describe a table after cleaning operations have been applied.
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
+        ... )
+        >>> description = event_table.describe(
+        ...   from_timestamp=datetime(2020, 1, 1),
+        ...   to_timestamp=datetime(2020, 1, 31),
+        ...   after_cleaning=True
+        ... )
         """
         return super().describe(size, seed, from_timestamp, to_timestamp, after_cleaning)
 
@@ -735,6 +830,27 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         -------
         pd.DataFrame
             Preview rows of the table.
+
+        Examples
+        --------
+        Preview a table without cleaning operations.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> description = event_table.preview(limit=5)
+
+
+        Preview a table after cleaning operations have been applied.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
+        ... )
+        >>> description = event_table.preview(
+        ...   limit=5,
+        ...   after_cleaning=True
+        ... )
         """
         return super().preview(limit=limit, after_cleaning=after_cleaning)
 

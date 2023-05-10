@@ -338,7 +338,13 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
 
 
         Sample 3 rows from the table with timestamps.
-        >>> catalog.get_table("GROCERYINVOICE").sample(  # doctest: +SKIP
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(  # doctest: +SKIP
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...   ]
+        ... )
+        >>> event_table.sample(  # doctest: +SKIP
         ...   size=3,
         ...   seed=111,
         ...   from_timestamp=datetime(2019, 1, 1),
@@ -370,6 +376,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         to_timestamp: Optional[Union[datetime, str]] = None,
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
+        # pylint: disable=line-too-long
         """
         Returns descriptive statistics of the table columns.
 
@@ -394,15 +401,26 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         Examples
         --------
         Get a summary of a view.
-        >>> catalog.get_table("GROCERYPRODUCT").describe()
-                                    GroceryProductGuid        ProductGroup
-        dtype                                  VARCHAR             VARCHAR
-        unique                                   29099                  87
-        %missing                                   0.0                 0.0
-        %empty                                       0                   0
-        entropy                               6.214608             4.13031
-        top       017fe5ed-80a2-4e70-ae48-78aabfdee856  Chips et Tortillas
-        freq                                       1.0              1319.0
+
+        >>> catalog.get_table("GROCERYINVOICE").describe(
+        ...   from_timestamp=datetime(2022, 1, 1),
+        ...   to_timestamp=datetime(2022, 12, 31),
+        ... )
+                                    GroceryInvoiceGuid                   GroceryCustomerGuid                      Timestamp            record_available_at     Amount
+        dtype                                  VARCHAR                               VARCHAR                      TIMESTAMP                      TIMESTAMP      FLOAT
+        unique                                   25422                                   471                          25399                           5908       6734
+        %missing                                   0.0                                   0.0                            0.0                            0.0        0.0
+        %empty                                       0                                     0                            NaN                            NaN        NaN
+        entropy                               6.214608                              5.784261                            NaN                            NaN        NaN
+        top       018f0163-249b-4cbc-ab4d-e933ce3786c1  c5820998-e779-4d62-ab8b-79ef0dfd841b            2022-01-09 10:47:17            2022-02-02 17:01:00        1.0
+        freq                                       1.0                                 692.0                            2.0                           18.0      406.0
+        mean                                       NaN                                   NaN                            NaN                            NaN  19.966062
+        std                                        NaN                                   NaN                            NaN                            NaN  25.027878
+        min                                        NaN                                   NaN  2022-01-01T00:24:14.000000000  2022-01-01T01:01:00.000000000        0.0
+        25%                                        NaN                                   NaN                            NaN                            NaN     4.5325
+        50%                                        NaN                                   NaN                            NaN                            NaN     10.725
+        75%                                        NaN                                   NaN                            NaN                            NaN      24.99
+        max                                        NaN                                   NaN  2022-12-30T22:37:57.000000000  2022-12-30T23:01:00.000000000     360.84
 
         See Also
         --------
@@ -758,20 +776,20 @@ class SourceTable(AbstractTableData):
         --------
         Create a SCD table from a source table.
 
-         >>> # Declare the grocery customer table
-         >>> source_table = ds.get_table(  # doctest: +SKIP
-         ...   database_name="spark_catalog",
-         ...   schema_name="GROCERY",
-         ...   table_name="GROCERYCUSTOMER"
-         ... )
-         >>> customer_table = source_table.create_scd_table(  # doctest: +SKIP
-         ...    name="GROCERYCUSTOMER",
-         ...    surrogate_key_column='RowID',
-         ...    natural_key_column="GroceryCustomerGuid",
-         ...    effective_timestamp_column="ValidFrom",
-         ...    current_flag_column ="CurrentRecord",
-         ...    record_creation_timestamp_column="record_available_at"
-         ... )
+        >>> # Declare the grocery customer table
+        >>> source_table = ds.get_table(  # doctest: +SKIP
+        ...   database_name="spark_catalog",
+        ...   schema_name="GROCERY",
+        ...   table_name="GROCERYCUSTOMER"
+        ... )
+        >>> customer_table = source_table.create_scd_table(  # doctest: +SKIP
+        ...    name="GROCERYCUSTOMER",
+        ...    surrogate_key_column='RowID',
+        ...    natural_key_column="GroceryCustomerGuid",
+        ...    effective_timestamp_column="ValidFrom",
+        ...    current_flag_column ="CurrentRecord",
+        ...    record_creation_timestamp_column="record_available_at"
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.scd_table import SCDTable
