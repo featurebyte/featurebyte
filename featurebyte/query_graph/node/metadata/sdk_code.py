@@ -324,11 +324,13 @@ class VariableNameGenerator(BaseModel):
     """
 
     var_name_counter: DefaultDict[str, int] = Field(default_factory=lambda: defaultdict(int))
+    node_name_to_var_name: Dict[str, VariableNameStr] = Field(default_factory=dict)
 
     def generate_variable_name(
         self,
         node_output_type: NodeOutputType,
         node_output_category: NodeOutputCategory,
+        node_name: Optional[str],
     ) -> VariableNameStr:
         """
         Generate a valid variable name (no name collision) based on node output type (series or frame) &
@@ -340,6 +342,9 @@ class VariableNameGenerator(BaseModel):
             Node output type (series or frame)
         node_output_category: NodeOutputCategory
             Node output category (view or feature)
+        node_name: Optional[str]
+            If not None, the generated variable name will be associated with the node name. If the node name
+            already exists, its associated variable name will be returned.
 
         Returns
         -------
@@ -356,9 +361,13 @@ class VariableNameGenerator(BaseModel):
             else:
                 pre_variable_name = "feat"
 
-        return self.convert_to_variable_name(variable_name_prefix=pre_variable_name)
+        return self.convert_to_variable_name(
+            variable_name_prefix=pre_variable_name, node_name=node_name
+        )
 
-    def convert_to_variable_name(self, variable_name_prefix: str) -> VariableNameStr:
+    def convert_to_variable_name(
+        self, variable_name_prefix: str, node_name: Optional[str]
+    ) -> VariableNameStr:
         """
         Convert an input variable name into a valid variable name (no name collision).
 
@@ -366,16 +375,26 @@ class VariableNameGenerator(BaseModel):
         ----------
         variable_name_prefix: str
             Variable name before name collision check
+        node_name: Optional[str]
+            If not None, the generated variable name will be associated with the node name. If the node name
+            already exists, its associated variable name will be returned.
 
         Returns
         -------
         VariableNameStr
         """
+        if node_name is not None and node_name in self.node_name_to_var_name:
+            return self.node_name_to_var_name[node_name]
+
         count = self.var_name_counter[variable_name_prefix]
         self.var_name_counter[variable_name_prefix] += 1
+        var_name = VariableNameStr(variable_name_prefix)
         if count:
-            return VariableNameStr(f"{variable_name_prefix}_{count}")
-        return VariableNameStr(variable_name_prefix)
+            var_name = VariableNameStr(f"{variable_name_prefix}_{count}")
+
+        if node_name is not None:
+            self.node_name_to_var_name[node_name] = var_name
+        return var_name
 
 
 class CodeGenerator(BaseModel):

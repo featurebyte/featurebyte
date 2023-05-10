@@ -34,6 +34,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ExpressionStr,
     ObjectClass,
     RightHandSide,
+    StatementStr,
     StatementT,
     ValueStr,
     VariableNameGenerator,
@@ -127,10 +128,12 @@ class ProjectNode(BaseNode):
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=operation_structure.output_category,
+            to_associate_with_node_name=False,
         )
         out_var_name = var_name_generator.generate_variable_name(
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
+            node_name=self.name,
         )
 
         # must assign the projection result to a new variable
@@ -222,6 +225,7 @@ class FilterNode(BaseNode):
             var_name_generator=var_name_generator,
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
+            to_associate_with_node_name=False,
         )
         mask_name = input_var_name_expressions[1].as_input()
         expression = ExpressionStr(f"{var_name}[{mask_name}]")
@@ -369,12 +373,20 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=operation_structure.output_category,
+            to_associate_with_node_name=False,
         )
         value: RightHandSide = ValueStr.create(self.parameters.value)
         if len(input_var_name_expressions) == 2:
             value = input_var_name_expressions[1]
-        statements.append((VariableNameStr(f"{var_name}['{column_name}']"), value))
-        return statements, var_name
+
+        output_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+            node_name=self.name,
+        )
+        statements.append(StatementStr(f"{output_var_name} = {var_name}.copy()"))
+        statements.append((VariableNameStr(f"{output_var_name}['{column_name}']"), value))
+        return statements, output_var_name
 
 
 class LagNode(BaseSeriesOutputNode):
@@ -524,6 +536,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
         )
         keys = ValueStr.create(self.parameters.keys)
         category = ValueStr.create(self.parameters.value_by)
@@ -536,6 +549,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         out_var_name = var_name_generator.generate_variable_name(
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
+            node_name=self.name,
         )
         expression = get_object_class_from_function_call(
             callable_name=f"{grouped}.aggregate_over",
@@ -621,6 +635,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
         )
         keys = ValueStr.create(self.parameters.keys)
         category = ValueStr.create(self.parameters.value_by)
@@ -634,15 +649,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
             f"feature_name={feature_name}, "
             f"skip_fill_na=True)"
         )
-        expression = ExpressionStr(f"{grouped}.{agg}")
-        # Note: the output of the above SDK code is a Series, but the output of this node is a Frame.
-        statements, var_name = self._convert_expression_to_variable(
-            var_name_expression=expression,
-            var_name_generator=var_name_generator,
-            node_output_type=NodeOutputType.SERIES,
-            node_output_category=operation_structure.output_category,
-        )
-        return statements, var_name
+        return statements, ExpressionStr(f"{grouped}.{agg}")
 
 
 class SCDBaseParameters(BaseModel):
@@ -769,6 +776,7 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
         )
         input_column_names = self.parameters.input_column_names
         feature_names = self.parameters.feature_names
@@ -783,6 +791,7 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
         out_var_name = var_name_generator.generate_variable_name(
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
+            node_name=self.name,
         )
         statements.append((out_var_name, ExpressionStr(grouped)))
         return statements, out_var_name
@@ -986,12 +995,14 @@ class JoinNode(BasePrunableNode):
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
         )
         right_statements, right_var_name = self._convert_expression_to_variable(
             var_name_expression=input_var_name_expressions[1],
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
         )
         statements = left_statements + right_statements
         var_name = left_var_name
@@ -1011,7 +1022,9 @@ class JoinNode(BasePrunableNode):
                 f"event_suffix={ValueStr.create(self.parameters.metadata.event_suffix)})"
             )
 
-        var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="joined_view")
+        var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="joined_view", node_name=self.name
+        )
         statements.append((var_name, expression))
         return statements, var_name
 
@@ -1111,14 +1124,17 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
         )
         expression = ExpressionStr(
             f"{var_name}.add_feature(new_column_name={new_column_name}, "
             f"feature={feature}, entity_column={entity_column})"
         )
-        var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="joined_view")
-        statements.append((var_name, expression))
-        return statements, var_name
+        out_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="joined_view", node_name=self.name
+        )
+        statements.append((out_var_name, expression))
+        return statements, out_var_name
 
 
 class TrackChangesNodeParameters(BaseModel):
@@ -1282,6 +1298,7 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
         )
         keys = ValueStr.create(self.parameters.keys)
         category = ValueStr.create(self.parameters.value_by)
@@ -1299,15 +1316,7 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
             f"backward={backward}, "
             f"skip_fill_na=True)"
         )
-        expression = ExpressionStr(f"{grouped}.{agg}")
-        # Note: the output of the above SDK code is a Series, but the output of this node is a Frame.
-        statements, var_name = self._convert_expression_to_variable(
-            var_name_expression=expression,
-            var_name_generator=var_name_generator,
-            node_output_type=NodeOutputType.SERIES,
-            node_output_category=operation_structure.output_category,
-        )
-        return statements, var_name
+        return statements, ExpressionStr(f"{grouped}.{agg}")
 
 
 class AliasNode(BaseNode):
@@ -1375,20 +1384,24 @@ class AliasNode(BaseNode):
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expr = input_var_name_expressions[0]
-        if isinstance(var_name_expr, VariableNameStr):
-            # Always convert into an ExpressionStr to avoid setting name to a temporary feature e.g.
-            # (feat_1 - feat_2).dt.day.name = "new_name"
-            var_name_expr = ExpressionStr(str(var_name_expr))
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expr,
             var_name_generator=var_name_generator,
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
+            to_associate_with_node_name=False,
         )
+
+        output_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+            node_name=self.name,
+        )
+        statements.append(StatementStr(f"{output_var_name} = {var_name}.copy()"))
         statements.append(
-            (VariableNameStr(f"{var_name}.name"), ValueStr.create(self.parameters.name))
+            (VariableNameStr(f"{output_var_name}.name"), ValueStr.create(self.parameters.name))
         )
-        return statements, var_name
+        return statements, output_var_name
 
 
 class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
@@ -1422,9 +1435,18 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             var_name_generator=var_name_generator,
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
+            to_associate_with_node_name=False,
         )
         value: RightHandSide = ValueStr.create(self.parameters.value)
         if len(input_var_name_expressions) == 3:
             value = input_var_name_expressions[2]
-        statements.append((VariableNameStr(f"{var_name}[{mask_var_name_expr}]"), value))
-        return statements, var_name
+
+        output_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+            node_name=self.name,
+        )
+        statements.append(StatementStr(f"{output_var_name} = {var_name}.copy()"))
+        statements.append(StatementStr(f"{output_var_name}._parent = None"))
+        statements.append((VariableNameStr(f"{output_var_name}[{mask_var_name_expr}]"), value))
+        return statements, output_var_name

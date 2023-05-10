@@ -269,6 +269,7 @@ class BaseNode(BaseModel):
             var_name = var_name_generator.generate_variable_name(
                 node_output_type=operation_structure.output_type,
                 node_output_category=operation_structure.output_category,
+                node_name=self.name,
             )
             statements.append((var_name, var_name_expression))
             return statements, var_name
@@ -311,12 +312,13 @@ class BaseNode(BaseModel):
         _ = target_node_input_order_pairs, input_operation_structures
         return self
 
-    @staticmethod
     def _convert_expression_to_variable(
+        self,
         var_name_expression: VarNameExpressionStr,
         var_name_generator: VariableNameGenerator,
         node_output_type: NodeOutputType,
         node_output_category: NodeOutputCategory,
+        to_associate_with_node_name: bool,
     ) -> Tuple[List[StatementT], VariableNameStr]:
         """
         Convert expression to variable
@@ -331,6 +333,8 @@ class BaseNode(BaseModel):
             Node output type
         node_output_category: NodeOutputCategory
             Node output category
+        to_associate_with_node_name: bool
+            Whether to associate the variable name with the node name
 
         Returns
         -------
@@ -341,6 +345,7 @@ class BaseNode(BaseModel):
             var_name = var_name_generator.generate_variable_name(
                 node_output_type=node_output_type,
                 node_output_category=node_output_category,
+                node_name=self.name if to_associate_with_node_name else None,
             )
             statements.append((var_name, var_name_expression))
             return statements, var_name

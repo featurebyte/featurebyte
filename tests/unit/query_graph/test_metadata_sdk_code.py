@@ -109,14 +109,16 @@ def test_variable_name_generator():
     ]
     for (output_type, output_cat), expected in input_params_expected_pairs:
         var_name = var_gen.generate_variable_name(
-            node_output_type=output_type, node_output_category=output_cat
+            node_output_type=output_type,
+            node_output_category=output_cat,
+            node_name=None,
         )
         assert var_name == expected
 
-    assert var_gen.convert_to_variable_name("event_table") == "event_table"
-    assert var_gen.convert_to_variable_name("event_view") == "event_view"
-    assert var_gen.convert_to_variable_name("event_view") == "event_view_1"
-    assert var_gen.convert_to_variable_name("feat") == "feat_2"
+    assert var_gen.convert_to_variable_name("event_table", node_name=None) == "event_table"
+    assert var_gen.convert_to_variable_name("event_view", node_name=None) == "event_view"
+    assert var_gen.convert_to_variable_name("event_view", node_name=None) == "event_view_1"
+    assert var_gen.convert_to_variable_name("feat", node_name=None) == "feat_2"
 
 
 def test_code_generator():

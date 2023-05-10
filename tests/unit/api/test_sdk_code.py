@@ -390,7 +390,9 @@ def test_sdk_code_generation__fraction_feature(
     )
 
 
-def test_sdk_code__operation_system_feature(saved_scd_table, cust_id_entity, update_fixtures):
+def test_sdk_code_generation__operating_system_feature(
+    saved_scd_table, cust_id_entity, update_fixtures
+):
     """
     Test get_feature_jobs_status for feature without tile
     """
@@ -402,7 +404,6 @@ def test_sdk_code__operation_system_feature(saved_scd_table, cust_id_entity, upd
     scd_view.os_type[mask_window] = "window"
     scd_view.os_type[mask_mac] = "mac"
     feat = scd_view.os_type.as_feature(feature_name="os_type")
-    feat.save()
 
     check_sdk_code_generation(
         feat,

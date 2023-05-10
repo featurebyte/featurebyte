@@ -413,7 +413,7 @@ class InputNode(BaseNode):
 
         # construct table sdk statement
         table_var_name = var_name_generator.convert_to_variable_name(
-            variable_name_prefix=self.parameters.variable_name_prefix
+            variable_name_prefix=self.parameters.variable_name_prefix, node_name=self.name
         )
         table_id = self.parameters.id
         table_info = config.table_id_to_info.get(table_id, {}) if table_id else {}

@@ -162,6 +162,7 @@ class TimeDelta(BaseSeriesOutputNode):
         var_name = var_name_generator.generate_variable_name(
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
+            node_name=self.name,
         )
         obj = ClassEnum.TO_TIMEDELTA(series=var_name_expression, unit=self.parameters.unit)
         statements.append((var_name, obj))
