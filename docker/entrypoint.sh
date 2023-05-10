@@ -49,7 +49,7 @@ _main() {
       celery --app featurebyte.worker.start.celery worker -Q io_task,io_task:1,io_task:2,io_task:3 --loglevel=INFO --pool=gevent -c 1000
     elif [ "$1" = 'server' ]; then
       python /scripts/migration.py
-      uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --timeout-keep-alive=300 --log-level=$LOG_LEVEL
+      uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --timeout-keep-alive=300 --log-level=info
     elif [ "$1" = '' ]; then
       echo "No command specified, choose either 'worker' or 'server'"
       exit 1
