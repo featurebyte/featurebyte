@@ -81,7 +81,8 @@ class TileManager(BaseModel):
                 tile_spec=tile_spec, tile_type=TileType.OFFLINE, start_ts_str=None, end_ts_str=None
             )
             logger.debug(
-                f"Done generating tiles for {tile_spec.tile_id}. Elapsed: {time.time() - tic:.2f}s"
+                "Done generating tiles",
+                extra={"tile_id": tile_spec.tile_id, "duration": time.time() - tic},
             )
 
             tic = time.time()
@@ -89,8 +90,8 @@ class TileManager(BaseModel):
                 tile_spec=tile_spec, temp_entity_table=entity_table
             )
             logger.debug(
-                f"Done update_tile_entity_tracker for {tile_spec.tile_id}."
-                f" Elapsed: {time.time() - tic:.2f}s"
+                f"Done update_tile_entity_tracker.",
+                extra={"tile_id": tile_spec.tile_id, "duration": time.time() - tic},
             )
 
             if progress_callback:
