@@ -775,20 +775,20 @@ class SourceTable(AbstractTableData):
         --------
         Create a SCD table from a source table.
 
-         >>> # Declare the grocery customer table
-         >>> source_table = ds.get_table(  # doctest: +SKIP
-         ...   database_name="spark_catalog",
-         ...   schema_name="GROCERY",
-         ...   table_name="GROCERYCUSTOMER"
-         ... )
-         >>> customer_table = source_table.create_scd_table(  # doctest: +SKIP
-         ...    name="GROCERYCUSTOMER",
-         ...    surrogate_key_column='RowID',
-         ...    natural_key_column="GroceryCustomerGuid",
-         ...    effective_timestamp_column="ValidFrom",
-         ...    current_flag_column ="CurrentRecord",
-         ...    record_creation_timestamp_column="record_available_at"
-         ... )
+        >>> # Declare the grocery customer table
+        >>> source_table = ds.get_table(  # doctest: +SKIP
+        ...   database_name="spark_catalog",
+        ...   schema_name="GROCERY",
+        ...   table_name="GROCERYCUSTOMER"
+        ... )
+        >>> customer_table = source_table.create_scd_table(  # doctest: +SKIP
+        ...    name="GROCERYCUSTOMER",
+        ...    surrogate_key_column='RowID',
+        ...    natural_key_column="GroceryCustomerGuid",
+        ...    effective_timestamp_column="ValidFrom",
+        ...    current_flag_column ="CurrentRecord",
+        ...    record_creation_timestamp_column="record_available_at"
+        ... )
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.scd_table import SCDTable
