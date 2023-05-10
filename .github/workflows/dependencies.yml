@@ -50,7 +50,7 @@ jobs:
           awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > branch.PKG-INFO
 
       - name: Checkout merge base
-        run: git checkout $(git merge-base "origin/${{ github.head_ref }}" origin/main)
+        run: git checkout --force $(git merge-base "origin/${{ github.head_ref }}" origin/main)
 
       - name: Build package (main)
         run: |
