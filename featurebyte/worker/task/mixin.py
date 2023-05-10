@@ -85,5 +85,6 @@ class DataWarehouseMixin:
                 table_name=table_details.table_name,
                 schema_name=table_details.schema_name,
                 database_name=table_details.database_name,
+                if_exists=True,
             )
             raise exc

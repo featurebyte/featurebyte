@@ -24,6 +24,8 @@
 
 ### 🧰 Bug fixes 🧰
 
++ Drop a materialized table only if it exists when cleaning up on error
+
 ## v0.2.1
 
 ### 🧰 Bug fixes 🧰
