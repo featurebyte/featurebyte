@@ -13,6 +13,7 @@
 
 
 ### 💡 Enhancements 💡
+* Update healthcare demo dataset to include timezone columns
 
 
 ### 🧰 Bug fixes 🧰

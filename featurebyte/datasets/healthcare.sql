@@ -1,4 +1,4 @@
--- url: https://storage.googleapis.com/featurebyte-public-datasets/healthcare.tar.gz
+-- url: https://storage.googleapis.com/featurebyte-public-datasets/healthcare_20230509.tar.gz
 -- description: Healthcare Dataset
 
 DROP DATABASE IF EXISTS HEALTHCARE CASCADE;
@@ -74,6 +74,7 @@ SELECT
   `LabResultGuid`,
   `PatientGuid`,
   `ReportDate`,
+  `tz_offset`,
   `record_available_at`
 FROM HEALTHCARE.__LABRESULT
 WHERE `record_available_at` <= CURRENT_TIMESTAMP();
@@ -126,6 +127,7 @@ SELECT
   `PrescriptionGuid`,
   `PatientGuid`,
   `PrescriptionDate`,
+  `tz_offset`,
   `Quantity`,
   `NumberOfRefills`,
   `RefillAsNeeded`,
@@ -174,6 +176,7 @@ SELECT
   `VisitGuid`,
   `PatientGuid`,
   `VisitDate`,
+  `tz_offset`,
   `Height`,
   `Weight`,
   `BMI`,
