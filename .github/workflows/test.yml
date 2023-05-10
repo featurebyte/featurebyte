@@ -37,10 +37,6 @@ env:
   DATABRICKS_STORAGE_URL: ${{ secrets.DATABRICKS_STORAGE_URL }}
   DATABRICKS_STORAGE_ACCESS_KEY_ID: ${{ secrets.DATABRICKS_S3_ACCESS_KEY }}
   DATABRICKS_STORAGE_ACCESS_KEY_SECRET: ${{ secrets.DATABRICKS_S3_SECRET_KEY }}
-  # Python
-  GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
-  GCR_PYPI_REPO: featurebyte-pypi
-  GCR_PYPI_LOCATION: us-central1
 
 jobs:
   build-jar:
@@ -346,7 +342,6 @@ jobs:
           path: featurebyte/sql/spark/
       - name: Test documentation
         run: |
-          export FEATUREBYTE_NP_PASSWORD=${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
           task test-docs
   validate:
     needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark", "test-integration-databricks"]

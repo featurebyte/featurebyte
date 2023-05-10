@@ -9,12 +9,7 @@ on:
     types: [opened, reopened, synchronize, labeled, unlabeled]
     branches:
       - main
-env:
-  GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
-  GCR_PYPI_REPO: featurebyte-pypi
-  GCR_PYPI_LOCATION: us-central1
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64 # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+env: {}
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
@@ -52,7 +47,6 @@ jobs:
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
       - name: Adding C headers
         run: |
           sudo apt-get install python-dev libsasl2-dev gcc

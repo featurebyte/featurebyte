@@ -10,11 +10,6 @@ permissions:
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
-env:
-  # Python
-  GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
-  GCR_PYPI_REPO: featurebyte-pypi
-  GCR_PYPI_LOCATION: us-central1
 jobs:
   cache:
     runs-on: ubuntu-20.04
