@@ -376,6 +376,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         to_timestamp: Optional[Union[datetime, str]] = None,
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
+        # pylint: disable=line-too-long
         """
         Returns descriptive statistics of the table columns.
 
