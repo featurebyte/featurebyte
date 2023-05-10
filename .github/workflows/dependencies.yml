@@ -1,7 +1,7 @@
 # This workflow checks the differences dependencies between main and the PR
 # Labelling a PR with `dependencies` will skip this check
 
-name: documentation
+name: dependencies
 on:
   pull_request:
     types: [opened, reopened, synchronize, labeled, unlabeled]
