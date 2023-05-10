@@ -26,11 +26,12 @@
 
 ## v0.2.1
 
+---
+
 ### 🧰 Bug fixes 🧰
 
 * Removed additional dependencies specified in featurebyte client
 
----
 
 ## v0.2.0
 
