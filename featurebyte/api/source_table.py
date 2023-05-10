@@ -401,7 +401,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         --------
         Get a summary of a view.
 
-        >>> description = catalog.get_table("GROCERYINVOICE").describe(
+        >>> catalog.get_table("GROCERYINVOICE").describe(
         ...   from_timestamp=datetime(2019, 1, 1),
         ...   to_timestamp=datetime(2019, 12, 31),
         ... )
