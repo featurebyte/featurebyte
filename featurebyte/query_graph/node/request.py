@@ -82,6 +82,7 @@ class RequestColumnNode(BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
+        as_info_str: bool = False,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         statements: List[StatementT] = []
         var_name = var_name_generator.convert_to_variable_name("request_col", node_name=self.name)

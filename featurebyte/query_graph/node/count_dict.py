@@ -43,6 +43,7 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
+        as_info_str: bool = False,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expression = input_var_name_expressions[0].as_input()
         other_operands = [val.as_input() for val in input_var_name_expressions[1:]]
@@ -135,6 +136,7 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
+        as_info_str: bool = False,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         return [], input_var_name_expressions[0]
 

@@ -406,6 +406,7 @@ class InputNode(BaseNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
+        as_info_str: bool = False,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         statements: List[StatementT] = []
         table_type = self.parameters.type

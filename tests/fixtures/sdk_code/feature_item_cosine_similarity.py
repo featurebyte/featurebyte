@@ -40,7 +40,8 @@ grouped_1 = item_view.groupby(
 )
 feat_1 = grouped_1["sum_item_amount_over_30d"]
 feat_2 = feat_1.cd.cosine_similarity(other=feat)
-feat_2.name = (
+feat_3 = feat_2.copy()
+feat_3.name = (
     "sum_item_amount_over_30d_cosine_similarity_sum_item_amount_over_90d"
 )
-output = feat_2
+output = feat_3

@@ -563,6 +563,7 @@ class BaseGraphNode(BasePrunableNode):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
+        as_info_str: bool = False,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         return self.parameters.derive_sdk_code(
             input_var_name_expressions=input_var_name_expressions,

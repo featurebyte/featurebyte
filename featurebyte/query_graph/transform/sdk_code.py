@@ -43,7 +43,26 @@ class SDKCodeGlobalState(BaseModel):
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
     code_generator: CodeGenerator = Field(default_factory=CodeGenerator)
     no_op_node_names: Set[str] = Field(default_factory=set)
-    required_copy_node_names: Set[str] = Field(default_factory=set)
+    as_info_str_node_names: Set[str] = Field(default_factory=set)
+
+    def _identify_output_as_info_str(self, node: Node, forward_nodes: List[Node]) -> None:
+        """
+        Identify the node names that should output info string rather than variable name or expression.
+
+        Parameters
+        ----------
+        node: Node
+            Node to check
+        forward_nodes: List[Node]
+            Forward nodes of the node
+        """
+        if node.type == NodeType.CONDITIONAL and any(
+            n.type == NodeType.ASSIGN for n in forward_nodes
+        ):
+            # This handle the case `view[<col>][<mask>] = <value>`. Since this SDK code actually contains
+            # ConditionalNode and AssignNode, we need to output info string for the ConditionalNode and
+            # postpone the assignment operation to AssignNode.
+            self.as_info_str_node_names.add(node.name)
 
     def _identify_no_op_node(self, node: Node, backward_nodes: List[Node]) -> None:
         """
@@ -66,31 +85,6 @@ class SDKCodeGlobalState(BaseModel):
             # already return a series, there is no operation for project node to generate any SDK code.
             self.no_op_node_names.add(node.name)
 
-    def _identify_required_copy_input(
-        self,
-        node: Node,
-        backward_nodes: List[Node],
-        backward_nodes_forward_nodes_count: Dict[str, int],
-    ) -> None:
-        """
-        Identify a node whether required copy operation by looking at the structure of the node type &
-        its forward node types.
-
-        Parameters
-        ----------
-        node: Node
-            Node to check
-        backward_nodes: List[Node]
-            Backward nodes of the node
-        backward_nodes_forward_nodes_count: Dict[str, int]
-            Forward nodes count of each backward node
-        """
-        if (
-            node.type in (NodeType.ASSIGN, NodeType.CONDITIONAL)
-            and backward_nodes_forward_nodes_count[backward_nodes[0].name] > 1
-        ):
-            self.required_copy_node_names.add(node.name)
-
     def initialize(self, query_graph: QueryGraphModel) -> None:
         """
         Initialize SDKCodeGlobalState
@@ -101,16 +95,14 @@ class SDKCodeGlobalState(BaseModel):
             Query graph
         """
         for node in query_graph.iterate_sorted_nodes():
+            forward_nodes = [
+                query_graph.nodes_map[name] for name in query_graph.edges_map[node.name]
+            ]
             backward_nodes = [
                 query_graph.nodes_map[name] for name in query_graph.backward_edges_map[node.name]
             ]
-            backward_nodes_forward_nodes_count = {
-                node.name: len(query_graph.edges_map[node.name]) for node in backward_nodes
-            }
+            self._identify_output_as_info_str(node, forward_nodes)
             self._identify_no_op_node(node, backward_nodes)
-            self._identify_required_copy_input(
-                node, backward_nodes, backward_nodes_forward_nodes_count
-            )
 
 
 class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCodeGlobalState]):
@@ -170,6 +162,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
                 var_name_generator=global_state.var_name_generator,
                 operation_structure=op_struct,
                 config=global_state.code_generation_config,
+                as_info_str=node.name in global_state.as_info_str_node_names,
             )
 
         # update global state

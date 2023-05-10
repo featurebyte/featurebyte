@@ -74,6 +74,12 @@ class VariableNameStr(str):
         return str(self)
 
 
+class InfoStr(VariableNameStr):
+    """
+    InfoStr class is used to represent a string that contains information about the code.
+    """
+
+
 class ExpressionStr(str):
     """
     ExpressionStr class is used to represent a combination of operations, variables, or values that will

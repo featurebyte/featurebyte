@@ -10,5 +10,6 @@ event_view = event_table.get_view(
 )
 col = event_view["tz_offset"]
 col_1 = event_view["event_timestamp"]
-event_view["event_timestamp_hour"] = col_1.dt.tz_offset(col).hour
-output = event_view
+view = event_view.copy()
+view["event_timestamp_hour"] = col_1.dt.tz_offset(col).hour
+output = view

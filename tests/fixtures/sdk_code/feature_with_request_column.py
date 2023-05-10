@@ -22,6 +22,6 @@ grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
 )
 feat = grouped["latest_event_timestamp_90d"]
 request_col = RequestColumn.point_in_time()
-feat_1 = (request_col - feat).dt.day
+feat_1 = (request_col - feat).dt.day.copy()
 feat_1.name = "Time Since Last Event (days)"
 output = feat_1

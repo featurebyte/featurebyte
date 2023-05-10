@@ -232,6 +232,7 @@ class BaseNode(BaseModel):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
+        as_info_str: bool = False,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         """
         Derive SDK codes based on the graph traversal from starting node(s) to this node
@@ -246,6 +247,8 @@ class BaseNode(BaseModel):
             Operation structure of current node
         config: CodeGenerationConfig
             Code generation configuration
+        as_info_str: bool
+            Whether to return the output as info string
 
         Returns
         -------
@@ -256,6 +259,7 @@ class BaseNode(BaseModel):
             var_name_generator=var_name_generator,
             operation_structure=operation_structure,
             config=config,
+            as_info_str=as_info_str,
         )
 
         if (
@@ -381,6 +385,7 @@ class BaseNode(BaseModel):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
+        as_info_str: bool = False,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         """
         Derive SDK codes based to be implemented at the concrete node class
@@ -395,13 +400,15 @@ class BaseNode(BaseModel):
             Operation structure of current node
         config: CodeGenerationConfig
             Code generation configuration
+        as_info_str: bool
+            Whether to return the output as info string
 
         Returns
         -------
         Tuple[List[StatementT], VarNameExpression]
         """
         # TODO: convert this method to an abstract method and remove the following dummy implementation
-        _ = var_name_generator, operation_structure, config
+        _ = var_name_generator, operation_structure, config, as_info_str
         input_params = ", ".join(input_var_name_expressions)
         expression = ExpressionStr(f"{self.type}({input_params})")
         return [], expression
@@ -604,6 +611,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
+        as_info_str: bool = False,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         left_operand: str = input_var_name_expressions[0].as_input()
         right_operand: str = ValueStr.create(self.parameters.value).as_input()
@@ -682,6 +690,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
+        as_info_str: bool = False,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expression = input_var_name_expressions[0]
         return [], self._derive_sdk_code_return_var_name_expression_type(
