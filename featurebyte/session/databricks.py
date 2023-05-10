@@ -4,12 +4,13 @@ DatabricksSession class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, OrderedDict
+from typing import Any, AsyncGenerator, Dict, OrderedDict
 
 import collections
 import json
 
 import pandas as pd
+import pyarrow as pa
 from pydantic import Field
 
 from featurebyte import AccessTokenCredential
@@ -23,6 +24,42 @@ try:
     HAS_DATABRICKS_SQL_CONNECTOR = True
 except ImportError:
     HAS_DATABRICKS_SQL_CONNECTOR = False
+
+
+class ArrowTablePostProcessor:
+    """
+    Post processor for Arrow table to fix databricks return format
+    """
+
+    def __init__(self, schema: Dict[str, str]):
+        self._map_columns = []
+        for col_name, var_type in schema.items():
+            if var_type.upper() == "MAP":
+                self._map_columns.append(col_name)
+
+    def to_dataframe(self, arrow_table: pa.Table) -> pd.DataFrame:
+        """
+        Convert Arrow table to Pandas dataframe
+
+        Parameters
+        ----------
+        arrow_table: pa.Table
+            Arrow table to convert
+
+        Returns
+        -------
+        pd.DataFrame:
+            Pandas dataframe
+        """
+        # handle map type. Databricks returns map as list of tuples
+        # https://docs.databricks.com/sql/language-manual/sql-ref-datatypes.html#map
+        # which is not supported by pyarrow. Below converts the tuple list to json string
+        dataframe = arrow_table.to_pandas()
+        for col_name in self._map_columns:
+            dataframe[col_name] = dataframe[col_name].apply(
+                lambda x: json.dumps(dict(x)) if x is not None else None
+            )
+        return dataframe
 
 
 class DatabricksSession(BaseSparkSession):
@@ -109,16 +146,24 @@ class DatabricksSession(BaseSparkSession):
             schema = {row[0]: row[1] for row in cursor.description}
 
         if schema:
+            post_processor = ArrowTablePostProcessor(schema=schema)
             arrow_table = cursor.fetchall_arrow()
-            dataframe = arrow_table.to_pandas()
-            for col_name in schema:
-                # handle map type. Databricks returns map as list of tuples
-                # https://docs.databricks.com/sql/language-manual/sql-ref-datatypes.html#map
-                # which is not supported by pyarrow. Below converts the tuple list to json string
-                if schema[col_name].upper() == "MAP":
-                    dataframe[col_name] = dataframe[col_name].apply(
-                        lambda x: json.dumps(dict(x)) if x is not None else None
-                    )
-            return dataframe
+            return post_processor.to_dataframe(arrow_table)
 
         return None
+
+    async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
+        schema = None
+        if cursor.description:
+            schema = {row[0]: row[1] for row in cursor.description}
+
+        if schema:
+            post_processor = ArrowTablePostProcessor(schema=schema)
+            # fetch results in batches
+            while True:
+                dataframe = post_processor.to_dataframe(cursor.fetchmany_arrow(size=1000))
+                arrow_table = pa.Table.from_pandas(dataframe)
+                if arrow_table.num_rows == 0:
+                    break
+                for record_batch in arrow_table.to_batches():
+                    yield record_batch
