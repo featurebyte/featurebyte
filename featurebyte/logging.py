@@ -115,8 +115,8 @@ def set_logger_level(
         Optional configurations used to configure logger
     """
     configurations = configurations or Configurations()
-    if os.environ.get("LOG_LEVEL") is not None:
-        logger.setLevel(os.environ["LOG_LEVEL"].upper())
+    if os.environ.get("LOG_LEVEL"):
+        logger.setLevel(os.environ["LOG_LEVEL"])
     else:
         logger.setLevel(configurations.logging.level)
 

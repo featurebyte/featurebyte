@@ -53,7 +53,7 @@ services:
       - "MONGODB_URI=mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0"
       - "API_HOST=0.0.0.0"
       - "API_PORT=8088"
-      - "LOG_LEVEL=info"
+      - "LOG_LEVEL=${LOG_LEVEL}"
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
     healthcheck:
@@ -84,6 +84,7 @@ services:
       - "MPLCONFIGDIR=/app/matplotlib"
       - "REDIS_URI=redis://redis:6379"
       - "MONGODB_URI=mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0"
+      - "LOG_LEVEL=${LOG_LEVEL}"
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
     command: ["bash", "/docker-entrypoint.sh", "worker"]

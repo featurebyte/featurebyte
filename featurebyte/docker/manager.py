@@ -50,22 +50,26 @@ def get_docker_client() -> Generator[DockerClient, None, None]:
     """
     with tempfile.TemporaryDirectory() as temp_dir:
         compose_env_file = os.path.join(temp_dir, ".env")
+        env_file_lines = []
         if sys.platform != "win32":
             import pwd  # pylint: disable=import-outside-toplevel
             uid = os.getuid()
             user = pwd.getpwuid(uid)
-            with open(compose_env_file, "w", encoding="utf8") as file_obj:
-                file_obj.write(f'LOCAL_UID="{uid}"\nLOCAL_GID="{user.pw_gid}"\n')
-            docker = DockerClient(
-                compose_project_name="featurebyte",
-                compose_files=[os.path.join(get_package_root(), "docker/featurebyte.yml")],
-                compose_env_file=compose_env_file,
+            env_file_lines.extend(
+                [
+                    f'LOCAL_UID="{uid}"\n',
+                    f'LOCAL_GID="{user.pw_gid}"\n',
+                ]
             )
-        else:
-            docker = DockerClient(
-                compose_project_name="featurebyte",
-                compose_files=[os.path.join(get_package_root(), "docker/featurebyte.yml")],
-            )
+        log_level = os.environ.get("LOG_LEVEL", "INFO")
+        env_file_lines.append(f'LOG_LEVEL="{log_level}"\n')
+        with open(compose_env_file, "w", encoding="utf8") as file_obj:
+            file_obj.writelines(env_file_lines)
+        docker = DockerClient(
+            compose_project_name="featurebyte",
+            compose_files=[os.path.join(get_package_root(), "docker/featurebyte.yml")],
+            compose_env_file=compose_env_file,
+        )
         yield docker
 
 
