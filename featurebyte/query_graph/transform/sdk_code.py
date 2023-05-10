@@ -45,6 +45,7 @@ class SDKCodeGlobalState(BaseModel):
     code_generator: CodeGenerator = Field(default_factory=CodeGenerator)
     no_op_node_names: Set[str] = Field(default_factory=set)
     as_info_str_node_names: Set[str] = Field(default_factory=set)
+    required_copy_node_names: Set[str] = Field(default_factory=set)
 
     def _identify_output_as_info_str(self, node: Node, forward_nodes: List[Node]) -> None:
         """
@@ -86,6 +87,31 @@ class SDKCodeGlobalState(BaseModel):
             # already return a series, there is no operation for project node to generate any SDK code.
             self.no_op_node_names.add(node.name)
 
+    def _identify_required_copy_node(
+        self, node: Node, backward_nodes: List[Node], edges_map: Dict[str, List[str]]
+    ) -> None:
+        """
+        Identify whether a copy is required for the inplace operation node.
+
+        Parameters
+        ----------
+        node: Node
+            Node to check
+        backward_nodes: List[Node]
+            Backward nodes of the node
+        edges_map: Dict[str, str]
+            Edges map of the query graph
+        """
+        if (
+            node.type in NodeType.inplace_operation_node_type()
+            and len(edges_map[backward_nodes[0].name]) > 1
+        ):
+            # If the backward node has more than one forward node, it means that the backward node is
+            # used by other nodes. In this case, we need to copy the backward node to avoid inplace operation
+            # affecting other nodes. Currently, only first node in the backward node's forward nodes will be
+            # affected by the inplace operation.
+            self.required_copy_node_names.add(node.name)
+
     def initialize(self, query_graph: QueryGraphModel) -> None:
         """
         Initialize SDKCodeGlobalState
@@ -104,6 +130,7 @@ class SDKCodeGlobalState(BaseModel):
             ]
             self._identify_output_as_info_str(node, forward_nodes)
             self._identify_no_op_node(node, backward_nodes)
+            self._identify_required_copy_node(node, backward_nodes, query_graph.edges_map)
 
 
 class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCodeGlobalState]):
@@ -164,7 +191,8 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
                 operation_structure=op_struct,
                 config=global_state.code_generation_config,
                 context=CodeGenerationContext(
-                    as_info_str=node.name in global_state.as_info_str_node_names
+                    as_info_str=node.name in global_state.as_info_str_node_names,
+                    required_copy=node.name in global_state.required_copy_node_names,
                 ),
             )
 

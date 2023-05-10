@@ -31,6 +31,5 @@ feat = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     skip_fill_na=True,
 )
 feat_1 = feat + 123
-feat_2 = feat_1.copy()
-feat_2.name = "feat"
-output = feat_2
+feat_1.name = "feat"
+output = feat_1

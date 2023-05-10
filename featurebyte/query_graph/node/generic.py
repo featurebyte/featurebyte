@@ -386,12 +386,15 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
         if len(input_var_name_expressions) == 2:
             value = input_var_name_expressions[1]
 
-        output_var_name = var_name_generator.generate_variable_name(
-            node_output_type=operation_structure.output_type,
-            node_output_category=operation_structure.output_category,
-            node_name=self.name,
-        )
-        statements.append(StatementStr(f"{output_var_name} = {var_name}.copy()"))
+        output_var_name = var_name
+        if context.required_copy:
+            output_var_name = var_name_generator.generate_variable_name(
+                node_output_type=operation_structure.output_type,
+                node_output_category=operation_structure.output_category,
+                node_name=self.name,
+            )
+            statements.append(StatementStr(f"{output_var_name} = {var_name}.copy()"))
+
         if isinstance(value, InfoStr):
             info = json.loads(value)
             mask_var, value = info["mask"], info["value"]
@@ -1415,12 +1418,22 @@ class AliasNode(BaseNode):
             to_associate_with_node_name=False,
         )
 
-        output_var_name = var_name_generator.generate_variable_name(
-            node_output_type=operation_structure.output_type,
-            node_output_category=operation_structure.output_category,
-            node_name=self.name,
-        )
-        statements.append(StatementStr(f"{output_var_name} = {var_name}.copy()"))
+        output_var_name = var_name
+        if context.required_copy or not var_name.isidentifier():
+            output_var_name = var_name_generator.generate_variable_name(
+                node_output_type=operation_structure.output_type,
+                node_output_category=operation_structure.output_category,
+                node_name=self.name,
+            )
+            if context.required_copy:
+                # Copy is required as the input will be used by other nodes. This is to avoid unexpected
+                # side effects when the input is modified by other nodes.
+                statements.append((output_var_name, ExpressionStr(f"{var_name}.copy()")))
+            else:
+                # This is to handle the case where the var_name is not a valid variable name,
+                # so we need to assign it to a valid variable name first.
+                statements.append((output_var_name, ExpressionStr(var_name)))
+
         statements.append(
             (VariableNameStr(f"{output_var_name}.name"), ValueStr.create(self.parameters.name))
         )
@@ -1473,12 +1486,13 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         if len(input_var_name_expressions) == 3:
             value = input_var_name_expressions[2]
 
-        if context:
+        if context.as_info_str:
             # This is to handle the case where `View[<column>][<condition>] = <value>` is used.
             # Since there is no single line in SDK code to generate conditional expression, we output info instead
             # and delay the generation of SDK code to the assign node. This method only generates the conditional part,
             # the assignment part will be generated in the assign node.
             return statements, InfoStr(json.dumps({"value": value, "mask": mask_var_name}))
+
         # This handles the normal series assignment case.
         statements.append((VariableNameStr(f"{var_name}[{mask_var_name}]"), value))
         return statements, var_name

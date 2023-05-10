@@ -334,6 +334,7 @@ class CodeGenerationContext(BaseModel):
     # the mask variable & value to the AssignNode, and AssignNode will use the mask variable & value to generate the
     # assignment statement.
     as_info_str: bool
+    required_copy: bool
 
 
 class VariableNameGenerator(BaseModel):
