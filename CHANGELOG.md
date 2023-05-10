@@ -19,6 +19,7 @@
 * Support `columns` and `columns_rename_mapping` parameters when creating observation table and
   batch feature table
 * Update healthcare demo dataset to include timezone columns
+* Support streamed records fetching for DataBricks session
 
 ### 🧰 Bug fixes 🧰
 

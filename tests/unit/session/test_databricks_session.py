@@ -6,6 +6,7 @@ from unittest import mock
 from unittest.mock import call
 
 import pandas as pd
+import pyarrow as pa
 import pytest
 
 from featurebyte.enum import DBVarType
@@ -45,6 +46,7 @@ class MockDatabricksConnection:
     def __init__(self, *args, **kwargs):
         self.description = None
         self.result_rows = None
+        self.returned_count = 0
 
     def cursor(self):
         return self
@@ -100,9 +102,16 @@ class MockDatabricksConnection:
         for row in self.result_rows:
             data.append({k: v for (k, v) in zip(columns, row)})
         df = pd.DataFrame(data)
-        mock_arrow_table = mock.Mock()
-        mock_arrow_table.to_pandas.return_value = df
-        return mock_arrow_table
+        return pa.Table.from_pandas(df)
+
+    def fetchmany_arrow(self, size):
+        mock_dataframe = self.fetchall_arrow().to_pandas()
+        if self.returned_count >= len(mock_dataframe):
+            mock_dataframe = pd.DataFrame(columns=mock_dataframe.columns)
+        else:
+            mock_dataframe = mock_dataframe.iloc[self.returned_count : self.returned_count + size]
+            self.returned_count += size
+        return pa.Table.from_pandas(mock_dataframe)
 
     def execute(self, *args, **kwargs):
         self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
