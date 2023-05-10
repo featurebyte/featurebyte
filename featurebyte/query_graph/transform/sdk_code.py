@@ -1,12 +1,13 @@
 """
 This module contains an extractor class to generate SDK codes from a query graph.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
@@ -18,17 +19,12 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
-# (variable or expression, node_type) tuple is the output type of `_post_compute`,
-# it is used to transfer the required info between two consecutive query graph nodes.
-# NodeType is required to handle item groupby special case.
-VarNameExpNodeType = Tuple[VarNameExpressionStr, NodeType]
-
 
 class SDKCodeGlobalState(BaseModel):
     """
     SDKCodeGlobalState class
 
-    node_name_to_post_compute_output: Dict[str, VarNameExpNodeType]
+    node_name_to_post_compute_output: Dict[str, VarNameExpressionStr]
         Cache to store node name to _post_compute_output (to remove redundant graph node traversals)
     node_name_to_operation_structure: Dict[str, OperationStructure]
         Operation structure mapping for each node in the graph
@@ -40,11 +36,56 @@ class SDKCodeGlobalState(BaseModel):
         Code generator is used to generate final SDK codes from a list of statements & imports
     """
 
-    node_name_to_post_compute_output: Dict[str, VarNameExpNodeType] = Field(default_factory=dict)
+    node_name_to_post_compute_output: Dict[str, VarNameExpressionStr] = Field(default_factory=dict)
     node_name_to_operation_structure: Dict[str, OperationStructure] = Field(default_factory=dict)
     code_generation_config: CodeGenerationConfig = Field(default_factory=CodeGenerationConfig)
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
     code_generator: CodeGenerator = Field(default_factory=CodeGenerator)
+    no_op_node_names: Set[str] = Field(default_factory=set)
+
+    def _identify_no_op_node(self, node: Node, input_node_types: List[NodeType]) -> None:
+        """
+        Identify a node as no-op node by looking at the structure of the node type & its input node types.
+
+        Parameters
+        ----------
+        node: Node
+            Node to mark
+        """
+        if node.type == NodeType.PROJECT and input_node_types[0] in (
+            NodeType.ITEM_GROUPBY,
+            NodeType.AGGREGATE_AS_AT,
+        ):
+            # ItemGroupByNode's & AggregateAsAtNode's SDK code like
+            # * `view.groupby(...).aggregate(...)`
+            # * `view.groupby(...).aggregate_as_at(...)`
+            # already return a series, there is no operation for project node to generate any SDK code.
+            self.no_op_node_names.add(node.name)
+
+        if (
+            node.type == NodeType.ASSIGN
+            and len(input_node_types) > 1
+            and input_node_types[1] == NodeType.CONDITIONAL
+        ):
+            # ConditionalNode's SDK code like `col[col > 10] = 10`
+            # already assign the output series to the parent frame, there is no operation for assign node
+            # to generate any SDK code.
+            self.no_op_node_names.add(node.name)
+
+    def initialize(self, query_graph: QueryGraphModel) -> None:
+        """
+        Initialize SDKCodeGlobalState
+
+        Parameters
+        ----------
+        query_graph: QueryGraphModel
+            Query graph
+        """
+        for node in query_graph.iterate_sorted_nodes():
+            backward_node_names = query_graph.backward_edges_map[node.name]
+            backward_nodes = [query_graph.nodes_map[name] for name in backward_node_names]
+            input_node_types = [node.type for node in backward_nodes]
+            self._identify_no_op_node(node, input_node_types)
 
 
 class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCodeGlobalState]):
@@ -79,35 +120,32 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         branch_state: BaseModel,
         global_state: SDKCodeGlobalState,
         node: Node,
-        inputs: List[VarNameExpNodeType],
+        inputs: List[VarNameExpressionStr],
         skip_post: bool,
-    ) -> VarNameExpNodeType:
+    ) -> VarNameExpressionStr:
         if node.name in global_state.node_name_to_post_compute_output:
             return global_state.node_name_to_post_compute_output[node.name]
 
         # construct SDK code
         op_struct = global_state.node_name_to_operation_structure[node.name]
-        input_var_name_expressions: List[VarNameExpressionStr] = []
-        input_node_types: List[NodeType] = []
-        for var_name_expr, node_type in inputs:
-            input_var_name_expressions.append(var_name_expr)
-            input_node_types.append(node_type)
 
-        statements, var_name_or_expr = node.derive_sdk_code(
-            input_var_name_expressions=input_var_name_expressions,
-            input_node_types=input_node_types,
-            var_name_generator=global_state.var_name_generator,
-            operation_structure=op_struct,
-            config=global_state.code_generation_config,
-        )
-        global_state.code_generator.add_statements(statements=statements)
+        if node.name in global_state.no_op_node_names:
+            var_name_or_expr = inputs[0]
+        else:
+            statements, var_name_or_expr = node.derive_sdk_code(
+                input_var_name_expressions=inputs,
+                var_name_generator=global_state.var_name_generator,
+                operation_structure=op_struct,
+                config=global_state.code_generation_config,
+            )
+            global_state.code_generator.add_statements(statements=statements)
 
         # update global state
-        global_state.node_name_to_post_compute_output[node.name] = (var_name_or_expr, node.type)
+        global_state.node_name_to_post_compute_output[node.name] = var_name_or_expr
 
-        # return the output variable name & node type of current operation so that
+        # return the output variable name or expression of current operation so that
         # it can be passed as `inputs` to the next node's post compute operation
-        return var_name_or_expr, node.type
+        return var_name_or_expr
 
     def extract(
         self,
@@ -132,7 +170,8 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
             node_name_to_operation_structure=op_struct_info.operation_structure_map,
             code_generation_config=CodeGenerationConfig(**code_generation_config),
         )
-        var_name_or_expr, _ = self._extract(
+        global_state.initialize(query_graph=self.graph)
+        var_name_or_expr = self._extract(
             node=node,
             branch_state=BaseModel(),
             global_state=global_state,

@@ -403,7 +403,6 @@ class InputNode(BaseNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,

@@ -229,7 +229,6 @@ class BaseNode(BaseModel):
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -241,8 +240,6 @@ class BaseNode(BaseModel):
         ----------
         input_var_name_expressions: List[VarNameExpressionStr]
             Input variables name
-        input_node_types: List[NodeType]
-            Input node types
         var_name_generator: VariableNameGenerator
             Variable name generator
         operation_structure: OperationStructure
@@ -256,7 +253,6 @@ class BaseNode(BaseModel):
         """
         statements, var_name_expression = self._derive_sdk_code(
             input_var_name_expressions=input_var_name_expressions,
-            input_node_types=input_node_types,
             var_name_generator=var_name_generator,
             operation_structure=operation_structure,
             config=config,
@@ -377,7 +373,6 @@ class BaseNode(BaseModel):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -389,8 +384,6 @@ class BaseNode(BaseModel):
         ----------
         input_var_name_expressions: List[VarNameExpression]
             Input variables name
-        input_node_types: List[NodeType]
-            Input node types
         var_name_generator: VariableNameGenerator
             Variable name generator
         operation_structure: OperationStructure
@@ -403,7 +396,7 @@ class BaseNode(BaseModel):
         Tuple[List[StatementT], VarNameExpression]
         """
         # TODO: convert this method to an abstract method and remove the following dummy implementation
-        _ = input_node_types, var_name_generator, operation_structure, config
+        _ = var_name_generator, operation_structure, config
         input_params = ", ".join(input_var_name_expressions)
         expression = ExpressionStr(f"{self.type}({input_params})")
         return [], expression
@@ -603,7 +596,6 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -682,7 +674,6 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,

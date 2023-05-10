@@ -118,25 +118,12 @@ class ProjectNode(BaseNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
-        var_name_expr = input_var_name_expressions[0]
-        if input_node_types[0] in {NodeType.ITEM_GROUPBY, NodeType.AGGREGATE_AS_AT}:
-            # special handling for item_view.aggregate output
-            # since the output is already single series, no projection is needed
-            statements, var_name = self._convert_expression_to_variable(
-                var_name_expression=var_name_expr,
-                var_name_generator=var_name_generator,
-                node_output_type=operation_structure.output_type,
-                node_output_category=operation_structure.output_category,
-            )
-            return statements, var_name
-
         statements, var_name = self._convert_expression_to_variable(
-            var_name_expression=var_name_expr,
+            var_name_expression=input_var_name_expressions[0],
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=operation_structure.output_category,
@@ -225,7 +212,6 @@ class FilterNode(BaseNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -372,7 +358,6 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -432,7 +417,6 @@ class LagNode(BaseSeriesOutputNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -531,7 +515,6 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -625,7 +608,6 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -652,7 +634,15 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
             f"feature_name={feature_name}, "
             f"skip_fill_na=True)"
         )
-        return statements, ExpressionStr(f"{grouped}.{agg}")
+        expression = ExpressionStr(f"{grouped}.{agg}")
+        # Note: the output of the above SDK code is a Series, but the output of this node is a Frame.
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=expression,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=operation_structure.output_category,
+        )
+        return statements, var_name
 
 
 class SCDBaseParameters(BaseModel):
@@ -770,7 +760,6 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -988,7 +977,6 @@ class JoinNode(BasePrunableNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -1111,7 +1099,6 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -1215,7 +1202,6 @@ class TrackChangesNode(BaseNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -1283,7 +1269,6 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -1314,7 +1299,15 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
             f"backward={backward}, "
             f"skip_fill_na=True)"
         )
-        return statements, ExpressionStr(f"{grouped}.{agg}")
+        expression = ExpressionStr(f"{grouped}.{agg}")
+        # Note: the output of the above SDK code is a Series, but the output of this node is a Frame.
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=expression,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=operation_structure.output_category,
+        )
+        return statements, var_name
 
 
 class AliasNode(BaseNode):
@@ -1377,7 +1370,6 @@ class AliasNode(BaseNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -1419,7 +1411,6 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,

@@ -98,7 +98,6 @@ class BaseGraphNodeParameters(BaseModel):
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -110,8 +109,6 @@ class BaseGraphNodeParameters(BaseModel):
         ----------
         input_var_name_expressions: List[VarNameExpressionStr]
             Input variables name
-        input_node_types: List[NodeType]
-            Input node types
         var_name_generator: VariableNameGenerator
             Variable name generator
         operation_structure: OperationStructure
@@ -134,7 +131,6 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -255,7 +251,6 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -296,7 +291,6 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -347,7 +341,6 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -377,7 +370,6 @@ class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -414,7 +406,6 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
@@ -558,14 +549,12 @@ class BaseGraphNode(BasePrunableNode):
     def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         return self.parameters.derive_sdk_code(
             input_var_name_expressions=input_var_name_expressions,
-            input_node_types=input_node_types,
             var_name_generator=var_name_generator,
             operation_structure=operation_structure,
             config=config,
