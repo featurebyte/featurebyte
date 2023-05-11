@@ -54,6 +54,7 @@ from featurebyte.exception import (
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
     AccessTokenCredential,
+    GCSStorageCredential,
     S3StorageCredential,
     UsernamePasswordCredential,
 )
@@ -493,6 +494,7 @@ __all__ = [
     # credentials
     "AccessTokenCredential",
     "Credential",
+    "GCSStorageCredential",
     "S3StorageCredential",
     "UsernamePasswordCredential",
     # enums
