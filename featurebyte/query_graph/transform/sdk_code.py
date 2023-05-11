@@ -107,18 +107,15 @@ class SDKCodeGlobalState(BaseModel):
         edges_map: Dict[str, str]
             Edges map of the query graph
         """
-        if node.type in NodeType.inplace_operation_node_type():
-            # get the first input node's output node names
-            first_input_node_output_node_names = edges_map[backward_nodes[0].name]
-            # get the index of the current node in the first input node's output node names
-            cur_node_index = first_input_node_output_node_names.index(node.name)
-            # check if there are other nodes after the current node in the first input node's output node names
-            if len(set(first_input_node_output_node_names[cur_node_index:])) > 1:
-                # If there are other nodes after the current node in the first input node's output node names,
-                # it means that the backward node is used by other nodes. In this case, we need to copy the
-                # backward node to avoid inplace operation affecting other nodes. Currently, only first node in
-                # the backward node's forward nodes will be affected by the inplace operation.
-                self.required_copy_node_names.add(node.name)
+        if (
+            node.type in NodeType.inplace_operation_node_type()
+            and len(set(edges_map[backward_nodes[0].name])) > 1
+        ):
+            # If there are more than one distinct output nodes from the first input, it means that the backward node
+            # is used by other nodes. In this case, we need to copy the backward node to avoid inplace operation
+            # affecting other nodes. Currently, only first node in the backward node's forward nodes will be
+            # affected by the inplace operation.
+            self.required_copy_node_names.add(node.name)
 
     def initialize(self, query_graph: QueryGraphModel) -> None:
         """

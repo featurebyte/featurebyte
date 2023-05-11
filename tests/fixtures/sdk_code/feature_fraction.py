@@ -20,7 +20,8 @@ col = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     feature_name="sum_item_amount",
     skip_fill_na=True,
 )
-col[col.isnull()] = 0
+col_1 = col.copy()
+col_1[col.isnull()] = 0
 event_table = EventTable.get_by_id(ObjectId("{table_id}"))
 event_view = event_table.get_view(
     view_mode="manual",
@@ -28,11 +29,11 @@ event_view = event_table.get_view(
     column_cleaning_operations=[],
 )
 joined_view = event_view.add_feature(
-    new_column_name="sum_item_amt", feature=col, entity_column="cust_id"
+    new_column_name="sum_item_amt", feature=col_1, entity_column="cust_id"
 )
-col_1 = joined_view["sum_item_amt"]
+col_2 = joined_view["sum_item_amt"]
 view = joined_view.copy()
-view["sum_item_amt_plus_one"] = col_1 + 1
+view["sum_item_amt_plus_one"] = col_2 + 1
 grouped = view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     value_column="sum_item_amt_plus_one",
     method="sum",
