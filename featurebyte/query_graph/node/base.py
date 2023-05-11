@@ -346,6 +346,7 @@ class BaseNode(BaseModel):
         node_output_type: NodeOutputType,
         node_output_category: NodeOutputCategory,
         to_associate_with_node_name: bool,
+        variable_name_prefix: Optional[str] = None,
     ) -> Tuple[List[StatementT], VariableNameStr]:
         """
         Convert expression to variable
@@ -362,6 +363,8 @@ class BaseNode(BaseModel):
             Node output category
         to_associate_with_node_name: bool
             Whether to associate the variable name with the node name
+        variable_name_prefix: Optional[str]
+            Variable name prefix (if any)
 
         Returns
         -------
@@ -369,14 +372,65 @@ class BaseNode(BaseModel):
         """
         statements: List[StatementT] = []
         if isinstance(var_name_expression, ExpressionStr):
-            var_name = var_name_generator.generate_variable_name(
-                node_output_type=node_output_type,
-                node_output_category=node_output_category,
-                node_name=self.name if to_associate_with_node_name else None,
-            )
+            if variable_name_prefix:
+                var_name = var_name_generator.convert_to_variable_name(
+                    variable_name_prefix=variable_name_prefix,
+                    node_name=self.name if to_associate_with_node_name else None,
+                )
+            else:
+                var_name = var_name_generator.generate_variable_name(
+                    node_output_type=node_output_type,
+                    node_output_category=node_output_category,
+                    node_name=self.name if to_associate_with_node_name else None,
+                )
             statements.append((var_name, var_name_expression))
             return statements, var_name
         return statements, var_name_expression
+
+    def _convert_to_proper_variable_name(
+        self,
+        var_name: VariableNameStr,
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        required_copy: bool,
+    ) -> Tuple[List[StatementT], VariableNameStr]:
+        """
+        This method is used to convert variable name to proper variable name if the variable name is
+        not a valid identifier.
+
+        Parameters
+        ----------
+        var_name: VariableNameStr
+            Variable name
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        operation_structure: OperationStructure
+            Operation structure of current node
+        required_copy: bool
+            Whether a copy is required
+
+        Returns
+        -------
+        Tuple[List[StatementT], VariableNameStr]
+        """
+        output_var_name = var_name
+        statements = []
+        is_var_name_valid_identifier = var_name.isidentifier()
+        if required_copy or not is_var_name_valid_identifier:
+            output_var_name = var_name_generator.generate_variable_name(
+                node_output_type=operation_structure.output_type,
+                node_output_category=operation_structure.output_category,
+                node_name=self.name,
+            )
+            if required_copy:
+                # Copy is required as the input will be used by other nodes. This is to avoid unexpected
+                # side effects when the input is modified by other nodes.
+                statements.append((output_var_name, ExpressionStr(f"{var_name}.copy()")))
+            else:
+                # This is to handle the case where the var_name is not a valid variable name,
+                # so we need to assign it to a valid variable name first.
+                statements.append((output_var_name, ExpressionStr(var_name)))
+        return statements, output_var_name
 
     @abstractmethod
     def _derive_node_operation_info(
