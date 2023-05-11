@@ -193,8 +193,8 @@ class GCSStorageCredential(BaseStorageCredential):
 
     Examples
     --------
-    >>> gcs_storage_credential = S3StorageCredential(
-    ...   service_account_info="google_api_token"
+    >>> gcs_storage_credential = GCSStorageCredential(
+    ...   service_account_info={"type": "service_account", "private_key": "private_key"}
     ... )
     """
 
