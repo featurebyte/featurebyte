@@ -33,19 +33,16 @@ Feature Engineering and management doesn’t have to be complicated. Take charge
 
 ``` python
 # Get view from catalog
-invoices = catalog.get_view("INVOICES")
-# Customer average spend over past 5 weeks
-features = invoices.groupby(
-    "CustomerId"
-).aggregate_over(
+invoice_view = catalog.get_view("GROCERYINVOICE")
+# Declare features of total spent by customer in the past 7 and 28 days
+customer_purchases = invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
     "Amount",
-    method="avg",
-    feature_names=["AvgSpend5w"],
+    method="sum",
+    feature_names=["CustomerTotalSpent_7d", "CustomerTotalSpent_28d"],
     fill_value=0,
-    windows=["5w"]
+    windows=['7d', '28d']
 )
-# Save feature
-features["AvgSpend5w"].save()
+customer_purchases.save()
 ```
 
 ### Experiment
