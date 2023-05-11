@@ -30,21 +30,33 @@ tasks:
   lint-java:
     desc: "Run linter for java"
     sources:
-      - hive-udf/**/*
+      - hive-udf/gradle/**/*
+      - hive-udf/lib/src/**/*
+      - hive-udf/lib/build.gradle
+    generates:
+      - featurebyte/sql/spark/*.jar
     cmds:
         - cd hive-udf && ./gradlew spotlessCheck
 
   format-java:
     desc: "Format the java code"
     sources:
-      - hive-udf/**/*
+      - hive-udf/gradle/**/*
+      - hive-udf/lib/src/**/*
+      - hive-udf/lib/build.gradle
+    generates:
+      - featurebyte/sql/spark/*.jar
     cmds:
       - cd hive-udf && ./gradlew spotlessApply
 
   test-java:
     desc: "Run the java tests"
     sources:
-      - hive-udf/**/*
+      - hive-udf/gradle/**/*
+      - hive-udf/lib/src/**/*
+      - hive-udf/lib/build.gradle
+    generates:
+      - featurebyte/sql/spark/*.jar
     cmds:
       - cd hive-udf && ./gradlew test
 
@@ -52,7 +64,11 @@ tasks:
     desc: "Compile the hive jar files"
     run: once
     sources:
-      - hive-udf/**/*
+      - hive-udf/gradle/**/*
+      - hive-udf/lib/src/**/*
+      - hive-udf/lib/build.gradle
+    generates:
+      - featurebyte/sql/spark/*.jar
     deps:
       - task: lint-java
     cmds:
