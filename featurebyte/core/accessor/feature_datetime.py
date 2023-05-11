@@ -304,7 +304,7 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         """
         return super().microsecond  # type: ignore[return-value]
 
-    def tz_offset(self, timezone_offset: Union[str, Feature]) -> DatetimeAccessor:
+    def tz_offset(self, timezone_offset: Union[str, Feature]) -> DatetimeAccessor:  # type: ignore[override]
         """
         Returns a DatetimeAccessor object with the specified timezone offset.
 

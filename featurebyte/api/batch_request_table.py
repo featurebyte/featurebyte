@@ -4,9 +4,8 @@ BatchRequestTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Union
 
-from ctypes import Union
 from pathlib import Path
 
 import pandas as pd
@@ -123,7 +122,7 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
         """
         return super().describe(size=size, seed=seed)
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:  # type: ignore[type-arg]
+    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
         """
         Downloads the batch request table from the database.
 
