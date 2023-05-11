@@ -4,6 +4,11 @@ BatchRequestTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
+from typing import Optional
+
+from ctypes import Union
+from pathlib import Path
+
 import pandas as pd
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
@@ -102,3 +107,32 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
             Summary of the table.
         """
         return super().describe(size=size, seed=seed)
+
+    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+        """
+        Downloads the batch request table from the database.
+
+        Parameters
+        ----------
+        output_path: Optional[Union[str, Path]]
+            Location to save downloaded parquet file.
+
+        Returns
+        -------
+        Path
+
+        Raises
+        ------
+        FileExistsError
+            File already exists at output path.
+        RecordRetrievalException
+            Error retrieving record from API.
+
+        Examples
+        --------
+        >>> batch_request_table = catalog.get_batch_request_table("batch_request_table_name")  # doctest: +SKIP
+        >>> downloaded_path = batch_request_table.download(output_path="path/to/download")  # doctest: +SKIP
+
+        # noqa: DAR402
+        """
+        return super().download(output_path=output_path)
