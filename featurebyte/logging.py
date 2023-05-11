@@ -101,9 +101,7 @@ CONSOLE_LOG_FORMATTER = logging.Formatter(
 )
 
 
-def set_logger_level(
-    logger: logging.Logger, configurations: Optional[Configurations] = None
-) -> None:
+def set_logger_level(logger: logging.Logger, configurations: Configurations) -> None:
     """
     Set logger level
 
@@ -114,7 +112,6 @@ def set_logger_level(
     configurations: Configurations
         Optional configurations used to configure logger
     """
-    configurations = configurations or Configurations()
     if os.environ.get("LOG_LEVEL"):
         logger.setLevel(os.environ["LOG_LEVEL"])
     else:
