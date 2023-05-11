@@ -63,9 +63,8 @@ joined_view = item_view.join_event_table_attributes(
 )
 col = joined_view["col_float_event_table"]
 col_1 = joined_view["item_amount"]
-view = joined_view.copy()
-view["percent"] = col_1 / col
-col_2 = view.groupby(by_keys=["event_id_col"], category=None).aggregate(
+joined_view["percent"] = col_1 / col
+col_2 = joined_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     value_column="percent",
     method="max",
     feature_name="max_percent",

@@ -67,9 +67,8 @@ def test_alias_node(node_inputs, required_copy, expected_statements, expected_in
         name="alias_1", parameters={"name": "new_col"}, output_type=NodeOutputType.SERIES
     )
     var_name_generator = VariableNameGenerator()
-    var_name_generator.convert_to_variable_name(
-        "col", node_name=None
-    )  # simulate a case where col has been defined
+    # simulate a case where col has been defined
+    var_name_generator.convert_to_variable_name("col", node_name=None)
     statements, info = node.derive_sdk_code(
         node_inputs=node_inputs,
         var_name_generator=var_name_generator,
@@ -225,7 +224,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
             True,
             [
                 (VariableNameStr("mask"), ExpressionStr("col > 10")),
-                (VariableNameStr("col_1"), ExpressionStr("col.dt.year.copy()")),
+                (VariableNameStr("col_1"), ExpressionStr("col.dt.year")),
             ],
             InfoStr(json.dumps({"value": 1234, "mask": "mask"})),
         ),
@@ -238,9 +237,8 @@ def test_conditional(node_inputs, required_copy, as_info_str, expected_statement
         NodeOutputType.SERIES if node_inputs[0].startswith("col") else NodeOutputType.FRAME
     )
     var_name_generator = VariableNameGenerator()
-    var_name_generator.convert_to_variable_name(
-        "col", node_name=None
-    )  # simulate a case where col has been defined
+    # simulate a case where col has been defined
+    var_name_generator.convert_to_variable_name("col", node_name=None)
     statements, info = node.derive_sdk_code(
         node_inputs=node_inputs,
         var_name_generator=var_name_generator,
