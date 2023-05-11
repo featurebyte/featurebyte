@@ -16,11 +16,16 @@ from featurebyte import StorageType
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
-from featurebyte.models.credential import StorageCredential
+from featurebyte.models.credential import (
+    GCSStorageCredential,
+    S3StorageCredential,
+    StorageCredential,
+)
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 from featurebyte.session.simple_storage import (
     FileMode,
     FileSimpleStorage,
+    GCSStorage,
     S3SimpleStorage,
     SimpleStorage,
 )
@@ -77,10 +82,29 @@ class BaseSparkSession(BaseSession, ABC):
         if self.storage_type == StorageType.FILE:
             self._storage = FileSimpleStorage(storage_url=self.storage_url)
         elif self.storage_type == StorageType.S3:
+            if self.storage_credential is None:
+                raise NotImplementedError("Storage credential is required for S3")
+            if not isinstance(self.storage_credential, S3StorageCredential):
+                raise NotImplementedError(
+                    f"Unsupported storage credential for S3: {self.storage_credential.__class__.__name__}"
+                )
             self._storage = S3SimpleStorage(
                 storage_url=self.storage_url,
                 storage_credential=self.storage_credential,
                 region_name=self.region_name,
+            )
+        elif self.storage_type == StorageType.GCS:
+            if self.storage_credential is None:
+                raise NotImplementedError("Storage credential is required for GCS")
+            if self.storage_credential is None or not isinstance(
+                self.storage_credential, GCSStorageCredential
+            ):
+                raise NotImplementedError(
+                    f"Unsupported storage credential for GCS: {self.storage_credential.__class__.__name__}"
+                )
+            self._storage = GCSStorage(
+                storage_url=self.storage_url,
+                storage_credential=self.storage_credential,
             )
         else:
             raise NotImplementedError("Unsupported remote storage type")

@@ -1,7 +1,7 @@
 """
 Document model for stored credentials
 """
-from typing import List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 from typing_extensions import Annotated
 
 import os  # pylint: disable=wrong-import-order
@@ -152,6 +152,7 @@ class StorageCredentialType(StrEnum):
     """
 
     S3 = "S3"
+    GCS = "GCS"
 
 
 class BaseStorageCredential(BaseCredential):
@@ -181,13 +182,32 @@ class S3StorageCredential(BaseStorageCredential):
         description="S3 access key ID used for connecting to your S3 store."
     )
     s3_secret_access_key: StrictStr = Field(
-        description="S3 secret access key used for connecting to your S3 store. "
+        description="S3 secret access key used for connecting to your S3 store."
         "Avoid storing this in plain text, or in a public repository."
     )
 
 
+class GCSStorageCredential(BaseStorageCredential):
+    """
+    Data class for a GCS storage credential.
+
+    Examples
+    --------
+    >>> gcs_storage_credential = GCSStorageCredential(
+    ...   service_account_info={"type": "service_account", "private_key": "private_key"}
+    ... )
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.GCSStorageCredential")
+
+    type: StorageCredentialType = Field(StorageCredentialType.GCS, const=True)
+    service_account_info: Dict[str, str] = Field(
+        description="Service account information used for connecting to your GCS store."
+    )
+
+
 StorageCredential = Annotated[
-    Union[S3StorageCredential],
+    Union[S3StorageCredential, GCSStorageCredential],
     Field(discriminator="type"),
 ]
 
