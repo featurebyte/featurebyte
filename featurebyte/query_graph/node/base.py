@@ -417,7 +417,7 @@ class BaseNode(BaseModel):
         Tuple[List[StatementT], VariableNameStr]
         """
         output_var_name = var_name
-        statements = []
+        statements: List[StatementT] = []
         is_var_name_valid_identifier = var_name.isidentifier()
         if required_copy or not is_var_name_valid_identifier:
             output_var_name = var_name_generator.generate_variable_name(
