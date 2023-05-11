@@ -109,7 +109,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         """
         return super().describe(size=size, seed=seed)
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:  # type: ignore[type-arg]
         """
         Downloads the historical feature table from the database.
 

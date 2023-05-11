@@ -122,7 +122,7 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         """
         return super().describe(size=size, seed=seed)
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:  # type: ignore[type-arg]
         """
         Downloads the observation table from the database.
 
