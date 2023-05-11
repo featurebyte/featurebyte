@@ -64,12 +64,12 @@ jobs:
           # Write diff to env
           echo "DIFF<<EOF" >> $GITHUB_ENV
           set +e
-          diff -u branch.PKG-INFO main.PKG-INFO >> $GITHUB_ENV
+          diff -u main.PKG-INFO branch.PKG-INFO >> $GITHUB_ENV
           set -e
           echo "EOF" >> $GITHUB_ENV
 
           # Test if it actually fails
-          diff -u branch.PKG-INFO main.PKG-INFO
+          diff -u main.PKG-INFO branch.PKG-INFO
 
       - uses: mshick/add-pr-comment@v2
         if: failure()
