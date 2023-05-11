@@ -33,19 +33,16 @@ Feature Engineering and management doesn’t have to be complicated. Take charge
 
 ``` python
 # Get view from catalog
-invoices = catalog.get_view("INVOICES")
-# Customer average spend over past 5 weeks
-features = invoices.groupby(
-    "CustomerId"
-).aggregate_over(
+invoice_view = catalog.get_view("GROCERYINVOICE")
+# Declare features of total spent by customer in the past 7 and 28 days
+customer_purchases = invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
     "Amount",
-    method="avg",
-    feature_names=["AvgSpend5w"],
+    method="sum",
+    feature_names=["CustomerTotalSpent_7d", "CustomerTotalSpent_28d"],
     fill_value=0,
-    windows=["5w"]
+    windows=['7d', '28d']
 )
-# Save feature
-features["AvgSpend5w"].save()
+customer_purchases.save()
 ```
 
 ### Experiment
@@ -235,33 +232,33 @@ items_view = catalog.get_view("INVOICEITEMS")
 product_view = catalog.get_view("GROCERYPRODUCT")
 # Join product view to items view
 items_view = items_view.join(product_view)
-# Get Customer purchases across product group over the past 4 weeks
-customer_inventory_28d = items_view.groupby(
+# Get Customer purchases across product group in the past 4 weeks
+customer_basket_28d = items_view.groupby(
     by_keys = "GroceryCustomerGuid", category=”ProductGroup”
 ).aggregate_over(
    "TotalCost",
     method=fb.AggFunc.SUM,
-    feature_names=["CustomerInventory_28d"],
+    feature_names=["CustomerBasket_28d"],
     windows=['28d']
 )
 # Get customer view and join it to items view
 customer_view = catalog.get_view("GROCERYCUSTOMER")
 items_view = items_view.join(customer_view)
 # Get Purchases of Customers living in the same state
-# across product group over the past 4 weeks
-state_inventory_28d = items_view.groupby(
+# across product group in the past 4 weeks
+state_basket_28d = items_view.groupby(
     by_keys="State", category="ProductGroup"
 ).aggregate_over(
    "TotalCost",
     method=fb.AggFunc.SUM,
-    feature_names=["StateInventory_28d"],
+    feature_names=["StateBasket_28d"],
     windows=['28d']
 )
 # Create a feature that measures the similarity of a customer purchases
 # and purchases of customers living in the same state
 customer_state_similarity_28d = \
-    customer_inventory_28d["CustomerInventory_28d"].cd.cosine_similarity(
-        state_inventory_28d["StateInventory_28d"]
+    customer_basket_28d["CustomerBasket_28d"].cd.cosine_similarity(
+        state_basket_28d["StateBasket_28d"]
     )
 # save the new feature
 customer_state_similarity_28d.name = \

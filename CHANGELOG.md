@@ -2,37 +2,42 @@
 
 ---
 
-## v0.2.2 (Unreleased)
+## v0.2.3 (Unreleased)
 
 ---
 
 ### 🛑 Breaking changes 🛑
-
-
 ### 🚩 Deprecations 🚩
+### 💡 Enhancements 💡
++ Support overriding default log level using environment variable `LOG_LEVEL`
 
+### 🧰 Bug fixes 🧰
+
+
+## v0.2.2
+
+---
 
 ### 💡 Enhancements 💡
 
-* Support using DataFrame as observation set in `compute_historical_feature_table()`
-* Support `preview`, `sample` and `describe` methods for materialised tables
-* Support `columns` and `columns_rename_mapping` parameters when creating observation table and
-  batch feature table
-* Update healthcare demo dataset to include timezone columns
-* Support streamed records fetching for DataBricks session
-* Support overriding default log level using environment variable `LOG_LEVEL`
++ Update healthcare demo dataset to include timezone columns
++ Support streamed records fetching for DataBricks session
 
 ### 🧰 Bug fixes 🧰
 
 + Drop a materialized table only if it exists when cleaning up on error
++ Update healthcare demo dataset to include timezone columns
++ Added `dependencies` workflow to repo to check for dependency changes in PRs
++ Fixed taskfile `java` tasks to properly cache the downloaded jar files.
 
 ## v0.2.1
+
+---
 
 ### 🧰 Bug fixes 🧰
 
 * Removed additional dependencies specified in featurebyte client
 
----
 
 ## v0.2.0
 
