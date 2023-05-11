@@ -10,9 +10,14 @@ from pathlib import Path
 
 import boto3
 from bson import ObjectId
+from google.cloud.storage import Client as GCSClient
 from smart_open import open as remote_open
 
-from featurebyte.models.credential import S3StorageCredential, StorageCredential
+from featurebyte.models.credential import (
+    GCSStorageCredential,
+    S3StorageCredential,
+    StorageCredential,
+)
 
 FileMode = Literal["r", "w", "rb", "wb"]
 
@@ -49,11 +54,14 @@ class SimpleStorage(ABC):
         """
         return {}
 
-    @abstractmethod
     def test_connection(self) -> None:
         """
         Test connection to storage
         """
+        conn_test_filename = f"_conn_test_{ObjectId()}"
+        with self.open(path=conn_test_filename, mode="w") as file_obj:
+            file_obj.write("OK")
+        self.delete_object(path=conn_test_filename)
 
     @abstractmethod
     def delete_object(self, path: str) -> None:
@@ -103,12 +111,6 @@ class FileSimpleStorage(SimpleStorage):
         path.mkdir(parents=True, exist_ok=True)
         self.base_url = f"file://{str(path)}"
 
-    def test_connection(self) -> None:
-        conn_test_filename = f"_conn_test_{ObjectId()}"
-        with self.open(path=conn_test_filename, mode="w") as file_obj:
-            file_obj.write("OK")
-        self.delete_object(path=conn_test_filename)
-
     def delete_object(self, path: str) -> None:
         base_path = self.base_url.replace("file://", "")
         os.remove(f"{base_path}/{path}")
@@ -122,7 +124,7 @@ class S3SimpleStorage(SimpleStorage):
     def __init__(
         self,
         storage_url: str,
-        storage_credential: Optional[StorageCredential] = None,
+        storage_credential: Optional[S3StorageCredential] = None,
         region_name: Optional[str] = None,
     ) -> None:
         super().__init__(storage_url=storage_url, storage_credential=storage_credential)
@@ -153,11 +155,44 @@ class S3SimpleStorage(SimpleStorage):
     def _get_transport_params(self) -> Dict[str, Any]:
         return {"client": self.client}
 
-    def test_connection(self) -> None:
-        # should raise exception if connection is not valid
-        self.client.list_objects(Bucket=self.bucket)
-
     def delete_object(self, path: str) -> None:
         path = path.rstrip("/")
         key = f"{self.key_prefix}/{path}" if self.key_prefix else path
         self.client.delete_object(Bucket=self.bucket, Key=key)
+
+
+class GCSStorage(SimpleStorage):
+    """
+    Simple GCS storage class
+    """
+
+    def __init__(
+        self,
+        storage_url: str,
+        storage_credential: GCSStorageCredential,
+    ) -> None:
+        super().__init__(storage_url=storage_url, storage_credential=storage_credential)
+
+        self.client = GCSClient.from_service_account_info(
+            info=storage_credential.service_account_info
+        )
+        protocol, path = storage_url.split("//")
+        assert protocol == "gs:"
+        parts = path.split("/")
+        if len(parts) == 0:
+            raise ValueError("Bucket is missing in storage url")
+        self.bucket = parts[0]
+        if len(parts) > 1:
+            self.key_prefix = "/".join(parts[1:])
+            self.base_url = f"gs://{self.bucket}/{self.key_prefix}"
+        else:
+            self.key_prefix = ""
+            self.base_url = f"gs://{self.bucket}"
+
+    def _get_transport_params(self) -> Dict[str, Any]:
+        return {"client": self.client}
+
+    def delete_object(self, path: str) -> None:
+        path = path.rstrip("/")
+        key = f"{self.key_prefix}/{path}" if self.key_prefix else path
+        self.client.get_bucket(self.bucket).delete_blob(blob_name=key)
