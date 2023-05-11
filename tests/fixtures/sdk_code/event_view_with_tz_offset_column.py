@@ -21,3 +21,4 @@ col = joined_view["tz_offset"]
 col_1 = joined_view["event_timestamp"]
 view_1 = joined_view.copy()
 view_1["event_timestamp_hour"] = col_1.dt.tz_offset(col).hour
+output = view_1
