@@ -2,15 +2,19 @@
 
 ---
 
-## v0.2.2 (Unreleased)
+## v0.2.3 (Unreleased)
 
 ---
 
 ### 🛑 Breaking changes 🛑
-
-
 ### 🚩 Deprecations 🚩
+### 💡 Enhancements 💡
+### 🧰 Bug fixes 🧰
 
+
+## v0.2.2
+
+---
 
 ### 💡 Enhancements 💡
 
