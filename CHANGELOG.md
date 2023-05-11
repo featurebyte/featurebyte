@@ -31,6 +31,7 @@
 ### 🧰 Bug fixes 🧰
 
 * Removed additional dependencies specified in featurebyte client
+* Fixed bug in `feature.definition` so that it is consistent with the underlying query graph
 
 
 ## v0.2.0
