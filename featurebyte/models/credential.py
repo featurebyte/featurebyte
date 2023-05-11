@@ -73,6 +73,15 @@ class BaseCredential(FeatureByteBaseModel):
         for field in self.__fields__.values():
             if field.type_ == StrictStr:
                 setattr(self, field.name, encrypt_value(getattr(self, field.name)))
+            elif field.type_ == str:
+                field_value = getattr(self, field.name)
+                if isinstance(field_value, dict):
+                    # Encrypt each value in the dict
+                    setattr(
+                        self,
+                        field.name,
+                        {key: encrypt_value(value) for key, value in field_value.items()},
+                    )
 
     def decrypt(self) -> None:
         """
@@ -81,6 +90,15 @@ class BaseCredential(FeatureByteBaseModel):
         for field in self.__fields__.values():
             if field.type_ == StrictStr:
                 setattr(self, field.name, decrypt_value(getattr(self, field.name)))
+            elif field.type_ == str:
+                field_value = getattr(self, field.name)
+                if isinstance(field_value, dict):
+                    # Decrypt each value in the dict
+                    setattr(
+                        self,
+                        field.name,
+                        {key: decrypt_value(value) for key, value in field_value.items()},
+                    )
 
 
 # Database Credentials

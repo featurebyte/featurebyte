@@ -12,6 +12,7 @@ from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
     DatabaseCredentialType,
+    GCSStorageCredential,
     S3StorageCredential,
     StorageCredentialType,
     UsernamePasswordCredential,
@@ -19,7 +20,9 @@ from featurebyte.models.credential import (
 from featurebyte.models.feature_store import FeatureStoreModel
 
 
-@pytest.fixture(name="storage_credential", params=[None, StorageCredentialType.S3])
+@pytest.fixture(
+    name="storage_credential", params=[None] + list(StorageCredentialType.__members__.values())
+)
 def storage_credential_fixture(request):
     """
     Fixture for a StorageCredential object
@@ -31,6 +34,13 @@ def storage_credential_fixture(request):
             s3_access_key_id="access_key_id",
             s3_secret_access_key="secret_access_key",
         )
+    elif request.param == StorageCredentialType.GCS:
+        credential = GCSStorageCredential(
+            service_account_info={
+                "type": "service_account",
+                "private_key": "private_key",
+            }
+        )
     else:
         raise ValueError("Invalid storage credential type")
     return credential.json_dict()
@@ -38,7 +48,7 @@ def storage_credential_fixture(request):
 
 @pytest.fixture(
     name="database_credential",
-    params=[None, DatabaseCredentialType.USERNAME_PASSWORD, DatabaseCredentialType.ACCESS_TOKEN],
+    params=[None] + list(DatabaseCredentialType.__members__.values()),
 )
 def database_credential_fixture(request):
     """
