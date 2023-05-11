@@ -69,12 +69,12 @@ def mock_config_path_env_fixture(config_file):
     """
     Mock FEATUREBYTE_HOME in featurebyte/config.py
     """
+    real_os_environ_get = os.environ.get
 
     def mock_env_side_effect(*args, **kwargs):
         if args[0] == "FEATUREBYTE_HOME":
             return os.path.dirname(config_file)
-        env = dict(os.environ)
-        return env.get(*args, **kwargs)
+        return real_os_environ_get(*args, **kwargs)
 
     with mock.patch("featurebyte.config.os.environ.get") as mock_env_get:
         mock_env_get.side_effect = mock_env_side_effect
