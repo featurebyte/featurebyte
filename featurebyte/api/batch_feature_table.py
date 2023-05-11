@@ -3,6 +3,10 @@ BatchFeatureTable class
 """
 from __future__ import annotations
 
+from typing import Optional, Union
+
+from pathlib import Path
+
 import pandas as pd
 
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
@@ -49,6 +53,11 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         -------
         pd.DataFrame
             Preview rows of the table.
+
+        Examples
+        --------
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
+        >>> preview_df = batch_feature_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
 
@@ -68,6 +77,11 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         -------
         pd.DataFrame
             Sampled rows from the table.
+
+        Examples
+        --------
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
+        >>> sample_df = batch_feature_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
 
@@ -86,5 +100,57 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         -------
         pd.DataFrame
             Summary of the table.
+
+        Examples
+        --------
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
+        >>> summary_df = batch_feature_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
+
+    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+        """
+        Downloads the batch feature table from the database.
+
+        Parameters
+        ----------
+        output_path: Optional[Union[str, Path]]
+            Location to save downloaded parquet file.
+
+        Returns
+        -------
+        Path
+
+        Raises
+        ------
+        FileExistsError
+            File already exists at output path.
+        RecordRetrievalException
+            Error retrieving record from API.
+
+        Examples
+        --------
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
+        >>> downloaded_path = batch_feature_table.download(output_path="path/to/download")  # doctest: +SKIP
+
+        # noqa: DAR402
+        """
+        return super().download(output_path=output_path)
+
+    def delete(self) -> None:
+        """
+        Deletes the batch feature table.
+
+        Raises
+        ------
+        RecordDeletionException
+            When the record cannot be deleted properly
+
+        Examples
+        --------
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
+        >>> batch_feature_table.delete()  # doctest: +SKIP
+
+        # noqa: DAR402
+        """
+        super().delete()

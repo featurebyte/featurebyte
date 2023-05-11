@@ -3,7 +3,7 @@ Feature datetime accessor module.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, TypeVar, Union
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.accessor.datetime import DatetimeAccessor
@@ -303,3 +303,29 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         >>> feature_group["TimestampMicrosecond"] = feature.dt.microsecond  # doctest: +SKIP
         """
         return super().microsecond  # type: ignore[return-value]
+
+    def tz_offset(self, timezone_offset: Union[str, Feature]) -> DatetimeAccessor:  # type: ignore[override]
+        """
+        Returns a DatetimeAccessor object with the specified timezone offset.
+
+        The timezone offset will be applied to convert the underlying timestamp column to localized
+        time before extracting datetime properties.
+
+        Parameters
+        ----------
+        timezone_offset : str or Feature
+            The timezone offset to apply. If a string is provided, it must be a valid timezone
+            offset in the format "(+|-)HH:mm". If the timezone offset can also be a column in the
+            table, in which case a Feature object should be provided.
+
+        Returns
+        -------
+        DatetimeAccessor
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
+        >>> feature_group = fb.FeatureGroup([feature])
+        >>> feature_group["TimestampWithOffset"] = feature.dt.tz_offset("+08:00").hour
+        """
+        return super().tz_offset(timezone_offset)
