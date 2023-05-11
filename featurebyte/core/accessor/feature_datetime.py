@@ -313,10 +313,10 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
 
         Parameters
         ----------
-        timezone_offset : str or FrozenSeries
+        timezone_offset : str or Feature
             The timezone offset to apply. If a string is provided, it must be a valid timezone
             offset in the format "(+|-)HH:mm". If the timezone offset can also be a column in the
-            table, in which case a Column object should be provided.
+            table, in which case a Feature object should be provided.
 
         Returns
         -------

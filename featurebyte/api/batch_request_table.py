@@ -168,4 +168,4 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
 
         # noqa: DAR402
         """
-        return super().delete()
+        super().delete()

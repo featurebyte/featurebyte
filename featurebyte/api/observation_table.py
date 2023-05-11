@@ -167,4 +167,4 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
 
         # noqa: DAR402
         """
-        return super().delete()
+        super().delete()

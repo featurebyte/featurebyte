@@ -153,4 +153,4 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
 
         # noqa: DAR402
         """
-        return super().delete()
+        super().delete()

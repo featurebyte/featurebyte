@@ -154,4 +154,4 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         # noqa: DAR402
         """
-        return super().delete()
+        super().delete()
