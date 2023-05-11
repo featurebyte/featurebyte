@@ -78,4 +78,42 @@ class FeatureCreateTask(BaseTask):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
+        feature = await feature_service.get_document(document_id=payload.output_document_id)
+        generated_hash = feature.graph.node_name_to_ref[feature.node_name]
+        expected_hash = graph.node_name_to_ref[node_name]
+        if definition != feature.definition or expected_hash != generated_hash:
+            # log the difference between the expected feature and the saved feature
+            logger.debug(f">>> Generated node_name_to_ref: \n{graph.node_name_to_ref}")
+            logger.debug(f">>> Expected node_name_to_ref: \n{feature.graph.node_name_to_ref}")
+            logger.debug(f">>> Generated graph: \n{graph.dict()}")
+            logger.debug(f">>> Expected graph: \n{feature.graph.dict()}")
+            logger.debug(f">>> Generated feature definition: \n{definition}")
+            logger.debug(f">>> Saved feature definition: \n{feature.definition}")
+
+            import pickle
+
+            from featurebyte.config import get_home_path
+
+            home_path = get_home_path()
+            feature_path = home_path.joinpath(f"{feature.name}_dict.pkl")
+            graph_path = home_path.joinpath(f"{feature.name}_graph.pkl")
+            definition_path = home_path.joinpath(f"{feature.name}_definition.txt")
+            expected_definition_path = home_path.joinpath(f"{feature.name}_expected_definition.txt")
+            payload_path = home_path.joinpath(f"{feature.name}_payload.pkl")
+            with open(feature_path, "wb") as f:
+                pickle.dump(feature.dict(by_alias=True), f)
+            with open(graph_path, "wb") as f:
+                pickle.dump([graph.dict(), node_name], f)
+            with open(definition_path, "w") as f:
+                f.write(feature.definition)
+            with open(expected_definition_path, "w") as f:
+                f.write(definition)
+            with open(payload_path, "wb") as f:
+                pickle.dump(payload.dict(by_alias=True), f)
+
+            # delete the feature if the definition is not consistent
+            # feat = Feature.get_by_id(payload.output_document_id)
+            # feat.delete()
+            # raise DocumentInconsistencyError("Inconsistent feature definition detected!")
+
         logger.debug("Complete feature create task")
