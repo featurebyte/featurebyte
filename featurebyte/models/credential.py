@@ -182,7 +182,7 @@ class S3StorageCredential(BaseStorageCredential):
         description="S3 access key ID used for connecting to your S3 storage."
     )
     s3_secret_access_key: StrictStr = Field(
-        description="S3 secret access key used for connecting to your S3 store. "
+        description="S3 secret access key used for connecting to your S3 storage. "
         "Avoid storing this in plain text, or in a public repository."
     )
 
