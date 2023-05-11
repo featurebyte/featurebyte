@@ -9,6 +9,8 @@
 ### 🛑 Breaking changes 🛑
 ### 🚩 Deprecations 🚩
 ### 💡 Enhancements 💡
++ Support overriding default log level using environment variable `LOG_LEVEL`
+
 ### 🧰 Bug fixes 🧰
 
 

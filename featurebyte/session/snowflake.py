@@ -8,6 +8,7 @@ from typing import Any, AsyncGenerator, OrderedDict
 import collections
 import datetime
 import json
+import logging
 
 import pandas as pd
 import pyarrow as pa
@@ -31,6 +32,8 @@ from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
 logger = get_logger(__name__)
+
+get_logger("snowflake.connector").setLevel(logging.ERROR)
 
 
 class SnowflakeSession(BaseSession):

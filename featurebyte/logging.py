@@ -4,6 +4,7 @@ Logging formatting
 from typing import Any, Optional
 
 import logging
+import os
 import sys
 
 from featurebyte.common.env_util import is_notebook
@@ -100,6 +101,23 @@ CONSOLE_LOG_FORMATTER = logging.Formatter(
 )
 
 
+def set_logger_level(logger: logging.Logger, configurations: Configurations) -> None:
+    """
+    Set logger level
+
+    Parameters
+    ----------
+    logger: logging.Logger
+        Logger to set level
+    configurations: Configurations
+        Optional configurations used to configure logger
+    """
+    if os.environ.get("LOG_LEVEL"):
+        logger.setLevel(os.environ["LOG_LEVEL"])
+    else:
+        logger.setLevel(configurations.logging.level)
+
+
 def get_logger(logger_name: str, configurations: Optional[Configurations] = None) -> logging.Logger:
     """
     Get logger
@@ -125,10 +143,10 @@ def get_logger(logger_name: str, configurations: Optional[Configurations] = None
     console_handler.setFormatter(formatter)
     logger = logging.getLogger(logger_name)
     logger.propagate = False
-    logger.setLevel(configurations.logging.level)
     if logger.hasHandlers():
         logger.handlers.clear()
     logger.addHandler(console_handler)
+    set_logger_level(logger, configurations)
     return logger
 
 
@@ -142,7 +160,7 @@ def reconfigure_loggers(configurations: Configurations) -> None:
         Configurations to use
     """
     for name in logging.root.manager.loggerDict:  # pylint: disable=no-member
-        logging.getLogger(name).setLevel(configurations.logging.level)
+        set_logger_level(logging.getLogger(name), configurations)
 
 
 __all__ = ["get_logger"]
