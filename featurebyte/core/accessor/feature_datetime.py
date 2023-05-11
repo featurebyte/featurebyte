@@ -325,6 +325,6 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         Examples
         --------
         >>> feature = catalog.get_feature("CustomerLatestInvoiceTimestamp")
-        >>> feature_group["TimestampWithOffset"] = feature.tz_offset("+08:00").hour
+        >>> feature_group["TimestampWithOffset"] = feature.dt.tz_offset("+08:00").hour
         """
         return super().tz_offset(timezone_offset)
