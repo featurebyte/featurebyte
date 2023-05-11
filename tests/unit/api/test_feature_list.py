@@ -1016,6 +1016,9 @@ def test_save_feature_group(saved_feature_list):
         assert feature.saved is True
 
     # check that object has been saved error is thrown
+    feat = feature_group["feat_0"]
+    feat[feat < 0] = 0
+    feature_group["feat_0"] = feat
     with pytest.raises(ObjectHasBeenSavedError):
         feature_group.save()
 
