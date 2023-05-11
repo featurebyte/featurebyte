@@ -179,10 +179,10 @@ class S3StorageCredential(BaseStorageCredential):
 
     type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
     s3_access_key_id: StrictStr = Field(
-        description="S3 access key ID used for connecting to your S3 storage."
+        description="S3 access key ID used for connecting to your S3 store."
     )
     s3_secret_access_key: StrictStr = Field(
-        description="S3 secret access key used for connecting to your S3 storage. "
+        description="S3 secret access key used for connecting to your S3 store."
         "Avoid storing this in plain text, or in a public repository."
     )
 
@@ -202,7 +202,7 @@ class GCSStorageCredential(BaseStorageCredential):
 
     type: StorageCredentialType = Field(StorageCredentialType.GCS, const=True)
     service_account_info: Dict[str, str] = Field(
-        description="Service account information used for connecting to your GCS storage."
+        description="Service account information used for connecting to your GCS store."
     )
 
 
