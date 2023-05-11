@@ -67,6 +67,11 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         -------
         pd.DataFrame
             Preview rows of the table.
+
+        Examples
+        --------
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
 
@@ -86,6 +91,11 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         -------
         pd.DataFrame
             Sampled rows from the table.
+
+        Examples
+        --------
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
 
@@ -104,6 +114,11 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         -------
         pd.DataFrame
             Summary of the table.
+
+        Examples
+        --------
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
 

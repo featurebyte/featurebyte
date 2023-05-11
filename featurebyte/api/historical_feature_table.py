@@ -54,6 +54,11 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         -------
         pd.DataFrame
             Preview rows of the table.
+
+        Examples
+        --------
+        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
 
@@ -73,6 +78,11 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         -------
         pd.DataFrame
             Sampled rows from the table.
+
+        Examples
+        --------
+        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
 
@@ -91,6 +101,11 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         -------
         pd.DataFrame
             Summary of the table.
+
+        Examples
+        --------
+        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
 

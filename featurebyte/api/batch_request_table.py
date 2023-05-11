@@ -68,6 +68,11 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
         -------
         pd.DataFrame
             Preview rows of the table.
+
+        Examples
+        --------
+        >>> batch_request_table = catalog.get_batch_request_table("my_batch_request_table")  # doctest: +SKIP
+        >>> batch_request_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
 
@@ -87,6 +92,11 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
         -------
         pd.DataFrame
             Sampled rows from the table.
+
+        Examples
+        --------
+        >>> batch_request_table = catalog.get_batch_request_table("my_batch_request_table")  # doctest: +SKIP
+        >>> batch_request_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
 
@@ -105,6 +115,11 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
         -------
         pd.DataFrame
             Summary of the table.
+
+        Examples
+        --------
+        >>> batch_request_table = catalog.get_batch_request_table("my_batch_request_table")  # doctest: +SKIP
+        >>> batch_request_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
 

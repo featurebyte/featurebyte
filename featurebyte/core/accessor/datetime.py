@@ -157,6 +157,11 @@ class DatetimeAccessor:
         Returns
         -------
         DatetimeAccessor
+
+        Examples
+        --------
+        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view["TimestampYearWithOffset"] = view["Timestamp"].dt.tz_offset("+08:00").year
         """
         return DatetimeAccessor(self._obj, timezone_offset)
 
