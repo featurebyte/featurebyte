@@ -136,3 +136,21 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
         # noqa: DAR402
         """
         return super().download(output_path=output_path)
+
+    def delete(self) -> None:
+        """
+        Deletes the batch request table.
+
+        Raises
+        ------
+        RecordDeletionException
+            When the record cannot be deleted properly
+
+        Examples
+        --------
+        >>> batch_request_table = catalog.get_batch_request_table("batch_request_table_name")  # doctest: +SKIP
+        >>> batch_request_table.delete()  # doctest: +SKIP
+
+        # noqa: DAR402
+        """
+        return super().delete()

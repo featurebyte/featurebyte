@@ -122,3 +122,21 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         # noqa: DAR402
         """
         return super().download(output_path=output_path)
+
+    def delete(self) -> None:
+        """
+        Deletes the historical feature table.
+
+        Raises
+        ------
+        RecordDeletionException
+            When the record cannot be deleted properly
+
+        Examples
+        --------
+        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table.delete()  # doctest: +SKIP
+
+        # noqa: DAR402
+        """
+        return super().delete()

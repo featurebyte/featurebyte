@@ -135,3 +135,21 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         # noqa: DAR402
         """
         return super().download(output_path=output_path)
+
+    def delete(self) -> None:
+        """
+        Deletes the observation table.
+
+        Raises
+        ------
+        RecordDeletionException
+            When the record cannot be deleted properly
+
+        Examples
+        --------
+        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table.delete()  # doctest: +SKIP
+
+        # noqa: DAR402
+        """
+        return super().delete()

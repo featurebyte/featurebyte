@@ -67,19 +67,15 @@ methods_without_examples = {
     "featurebyte.batchfeaturetable.describe",
     "featurebyte.batchfeaturetable.preview",
     "featurebyte.batchfeaturetable.sample",
-    "featurebyte.batchfeaturetable.delete",
     "featurebyte.batchrequesttable.describe",
     "featurebyte.batchrequesttable.preview",
     "featurebyte.batchrequesttable.sample",
-    "featurebyte.batchrequesttable.delete",
     "featurebyte.observationtable.describe",
     "featurebyte.observationtable.preview",
     "featurebyte.observationtable.sample",
-    "featurebyte.observationtable.delete",
     "featurebyte.historicalfeaturetable.describe",
     "featurebyte.historicalfeaturetable.preview",
     "featurebyte.historicalfeaturetable.sample",
-    "featurebyte.historicalfeaturetable.delete",
 }
 
 

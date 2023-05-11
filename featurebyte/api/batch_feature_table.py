@@ -121,3 +121,21 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         # noqa: DAR402
         """
         return super().download(output_path=output_path)
+
+    def delete(self) -> None:
+        """
+        Deletes the batch feature table.
+
+        Raises
+        ------
+        RecordDeletionException
+            When the record cannot be deleted properly
+
+        Examples
+        --------
+        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
+        >>> batch_feature_table.delete()  # doctest: +SKIP
+
+        # noqa: DAR402
+        """
+        return super().delete()
