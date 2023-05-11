@@ -15,8 +15,9 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     CodeGenerator,
     ExpressionStr,
+    StatementT,
     VariableNameGenerator,
-    VarNameExpressionStr,
+    VarNameExpressionInfoStr,
 )
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -38,7 +39,9 @@ class SDKCodeGlobalState(BaseModel):
         Code generator is used to generate final SDK codes from a list of statements & imports
     """
 
-    node_name_to_post_compute_output: Dict[str, VarNameExpressionStr] = Field(default_factory=dict)
+    node_name_to_post_compute_output: Dict[str, VarNameExpressionInfoStr] = Field(
+        default_factory=dict
+    )
     node_name_to_operation_structure: Dict[str, OperationStructure] = Field(default_factory=dict)
     code_generation_config: CodeGenerationConfig = Field(default_factory=CodeGenerationConfig)
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
@@ -165,28 +168,30 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         branch_state: BaseModel,
         global_state: SDKCodeGlobalState,
         node: Node,
-        inputs: List[VarNameExpressionStr],
+        inputs: List[VarNameExpressionInfoStr],
         skip_post: bool,
-    ) -> VarNameExpressionStr:
+    ) -> VarNameExpressionInfoStr:
         if node.name in global_state.node_name_to_post_compute_output:
             return global_state.node_name_to_post_compute_output[node.name]
 
         # construct SDK code
         op_struct = global_state.node_name_to_operation_structure[node.name]
 
+        statements: List[StatementT]
         if node.name in global_state.no_op_node_names:
             var_name_or_expr = inputs[0]
             statements = []
             if isinstance(var_name_or_expr, ExpressionStr):
-                var_name_or_expr = global_state.var_name_generator.generate_variable_name(
+                new_var_name = global_state.var_name_generator.generate_variable_name(
                     node_output_type=op_struct.output_type,
                     node_output_category=op_struct.output_category,
                     node_name=node.name,
                 )
-                statements.append((var_name_or_expr, inputs[0]))
+                statements.append((new_var_name, var_name_or_expr))
+                var_name_or_expr = new_var_name
         else:
             statements, var_name_or_expr = node.derive_sdk_code(
-                input_var_name_expressions=inputs,
+                node_inputs=inputs,
                 var_name_generator=global_state.var_name_generator,
                 operation_structure=op_struct,
                 config=global_state.code_generation_config,

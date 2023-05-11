@@ -23,7 +23,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
-    VarNameExpressionStr,
+    VarNameExpressionInfoStr,
 )
 
 
@@ -53,19 +53,20 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
+        node_inputs: List[VarNameExpressionInfoStr],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
-        ts_operand: str = input_var_name_expressions[0].as_input()
+    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+        var_name_expressions = self._assert_no_info_str(node_inputs)
+        ts_operand: str = var_name_expressions[0].as_input()
 
         offset_operand: Optional[str]
         if self.parameters.timezone_offset is not None:
             offset_operand = ValueStr.create(self.parameters.timezone_offset).as_input()
-        elif len(input_var_name_expressions) == 2:
-            offset_operand = input_var_name_expressions[1].as_input()
+        elif len(var_name_expressions) == 2:
+            offset_operand = var_name_expressions[1].as_input()
         else:
             offset_operand = None
 
@@ -73,7 +74,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         if date_property == "dayofweek":
             date_property = "day_of_week"
 
-        output: VarNameExpressionStr
+        output: VarNameExpressionInfoStr
         if offset_operand is None:
             output = VariableNameStr(f"{ts_operand}.dt.{date_property}")
         else:
@@ -119,14 +120,15 @@ class DateDifference(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
+        node_inputs: List[VarNameExpressionInfoStr],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
-        left_operand: str = input_var_name_expressions[0].as_input()
-        right_operand = input_var_name_expressions[1].as_input()
+    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+        var_name_expressions = self._assert_no_info_str(node_inputs)
+        left_operand: str = var_name_expressions[0].as_input()
+        right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} - {right_operand}")
 
 
@@ -155,13 +157,14 @@ class TimeDelta(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
+        node_inputs: List[VarNameExpressionInfoStr],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
-        var_name_expression = input_var_name_expressions[0]
+    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expression = var_name_expressions[0]
         statements: List[StatementT] = []
         var_name = var_name_generator.generate_variable_name(
             node_output_type=operation_structure.output_type,
@@ -198,12 +201,13 @@ class DateAdd(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
+        node_inputs: List[VarNameExpressionInfoStr],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
-        left_operand: str = input_var_name_expressions[0].as_input()
-        right_operand = input_var_name_expressions[1].as_input()
+    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+        var_name_expressions = self._assert_no_info_str(node_inputs)
+        left_operand: str = var_name_expressions[0].as_input()
+        right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} + {right_operand}")

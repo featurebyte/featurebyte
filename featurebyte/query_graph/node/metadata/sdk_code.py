@@ -74,7 +74,7 @@ class VariableNameStr(str):
         return str(self)
 
 
-class InfoStr(VariableNameStr):
+class InfoStr(str):
     """
     InfoStr class is used to represent a string that contains information about the code.
     """
@@ -280,6 +280,7 @@ def get_object_class_from_function_call(
 
 
 VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
+VarNameExpressionInfoStr = Union[VariableNameStr, ExpressionStr, InfoStr]
 RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
 StatementT = Union[  # pylint: disable=invalid-name
     StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]

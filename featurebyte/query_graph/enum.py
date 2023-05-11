@@ -101,6 +101,10 @@ class NodeType(StrEnum):
         """
         Returns all the node types that are inplace operations. Inplace operations are operations that
         modify the input node inplace.
+
+        Returns
+        -------
+        Set[NodeType]
         """
         return {cls.ASSIGN, cls.CONDITIONAL, cls.ALIAS}
 

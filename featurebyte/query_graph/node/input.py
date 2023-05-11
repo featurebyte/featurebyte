@@ -30,7 +30,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ObjectClass,
     StatementT,
     VariableNameGenerator,
-    VarNameExpressionStr,
+    VarNameExpressionInfoStr,
 )
 from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 
@@ -403,12 +403,12 @@ class InputNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
+        node_inputs: List[VarNameExpressionInfoStr],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
         statements: List[StatementT] = []
         table_type = self.parameters.type
         table_class_enum = self._table_type_to_table_class_enum[table_type]
