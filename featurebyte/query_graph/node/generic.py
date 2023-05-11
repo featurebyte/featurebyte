@@ -38,7 +38,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     InfoStr,
     ObjectClass,
     RightHandSide,
-    StatementStr,
     StatementT,
     ValueStr,
     VariableNameGenerator,
@@ -1436,6 +1435,7 @@ class AliasNode(BaseNode):
             var_name_generator=var_name_generator,
             operation_structure=operation_structure,
             required_copy=context.required_copy,
+            to_associate_with_node_name=True,
         )
         statements.extend(var_statements)
         statements.append(
@@ -1493,6 +1493,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             var_name_generator=var_name_generator,
             operation_structure=operation_structure,
             required_copy=context.required_copy,
+            to_associate_with_node_name=True,
         )
         statements.extend(var_statements)
 

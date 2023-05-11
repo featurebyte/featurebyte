@@ -393,6 +393,7 @@ class BaseNode(BaseModel):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         required_copy: bool,
+        to_associate_with_node_name: bool,
     ) -> Tuple[List[StatementT], VariableNameStr]:
         """
         This method is used to convert variable name to proper variable name if the variable name is
@@ -408,6 +409,8 @@ class BaseNode(BaseModel):
             Operation structure of current node
         required_copy: bool
             Whether a copy is required
+        to_associate_with_node_name: bool
+            Whether to associate the variable name with the node name
 
         Returns
         -------
@@ -420,7 +423,7 @@ class BaseNode(BaseModel):
             output_var_name = var_name_generator.generate_variable_name(
                 node_output_type=operation_structure.output_type,
                 node_output_category=operation_structure.output_category,
-                node_name=self.name,
+                node_name=self.name if to_associate_with_node_name else None,
             )
             if required_copy:
                 # Copy is required as the input will be used by other nodes. This is to avoid unexpected
