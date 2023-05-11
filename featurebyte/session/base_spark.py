@@ -109,6 +109,10 @@ class BaseSparkSession(BaseSession, ABC):
         else:
             raise NotImplementedError("Unsupported remote storage type")
 
+    def test_storage_connection(self) -> None:
+        """
+        Test storage connection
+        """
         # test connectivity
         self._storage.test_connection()
 
@@ -228,6 +232,9 @@ class BaseSparkSession(BaseSession, ABC):
 class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
     """BaseSpark metadata initializer class"""
 
+    def __init__(self, session: BaseSparkSession):
+        super().__init__(session)
+
     def create_metadata_table_queries(self, current_migration_version: int) -> List[str]:
         """Query to create metadata table
 
@@ -267,7 +274,7 @@ class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
 class BaseSparkSchemaInitializer(BaseSchemaInitializer):
     """BaseSpark schema initializer class"""
 
-    def __init__(self, session: BaseSession):
+    def __init__(self, session: BaseSparkSession):
         super().__init__(session=session)
         self.metadata_schema_initializer = BaseSparkMetadataSchemaInitializer(session)
 
@@ -336,9 +343,13 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         return []
 
     async def register_missing_objects(self) -> None:
+        # check storage connection is working
+        session = cast(BaseSparkSession, self.session)
+        session.test_storage_connection()
+
         # upload jar file to storage
         udf_jar_file_name = os.path.basename(self.udf_jar_local_path)
-        self.session.upload_file_to_storage(  # type: ignore[attr-defined]
+        session.upload_file_to_storage(
             local_path=self.udf_jar_local_path, remote_path=udf_jar_file_name
         )
         await super().register_missing_objects()
