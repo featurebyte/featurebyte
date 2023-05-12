@@ -835,7 +835,6 @@ class JoinMetadata(BaseModel):
     """Metadata to track general `view.join(...)` operation"""
 
     type: str = Field("join", const=True)
-    on: Optional[str]
     rsuffix: str
 
 
@@ -1047,7 +1046,7 @@ class JoinNode(BasePrunableNode):
             other_var_name = right_var_name
             expression = ExpressionStr(
                 f"{var_name}.join({other_var_name}, "
-                f"on={ValueStr.create(self.parameters.metadata.on)}, "
+                f"on={ValueStr.create(self.parameters.left_on)}, "
                 f"how={ValueStr.create(self.parameters.join_type)}, "
                 f"rsuffix={ValueStr.create(self.parameters.metadata.rsuffix)})"
             )

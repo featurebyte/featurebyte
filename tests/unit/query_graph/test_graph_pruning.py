@@ -200,7 +200,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         "right_output_columns": ["item_type", "item_name"],
         "join_type": "inner",
         "scd_parameters": None,
-        "metadata": {"type": "join", "on": None, "rsuffix": ""},
+        "metadata": {"type": "join", "rsuffix": ""},
     }
     join_node = global_graph.add_operation(
         node_type=NodeType.JOIN,

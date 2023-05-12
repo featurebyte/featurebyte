@@ -1220,7 +1220,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             "right_input_columns": right_input_columns,
             "right_output_columns": right_output_columns,
             "join_type": how,
-            "metadata": JoinMetadata(on=on, rsuffix=rsuffix),
+            "metadata": JoinMetadata(rsuffix=rsuffix),
         }
         node_params.update(
             other_view._get_join_parameters(self)  # pylint: disable=protected-access
