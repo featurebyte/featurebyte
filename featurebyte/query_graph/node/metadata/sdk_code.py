@@ -330,11 +330,14 @@ class CodeGenerationContext(BaseModel):
     include information that need to be passed to the next code generation step.
     """
 
-    # Whether to output current node output as info string or not. This is used to pass the information to the next
+    # Whether to output current node output as info dict or not. This is used to pass the information to the next
     # code generation step. For example, for the ConditionalNode -> AssignNode structure, ConditionalNode will pass
     # the mask variable & value to the AssignNode, and AssignNode will use the mask variable & value to generate the
     # assignment statement.
     as_info_dict: bool
+    # Whether to copy the variable before generate the following SDK statement. This is used when the node operation
+    # is in-place operation, and the variable is used in the following SDK statement. See AssignNode,
+    # ConditionalNode and AliasNode for example.
     required_copy: bool
 
 
