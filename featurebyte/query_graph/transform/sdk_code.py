@@ -55,7 +55,7 @@ class SDKCodeGlobalState(BaseModel):
         node_name_to_operation_structure: Dict[str, OperationStructure],
     ) -> None:
         """
-        Identify the node names that should output info string rather than variable name or expression.
+        Identify the node names that should output info dict rather than variable name or expression.
 
         Parameters
         ----------
@@ -93,7 +93,7 @@ class SDKCodeGlobalState(BaseModel):
             assign_column_name = assign_node.parameters.name  # type: ignore
             if assign_column_name in assign_input_view_columns:
                 # This handle the case `view[<col>][<mask>] = <value>`. Since this SDK code actually contains
-                # ConditionalNode and AssignNode, we need to output info string for the ConditionalNode and
+                # ConditionalNode and AssignNode, we need to output info dict for the ConditionalNode and
                 # postpone the assignment operation to AssignNode.
                 self.as_info_dict_node_names.add(node.name)
 

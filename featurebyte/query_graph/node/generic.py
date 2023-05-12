@@ -1500,8 +1500,8 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             variable_name_prefix="mask",
         )
         statements.extend(mask_statements)
-        # only make the copy if we are not generating info string
-        # if generating info string, we will delay the copy to the assign node
+        # only make the copy if we are not generating info dict
+        # if generating info dict, we will delay the copy to the assign node
         var_statements, output_var_name = self._convert_to_proper_variable_name(
             var_name=var_name,
             var_name_generator=var_name_generator,
