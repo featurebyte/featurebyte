@@ -137,15 +137,18 @@ class SDKCodeGlobalState(BaseModel):
             node.is_inplace_operation_in_sdk_code
             and len(set(edges_map[backward_nodes[0].name])) > 1
         ):
-            # If there are more than one distinct output nodes from the first input, it means that the backward node
-            # is used by other nodes. In this case, we need to copy the backward node to avoid inplace operation
-            # affecting other nodes. Currently, only first node in the backward node's forward nodes will be
-            # affected by the inplace operation. For example, if we have an AssignNode that consume input `view`
-            # it will generate `view[<col>] = <value>` SDK code if the `view` object is not used by other nodes.
-            # However, if the `view` object is used by other nodes, we need to copy the `view` first to avoid
-            # affecting other nodes. The generated SDK code will be the following:
+            # If there are more than one distinct output nodes from the first input, it means that the input
+            # api object is used by other operations. In this case, we need to copy the input api object to avoid
+            # inplace operation affecting other operation. Currently, only api object from the first input node
+            # could be affected by the inplace operation.
+            #
+            # For example:
+            #   grouped = view.groupby(...).aggregate(...)
             #   view_1 = view.copy()
             #   view_1[<col>] = <value>
+            #
+            # In this example, a copy is made for the `view` object because the `view` object is used by
+            # GroupByNode and AssignNode and the AssignNode is an inplace operation.
             self.required_copy_node_names.add(node.name)
 
     def initialize(
