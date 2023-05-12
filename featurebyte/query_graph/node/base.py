@@ -504,7 +504,8 @@ class BaseNode(BaseModel):
         """
         # TODO: convert this method to an abstract method and remove the following dummy implementation
         _ = var_name_generator, operation_structure, config, context
-        input_params = ", ".join(node_inputs)
+        var_name_expressions = self._assert_no_info_str(node_inputs)
+        input_params = ", ".join(var_name_expressions)
         expression = ExpressionStr(f"{self.type}({input_params})")
         return [], expression
 

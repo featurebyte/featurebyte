@@ -399,6 +399,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             )
             statements.append((output_var_name, ExpressionStr(f"{var_name}.copy()")))
 
+        value: RightHandSide
         if isinstance(second_input, InfoDict):
             mask_var = second_input["mask"]
             value = ValueStr.create(second_input["value"])

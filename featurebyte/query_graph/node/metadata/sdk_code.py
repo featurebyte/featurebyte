@@ -74,7 +74,7 @@ class VariableNameStr(str):
         return str(self)
 
 
-class InfoDict(dict):
+class InfoDict(dict):  # type: ignore
     """
     InfoStr class is used to store the information about SDK code generation from the node to its connected node(s).
     """
