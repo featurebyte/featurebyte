@@ -1,6 +1,9 @@
 """
 Tests for the SDK code generation.
 """
+import ast
+import textwrap
+
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType
@@ -11,6 +14,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     ExpressionStr,
     InfoDict,
+    UnusedVariableFinder,
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
@@ -250,3 +254,18 @@ def test_conditional(node_inputs, required_copy, as_info_dict, expected_statemen
     )
     assert statements == expected_statements
     assert info == expected_info
+
+
+def test_unused_variable_finder():
+    """Test UnusedVariableFinder"""
+    code = """
+    x = 1
+    y = 2
+    print(x)
+    """
+
+    tree = ast.parse(textwrap.dedent(code))
+    finder = UnusedVariableFinder()
+    finder.visit(tree)
+    unused_variables = finder.get_unused_variables()
+    assert unused_variables == {"y"}

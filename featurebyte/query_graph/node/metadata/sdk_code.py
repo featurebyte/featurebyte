@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
+import ast
 import json
 import os
 from collections import defaultdict
@@ -111,6 +112,10 @@ class CommentStr(str):
     """
 
 
+# module import path str pair
+ImportPathPair = Tuple[str, str]
+
+
 class ObjectClass(BaseModel):
     """
     ObjectClass is used as a mock class object which are used to
@@ -167,7 +172,7 @@ class ObjectClass(BaseModel):
         return output
 
     @classmethod
-    def _extract_import(cls, obj: ObjectClass) -> Set[Tuple[str, str]]:
+    def _extract_import(cls, obj: ObjectClass) -> Set[ImportPathPair]:
         if obj.module_path is not None:
             assert obj.class_name is not None
             output = {(obj.module_path, obj.class_name)}
@@ -179,7 +184,7 @@ class ObjectClass(BaseModel):
             output.update(cls._extract_import_helper(val_arg))
         return output
 
-    def extract_import(self) -> Set[Tuple[str, str]]:
+    def extract_import(self) -> Set[ImportPathPair]:
         """
         Extract set of required (module_path, class_name) tuple for this object
 
@@ -421,6 +426,40 @@ class VariableNameGenerator(BaseModel):
         return var_name
 
 
+class UnusedVariableFinder(ast.NodeVisitor):
+    """UnusedVariableFinder class is used to find the unused variables in the generated SDK code."""
+
+    def __init__(self) -> None:
+        self.variables: Set[str] = set()
+        self.used_variables: Set[str] = set()
+
+    def visit_Name(self, node: ast.Name) -> None:  # pylint: disable=invalid-name
+        """
+        Visit the Name node in the ast.
+
+        Parameters
+        ----------
+        node: ast.Name
+            Ast name node
+        """
+        if isinstance(node.ctx, ast.Store):
+            # add variable to set of variables
+            self.variables.add(node.id)
+        elif isinstance(node.ctx, ast.Load):
+            # add variable to set of used variables
+            self.used_variables.add(node.id)
+
+    def get_unused_variables(self) -> Set[str]:
+        """
+        Get the unused variables found in the ast.
+
+        Returns
+        -------
+        Set[str]
+        """
+        return self.variables - self.used_variables
+
+
 class CodeGenerator(BaseModel):
     """
     SDKCodeGenerator class is used to generate the SDK codes from a list of import tags and statements.
@@ -451,25 +490,17 @@ class CodeGenerator(BaseModel):
         """
         self.statements.extend(statements)
 
-    def generate(self, to_format: bool = False) -> str:
-        """
-        Generate code as string using list of stored statements
-
-        Parameters
-        ----------
-        to_format: bool
-            Whether to format the final code
-
-        Returns
-        -------
-        str
-        """
+    def _generate(
+        self, unused_variables: Optional[Set[str]] = None
+    ) -> Tuple[str, Set[ImportPathPair]]:
         # process statements & extract required imports
         statement_lines = []
         import_pairs = set()
         for statement in self.statements:
             if isinstance(statement, tuple):
                 var_name, right_hand_side = statement
+                if unused_variables and var_name in unused_variables:
+                    continue
                 if isinstance(right_hand_side, ObjectClass):
                     import_pairs.update(right_hand_side.extract_import())
                 statement_lines.append(f"{var_name} = {right_hand_side}")
@@ -478,6 +509,35 @@ class CodeGenerator(BaseModel):
             elif isinstance(statement, str):
                 statement_lines.append(statement)
         statements = "\n".join(statement_lines)
+        return statements, import_pairs
+
+    def generate(self, to_format: bool = False, output_var_name: Optional[str] = None) -> str:
+        """
+        Generate code as string using list of stored statements
+
+        Parameters
+        ----------
+        to_format: bool
+            Whether to format the final code
+        output_var_name: Optional[str]
+            Output variable name, default to "output"
+
+        Returns
+        -------
+        str
+        """
+        # generate statements and extract required imports
+        statements, _ = self._generate()
+
+        # extract unused variables
+        tree = ast.parse(statements)
+        finder = UnusedVariableFinder()
+        finder.visit(tree)
+        keep_var_names = {output_var_name} if output_var_name else {"output"}
+        unused_variables = finder.get_unused_variables().difference(keep_var_names)
+
+        # regenerate statements by removing unused variables
+        statements, import_pairs = self._generate(unused_variables=unused_variables)
 
         # process imports and generate import statements
         import_statements = []
