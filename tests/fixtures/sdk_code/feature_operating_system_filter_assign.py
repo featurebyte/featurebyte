@@ -12,7 +12,6 @@ scd_view["os_type"] = "unknown"
 col = scd_view["os_type"]
 view = scd_view.copy()
 view["os_type"][col.str.contains(pat="window", case=True)] = "window"
-col_1 = view["os_type"]
 view_1 = view.copy()
 view_1["os_type"][col.str.contains(pat="mac", case=True)] = "mac"
 grouped = view_1.as_features(
