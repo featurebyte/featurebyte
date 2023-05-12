@@ -12,6 +12,7 @@
 + Support streamed records fetching for DataBricks session
 + Support GCS storage for Spark and DataBricks sessions
 + Update feature definition by explicitly specifying `on` parameter in `join` operation
++ Remove unused statement from `feature.definition`
 + Improve error handling and messaging for Docker exceptions
 
 ### 🧰 Bug fixes 🧰
