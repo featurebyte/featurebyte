@@ -398,6 +398,9 @@ def test_sdk_code_generation__operating_system_feature(
     saved_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = saved_scd_table.get_view()
     scd_view["os_type"] = "unknown"
+    os_type_col = scd_view["os_type"].copy()
+
+    # case 1: test `view[<col_name>][<mask>] = <value>`
     mask_window = scd_view["os_type"].str.contains("window")
     mask_mac = scd_view["os_type"].str.contains("mac")
     scd_view.os_type[mask_window] = "window"
@@ -408,7 +411,22 @@ def test_sdk_code_generation__operating_system_feature(
         feat,
         to_use_saved_data=True,
         to_format=True,
-        fixture_path="tests/fixtures/sdk_code/feature_operating_system.py",
+        fixture_path="tests/fixtures/sdk_code/feature_operating_system_filter_assign.py",
+        update_fixtures=update_fixtures,
+        table_id=saved_scd_table.id,
+    )
+
+    # case 2: test `col[<mask>] = <value>; view[<col_name>] = col`
+    new_col = os_type_col + "_new"
+    new_col[~mask_window & ~mask_mac] = "other"
+    scd_view["other_os_type"] = new_col
+    feat = scd_view.other_os_type.as_feature(feature_name="other_os_type")
+    feat.save()
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/feature_operating_system_series_assign.py",
         update_fixtures=update_fixtures,
         table_id=saved_scd_table.id,
     )

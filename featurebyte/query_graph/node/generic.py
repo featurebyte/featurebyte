@@ -1520,9 +1520,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             # Since there is no single line in SDK code to generate conditional expression, we output info instead
             # and delay the generation of SDK code to the assign node. This method only generates the conditional part,
             # the assignment part will be generated in the assign node.
-            info_dict = InfoDict(
-                {"var_name": output_var_name, "value": self.parameters.value, "mask": mask_var_name}
-            )
+            info_dict = InfoDict({"value": self.parameters.value, "mask": mask_var_name})
             return statements, info_dict
 
         # This handles the normal series assignment case where `col[<condition>] = <value>` is used. In this case,

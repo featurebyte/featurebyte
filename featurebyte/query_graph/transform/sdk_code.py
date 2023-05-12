@@ -48,7 +48,12 @@ class SDKCodeGlobalState(BaseModel):
     as_info_dict_node_names: Set[str] = Field(default_factory=set)
     required_copy_node_names: Set[str] = Field(default_factory=set)
 
-    def _identify_output_as_info_dict(self, node: Node, forward_nodes: List[Node]) -> None:
+    def _identify_output_as_info_dict(
+        self,
+        node: Node,
+        query_graph: QueryGraphModel,
+        node_name_to_operation_structure: Dict[str, OperationStructure],
+    ) -> None:
         """
         Identify the node names that should output info string rather than variable name or expression.
 
@@ -56,18 +61,41 @@ class SDKCodeGlobalState(BaseModel):
         ----------
         node: Node
             Node to check
-        forward_nodes: List[Node]
-            Forward nodes of the node
+        query_graph: QueryGraphModel
+            Query graph
+        node_name_to_operation_structure: Dict[str, OperationStructure]
+            Operation structure mapping for each node in the graph
         """
+        forward_nodes = [query_graph.nodes_map[name] for name in query_graph.edges_map[node.name]]
         if (
             node.type == NodeType.CONDITIONAL
             and len(forward_nodes) == 1
             and forward_nodes[0].type == NodeType.ASSIGN
         ):
-            # This handle the case `view[<col>][<mask>] = <value>`. Since this SDK code actually contains
-            # ConditionalNode and AssignNode, we need to output info string for the ConditionalNode and
-            # postpone the assignment operation to AssignNode.
-            self.as_info_dict_node_names.add(node.name)
+            # There are 2 cases we need to consider:
+            # * `view[<col_name>][<mask>] = <value>`
+            # * `col[<mask>] = <value>; view[<col_name>] = col`
+            #
+            # If `view` has `col_name` column, then `view[<col_name>]` must have parent. In this case, we should
+            # use first case to generate SDK code. If we use the second case to generate the graph,
+            # `col[<mask>] = <value>` will update the column's parent view, and the `view[<col_name>] = col`
+            # will update the column's parent view again. The generated graph will be
+            # `<CONDITIONAL> -> <ASSIGN> -> <ASSIGN>` but not `<CONDITIONAL> -> <ASSIGN>`.
+            #
+            # On the other hand, if `view` doesn't have `<col_name>` column, then `view[<col_name>][<mask>]`
+            # will throw an error. In this case, we should use the second case to generate SDK code.
+            assign_node = forward_nodes[0]
+            assign_node_input_node_names = query_graph.backward_edges_map[assign_node.name]
+            assign_input_view_op_struct = node_name_to_operation_structure[
+                assign_node_input_node_names[0]
+            ]
+            assign_input_view_columns = assign_input_view_op_struct.output_column_names
+            assign_column_name = assign_node.parameters.name  # type: ignore
+            if assign_column_name in assign_input_view_columns:
+                # This handle the case `view[<col>][<mask>] = <value>`. Since this SDK code actually contains
+                # ConditionalNode and AssignNode, we need to output info string for the ConditionalNode and
+                # postpone the assignment operation to AssignNode.
+                self.as_info_dict_node_names.add(node.name)
 
     def _identify_no_op_node(self, node: Node, backward_nodes: List[Node]) -> None:
         """
@@ -120,7 +148,11 @@ class SDKCodeGlobalState(BaseModel):
             #   view_1[<col>] = <value>
             self.required_copy_node_names.add(node.name)
 
-    def initialize(self, query_graph: QueryGraphModel) -> None:
+    def initialize(
+        self,
+        query_graph: QueryGraphModel,
+        node_name_to_operation_structure: Dict[str, OperationStructure],
+    ) -> None:
         """
         Initialize SDKCodeGlobalState
 
@@ -128,15 +160,14 @@ class SDKCodeGlobalState(BaseModel):
         ----------
         query_graph: QueryGraphModel
             Query graph
+        node_name_to_operation_structure: Dict[str, OperationStructure]
+            Operation structure mapping for each node in the graph
         """
         for node in query_graph.iterate_sorted_nodes():
-            forward_nodes = [
-                query_graph.nodes_map[name] for name in query_graph.edges_map[node.name]
-            ]
             backward_nodes = [
                 query_graph.nodes_map[name] for name in query_graph.backward_edges_map[node.name]
             ]
-            self._identify_output_as_info_dict(node, forward_nodes)
+            self._identify_output_as_info_dict(node, query_graph, node_name_to_operation_structure)
             self._identify_no_op_node(node, backward_nodes)
             self._identify_required_copy_node(node, backward_nodes, query_graph.edges_map)
 
@@ -237,7 +268,10 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
             node_name_to_operation_structure=op_struct_info.operation_structure_map,
             code_generation_config=CodeGenerationConfig(**code_generation_config),
         )
-        global_state.initialize(query_graph=self.graph)
+        global_state.initialize(
+            query_graph=self.graph,
+            node_name_to_operation_structure=op_struct_info.operation_structure_map,
+        )
         var_name_or_expr = self._extract(
             node=node,
             branch_state=BaseModel(),
