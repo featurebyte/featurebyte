@@ -394,9 +394,7 @@ def test_sdk_code_generation__fraction_feature(
 def test_sdk_code_generation__operating_system_feature(
     saved_scd_table, cust_id_entity, update_fixtures
 ):
-    """
-    Test get_feature_jobs_status for feature without tile
-    """
+    """Test SDK code generation for operating system feature"""
     saved_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = saved_scd_table.get_view()
     scd_view["os_type"] = "unknown"
