@@ -511,7 +511,12 @@ class CodeGenerator(BaseModel):
         statements = "\n".join(statement_lines)
         return statements, import_pairs
 
-    def generate(self, to_format: bool = False, output_var_name: Optional[str] = None) -> str:
+    def generate(
+        self,
+        to_format: bool = False,
+        output_var_name: Optional[str] = None,
+        skip_remove_unused_variables: bool = False,
+    ) -> str:
         """
         Generate code as string using list of stored statements
 
@@ -521,23 +526,26 @@ class CodeGenerator(BaseModel):
             Whether to format the final code
         output_var_name: Optional[str]
             Output variable name, default to "output"
+        skip_remove_unused_variables: bool
+            Whether to skip removing unused variables
 
         Returns
         -------
         str
         """
         # generate statements and extract required imports
-        statements, _ = self._generate()
+        statements, import_pairs = self._generate()
 
-        # extract unused variables
-        tree = ast.parse(statements)
-        finder = UnusedVariableFinder()
-        finder.visit(tree)
-        keep_var_names = {output_var_name} if output_var_name else {"output"}
-        unused_variables = finder.get_unused_variables().difference(keep_var_names)
+        if not skip_remove_unused_variables:
+            # extract unused variables
+            tree = ast.parse(statements)
+            finder = UnusedVariableFinder()
+            finder.visit(tree)
+            keep_var_names = {output_var_name} if output_var_name else {"output"}
+            unused_variables = finder.get_unused_variables().difference(keep_var_names)
 
-        # regenerate statements by removing unused variables
-        statements, import_pairs = self._generate(unused_variables=unused_variables)
+            # regenerate statements by removing unused variables
+            statements, import_pairs = self._generate(unused_variables=unused_variables)
 
         # process imports and generate import statements
         import_statements = []
