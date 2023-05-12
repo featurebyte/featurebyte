@@ -4,6 +4,7 @@ import pytest
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc
 from featurebyte.exception import RecordUpdateException
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 from tests.util.helper import check_sdk_code_generation
 
@@ -337,3 +338,119 @@ def test_sdk_code_generation__item_view_cosine_similarity_feature(
     # check the main input nodes
     primary_input_nodes = output.graph.get_primary_input_nodes(node_name=output.node_name)
     assert [node.parameters.id for node in primary_input_nodes] == [saved_item_table.id]
+
+
+def test_sdk_code_generation__fraction_feature(
+    saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
+):
+    """Test SDK code generation for assign node special case"""
+    # tag entities
+    saved_item_table.event_id_col.as_entity(transaction_entity.name)
+
+    # create views
+    item_view = saved_item_table.get_view(event_suffix="_event_table")
+    total_amt = item_view.groupby(["event_id_col"]).aggregate(
+        value_column="item_amount",
+        method=AggFunc.SUM,
+        feature_name="sum_item_amount",
+    )
+    total_amt[total_amt.isnull()] = 0
+
+    event_view = saved_event_table.get_view()
+    joined_view = event_view.add_feature(
+        new_column_name="sum_item_amt",
+        feature=total_amt,
+        entity_column="cust_id",
+    )
+    grouped = joined_view.groupby("cust_id").aggregate_over(
+        value_column="sum_item_amt",
+        method=AggFunc.SUM,
+        windows=["30d"],
+        feature_names=["sum_item_amt_over_30d"],
+    )
+
+    joined_view["sum_item_amt_plus_one"] = joined_view["sum_item_amt"] + 1
+    grouped_1 = joined_view.groupby("cust_id").aggregate_over(
+        value_column="sum_item_amt_plus_one",
+        method=AggFunc.SUM,
+        windows=["30d"],
+        feature_names=["sum_item_amt_plus_one_over_30d"],
+    )
+
+    feat = grouped["sum_item_amt_over_30d"] / grouped_1["sum_item_amt_plus_one_over_30d"]
+    feat.name = "fraction"
+    feat.save()
+
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/feature_fraction.py",
+        update_fixtures=update_fixtures,
+        table_id=saved_event_table.id,
+        item_table_id=saved_item_table.id,
+    )
+
+
+def test_sdk_code_generation__operating_system_feature(
+    saved_scd_table, cust_id_entity, update_fixtures
+):
+    """Test SDK code generation for operating system feature"""
+    saved_scd_table["col_text"].as_entity(cust_id_entity.name)
+    scd_view = saved_scd_table.get_view()
+    scd_view["os_type"] = "unknown"
+    os_type_col = scd_view["os_type"].copy()
+
+    # case 1: test `view[<col_name>][<mask>] = <value>`
+    mask_window = scd_view["os_type"].str.contains("window")
+    mask_mac = scd_view["os_type"].str.contains("mac")
+    assert scd_view.os_type.parent is not None  # project column has parent
+    scd_view.os_type[mask_window] = "window"
+    scd_view.os_type[mask_mac] = "mac"
+    feat = scd_view.os_type.as_feature(feature_name="os_type")
+
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/feature_operating_system_filter_assign.py",
+        update_fixtures=update_fixtures,
+        table_id=saved_scd_table.id,
+    )
+
+    # case 2: test `col[<mask>] = <value>; view[<col_name>] = col`
+    new_col = os_type_col + "_new"
+    assert new_col.parent is None  # derived column has no parent
+    new_col[~mask_window & ~mask_mac] = "other"
+    scd_view["other_os_type"] = new_col
+    feat = scd_view.other_os_type.as_feature(feature_name="other_os_type")
+    feat.save()
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/feature_operating_system_series_assign.py",
+        update_fixtures=update_fixtures,
+        table_id=saved_scd_table.id,
+    )
+
+
+def test_conditional_assignment_assumption(saved_event_table):
+    """Test conditional assignment structure assumption"""
+    view = saved_event_table.get_view()
+    col = view["col_text"]
+    assert col.parent == view
+    mask = view["col_boolean"]
+
+    # copy original view & make a conditional assignment
+    view_copy = view.copy()  # [input] -> [graph]
+    col[mask] = "new_value"
+    assert view != view_copy  # view becomes `[input] -> [graph] -> [assign]`
+
+    # check that no way we could get the handle to conditional node from the api object.
+    # if we could get the handle and user does something like `view_copy["col_text"] = <handle>`.
+    # this will break the assumption used in the sdk code generation to identify case 1 (view-mask-assign)
+    # and case 2 (view-series-assignment) conditional assignment.
+    assert view.node_name != view_copy.node_name
+    assert view_copy["col_text"].node.type == NodeType.PROJECT  # before conditional node
+    assert view["col_text"].node.type == NodeType.PROJECT  # after assignment node

@@ -21,11 +21,14 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
+    CodeGenerationContext,
     ExpressionStr,
+    InfoDict,
     StatementT,
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
+    VarNameExpressionInfo,
     VarNameExpressionStr,
 )
 from featurebyte.query_graph.node.scalar import ValueParameterType
@@ -99,6 +102,41 @@ class BaseNode(BaseModel):
             # used for the signal type tagging (for feature theme).
             return f"{str(self.type).lower()}({', '.join(parameters)})"
         return str(self.type).lower()
+
+    @property
+    def is_inplace_operation_in_sdk_code(self) -> bool:
+        """
+        Check if this node is an inplace operation in SDK code. For example, if the SDK code generated
+        for this node is `view['new_col'] = 1`, then this node is an inplace operation as it will modify
+        the input view object inplace. If the SDK code generated for this node is something like
+        `joined_view = view.join_event_table_attributes(["col_float"])`, then this node is not an inplace
+        operation as it will not modify the input view object inplace.
+
+        Returns
+        -------
+        bool
+        """
+        return False
+
+    @staticmethod
+    def _assert_no_info_dict(inputs: List[VarNameExpressionInfo]) -> List[VarNameExpressionStr]:
+        """
+        Assert there is no info dict in the given inputs & convert the type to VarNameExpressionStr
+
+        Parameters
+        ----------
+        inputs: List[VarNameExpressionInfoStr]
+            List of inputs
+
+        Returns
+        -------
+        List[VarNameExpressionStr]
+        """
+        out = []
+        for input_ in inputs:
+            assert not isinstance(input_, InfoDict)
+            out.append(input_)
+        return out
 
     @classmethod
     def detect_var_type_from_value(cls, value: Any) -> DBVarType:
@@ -228,44 +266,44 @@ class BaseNode(BaseModel):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         """
         Derive SDK codes based on the graph traversal from starting node(s) to this node
 
         Parameters
         ----------
-        input_var_name_expressions: List[VarNameExpressionStr]
-            Input variables name
-        input_node_types: List[NodeType]
-            Input node types
+        node_inputs: List[VarNameExpressionStr]
+            Node inputs to derive SDK code
         var_name_generator: VariableNameGenerator
             Variable name generator
         operation_structure: OperationStructure
             Operation structure of current node
         config: CodeGenerationConfig
             Code generation configuration
+        context: CodeGenerationContext
+            Context for code generation
 
         Returns
         -------
         Tuple[List[StatementT], VarNameExpressionStr]
         """
-        statements, var_name_expression = self._derive_sdk_code(
-            input_var_name_expressions=input_var_name_expressions,
-            input_node_types=input_node_types,
+        statements, var_name_expression_info = self._derive_sdk_code(
+            node_inputs=node_inputs,
             var_name_generator=var_name_generator,
             operation_structure=operation_structure,
             config=config,
+            context=context,
         )
 
         if (
             self._auto_convert_expression_to_variable
-            and isinstance(var_name_expression, ExpressionStr)
-            and len(var_name_expression) > config.max_expression_length
+            and isinstance(var_name_expression_info, ExpressionStr)
+            and len(var_name_expression_info) > config.max_expression_length
         ):
             # if the output of the var_name_expression is an expression and
             # the length of expression exceeds limit specified in code generation config,
@@ -273,10 +311,11 @@ class BaseNode(BaseModel):
             var_name = var_name_generator.generate_variable_name(
                 node_output_type=operation_structure.output_type,
                 node_output_category=operation_structure.output_category,
+                node_name=self.name,
             )
-            statements.append((var_name, var_name_expression))
+            statements.append((var_name, var_name_expression_info))
             return statements, var_name
-        return statements, var_name_expression
+        return statements, var_name_expression_info
 
     def clone(self: NodeT, **kwargs: Any) -> NodeT:
         """
@@ -315,12 +354,14 @@ class BaseNode(BaseModel):
         _ = target_node_input_order_pairs, input_operation_structures
         return self
 
-    @staticmethod
     def _convert_expression_to_variable(
+        self,
         var_name_expression: VarNameExpressionStr,
         var_name_generator: VariableNameGenerator,
         node_output_type: NodeOutputType,
         node_output_category: NodeOutputCategory,
+        to_associate_with_node_name: bool,
+        variable_name_prefix: Optional[str] = None,
     ) -> Tuple[List[StatementT], VariableNameStr]:
         """
         Convert expression to variable
@@ -335,6 +376,10 @@ class BaseNode(BaseModel):
             Node output type
         node_output_category: NodeOutputCategory
             Node output category
+        to_associate_with_node_name: bool
+            Whether to associate the variable name with the node name
+        variable_name_prefix: Optional[str]
+            Variable name prefix (if any)
 
         Returns
         -------
@@ -342,13 +387,68 @@ class BaseNode(BaseModel):
         """
         statements: List[StatementT] = []
         if isinstance(var_name_expression, ExpressionStr):
-            var_name = var_name_generator.generate_variable_name(
-                node_output_type=node_output_type,
-                node_output_category=node_output_category,
-            )
+            if variable_name_prefix:
+                var_name = var_name_generator.convert_to_variable_name(
+                    variable_name_prefix=variable_name_prefix,
+                    node_name=self.name if to_associate_with_node_name else None,
+                )
+            else:
+                var_name = var_name_generator.generate_variable_name(
+                    node_output_type=node_output_type,
+                    node_output_category=node_output_category,
+                    node_name=self.name if to_associate_with_node_name else None,
+                )
             statements.append((var_name, var_name_expression))
             return statements, var_name
         return statements, var_name_expression
+
+    def _convert_to_proper_variable_name(
+        self,
+        var_name: VariableNameStr,
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        required_copy: bool,
+        to_associate_with_node_name: bool,
+    ) -> Tuple[List[StatementT], VariableNameStr]:
+        """
+        This method is used to convert variable name to proper variable name if the variable name is
+        not a valid identifier.
+
+        Parameters
+        ----------
+        var_name: VariableNameStr
+            Variable name
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        operation_structure: OperationStructure
+            Operation structure of current node
+        required_copy: bool
+            Whether a copy is required
+        to_associate_with_node_name: bool
+            Whether to associate the variable name with the node name
+
+        Returns
+        -------
+        Tuple[List[StatementT], VariableNameStr]
+        """
+        output_var_name = var_name
+        statements: List[StatementT] = []
+        is_var_name_valid_identifier = var_name.isidentifier()
+        if required_copy or not is_var_name_valid_identifier:
+            output_var_name = var_name_generator.generate_variable_name(
+                node_output_type=operation_structure.output_type,
+                node_output_category=operation_structure.output_category,
+                node_name=self.name if to_associate_with_node_name else None,
+            )
+            if required_copy:
+                # Copy is required as the input will be used by other nodes. This is to avoid unexpected
+                # side effects when the input is modified by other nodes.
+                statements.append((output_var_name, ExpressionStr(f"{var_name}.copy()")))
+            else:
+                # This is to handle the case where the var_name is not a valid variable name,
+                # so we need to assign it to a valid variable name first.
+                statements.append((output_var_name, ExpressionStr(var_name)))
+        return statements, output_var_name
 
     @abstractmethod
     def _derive_node_operation_info(
@@ -376,35 +476,36 @@ class BaseNode(BaseModel):
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         """
         Derive SDK codes based to be implemented at the concrete node class
 
         Parameters
         ----------
-        input_var_name_expressions: List[VarNameExpression]
-            Input variables name
-        input_node_types: List[NodeType]
-            Input node types
+        node_inputs: List[VarNameExpression]
+            Inputs for this node to generate SDK codes
         var_name_generator: VariableNameGenerator
             Variable name generator
         operation_structure: OperationStructure
             Operation structure of current node
         config: CodeGenerationConfig
             Code generation configuration
+        context: CodeGenerationContext
+            Context for code generation
 
         Returns
         -------
         Tuple[List[StatementT], VarNameExpression]
         """
         # TODO: convert this method to an abstract method and remove the following dummy implementation
-        _ = input_node_types, var_name_generator, operation_structure, config
-        input_params = ", ".join(input_var_name_expressions)
+        _ = var_name_generator, operation_structure, config, context
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        input_params = ", ".join(var_name_expressions)
         expression = ExpressionStr(f"{self.type}({input_params})")
         return [], expression
 
@@ -602,12 +703,13 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = input_var_name_expressions[0].as_input()
         right_operand: str = ValueStr.create(self.parameters.value).as_input()
         if len(input_var_name_expressions) == 2:
@@ -681,12 +783,13 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = input_var_name_expressions[0]
         return [], self._derive_sdk_code_return_var_name_expression_type(
             self.generate_expression(var_name_expression.as_input())

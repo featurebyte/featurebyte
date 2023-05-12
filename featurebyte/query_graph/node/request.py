@@ -19,9 +19,10 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationConfig,
+    CodeGenerationContext,
     StatementT,
     VariableNameGenerator,
-    VarNameExpressionStr,
+    VarNameExpressionInfo,
 )
 
 
@@ -78,14 +79,14 @@ class RequestColumnNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements: List[StatementT] = []
-        var_name = var_name_generator.convert_to_variable_name("request_col")
+        var_name = var_name_generator.convert_to_variable_name("request_col", node_name=self.name)
         if self.parameters.column_name == SpecialColumnName.POINT_IN_TIME:
             obj = ClassEnum.REQUEST_COLUMN(
                 _method_name="point_in_time",

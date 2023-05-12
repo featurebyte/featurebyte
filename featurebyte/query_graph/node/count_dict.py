@@ -17,11 +17,12 @@ from featurebyte.query_graph.node.base import BaseSeriesOutputNode
 from featurebyte.query_graph.node.metadata.operation import AggregationColumn, OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
+    CodeGenerationContext,
     ExpressionStr,
     StatementT,
     ValueStr,
     VariableNameGenerator,
-    VarNameExpressionStr,
+    VarNameExpressionInfo,
 )
 
 
@@ -39,14 +40,15 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
-        var_name_expression = input_var_name_expressions[0].as_input()
-        other_operands = [val.as_input() for val in input_var_name_expressions[1:]]
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name_expression = var_name_expressions[0].as_input()
+        other_operands = [val.as_input() for val in var_name_expressions[1:]]
         expression = ExpressionStr(
             self.generate_expression(operand=var_name_expression, other_operands=other_operands)
         )
@@ -132,13 +134,13 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionStr],
-        input_node_types: List[NodeType],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
-        return [], input_var_name_expressions[0]
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        return [], node_inputs[0]
 
 
 class GetValueFromDictionaryNode(BaseCountDictOpNode):
