@@ -445,7 +445,7 @@ class UnusedVariableFinder(ast.NodeVisitor):
         if isinstance(node.ctx, ast.Store):
             # add variable to set of variables
             self.variables.add(node.id)
-        elif isinstance(node.ctx, ast.Load):
+        elif isinstance(node.ctx, (ast.Load, ast.Del)):
             # add variable to set of used variables
             self.used_variables.add(node.id)
 

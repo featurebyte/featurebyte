@@ -256,16 +256,33 @@ def test_conditional(node_inputs, required_copy, as_info_dict, expected_statemen
     assert info == expected_info
 
 
-def test_unused_variable_finder():
+@pytest.mark.parametrize(
+    "code, expected_variables, expected_unused_variables",
+    [
+        (
+            """
+            x = 1
+            y = 2
+            print(x)
+            """,
+            {"x", "y"},
+            {"y"},
+        ),
+        (
+            """
+            a = 1
+            b = 2
+            del a
+            """,
+            {"a", "b"},
+            {"b"},
+        ),
+    ],
+)
+def test_unused_variable_finder(code, expected_variables, expected_unused_variables):
     """Test UnusedVariableFinder"""
-    code = """
-    x = 1
-    y = 2
-    print(x)
-    """
-
     tree = ast.parse(textwrap.dedent(code))
     finder = UnusedVariableFinder()
     finder.visit(tree)
-    unused_variables = finder.get_unused_variables()
-    assert unused_variables == {"y"}
+    assert finder.variables == expected_variables
+    assert finder.get_unused_variables() == expected_unused_variables
