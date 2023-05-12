@@ -328,6 +328,10 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     def max_input_count(self) -> int:
         return 2
 
+    @property
+    def is_inplace_operation_in_sdk_code(self) -> bool:
+        return True
+
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
@@ -1371,6 +1375,10 @@ class AliasNode(BaseNode):
     def max_input_count(self) -> int:
         return 1
 
+    @property
+    def is_inplace_operation_in_sdk_code(self) -> bool:
+        return True
+
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
@@ -1453,6 +1461,10 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     def max_input_count(self) -> int:
         return 3
 
+    @property
+    def is_inplace_operation_in_sdk_code(self) -> bool:
+        return True
+
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
@@ -1512,6 +1524,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
                 json.dumps({"value": self.parameters.value, "mask": mask_var_name})
             )
 
-        # This handles the normal series assignment case.
+        # This handles the normal series assignment case where `col[<condition>] = <value>` is used. In this case,
+        # the conditional assignment should not update their parent view.
         statements.append((VariableNameStr(f"{output_var_name}[{mask_var_name}]"), value))
         return statements, output_var_name

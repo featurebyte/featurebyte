@@ -96,18 +96,6 @@ class NodeType(StrEnum):
     GRAPH = "graph"
     PROXY_INPUT = "proxy_input"
 
-    @classmethod
-    def inplace_operation_node_type(cls) -> Set["NodeType"]:
-        """
-        Returns all the node types that are inplace operations. Inplace operations are operations that
-        modify the input node inplace.
-
-        Returns
-        -------
-        Set[NodeType]
-        """
-        return {cls.ASSIGN, cls.CONDITIONAL, cls.ALIAS}
-
 
 class NodeOutputType(StrEnum):
     """

@@ -108,13 +108,18 @@ class SDKCodeGlobalState(BaseModel):
             Edges map of the query graph
         """
         if (
-            node.type in NodeType.inplace_operation_node_type()
+            node.is_inplace_operation_in_sdk_code
             and len(set(edges_map[backward_nodes[0].name])) > 1
         ):
             # If there are more than one distinct output nodes from the first input, it means that the backward node
             # is used by other nodes. In this case, we need to copy the backward node to avoid inplace operation
             # affecting other nodes. Currently, only first node in the backward node's forward nodes will be
-            # affected by the inplace operation.
+            # affected by the inplace operation. For example, if we have an AssignNode that consume input `view`
+            # it will generate `view[<col>] = <value>` SDK code if the `view` object is not used by other nodes.
+            # However, if the `view` object is used by other nodes, we need to copy the `view` first to avoid
+            # affecting other nodes. The generated SDK code will be the following:
+            #   view_1 = view.copy()
+            #   view_1[<col>] = <value>
             self.required_copy_node_names.add(node.name)
 
     def initialize(self, query_graph: QueryGraphModel) -> None:

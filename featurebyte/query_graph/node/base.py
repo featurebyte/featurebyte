@@ -103,6 +103,21 @@ class BaseNode(BaseModel):
             return f"{str(self.type).lower()}({', '.join(parameters)})"
         return str(self.type).lower()
 
+    @property
+    def is_inplace_operation_in_sdk_code(self) -> bool:
+        """
+        Check if this node is an inplace operation in SDK code. For example, if the SDK code generated
+        for this node is `view['new_col'] = 1`, then this node is an inplace operation as it will modify
+        the input view object inplace. If the SDK code generated for this node is something like
+        `joined_view = view.join_event_table_attributes(["col_float"])`, then this node is not an inplace
+        operation as it will not modify the input view object inplace.
+
+        Returns
+        -------
+        bool
+        """
+        return False
+
     @staticmethod
     def _assert_no_info_str(inputs: List[VarNameExpressionInfoStr]) -> List[VarNameExpressionStr]:
         """
