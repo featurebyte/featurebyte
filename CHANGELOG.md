@@ -7,7 +7,12 @@
 ### 🛑 Breaking changes 🛑
 ### 🚩 Deprecations 🚩
 ### 💡 Enhancements 💡
+
 + Support overriding default log level using environment variable `LOG_LEVEL`
+
+### 🧰 Bug fixes 🧰
+
++ Fixed bug in `feature.definition` so that it is consistent with the underlying query graph
 
 ### 🧰 Bug fixes 🧰
 
@@ -31,7 +36,6 @@
 ### 🧰 Bug fixes 🧰
 
 * Removed additional dependencies specified in featurebyte client
-* Fixed bug in `feature.definition` so that it is consistent with the underlying query graph
 
 
 ## v0.2.0
