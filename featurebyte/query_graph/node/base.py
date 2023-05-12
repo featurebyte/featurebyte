@@ -119,9 +119,9 @@ class BaseNode(BaseModel):
         return False
 
     @staticmethod
-    def _assert_no_info_str(inputs: List[VarNameExpressionInfo]) -> List[VarNameExpressionStr]:
+    def _assert_no_info_dict(inputs: List[VarNameExpressionInfo]) -> List[VarNameExpressionStr]:
         """
-        Assert there is no info string in the given inputs & convert the type to VarNameExpressionStr
+        Assert there is no info dict in the given inputs & convert the type to VarNameExpressionStr
 
         Parameters
         ----------
@@ -504,7 +504,7 @@ class BaseNode(BaseModel):
         """
         # TODO: convert this method to an abstract method and remove the following dummy implementation
         _ = var_name_generator, operation_structure, config, context
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         input_params = ", ".join(var_name_expressions)
         expression = ExpressionStr(f"{self.type}({input_params})")
         return [], expression
@@ -709,7 +709,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        input_var_name_expressions = self._assert_no_info_str(node_inputs)
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = input_var_name_expressions[0].as_input()
         right_operand: str = ValueStr.create(self.parameters.value).as_input()
         if len(input_var_name_expressions) == 2:
@@ -789,7 +789,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        input_var_name_expressions = self._assert_no_info_str(node_inputs)
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = input_var_name_expressions[0]
         return [], self._derive_sdk_code_return_var_name_expression_type(
             self.generate_expression(var_name_expression.as_input())

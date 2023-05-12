@@ -59,7 +59,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         ts_operand: str = var_name_expressions[0].as_input()
 
         offset_operand: Optional[str]
@@ -126,7 +126,7 @@ class DateDifference(BaseSeriesOutputNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} - {right_operand}")
@@ -163,7 +163,7 @@ class TimeDelta(BaseSeriesOutputNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = var_name_expressions[0]
         statements: List[StatementT] = []
         var_name = var_name_generator.generate_variable_name(
@@ -207,7 +207,7 @@ class DateAdd(BaseSeriesOutputNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} + {right_operand}")

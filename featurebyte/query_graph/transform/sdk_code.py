@@ -45,10 +45,10 @@ class SDKCodeGlobalState(BaseModel):
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
     code_generator: CodeGenerator = Field(default_factory=CodeGenerator)
     no_op_node_names: Set[str] = Field(default_factory=set)
-    as_info_str_node_names: Set[str] = Field(default_factory=set)
+    as_info_dict_node_names: Set[str] = Field(default_factory=set)
     required_copy_node_names: Set[str] = Field(default_factory=set)
 
-    def _identify_output_as_info_str(self, node: Node, forward_nodes: List[Node]) -> None:
+    def _identify_output_as_info_dict(self, node: Node, forward_nodes: List[Node]) -> None:
         """
         Identify the node names that should output info string rather than variable name or expression.
 
@@ -67,7 +67,7 @@ class SDKCodeGlobalState(BaseModel):
             # This handle the case `view[<col>][<mask>] = <value>`. Since this SDK code actually contains
             # ConditionalNode and AssignNode, we need to output info string for the ConditionalNode and
             # postpone the assignment operation to AssignNode.
-            self.as_info_str_node_names.add(node.name)
+            self.as_info_dict_node_names.add(node.name)
 
     def _identify_no_op_node(self, node: Node, backward_nodes: List[Node]) -> None:
         """
@@ -136,7 +136,7 @@ class SDKCodeGlobalState(BaseModel):
             backward_nodes = [
                 query_graph.nodes_map[name] for name in query_graph.backward_edges_map[node.name]
             ]
-            self._identify_output_as_info_str(node, forward_nodes)
+            self._identify_output_as_info_dict(node, forward_nodes)
             self._identify_no_op_node(node, backward_nodes)
             self._identify_required_copy_node(node, backward_nodes, query_graph.edges_map)
 
@@ -201,7 +201,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
                 operation_structure=op_struct,
                 config=global_state.code_generation_config,
                 context=CodeGenerationContext(
-                    as_info_str=node.name in global_state.as_info_str_node_names,
+                    as_info_dict=node.name in global_state.as_info_dict_node_names,
                     required_copy=node.name in global_state.required_copy_node_names,
                 ),
             )

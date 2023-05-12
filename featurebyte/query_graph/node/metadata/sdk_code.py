@@ -334,7 +334,7 @@ class CodeGenerationContext(BaseModel):
     # code generation step. For example, for the ConditionalNode -> AssignNode structure, ConditionalNode will pass
     # the mask variable & value to the AssignNode, and AssignNode will use the mask variable & value to generate the
     # assignment statement.
-    as_info_str: bool
+    as_info_dict: bool
     required_copy: bool
 
 

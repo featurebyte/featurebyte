@@ -76,7 +76,7 @@ def test_alias_node(node_inputs, required_copy, expected_statements, expected_in
             row_index_lineage=tuple(),
         ),
         config=CodeGenerationConfig(),
-        context=CodeGenerationContext(as_info_str=False, required_copy=required_copy),
+        context=CodeGenerationContext(as_info_dict=False, required_copy=required_copy),
     )
     assert statements == expected_statements
     assert info == expected_info
@@ -139,16 +139,16 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
             row_index_lineage=tuple(),
         ),
         config=CodeGenerationConfig(),
-        context=CodeGenerationContext(as_info_str=False, required_copy=required_copy),
+        context=CodeGenerationContext(as_info_dict=False, required_copy=required_copy),
     )
     assert statements == expected_statements
     assert info == expected_info
 
 
 @pytest.mark.parametrize(
-    "node_inputs, required_copy, as_info_str, expected_statements, expected_info",
+    "node_inputs, required_copy, as_info_dict, expected_statements, expected_info",
     [
-        # case 1: conditional with required_copy=False, as_info_str=False, col mask
+        # case 1: conditional with required_copy=False, as_info_dict=False, col mask
         (
             [
                 VariableNameStr("col"),
@@ -159,7 +159,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
             [(VariableNameStr("col[mask]"), ValueStr.create(1234))],
             VariableNameStr("col"),
         ),
-        # case 2: conditional with required_copy=False, as_info_str=True, col mask
+        # case 2: conditional with required_copy=False, as_info_dict=True, col mask
         (
             [
                 VariableNameStr("col"),
@@ -170,7 +170,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
             [],
             InfoDict({"value": 1234, "mask": "mask"}),
         ),
-        # case 3: conditional with required_copy=False, as_info_str=False, expression mask
+        # case 3: conditional with required_copy=False, as_info_dict=False, expression mask
         (
             [
                 VariableNameStr("col"),
@@ -184,7 +184,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
             ],
             VariableNameStr("col"),
         ),
-        # case 4: conditional with required_copy=False, as_info_str=True, expression mask
+        # case 4: conditional with required_copy=False, as_info_dict=True, expression mask
         (
             [
                 VariableNameStr("col.dt.year"),
@@ -198,7 +198,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
             ],
             InfoDict({"value": 1234, "mask": "mask"}),
         ),
-        # case 5: conditional with required_copy=True, as_info_str=False, col mask
+        # case 5: conditional with required_copy=True, as_info_dict=False, col mask
         (
             [
                 VariableNameStr("col"),
@@ -212,7 +212,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
             ],
             VariableNameStr("col_1"),
         ),
-        # case 6: conditional with required_copy=True, as_info_str=True, expression mask
+        # case 6: conditional with required_copy=True, as_info_dict=True, expression mask
         (
             [
                 VariableNameStr("col.dt.year"),
@@ -228,7 +228,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
         ),
     ],
 )
-def test_conditional(node_inputs, required_copy, as_info_str, expected_statements, expected_info):
+def test_conditional(node_inputs, required_copy, as_info_dict, expected_statements, expected_info):
     """Test ConditionalNode"""
     node = ConditionalNode(name="conditional_1", parameters={"value": 1234})
     output_type = (
@@ -246,7 +246,7 @@ def test_conditional(node_inputs, required_copy, as_info_str, expected_statement
             row_index_lineage=tuple(),
         ),
         config=CodeGenerationConfig(),
-        context=CodeGenerationContext(as_info_str=as_info_str, required_copy=required_copy),
+        context=CodeGenerationContext(as_info_dict=as_info_dict, required_copy=required_copy),
     )
     assert statements == expected_statements
     assert info == expected_info

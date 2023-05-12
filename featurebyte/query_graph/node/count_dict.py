@@ -46,7 +46,7 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = var_name_expressions[0].as_input()
         other_operands = [val.as_input() for val in var_name_expressions[1:]]
         expression = ExpressionStr(

@@ -125,7 +125,7 @@ class ProjectNode(BaseNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
             var_name_generator=var_name_generator,
@@ -223,7 +223,7 @@ class FilterNode(BaseNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expr = var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expr,
@@ -460,7 +460,7 @@ class LagNode(BaseSeriesOutputNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         col_name = var_name_expressions[0].as_input()
         entity_columns = ValueStr.create(self.parameters.entity_columns)
         offset = ValueStr.create(self.parameters.offset)
@@ -560,7 +560,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
             var_name_generator=var_name_generator,
@@ -661,7 +661,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
         # Currently, `item_view.groupby(...).aggregate()` will generate ItemGroupbyNode + ProjectNode.
         # Output of ItemGroupbyNode is just an expression, the actual variable assignment
         # will be done at the ProjectNode.
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
             var_name_generator=var_name_generator,
@@ -804,7 +804,7 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
             var_name_generator=var_name_generator,
@@ -1025,7 +1025,7 @@ class JoinNode(BasePrunableNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_statements, left_var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
             var_name_generator=var_name_generator,
@@ -1153,7 +1153,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         new_column_name = ValueStr.create(self.parameters.name)
         feature = var_name_expressions[1]
         entity_column = ValueStr.create(self.parameters.view_entity_column)
@@ -1333,7 +1333,7 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         # Currently, `scd_view.groupby(...).aggregate_asat()` will generate AggregateAsAtNode + ProjectNode.
         # Output of AggregateAsAtNode is just an expression, the actual variable assignment
         # will be done at the ProjectNode.
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
             var_name_generator=var_name_generator,
@@ -1429,7 +1429,7 @@ class AliasNode(BaseNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expr = var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expr,
@@ -1481,7 +1481,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_str(node_inputs)
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expr = var_name_expressions[0]
         mask_var_name_expr = var_name_expressions[1]
         statements, var_name = self._convert_expression_to_variable(
@@ -1506,7 +1506,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             var_name=var_name,
             var_name_generator=var_name_generator,
             operation_structure=operation_structure,
-            required_copy=context.required_copy and not context.as_info_str,
+            required_copy=context.required_copy and not context.as_info_dict,
             to_associate_with_node_name=True,
         )
         statements.extend(var_statements)
@@ -1515,12 +1515,15 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         if len(var_name_expressions) == 3:
             value = var_name_expressions[2]
 
-        if context.as_info_str:
+        if context.as_info_dict:
             # This is to handle the case where `View[<column>][<condition>] = <value>` is used.
             # Since there is no single line in SDK code to generate conditional expression, we output info instead
             # and delay the generation of SDK code to the assign node. This method only generates the conditional part,
             # the assignment part will be generated in the assign node.
-            return statements, InfoDict({"value": self.parameters.value, "mask": mask_var_name})
+            info_dict = InfoDict(
+                {"var_name": output_var_name, "value": self.parameters.value, "mask": mask_var_name}
+            )
+            return statements, info_dict
 
         # This handles the normal series assignment case where `col[<condition>] = <value>` is used. In this case,
         # the conditional assignment should not update their parent view.
