@@ -1,6 +1,8 @@
 """
 Test SparkSession
 """
+from unittest.mock import patch
+
 import pytest
 
 from featurebyte import S3StorageCredential, StorageType
@@ -8,6 +10,7 @@ from featurebyte.models.credential import GCSStorageCredential
 from featurebyte.session.spark import SparkSession
 
 
+@patch("featurebyte.session.spark.HiveConnection.__new__")
 def test_s3_storage(config):
     """
     Test initializing session with s3 storage
@@ -36,15 +39,16 @@ def test_s3_storage(config):
     assert "Unsupported storage credential for S3: GCSStorageCredential" in str(exc)
 
     # Success
-    with pytest.raises(ValueError) as exc:
-        SparkSession(
-            storage_credential=S3StorageCredential(
-                s3_access_key_id="test", s3_secret_access_key="test"
-            ),
-            **params,
-        )
+    # with pytest.raises(ValueError):
+    SparkSession(
+        storage_credential=S3StorageCredential(
+            s3_access_key_id="test", s3_secret_access_key="test"
+        ),
+        **params,
+    )
 
 
+@patch("featurebyte.session.spark.HiveConnection.__new__")
 def test_gcs_storage(config):
     """
     Test initializing session with gcs storage
@@ -78,5 +82,14 @@ def test_gcs_storage(config):
     assert "Unsupported storage credential for GCS: S3StorageCredential" in str(exc)
 
     # Success
-    with pytest.raises(ValueError) as exc:
-        SparkSession(storage_credential=GCSStorageCredential(service_account_info={}), **params)
+    with patch("featurebyte.session.simple_storage.GCSClient.from_service_account_info"):
+        SparkSession(
+            storage_credential=GCSStorageCredential(
+                service_account_info={
+                    "client_email": "test",
+                    "token_uri": "test",
+                    "private_key": "test",
+                }
+            ),
+            **params,
+        )

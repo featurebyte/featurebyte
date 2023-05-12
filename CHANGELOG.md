@@ -8,6 +8,8 @@
 ### 🚩 Deprecations 🚩
 ### 💡 Enhancements 💡
 + Support overriding default log level using environment variable `LOG_LEVEL`
++ Support streamed records fetching for DataBricks session
++ Support GCS storage for Spark and DataBricks sessions
 
 ### 🧰 Bug fixes 🧰
 
@@ -17,8 +19,6 @@
 ### 💡 Enhancements 💡
 
 + Update healthcare demo dataset to include timezone columns
-+ Support streamed records fetching for DataBricks session
-+ Support GCS storage for Spark and DataBricks sessions
 
 ### 🧰 Bug fixes 🧰
 
