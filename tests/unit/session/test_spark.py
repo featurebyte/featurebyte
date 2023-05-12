@@ -10,6 +10,7 @@ from featurebyte.models.credential import GCSStorageCredential
 from featurebyte.session.spark import SparkSession
 
 
+@patch("featurebyte.session.spark.HiveConnection.__new__")
 def test_s3_storage(config):
     """
     Test initializing session with s3 storage
@@ -47,6 +48,7 @@ def test_s3_storage(config):
     )
 
 
+@patch("featurebyte.session.spark.HiveConnection.__new__")
 def test_gcs_storage(config):
     """
     Test initializing session with gcs storage
