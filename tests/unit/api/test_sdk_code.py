@@ -4,6 +4,7 @@ import pytest
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc
 from featurebyte.exception import RecordUpdateException
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 from tests.util.helper import check_sdk_code_generation
 
@@ -430,3 +431,24 @@ def test_sdk_code_generation__operating_system_feature(
         update_fixtures=update_fixtures,
         table_id=saved_scd_table.id,
     )
+
+
+def test_conditional_assignment_assumption(saved_event_table):
+    """Test conditional assignment structure assumption"""
+    view = saved_event_table.get_view()
+    col = view["col_text"]
+    assert col.parent == view
+    mask = view["col_boolean"]
+
+    # copy original view & make a conditional assignment
+    view_copy = view.copy()  # [input] -> [graph]
+    col[mask] = "new_value"
+    assert view != view_copy  # view becomes `[input] -> [graph] -> [assign]`
+
+    # check that no way we could get the handle to conditional node from the api object.
+    # if we could get the handle and user does something like `view_copy["col_text"] = <handle>`.
+    # this will break the assumption used in the sdk code generation to identify case 1 (view-mask-assign)
+    # and case 2 (view-series-assignment) conditional assignment.
+    assert view.node_name != view_copy.node_name
+    assert view_copy["col_text"].node.type == NodeType.PROJECT  # before conditional node
+    assert view["col_text"].node.type == NodeType.PROJECT  # after assignment node

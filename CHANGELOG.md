@@ -14,8 +14,6 @@
 
 + Fixed bug in `feature.definition` so that it is consistent with the underlying query graph
 
-### 🧰 Bug fixes 🧰
-
 
 ## v0.2.2
 
