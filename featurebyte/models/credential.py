@@ -74,6 +74,7 @@ class BaseCredential(FeatureByteBaseModel):
             if field.type_ == StrictStr:
                 setattr(self, field.name, encrypt_value(getattr(self, field.name)))
             elif field.type_ == str:
+                # pydantic captures dict field type as str
                 field_value = getattr(self, field.name)
                 if isinstance(field_value, dict):
                     # Encrypt each value in the dict
@@ -91,6 +92,7 @@ class BaseCredential(FeatureByteBaseModel):
             if field.type_ == StrictStr:
                 setattr(self, field.name, decrypt_value(getattr(self, field.name)))
             elif field.type_ == str:
+                # pydantic captures dict field type as str
                 field_value = getattr(self, field.name)
                 if isinstance(field_value, dict):
                     # Decrypt each value in the dict
