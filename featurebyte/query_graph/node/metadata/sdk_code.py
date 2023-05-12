@@ -515,7 +515,7 @@ class CodeGenerator(BaseModel):
         self,
         to_format: bool = False,
         output_var_name: Optional[str] = None,
-        skip_remove_unused_variables: bool = False,
+        remove_unused_variables: bool = True,
     ) -> str:
         """
         Generate code as string using list of stored statements
@@ -526,7 +526,7 @@ class CodeGenerator(BaseModel):
             Whether to format the final code
         output_var_name: Optional[str]
             Output variable name, default to "output"
-        skip_remove_unused_variables: bool
+        remove_unused_variables: bool
             Whether to skip removing unused variables
 
         Returns
@@ -536,7 +536,7 @@ class CodeGenerator(BaseModel):
         # generate statements and extract required imports
         statements, import_pairs = self._generate()
 
-        if not skip_remove_unused_variables:
+        if remove_unused_variables:
             # extract unused variables
             tree = ast.parse(statements)
             finder = UnusedVariableFinder()
