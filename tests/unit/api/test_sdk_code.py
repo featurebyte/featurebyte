@@ -404,6 +404,7 @@ def test_sdk_code_generation__operating_system_feature(
     # case 1: test `view[<col_name>][<mask>] = <value>`
     mask_window = scd_view["os_type"].str.contains("window")
     mask_mac = scd_view["os_type"].str.contains("mac")
+    assert scd_view.os_type.parent is not None  # project column has parent
     scd_view.os_type[mask_window] = "window"
     scd_view.os_type[mask_mac] = "mac"
     feat = scd_view.os_type.as_feature(feature_name="os_type")
@@ -419,6 +420,7 @@ def test_sdk_code_generation__operating_system_feature(
 
     # case 2: test `col[<mask>] = <value>; view[<col_name>] = col`
     new_col = os_type_col + "_new"
+    assert new_col.parent is None  # derived column has no parent
     new_col[~mask_window & ~mask_mac] = "other"
     scd_view["other_os_type"] = new_col
     feat = scd_view.other_os_type.as_feature(feature_name="other_os_type")
