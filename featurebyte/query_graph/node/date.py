@@ -23,7 +23,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
-    VarNameExpressionInfoStr,
+    VarNameExpressionInfo,
 )
 
 
@@ -53,12 +53,12 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         ts_operand: str = var_name_expressions[0].as_input()
 
@@ -74,7 +74,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         if date_property == "dayofweek":
             date_property = "day_of_week"
 
-        output: VarNameExpressionInfoStr
+        output: VarNameExpressionInfo
         if offset_operand is None:
             output = VariableNameStr(f"{ts_operand}.dt.{date_property}")
         else:
@@ -120,12 +120,12 @@ class DateDifference(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         left_operand: str = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
@@ -157,12 +157,12 @@ class TimeDelta(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         var_name_expression = var_name_expressions[0]
         statements: List[StatementT] = []
@@ -201,12 +201,12 @@ class DateAdd(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         left_operand: str = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()

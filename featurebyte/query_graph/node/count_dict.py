@@ -22,7 +22,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     StatementT,
     ValueStr,
     VariableNameGenerator,
-    VarNameExpressionInfoStr,
+    VarNameExpressionInfo,
 )
 
 
@@ -40,12 +40,12 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         var_name_expression = var_name_expressions[0].as_input()
         other_operands = [val.as_input() for val in var_name_expressions[1:]]
@@ -134,12 +134,12 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         return [], node_inputs[0]
 
 

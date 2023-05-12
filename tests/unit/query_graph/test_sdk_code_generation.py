@@ -1,8 +1,6 @@
 """
 Tests for the SDK code generation.
 """
-import json
-
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType
@@ -12,7 +10,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     CodeGenerationContext,
     ExpressionStr,
-    InfoStr,
+    InfoDict,
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
@@ -108,7 +106,7 @@ def test_alias_node(node_inputs, required_copy, expected_statements, expected_in
         (
             [
                 VariableNameStr("event_view"),
-                InfoStr(json.dumps({"value": 10, "mask": "col_1 > 10"})),
+                InfoDict({"value": 10, "mask": "col_1 > 10"}),
             ],
             False,
             [(VariableNameStr("event_view['col'][col_1 > 10]"), ValueStr.create(10))],
@@ -118,7 +116,7 @@ def test_alias_node(node_inputs, required_copy, expected_statements, expected_in
         (
             [
                 VariableNameStr("event_view"),
-                InfoStr(json.dumps({"value": 10, "mask": "col_1 > 10"})),
+                InfoDict({"value": 10, "mask": "col_1 > 10"}),
             ],
             True,
             [
@@ -170,7 +168,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
             False,
             True,
             [],
-            InfoStr(json.dumps({"value": 1234, "mask": "mask"})),
+            InfoDict({"value": 1234, "mask": "mask"}),
         ),
         # case 3: conditional with required_copy=False, as_info_str=False, expression mask
         (
@@ -198,7 +196,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
                 (VariableNameStr("mask"), ExpressionStr("col > 10")),
                 (VariableNameStr("col_1"), ExpressionStr("col.dt.year")),
             ],
-            InfoStr(json.dumps({"value": 1234, "mask": "mask"})),
+            InfoDict({"value": 1234, "mask": "mask"}),
         ),
         # case 5: conditional with required_copy=True, as_info_str=False, col mask
         (
@@ -226,7 +224,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
                 (VariableNameStr("mask"), ExpressionStr("col > 10")),
                 (VariableNameStr("col_1"), ExpressionStr("col.dt.year")),
             ],
-            InfoStr(json.dumps({"value": 1234, "mask": "mask"})),
+            InfoDict({"value": 1234, "mask": "mask"}),
         ),
     ],
 )

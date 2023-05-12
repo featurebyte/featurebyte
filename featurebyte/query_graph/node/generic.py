@@ -5,8 +5,6 @@ This module contains SQL operation related node classes
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
 
-import json
-
 from pydantic import BaseModel, Field, root_validator, validator
 
 from featurebyte.enum import DBVarType
@@ -35,14 +33,14 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     CodeGenerationContext,
     ExpressionStr,
-    InfoStr,
+    InfoDict,
     ObjectClass,
     RightHandSide,
     StatementT,
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
-    VarNameExpressionInfoStr,
+    VarNameExpressionInfo,
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
@@ -121,12 +119,12 @@ class ProjectNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -219,12 +217,12 @@ class FilterNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         var_name_expr = var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
@@ -372,14 +370,14 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expr = node_inputs[0]
-        assert not isinstance(var_name_expr, InfoStr)
+        assert not isinstance(var_name_expr, InfoDict)
         column_name = self.parameters.name
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expr,
@@ -388,9 +386,9 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             node_output_category=operation_structure.output_category,
             to_associate_with_node_name=False,
         )
-        value: Any = ValueStr.create(self.parameters.value)
+        second_input = None
         if len(node_inputs) == 2:
-            value = node_inputs[1]
+            second_input = node_inputs[1]
 
         output_var_name = var_name
         if context.required_copy:
@@ -401,16 +399,17 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             )
             statements.append((output_var_name, ExpressionStr(f"{var_name}.copy()")))
 
-        if isinstance(value, InfoStr):
-            info = json.loads(value)
-            mask_var, value = info["mask"], info["value"]
+        if isinstance(second_input, InfoDict):
+            mask_var = second_input["mask"]
+            value = ValueStr.create(second_input["value"])
             statements.append(
                 (
                     VariableNameStr(f"{output_var_name}['{column_name}'][{mask_var}]"),
-                    ValueStr.create(value),
+                    value,
                 )
             )
         else:
+            value = second_input if second_input else ValueStr.create(self.parameters.value)
             statements.append((VariableNameStr(f"{output_var_name}['{column_name}']"), value))
         return statements, output_var_name
 
@@ -454,12 +453,12 @@ class LagNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         col_name = var_name_expressions[0].as_input()
         entity_columns = ValueStr.create(self.parameters.entity_columns)
@@ -554,12 +553,12 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -651,12 +650,12 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # Note: this node is a special case as the output of this node is not a complete SDK code.
         # Currently, `item_view.groupby(...).aggregate()` will generate ItemGroupbyNode + ProjectNode.
         # Output of ItemGroupbyNode is just an expression, the actual variable assignment
@@ -798,12 +797,12 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -1019,12 +1018,12 @@ class JoinNode(BasePrunableNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         left_statements, left_var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -1147,12 +1146,12 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         new_column_name = ValueStr.create(self.parameters.name)
         feature = var_name_expressions[1]
@@ -1255,12 +1254,12 @@ class TrackChangesNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         raise NotImplementedError()
 
 
@@ -1323,12 +1322,12 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # Note: this node is a special case as the output of this node is not a complete SDK code.
         # Currently, `scd_view.groupby(...).aggregate_asat()` will generate AggregateAsAtNode + ProjectNode.
         # Output of AggregateAsAtNode is just an expression, the actual variable assignment
@@ -1423,12 +1422,12 @@ class AliasNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         var_name_expr = var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
@@ -1475,12 +1474,12 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_str(node_inputs)
         var_name_expr = var_name_expressions[0]
         mask_var_name_expr = var_name_expressions[1]
@@ -1520,9 +1519,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             # Since there is no single line in SDK code to generate conditional expression, we output info instead
             # and delay the generation of SDK code to the assign node. This method only generates the conditional part,
             # the assignment part will be generated in the assign node.
-            return statements, InfoStr(
-                json.dumps({"value": self.parameters.value, "mask": mask_var_name})
-            )
+            return statements, InfoDict({"value": self.parameters.value, "mask": mask_var_name})
 
         # This handles the normal series assignment case where `col[<condition>] = <value>` is used. In this case,
         # the conditional assignment should not update their parent view.

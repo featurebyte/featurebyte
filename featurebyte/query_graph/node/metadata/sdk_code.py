@@ -74,9 +74,9 @@ class VariableNameStr(str):
         return str(self)
 
 
-class InfoStr(str):
+class InfoDict(dict):
     """
-    InfoStr class is used to represent a string that contains information about the code.
+    InfoStr class is used to store the information about SDK code generation from the node to its connected node(s).
     """
 
 
@@ -280,7 +280,7 @@ def get_object_class_from_function_call(
 
 
 VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
-VarNameExpressionInfoStr = Union[VariableNameStr, ExpressionStr, InfoStr]
+VarNameExpressionInfo = Union[VariableNameStr, ExpressionStr, InfoDict]
 RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
 StatementT = Union[  # pylint: disable=invalid-name
     StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]

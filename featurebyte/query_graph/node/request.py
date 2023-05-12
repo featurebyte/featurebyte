@@ -22,7 +22,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     StatementT,
     VariableNameGenerator,
-    VarNameExpressionInfoStr,
+    VarNameExpressionInfo,
 )
 
 
@@ -79,12 +79,12 @@ class RequestColumnNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements: List[StatementT] = []
         var_name = var_name_generator.convert_to_variable_name("request_col", node_name=self.name)
         if self.parameters.column_name == SpecialColumnName.POINT_IN_TIME:

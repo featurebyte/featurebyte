@@ -23,12 +23,12 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     CodeGenerationContext,
     ExpressionStr,
-    InfoStr,
+    InfoDict,
     StatementT,
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
-    VarNameExpressionInfoStr,
+    VarNameExpressionInfo,
     VarNameExpressionStr,
 )
 from featurebyte.query_graph.node.scalar import ValueParameterType
@@ -119,7 +119,7 @@ class BaseNode(BaseModel):
         return False
 
     @staticmethod
-    def _assert_no_info_str(inputs: List[VarNameExpressionInfoStr]) -> List[VarNameExpressionStr]:
+    def _assert_no_info_str(inputs: List[VarNameExpressionInfo]) -> List[VarNameExpressionStr]:
         """
         Assert there is no info string in the given inputs & convert the type to VarNameExpressionStr
 
@@ -134,7 +134,7 @@ class BaseNode(BaseModel):
         """
         out = []
         for input_ in inputs:
-            assert not isinstance(input_, InfoStr)
+            assert not isinstance(input_, InfoDict)
             out.append(input_)
         return out
 
@@ -266,12 +266,12 @@ class BaseNode(BaseModel):
 
     def derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         """
         Derive SDK codes based on the graph traversal from starting node(s) to this node
 
@@ -476,12 +476,12 @@ class BaseNode(BaseModel):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         """
         Derive SDK codes based to be implemented at the concrete node class
 
@@ -702,12 +702,12 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_str(node_inputs)
         left_operand: str = input_var_name_expressions[0].as_input()
         right_operand: str = ValueStr.create(self.parameters.value).as_input()
@@ -782,12 +782,12 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfoStr],
+        node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfoStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_str(node_inputs)
         var_name_expression = input_var_name_expressions[0]
         return [], self._derive_sdk_code_return_var_name_expression_type(

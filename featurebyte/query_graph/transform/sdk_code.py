@@ -17,7 +17,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ExpressionStr,
     StatementT,
     VariableNameGenerator,
-    VarNameExpressionInfoStr,
+    VarNameExpressionInfo,
 )
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -39,9 +39,7 @@ class SDKCodeGlobalState(BaseModel):
         Code generator is used to generate final SDK codes from a list of statements & imports
     """
 
-    node_name_to_post_compute_output: Dict[str, VarNameExpressionInfoStr] = Field(
-        default_factory=dict
-    )
+    node_name_to_post_compute_output: Dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
     node_name_to_operation_structure: Dict[str, OperationStructure] = Field(default_factory=dict)
     code_generation_config: CodeGenerationConfig = Field(default_factory=CodeGenerationConfig)
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
@@ -175,9 +173,9 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         branch_state: BaseModel,
         global_state: SDKCodeGlobalState,
         node: Node,
-        inputs: List[VarNameExpressionInfoStr],
+        inputs: List[VarNameExpressionInfo],
         skip_post: bool,
-    ) -> VarNameExpressionInfoStr:
+    ) -> VarNameExpressionInfo:
         if node.name in global_state.node_name_to_post_compute_output:
             return global_state.node_name_to_post_compute_output[node.name]
 
