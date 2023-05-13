@@ -21,9 +21,9 @@ from pandas import DataFrame
 from requests.models import Response
 from typeguard import typechecked
 
-from featurebyte.api.api_object_util import PrettyDict, ProgressThread
+from featurebyte.api.api_object_util import ProgressThread
 from featurebyte.common.env_util import get_alive_bar_additional_params
-from featurebyte.common.utils import construct_repr_string
+from featurebyte.common.utils import InfoDict, construct_repr_string
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -720,7 +720,9 @@ class ApiObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
         if response.status_code == HTTPStatus.OK:
-            return PrettyDict(response.json())
+            info = response.json()
+            info["class_name"] = self.__class__.__name__
+            return InfoDict(info)
         raise RecordRetrievalException(response, "Failed to retrieve object info.")
 
     @classmethod

@@ -420,3 +420,63 @@ class CodeStr(str):
             '<div style="margin:30px; padding: 20px; border:1px solid #aaa">'
             f"{highlighted_code}</div>"
         )
+
+
+class InfoDict(dict):
+    """
+    Featurebyte asset information dictionary that can be displayed in HTML
+    """
+
+    def _repr_html_(self) -> str:
+        def dict_to_html(data):
+            """
+            Convert dict to html using basic html tags
+            """
+            content = []
+            if "class_name" in data:
+                # info table title
+                content.append(
+                    '<div style="font-weight:bold; text-align:center; border-bottom:1px solid black; width: 100%; padding-top:20px">'
+                    f'{data["class_name"]}</div>'
+                )
+
+            if isinstance(data, list):
+                return pd.DataFrame(data)._repr_html_()
+                # # list of dictionaries
+                # data = pd.DataFrame(data).to_dict(orient="list")
+                # header = "</th><th>".join([
+                #     " ".join(key.split("_")).title() for key in data.keys()
+                # ])
+                # content.append(
+                #     f'<thead><tr style="height:35px; border-bottom: 1px solid lightgray"><th>{header}</th></tr></thead><tbody>'
+                # )
+                # for row in zip(*data.values()):
+                #     row_content = "</td><td>".join([str(value) for value in row])
+                #     content.append(f"<tr><td>{row_content}</td></tr>")
+                # content.append("</tbody>")
+            else:
+                for key, value in data.items():
+                    if isinstance(value, dict):
+                        # process dictionaries recursively
+                        value = (
+                            f'<div style="border:0;padding:0;margin:0">{dict_to_html(value)}</div>'
+                        )
+                    elif isinstance(value, list):
+                        if value and isinstance(value[0], dict):
+                            # list of dictionaries
+                            value = f'<div style="border:0;padding:0;margin:0">{dict_to_html(value)}</div>'
+                    else:
+                        # nicer datetime formatting
+                        try:
+                            value = datetime.fromisoformat(value).strftime("%Y-%m-%d %H:%M:%S")
+                        except:
+                            pass
+
+                    key = " ".join(key.split("_")).title()
+                    content.append(
+                        f'<tr><td style="font-weight:bold; vertical-align:top; width:200px; over-flow:wrap">{key}</td>'
+                        f'<td style="width:80%; text-align: left">{value}</td></tr>'
+                    )
+            return f'<table style="width:100%;padding:0;margin:0">{"".join(content)}</table>'
+
+        return dict_to_html(self)
