@@ -1,13 +1,11 @@
 """
 This module contains integration tests for TileManager scheduler
 """
-from datetime import datetime
 from unittest import mock
 
 import pytest
 import pytest_asyncio
 
-from featurebyte.common import date_util
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType

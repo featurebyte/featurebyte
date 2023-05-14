@@ -12,7 +12,6 @@ from sqlglot.expressions import Select, select
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
@@ -80,21 +79,13 @@ class OnDemandTileComputePlan:
         for tile_info in self.tile_infos:
             # Convert template SQL with concrete start and end timestamps, based on the requested
             # point-in-time and feature window sizes
-            tile_sql_with_start_end_expr = get_tile_sql_from_point_in_time(
+            tile_sql_expr = get_tile_sql_from_point_in_time(
                 sql_template=tile_info.sql_template,
                 point_in_time_list=self.point_in_time_list,
                 frequency=tile_info.frequency,
                 time_modulo_frequency=tile_info.time_modulo_frequency,
                 blind_spot=tile_info.blind_spot,
                 window=self.get_max_window_size(tile_info.tile_table_id),
-            )
-            # Include global tile index that would have been computed by F_TIMESTAMP_TO_INDEX UDF
-            # during scheduled tile jobs
-            tile_sql_expr = get_tile_sql_parameterized_by_job_settings(
-                tile_sql_with_start_end_expr,
-                frequency=tile_info.frequency,
-                time_modulo_frequency=tile_info.time_modulo_frequency,
-                blind_spot=tile_info.blind_spot,
             )
 
             # Build wide tile table by joining tile sqls with the same tile_table_id
@@ -275,7 +266,7 @@ def compute_start_end_date_from_point_in_time(
         get_epoch_seconds(point_in_time) for point_in_time in point_in_time_list
     ]
 
-    def _compute_end_date_epoch_seconds(point_in_time_epoch_seconds: int) -> pd.Timestamp:
+    def _compute_end_date_epoch_seconds(point_in_time_epoch_seconds: int) -> int:
         """
         Compute end date based on point in time in epoch seconds
 
@@ -364,46 +355,3 @@ def get_tile_sql_from_point_in_time(
         as_str=False,
     )
     return cast(Select, out_expr)
-
-
-def get_tile_sql_parameterized_by_job_settings(
-    tile_sql_expr: Select,
-    frequency: int,
-    time_modulo_frequency: int,
-    blind_spot: int,
-) -> Select:
-    """Get the final tile SQL code that would have been executed by the tile schedule job
-
-    The template SQL code doesn't contain the tile index, which is computed by the tile schedule job
-    by F_TIMESTAMP_TO_INDEX. This produces a SQL that incorporates that.
-
-    Parameters
-    ----------
-    tile_sql_expr : Select
-        Tile SQL expression with placeholders already filled
-    frequency : int
-        Frequency in feature job setting
-    time_modulo_frequency : int
-        Time modulo frequency in feature job setting
-    blind_spot : int
-        Blind spot in feature job setting
-
-    Returns
-    -------
-    Select
-    """
-    frequency_minute = frequency // 60
-    f_time_to_index_expr = expressions.Anonymous(
-        this="F_TIMESTAMP_TO_INDEX",
-        expressions=[
-            InternalName.TILE_START_DATE.value,
-            make_literal_value(time_modulo_frequency),
-            make_literal_value(blind_spot),
-            make_literal_value(frequency_minute),
-        ],
-    )
-    expr = select(
-        "*",
-        expressions.alias_(expression=f_time_to_index_expr, alias=quoted_identifier("INDEX")),
-    ).from_(tile_sql_expr.subquery())
-    return expr

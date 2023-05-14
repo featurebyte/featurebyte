@@ -161,20 +161,14 @@ def test_item_table_join_event_table_attributes_on_demand_tile_gen(
     expected = textwrap.dedent(
         """
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          index,
           "cust_id",
           "item_type",
           COUNT(*) AS value_count_bac600740926fd108d0945c41b34484acf70adad
         FROM (
           SELECT
             *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
-              ) / 3600
-            ) AS tile_index
+            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
           FROM (
             WITH __FB_ENTITY_TABLE_NAME AS (
               __FB_ENTITY_TABLE_SQL_PLACEHOLDER
@@ -213,7 +207,7 @@ def test_item_table_join_event_table_attributes_on_demand_tile_gen(
           )
         )
         GROUP BY
-          tile_index,
+          index,
           "cust_id",
           "item_type"
         """
@@ -324,18 +318,14 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
     expected = textwrap.dedent(
         """
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          index,
           "cust_id",
           SUM("ord_size") AS sum_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff,
           COUNT("ord_size") AS count_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff
         FROM (
           SELECT
             *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
-              ) / 3600
-            ) AS tile_index
+            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
           FROM (
             SELECT
               *
@@ -387,7 +377,7 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
           )
         )
         GROUP BY
-          tile_index,
+          index,
           "cust_id"
         """
     ).strip()

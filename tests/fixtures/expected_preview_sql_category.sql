@@ -7,49 +7,38 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
     count_value_avg_828be81883198b473c3a5ac214dd4112d7559427
   FROM (
     SELECT
-      *,
-      F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS "INDEX"
+      index,
+      "cust_id",
+      "product_type",
+      SUM("a") AS sum_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
+      COUNT("a") AS count_value_avg_828be81883198b473c3a5ac214dd4112d7559427
     FROM (
       SELECT
-        TO_TIMESTAMP(
-          DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMPNTZ)) + tile_index * 3600
-        ) AS __FB_TILE_START_DATE_COLUMN,
-        "cust_id",
-        "product_type",
-        SUM("a") AS sum_value_avg_828be81883198b473c3a5ac214dd4112d7559427,
-        COUNT("a") AS count_value_avg_828be81883198b473c3a5ac214dd4112d7559427
+        *,
+        F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
       FROM (
         SELECT
-          *,
-          FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMPNTZ))
-            ) / 3600
-          ) AS tile_index
+          *
         FROM (
           SELECT
-            *
-          FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b",
-              (
-                "a" + "b"
-              ) AS "c"
-            FROM "db"."public"."event_table"
-          )
-          WHERE
-            "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMPNTZ)
-            AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "a" AS "a",
+            "b" AS "b",
+            (
+              "a" + "b"
+            ) AS "c"
+          FROM "db"."public"."event_table"
         )
+        WHERE
+          "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMPNTZ)
+          AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
       )
-      GROUP BY
-        tile_index,
-        "cust_id",
-        "product_type"
     )
+    GROUP BY
+      index,
+      "cust_id",
+      "product_type"
   ) AS avg_828be81883198b473c3a5ac214dd4112d7559427
 ), REQUEST_TABLE AS (
   SELECT

@@ -29,7 +29,7 @@ async def test_schedule_generate_tile_online(session, tile_task_prep_spark, base
     entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
-        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
+        f" SELECT INDEX,{entity_col_names_str},{value_col_names_str} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
@@ -105,7 +105,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model):
     entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
-        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
+        f" SELECT INDEX,{entity_col_names_str},{value_col_names_str} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
@@ -193,7 +193,7 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
     entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
-        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
+        f" SELECT INDEX,{entity_col_names_str},{value_col_names_str} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
@@ -270,7 +270,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
     entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
-        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
+        f" SELECT INDEX,{entity_col_names_str},{value_col_names_str} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )

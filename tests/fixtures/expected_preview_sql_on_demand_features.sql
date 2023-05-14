@@ -5,49 +5,38 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     value_latest_f243fc3de55421dea9679ba6aec5bc0ac03ffe30
   FROM (
     SELECT
-      *,
-      F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS "INDEX"
+      index,
+      "cust_id",
+      value_latest_f243fc3de55421dea9679ba6aec5bc0ac03ffe30
     FROM (
       SELECT
-        __FB_TILE_START_DATE_COLUMN,
+        index,
         "cust_id",
-        value_latest_f243fc3de55421dea9679ba6aec5bc0ac03ffe30
+        ROW_NUMBER() OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
+        FIRST_VALUE("ts") OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_f243fc3de55421dea9679ba6aec5bc0ac03ffe30
       FROM (
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
-          "cust_id",
-          ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-          FIRST_VALUE("ts") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_f243fc3de55421dea9679ba6aec5bc0ac03ffe30
+          *,
+          F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
         FROM (
           SELECT
-            *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ))
-              ) / 3600
-            ) AS tile_index
+            *
           FROM (
             SELECT
-              *
-            FROM (
-              SELECT
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "a" AS "a",
-                "b" AS "b"
-              FROM "db"."public"."event_table"
-            )
-            WHERE
-              "ts" >= CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ)
-              AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b"
+            FROM "db"."public"."event_table"
           )
+          WHERE
+            "ts" >= CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ)
+            AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
         )
       )
-      WHERE
-        "__FB_ROW_NUMBER" = 1
     )
+    WHERE
+      "__FB_ROW_NUMBER" = 1
   ) AS latest_f243fc3de55421dea9679ba6aec5bc0ac03ffe30
 ), REQUEST_TABLE AS (
   SELECT

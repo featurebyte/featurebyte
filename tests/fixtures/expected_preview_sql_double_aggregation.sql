@@ -6,78 +6,67 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     count_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff
   FROM (
     SELECT
-      *,
-      F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS "INDEX"
+      index,
+      "cust_id",
+      SUM("ord_size") AS sum_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff,
+      COUNT("ord_size") AS count_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff
     FROM (
       SELECT
-        TO_TIMESTAMP(
-          DATE_PART(EPOCH_SECOND, CAST('2022-03-21 09:15:00' AS TIMESTAMPNTZ)) + tile_index * 3600
-        ) AS __FB_TILE_START_DATE_COLUMN,
-        "cust_id",
-        SUM("ord_size") AS sum_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff,
-        COUNT("ord_size") AS count_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff
+        *,
+        F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
       FROM (
         SELECT
-          *,
-          FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-03-21 09:15:00' AS TIMESTAMPNTZ))
-            ) / 3600
-          ) AS tile_index
+          *
         FROM (
           SELECT
-            *
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "order_id" AS "order_id",
+            "order_method" AS "order_method",
+            (
+              "_fb_internal_item_count_None_input_1" + 123
+            ) AS "ord_size"
           FROM (
             SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "order_id" AS "order_id",
-              "order_method" AS "order_method",
-              (
-                "_fb_internal_item_count_None_input_1" + 123
-              ) AS "ord_size"
+              REQ."ts",
+              REQ."cust_id",
+              REQ."order_id",
+              REQ."order_method",
+              "T0"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1"
             FROM (
               SELECT
-                REQ."ts",
-                REQ."cust_id",
-                REQ."order_id",
-                REQ."order_method",
-                "T0"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1"
+                "ts" AS "ts",
+                "cust_id" AS "cust_id",
+                "order_id" AS "order_id",
+                "order_method" AS "order_method"
+              FROM "db"."public"."event_table"
+            ) AS REQ
+            LEFT JOIN (
+              SELECT
+                ITEM."order_id" AS "order_id",
+                COUNT(*) AS "_fb_internal_item_count_None_input_1"
               FROM (
                 SELECT
-                  "ts" AS "ts",
-                  "cust_id" AS "cust_id",
                   "order_id" AS "order_id",
-                  "order_method" AS "order_method"
-                FROM "db"."public"."event_table"
-              ) AS REQ
-              LEFT JOIN (
-                SELECT
-                  ITEM."order_id" AS "order_id",
-                  COUNT(*) AS "_fb_internal_item_count_None_input_1"
-                FROM (
-                  SELECT
-                    "order_id" AS "order_id",
-                    "item_id" AS "item_id",
-                    "item_name" AS "item_name",
-                    "item_type" AS "item_type"
-                  FROM "db"."public"."item_table"
-                ) AS ITEM
-                GROUP BY
-                  ITEM."order_id"
-              ) AS T0
-                ON REQ."order_id" = T0."order_id"
-            )
+                  "item_id" AS "item_id",
+                  "item_name" AS "item_name",
+                  "item_type" AS "item_type"
+                FROM "db"."public"."item_table"
+              ) AS ITEM
+              GROUP BY
+                ITEM."order_id"
+            ) AS T0
+              ON REQ."order_id" = T0."order_id"
           )
-          WHERE
-            "ts" >= CAST('2022-03-21 09:15:00' AS TIMESTAMPNTZ)
-            AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
         )
+        WHERE
+          "ts" >= CAST('2022-03-21 09:15:00' AS TIMESTAMPNTZ)
+          AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
       )
-      GROUP BY
-        tile_index,
-        "cust_id"
     )
+    GROUP BY
+      index,
+      "cust_id"
   ) AS avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff
 ), REQUEST_TABLE AS (
   SELECT
