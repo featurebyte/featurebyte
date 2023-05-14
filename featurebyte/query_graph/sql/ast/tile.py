@@ -114,6 +114,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
 
         Entity table is expected to have these columns:
         * entity column(s)
+        * InternalName.ENTITY_TABLE_START_DATE
         * InternalName.ENTITY_TABLE_END_DATE
 
         Returns
@@ -121,7 +122,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         Select
         """
         entity_table = InternalName.ENTITY_TABLE_NAME.value
-        start_date = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
+        start_date = InternalName.ENTITY_TABLE_START_DATE.value
         end_date = InternalName.ENTITY_TABLE_END_DATE.value
 
         join_conditions: list[Expression] = []
@@ -134,7 +135,9 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         join_conditions.append(
             expressions.GTE(
                 this=get_qualified_column_identifier(self.timestamp, "R"),
-                expression=expressions.Identifier(this=start_date),
+                expression=get_qualified_column_identifier(
+                    start_date, entity_table, quote_column=False
+                ),
             )
         )
         join_conditions.append(
