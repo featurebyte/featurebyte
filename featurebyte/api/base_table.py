@@ -620,9 +620,17 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
 
         Examples
         --------
-        Show the list of column cleaning operations of an event table
+        Show the list of column cleaning operations of an event table.
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...     fb.ValueBeyondEndpointImputation(
+        ...       type="less_than", end_point=0, imputed_value=0
+        ...     ),
+        ...   ]
+        ... )
         >>> event_table.column_cleaning_operations
         []
 
