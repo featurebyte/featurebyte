@@ -345,10 +345,12 @@ class Feature(
 
     def delete(self) -> None:
         """
-        Delete a feature. A feature can only be deleted if
-        * the feature readiness is DRAFT
-        * the feature is not used in any feature list
-        * the feature is not a default feature with manual version mode
+        Deletes a feature from the persistent data store. A feature can only be deleted from the persistent data
+        store if:
+
+        - the feature readiness is DRAFT
+        - the feature is not used in any feature list
+        - the feature is not a default feature with manual version mode
 
         Examples
         --------
