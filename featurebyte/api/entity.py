@@ -89,7 +89,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
 
         Returns
         -------
-        ObjectId
+        PydanticObjectId
             Catalog ID of the entity.
 
         See Also

@@ -102,7 +102,7 @@ class Relationship(ApiObject):
 
         Returns
         -------
-        ObjectId
+        PydanticObjectId
             Catalog ID of the relationship.
 
         See Also
