@@ -95,6 +95,22 @@ class Relationship(ApiObject):
         except RecordRetrievalException:
             return self.internal_updated_by
 
+    @property
+    def catalog_id(self) -> PydanticObjectId:
+        """
+        Returns the unique identifier (ID) of the Catalog that is associated with the Relationship object.
+
+        Returns
+        -------
+        ObjectId
+            Catalog ID of the relationship.
+
+        See Also
+        --------
+        - [Catalog](/reference/featurebyte.api.catalog.Catalog)
+        """
+        return self.cached_model.catalog_id  # pylint: disable=no-member
+
     @classmethod
     @typechecked
     def list(

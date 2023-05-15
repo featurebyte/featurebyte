@@ -16,6 +16,7 @@ from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException, RecordUpdateException
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
@@ -80,6 +81,22 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
             return self.cached_model.serving_names
         except RecordRetrievalException:
             return self.internal_serving_names
+
+    @property
+    def catalog_id(self) -> PydanticObjectId:
+        """
+        Returns the unique identifier (ID) of the Catalog that is associated with the Entity object.
+
+        Returns
+        -------
+        ObjectId
+            Catalog ID of the entity.
+
+        See Also
+        --------
+        - [Catalog](/reference/featurebyte.api.catalog.Catalog)
+        """
+        return self.cached_model.catalog_id  # pylint: disable=no-member
 
     @property
     def serving_name(self) -> str:
