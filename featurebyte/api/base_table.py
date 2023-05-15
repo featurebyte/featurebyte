@@ -1,6 +1,7 @@
 """
 DataColumn class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, ClassVar, List, Literal, Optional, Tuple, Type, TypeVar, Union, cast
@@ -609,6 +610,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
 
     @property
     def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+        # pylint: disable=line-too-long
         """
         List of column cleaning operations associated with this table. Column cleaning operation is a list of
         cleaning operations to be applied to a column of this table.
@@ -632,7 +634,17 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         ...   ]
         ... )
         >>> event_table.column_cleaning_operations
+        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing), ValueBeyondEndpointImputation(imputed_value=0, type=less_than, end_point=0)])]
+
+        Empty list of column cleaning operations after resetting the cleaning operations.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(
+        ...   cleaning_operations=[]
+        ... )
+        >>> event_table.column_cleaning_operations
         []
+
 
         See Also
         --------
