@@ -589,14 +589,14 @@ class FeatureList(
 
     def delete(self) -> None:
         """
-        Delete a FeatureList object from the persistent data store. A feature list can only be deleted if
-        * the feature list status is DRAFT
-        * the feature list is not a default feature list with manual version mode
+        Deletes a FeatureList object from the persistent data store. A feature list can only be deleted from the
+        persistent data store if:
+
+        - the feature list status is DRAFT
+        - the feature list is not a default feature list with manual version mode
 
         Examples
         --------
-        Delete a FeatureList.
-
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.delete()  # doctest: +SKIP
         """

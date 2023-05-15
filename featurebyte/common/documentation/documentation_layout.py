@@ -281,11 +281,11 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_list_ids"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_namespace_id"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_store"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.graph"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.id"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.definition"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.sql"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.catalog_id"]),
+        DocLayoutItem([FEATURE, MANAGE, "Feature.delete"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.get_feature_jobs_status"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.as_default_version"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.create_new_version"]),
@@ -381,6 +381,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.sql"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.primary_entity"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.get_feature_jobs_status"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.delete"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.as_default_version"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.create_new_version"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.list_versions"]),
@@ -667,6 +668,11 @@ def _get_utility_methods_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [UTILITY_METHODS, TRANSFORM, "to_timedelta"],
             doc_path_override="core.timedelta.to_timedelta.md",
+            is_pure_method=True,
+        ),
+        DocLayoutItem(
+            [UTILITY_METHODS, LIST, "list_unsaved_features"],
+            doc_path_override="feature_utility.list_unsaved_features.md",
             is_pure_method=True,
         ),
     ]
