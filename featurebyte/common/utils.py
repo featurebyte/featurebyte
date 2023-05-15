@@ -431,6 +431,10 @@ class InfoDict(Dict[str, Any]):
     Featurebyte asset information dictionary that can be displayed in HTML
     """
 
+    def __init__(self, data: Dict[str, Any]) -> None:
+        self.class_name = data.pop("class_name", "Unknown")
+        super().__init__(data)
+
     def _repr_html_(self) -> str:
         def _set_element_style(elem: Element, style: Dict[str, Any]) -> None:
             """
@@ -529,8 +533,7 @@ class InfoDict(Dict[str, Any]):
 
         # add title for the table
         data = copy.deepcopy(self)
-        class_name = data.pop("class_name", "Unknown")
-        class_name = re.sub(r"([A-Z]+[a-z]+)", r" \1", class_name).strip()
+        class_name = re.sub(r"([A-Z]+[a-z]+)", r" \1", self.class_name).strip()
         title_div = doc.createElement("div")
         title_div.appendChild(doc.createTextNode(class_name))
         _set_element_style(
