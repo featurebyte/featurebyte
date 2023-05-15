@@ -20,41 +20,76 @@ def relationship_info_service_fixture(app_container):
     return app_container.relationship_info_service
 
 
-@pytest.fixture(name="persistable_relationship_info")
-def persistable_relationship_info_fixture(relationship_info_service, snowflake_event_table):
+@pytest.fixture(name="relationship_info_create")
+def relationship_info_create_fixture(snowflake_event_table):
     """
-    Get a callback function that will persist a relationship info.
+    Get a default RelationshipInfoCreate object.
     """
     cust_entity = Entity(name="customer", serving_names=["cust_id"])
     cust_entity.save()
     user_entity = Entity(name="user", serving_names=["user_id"])
     user_entity.save()
 
-    async def save() -> RelationshipInfoModel:
+    return RelationshipInfoCreate(
+        name="test_relationship",
+        relationship_type=RelationshipType.CHILD_PARENT,
+        entity_id=cust_entity.id,
+        related_entity_id=user_entity.id,
+        relation_table_id=snowflake_event_table.id,
+        enabled=False,
+        updated_by=PydanticObjectId(ObjectId()),
+    )
+
+
+@pytest.fixture(name="persistable_relationship_info")
+def persistable_relationship_info_fixture(relationship_info_service):
+    """
+    Get a callback function that will persist a relationship info.
+    """
+
+    async def save(relationship_info_create: RelationshipInfoCreate) -> RelationshipInfoModel:
         created_relationship = await relationship_info_service.create_document(
-            RelationshipInfoCreate(
-                name="test_relationship",
-                relationship_type=RelationshipType.CHILD_PARENT,
-                entity_id=cust_entity.id,
-                related_entity_id=user_entity.id,
-                relation_table_id=snowflake_event_table.id,
-                enabled=False,
-                updated_by=PydanticObjectId(ObjectId()),
-            )
+            relationship_info_create
         )
-        assert created_relationship.entity_id == cust_entity.id
+        assert created_relationship.entity_id == relationship_info_create.entity_id
         return created_relationship
 
     return save
 
 
 @pytest_asyncio.fixture(name="persisted_relationship_info")
-async def persisted_relationship_info_fixture(persistable_relationship_info):
+async def persisted_relationship_info_fixture(
+    persistable_relationship_info, relationship_info_create
+):
     """
     Persisted relationship info fixture
     """
-    persisted = await persistable_relationship_info()
+    persisted = await persistable_relationship_info(relationship_info_create)
     yield persisted
+
+
+@pytest.mark.asyncio
+async def test_relationship_get_by_id_without_updated_by(
+    persistable_relationship_info, relationship_info_create
+):
+    """
+    Test relationship get by id without updated by field.
+    """
+    # Create a RelationshipInfoCreate struct with no updated_by field
+    default_values = relationship_info_create.dict()
+    default_values["updated_by"] = None
+    updated_relationship_info_create = RelationshipInfoCreate(**default_values)
+
+    # Persist the value
+    persisted_relationship_info = await persistable_relationship_info(
+        updated_relationship_info_create
+    )
+    assert persisted_relationship_info.updated_by is None
+
+    # Test that the results are equal
+    retrieved_relationship_info = Relationship.get_by_id(persisted_relationship_info.id)
+    assert retrieved_relationship_info.id == persisted_relationship_info.id
+    assert retrieved_relationship_info.cached_model == persisted_relationship_info
 
 
 def test_accessing_persisted_relationship_info_attributes(persisted_relationship_info):
@@ -93,14 +128,14 @@ def assert_relationship_info(relationship_info_df):
 
 
 @pytest.mark.asyncio
-async def test_relationships_list(persistable_relationship_info):
+async def test_relationships_list(persistable_relationship_info, relationship_info_create):
     """
     Test relationships list
     """
     relationships = Relationship.list()
     assert relationships.shape[0] == 0
 
-    persisted_relationship_info = await persistable_relationship_info()
+    persisted_relationship_info = await persistable_relationship_info(relationship_info_create)
     relationship_type = persisted_relationship_info.relationship_type
 
     # verify that there's one relationship that was created
