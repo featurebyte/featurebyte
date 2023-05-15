@@ -670,6 +670,11 @@ def _get_utility_methods_layout() -> List[DocLayoutItem]:
             doc_path_override="core.timedelta.to_timedelta.md",
             is_pure_method=True,
         ),
+        DocLayoutItem(
+            [UTILITY_METHODS, LIST, "list_unsaved_features"],
+            doc_path_override="feature_utility.list_unsaved_features.md",
+            is_pure_method=True,
+        ),
     ]
 
 
