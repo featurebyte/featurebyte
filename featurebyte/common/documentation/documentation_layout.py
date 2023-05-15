@@ -281,7 +281,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_list_ids"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_namespace_id"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_store"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.graph"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.id"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.definition"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.sql"]),
