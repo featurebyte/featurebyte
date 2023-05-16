@@ -8,8 +8,8 @@ from typing import Any, Dict, Optional
 from bson import ObjectId
 from pandas import DataFrame
 
-from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.data_source import DataSource
+from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
