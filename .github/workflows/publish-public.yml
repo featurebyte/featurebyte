@@ -46,11 +46,11 @@ concurrency:
   group: ${{ github.workflow }}
 jobs:
   publish:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
       matrix:
-        python-version: ["3.8.0"]
+        python-version: ["3.8.12"]
     steps:
       - uses: actions/checkout@v3
         with:
