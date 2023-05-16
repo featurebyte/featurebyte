@@ -448,7 +448,6 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
-    version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )
@@ -462,7 +461,6 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
     _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(
         construct_sort_validator()
     )
-    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
     @staticmethod
     def derive_readiness_distribution(features: List[FeatureModel]) -> FeatureReadinessDistribution:
@@ -533,15 +531,8 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
-            UniqueValuesConstraint(
-                fields=("name", "version"),
-                conflict_fields_signature={"name": ["name"], "version": ["version"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            ),
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("feature_ids"),
             pymongo.operations.IndexModel("feature_list_namespace_id"),
         ]
@@ -573,6 +564,7 @@ class FeatureListModel(FrozenFeatureListModel):
         List of combined graphs for features from the same feature store
     """
 
+    version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
     online_enabled_feature_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
@@ -580,6 +572,9 @@ class FeatureListModel(FrozenFeatureListModel):
         allow_mutation=False, default_factory=list
     )
     deployed: bool = Field(allow_mutation=False, default=False)
+
+    # pydantic validators
+    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
     @root_validator(pre=True)
     @classmethod
@@ -606,7 +601,15 @@ class FeatureListModel(FrozenFeatureListModel):
         MongoDB settings
         """
 
+        unique_constraints = FrozenFeatureListModel.Settings.unique_constraints + [
+            UniqueValuesConstraint(
+                fields=("name", "version"),
+                conflict_fields_signature={"name": ["name"], "version": ["version"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            )
+        ]
         indexes = FrozenFeatureListModel.Settings.indexes + [
+            pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("online_enabled_feature_ids"),
             pymongo.operations.IndexModel("deployed"),
             [

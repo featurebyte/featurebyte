@@ -309,11 +309,6 @@ class FeatureList(
         allow_mutation=False,
         description="Returns the unique identifier (ID) of the Feature objects associated with the FeatureList object.",
     )
-    version: VersionIdentifier = Field(
-        allow_mutation=False,
-        default=None,
-        description="Returns the version identifier of a FeatureList object.",
-    )
 
     # class variables
     _route = "/feature_list"
@@ -329,6 +324,23 @@ class FeatureList(
         "deployed",
         "created_at",
     ]
+
+    @property
+    def version(self) -> str:
+        """
+        Returns the version identifier of a FeatureList object.
+
+        Returns
+        -------
+        str
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.version  # doctest: +SKIP
+        'V230330'
+        """
+        return cast(FeatureListModel, self.cached_model).version.to_str()
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"items": self.items}

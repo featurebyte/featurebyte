@@ -558,8 +558,7 @@ def test_create_new_version(saved_feature, snowflake_event_table):
     assert new_version.saved is True
 
     saved_feature_version = saved_feature.version
-    assert saved_feature_version.suffix is None
-    assert new_version.version == {"name": saved_feature_version.name, "suffix": 1}
+    assert new_version.version == f"{saved_feature_version}_1"
 
     new_version_dict = new_version.dict()
     assert new_version_dict["graph"]["nodes"][1]["type"] == "graph"
@@ -718,7 +717,7 @@ def test_feature__as_default_version(saved_feature):
     assert Feature.get(name=saved_feature.name) == saved_feature
 
     # check get by name and version
-    assert Feature.get(name=saved_feature.name, version=new_version.version.to_str()) == new_version
+    assert Feature.get(name=saved_feature.name, version=new_version.version) == new_version
 
 
 def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
@@ -928,7 +927,7 @@ def test_list_versions(saved_feature):
                     saved_feature.id,
                 ],
                 "name": ["new_feat2", "new_feat1", saved_feature.name],
-                "version": [saved_feature.version.to_str()] * 3,
+                "version": [saved_feature.version] * 3,
                 "dtype": [saved_feature.dtype] * 3,
                 "readiness": [saved_feature.readiness] * 3,
                 "online_enabled": [saved_feature.online_enabled] * 3,
@@ -950,7 +949,7 @@ def test_list_versions(saved_feature):
             {
                 "id": [saved_feature.id],
                 "name": [saved_feature.name],
-                "version": [saved_feature.version.to_str()],
+                "version": [saved_feature.version],
                 "dtype": [saved_feature.dtype],
                 "readiness": [saved_feature.readiness],
                 "online_enabled": [saved_feature.online_enabled],
@@ -1116,7 +1115,7 @@ def test_feature_deletion_failure(saved_feature):
     with pytest.raises(RecordDeletionException) as exc_info:
         saved_feature.delete()
 
-    version = feature_list.version.to_str()
+    version = feature_list.version
     expected_msg = (
         "Feature is still in use by feature list(s). Please remove the following feature list(s) first:\n"
         f"[{{'id': '{feature_list.id}',\n  'name': 'test_feature_list',\n  'version': '{version}'}}]"

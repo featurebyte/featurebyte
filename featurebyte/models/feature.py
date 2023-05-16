@@ -162,11 +162,6 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
     graph: QueryGraph = Field(allow_mutation=False)
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
-    version: VersionIdentifier = Field(
-        allow_mutation=False,
-        default=None,
-        description="Returns the version identifier of a Feature object.",
-    )
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
@@ -175,7 +170,6 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
 
     # pydantic validators
     _sort_ids_validator = validator("entity_ids", allow_reuse=True)(construct_sort_validator())
-    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
     @property
     def node(self) -> Node:
@@ -253,17 +247,10 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            ),
-            UniqueValuesConstraint(
-                fields=("name", "version"),
-                conflict_fields_signature={"name": ["name"], "version": ["version"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            ),
+            )
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("dtype"),
-            pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("entity_ids"),
             pymongo.operations.IndexModel("table_ids"),
             pymongo.operations.IndexModel("primary_table_ids"),
@@ -312,6 +299,11 @@ class FeatureModel(FrozenFeatureModel):
         When the Feature get updated
     """
 
+    version: VersionIdentifier = Field(
+        allow_mutation=False,
+        default=None,
+        description="Returns the version identifier of a Feature object.",
+    )
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     online_enabled: bool = Field(allow_mutation=False, default=False)
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
@@ -321,12 +313,23 @@ class FeatureModel(FrozenFeatureModel):
         allow_mutation=False, default=None, description="Feature Definition"
     )
 
+    # pydantic validators
+    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
+
     class Settings(FrozenFeatureModel.Settings):
         """
         MongoDB settings
         """
 
+        unique_constraints = FrozenFeatureModel.Settings.unique_constraints + [
+            UniqueValuesConstraint(
+                fields=("name", "version"),
+                conflict_fields_signature={"name": ["name"], "version": ["version"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            )
+        ]
         indexes = FrozenFeatureModel.Settings.indexes + [
+            pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("readiness"),
             pymongo.operations.IndexModel("online_enabled"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),

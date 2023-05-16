@@ -15,6 +15,7 @@
 + Remove unused statement from `feature.definition`
 + Improve error handling and messaging for Docker exceptions
 + Support `scheduler`, `worker:io`, `worker:cpu` in startup command to start different services
++ Update feature's & feature list's version format from dictionary to string
 
 ### 🧰 Bug fixes 🧰
 

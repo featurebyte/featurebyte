@@ -132,6 +132,23 @@ class Feature(
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
 
+    @property
+    def version(self) -> str:
+        """
+        Returns the version identifier of a Feature object.
+
+        Returns
+        -------
+        str
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("CustomerProductGroupCounts_7d")
+        >>> feature.version  # doctest: +SKIP
+        'V230323'
+        """
+        return cast(FeatureModel, self.cached_model).version.to_str()
+
     @typechecked
     def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
         """
