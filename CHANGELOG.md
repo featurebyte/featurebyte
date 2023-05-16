@@ -14,6 +14,7 @@
 + Update feature definition by explicitly specifying `on` parameter in `join` operation
 + Remove unused statement from `feature.definition`
 + Improve error handling and messaging for Docker exceptions
++ Support `scheduler`, `worker:io`, `worker:cpu` in startup command to start different services
 
 ### 🧰 Bug fixes 🧰
 
