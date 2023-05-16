@@ -70,7 +70,7 @@ jobs:
           path: hive-udf/lib/build/libs/*
   test-unit:
     needs: ["build-jar"]
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
@@ -123,7 +123,7 @@ jobs:
           path: .coverage.0
   test-integration-snowflake:
     needs: ["build-jar"]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
@@ -176,7 +176,7 @@ jobs:
           path: .coverage.1
   test-integration-spark:
     needs: ["build-jar"]
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
@@ -252,7 +252,7 @@ jobs:
           path: .coverage.2
   test-integration-databricks:
     needs: ["build-jar"]
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
@@ -305,11 +305,11 @@ jobs:
           path: .coverage.3
   test-docs:
     needs: ["build-jar"]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
-        python-version: [ "3.8.0" ]
+        python-version: ["3.8.12"]
     steps:
       - uses: actions/checkout@v3
       - uses: arduino/setup-task@v1
@@ -347,7 +347,7 @@ jobs:
           task test-docs
   validate:
     needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark", "test-integration-databricks"]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
