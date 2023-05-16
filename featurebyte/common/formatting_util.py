@@ -15,6 +15,7 @@ import pandas as pd
 import pygments
 from bson import ObjectId
 from pygments.formatters.html import HtmlFormatter
+from rich.pretty import pretty_repr
 
 
 class CodeStr(str):
@@ -48,6 +49,9 @@ class InfoDict(Dict[str, Any]):
             self.class_name = data.pop("class_name", "Unknown")
 
         super().__init__(data)
+
+    def __repr__(self) -> str:
+        return pretty_repr(dict(self), expand_all=True, indent_size=2)
 
     def _repr_html_(self) -> str:
         """
