@@ -114,7 +114,7 @@ def test_entity_creation(entity):
     )
     assert expected_msg in str(exc.value)
 
-    with mock.patch("featurebyte.api.api_object.Configurations"):
+    with mock.patch("featurebyte.api.savable_api_object.Configurations"):
         with pytest.raises(RecordCreationException):
             Entity(name="Customer", serving_names=["cust_id"]).save()
 

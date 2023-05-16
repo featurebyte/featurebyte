@@ -426,7 +426,7 @@ def test_event_table__record_creation_exception(snowflake_database_table, snowfl
     """
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
-        with patch("featurebyte.api.api_object.Configurations"):
+        with patch("featurebyte.api.savable_api_object.Configurations"):
             snowflake_database_table.create_event_table(
                 name="sf_event_table",
                 event_id_column="col_int",

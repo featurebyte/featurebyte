@@ -303,7 +303,7 @@ def test_item_table__record_creation_exception(
     """
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
-        with patch("featurebyte.api.api_object.Configurations"):
+        with patch("featurebyte.api.savable_api_object.Configurations"):
             with patch("featurebyte.api.api_object.ApiObject.get") as mock_get:
                 mock_get.return_value = snowflake_event_table
                 snowflake_database_table_item_table.create_item_table(
