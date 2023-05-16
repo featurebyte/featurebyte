@@ -33,9 +33,7 @@ from featurebyte.api.api_object import (
     PAGINATED_CALL_PAGE_SIZE,
     ApiObject,
     ConflictResolution,
-    DeletableApiObject,
     ForeignKeyMapping,
-    SavableApiObject,
 )
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
@@ -45,6 +43,7 @@ from featurebyte.api.feature_job import FeatureJobMixin, FeatureJobStatusResult
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
