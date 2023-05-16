@@ -64,7 +64,7 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
         ],
         table_cleaning_operations=None,
     )
-    assert amt_sum_30m_v1.version.to_str() == f"{get_version()}_1"
+    assert amt_sum_30m_v1.version == f"{get_version()}_1"
     assert amt_sum_30m.feature_namespace.default_feature_id == amt_sum_30m_v1.id
 
     # create a new feature list version without specifying features
@@ -79,9 +79,7 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
 
     # create a new feature list version by specifying features
     feature_list_v2 = feature_list.create_new_version(
-        features=[
-            FeatureVersionInfo(name=amt_sum_30m_v1.name, version=amt_sum_30m_v1.version.to_str())
-        ],
+        features=[FeatureVersionInfo(name=amt_sum_30m_v1.name, version=amt_sum_30m_v1.version)],
     )
     assert set(feature_list_v2.feature_ids) == set(feature_list_v1.feature_ids)
     assert feature_list_v2.version.to_str() == f"{get_version()}_2"

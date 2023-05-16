@@ -1043,7 +1043,7 @@ def test_list_features(saved_feature_list, float_feature):
             {
                 "id": [float_feature.id],
                 "name": [float_feature.name],
-                "version": [float_feature.version.to_str()],
+                "version": [float_feature.version],
                 "dtype": [float_feature.dtype],
                 "readiness": [float_feature.readiness],
                 "online_enabled": [float_feature.online_enabled],
