@@ -19,7 +19,7 @@
 ### 🧰 Bug fixes 🧰
 
 + Fixed bug in `feature.definition` so that it is consistent with the underlying query graph
-
++ Updated `pymdown-extensions` due to vuln `CVE-2023-32309`
 
 ## v0.2.2
 
