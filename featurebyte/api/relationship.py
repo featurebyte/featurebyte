@@ -63,7 +63,7 @@ class Relationship(ApiObject):
 
     # pydantic instance variable (internal use)
     internal_enabled: bool = Field(alias="enabled")
-    internal_updated_by: PydanticObjectId = Field(alias="updated_by")
+    internal_updated_by: Optional[PydanticObjectId] = Field(alias="updated_by")
 
     @property
     def enabled(self) -> bool:
@@ -81,7 +81,7 @@ class Relationship(ApiObject):
             return self.internal_enabled
 
     @property
-    def updated_by(self) -> PydanticObjectId:
+    def updated_by(self) -> Optional[PydanticObjectId]:
         """
         Who the relationship was updated by
 
