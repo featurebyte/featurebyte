@@ -14,11 +14,12 @@
 + Update feature definition by explicitly specifying `on` parameter in `join` operation
 + Remove unused statement from `feature.definition`
 + Improve error handling and messaging for Docker exceptions
++ Support `scheduler`, `worker:io`, `worker:cpu` in startup command to start different services
 
 ### 🧰 Bug fixes 🧰
 
 + Fixed bug in `feature.definition` so that it is consistent with the underlying query graph
-
++ Updated `pymdown-extensions` due to vuln `CVE-2023-32309`
 
 ## v0.2.2
 
