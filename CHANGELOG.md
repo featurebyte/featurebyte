@@ -16,6 +16,7 @@
 + Improve error handling and messaging for Docker exceptions
 + Support `scheduler`, `worker:io`, `worker:cpu` in startup command to start different services
 + Update feature's & feature list's version format from dictionary to string
++ Add `is_default` field to feature's & feature list's `list_versions` object method
 
 ### 🧰 Bug fixes 🧰
 
