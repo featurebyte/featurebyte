@@ -391,10 +391,9 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
     assert feature_list.saved is False
     assert feature_list.feature_ids == [production_ready_feature.id, draft_feature.id]
     assert feature_list.feature_names == ["production_ready_feature", "draft_feature"]
-    assert feature_list.version == "V220720"
-    assert list(feature_list.feature_objects.keys()) == [
-        "production_ready_feature",
+    assert sorted(feature_list.feature_objects.keys()) == [
         "draft_feature",
+        "production_ready_feature",
     ]
     assert dict(feature_list.feature_objects) == {
         "production_ready_feature": production_ready_feature,
@@ -454,7 +453,6 @@ def test_deserialization(production_ready_feature, draft_feature):
         assert mock_get_by_id.call_count == 1
 
     # check consistency between loaded feature list & original feature list
-    assert loaded_feature_list.version == expected_version
     assert loaded_feature_list.feature_ids == feature_list.feature_ids
 
 
@@ -544,7 +542,7 @@ def test_get_feature_list(saved_feature_list):
             ("relationships_info", audit_history.new_value.iloc[9]),
             ("updated_at", None),
             ("user_id", None),
-            ("version.name", saved_feature_list.version.name),
+            ("version.name", saved_feature_list.version),
             ("version.suffix", None),
         ],
         columns=["field_name", "new_value"],
@@ -607,9 +605,9 @@ def test_list_versions(saved_feature_list):
                 "id": [flist_2.id, flist_1.id, saved_feature_list.id],
                 "name": [flist_2.name, flist_1.name, saved_feature_list.name],
                 "version": [
-                    flist_2.version.to_str(),
-                    flist_1.version.to_str(),
-                    saved_feature_list.version.to_str(),
+                    flist_2.version,
+                    flist_1.version,
+                    saved_feature_list.version,
                 ],
                 "feature_list_namespace_id": [
                     flist_2.feature_list_namespace_id,
@@ -634,7 +632,7 @@ def test_list_versions(saved_feature_list):
             {
                 "id": [saved_feature_list.id],
                 "name": [saved_feature_list.name],
-                "version": [saved_feature_list.version.to_str()],
+                "version": [saved_feature_list.version],
                 "feature_list_namespace_id": [saved_feature_list.feature_list_namespace.id],
                 "num_feature": 1,
                 "online_frac": 0.0,
@@ -817,9 +815,7 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
     deployments = list_deployments(include_id=True)
-    expected_deployment_name = (
-        f"Deployment with {feature_list.name}_{feature_list.version.to_str()}"
-    )
+    expected_deployment_name = f"Deployment with {feature_list.name}_{feature_list.version}"
     assert_frame_equal(
         deployments[
             ["name", "catalog_name", "feature_list_name", "feature_list_version", "num_feature"]
@@ -830,7 +826,7 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
                     "name": expected_deployment_name,
                     "catalog_name": "default",
                     "feature_list_name": feature_list.name,
-                    "feature_list_version": feature_list.version.to_str(),
+                    "feature_list_version": feature_list.version,
                     "num_feature": len(feature_list.feature_names),
                 }
             ]

@@ -247,17 +247,10 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            ),
-            UniqueValuesConstraint(
-                fields=("name", "version"),
-                conflict_fields_signature={"name": ["name"], "version": ["version"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            ),
+            )
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("dtype"),
-            pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("entity_ids"),
             pymongo.operations.IndexModel("table_ids"),
             pymongo.operations.IndexModel("primary_table_ids"),
@@ -328,7 +321,15 @@ class FeatureModel(FrozenFeatureModel):
         MongoDB settings
         """
 
+        unique_constraints = FrozenFeatureModel.Settings.unique_constraints + [
+            UniqueValuesConstraint(
+                fields=("name", "version"),
+                conflict_fields_signature={"name": ["name"], "version": ["version"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            )
+        ]
         indexes = FrozenFeatureModel.Settings.indexes + [
+            pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("readiness"),
             pymongo.operations.IndexModel("online_enabled"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),

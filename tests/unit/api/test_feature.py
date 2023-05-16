@@ -1115,7 +1115,7 @@ def test_feature_deletion_failure(saved_feature):
     with pytest.raises(RecordDeletionException) as exc_info:
         saved_feature.delete()
 
-    version = feature_list.version.to_str()
+    version = feature_list.version
     expected_msg = (
         "Feature is still in use by feature list(s). Please remove the following feature list(s) first:\n"
         f"[{{'id': '{feature_list.id}',\n  'name': 'test_feature_list',\n  'version': '{version}'}}]"

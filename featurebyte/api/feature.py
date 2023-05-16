@@ -140,6 +140,12 @@ class Feature(
         Returns
         -------
         str
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("CustomerProductGroupCounts_7d")
+        >>> feature.version  # doctest: +SKIP
+        'V230323'
         """
         return cast(FeatureModel, self.cached_model).version.to_str()
 

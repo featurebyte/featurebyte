@@ -47,7 +47,7 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     feature_list = FeatureList([feature_group], name="my_special_fl")
     feature_list.save()
     assert feature_list.saved is True
-    assert feature_list.version.to_str() == get_version()
+    assert feature_list.version == get_version()
     assert feature_list.feature_list_namespace.default_feature_list_id == feature_list.id
 
     # create a new feature version
@@ -74,7 +74,7 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
         feature_group["amt_sum_2h"].id,
         feature_group["amt_sum_4h"].id,
     }
-    assert feature_list_v1.version.to_str() == f"{get_version()}_1"
+    assert feature_list_v1.version == f"{get_version()}_1"
     assert feature_list.feature_list_namespace.default_feature_list_id == feature_list_v1.id
 
     # create a new feature list version by specifying features
@@ -82,7 +82,7 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
         features=[FeatureVersionInfo(name=amt_sum_30m_v1.name, version=amt_sum_30m_v1.version)],
     )
     assert set(feature_list_v2.feature_ids) == set(feature_list_v1.feature_ids)
-    assert feature_list_v2.version.to_str() == f"{get_version()}_2"
+    assert feature_list_v2.version == f"{get_version()}_2"
     assert feature_list.feature_list_namespace.default_feature_list_id == feature_list_v2.id
     assert feature_list.is_default is False
     assert feature_list_v2.is_default is True
@@ -141,7 +141,7 @@ def test_feature_list__as_default_version(feature_group):
     assert (
         FeatureList.get(
             name=feature_list.name,
-            version=new_feature_list_version.version.to_str(),
+            version=new_feature_list_version.version,
         )
         == new_feature_list_version
     )
