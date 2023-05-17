@@ -69,6 +69,20 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         return cast(ColumnInfo, column_info)
 
     @property
+    def cleaning_operations(self) -> List[CleaningOperation]:
+        """
+        Cleaning operations applied to the column of the table.
+
+        Returns
+        -------
+        List[CleaningOperation]
+        """
+        column_clean_ops = next(
+            op for op in self.parent.cleaning_operations if op.column_name == self.name
+        )
+        return cast(List[CleaningOperation], column_clean_ops.cleaning_operations)
+
+    @property
     def feature_store(self) -> FeatureStoreModel:
         """
         Feature store used by parent frame

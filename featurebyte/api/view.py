@@ -58,7 +58,10 @@ from featurebyte.models.observation_table import ViewObservationInput
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
+from featurebyte.query_graph.node.cleaning_operation import (
+    CleaningOperation,
+    ColumnCleaningOperation,
+)
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import BaseGraphNode
@@ -92,6 +95,22 @@ class ViewColumn(Series, SampleMixin):
         if not self._parent:
             return None
         return self._parent.timestamp_column
+
+    @property
+    def cleaning_operations(self) -> Optional[List[CleaningOperation]]:
+        """
+        List of cleaning operations that were applied to this column during the view's creation.
+
+        Returns
+        -------
+        Optional[List[CleaningOperation]]
+        """
+        if not self._parent:
+            return None
+        column_clean_ops = next(
+            op for op in self.parent.cleaning_operations if op.column_name == self.name
+        )
+        return cast(List[CleaningOperation], column_clean_ops.cleaning_operations)
 
     def sample(
         self,
