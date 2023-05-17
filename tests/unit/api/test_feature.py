@@ -1562,3 +1562,13 @@ def test_list_unsaved_features(
         )
     finally:
         activate_and_get_catalog("default")
+
+
+def test_unsaved_feature_repr(
+    float_feature,
+):
+    expected_value = "Feature[FLOAT](name=sum_1d, node_name=project_3)"
+    assert repr(float_feature) == expected_value
+
+    # html representation for unsaved object should be the same as repr
+    assert float_feature._repr_html_() == expected_value
