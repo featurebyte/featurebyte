@@ -77,10 +77,10 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         -------
         List[CleaningOperation]
         """
-        column_clean_ops = next(
-            op for op in self.parent.cleaning_operations if op.column_name == self.name
-        )
-        return cast(List[CleaningOperation], column_clean_ops.cleaning_operations)
+        for column_cleaning_operations in self.parent.column_cleaning_operations:
+            if column_cleaning_operations.column_name == self.name:
+                return cast(List[CleaningOperation], column_cleaning_operations.cleaning_operations)
+        return []
 
     @property
     def feature_store(self) -> FeatureStoreModel:
