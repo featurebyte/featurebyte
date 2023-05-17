@@ -12,6 +12,7 @@
 + Support streamed records fetching for DataBricks session
 + Support GCS storage for Spark and DataBricks sessions
 + Update feature definition by explicitly specifying `on` parameter in `join` operation
++ Expose `catalog_id` property in the Entity and Relationship API objects
 + Remove unused statement from `feature.definition`
 + Improve error handling and messaging for Docker exceptions
 + Support `scheduler`, `worker:io`, `worker:cpu` in startup command to start different services
@@ -19,6 +20,7 @@
 + Implement HTML representation for API objects `.info()` result
 + Add `column_cleaning_operations` to view object
 + Add `is_default` column to feature's & feature list's `list_versions` object method output DataFrame
++ Add guardrail to make sure `SCDTable`'s `effective_timestamp_column` differs from `end_timestamp_column`
 + Add `primary_entities` to feature list's `list()` method output DataFrame
 
 ### 🧰 Bug fixes 🧰

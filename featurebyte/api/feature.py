@@ -219,6 +219,11 @@ class Feature(
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.info()  # doctest: +SKIP
         """
         return super().info(verbose)
 
@@ -680,6 +685,17 @@ class Feature(
         conflict_resolution: ConflictResolution
             "raise" will raise an error when we encounter a conflict error.
             "retrieve" will handle the conflict error by retrieving the object with the same name.
+
+        Examples
+        --------
+        >>> grocery_invoice_view = catalog.get_view("GROCERYINVOICE")
+        >>> invoice_amount_avg_60days = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
+        ...   value_column="Amount",
+        ...   method="avg",
+        ...   feature_names=["InvoiceAmountAvg_60days"],
+        ...   windows=["60d"],
+        ... )["InvoiceAmountAvg_60days"]
+        >>> invoice_amount_avg_60days.save()  # doctest: +SKIP
         """
         super().save(conflict_resolution=conflict_resolution)
 
