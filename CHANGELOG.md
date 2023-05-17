@@ -12,6 +12,7 @@
 + Support streamed records fetching for DataBricks session
 + Support GCS storage for Spark and DataBricks sessions
 + Update feature definition by explicitly specifying `on` parameter in `join` operation
++ Expose `catalog_id` property in the Entity and Relationship API objects
 + Remove unused statement from `feature.definition`
 + Improve error handling and messaging for Docker exceptions
 + Support `scheduler`, `worker:io`, `worker:cpu` in startup command to start different services
