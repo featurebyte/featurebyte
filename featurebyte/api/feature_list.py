@@ -379,6 +379,11 @@ class FeatureList(
         Returns
         -------
         FeatureJobStatusResult
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.get_feature_jobs_status()  # doctest: +SKIP
         """
         return super().get_feature_jobs_status(
             job_history_window=job_history_window, job_duration_tolerance=job_duration_tolerance
@@ -587,6 +592,14 @@ class FeatureList(
         ------
         DuplicatedRecordException
             When a record with the same key exists at the persistent data store.
+
+        Examples
+        --------
+        >>> feature_list = fb.FeatureList([
+        ...     catalog.get_feature("InvoiceCount_60days"),
+        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
+        ... ], name="feature_lists_invoice_features")
+        >>> feature_list.save()  # doctest: +SKIP
         """
         try:
             super().save(conflict_resolution=conflict_resolution)
@@ -934,10 +947,16 @@ class FeatureList(
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.list_versions()  # doctest: +SKIP
-                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at
-        0  invoice_feature_list  641d02af94ede33779acc6c8            1          0.0     False 2023-03-24 01:53:51.515
+                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at  is_default
+        0  invoice_feature_list  641d02af94ede33779acc6c8            1          0.0     False 2023-03-24 01:53:51.515        True
         """
-        return self._list(include_id=include_id, params={"name": self.name})
+        output = self._list(include_id=True, params={"name": self.name})
+        default_feature_list_id = self.feature_list_namespace.default_feature_list_id
+        output["is_default"] = output["id"] == default_feature_list_id
+        columns = output.columns
+        if not include_id:
+            columns = [column for column in columns if column != "id"]
+        return output[columns]
 
     @classmethod
     def list(

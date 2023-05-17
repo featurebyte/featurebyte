@@ -6,6 +6,7 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte import Entity
+from featurebyte.api.catalog import Catalog
 from featurebyte.api.relationship import Relationship
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
@@ -181,3 +182,12 @@ async def test_enable(persisted_relationship_info):
     # verify that relationship is now enabled
     relationship = Relationship.get_by_id(persisted_relationship_info.id)
     assert not relationship.enabled
+
+
+def test_catalog_id(persisted_relationship_info):
+    """
+    Test catalog_id
+    """
+    relationship = Relationship.get_by_id(persisted_relationship_info.id)
+    catalog = Catalog.get_active()
+    assert relationship.catalog_id == catalog.id
