@@ -638,6 +638,7 @@ def test_list_versions(saved_feature_list):
                 "online_frac": 0.0,
                 "deployed": [saved_feature_list.deployed],
                 "created_at": [saved_feature_list.created_at],
+                "is_default": [True],
             }
         ),
     )

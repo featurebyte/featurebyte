@@ -18,6 +18,7 @@
 + Update feature's & feature list's version format from dictionary to string
 + Implement HTML representation for API objects `.info()` result
 + Add `column_cleaning_operations` to view object
++ Add `is_default` column to feature's & feature list's `list_versions` object method output DataFrame
 
 ### 🧰 Bug fixes 🧰
 

@@ -357,10 +357,16 @@ class Feature(
         --------
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature.list_versions()  # doctest: +SKIP
-                name  version  dtype readiness  online_enabled             table    entities              created_at
-            0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838
+                 name  version  dtype readiness  online_enabled             table    entities              created_at  is_default
+            0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838        True
         """
-        return self._list(include_id=include_id, params={"name": self.name})
+        output = self._list(include_id=True, params={"name": self.name})
+        default_feature_id = self.feature_namespace.default_feature_id
+        output["is_default"] = output["id"] == default_feature_id
+        columns = output.columns
+        if not include_id:
+            columns = [column for column in columns if column != "id"]
+        return output[columns]
 
     def delete(self) -> None:
         """
