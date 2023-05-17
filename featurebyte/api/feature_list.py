@@ -248,7 +248,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             Whether to include id in the list
         primary_entity: Optional[Union[str, List[str]]]
             Name of entity used to filter results. If multiple entities are provided, the filtered results will
-            contain features that are associated with all the entities.
+            contain feature lists that are associated with all the entities.
         entity: Optional[str]
             Name of entity used to filter results
         table: Optional[str]
@@ -966,6 +966,7 @@ class FeatureList(
     def list(
         cls,
         include_id: Optional[bool] = False,
+        primary_entity: Optional[Union[str, List[str]]] = None,
         entity: Optional[str] = None,
         table: Optional[str] = None,
     ) -> pd.DataFrame:
@@ -976,6 +977,9 @@ class FeatureList(
         ----------
         include_id: Optional[bool]
             Whether to include id in the list
+        primary_entity: Optional[Union[str, List[str]]] = None,
+            Name of entity used to filter results. If multiple entities are provided, the filtered results will
+            contain feature lists that are associated with all the entities.
         entity: Optional[str]
             Name of entity used to filter results
         table: Optional[str]
@@ -986,7 +990,9 @@ class FeatureList(
         pd.DataFrame
             Table of feature lists
         """
-        return FeatureListNamespace.list(include_id=include_id, entity=entity, table=table)
+        return FeatureListNamespace.list(
+            include_id=include_id, primary_entity=primary_entity, entity=entity, table=table
+        )
 
     def list_features(self) -> pd.DataFrame:
         """

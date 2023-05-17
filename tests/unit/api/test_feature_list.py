@@ -995,6 +995,15 @@ def test_list_filter(saved_feature_list):
     feature_lists = FeatureList.list(table="other_data", entity="customer")
     assert feature_lists.shape[0] == 0
 
+    feature_lists = FeatureList.list(primary_entity="customer")
+    assert feature_lists.shape[0] == 1
+
+    feature_lists = FeatureList.list(primary_entity=["customer"])
+    assert feature_lists.shape[0] == 1
+
+    feature_lists = FeatureList.list(primary_entity=["customer", "other_entity"])
+    assert feature_lists.shape[0] == 0
+
 
 def test_save_feature_group(saved_feature_list):
     """Test feature group saving"""

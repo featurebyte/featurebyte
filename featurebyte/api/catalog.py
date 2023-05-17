@@ -454,6 +454,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     def list_feature_lists(
         self,
         include_id: Optional[bool] = True,
+        primary_entity: Optional[Union[str, List[str]]] = None,
         entity: Optional[str] = None,
         table: Optional[str] = None,
     ) -> pd.DataFrame:
@@ -470,6 +471,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         ----------
         include_id: Optional[bool]
             Whether to include id in the list.
+        primary_entity: Optional[Union[str, List[str]]] = None,
+            Name of entity used to filter results. If multiple entities are provided, the filtered results will
+            contain feature lists that are associated with all the entities.
         entity: Optional[str]
             Name of entity used to filter results.
         table: Optional[str]
@@ -484,7 +488,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         >>> feature_lists = catalog.list_feature_lists()
         """
-        return FeatureList.list(include_id=include_id, entity=entity, table=table)
+        return FeatureList.list(
+            include_id=include_id, primary_entity=primary_entity, entity=entity, table=table
+        )
 
     @update_and_reset_catalog
     def list_tables(
