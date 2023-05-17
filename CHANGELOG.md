@@ -24,6 +24,7 @@
 + Add `is_default` column to feature's & feature list's `list_versions` object method output DataFrame
 + Add guardrail to make sure `SCDTable`'s `effective_timestamp_column` differs from `end_timestamp_column`
 + Add `primary_entities` to feature list's `list()` method output DataFrame
++ Add `cleaning_operations` to table column object & view column object
 
 ### 🧰 Bug fixes 🧰
 

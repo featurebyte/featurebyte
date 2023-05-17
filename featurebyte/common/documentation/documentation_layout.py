@@ -225,6 +225,7 @@ def _get_table_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE_COLUMN, EXPLORE, "TableColumn.preview"]),
         DocLayoutItem([TABLE_COLUMN, EXPLORE, "TableColumn.sample"]),
         DocLayoutItem([TABLE_COLUMN, INFO, "TableColumn.name"]),
+        DocLayoutItem([TABLE_COLUMN, INFO, "TableColumn.cleaning_operations"]),
         DocLayoutItem([TABLE_COLUMN, LINEAGE, "TableColumn.preview_sql"]),
     ]
 
@@ -568,6 +569,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_datetime"]),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_numeric"]),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.name"]),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.cleaning_operations"]),
         DocLayoutItem([VIEW_COLUMN, LAGS, "ChangeViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LAGS, "EventViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.feature_store"]),

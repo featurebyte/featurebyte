@@ -58,7 +58,10 @@ from featurebyte.models.observation_table import ViewObservationInput
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
+from featurebyte.query_graph.node.cleaning_operation import (
+    CleaningOperation,
+    ColumnCleaningOperation,
+)
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import BaseGraphNode
@@ -92,6 +95,45 @@ class ViewColumn(Series, SampleMixin):
         if not self._parent:
             return None
         return self._parent.timestamp_column
+
+    @property
+    def cleaning_operations(self) -> Optional[List[CleaningOperation]]:
+        """
+        List of cleaning operations that were applied to this column during the view's creation.
+
+        Returns
+        -------
+        Optional[List[CleaningOperation]]
+            Returns None if the view column does not have parent. Otherwise, returns the list of cleaning operations.
+
+        Examples
+        --------
+        Show the list of cleaning operations of the event view amount column after updating the critical
+        data info of the event table.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(
+        ...    cleaning_operations=[
+        ...        fb.MissingValueImputation(imputed_value=0),
+        ...    ]
+        ... )
+        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view["Amount"].cleaning_operations
+        [MissingValueImputation(imputed_value=0, type=missing)]
+
+        Empty list of column cleaning operations of the event table amount column.
+
+        >>> event_table["Amount"].update_critical_data_info(cleaning_operations=[])
+        >>> event_table["Amount"].cleaning_operations
+        []
+        """
+        if not self.parent:
+            return None
+
+        for column_cleaning_operations in self.parent.column_cleaning_operations:
+            if column_cleaning_operations.column_name == self.name:
+                return cast(List[CleaningOperation], column_cleaning_operations.cleaning_operations)
+        return []
 
     def sample(
         self,
