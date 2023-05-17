@@ -259,6 +259,27 @@ def test_create_scd_table__retrieval_exception(snowflake_database_table_scd_tabl
             )
 
 
+def test_create_scd_table__effective_timestamp_column_same_as_end_timestamp_column(
+    snowflake_database_table_scd_table,
+):
+    """
+    Test SCDTable creation failure due to effective_timestamp_column same as end_timestamp_column
+    """
+    # test when effective_timestamp_column is same as end_timestamp_column
+    with pytest.raises(ValueError) as exc:
+        snowflake_database_table_scd_table.create_scd_table(
+            name="sf_scd_table",
+            natural_key_column="col_text",
+            surrogate_key_column="col_int",
+            effective_timestamp_column="effective_timestamp",
+            end_timestamp_column="effective_timestamp",
+            current_flag_column="is_active",
+            record_creation_timestamp_column="created_at",
+        )
+    expected_error_message = "effective_timestamp_column and end_timestamp_column cannot be same"
+    assert expected_error_message in str(exc.value)
+
+
 def assert_info_helper(scd_table_info):
     """
     Helper function to assert info from SCD table.

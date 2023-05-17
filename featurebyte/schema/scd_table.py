@@ -3,9 +3,9 @@ SCDTable API payload schema
 """
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -25,6 +25,21 @@ class SCDTableCreate(TableCreate):
     effective_timestamp_column: StrictStr
     end_timestamp_column: Optional[StrictStr]
     current_flag_column: Optional[StrictStr]
+
+    @root_validator
+    @classmethod
+    def _validate_scd_table_settings(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validate SCDTable settings
+        """
+        effective_timestamp_column = values.get("effective_timestamp_column")
+        end_timestamp_column = values.get("end_timestamp_column")
+        if effective_timestamp_column and end_timestamp_column:
+            if effective_timestamp_column == end_timestamp_column:
+                raise ValueError(
+                    "effective_timestamp_column and end_timestamp_column cannot be same"
+                )
+        return values
 
 
 class SCDTableList(PaginationMixin):
