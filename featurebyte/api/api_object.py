@@ -121,22 +121,18 @@ class ApiObject(FeatureByteBaseDocumentModel):
         -------
         str
         """
-        info_repr = ""
         try:
-            info_repr = InfoDict(self.info()).to_html()
+            return InfoDict(self.info()).to_html()
         except (RecordCreationException, RecordRetrievalException):
             # object has not been saved yet
-            pass
-
-        return info_repr
+            return repr(self)
 
     def __repr__(self) -> str:
-        info_repr = ""
         try:
             info_repr = repr(self.info())
         except (RecordCreationException, RecordRetrievalException):
             # object has not been saved yet
-            pass
+            info_repr = super().__repr__()
 
         return construct_repr_string(self, info_repr)
 

@@ -248,6 +248,7 @@ def _get_entity_layout() -> List[DocLayoutItem]:
         DocLayoutItem([ENTITY, INFO, "Entity.serving_names"]),
         DocLayoutItem([ENTITY, INFO, "Entity.updated_at"]),
         DocLayoutItem([ENTITY, LINEAGE, "Entity.id"]),
+        DocLayoutItem([ENTITY, LINEAGE, "Entity.catalog_id"]),
         DocLayoutItem([ENTITY, MANAGE, "Entity.update_name"]),
     ]
 
@@ -453,6 +454,7 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.name"]),
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.updated_at"]),
         DocLayoutItem([RELATIONSHIP, LINEAGE, "Relationship.id"]),
+        DocLayoutItem([RELATIONSHIP, LINEAGE, "Relationship.catalog_id"]),
         DocLayoutItem([RELATIONSHIP, MANAGE, "Relationship.enable"]),
         DocLayoutItem([RELATIONSHIP, MANAGE, "Relationship.disable"]),
     ]

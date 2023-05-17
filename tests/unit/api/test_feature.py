@@ -958,6 +958,7 @@ def test_list_versions(saved_feature):
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
                 "created_at": [saved_feature.created_at],
+                "is_default": [True],
             }
         ),
     )
@@ -1562,3 +1563,13 @@ def test_list_unsaved_features(
         )
     finally:
         activate_and_get_catalog("default")
+
+
+def test_unsaved_feature_repr(
+    float_feature,
+):
+    expected_value = f"Feature[FLOAT](name=sum_1d, node_name={float_feature.node_name})"
+    assert repr(float_feature) == expected_value
+
+    # html representation for unsaved object should be the same as repr
+    assert float_feature._repr_html_() == expected_value

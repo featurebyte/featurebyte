@@ -219,6 +219,11 @@ class Feature(
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.info()  # doctest: +SKIP
         """
         return super().info(verbose)
 
@@ -357,10 +362,16 @@ class Feature(
         --------
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature.list_versions()  # doctest: +SKIP
-                name  version  dtype readiness  online_enabled             table    entities              created_at
-            0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838
+                 name  version  dtype readiness  online_enabled             table    entities              created_at  is_default
+            0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838        True
         """
-        return self._list(include_id=include_id, params={"name": self.name})
+        output = self._list(include_id=True, params={"name": self.name})
+        default_feature_id = self.feature_namespace.default_feature_id
+        output["is_default"] = output["id"] == default_feature_id
+        columns = output.columns
+        if not include_id:
+            columns = [column for column in columns if column != "id"]
+        return output[columns]
 
     def delete(self) -> None:
         """
@@ -674,6 +685,17 @@ class Feature(
         conflict_resolution: ConflictResolution
             "raise" will raise an error when we encounter a conflict error.
             "retrieve" will handle the conflict error by retrieving the object with the same name.
+
+        Examples
+        --------
+        >>> grocery_invoice_view = catalog.get_view("GROCERYINVOICE")
+        >>> invoice_amount_avg_60days = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
+        ...   value_column="Amount",
+        ...   method="avg",
+        ...   feature_names=["InvoiceAmountAvg_60days"],
+        ...   windows=["60d"],
+        ... )["InvoiceAmountAvg_60days"]
+        >>> invoice_amount_avg_60days.save()  # doctest: +SKIP
         """
         super().save(conflict_resolution=conflict_resolution)
 
