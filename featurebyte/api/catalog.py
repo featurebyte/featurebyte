@@ -11,7 +11,6 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
@@ -28,6 +27,7 @@ from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
+from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.table import Table
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc

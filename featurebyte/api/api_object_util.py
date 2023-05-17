@@ -1,12 +1,10 @@
 """
 API Object Util
 """
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import ctypes
 import threading
-
-from rich.pretty import pretty_repr
 
 from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException
@@ -82,15 +80,6 @@ class ProgressThread(threading.Thread):
             if res > 1:
                 ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
                 logger.warning("Exception raise failure")
-
-
-class PrettyDict(Dict[str, Any]):
-    """
-    Dict with prettified representation
-    """
-
-    def __repr__(self) -> str:
-        return pretty_repr(dict(self), expand_all=True, indent_size=2)
 
 
 class NameAttributeUpdatableMixin:

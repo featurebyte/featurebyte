@@ -127,6 +127,14 @@ class BaseViewTestSuite:
             }
         ]
         assert metadata.table_id == data_under_test_with_imputation.id
+        assert (
+            view.column_cleaning_operations
+            == data_under_test_with_imputation.column_cleaning_operations
+        )
+
+        # check sub-setting view without including the column with column cleaning operations
+        cols = [col for col in view.columns if col != self.col]
+        assert view[cols].column_cleaning_operations == []
 
         # check that cleaning graph is created
         nested_graph = view.node.parameters.graph

@@ -58,6 +58,7 @@ from featurebyte.models.observation_table import ViewObservationInput
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import BaseGraphNode
@@ -617,6 +618,29 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         list[str]
         """
         return super().columns
+
+    @property
+    def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+        """
+        List the cleaning operations associated with each column in the view during view creation.
+
+        Returns
+        -------
+        List[ColumnCleaningOperation]
+            List of column cleaning operations
+
+        See Also
+        --------
+        - [Table.columns_info](/reference/featurebyte.api.base_table.TableApiObject.columns_info)
+        - [TableColumn.update_critical_data_info](/reference/featurebyte.api.base_table.TableColumn.update_critical_data_info)
+        """
+        return [
+            ColumnCleaningOperation(
+                column_name=col.name, cleaning_operations=col.critical_data_info.cleaning_operations
+            )
+            for col in self.columns_info
+            if col.critical_data_info is not None and col.critical_data_info.cleaning_operations
+        ]
 
     @typechecked
     def preview_sql(self, limit: int = 10, **kwargs: Any) -> str:

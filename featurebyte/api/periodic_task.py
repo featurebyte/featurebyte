@@ -3,7 +3,7 @@ PeriodicTask class
 """
 from __future__ import annotations
 
-from featurebyte.api.api_object import SavableApiObject
+from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.periodic_task import PeriodicTask as PeriodicTaskModel
 

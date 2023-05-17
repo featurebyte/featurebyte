@@ -15,8 +15,9 @@ from pandas import DataFrame
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, ForeignKeyMapping, SavableApiObject
+from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.entity import Entity
+from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.source_table import AbstractTableData, SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
