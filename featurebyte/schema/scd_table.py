@@ -29,9 +29,6 @@ class SCDTableCreate(TableCreate):
     @root_validator
     @classmethod
     def _validate_scd_table_settings(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Validate SCDTable settings
-        """
         effective_timestamp_column = values.get("effective_timestamp_column")
         end_timestamp_column = values.get("end_timestamp_column")
         if effective_timestamp_column and end_timestamp_column:
