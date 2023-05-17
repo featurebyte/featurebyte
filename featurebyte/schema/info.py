@@ -32,7 +32,7 @@ from featurebyte.schema.feature import (
     TableFeatureJobSettingComparison,
     VersionComparison,
 )
-from featurebyte.schema.feature_job_setting_analysis import AnalysisOptions, AnalysisParameters
+from featurebyte.schema.feature_job_setting_analysis import AnalysisOptions
 from featurebyte.schema.feature_list import ProductionReadyFractionComparison
 
 
@@ -335,7 +335,6 @@ class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
     created_at: datetime
     event_table_name: str
     analysis_options: AnalysisOptions
-    analysis_parameters: AnalysisParameters
     recommendation: FeatureJobSetting
     catalog_name: str
 
