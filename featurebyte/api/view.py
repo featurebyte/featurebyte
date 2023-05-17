@@ -105,6 +105,12 @@ class ViewColumn(Series, SampleMixin):
         -------
         Optional[List[CleaningOperation]]
             Returns None if the view column does not have parent. Otherwise, returns the list of cleaning operations.
+
+        Examples
+        --------
+        >>> view = catalog.get_view("GROCERYPRODUCT")
+        >>> view["ProductGroup"]["GroceryProductGuid"].cleaning_operations
+        []
         """
         if not self._parent:
             return None

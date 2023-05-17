@@ -76,6 +76,13 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         Returns
         -------
         List[CleaningOperation]
+            List of cleaning operations applied to the column of the table.
+
+        Examples
+        --------
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["GroceryInvoiceGuid"].cleaning_operations
+        []
         """
         for column_cleaning_operations in self.parent.column_cleaning_operations:
             if column_cleaning_operations.column_name == self.name:
