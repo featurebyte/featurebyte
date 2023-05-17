@@ -109,7 +109,7 @@ class ViewColumn(Series, SampleMixin):
         Examples
         --------
         >>> view = catalog.get_view("GROCERYPRODUCT")
-        >>> view["ProductGroup"]["GroceryProductGuid"].cleaning_operations
+        >>> view["ProductGroup"].cleaning_operations
         []
         """
         if not self._parent:
