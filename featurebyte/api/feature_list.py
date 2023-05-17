@@ -379,6 +379,11 @@ class FeatureList(
         Returns
         -------
         FeatureJobStatusResult
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.get_feature_jobs_status()  # doctest: +SKIP
         """
         return super().get_feature_jobs_status(
             job_history_window=job_history_window, job_duration_tolerance=job_duration_tolerance
@@ -587,6 +592,14 @@ class FeatureList(
         ------
         DuplicatedRecordException
             When a record with the same key exists at the persistent data store.
+
+        Examples
+        --------
+        >>> feature_list = fb.FeatureList([
+        ...     catalog.get_feature("InvoiceCount_60days"),
+        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
+        ... ], name="feature_lists_invoice_features")
+        >>> feature_list.save()  # doctest: +SKIP
         """
         try:
             super().save(conflict_resolution=conflict_resolution)
