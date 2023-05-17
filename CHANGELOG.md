@@ -18,6 +18,7 @@
 + Update feature's & feature list's version format from dictionary to string
 + Implement HTML representation for API objects `.info()` result
 + Add `column_cleaning_operations` to view object
++ Add guardrail to make sure `SCDTable`'s `effective_timestamp_column` differs from `end_timestamp_column`
 
 ### 🧰 Bug fixes 🧰
 
