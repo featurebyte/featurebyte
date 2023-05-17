@@ -49,6 +49,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import (
+    convert_to_list_of_strings,
     dataframe_from_arrow_stream,
     dataframe_to_arrow_bytes,
     enforce_observation_set_row_order,
@@ -79,7 +80,10 @@ from featurebyte.schema.feature_list import (
     FeatureListUpdate,
     FeatureVersionInfo,
 )
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
+from featurebyte.schema.feature_list_namespace import (
+    FeatureListNamespaceModelResponse,
+    FeatureListNamespaceUpdate,
+)
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 
 if TYPE_CHECKING:
@@ -111,8 +115,8 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     _route = "/feature_list_namespace"
     _update_schema_class = FeatureListNamespaceUpdate
 
-    _list_schema = FeatureListNamespaceModel
-    _get_schema = FeatureListNamespaceModel
+    _list_schema = FeatureListNamespaceModelResponse
+    _get_schema = FeatureListNamespaceModelResponse
     _list_fields = [
         "name",
         "num_feature",
@@ -122,11 +126,13 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         "online_frac",
         "tables",
         "entities",
+        "primary_entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
         ForeignKeyMapping("table_ids", TableApiObject, "tables"),
+        ForeignKeyMapping("primary_entity_ids", Entity, "primary_entities"),
     ]
 
     @property
@@ -229,6 +235,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     def list(
         cls,
         include_id: Optional[bool] = False,
+        primary_entity: Optional[Union[str, List[str]]] = None,
         entity: Optional[str] = None,
         table: Optional[str] = None,
     ) -> pd.DataFrame:
@@ -239,6 +246,9 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         ----------
         include_id: Optional[bool]
             Whether to include id in the list
+        primary_entity: Optional[Union[str, List[str]]]
+            Name of entity used to filter results. If multiple entities are provided, the filtered results will
+            contain features that are associated with all the entities.
         entity: Optional[str]
             Name of entity used to filter results
         table: Optional[str]
@@ -250,6 +260,13 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             Table of feature lists
         """
         feature_lists = super().list(include_id=include_id)
+        target_entities = convert_to_list_of_strings(primary_entity)
+        if target_entities:
+            feature_lists = feature_lists[
+                feature_lists.primary_entities.apply(
+                    lambda primary_entities: set(target_entities).issubset(primary_entities)
+                )
+            ]
         if entity:
             feature_lists = feature_lists[
                 feature_lists.entities.apply(lambda entities: entity in entities)

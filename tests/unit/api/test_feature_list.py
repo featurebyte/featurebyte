@@ -578,6 +578,7 @@ def test_list(saved_feature_list):
                 "online_frac": 0.0,
                 "tables": [["sf_event_table"]],
                 "entities": [["customer"]],
+                "primary_entities": [["customer"]],
                 "created_at": [saved_feature_list_namespace.created_at],
             }
         ),
