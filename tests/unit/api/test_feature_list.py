@@ -578,6 +578,7 @@ def test_list(saved_feature_list):
                 "online_frac": 0.0,
                 "tables": [["sf_event_table"]],
                 "entities": [["customer"]],
+                "primary_entities": [["customer"]],
                 "created_at": [saved_feature_list_namespace.created_at],
             }
         ),
@@ -992,6 +993,15 @@ def test_list_filter(saved_feature_list):
     assert feature_lists.shape[0] == 0
 
     feature_lists = FeatureList.list(table="other_data", entity="customer")
+    assert feature_lists.shape[0] == 0
+
+    feature_lists = FeatureList.list(primary_entity="customer")
+    assert feature_lists.shape[0] == 1
+
+    feature_lists = FeatureList.list(primary_entity=["customer"])
+    assert feature_lists.shape[0] == 1
+
+    feature_lists = FeatureList.list(primary_entity=["customer", "other_entity"])
     assert feature_lists.shape[0] == 0
 
 
