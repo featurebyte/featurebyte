@@ -958,6 +958,7 @@ def test_list_versions(saved_feature):
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
                 "created_at": [saved_feature.created_at],
+                "is_default": [True],
             }
         ),
     )
