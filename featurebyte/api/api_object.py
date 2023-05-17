@@ -128,7 +128,6 @@ class ApiObject(FeatureByteBaseDocumentModel):
             return repr(self)
 
     def __repr__(self) -> str:
-        info_repr = ""
         try:
             info_repr = repr(self.info())
         except (RecordCreationException, RecordRetrievalException):

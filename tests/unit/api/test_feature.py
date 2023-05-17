@@ -1567,7 +1567,7 @@ def test_list_unsaved_features(
 def test_unsaved_feature_repr(
     float_feature,
 ):
-    expected_value = "Feature[FLOAT](name=sum_1d, node_name=project_3)"
+    expected_value = f"Feature[FLOAT](name=sum_1d, node_name={float_feature.node_name})"
     assert repr(float_feature) == expected_value
 
     # html representation for unsaved object should be the same as repr
