@@ -100,7 +100,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         """Save entity"""
         payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
         response = api_client.post(
-            f"/entity", json=payload, headers={"active-catalog-id": str(catalog_id)}
+            "/entity", json=payload, headers={"active-catalog-id": str(catalog_id)}
         )
         assert response.status_code == HTTPStatus.CREATED
 

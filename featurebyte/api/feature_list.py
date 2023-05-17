@@ -65,7 +65,6 @@ from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListModel,
-    FeatureListNamespaceModel,
     FeatureListStatus,
     FeatureReadinessDistribution,
     FrozenFeatureListModel,

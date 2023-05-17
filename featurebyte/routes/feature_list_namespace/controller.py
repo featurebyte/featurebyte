@@ -67,9 +67,6 @@ class FeatureListNamespaceController(
         document_id: ObjectId,
         exception_detail: str | None = None,
     ) -> Document:
-        """
-        Get FeatureListNamespace stored at persistent (Git) storage
-        """
         document = await self.service.get_document(
             document_id=document_id, exception_detail=exception_detail
         )
