@@ -20,6 +20,7 @@
 + Implement HTML representation for API objects `.info()` result
 + Add `column_cleaning_operations` to view object
 + Add `is_default` column to feature's & feature list's `list_versions` object method output DataFrame
++ Add guardrail to make sure `SCDTable`'s `effective_timestamp_column` differs from `end_timestamp_column`
 
 ### 🧰 Bug fixes 🧰
 
