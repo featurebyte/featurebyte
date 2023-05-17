@@ -205,13 +205,14 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        tables = ["a", "b", "c"]
+        tables = ["a", "b", "c", "__d", "__e", "__f"]
         mock_get_session.return_value.list_tables.return_value = tables
         response = test_api_client.post(
             f"{self.base_route}/table?database_name=x&schema_name=y", json=feature_store
         )
         assert response.status_code == HTTPStatus.OK
-        assert response.json() == tables
+        # tables with names that has a "__" prefix should be excluded
+        assert response.json() == tables[:3]
 
     def test_list_columns_422(self, test_api_client_persistent, create_success_response):
         """
