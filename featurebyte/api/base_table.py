@@ -80,8 +80,22 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
 
         Examples
         --------
+        Show the list of cleaning operations of the event table amount column after updating the critical
+        data info.
+
         >>> event_table = catalog.get_table("GROCERYINVOICE")
-        >>> event_table["GroceryInvoiceGuid"].cleaning_operations
+        >>> event_table["Amount"].update_critical_data_info(
+        ...    cleaning_operations=[
+        ...        fb.MissingValueImputation(imputed_value=0),
+        ...    ]
+        ... )
+        >>> event_table["Amount"].cleaning_operations
+        [MissingValueImputation(imputed_value=0, type=missing)]
+
+        Empty list of column cleaning operations of the event table amount column.
+
+        >>> event_table["Amount"].update_critical_data_info(cleaning_operations=[])
+        >>> event_table["Amount"].cleaning_operations
         []
         """
         for column_cleaning_operations in self.parent.column_cleaning_operations:

@@ -108,11 +108,26 @@ class ViewColumn(Series, SampleMixin):
 
         Examples
         --------
-        >>> view = catalog.get_view("GROCERYPRODUCT")
-        >>> view["ProductGroup"].cleaning_operations
+        Show the list of cleaning operations of the event view amount column after updating the critical
+        data info of the event table.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(
+        ...    cleaning_operations=[
+        ...        fb.MissingValueImputation(imputed_value=0),
+        ...    ]
+        ... )
+        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view["Amount"].cleaning_operations
+        [MissingValueImputation(imputed_value=0, type=missing)]
+
+        Empty list of column cleaning operations of the event table amount column.
+
+        >>> event_table["Amount"].update_critical_data_info(cleaning_operations=[])
+        >>> event_table["Amount"].cleaning_operations
         []
         """
-        if not self._parent:
+        if not self.parent:
             return None
 
         for column_cleaning_operations in self.parent.column_cleaning_operations:
