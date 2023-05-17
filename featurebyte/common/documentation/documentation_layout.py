@@ -499,6 +499,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, INFO, "SCDView.surrogate_key_column"]),
         DocLayoutItem([VIEW, INFO, "View.columns"]),
         DocLayoutItem([VIEW, INFO, "View.columns_info"]),
+        DocLayoutItem([VIEW, INFO, "View.column_cleaning_operations"]),
         DocLayoutItem([VIEW, INFO, "View.dtypes"]),
         DocLayoutItem([VIEW, INFO, "View.entity_columns"]),
         DocLayoutItem([VIEW, INFO, "View.timestamp_column"]),
