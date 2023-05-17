@@ -1,9 +1,41 @@
 import os
 import sys
+from enum import Enum
 
 import yaml
 
-CHANGE_TYPES = ['breaking', 'deprecation', 'enhancement', 'bug_fix']
+
+class ChangeTypes(Enum):
+    BREAKING = 'breaking'
+    DEPRECATION = 'deprecation'
+    ENHANCEMENT = 'enhancement'
+    BUG_FIX = 'bug_fix'
+
+    def __str__(self):
+        return self.value
+
+    def __header__(self):
+        if self == ChangeTypes.BREAKING:
+            return "### 🛑 Breaking Changes"
+        elif self == ChangeTypes.DEPRECATION:
+            return "### ⚠️ Deprecations"
+        elif self == ChangeTypes.ENHANCEMENT:
+            return "### 💡 Enhancements"
+        elif self == ChangeTypes.BUG_FIX:
+            return "### 🐛 Bug Fixes"
+
+    @staticmethod
+    def from_str(s: str):
+        if s == 'breaking':
+            return ChangeTypes.BREAKING
+        elif s == 'deprecation':
+            return ChangeTypes.DEPRECATION
+        elif s == 'enhancement':
+            return ChangeTypes.ENHANCEMENT
+        elif s == 'bug_fix':
+            return ChangeTypes.BUG_FIX
+        else:
+            raise ValueError("Invalid change type: " + s)
 
 
 class Changelog:
@@ -14,7 +46,6 @@ class Changelog:
         # Validate changelog file
         self.__validate_keys(clog)
         self.__validate_types(clog)
-        self.__validate_change_type(clog)
 
         # Set changelog attributes
         self.change_type = clog["change_type"]
@@ -46,6 +77,10 @@ class Changelog:
     def __validate_types(clog: dict) -> None:
         if not isinstance(clog["change_type"], str):
             raise TypeError("Change type must be a string")
+
+        # Convert change type to enum
+        clog["change_type"] = ChangeTypes.from_str(clog["change_type"])
+
         if not isinstance(clog["component"], str):
             raise TypeError("Component must be a string")
         if not isinstance(clog["issues"], list):
@@ -56,11 +91,6 @@ class Changelog:
         if not isinstance(clog["subtext"], str):
             print("[WARN] subtext is not a string, converting to empty str")
             clog["subtext"] = ""
-
-    @staticmethod
-    def __validate_change_type(clog: dict) -> None:
-        if clog["change_type"] not in CHANGE_TYPES:
-            raise ValueError("Invalid change type: " + clog["change_type"])
 
 
 def get_script_path() -> str:
@@ -97,8 +127,9 @@ def get_changelog_files() -> list[str]:
     return list(map(lambda f: os.path.join(get_script_path(), f), files))
 
 
-def render(clogs: list[Changelog]) -> str:
-    pass
+class ChangelogRenderer:
+    def __init__(self, changelogs: list[Changelog]):
+        self.changelogs = changelogs
 
 
 if __name__ == '__main__':
