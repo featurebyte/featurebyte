@@ -354,6 +354,11 @@ class FeatureJobMixin(ApiObject):
         ------
         RecordRetrievalException
             Preview request failed
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.get_feature_jobs_status()  # doctest: +SKIP
         """
         client = Configurations().get_client()
         response = client.get(

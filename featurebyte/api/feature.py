@@ -200,6 +200,11 @@ class Feature(
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.info()  # doctest: +SKIP
         """
         return super().info(verbose)
 

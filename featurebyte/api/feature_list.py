@@ -368,6 +368,11 @@ class FeatureList(
         Returns
         -------
         FeatureJobStatusResult
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.get_feature_jobs_status()  # doctest: +SKIP
         """
         return super().get_feature_jobs_status(
             job_history_window=job_history_window, job_duration_tolerance=job_duration_tolerance

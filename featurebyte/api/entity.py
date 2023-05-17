@@ -344,5 +344,10 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> entity = catalog.get_entity("grocerycustomer")
+        >>> entity.info()  # doctest: +SKIP
         """
         return super().info(verbose)
