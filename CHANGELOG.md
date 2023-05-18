@@ -7,11 +7,6 @@
 ### 🛑 Breaking changes 🛑
 ### 🚩 Deprecations 🚩
 ### 💡 Enhancements 💡
-
-+ Add guardrail to make sure `SCDTable`'s `effective_timestamp_column` differs from `end_timestamp_column`
-+ Add `primary_entities` to feature list's `list()` method output DataFrame
-+ Add `cleaning_operations` to table column object & view column object
-
 ### 🧰 Bug fixes 🧰
 
 + Fixed bug in `feature.definition` so that it is consistent with the underlying query graph
