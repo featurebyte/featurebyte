@@ -21,6 +21,10 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Ensure no changes to the CHANGELOG
         run: |
           if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./CHANGELOG.md) ]]; then
@@ -31,5 +35,20 @@ jobs:
           else
             echo "The CHANGELOG.md was not modified."
           fi
-      - name: Ensure addition on 1 change entry
+      - name: Ensure addition of at least 1 changelog entry
         run: |
+          task changelog-pr-files
+
+      - name: Validate changelog entries
+        run: |
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          task changelog-pr | tee -a $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            **Changelog entries**
+            ```
+            ${{ env.CHANGELOG }}
+            ```

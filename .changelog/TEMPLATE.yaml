@@ -1,3 +1,10 @@
+# This template file is used to generate changelog entries on release
+# Check the generated entry in your PR with the task command
+
+# To view the generated changelog, run the following command:
+# task changelog-pr
+
+# --- TEMPLATE --- #
 # One of 'breaking', 'deprecation', 'enhancement', 'bug_fix'
 change_type: enhancement
 

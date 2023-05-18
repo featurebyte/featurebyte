@@ -109,14 +109,12 @@ class Changelog:
             raise TypeError("Component must be a single word")
 
         if not isinstance(clog["issues"], list):
-            print("[WARN] issues is not a list, converting to empty list")
             clog["issues"] = []
 
         if not isinstance(clog["note"], str):
             raise TypeError("Note must be a string")
 
         if not isinstance(clog["subtext"], str):
-            print("[WARN] subtext is not a string, converting to empty str")
             clog["subtext"] = ""
 
 
@@ -188,10 +186,15 @@ if __name__ == "__main__":
 
     files = get_changelog_files(args)
 
+    if len(files) == 0:
+        print("No changelog files found")
+        sys.exit(1)
+
     if file_mode:
         print("Changelog files:")
         for file in files:
             print(" + " + file)
+
     else:
         clogs = list(map(lambda f: Changelog(f), files))
         renderer = ChangelogRenderer(clogs)
