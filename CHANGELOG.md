@@ -8,7 +8,6 @@
 ### 🚩 Deprecations 🚩
 ### 💡 Enhancements 💡
 
-+ Support overriding default log level using environment variable `LOG_LEVEL`
 + Support streamed records fetching for DataBricks session
 + Support GCS storage for Spark and DataBricks sessions
 + Update feature definition by explicitly specifying `on` parameter in `join` operation
