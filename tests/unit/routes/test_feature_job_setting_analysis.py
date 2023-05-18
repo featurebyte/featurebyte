@@ -327,3 +327,42 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             "catalog_name": "default",
         }
         assert response_dict.items() == expected_info_response.items()
+
+    @pytest.mark.asyncio
+    async def test_list_records_with_warehouse_info(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test retrieve info"""
+        test_api_client, _ = test_api_client_persistent
+        _ = create_success_response
+        response = test_api_client.get(self.base_route)
+        assert response.status_code == HTTPStatus.OK, response.text
+
+        wh_record_fields = [
+            "job_frequency",
+            "job_interval",
+            "job_time_modulo_frequency",
+            "jobs_count",
+            "missing_jobs_count",
+        ]
+        warehouse_info = response.json()["data"][0]["stats_on_wh_jobs"]
+        warehouse_record = {field: warehouse_info[field] for field in wh_record_fields}
+
+        expected_warehouse_record = {
+            "job_frequency": {"best_estimate": 180, "confidence": "high"},
+            "job_interval": {
+                "avg": 180.16713693942486,
+                "max": 541.0,
+                "median": 180.0,
+                "min": 128.0,
+            },
+            "job_time_modulo_frequency": {
+                "ends": 55,
+                "ends_wo_late": 5,
+                "job_at_end_of_cycle": False,
+                "starts": 2,
+            },
+            "jobs_count": 3354,
+            "missing_jobs_count": 5,
+        }
+        assert warehouse_record == expected_warehouse_record
