@@ -9,7 +9,6 @@
 ### 💡 Enhancements 💡
 ### 🧰 Bug fixes 🧰
 
-+ Updated `pymdown-extensions` due to vuln `CVE-2023-32309`
 + Fixed bug that was causing an error when retrieving a `Relationship` with no `updated_by` set
 
 ## v0.2.2
