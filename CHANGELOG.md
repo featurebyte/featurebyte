@@ -2,11 +2,11 @@
 
 ## v0.2.2
 
-### 💡 Enhancements 💡
+### 💡 Enhancements
 
 + Update healthcare demo dataset to include timezone columns
 
-### 🧰 Bug fixes 🧰
+### 🐛 Bug Fixes
 
 + Drop a materialized table only if it exists when cleaning up on error
 + Added `dependencies` workflow to repo to check for dependency changes in PRs
@@ -14,13 +14,13 @@
 
 ## v0.2.1
 
-### 🧰 Bug fixes 🧰
+### 🐛 Bug Fixes
 
 * Removed additional dependencies specified in featurebyte client
 
 
 ## v0.2.0
 
-### 🛑 Breaking changes 🛑
+### 🛑 Breaking changes
 
 + `featurebyte` is now available for early access
