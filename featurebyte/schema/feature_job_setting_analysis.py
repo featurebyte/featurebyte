@@ -76,6 +76,49 @@ class FeatureJobSetting(FeatureByteBaseModel):
     feature_cutoff_modulo_frequency: int
 
 
+class FeatureJobSettingAnalysisWHJobFrequency(FeatureByteBaseModel):
+    """
+    FeatureJobSettingAnalysisWHJobFrequency Schema
+    """
+
+    best_estimate: int
+    confidence: str
+
+
+class FeatureJobSettingAnalysisWHJobInterval(FeatureByteBaseModel):
+    """
+    FeatureJobSettingAnalysisWHJobInterval Schema
+    """
+
+    avg: float
+    median: float
+    min: float
+    max: float
+
+
+class FeatureJobSettingAnalysisWHJobTimeModuloFrequency(FeatureByteBaseModel):
+    """
+    FeatureJobSettingAnalysisWHJobTimeModuloFrequency Schema
+    """
+
+    starts: int
+    ends: int
+    ends_wo_late: int
+    job_at_end_of_cycle: bool
+
+
+class FeatureJobSettingAnalysisWarehouseRecord(FeatureByteBaseDocumentModel):
+    """
+    FeatureJobSettingAnalysis persistent record with warehouse jobs info
+    """
+
+    job_frequency: FeatureJobSettingAnalysisWHJobFrequency
+    job_interval: FeatureJobSettingAnalysisWHJobInterval
+    job_time_modulo_frequency: FeatureJobSettingAnalysisWHJobTimeModuloFrequency
+    jobs_count: int
+    missing_jobs_count: int
+
+
 class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
     """
     FeatureJobSettingAnalysis persistent record without report
@@ -84,6 +127,7 @@ class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
     event_table_id: PydanticObjectId
     analysis_options: AnalysisOptions
     recommended_feature_job_setting: FeatureJobSetting
+    stats_on_wh_jobs: FeatureJobSettingAnalysisWarehouseRecord
 
     @root_validator(pre=True)
     @classmethod
@@ -92,6 +136,11 @@ class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
             values["recommended_feature_job_setting"] = values["analysis_result"][
                 "recommended_feature_job_setting"
             ]
+
+        # expose statistics on warehouse jobs
+        if "stats_on_wh_jobs" not in values:
+            values["stats_on_wh_jobs"] = values["analysis_result"]["stats_on_wh_jobs"]
+
         return values
 
 
