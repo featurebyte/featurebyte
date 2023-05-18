@@ -19,8 +19,8 @@ class ChangeTypes(Enum):
     def all():
         return [
             ChangeTypes.BREAKING,
-            ChangeTypes.DEPRECATION,
             ChangeTypes.ENHANCEMENT,
+            ChangeTypes.DEPRECATION,
             ChangeTypes.BUG_FIX,
         ]
 
