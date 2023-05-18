@@ -370,3 +370,24 @@ tasks:
     dir: docker/
     cmds:
       - docker buildx build --platform linux/amd64,linux/arm64 -t featurebyte/mongo:latest -t featurebyte/mongo:6 -f mongo.Dockerfile . --push
+
+  changelog:
+    desc: "Generate all changelog entries in .changelog"
+    cmds:
+      - python .changelog/changelog-gen.py
+
+  changelog-pr:
+    desc: "Generate changelog for PR"
+    vars:
+      clogs:
+        sh: git diff origin/main\:./ --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
+    cmds:
+      - python .changelog/changelog-gen.py {{.clogs}}
+
+  changelog-pr-files:
+    desc: "View changelog files in pr"
+    vars:
+      clogs:
+        sh: git diff origin/main\:./ --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
+    cmds:
+      - python .changelog/changelog-gen.py --file-mode {{.clogs}}

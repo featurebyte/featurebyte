@@ -585,6 +585,7 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
         deployed=False,
         serving_endpoint=None,
         catalog_name="default",
+        default_feature_list_id=feature_list_namespace.default_feature_list_id,
     )
     assert info == expected_info
 
