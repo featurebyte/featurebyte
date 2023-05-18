@@ -380,7 +380,7 @@ tasks:
     desc: "Generate changelog for PR"
     vars:
       clogs:
-        sh: git diff main\:./ --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
+        sh: git diff origin/main\:./ --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
     cmds:
       - python .changelog/changelog-gen.py {{.clogs}}
 
@@ -388,6 +388,6 @@ tasks:
     desc: "View changelog files in pr"
     vars:
       clogs:
-        sh: git diff main...HEAD --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
+        sh: git diff origin/main\:./ --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
     cmds:
       - python .changelog/changelog-gen.py --file-mode {{.clogs}}
