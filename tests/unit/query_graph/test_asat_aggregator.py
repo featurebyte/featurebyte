@@ -140,6 +140,21 @@ def aggregation_specs_same_source_different_keys(
     return specs
 
 
+@pytest.fixture
+def aggregation_spec_with_category(
+    aggregate_as_at_node_parameters_with_end_timestamp, scd_aggregation_source, entity_id
+):
+    parameters = aggregate_as_at_node_parameters_with_end_timestamp.copy()
+    parameters.value_by = "category_col"
+    return AggregateAsAtSpec(
+        serving_names=["serving_cust_id"],
+        serving_names_mapping=None,
+        parameters=parameters,
+        aggregation_source=scd_aggregation_source,
+        entity_ids=[entity_id],
+    )
+
+
 def test_asat_aggregate_scd_table_without_end_timestamp(aggregation_spec_without_end_timestamp):
     """
     Test AsAtAggregator on SCD table without end timestamp
@@ -428,6 +443,72 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
             REQ."serving_key_2"
         ) AS T1
           ON REQ."POINT_IN_TIME" = T1."POINT_IN_TIME" AND REQ."serving_key_2" = T1."serving_key_2"
+        """
+    ).strip()
+    assert result.updated_table_expr.sql(pretty=True) == expected
+
+
+def test_asat_aggregate_with_cateogry(aggregation_spec_with_category):
+    """
+    Test AsAtAggregator with category parameter
+    """
+    aggregator = AsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator.update(aggregation_spec_with_category)
+
+    result = aggregator.update_aggregation_table_expr(
+        select("a", "b", "c").from_("REQUEST_TABLE"), "POINT_INT_TIME", ["a", "b", "c"], 0
+    )
+
+    expected = textwrap.dedent(
+        """
+        SELECT
+          a,
+          b,
+          c,
+          "T0"."_fb_internal_as_at_sum_value_cust_id_category_col_input_1" AS "_fb_internal_as_at_sum_value_cust_id_category_col_input_1"
+        FROM REQUEST_TABLE
+        LEFT JOIN (
+          SELECT
+            INNER_."POINT_IN_TIME",
+            INNER_."serving_cust_id",
+            OBJECT_AGG(
+              CASE
+                WHEN INNER_."category_col" IS NULL
+                THEN '__MISSING__'
+                ELSE CAST(INNER_."category_col" AS TEXT)
+              END,
+              TO_VARIANT(INNER_."_fb_internal_as_at_sum_value_cust_id_category_col_input_1_inner")
+            ) AS "_fb_internal_as_at_sum_value_cust_id_category_col_input_1"
+          FROM (
+            SELECT
+              REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+              REQ."serving_cust_id" AS "serving_cust_id",
+              SCD."category_col" AS "category_col",
+              SUM(SCD."value") AS "_fb_internal_as_at_sum_value_cust_id_category_col_input_1_inner"
+            FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
+            INNER JOIN (
+              SELECT
+                *
+              FROM SCD_TABLE
+            ) AS SCD
+              ON REQ."serving_cust_id" = SCD."cust_id"
+              AND (
+                SCD."effective_ts" <= REQ."POINT_IN_TIME"
+                AND (
+                  SCD."end_ts" > REQ."POINT_IN_TIME" OR SCD."end_ts" IS NULL
+                )
+              )
+            GROUP BY
+              REQ."POINT_IN_TIME",
+              REQ."serving_cust_id",
+              SCD."category_col"
+          ) AS INNER_
+          GROUP BY
+            INNER_."POINT_IN_TIME",
+            INNER_."serving_cust_id"
+        ) AS T0
+          ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
+          AND REQ."serving_cust_id" = T0."serving_cust_id"
         """
     ).strip()
     assert result.updated_table_expr.sql(pretty=True) == expected
