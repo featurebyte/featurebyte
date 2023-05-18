@@ -302,20 +302,6 @@ class FeatureListBriefInfoList(FeatureByteBaseModel):
         return FeatureListBriefInfoList(__root__=feature_list_project.project(paginated_data))
 
 
-class FeatureListInfo(NamespaceInfo):
-    """
-    FeatureList info schema
-    """
-
-    dtype_distribution: List[FeatureTypeFeatureCount]
-    status: FeatureListStatus
-    feature_count: int
-    version: VersionComparison
-    production_ready_fraction: ProductionReadyFractionComparison
-    versions_info: Optional[FeatureListBriefInfoList]
-    deployed: bool
-
-
 class FeatureListNamespaceInfo(NamespaceInfo):
     """
     FeatureListNamespace info schema
@@ -325,6 +311,17 @@ class FeatureListNamespaceInfo(NamespaceInfo):
     default_feature_list_id: PydanticObjectId
     status: FeatureListStatus
     feature_count: int
+
+
+class FeatureListInfo(FeatureListNamespaceInfo):
+    """
+    FeatureList info schema
+    """
+
+    version: VersionComparison
+    production_ready_fraction: ProductionReadyFractionComparison
+    versions_info: Optional[FeatureListBriefInfoList]
+    deployed: bool
 
 
 class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
