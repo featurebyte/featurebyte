@@ -1,16 +1,5 @@
 # Changelog
 
----
-
-## v0.2.3 (Unreleased)
-
-### 🛑 Breaking changes 🛑
-### 🚩 Deprecations 🚩
-### 💡 Enhancements 💡
-### 🧰 Bug fixes 🧰
-
-+ Fixed bug that was causing an error when retrieving a `Relationship` with no `updated_by` set
-
 ## v0.2.2
 
 ### 💡 Enhancements 💡
