@@ -8,7 +8,6 @@
 ### 🚩 Deprecations 🚩
 ### 💡 Enhancements 💡
 
-+ Implement HTML representation for API objects `.info()` result
 + Add `column_cleaning_operations` to view object
 + Exclude tables with names that has a "__" prefix in source table listing
 + Remove `analysis_parameters` from `FeatureJobSettingAnalysis.info()` result
