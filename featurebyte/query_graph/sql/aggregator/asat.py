@@ -20,7 +20,12 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
-from featurebyte.query_graph.sql.groupby_helper import get_aggregation_expression
+from featurebyte.query_graph.sql.groupby_helper import (
+    GroupbyColumn,
+    GroupbyKey,
+    get_aggregation_expression,
+    get_groupby_expr,
+)
 from featurebyte.query_graph.sql.scd_helper import END_TS, augment_scd_table_with_end_timestamp
 from featurebyte.query_graph.sql.specs import AggregateAsAtSpec
 
@@ -128,31 +133,43 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
         )
         join_condition = expressions.and_(join_key_condition, record_validity_condition)
 
-        groupby_keys = [get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ")] + [
-            get_qualified_column_identifier(serving_name, "REQ")
+        groupby_keys = [
+            GroupbyKey(
+                expr=get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ"),
+                name=SpecialColumnName.POINT_IN_TIME,
+            )
+        ] + [
+            GroupbyKey(
+                expr=get_qualified_column_identifier(serving_name, "REQ"),
+                name=serving_name,
+            )
             for serving_name in spec.serving_names
         ]
-        agg_exprs = [
-            alias_(
-                get_aggregation_expression(
-                    agg_func=s.parameters.agg_func,
-                    input_column=(
-                        get_qualified_column_identifier(s.parameters.parent, "SCD")
-                        if s.parameters.parent
-                        else None
-                    ),
+        value_by = (
+            GroupbyKey(
+                expr=get_qualified_column_identifier(spec.parameters.value_by, "SCD"),
+                name=spec.parameters.value_by,
+            )
+            if spec.parameters.value_by
+            else None
+        )
+        groupby_columns = [
+            GroupbyColumn(
+                agg_func=s.parameters.agg_func,
+                parent_expr=(
+                    get_qualified_column_identifier(s.parameters.parent, "SCD")
+                    if s.parameters.parent
+                    else None
                 ),
-                alias=s.agg_result_name,
-                quoted=True,
+                result_name=s.agg_result_name,
             )
             for s in specs
         ]
-        request_table_name = self.request_table_plan.get_request_table_name(spec)
-        aggregate_asat_expr = (
-            select(*groupby_keys, *agg_exprs)
+        groupby_input_expr = (
+            select()
             .from_(
                 expressions.Table(
-                    this=quoted_identifier(request_table_name),
+                    this=quoted_identifier(self.request_table_plan.get_request_table_name(spec)),
                     alias="REQ",
                 )
             )
@@ -161,9 +178,14 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
                 join_type="inner",
                 on=join_condition,
             )
-            .group_by(*groupby_keys)
         )
-
+        aggregate_asat_expr = get_groupby_expr(
+            input_expr=groupby_input_expr,
+            groupby_keys=groupby_keys,
+            groupby_columns=groupby_columns,
+            value_by=value_by,
+            adapter=self.adapter,
+        )
         return LeftJoinableSubquery(
             expr=aggregate_asat_expr,
             column_names=[s.agg_result_name for s in specs],

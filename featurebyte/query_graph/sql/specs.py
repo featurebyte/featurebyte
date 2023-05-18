@@ -487,7 +487,10 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         str
             Column name of the aggregated result
         """
-        return self.construct_agg_result_name(self.parameters.agg_func, self.parameters.parent)
+        args = [self.parameters.agg_func, self.parameters.parent]
+        if self.parameters.value_by is not None:
+            args.append(self.parameters.value_by)
+        return self.construct_agg_result_name(*args)
 
     @property
     def aggregation_type(self) -> AggregationType:
