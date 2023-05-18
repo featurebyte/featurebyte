@@ -8,7 +8,6 @@
 ### 🚩 Deprecations 🚩
 ### 💡 Enhancements 💡
 
-+ Update feature's & feature list's version format from dictionary to string
 + Implement HTML representation for API objects `.info()` result
 + Add `column_cleaning_operations` to view object
 + Exclude tables with names that has a "__" prefix in source table listing
