@@ -1,6 +1,7 @@
 """
 Tests for featurebyte.api.feature_list
 """
+import pdb
 import textwrap
 from unittest.mock import patch
 
@@ -476,25 +477,25 @@ def test_info(saved_feature_list):
         "production_ready_fraction": {"this": 0.0, "default": 0.0},
         "deployed": False,
         "catalog_name": "default",
+        "default_feature_list_id": str(saved_feature_list.id),
+        "created_at": info_dict["created_at"],
+        "version": info_dict["version"],
+        "updated_at": info_dict["updated_at"],
+        "versions_info": None,
     }
-    assert info_dict.items() > expected_info.items(), info_dict
-    assert "created_at" in info_dict, info_dict
-    assert "version" in info_dict, info_dict
-    assert set(info_dict["version"]) == {"this", "default"}, info_dict["version"]
+    assert info_dict == expected_info, info_dict
 
     verbose_info_dict = saved_feature_list.info(verbose=True)
-    assert verbose_info_dict.items() > expected_info.items(), verbose_info_dict
-    assert "created_at" in verbose_info_dict, verbose_info_dict
-    assert "version" in verbose_info_dict, verbose_info_dict
-    assert set(verbose_info_dict["version"]) == {"this", "default"}, verbose_info_dict["version"]
-
-    assert "versions_info" in verbose_info_dict, verbose_info_dict
-    assert len(verbose_info_dict["versions_info"]) == 1, verbose_info_dict
-    assert set(verbose_info_dict["versions_info"][0]) == {
-        "version",
-        "readiness_distribution",
-        "created_at",
-        "production_ready_fraction",
+    assert verbose_info_dict == {
+        **expected_info,
+        "versions_info": [
+            {
+                "production_ready_fraction": 0.0,
+                "readiness_distribution": [{"readiness": "DRAFT", "count": 1}],
+                "created_at": verbose_info_dict["versions_info"][0]["created_at"],
+                "version": verbose_info_dict["versions_info"][0]["version"],
+            }
+        ],
     }, verbose_info_dict
 
 
