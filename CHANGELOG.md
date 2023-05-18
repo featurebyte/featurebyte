@@ -8,7 +8,6 @@
 ### 🚩 Deprecations 🚩
 ### 💡 Enhancements 💡
 
-+ Update feature definition by explicitly specifying `on` parameter in `join` operation
 + Expose `catalog_id` property in the Entity and Relationship API objects
 + Remove unused statement from `feature.definition`
 + Improve error handling and messaging for Docker exceptions
