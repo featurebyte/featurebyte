@@ -8,7 +8,6 @@
 ### 🚩 Deprecations 🚩
 ### 💡 Enhancements 💡
 
-+ Expose `catalog_id` property in the Entity and Relationship API objects
 + Remove unused statement from `feature.definition`
 + Improve error handling and messaging for Docker exceptions
 + Support `scheduler`, `worker:io`, `worker:cpu` in startup command to start different services
