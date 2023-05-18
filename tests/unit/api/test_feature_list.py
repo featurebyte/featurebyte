@@ -1,7 +1,6 @@
 """
 Tests for featurebyte.api.feature_list
 """
-import pdb
 import textwrap
 from unittest.mock import patch
 
