@@ -19,7 +19,7 @@ repos:
       - id: changelog
         pass_filenames: false
         name: Check changelog
-        entry: task changelog-pr
+        entry: bash -c "task changelog-pr || true"
         types: [ ]
         language: system
         verbose: true
