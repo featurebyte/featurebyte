@@ -49,7 +49,7 @@ async def test_timestamp_to_index(
     "source_type",
     [
         "snowflake",
-        # "databricks",
+        "spark",
     ],
     indirect=True,
 )

@@ -312,20 +312,14 @@ def test_graph_interpreter_on_demand_tile_gen(
     expected_sql = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          index,
           "cust_id",
           SUM("a") AS sum_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb,
           COUNT("a") AS count_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
         FROM (
           SELECT
             *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
-              ) / 3600
-            ) AS tile_index
+            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
           FROM (
             WITH __FB_ENTITY_TABLE_NAME AS (
               __FB_ENTITY_TABLE_SQL_PLACEHOLDER
@@ -350,7 +344,7 @@ def test_graph_interpreter_on_demand_tile_gen(
           )
         )
         GROUP BY
-          tile_index,
+          index,
           "cust_id"
         """
     ).strip()
@@ -394,9 +388,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     expected_sql = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          index,
           "cust_id",
           "product_type",
           SUM("a") AS sum_value_avg_{aggregation_id},
@@ -404,11 +396,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
         FROM (
           SELECT
             *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
-              ) / 3600
-            ) AS tile_index
+            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
           FROM (
             SELECT
               *
@@ -429,7 +417,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
           )
         )
         GROUP BY
-          tile_index,
+          index,
           "cust_id",
           "product_type"
         """
@@ -499,20 +487,14 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          index,
           "cust_id",
           SUM("a") AS sum_value_avg_{groupby_node_aggregation_id},
           COUNT("a") AS count_value_avg_{groupby_node_aggregation_id}
         FROM (
           SELECT
             *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
-              ) / 3600
-            ) AS tile_index
+            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
           FROM (
             WITH __FB_ENTITY_TABLE_NAME AS (
               __FB_ENTITY_TABLE_SQL_PLACEHOLDER
@@ -537,7 +519,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
           )
         )
         GROUP BY
-          tile_index,
+          index,
           "cust_id"
         """
     ).strip()
@@ -570,19 +552,13 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          index,
           "biz_id",
           SUM("a") AS value_sum_{aggregation_id}
         FROM (
           SELECT
             *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
-              ) / 3600
-            ) AS tile_index
+            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
           FROM (
             WITH __FB_ENTITY_TABLE_NAME AS (
               __FB_ENTITY_TABLE_SQL_PLACEHOLDER
@@ -607,7 +583,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
           )
         )
         GROUP BY
-          tile_index,
+          index,
           "biz_id"
         """
     ).strip()
@@ -1020,18 +996,14 @@ def test_databricks_source(query_graph_with_groupby, groupby_node_aggregation_id
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          index,
           `cust_id`,
           SUM(`a`) AS sum_value_avg_{groupby_node_aggregation_id},
           COUNT(`a`) AS count_value_avg_{groupby_node_aggregation_id}
         FROM (
           SELECT
             *,
-            FLOOR(
-              (
-                UNIX_TIMESTAMP(`ts`) - UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP))
-              ) / 3600
-            ) AS tile_index
+            F_TIMESTAMP_TO_INDEX(`ts`, 1800, 900, 60) AS index
           FROM (
             SELECT
               *
@@ -1052,7 +1024,7 @@ def test_databricks_source(query_graph_with_groupby, groupby_node_aggregation_id
           )
         )
         GROUP BY
-          tile_index,
+          index,
           `cust_id`
         """
     ).strip()
@@ -1072,25 +1044,19 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
     expected = textwrap.dedent(
         """
         SELECT
-          __FB_TILE_START_DATE_COLUMN,
+          index,
           "cust_id",
           value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
         FROM (
           SELECT
-            TO_TIMESTAMP(
-              DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
-            ) AS __FB_TILE_START_DATE_COLUMN,
+            index,
             "cust_id",
-            ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+            ROW_NUMBER() OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
+            FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
           FROM (
             SELECT
               *,
-              FLOOR(
-                (
-                  DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
-                ) / 3600
-              ) AS tile_index
+              F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
             FROM (
               SELECT
                 *

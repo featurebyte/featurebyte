@@ -6,45 +6,36 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     count_value_avg_8b1b0ac73d607b2ad9cd1bd83be10878d3137e5b
   FROM (
     SELECT
-      *,
-      F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS `INDEX`
+      index,
+      `cust_id`,
+      SUM(`a`) AS sum_value_avg_8b1b0ac73d607b2ad9cd1bd83be10878d3137e5b,
+      COUNT(`a`) AS count_value_avg_8b1b0ac73d607b2ad9cd1bd83be10878d3137e5b
     FROM (
       SELECT
-        TO_TIMESTAMP(UNIX_TIMESTAMP(CAST('2022-04-18 09:15:00' AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
-        `cust_id`,
-        SUM(`a`) AS sum_value_avg_8b1b0ac73d607b2ad9cd1bd83be10878d3137e5b,
-        COUNT(`a`) AS count_value_avg_8b1b0ac73d607b2ad9cd1bd83be10878d3137e5b
+        *,
+        F_TIMESTAMP_TO_INDEX(`ts`, 1800, 900, 60) AS index
       FROM (
         SELECT
-          *,
-          FLOOR(
-            (
-              UNIX_TIMESTAMP(`ts`) - UNIX_TIMESTAMP(CAST('2022-04-18 09:15:00' AS TIMESTAMP))
-            ) / 3600
-          ) AS tile_index
+          *
         FROM (
           SELECT
-            *
-          FROM (
-            SELECT
-              `ts` AS `ts`,
-              `cust_id` AS `cust_id`,
-              `a` AS `a`,
-              `b` AS `b`,
-              (
-                `a` + `b`
-              ) AS `c`
-            FROM `db`.`public`.`event_table`
-          )
-          WHERE
-            `ts` >= CAST('2022-04-18 09:15:00' AS TIMESTAMP)
-            AND `ts` < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
+            `ts` AS `ts`,
+            `cust_id` AS `cust_id`,
+            `a` AS `a`,
+            `b` AS `b`,
+            (
+              `a` + `b`
+            ) AS `c`
+          FROM `db`.`public`.`event_table`
         )
+        WHERE
+          `ts` >= CAST('2022-04-18 09:15:00' AS TIMESTAMP)
+          AND `ts` < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
       )
-      GROUP BY
-        tile_index,
-        `cust_id`
     )
+    GROUP BY
+      index,
+      `cust_id`
   ) AS avg_8b1b0ac73d607b2ad9cd1bd83be10878d3137e5b
 ), REQUEST_TABLE AS (
   SELECT

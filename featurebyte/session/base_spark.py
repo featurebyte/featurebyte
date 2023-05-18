@@ -363,6 +363,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
             ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregate"),
             ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDelete"),
             ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndex"),
+            ("F_INDEX_TO_TIMESTAMP", "com.featurebyte.hive.udf.IndexToTimestamp"),
             (
                 "F_COUNT_DICT_COSINE_SIMILARITY",
                 "com.featurebyte.hive.udf.CountDictCosineSimilarity",

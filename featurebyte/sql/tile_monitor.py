@@ -50,13 +50,13 @@ class TileMonitor(TileCommon):
 
             new_tile_sql = f"""
                 select
-                    {self.tile_start_date_column},
-                    F_TIMESTAMP_TO_INDEX(
-                        {self.tile_start_date_column},
+                    F_INDEX_TO_TIMESTAMP(
+                        INDEX,
                         {self.tile_modulo_frequency_second},
                         {self.blind_spot_second},
                         {self.frequency_minute}
-                    ) as INDEX,
+                    ) as {self.tile_start_date_column},
+                    INDEX,
                     {self.entity_column_names_str},
                     {self.value_column_names_str}
                 from ({self.monitor_sql})
