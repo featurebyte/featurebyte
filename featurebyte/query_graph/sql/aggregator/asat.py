@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, cast
 
 from sqlglot import expressions
-from sqlglot.expressions import Select, alias_, select
+from sqlglot.expressions import Select, select
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import (
@@ -20,12 +20,7 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
-from featurebyte.query_graph.sql.groupby_helper import (
-    GroupbyColumn,
-    GroupbyKey,
-    get_aggregation_expression,
-    get_groupby_expr,
-)
+from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.scd_helper import END_TS, augment_scd_table_with_end_timestamp
 from featurebyte.query_graph.sql.specs import AggregateAsAtSpec
 

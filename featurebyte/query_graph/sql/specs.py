@@ -27,6 +27,7 @@ from featurebyte.query_graph.node.generic import (
     LookupNode,
     SCDLookupParameters,
 )
+from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
 from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
@@ -288,6 +289,26 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     def construct_agg_result_name(self, *args: Any) -> str:
         return super().construct_agg_result_name(*args, self.aggregation_source.query_node_name)
 
+    def get_agg_result_name_from_groupby_parameters(self, parameters: BaseGroupbyParameters) -> str:
+        """
+        Get the name of the aggregation result column from groupby parameters. The name should
+        include the parameters that can affect the result of the groupby operation: aggregation
+        function, parent variable, groupby keys and category key (optional).
+
+        Parameters
+        ----------
+        parameters: BaseGroupbyParameters
+            Groupby parameters
+
+        Returns
+        -------
+        str
+        """
+        args = [parameters.agg_func, parameters.parent] + parameters.keys
+        if parameters.value_by is not None:
+            args.append(parameters.value_by)
+        return self.construct_agg_result_name(*args)
+
     @classmethod
     def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
         """
@@ -435,7 +456,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         str
             Column name of the aggregated result
         """
-        return self.construct_agg_result_name(self.parameters.agg_func, self.parameters.parent)
+        return self.get_agg_result_name_from_groupby_parameters(self.parameters)
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -487,10 +508,7 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         str
             Column name of the aggregated result
         """
-        args = [self.parameters.agg_func, self.parameters.parent]
-        if self.parameters.value_by is not None:
-            args.append(self.parameters.value_by)
-        return self.construct_agg_result_name(*args)
+        return self.get_agg_result_name_from_groupby_parameters(self.parameters)
 
     @property
     def aggregation_type(self) -> AggregationType:
