@@ -12,6 +12,14 @@ repos:
     hooks:
       - id: format
         name: Formatting Code
+        pass_filenames: false
         entry: bash -c "task format; git add . -u"
         types: [ ]
         language: system
+      - id: changelog
+        pass_filenames: false
+        name: Check changelog
+        entry: task changelog-pr
+        types: [ ]
+        language: system
+        verbose: true
