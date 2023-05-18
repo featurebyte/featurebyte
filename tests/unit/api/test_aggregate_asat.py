@@ -122,17 +122,6 @@ def test_aggregate_asat__latest_not_supported(scd_view_with_entity):
     assert str(exc.value) == "latest aggregation method is not supported for aggregated_asat"
 
 
-def test_aggregate_asat__category_not_supported(scd_view_with_entity):
-    """
-    Test groupby with category is not supported
-    """
-    with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("col_int", category="col_text").aggregate_asat(
-            value_column="col_float", method="sum", feature_name="asat_feature"
-        )
-    assert str(exc.value) == "category is not supported for aggregate_asat"
-
-
 def test_aggregate_asat__groupby_key_cannot_be_natural_key(scd_view_with_entity):
     """
     Test using natural key as groupby key is not allowed

@@ -304,9 +304,9 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         -------
         str
         """
-        args = [parameters.agg_func, parameters.parent] + parameters.keys
-        if parameters.value_by is not None:
-            args.append(parameters.value_by)
+        args = [parameters.agg_func, parameters.parent]
+        args.extend(parameters.keys or [None])  # type: ignore[list-item]
+        args.append(parameters.value_by or None)
         return self.construct_agg_result_name(*args)
 
     @classmethod

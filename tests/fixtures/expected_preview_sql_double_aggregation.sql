@@ -24,7 +24,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
             "order_id" AS "order_id",
             "order_method" AS "order_method",
             (
-              "_fb_internal_item_count_None_input_1" + 123
+              "_fb_internal_item_count_None_order_id_None_input_1" + 123
             ) AS "ord_size"
           FROM (
             SELECT
@@ -32,7 +32,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
               REQ."cust_id",
               REQ."order_id",
               REQ."order_method",
-              "T0"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1"
+              "T0"."_fb_internal_item_count_None_order_id_None_input_1" AS "_fb_internal_item_count_None_order_id_None_input_1"
             FROM (
               SELECT
                 "ts" AS "ts",
@@ -44,7 +44,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
             LEFT JOIN (
               SELECT
                 ITEM."order_id" AS "order_id",
-                COUNT(*) AS "_fb_internal_item_count_None_input_1"
+                COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_1"
               FROM (
                 SELECT
                   "order_id" AS "order_id",
