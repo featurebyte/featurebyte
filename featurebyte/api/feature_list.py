@@ -486,6 +486,7 @@ class FeatureList(
               'count': 1
             }
           ],
+          'default_feature_list_id': ...,
           'status': 'DRAFT',
           'feature_count': 1,
           'version': {
