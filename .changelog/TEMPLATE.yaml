@@ -24,11 +24,11 @@ note: "Major enhancement to make `myComponent` more awesome."
 subtext:
 
 # SAMPLE
-# subtext: |
-#   + note this will make everything better
-#   + major performance improvement
-#   + time reduction for test suite from 10 minutes to 2 minutes
-#   ```
-#    Code sample
-#    goes here
-#   ```
+#subtext: |
+#  + note this will make everything better
+#  + major performance improvement
+#  + time reduction for test suite from 10 minutes to 2 minutes
+#  ```
+#   Code sample
+#   goes here
+#  ```
