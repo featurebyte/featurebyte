@@ -83,7 +83,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     REQ."CUSTOMER_ID",
     "T0"."_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
     "T1"."_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
-    "T2"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1"
+    "T2"."_fb_internal_item_count_None_order_id_None_input_1" AS "_fb_internal_item_count_None_order_id_None_input_1"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -162,7 +162,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   LEFT JOIN (
     SELECT
       REQ."order_id" AS "order_id",
-      COUNT(*) AS "_fb_internal_item_count_None_input_1"
+      COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_1"
     FROM "REQUEST_TABLE_order_id" AS REQ
     INNER JOIN (
       SELECT
@@ -183,5 +183,5 @@ SELECT
   AGG."CUSTOMER_ID",
   "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "a_2h_average",
   "_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "a_48h_average",
-  "_fb_internal_item_count_None_input_1" AS "order_size"
+  "_fb_internal_item_count_None_order_id_None_input_1" AS "order_size"
 FROM _FB_AGGREGATED AS AGG

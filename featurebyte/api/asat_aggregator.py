@@ -140,9 +140,6 @@ class AsAtAggregator(BaseAggregator):
         if feature_name is None:
             raise ValueError("feature_name is required")
 
-        if self.category is not None:
-            raise ValueError("category is not supported for aggregate_asat")
-
         view = cast(SCDView, self.view)
         for key in self.keys:
             if key == view.natural_key_column:

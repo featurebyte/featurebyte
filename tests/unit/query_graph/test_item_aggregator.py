@@ -108,15 +108,15 @@ def test_item_aggregation(aggregation_specs):
         """
         SELECT
           a,
-          "T0"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1",
-          "T0"."_fb_internal_item_max_price_input_1" AS "_fb_internal_item_max_price_input_1",
-          "T1"."_fb_internal_item_max_price_input_1" AS "_fb_internal_item_max_price_input_1"
+          "T0"."_fb_internal_item_count_None_order_id_None_input_1" AS "_fb_internal_item_count_None_order_id_None_input_1",
+          "T0"."_fb_internal_item_max_price_order_id_None_input_1" AS "_fb_internal_item_max_price_order_id_None_input_1",
+          "T1"."_fb_internal_item_max_price_order_id_item_type_input_1" AS "_fb_internal_item_max_price_order_id_item_type_input_1"
         FROM REQUEST_TABLE
         LEFT JOIN (
           SELECT
             REQ."new_serving_order_id" AS "new_serving_order_id",
-            COUNT(*) AS "_fb_internal_item_count_None_input_1",
-            MAX(ITEM."price") AS "_fb_internal_item_max_price_input_1"
+            COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_1",
+            MAX(ITEM."price") AS "_fb_internal_item_max_price_order_id_None_input_1"
           FROM "REQUEST_TABLE_new_serving_order_id" AS REQ
           INNER JOIN (
             SELECT
@@ -137,13 +137,13 @@ def test_item_aggregation(aggregation_specs):
                 THEN '__MISSING__'
                 ELSE CAST(INNER_."item_type" AS TEXT)
               END,
-              TO_VARIANT(INNER_."_fb_internal_item_max_price_input_1_inner")
-            ) AS "_fb_internal_item_max_price_input_1"
+              TO_VARIANT(INNER_."_fb_internal_item_max_price_order_id_item_type_input_1_inner")
+            ) AS "_fb_internal_item_max_price_order_id_item_type_input_1"
           FROM (
             SELECT
               REQ."new_serving_order_id" AS "new_serving_order_id",
               ITEM."item_type" AS "item_type",
-              MAX(ITEM."price") AS "_fb_internal_item_max_price_input_1_inner"
+              MAX(ITEM."price") AS "_fb_internal_item_max_price_order_id_item_type_input_1_inner"
             FROM "REQUEST_TABLE_new_serving_order_id" AS REQ
             INNER JOIN (
               SELECT
