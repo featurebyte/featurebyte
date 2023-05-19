@@ -16,7 +16,6 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import validate_type_is_feature
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -305,13 +304,13 @@ class EventView(View, GroupByMixin, RawMixin):
             )
         return entity_ids[0]
 
-    def _get_col_with_entity_id(self, entity_id: PydanticObjectId) -> Optional[str]:
+    def _get_col_with_entity_id(self, entity_id: ObjectId) -> Optional[str]:
         """
         Tries to find a single column with the matching entity ID.
 
         Parameters
         ----------
-        entity_id: PydanticObjectId
+        entity_id: ObjectId
             entity ID to search for
 
         Returns
