@@ -202,7 +202,7 @@ def test_item_table_join_event_table_attributes_on_demand_tile_gen(
                 ON L."order_id" = R."order_id"
             ) AS R
               ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-              AND R."ts" >= __FB_START_DATE
+              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
               AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
           )
         )
