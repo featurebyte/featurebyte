@@ -139,17 +139,6 @@ class TileGenerate(TileCommon):
         else:
             entity_and_value_column_names_str = self.value_column_names_str
 
-        # tile_sql = f"""
-        #     select
-        #         F_TIMESTAMP_TO_INDEX({self.tile_start_date_column},
-        #             {self.tile_modulo_frequency_second},
-        #             {self.blind_spot_second},
-        #             {self.frequency_minute}
-        #         ) as index,
-        #         {entity_and_value_column_names_str},
-        #         current_timestamp() as created_at
-        #     from ({self.sql})
-        # """
         tile_sql = f"""
             select
                 index,

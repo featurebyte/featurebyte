@@ -373,10 +373,6 @@ class TileCache:
         columns = []
         for table_index, tile_id in enumerate(tile_ids_with_tracker):
             tile_info = unique_tile_infos[tile_id]
-            # point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
-            # last_tile_start_date_expr = self._get_last_tile_start_date_expr(
-            #     point_in_time_epoch_expr, tile_info
-            # )
             tracker_table_name = self._get_tracker_name_from_tile_id(tile_id)
             table_alias = f"T{table_index}"
             join_conditions = []
@@ -386,14 +382,6 @@ class TileCache:
                         f"REQ.{quoted_identifier(serving_name).sql()} <=> {table_alias}.{quoted_identifier(key).sql()}"
                     )
                 )
-            # join_conditions.append(
-            #     expressions.LTE(
-            #         this=last_tile_start_date_expr,
-            #         expression=expressions.Identifier(
-            #             this=f"{table_alias}.{InternalName.TILE_LAST_START_DATE}"
-            #         ),
-            #     )
-            # )
             table_expr = table_expr.join(
                 tracker_table_name,
                 join_type="left",
@@ -467,7 +455,6 @@ class TileCache:
                 alias=tile_id,
                 quoted=False,
             )
-            # expr = f"(COUNT({tile_id}) = COUNT(*)) AS {tile_id}"
             validity_exprs.append(expr)
 
         tile_cache_working_table_name = (
@@ -505,7 +492,6 @@ class TileCache:
         aggregation_id = tile_info.aggregation_id
 
         # Filter for rows where tile cache are outdated
-        # working_table_filter = f"{aggregation_id} IS NULL"
         point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
         last_tile_start_date_expr = self._get_last_tile_start_date_expr(
             point_in_time_epoch_expr, tile_info
@@ -563,7 +549,6 @@ class TileCache:
             tile_info.sql_template.render(
                 {
                     InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery(),
-                    # InternalName.TILE_START_DATE_SQL_PLACEHOLDER: start_date_expr,
                 }
             ),
         )
