@@ -332,27 +332,27 @@ class TileCache:
         request_table_name: str,
     ) -> None:
         """Register a temp table from which we can query whether each (POINT_IN_TIME, ENTITY_ID,
-        TILE_ID) pair has updated tile cache: a null value in this table indicates that the pair has
-        outdated tile cache. A non-null value refers to the valid last tile start date registered in
-        the data warehouse's tracking table for that pair.
+        TILE_ID) pair has updated tile cache:
 
-        Two possible reasons that can cause tile cache to be outdated: 1) tiles were never computed
-        for the entity; or 2) tiles were previously computed for the entity but more recent tiles
-        are required due to the requested point in time.
+        * Each column in the table represents a specific aggregation_id
+        * Each value in the table is the date of the last computed tile for historical features
+        * Null value in this table means that tiles were never computed for this specific entity
+
+        We can then query this table to identify which tiles need to be recomputed.
 
         This table has the same number of rows as the request table, and has tile IDs as the
         additional columns. For example,
 
         ---------------------------------------------------------------
-        POINT_IN_TIME  CUST_ID  TILE_ID_1   TILE_ID_2   TILE_ID_3  ...
+        POINT_IN_TIME  CUST_ID  AGG_ID_1    AGG_ID_2    AGG_ID_3   ...
         ---------------------------------------------------------------
-        2022-04-01     C1       null        2022-04-05  2022-04-15
+        2022-04-01     C1       2022-03-01  2022-04-05  2022-04-15
         2022-04-10     C2       2022-04-20  null        2022-04-11
         ---------------------------------------------------------------
 
         The table above indicates that the following tile tables need to be recomputed:
-        - TILE_ID_1 for C1
-        - TILE_ID_2 for C2
+        - AGG_ID_1 for C1 (last tile start date is prior to the point in time)
+        - AGG_ID_2 for C2 (no tile has been computed for this entity)
 
         Parameters
         ----------
@@ -416,6 +416,8 @@ class TileCache:
             Request ID
         tile_ids : list[str]
             List of tile ids
+        unique_tile_infos : dict[str, TileGenSql]
+            Mapping from tile id to TileGenSql
 
         Returns
         -------
