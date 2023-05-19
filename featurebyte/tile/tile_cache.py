@@ -715,8 +715,8 @@ class TileCache:
         # This expression will be evaluated in a group by statement with the entity value as the
         # group by key. We can use ANY_VALUE because the recorded last tile start date is the same
         # across all rows within the group.
-        recorded_last_tile_start_date_expr = expressions.AnyValue(
-            this=expressions.Identifier(this=tile_info.aggregation_id)
+        recorded_last_tile_start_date_expr = self.adapter.any_value(
+            expressions.Identifier(this=tile_info.aggregation_id)
         )
         start_date_expr = expressions.Case(
             ifs=[
