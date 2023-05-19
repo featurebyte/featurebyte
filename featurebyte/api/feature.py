@@ -468,14 +468,14 @@ class Feature(
         -------
         List[str]
         """
-        entity_ids: list[str] = []
+        entity_columns: list[str] = []
         for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY):
-            entity_ids.extend(cast(GroupByNode, node).parameters.keys)
+            entity_columns.extend(cast(GroupByNode, node).parameters.keys)
         for node in self.graph.iterate_nodes(
             target_node=self.node, node_type=NodeType.ITEM_GROUPBY
         ):
-            entity_ids.extend(cast(ItemGroupbyNode, node).parameters.keys)
-        return entity_ids
+            entity_columns.extend(cast(ItemGroupbyNode, node).parameters.keys)
+        return entity_columns
 
     @property
     def inherited_columns(self) -> set[str]:

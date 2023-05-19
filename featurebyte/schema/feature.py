@@ -33,7 +33,6 @@ class FeatureCreate(FeatureByteBaseModel):
     graph: QueryGraph
     node_name: str
     tabular_source: TabularSource
-    entity_ids: List[PydanticObjectId] = Field(min_items=0)
     feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 
