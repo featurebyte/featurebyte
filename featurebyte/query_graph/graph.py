@@ -26,7 +26,7 @@ from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
-from featurebyte.query_graph.node.generic import GroupByNode
+from featurebyte.query_graph.node.generic import GroupByNode, LookupNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
@@ -83,7 +83,7 @@ class QueryGraph(QueryGraphModel):
 
         Parameters
         ----------
-        node_name:
+        node_name: str
             Name of the node to get table IDs for
 
         Returns
@@ -114,7 +114,7 @@ class QueryGraph(QueryGraphModel):
             List of primary table IDs in the query graph
         """
         primary_input_nodes = self.get_primary_input_nodes(node_name=node_name)
-        return sorted([node.parameters.id for node in primary_input_nodes])
+        return sorted([node.parameters.id for node in primary_input_nodes if node.parameters.id])
 
     def get_entity_ids(self, node_name: str) -> List[ObjectId]:
         """
@@ -136,7 +136,7 @@ class QueryGraph(QueryGraphModel):
             if isinstance(node.parameters, BaseGroupbyParameters):
                 if node.parameters.entity_ids:
                     output.extend(node.parameters.entity_ids)
-            elif node.type == NodeType.LOOKUP:
+            elif isinstance(node, LookupNode):
                 output.append(node.parameters.entity_id)
         return sorted(output)
 

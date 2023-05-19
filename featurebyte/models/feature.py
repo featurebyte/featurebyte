@@ -20,13 +20,11 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
     VersionIdentifier,
 )
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 
 
 class FeatureReadiness(OrderedStrEnum):
