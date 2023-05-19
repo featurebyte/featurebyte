@@ -323,14 +323,44 @@ def test_aggregate_over(
         transaction_data_upper_case, event_view
     )
 
-    features = []
-    df_expected_all = [observation_set]
     df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
+
+    common_args = (
+        df,
+        entity_column_name,
+        event_timestamp_column_name,
+        event_view,
+        feature_parameters,
+        frequency,
+        time_modulo_frequency,
+        blind_spot,
+    )
+    check_aggregate_over(observation_set, *common_args)
+
+    # Test with a subset of data but with POINT_IN_TIME shifted forward to trigger tile updates
+    observation_set_new = observation_set.sample(n=100, random_state=0).reset_index(drop=True)
+    observation_set_new["POINT_IN_TIME"] = observation_set_new["POINT_IN_TIME"] + pd.Timedelta("1d")
+    check_aggregate_over(observation_set_new, *common_args)
+
+
+def check_aggregate_over(
+    observation_set,
+    df,
+    entity_column_name,
+    event_timestamp_column_name,
+    event_view,
+    feature_parameters,
+    frequency,
+    time_modulo_frequency,
+    blind_spot,
+):
+    df_expected_all = [observation_set]
     utc_event_timestamps = pd.to_datetime(df[event_timestamp_column_name], utc=True).dt.tz_localize(
         None
     )
 
     elapsed_time_ref = 0
+    features = []
     for (
         variable_column_name,
         agg_name,
