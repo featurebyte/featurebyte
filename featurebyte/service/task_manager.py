@@ -204,6 +204,7 @@ class TaskManager(AbstractTaskManager):
         interval: Interval,
         time_modulo_frequency_second: Optional[int] = None,
         start_after: Optional[datetime.datetime] = None,
+        time_limit: Optional[int] = None,
     ) -> ObjectId:
         """
         Schedule task to run periodically
@@ -220,6 +221,8 @@ class TaskManager(AbstractTaskManager):
             Time modulo frequency in seconds
         start_after: Optional[datetime.datetime]
             Start after this time
+        time_limit: Optional[int]
+            Execution time limit in seconds
 
         Returns
         -------
@@ -232,6 +235,12 @@ class TaskManager(AbstractTaskManager):
         else:
             last_run_at = None
 
+        # if time limit is not set default to interval length
+        if not time_limit:
+            time_limit = int(
+                datetime.timedelta(**{str(interval.period): interval.every}).total_seconds()
+            )
+
         periodic_task = PeriodicTask(
             name=name,
             task=payload.task,
@@ -242,6 +251,7 @@ class TaskManager(AbstractTaskManager):
             start_after=start_after,
             last_run_at=last_run_at,
             queue=payload.queue,
+            soft_time_limit=time_limit,
         )
         periodic_task_service = PeriodicTaskService(
             user=self.user,
@@ -257,6 +267,7 @@ class TaskManager(AbstractTaskManager):
         payload: BaseTaskPayload,
         crontab: Crontab,
         start_after: Optional[datetime.datetime] = None,
+        time_limit: Optional[int] = None,
     ) -> ObjectId:
         """
         Schedule task to run on cron setting
@@ -271,6 +282,8 @@ class TaskManager(AbstractTaskManager):
             Cron specification
         start_after: Optional[datetime.datetime]
             Start after this time
+        time_limit: Optional[int]
+            Execution time limit in seconds
 
         Returns
         -------
@@ -285,6 +298,7 @@ class TaskManager(AbstractTaskManager):
             args=[],
             kwargs=payload.json_dict(),
             start_after=start_after,
+            soft_time_limit=time_limit,
         )
         periodic_task_service = PeriodicTaskService(
             user=self.user,
