@@ -26,6 +26,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 
 
 class FeatureReadiness(OrderedStrEnum):
@@ -192,6 +193,7 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
             if isinstance(graph, dict):
                 graph = QueryGraphModel(**dict(graph))
 
+            # extract table ids from the graph
             node_name = values["node_name"]
             node = graph.get_node_by_name(node_name)
             primary_input_nodes = graph.get_primary_input_nodes(node_name=node_name)
@@ -203,6 +205,16 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 for node in graph.iterate_nodes(target_node=node, node_type=NodeType.INPUT)
                 if node.parameters.id
             )
+
+            # extract entity ids from the graph
+            entity_ids = []
+            for node in graph.iterate_nodes(target_node=node, node_type=None):
+                if isinstance(node.parameters, BaseGroupbyParameters):
+                    if node.parameters.entity_ids:
+                        entity_ids.extend(node.parameters.entity_ids)
+                elif node.type == NodeType.LOOKUP:
+                    entity_ids.append(node.parameters.entity_id)
+            values["entity_ids"] = sorted(set(entity_ids))
         return values
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
