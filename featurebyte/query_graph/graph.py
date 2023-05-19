@@ -33,6 +33,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     SourceDataColumn,
 )
+from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
@@ -75,6 +76,69 @@ class QueryGraph(QueryGraphModel):
             if input_node.name not in node_name_to_input_node:
                 node_name_to_input_node[input_node.name] = input_node
         return list(node_name_to_input_node.values())
+
+    def get_table_ids(self, node_name: str) -> List[ObjectId]:
+        """
+        Get table IDs of the query graph given the target node name
+
+        Parameters
+        ----------
+        node_name:
+            Name of the node to get table IDs for
+
+        Returns
+        -------
+        List[ObjectId]
+            List of table IDs in the query graph
+        """
+        output = []
+        target_node = self.get_node_by_name(node_name)
+        for node in self.iterate_nodes(target_node=target_node, node_type=NodeType.INPUT):
+            assert isinstance(node, InputNode)
+            if node.parameters.id:
+                output.append(node.parameters.id)
+        return sorted(output)
+
+    def get_primary_table_ids(self, node_name: str) -> List[ObjectId]:
+        """
+        Get primary table IDs of the query graph given the target node name
+
+        Parameters
+        ----------
+        node_name: str
+            Name of the node to get primary table IDs for
+
+        Returns
+        -------
+        List[ObjectId]
+            List of primary table IDs in the query graph
+        """
+        primary_input_nodes = self.get_primary_input_nodes(node_name=node_name)
+        return sorted([node.parameters.id for node in primary_input_nodes])
+
+    def get_entity_ids(self, node_name: str) -> List[ObjectId]:
+        """
+        Get entity IDs of the query graph given the target node name
+
+        Parameters
+        ----------
+        node_name: str
+            Name of the node to get entity IDs for
+
+        Returns
+        -------
+        List[ObjectId]
+            List of entity IDs in the query graph
+        """
+        output = []
+        target_node = self.get_node_by_name(node_name)
+        for node in self.iterate_nodes(target_node=target_node, node_type=None):
+            if isinstance(node.parameters, BaseGroupbyParameters):
+                if node.parameters.entity_ids:
+                    output.extend(node.parameters.entity_ids)
+            elif node.type == NodeType.LOOKUP:
+                output.append(node.parameters.entity_id)
+        return sorted(output)
 
     def iterate_group_by_node_and_table_id_pairs(
         self, target_node: Node

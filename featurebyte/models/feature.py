@@ -163,14 +163,11 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
     graph: QueryGraph = Field(allow_mutation=False)
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
-    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-
-    # pydantic validators
-    _sort_ids_validator = validator("entity_ids", allow_reuse=True)(construct_sort_validator())
 
     @property
     def node(self) -> Node:
@@ -193,28 +190,11 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
             if isinstance(graph, dict):
                 graph = QueryGraphModel(**dict(graph))
 
-            # extract table ids from the graph
+            # extract table ids & entity ids from the graph
             node_name = values["node_name"]
-            node = graph.get_node_by_name(node_name)
-            primary_input_nodes = graph.get_primary_input_nodes(node_name=node_name)
-            values["primary_table_ids"] = sorted(
-                node.parameters.id for node in primary_input_nodes if node.parameters.id
-            )
-            values["table_ids"] = sorted(
-                node.parameters.id
-                for node in graph.iterate_nodes(target_node=node, node_type=NodeType.INPUT)
-                if node.parameters.id
-            )
-
-            # extract entity ids from the graph
-            entity_ids = []
-            for node in graph.iterate_nodes(target_node=node, node_type=None):
-                if isinstance(node.parameters, BaseGroupbyParameters):
-                    if node.parameters.entity_ids:
-                        entity_ids.extend(node.parameters.entity_ids)
-                elif node.type == NodeType.LOOKUP:
-                    entity_ids.append(node.parameters.entity_id)
-            values["entity_ids"] = sorted(set(entity_ids))
+            values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
+            values["table_ids"] = graph.get_table_ids(node_name=node_name)
+            values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
         return values
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:

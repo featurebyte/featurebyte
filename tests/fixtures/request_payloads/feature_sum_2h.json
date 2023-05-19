@@ -6,9 +6,6 @@
     ],
     "_id": "642db61e28e1dffe39df3544",
     "dtype": "FLOAT",
-    "entity_ids": [
-        "63f94ed6ea1f050131379214"
-    ],
     "feature_namespace_id": "642db61e28e1dffe39df3545",
     "graph": {
         "edges": [
