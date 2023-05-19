@@ -383,11 +383,13 @@ class TileCache:
                         f"REQ.{quoted_identifier(serving_name).sql()} <=> {table_alias}.{quoted_identifier(key).sql()}"
                     )
                 )
+            # Note: join_conditions is empty list if there is no entity column. In this case, there
+            # is only one row in the tracking table and the join condition can be omitted.
             table_expr = table_expr.join(
                 tracker_table_name,
                 join_type="left",
                 join_alias=table_alias,
-                on=expressions.and_(*join_conditions),
+                on=expressions.and_(*join_conditions) if join_conditions else None,
             )
             columns.append(f"{table_alias}.{InternalName.TILE_LAST_START_DATE} AS {agg_id}")
 
