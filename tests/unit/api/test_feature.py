@@ -734,12 +734,19 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
         frequency="30m",
         time_modulo_frequency="5m",
     )
-    feature_group_by_cust_id = event_view.groupby("cust_id").aggregate_over(
+    feature_group_by_cust_id_30m = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m"],
         feature_job_setting=feature_job_setting,
-        feature_names=["sum_30m_by_cust_id"],
+        feature_names=["sum_30m_by_cust_id_30m"],
+    )
+    feature_group_by_cust_id_1h = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["1h"],
+        feature_job_setting=feature_job_setting,
+        feature_names=["sum_30m_by_cust_id_1h"],
     )
     feature_group_by_binary = event_view.groupby("col_binary").aggregate_over(
         value_column="col_float",
@@ -749,13 +756,19 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
         feature_names=["sum_30m_by_binary"],
     )
     composite_feature = (
-        feature_group_by_cust_id["sum_30m_by_cust_id"]
+        feature_group_by_cust_id_30m["sum_30m_by_cust_id_30m"]
+        + feature_group_by_cust_id_1h["sum_30m_by_cust_id_1h"]
         + feature_group_by_binary["sum_30m_by_binary"]
     )
 
     assert composite_feature.primary_entity == [
         Entity.get_by_id(cust_id_entity.id),
         Entity.get_by_id(entity.id),
+    ]
+    assert composite_feature.entity_ids == sorted([cust_id_entity.id, entity.id])
+    assert composite_feature.graph.get_entity_columns(node_name=composite_feature.node_name) == [
+        "col_binary",
+        "cust_id",
     ]
 
 
