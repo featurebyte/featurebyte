@@ -505,3 +505,54 @@ def invalid_query_graph_groupby_node_fixture(
         input_nodes=[node_input],
     )
     return graph, node_group_by
+
+
+def test_get_table_ids(
+    event_table_details, item_table_input_details, snowflake_feature_store_details_dict
+):
+    """Test get_table_ids method (check that duplicated table ids are not returned)"""
+    query_graph = QueryGraph()
+    table_id = ObjectId()
+    node_input1 = query_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "type": "event_table",
+            "columns": [{"name": "column", "dtype": "FLOAT"}],
+            "table_details": event_table_details.dict(),
+            "feature_store_details": snowflake_feature_store_details_dict,
+            "id": table_id,
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    node_input2 = query_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "type": "item_table",
+            "columns": [{"name": "column", "dtype": "FLOAT"}],
+            **item_table_input_details,
+            "id": table_id,
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    proj_1 = query_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["column"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input1],
+    )
+    proj_2 = query_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["column"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input2],
+    )
+    add_node = query_graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_1, proj_2],
+    )
+    table_ids = query_graph.get_table_ids(node_name=add_node.name)
+    assert table_ids == [table_id]

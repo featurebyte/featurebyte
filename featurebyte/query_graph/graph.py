@@ -97,7 +97,7 @@ class QueryGraph(QueryGraphModel):
             assert isinstance(node, InputNode)
             if node.parameters.id:
                 output.append(node.parameters.id)
-        return sorted(output)
+        return sorted(set(output))
 
     def get_primary_table_ids(self, node_name: str) -> List[ObjectId]:
         """
@@ -114,7 +114,7 @@ class QueryGraph(QueryGraphModel):
             List of primary table IDs in the query graph
         """
         primary_input_nodes = self.get_primary_input_nodes(node_name=node_name)
-        return sorted([node.parameters.id for node in primary_input_nodes if node.parameters.id])
+        return sorted(set(node.parameters.id for node in primary_input_nodes if node.parameters.id))
 
     def get_entity_ids(self, node_name: str) -> List[ObjectId]:
         """
@@ -138,7 +138,31 @@ class QueryGraph(QueryGraphModel):
                     output.extend(node.parameters.entity_ids)
             elif isinstance(node, LookupNode):
                 output.append(node.parameters.entity_id)
-        return sorted(output)
+        return sorted(set(output))
+
+    def get_entity_columns(self, node_name: str) -> List[str]:
+        """
+        Get entity columns of the query graph given the target node name
+
+        Parameters
+        ----------
+        node_name: str
+            Name of the node to get entity columns for
+
+        Returns
+        -------
+        List[str]
+            List of entity columns in the query graph
+        """
+        output = []
+        target_node = self.get_node_by_name(node_name)
+        for node in self.iterate_nodes(target_node=target_node, node_type=None):
+            if isinstance(node.parameters, BaseGroupbyParameters):
+                if node.parameters.entity_ids:
+                    output.extend(node.parameters.keys)
+            elif isinstance(node, LookupNode):
+                output.append(node.parameters.entity_column)
+        return sorted(set(output))
 
     def iterate_group_by_node_and_table_id_pairs(
         self, target_node: Node

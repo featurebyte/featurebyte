@@ -15,7 +15,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.enum import DBVarType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -418,9 +418,7 @@ def assert_entity_identifiers_raises_errors(identifiers, feature):
     """
     Helper method to assert that entity identifiers passed in will raise an error on `_get_feature_entity_col`.
     """
-    with mock.patch(
-        "featurebyte.api.feature.Feature.entity_identifiers", new_callable=PropertyMock
-    ) as mock_idents:
+    with mock.patch("featurebyte.query_graph.graph.QueryGraph.get_entity_columns") as mock_idents:
         mock_idents.return_value = identifiers
         with pytest.raises(ValueError) as exc_info:
             EventView._get_feature_entity_col(feature)
@@ -442,41 +440,26 @@ def test_get_feature_entity_col(production_ready_feature):
     assert_entity_identifiers_raises_errors(["col_a", "col_b"], production_ready_feature)
 
 
-@pytest.fixture(name="feature_with_entity_ids")
-def get_feature_with_entity_ids(float_feature):
-    """
-    Get a function that helps us create test features with configurable entity IDs.
-    """
-
-    def get_feature(entity_ids):
-        feature = float_feature.copy()
-        feature.__dict__.update({"entity_ids": entity_ids[:]})
-        return feature
-
-    return get_feature
-
-
-def test_get_feature_entity_id(feature_with_entity_ids):
+def test_get_feature_entity_id(
+    non_time_based_feature, float_feature, transaction_entity, cust_id_entity
+):
     """
     Test get_feature_entity_col
     """
-    entity_id_1 = PydanticObjectId(ObjectId())
-    entity_id_2 = PydanticObjectId(ObjectId())
     # verify we can retrieve the entity ID
-    feature = feature_with_entity_ids([entity_id_1])
-    entity_id = EventView._get_feature_entity_id(feature)
-    assert entity_id == feature.entity_ids[0]
+    entity_id = EventView._get_feature_entity_id(float_feature)
 
-    # verify that no entity IDs raises error
-    feature = feature_with_entity_ids([])
-    with pytest.raises(ValueError) as exc_info:
-        EventView._get_feature_entity_id(feature)
-    assert "The feature should only be based on one entity" in str(exc_info)
+    # construct a feature wil multiple entity IDs
+    assert entity_id == cust_id_entity.id
+    comp_feature = non_time_based_feature + float_feature
+    comp_feature.name = "comp_feature"
+    assert comp_feature.graph.get_entity_ids(node_name=comp_feature.node_name) == sorted(
+        [cust_id_entity.id, transaction_entity.id]
+    )
 
     # verify that multiple entity IDs raises error
-    feature = feature_with_entity_ids([entity_id_1, entity_id_2])
     with pytest.raises(ValueError) as exc_info:
-        EventView._get_feature_entity_id(feature)
+        EventView._get_feature_entity_id(comp_feature)
     assert "The feature should only be based on one entity" in str(exc_info)
 
 
@@ -540,35 +523,24 @@ def test_get_view_entity_column__entity_col_provided(
 
 
 def test_get_view_entity_column__no_entity_col_provided(
-    event_view_with_col_infos, feature_with_entity_ids
+    snowflake_event_table_with_entity, float_feature, non_time_based_feature, cust_id_entity
 ):
     """
     Test _get_view_entity_column - no entity col provided
     """
-    entity_id_1 = PydanticObjectId(ObjectId())
-    entity_id_2 = PydanticObjectId(ObjectId())
+    event_view = snowflake_event_table_with_entity.get_view()
+    assert event_view._get_view_entity_column(float_feature, None) == "cust_id"
+    assert event_view._get_view_entity_column(non_time_based_feature, None) == "col_int"
 
-    # No matching column should throw an error
-    feature = feature_with_entity_ids([entity_id_1])
-    event_view_with_no_col_info = event_view_with_col_infos(
-        [
-            ColumnInfo(name="random", dtype=DBVarType.INT, entity_id=entity_id_2),
-        ]
-    )
+    # remove cust_id entity
+    snowflake_event_table_with_entity.cust_id.as_entity(None)
+    event_view = snowflake_event_table_with_entity.get_view()
     with pytest.raises(EventViewMatchingEntityColumnNotFound) as exc_info:
-        event_view_with_no_col_info._get_view_entity_column(feature, None)
+        event_view._get_view_entity_column(float_feature, None)
     assert "Unable to find a matching entity column" in str(exc_info)
 
-    # Matching column should match
-    col_a_name = "col_a"
-    event_view_with_matching_col_info = event_view_with_col_infos(
-        [
-            ColumnInfo(name="random", dtype=DBVarType.INT, entity_id=entity_id_2),
-            ColumnInfo(name=col_a_name, dtype=DBVarType.INT, entity_id=entity_id_1),
-        ]
-    )
-    view_entity_col = event_view_with_matching_col_info._get_view_entity_column(feature, None)
-    assert view_entity_col == col_a_name
+    # add back cust_id entity
+    snowflake_event_table_with_entity.cust_id.as_entity(cust_id_entity.name)
 
 
 @pytest.fixture(name="generic_input_node_params")

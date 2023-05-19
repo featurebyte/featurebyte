@@ -31,7 +31,6 @@ from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
 from featurebyte.core.accessor.feature_string import FeatureStrAccessorMixin
-from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -50,12 +49,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
-from featurebyte.query_graph.node.generic import (
-    AliasNode,
-    GroupByNode,
-    ItemGroupbyNode,
-    ProjectNode,
-)
+from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.feature import (
     FeatureCreate,
     FeatureModelResponse,
@@ -68,7 +62,6 @@ logger = get_logger(__name__)
 
 
 class Feature(
-    ProtectedColumnsQueryObject,
     Series,
     FrozenFeatureModel,
     DeletableApiObject,
@@ -447,47 +440,6 @@ class Feature(
         )
         self.node_name = new_node.name
         return super().__setattr__(key, value)
-
-    @property
-    def protected_attributes(self) -> List[str]:
-        """
-        List of protected attributes used to extract protected_columns
-
-        Returns
-        -------
-        List[str]
-        """
-        return ["entity_identifiers"]
-
-    @property
-    def entity_identifiers(self) -> List[str]:
-        """
-        Entity identifiers column names
-
-        Returns
-        -------
-        List[str]
-        """
-        entity_columns: list[str] = []
-        for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY):
-            entity_columns.extend(cast(GroupByNode, node).parameters.keys)
-        for node in self.graph.iterate_nodes(
-            target_node=self.node, node_type=NodeType.ITEM_GROUPBY
-        ):
-            entity_columns.extend(cast(ItemGroupbyNode, node).parameters.keys)
-        return entity_columns
-
-    @property
-    def inherited_columns(self) -> set[str]:
-        """
-        Special columns set which will be automatically added to the object of same class
-        derived from current object
-
-        Returns
-        -------
-        set[str]
-        """
-        return set(self.entity_identifiers)
 
     @property
     def feature_namespace(self) -> FeatureNamespace:
