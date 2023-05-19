@@ -215,45 +215,45 @@ class TileCache:
         unique_tile_infos = self._get_unique_tile_infos(
             graph=graph, nodes=nodes, serving_names_mapping=serving_names_mapping
         )
-        tile_ids_with_tracker = await self._filter_tile_ids_with_tracker(
+        agg_ids_with_tracker = await self._filter_agg_ids_with_tracker(
             list(unique_tile_infos.keys())
         )
-        tile_ids_without_tracker = list(set(unique_tile_infos.keys()) - set(tile_ids_with_tracker))
+        agg_ids_without_tracker = list(set(unique_tile_infos.keys()) - set(agg_ids_with_tracker))
 
         # Construct a temp table and query from it whether each tile has updated cache
         tic = time.time()
         await self._register_working_table(
             unique_tile_infos=unique_tile_infos,
-            tile_ids_with_tracker=tile_ids_with_tracker,
-            tile_ids_no_tracker=tile_ids_without_tracker,
+            agg_ids_with_tracker=agg_ids_with_tracker,
+            agg_ids_no_tracker=agg_ids_without_tracker,
             request_id=request_id,
             request_table_name=request_table_name,
         )
 
-        # Create a validity flag for each tile id
+        # Create a validity flag for each aggregation id
         tile_cache_validity = {}
-        for tile_id in tile_ids_without_tracker:
-            tile_cache_validity[tile_id] = False
-        if tile_ids_with_tracker:
+        for agg_id in agg_ids_without_tracker:
+            tile_cache_validity[agg_id] = False
+        if agg_ids_with_tracker:
             existing_validity = await self._get_tile_cache_validity_from_working_table(
                 request_id=request_id,
-                tile_ids=tile_ids_with_tracker,
+                agg_ids=agg_ids_with_tracker,
                 unique_tile_infos=unique_tile_infos,
             )
             tile_cache_validity.update(existing_validity)
         elapsed = time.time() - tic
         logger.debug(f"Registering working table and validity check took {elapsed:.2f}s")
 
-        # Construct requests for outdated tile ids
+        # Construct requests for outdated aggregation ids
         requests = []
-        for tile_id, is_cache_valid in tile_cache_validity.items():
+        for agg_id, is_cache_valid in tile_cache_validity.items():
             if is_cache_valid:
-                logger.debug(f"Cache for {tile_id} can be resued")
+                logger.debug(f"Cache for {agg_id} can be resued")
             else:
-                logger.debug(f"Need to recompute cache for {tile_id}")
+                logger.debug(f"Need to recompute cache for {agg_id}")
                 request = self._construct_request_from_working_table(
                     request_id=request_id,
-                    tile_info=unique_tile_infos[tile_id],
+                    tile_info=unique_tile_infos[agg_id],
                 )
                 requests.append(request)
 
@@ -262,7 +262,7 @@ class TileCache:
     def _get_unique_tile_infos(
         self, graph: QueryGraph, nodes: list[Node], serving_names_mapping: dict[str, str] | None
     ) -> dict[str, TileGenSql]:
-        """Construct mapping from tile_table_id to TileGenSql for easier manipulation
+        """Construct mapping from aggregation id to TileGenSql for easier manipulation
 
         Parameters
         ----------
@@ -290,13 +290,14 @@ class TileCache:
                     out[info.aggregation_id] = info
         return out
 
-    async def _filter_tile_ids_with_tracker(self, tile_ids: list[str]) -> list[str]:
-        """Query tracker tables in data warehouse to identify tile IDs with existing tracking tables
+    async def _filter_agg_ids_with_tracker(self, agg_ids: list[str]) -> list[str]:
+        """Query tracker tables in data warehouse to identify aggregation IDs with existing tracking
+        tables
 
         Parameters
         ----------
-        tile_ids : list[str]
-            List of tile table IDs
+        agg_ids : list[str]
+            List of aggregation IDs
 
         Returns
         -------
@@ -313,21 +314,21 @@ class TileCache:
                 all_trackers.add(table)
 
         out = []
-        for tile_id in tile_ids:
-            tile_id_tracker_name = self._get_tracker_name_from_tile_id(tile_id)
-            if tile_id_tracker_name in all_trackers:
-                out.append(tile_id)
+        for agg_id in agg_ids:
+            agg_id_tracker_name = self._get_tracker_name_from_agg_id(agg_id)
+            if agg_id_tracker_name in all_trackers:
+                out.append(agg_id)
         return out
 
     @staticmethod
-    def _get_tracker_name_from_tile_id(tile_id: str) -> str:
-        return f"{tile_id}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
+    def _get_tracker_name_from_agg_id(agg_id: str) -> str:
+        return f"{agg_id}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
 
     async def _register_working_table(
         self,
         unique_tile_infos: dict[str, TileGenSql],
-        tile_ids_with_tracker: list[str],
-        tile_ids_no_tracker: list[str],
+        agg_ids_with_tracker: list[str],
+        agg_ids_no_tracker: list[str],
         request_id: str,
         request_table_name: str,
     ) -> None:
@@ -358,9 +359,9 @@ class TileCache:
         ----------
         unique_tile_infos : dict[str, TileGenSql]
             Mapping from tile id to TileGenSql
-        tile_ids_with_tracker : list[str]
+        agg_ids_with_tracker : list[str]
             List of tile ids with existing tracker tables
-        tile_ids_no_tracker : list[str]
+        agg_ids_no_tracker : list[str]
             List of tile ids without existing tracker table
         request_id : str
             Request ID
@@ -371,9 +372,9 @@ class TileCache:
         table_expr = select().from_(f"{request_table_name} AS REQ")
 
         columns = []
-        for table_index, tile_id in enumerate(tile_ids_with_tracker):
-            tile_info = unique_tile_infos[tile_id]
-            tracker_table_name = self._get_tracker_name_from_tile_id(tile_id)
+        for table_index, agg_id in enumerate(agg_ids_with_tracker):
+            tile_info = unique_tile_infos[agg_id]
+            tracker_table_name = self._get_tracker_name_from_agg_id(agg_id)
             table_alias = f"T{table_index}"
             join_conditions = []
             for serving_name, key in zip(tile_info.serving_names, tile_info.entity_columns):
@@ -388,10 +389,10 @@ class TileCache:
                 join_alias=table_alias,
                 on=expressions.and_(*join_conditions),
             )
-            columns.append(f"{table_alias}.{InternalName.TILE_LAST_START_DATE} AS {tile_id}")
+            columns.append(f"{table_alias}.{InternalName.TILE_LAST_START_DATE} AS {agg_id}")
 
-        for tile_id in tile_ids_no_tracker:
-            columns.append(f"CAST(null AS TIMESTAMP) AS {tile_id}")
+        for agg_id in agg_ids_no_tracker:
+            columns.append(f"CAST(null AS TIMESTAMP) AS {agg_id}")
 
         table_expr = table_expr.select("REQ.*", *columns)
         table_sql = sql_to_string(table_expr, source_type=self.source_type)
@@ -405,7 +406,7 @@ class TileCache:
     async def _get_tile_cache_validity_from_working_table(
         self,
         request_id: str,
-        tile_ids: list[str],
+        agg_ids: list[str],
         unique_tile_infos: dict[str, TileGenSql],
     ) -> dict[str, bool]:
         """Get a dictionary indicating whether each tile table has updated enough tiles
@@ -414,8 +415,8 @@ class TileCache:
         ----------
         request_id : str
             Request ID
-        tile_ids : list[str]
-            List of tile ids
+        agg_ids : list[str]
+            List of aggregation ids
         unique_tile_infos : dict[str, TileGenSql]
             Mapping from tile id to TileGenSql
 
@@ -427,8 +428,8 @@ class TileCache:
         # A tile table has valid cache if there is no null value in corresponding column in the
         # working table
         validity_exprs = []
-        for tile_id in tile_ids:
-            tile_info = unique_tile_infos[tile_id]
+        for agg_id in agg_ids:
+            tile_info = unique_tile_infos[agg_id]
             point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
             last_tile_start_date_expr = self._get_last_tile_start_date_expr(
                 point_in_time_epoch_expr, tile_info
@@ -438,13 +439,13 @@ class TileCache:
                     this=expressions.Case(
                         ifs=[
                             expressions.If(
-                                this=expressions.Is(this=tile_id, expression=expressions.Null()),
+                                this=expressions.Is(this=agg_id, expression=expressions.Null()),
                                 true=expressions.false(),
                             ),
                         ],
                         default=expressions.LTE(
                             this=last_tile_start_date_expr,
-                            expression=expressions.Identifier(this=tile_id),
+                            expression=expressions.Identifier(this=agg_id),
                         ),
                     ),
                     to=expressions.DataType.build("BIGINT"),
@@ -454,7 +455,7 @@ class TileCache:
                 expressions.EQ(
                     this=is_tile_updated, expression=expressions.Count(this=expressions.Star())
                 ),
-                alias=tile_id,
+                alias=agg_id,
                 quoted=False,
             )
             validity_exprs.append(expr)
@@ -490,7 +491,6 @@ class TileCache:
         -------
         OnDemandTileComputeRequest
         """
-        tile_id = tile_info.tile_table_id
         aggregation_id = tile_info.aggregation_id
 
         # Filter for rows where tile cache are outdated
@@ -555,7 +555,7 @@ class TileCache:
             ),
         )
         request = OnDemandTileComputeRequest(
-            tile_table_id=tile_id,
+            tile_table_id=tile_info.tile_table_id,
             aggregation_id=aggregation_id,
             tracker_sql=sql_to_string(entity_table_expr, source_type=self.source_type),
             tile_compute_sql=tile_compute_sql,
