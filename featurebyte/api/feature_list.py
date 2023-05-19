@@ -333,7 +333,6 @@ class FeatureList(
     _list_fields = [
         "name",
         "version",
-        "feature_list_namespace_id",
         "num_feature",
         "online_frac",
         "deployed",
@@ -930,15 +929,15 @@ class FeatureList(
         List saved FeatureList versions (calling from FeatureList class):
 
         >>> FeatureList.list_versions()  # doctest: +SKIP
-                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at
-        0  invoice_feature_list  641d2f94f8d79eb6fee0a335            1          0.0     False 2023-03-24 05:05:24.875
+                           name  num_feature  online_frac  deployed              created_at
+        0  invoice_feature_list            1          0.0     False 2023-03-24 05:05:24.875
 
         List FeatureList versions with the same name (calling from FeatureList object):
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list") # doctest: +SKIP
         >>> feature_list.list_versions()  # doctest: +SKIP
-                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at
-        0  invoice_feature_list  641d02af94ede33779acc6c8            1          0.0     False 2023-03-24 01:53:51.515
+                           name  num_feature  online_frac  deployed              created_at
+        0  invoice_feature_list            1          0.0     False 2023-03-24 01:53:51.515
 
         See Also
         --------
@@ -964,16 +963,16 @@ class FeatureList(
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.list_versions()  # doctest: +SKIP
-                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at  is_default
-        0  invoice_feature_list  641d02af94ede33779acc6c8            1          0.0     False 2023-03-24 01:53:51.515        True
+                           name  online_frac  deployed              created_at  is_default
+        0  invoice_feature_list          0.0     False 2023-03-24 01:53:51.515        True
         """
         output = self._list(include_id=True, params={"name": self.name})
         default_feature_list_id = self.feature_list_namespace.default_feature_list_id
         output["is_default"] = output["id"] == default_feature_list_id
-        columns = output.columns
+        exclude_cols = {"num_feature"}
         if not include_id:
-            columns = [column for column in columns if column != "id"]
-        return output[columns]
+            exclude_cols.add("id")
+        return output[[col for col in output.columns if col not in exclude_cols]]
 
     @classmethod
     def list(
