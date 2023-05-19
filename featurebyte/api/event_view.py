@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 import copy
 
+from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.api.lag import LaggableViewColumn
@@ -268,7 +269,7 @@ class EventView(View, GroupByMixin, RawMixin):
         ValueError
             raised when the feature is created from more than one entity
         """
-        entity_columns = feature.entity_identifiers
+        entity_columns = feature.graph.get_entity_columns(node_name=feature.node_name)
         if len(entity_columns) != 1:
             raise ValueError(
                 "The feature should only be based on one entity. We are currently unable to add features "
@@ -277,7 +278,7 @@ class EventView(View, GroupByMixin, RawMixin):
         return entity_columns[0]
 
     @staticmethod
-    def _get_feature_entity_id(feature: Feature) -> PydanticObjectId:
+    def _get_feature_entity_id(feature: Feature) -> ObjectId:
         """
         Get the entity ID of the feature.
 
@@ -288,7 +289,7 @@ class EventView(View, GroupByMixin, RawMixin):
 
         Returns
         -------
-        PydanticObjectId
+        ObjectId
             entity ID
 
         Raises
@@ -296,7 +297,7 @@ class EventView(View, GroupByMixin, RawMixin):
         ValueError
             raised when the feature is created from more than one entity
         """
-        entity_ids = feature.entity_ids
+        entity_ids = feature.graph.get_entity_ids(node_name=feature.node_name)
         if len(entity_ids) != 1:
             raise ValueError(
                 "The feature should only be based on one entity. We are currently unable to add features "

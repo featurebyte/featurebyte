@@ -752,7 +752,6 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
         feature_group_by_cust_id["sum_30m_by_cust_id"]
         + feature_group_by_binary["sum_30m_by_binary"]
     )
-    assert set(composite_feature.entity_identifiers) == {"cust_id", "col_binary"}
 
     assert composite_feature.primary_entity == [
         Entity.get_by_id(cust_id_entity.id),
