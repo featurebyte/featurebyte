@@ -333,7 +333,7 @@ class TileCache:
         request_table_name: str,
     ) -> None:
         """Register a temp table from which we can query whether each (POINT_IN_TIME, ENTITY_ID,
-        TILE_ID) pair has updated tile cache:
+        TILE_ID) triplet has updated tile cache:
 
         * Each column in the table represents a specific aggregation_id
         * Each value in the table is the date of the last computed tile for historical features
