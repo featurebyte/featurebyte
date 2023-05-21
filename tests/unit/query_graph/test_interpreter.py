@@ -339,7 +339,7 @@ def test_graph_interpreter_on_demand_tile_gen(
               FROM "db"."public"."event_table"
             ) AS R
               ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-              AND R."ts" >= __FB_START_DATE
+              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
               AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
           )
         )
@@ -514,7 +514,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
               FROM "db"."public"."event_table"
             ) AS R
               ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-              AND R."ts" >= __FB_START_DATE
+              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
               AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
           )
         )
@@ -578,7 +578,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
               FROM "db"."public"."event_table"
             ) AS R
               ON R."biz_id" = __FB_ENTITY_TABLE_NAME."biz_id"
-              AND R."ts" >= __FB_START_DATE
+              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
               AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
           )
         )

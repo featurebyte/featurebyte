@@ -461,6 +461,22 @@ class BaseAdapter:
             )
         return select_expr
 
+    @classmethod
+    def any_value(cls, expr: Expression) -> Expression:
+        """
+        Expression for the aggregation function that returns any value in a group
+
+        Parameters
+        ----------
+        expr : Expression
+            Expression to be aggregated
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Anonymous(this="ANY_VALUE", expressions=[expr])
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -776,6 +792,10 @@ class DatabricksAdapter(BaseAdapter):
             expression=select_expr,
             properties=expressions.Properties(expressions=table_properties),
         )
+
+    @classmethod
+    def any_value(cls, expr: Expression) -> Expression:
+        return expressions.Anonymous(this="first", expressions=[expr])
 
 
 class SparkAdapter(DatabricksAdapter):
