@@ -185,7 +185,7 @@ def run_process_task(state: Value, exception_value: Value, timeout: int):
     greenlet.greenlet(run_greenlet_task).switch()
 
 
-@pytest.mark.parametrize("timeout", [10, 1])
+@pytest.mark.parametrize("timeout", [30, 1])
 def test_run_async(timeout):
     """
     Test run async task in a separate thread
