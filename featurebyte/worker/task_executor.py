@@ -60,7 +60,7 @@ def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
         timeout is exceeded
     """
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         logger.debug("Use existing async loop", extra={"loop": loop})
     except RuntimeError:
         loop = asyncio.new_event_loop()
