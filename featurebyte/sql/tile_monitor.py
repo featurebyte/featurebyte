@@ -16,7 +16,6 @@ class TileMonitor(TileCommon):
     """
 
     monitor_sql: str
-    tile_start_date_column: str
     tile_type: str
 
     async def execute(self) -> None:
@@ -37,7 +36,6 @@ class TileMonitor(TileCommon):
                 sql=tile_sql,
                 table_name=self.tile_id,
                 table_exist=True,
-                tile_start_date_column=self.tile_start_date_column,
                 tile_modulo_frequency_second=self.tile_modulo_frequency_second,
                 blind_spot_second=self.blind_spot_second,
                 frequency_minute=self.frequency_minute,
@@ -56,7 +54,7 @@ class TileMonitor(TileCommon):
                         {self.tile_modulo_frequency_second},
                         {self.blind_spot_second},
                         {self.frequency_minute}
-                    ) as {self.tile_start_date_column},
+                    ) as {InternalName.TILE_START_DATE},
                     INDEX,
                     {self.entity_column_names_str},
                     {self.value_column_names_str}
@@ -88,7 +86,7 @@ class TileMonitor(TileCommon):
                         DATEADD(
                             SECOND,
                             ({self.blind_spot_second}+{self.frequency_minute}*60),
-                            a.{self.tile_start_date_column}
+                            a.{InternalName.TILE_START_DATE}
                         ) as EXPECTED_CREATED_AT,
                         current_timestamp() as CREATED_AT
                     from
