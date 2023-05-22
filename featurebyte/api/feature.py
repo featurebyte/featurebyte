@@ -128,21 +128,6 @@ class Feature(
         return values
 
     @property
-    def dtype(self) -> DBVarType:
-        """
-        Returns the database variable type of the Feature object.
-
-        Returns
-        -------
-        DBVarType
-        """
-        try:
-            return cast(FeatureModel, self.cached_model).dtype
-        except RecordRetrievalException:
-            operation_structure = self.graph.extract_operation_structure(self.node)
-            return operation_structure.aggregations[0].dtype
-
-    @property
     def version(self) -> str:
         """
         Returns the version identifier of a Feature object.

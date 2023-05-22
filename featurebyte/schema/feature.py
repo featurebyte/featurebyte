@@ -10,7 +10,6 @@ from datetime import datetime
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
-from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
