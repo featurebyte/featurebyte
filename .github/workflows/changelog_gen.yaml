@@ -56,8 +56,9 @@ jobs:
         task changelog-pr | tee -a $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
     - uses: mshick/add-pr-comment@v2
-      with: |-
-        **Changelog entries**
-        ```
-        ${{ env.CHANGELOG }}
-        ```
+      with:
+        message: |-
+          **Changelog entries**
+          ```
+          ${{ env.CHANGELOG }}
+          ```
