@@ -1,21 +1,24 @@
 """
 Tests for task executor
 """
-import datetime
 from enum import Enum
-from unittest.mock import Mock, patch
+from multiprocessing import Array, Process, Value
 
+import greenlet
 import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 from featurebyte.worker.task.base import TASK_MAP, BaseTask
+from featurebyte.worker.task_executor import run_async
 from tests.util.task import TaskExecutor
 
 
 @pytest.fixture(name="command_class")
 def command_class_fixture():
+    """Command class"""
+
     class Command(str, Enum):
         """Command enum used for testing"""
 
@@ -87,6 +90,8 @@ def test_extend_base_task_payload(random_task_payload_class):
 @pytest.mark.asyncio
 async def test_task_executor(random_task_class, persistent):
     """Test task get loaded properly when extending BaseTask & BaskTaskPayload"""
+    _ = random_task_class
+
     # check task get loaded to TASK_MAP properly
     assert "random_command" in TASK_MAP
     assert TASK_MAP["random_command"] == random_task_class
@@ -118,6 +123,8 @@ def test_task_has_been_implemented(random_task_class, command_class):
     """
     Test implement a task whose command has been implemented before
     """
+    _ = random_task_class
+
     # check task get loaded to TASK_MAP properly
     assert "random_command" in TASK_MAP
     with pytest.raises(ValueError) as exc:
@@ -131,6 +138,9 @@ def test_task_has_been_implemented(random_task_class, command_class):
             """RandomTask class"""
 
             payload_class = ConflictTaskPayload
+
+            async def execute(self) -> None:
+                """Run some task"""
 
         _ = ConflictTask
 
@@ -146,4 +156,58 @@ def test_task_has_been_implemented(random_task_class, command_class):
             get_storage=None,
             get_temp_storage=None,
             get_credential=None,
+        )
+
+
+def run_process_task(state: Value, exception_value: Value, timeout: int):
+    """Run task in a separate process using greenlet thread"""
+    from gevent import monkey  # pylint: disable=import-outside-toplevel
+
+    # all imports should be done after monkey patch
+    monkey.patch_all()
+    import time  # pylint: disable=import-outside-toplevel
+
+    async def async_task(state: Value):
+        """Async task that blocks for 2 seconds and update state to 2"""
+        time.sleep(2)
+        state.value = 2
+
+    def run_greenlet_task():
+        """Run task in a separate greenlet"""
+        try:
+            run_async(coro=async_task(state), timeout=timeout)
+        except Exception as exc:  # pylint: disable=broad-except
+            error_message = str(exc).encode("utf-8")
+            for idx, byte in enumerate(error_message[:100]):
+                exception_value[idx] = byte
+
+    # execute task in greenlet thread
+    greenlet.greenlet(run_greenlet_task).switch()
+
+
+@pytest.mark.parametrize("timeout", [10, 1])
+def test_run_async(timeout):
+    """
+    Test run async task in a separate thread
+    """
+    state = Value("i", 1)
+    exception_value = Array("c", 100)
+    process = Process(target=run_process_task, args=(state, exception_value, timeout))
+
+    if timeout > 2:
+        process.start()
+        process.join()
+        # state should be updated by async task in greenlet thread
+        assert state.value == 2
+        assert exception_value[:].decode("utf-8").strip("\x00") == ""
+    else:
+        # expect celery SoftTimeLimitExceeded error
+        # with pytest.raises(SoftTimeLimitExceeded) as exc:
+        process.start()
+        process.join()
+        # state should remain unchanged
+        assert state.value == 1
+        assert (
+            exception_value[:].decode("utf-8").strip("\x00")
+            == f"SoftTimeLimitExceeded('Task timed out after {timeout}s',)"
         )

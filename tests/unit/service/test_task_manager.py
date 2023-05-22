@@ -162,6 +162,7 @@ async def test_task_manager__schedule_interval_task(task_manager, user_id):
     assert periodic_task.name == "test_interval_task"
     assert periodic_task.kwargs == payload.json_dict()
     assert periodic_task.interval == interval
+    assert periodic_task.soft_time_limit == 60
 
     await task_manager.delete_periodic_task(periodic_task_id)
     with pytest.raises(DocumentNotFoundError):
