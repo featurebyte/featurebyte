@@ -168,7 +168,7 @@ class ChangelogRenderer:
                 display += clog.render()
             display += "\n"
 
-        return display
+        return display.rstrip()
 
 
 if __name__ == "__main__":
