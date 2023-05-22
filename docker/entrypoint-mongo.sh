@@ -50,8 +50,8 @@ echo "mongo-rs is established"
 
 # Sleep
 while true; do
-  echo "Sleeping for 5 minutes"
-  sleep 300
+  echo "Sleeping for 6 hours"
+  sleep 6h
   echo "Rotating logs"
   mongosh --quiet --port=27021 --eval 'db.adminCommand( { logRotate : "server" } )'
   mongosh --quiet --port=27022 --eval 'db.adminCommand( { logRotate : "server" } )'
