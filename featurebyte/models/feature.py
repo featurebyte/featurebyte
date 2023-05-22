@@ -183,16 +183,12 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
     @root_validator
     @classmethod
     def _add_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if values.get("graph") and values.get("node_name"):
-            graph = values["graph"]
-            if isinstance(graph, dict):
-                graph = QueryGraphModel(**dict(graph))
-
-            # extract table ids & entity ids from the graph
-            node_name = values["node_name"]
-            values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
-            values["table_ids"] = graph.get_table_ids(node_name=node_name)
-            values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
+        # extract table ids & entity ids from the graph
+        graph = values["graph"]
+        node_name = values["node_name"]
+        values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
+        values["table_ids"] = graph.get_table_ids(node_name=node_name)
+        values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
         return values
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
