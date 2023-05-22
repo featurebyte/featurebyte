@@ -150,9 +150,46 @@ class FeatureNamespaceModel(FrozenFeatureNamespaceModel):
         ]
 
 
-class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
+class FeatureModel(FeatureByteCatalogBaseDocumentModel):
     """
-    FrozenFeatureModel store all the attributes that are fixed after object construction.
+    Model for Feature asset
+
+    id: PydanticObjectId
+        Feature id of the object
+    name: str
+        Feature name
+    dtype: DBVarType
+        Variable type of the feature
+    graph: QueryGraph
+        Graph contains steps of transformation to generate the feature
+    node_name: str
+        Node name of the graph which represent the feature
+    tabular_source: TabularSource
+        Tabular source used to construct this feature
+    readiness: FeatureReadiness
+        Feature readiness
+    version: VersionIdentifier
+        Feature version
+    online_enabled: bool
+        Whether to make this feature version online enabled
+    definition: str
+        Feature definition
+    entity_ids: List[PydanticObjectId]
+        Entity IDs used by the feature
+    table_ids: List[PydanticObjectId]
+        Table IDs used by the feature
+    primary_table_ids: Optional[List[PydanticObjectId]]
+        Primary table IDs of the feature (auto-derive from graph)
+    feature_namespace_id: PydanticObjectId
+        Feature namespace id of the object
+    feature_list_ids: List[PydanticObjectId]
+        FeatureList versions which use this feature version
+    deployed_feature_list_ids: List[PydanticObjectId]
+        Deployed FeatureList versions which use this feature version
+    created_at: Optional[datetime]
+        Datetime when the Feature was first saved
+    updated_at: Optional[datetime]
+        When the Feature get updated
     """
 
     dtype: DBVarType = Field(
@@ -161,11 +198,40 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
     graph: QueryGraph = Field(allow_mutation=False)
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
+    readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
+    version: VersionIdentifier = Field(
+        allow_mutation=False,
+        default=None,
+        description="Returns the version identifier of a Feature object.",
+    )
+    online_enabled: bool = Field(allow_mutation=False, default=False)
+    definition: Optional[str] = Field(
+        allow_mutation=False, default=None, description="Feature Definition"
+    )
+
+    # list of IDs attached to this feature
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
+
+    # pydantic validators
+    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
+
+    @root_validator
+    @classmethod
+    def _add_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # extract table ids & entity ids from the graph
+        graph = values["graph"]
+        node_name = values["node_name"]
+        values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
+        values["table_ids"] = graph.get_table_ids(node_name=node_name)
+        values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
+        return values
 
     @property
     def node(self) -> Node:
@@ -179,21 +245,6 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         return self.graph.get_node_by_name(self.node_name)
-
-    @root_validator
-    @classmethod
-    def _add_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if values.get("graph") and values.get("node_name"):
-            graph = values["graph"]
-            if isinstance(graph, dict):
-                graph = QueryGraphModel(**dict(graph))
-
-            # extract table ids & entity ids from the graph
-            node_name = values["node_name"]
-            values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
-            values["table_ids"] = graph.get_table_ids(node_name=node_name)
-            values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
-        return values
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
@@ -232,96 +283,28 @@ class FrozenFeatureModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "feature"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            )
+            ),
+            UniqueValuesConstraint(
+                fields=("name", "version"),
+                conflict_fields_signature={"name": ["name"], "version": ["version"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            ),
         ]
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("dtype"),
+            pymongo.operations.IndexModel("version"),
+            pymongo.operations.IndexModel("readiness"),
+            pymongo.operations.IndexModel("online_enabled"),
             pymongo.operations.IndexModel("entity_ids"),
             pymongo.operations.IndexModel("table_ids"),
             pymongo.operations.IndexModel("primary_table_ids"),
             pymongo.operations.IndexModel("feature_namespace_id"),
             pymongo.operations.IndexModel("feature_list_ids"),
-        ]
-
-
-class FeatureModel(FrozenFeatureModel):
-    """
-    Model for Feature entity
-
-    id: PydanticObjectId
-        Feature id of the object
-    name: str
-        Feature name
-    dtype: DBVarType
-        Variable type of the feature
-    graph: QueryGraph
-        Graph contains steps of transformation to generate the feature
-    node_name: str
-        Node name of the graph which represent the feature
-    tabular_source: TabularSource
-        Tabular source used to construct this feature
-    readiness: FeatureReadiness
-        Feature readiness
-    version: VersionIdentifier
-        Feature version
-    online_enabled: bool
-        Whether to make this feature version online enabled
-    entity_ids: List[PydanticObjectId]
-        Entity IDs used by the feature
-    table_ids: List[PydanticObjectId]
-        Table IDs used by the feature
-    primary_table_ids: Optional[List[PydanticObjectId]]
-        Primary table IDs of the feature (auto-derive from graph)
-    feature_namespace_id: PydanticObjectId
-        Feature namespace id of the object
-    feature_list_ids: List[PydanticObjectId]
-        FeatureList versions which use this feature version
-    deployed_feature_list_ids: List[PydanticObjectId]
-        Deployed FeatureList versions which use this feature version
-    created_at: Optional[datetime]
-        Datetime when the Feature was first saved
-    updated_at: Optional[datetime]
-        When the Feature get updated
-    """
-
-    version: VersionIdentifier = Field(
-        allow_mutation=False,
-        default=None,
-        description="Returns the version identifier of a Feature object.",
-    )
-    readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
-    online_enabled: bool = Field(allow_mutation=False, default=False)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    definition: Optional[str] = Field(
-        allow_mutation=False, default=None, description="Feature Definition"
-    )
-
-    # pydantic validators
-    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
-
-    class Settings(FrozenFeatureModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        unique_constraints = FrozenFeatureModel.Settings.unique_constraints + [
-            UniqueValuesConstraint(
-                fields=("name", "version"),
-                conflict_fields_signature={"name": ["name"], "version": ["version"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            )
-        ]
-        indexes = FrozenFeatureModel.Settings.indexes + [
-            pymongo.operations.IndexModel("version"),
-            pymongo.operations.IndexModel("readiness"),
-            pymongo.operations.IndexModel("online_enabled"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
             pymongo.operations.IndexModel(
                 [

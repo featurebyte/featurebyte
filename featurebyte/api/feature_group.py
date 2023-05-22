@@ -4,13 +4,14 @@ Feature group module.
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, OrderedDict, Sequence, Tuple, Union, cast
+from typing import Any, List, Optional, OrderedDict, Sequence, Set, Tuple, Union, cast
 
 import collections
 import time
 from http import HTTPStatus
 
 import pandas as pd
+from bson import ObjectId
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
@@ -117,7 +118,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         List[Entity]
             Primary entity
         """
-        entity_ids = set()
+        entity_ids: Set[ObjectId] = set()
         for feature in self._features:
             entity_ids.update(feature.entity_ids)
         primary_entity = derive_primary_entity(  # type: ignore

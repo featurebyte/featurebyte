@@ -112,7 +112,7 @@ class CredentialServiceUpdate(BaseDocumentServiceUpdateSchema):
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """
-        Unique contraints checking
+        Unique constraints checking
         """
 
         unique_constraints: List[UniqueValuesConstraint] = [

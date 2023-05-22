@@ -42,7 +42,10 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     TableCleaningOperation,
 )
-from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    GroupOperationStructure,
+    OperationStructure,
+)
 from tests.util.helper import check_aggressively_pruned_graph, check_sdk_code_generation, get_node
 
 
@@ -200,12 +203,9 @@ def test_feature_deserialization(
             time_modulo_frequency="5m",
         ),
     )
-    same_float_feature_dict = feature_group["sum_1d"].dict(
-        exclude={"id": True, "feature_namespace_id": True}
-    )
+    same_float_feature_dict = feature_group["sum_1d"].dict(exclude={"id": True})
     float_feature_dict.pop("_id")
     float_feature_dict.pop("feature_store")
-    float_feature_dict.pop("feature_namespace_id")
 
     # as serialization only perform non-aggressive pruning (all travelled nodes are kept)
     # here we need to perform aggressive pruning & compare the final graph to make sure they are the same
@@ -853,10 +853,6 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
 
     with pytest.raises(RecordRetrievalException) as exc:
         float_feature.update_default_version_mode(DefaultVersionMode.MANUAL)
-    namespace_id = float_feature.feature_namespace_id
-    expected = (
-        f'FeatureNamespace (id: "{namespace_id}") not found. Please save the Feature object first.'
-    )
     assert expected in str(exc.value)
 
 
@@ -899,23 +895,15 @@ def test_list_filter(saved_feature):
     assert feature_list.shape[0] == 0
 
 
-def test_is_time_based(saved_feature):
+def test_is_time_based(saved_feature, non_time_based_feature):
     """
     Test is_time_based
     """
-    # Default saved_feature is time based
-    is_time_based = saved_feature.is_time_based
-    assert is_time_based
+    # window aggregation feature is time based
+    assert saved_feature.is_time_based is True
 
-    # Mock out GroupOperationStructure to have time-based property set to true
-    with patch(
-        "featurebyte.models.feature.FrozenFeatureModel.extract_operation_structure"
-    ) as mocked_extract:
-        mocked_extract.return_value = GroupOperationStructure(
-            row_index_lineage=("item_groupby_1",),
-            is_time_based=False,
-        )
-        assert not saved_feature.is_time_based
+    # item aggregation feature is not time based
+    assert non_time_based_feature.is_time_based is False
 
 
 def test_list_versions(saved_feature):

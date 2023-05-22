@@ -17,7 +17,6 @@ from featurebyte.exception import RecordCreationException, RecordRetrievalExcept
 from featurebyte.models.feature import (
     FeatureModel,
     FeatureNamespaceModel,
-    FrozenFeatureModel,
     FrozenFeatureNamespaceModel,
 )
 from featurebyte.models.feature_list import (
@@ -240,7 +239,6 @@ def test_api_object_list_empty():
 @pytest.mark.parametrize(
     "api_object_class,frozen_model_class,model_class,update_schema_class",
     [
-        (Feature, FrozenFeatureModel, FeatureModel, FeatureUpdate),
         (
             FeatureNamespace,
             FrozenFeatureNamespaceModel,

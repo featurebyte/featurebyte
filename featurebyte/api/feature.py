@@ -1,7 +1,7 @@
 """
 Feature and FeatureList classes
 """
-# pylint: disable=too-many-lines,too-many-ancestors
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
@@ -35,13 +35,8 @@ from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId, VersionIdentifier
-from featurebyte.models.feature import (
-    DefaultVersionMode,
-    FeatureModel,
-    FeatureReadiness,
-    FrozenFeatureModel,
-)
+from featurebyte.models.base import PydanticObjectId, VersionIdentifier, get_active_catalog_id
+from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.models.tile import TileSpec
@@ -63,7 +58,6 @@ logger = get_logger(__name__)
 
 class Feature(
     Series,
-    FrozenFeatureModel,
     DeletableApiObject,
     SavableApiObject,
     CdAccessorMixin,
@@ -106,6 +100,11 @@ class Feature(
     ]
     _list_foreign_keys = FEATURE_LIST_FOREIGN_KEYS
 
+    # pydantic instance variable (internal use)
+    internal_catalog_id: PydanticObjectId = Field(
+        default_factory=get_active_catalog_id, alias="catalog_id"
+    )
+
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
 
@@ -143,6 +142,64 @@ class Feature(
         'V230323'
         """
         return cast(FeatureModel, self.cached_model).version.to_str()
+
+    @property
+    def catalog_id(self) -> ObjectId:
+        """
+        Returns the catalog ID that is associated with the Feature object.
+
+        Returns
+        -------
+        ObjectId
+            Catalog ID of the table.
+
+        See Also
+        --------
+        - [Catalog](/reference/featurebyte.api.catalog.Catalog)
+        """
+        try:
+            return cast(FeatureModel, self.cached_model).catalog_id
+        except RecordRetrievalException:
+            return self.internal_catalog_id
+
+    @property
+    def entity_ids(self) -> Sequence[ObjectId]:
+        """
+        Returns the entity IDs associated with the Feature object.
+
+        Returns
+        -------
+        List[ObjectId]
+        """
+        try:
+            return cast(FeatureModel, self.cached_model).entity_ids
+        except RecordRetrievalException:
+            return self.graph.get_entity_ids(node_name=self.node_name)
+
+    @property
+    def table_ids(self) -> Sequence[ObjectId]:
+        """
+        Returns the table IDs used by the Feature object.
+
+        Returns
+        -------
+        List[ObjectId]
+        """
+        try:
+            return cast(FeatureModel, self.cached_model).table_ids
+        except RecordRetrievalException:
+            return self.graph.get_table_ids(node_name=self.node_name)
+
+    @property
+    def feature_list_ids(self) -> Sequence[ObjectId]:
+        """
+        Returns the feature list IDs that use the Feature object.
+
+        Returns
+        -------
+        List[ObjectId]
+        """
+        return cast(FeatureModel, self.cached_model).feature_list_ids
 
     @typechecked
     def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
@@ -450,7 +507,8 @@ class Feature(
         -------
         FeatureNamespace
         """
-        return FeatureNamespace.get_by_id(id=self.feature_namespace_id)
+        feature_namespace_id = cast(FeatureModel, self.cached_model).feature_namespace_id
+        return FeatureNamespace.get_by_id(id=feature_namespace_id)
 
     @property
     def readiness(self) -> FeatureReadiness:
@@ -540,7 +598,7 @@ class Feature(
         bool
             True if the feature is time based, False otherwise.
         """
-        operation_structure = self.extract_operation_structure()
+        operation_structure = self.graph.extract_operation_structure(self.node)
         return operation_structure.is_time_based
 
     @property
