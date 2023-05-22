@@ -5,7 +5,6 @@
         "Run `pytest --update-fixtures` to update it."
     ],
     "_id": "642db61f28e1dffe39df355a",
-    "dtype": "INT",
     "feature_namespace_id": "642db61f28e1dffe39df355b",
     "graph": {
         "edges": [

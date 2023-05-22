@@ -29,7 +29,6 @@ class FeatureCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    dtype: DBVarType
     graph: QueryGraph
     node_name: str
     tabular_source: TabularSource
