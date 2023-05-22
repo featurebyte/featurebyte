@@ -605,7 +605,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         Returns
         -------
-        List[ObjectId]
+        Sequence[ObjectId]
         """
         try:
             return cast(FeatureListModel, self.cached_model).feature_ids
