@@ -788,7 +788,11 @@ class DocsBuilder:
         with self.gen_files_open(filepath, "w") as fd:
             fd.writelines(output)
         if DEBUG_MODE:
-            with open(f"debug/{local_path}_local.txt", "w") as local_file:
+            debug_folder = "debug"
+            file_exists = os.path.exists(debug_folder)
+            if not file_exists:
+                os.makedirs(debug_folder)
+            with open(f"{debug_folder}/{local_path}_local.txt", "w") as local_file:
                 local_file.writelines(output)
 
     def _build_and_write_to_file(
