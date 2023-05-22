@@ -1,6 +1,7 @@
 """
 Tile Monitor Job
 """
+from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
@@ -112,7 +113,6 @@ class TileMonitor(TileCommon):
                     sql=tile_sql,
                     table_name=monitor_table_name,
                     table_exist=True,
-                    tile_start_date_column=self.tile_start_date_column,
                     tile_modulo_frequency_second=self.tile_modulo_frequency_second,
                     blind_spot_second=self.blind_spot_second,
                     frequency_minute=self.frequency_minute,
@@ -146,7 +146,7 @@ class TileMonitor(TileCommon):
                     WHEN NOT MATCHED THEN
                         INSERT
                         (
-                            {self.tile_start_date_column},
+                            {InternalName.TILE_START_DATE},
                             INDEX,
                             {self.entity_column_names_str},
                             {self.value_column_names_str},
@@ -156,7 +156,7 @@ class TileMonitor(TileCommon):
                             CREATED_AT
                         ) VALUES
                         (
-                            b.{self.tile_start_date_column},
+                            b.{InternalName.TILE_START_DATE},
                             b.INDEX,
                             {entity_column_names_str_src},
                             {value_insert_cols_str},
@@ -172,7 +172,7 @@ class TileMonitor(TileCommon):
                 INSERT INTO TILE_MONITOR_SUMMARY(TILE_ID, TILE_START_DATE, TILE_TYPE, CREATED_AT)
                 SELECT
                     '{self.tile_id}' as TILE_ID,
-                    {self.tile_start_date_column} as TILE_START_DATE,
+                    {InternalName.TILE_START_DATE} as TILE_START_DATE,
                     TILE_TYPE,
                     current_timestamp()
                 FROM ({compare_sql})

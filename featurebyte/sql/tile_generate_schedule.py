@@ -9,7 +9,6 @@ import dateutil.parser
 from pydantic import Field
 
 from featurebyte.common import date_util
-from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
@@ -26,8 +25,6 @@ class TileGenerateSchedule(TileCommon):
     """
 
     offline_period_minute: int
-    tile_start_date_column: str
-    tile_last_start_date_column: str
     tile_start_date_placeholder: str
     tile_end_date_placeholder: str
     tile_type: str
@@ -154,7 +151,6 @@ class TileGenerateSchedule(TileCommon):
             value_column_names=self.value_column_names,
             value_column_types=self.value_column_types,
             tile_type=self.tile_type,
-            tile_start_date_column=InternalName.TILE_START_DATE,
             aggregation_id=self.aggregation_id,
         )
 
@@ -169,9 +165,7 @@ class TileGenerateSchedule(TileCommon):
             value_column_names=self.value_column_names,
             value_column_types=self.value_column_types,
             tile_type=self.tile_type,
-            tile_start_date_column=InternalName.TILE_START_DATE,
             last_tile_start_str=tile_end_ts_str,
-            tile_last_start_date_column=self.tile_last_start_date_column,
             aggregation_id=self.aggregation_id,
         )
 
