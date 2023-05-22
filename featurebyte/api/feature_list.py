@@ -332,6 +332,61 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     internal_catalog_id: PydanticObjectId = Field(
         default_factory=get_active_catalog_id, alias="catalog_id"
     )
+    internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "feature_ids" in values:
+            # FeatureList object constructed in SDK will not have feature_ids attribute,
+            # only the record retrieved from the persistent contains this attribute.
+            # Use this check to decide whether to make API call to retrieve features.
+            items = []
+            feature_objects = collections.OrderedDict()
+            id_value = values["_id"]
+            feature_store_map: Dict[ObjectId, FeatureStore] = {}
+            with alive_bar(
+                total=len(values["feature_ids"]),
+                title="Loading Feature(s)",
+                **get_alive_bar_additional_params(),
+            ) as progress_bar:
+                for feature_dict in cls.iterate_api_object_using_paginated_routes(
+                    route="/feature",
+                    params={"feature_list_id": id_value, "page_size": PAGINATED_CALL_PAGE_SIZE},
+                ):
+                    # store the feature store retrieve result to reuse it if same feature store are called again
+                    feature_store_id = TabularSource(
+                        **feature_dict["tabular_source"]
+                    ).feature_store_id
+                    if feature_store_id not in feature_store_map:
+                        feature_store_map[feature_store_id] = FeatureStore.get_by_id(
+                            feature_store_id
+                        )
+                    feature_dict["feature_store"] = feature_store_map[feature_store_id]
+
+                    # deserialize feature record into feature object
+                    feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
+                    items.append(feature)
+                    feature_objects[feature.name] = feature
+                    progress_bar.text = feature.name
+                    progress_bar()  # pylint: disable=not-callable
+
+            values["items"] = items
+            values["feature_objects"] = feature_objects
+        return values
+
+    @root_validator
+    @classmethod
+    def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # set the following values if it is empty (used mainly by the SDK constructed feature list)
+        # for the feature list constructed during serialization, following codes should be skipped
+        features = list(values["feature_objects"].values())
+        values["internal_feature_ids"] = [feature.id for feature in features]
+        return values
+
+    @typechecked
+    def __init__(self, items: Sequence[Union[Feature, BaseFeatureGroup]], name: str, **kwargs: Any):
+        super().__init__(items=items, name=name, **kwargs)
 
     @property
     def version(self) -> str:
@@ -555,7 +610,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         try:
             return cast(FeatureListModel, self.cached_model).feature_ids
         except RecordRetrievalException:
-            return [feature.id for feature in self.feature_objects.values()]
+            return self.internal_feature_ids
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
@@ -762,61 +817,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         1   2022-06-02     ac479f28-e0ff-41a4-8e60-8678e670e80b  6.0                  9.870
         """
         return super().preview(observation_set=observation_set)
-
-    @root_validator(pre=True)
-    @classmethod
-    def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "feature_ids" in values:
-            # FeatureList object constructed in SDK will not have feature_ids attribute,
-            # only the record retrieved from the persistent contains this attribute.
-            # Use this check to decide whether to make API call to retrieve features.
-            items = []
-            feature_objects = collections.OrderedDict()
-            id_value = values["_id"]
-            feature_store_map: Dict[ObjectId, FeatureStore] = {}
-            with alive_bar(
-                total=len(values["feature_ids"]),
-                title="Loading Feature(s)",
-                **get_alive_bar_additional_params(),
-            ) as progress_bar:
-                for feature_dict in cls.iterate_api_object_using_paginated_routes(
-                    route="/feature",
-                    params={"feature_list_id": id_value, "page_size": PAGINATED_CALL_PAGE_SIZE},
-                ):
-                    # store the feature store retrieve result to reuse it if same feature store are called again
-                    feature_store_id = TabularSource(
-                        **feature_dict["tabular_source"]
-                    ).feature_store_id
-                    if feature_store_id not in feature_store_map:
-                        feature_store_map[feature_store_id] = FeatureStore.get_by_id(
-                            feature_store_id
-                        )
-                    feature_dict["feature_store"] = feature_store_map[feature_store_id]
-
-                    # deserialize feature record into feature object
-                    feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
-                    items.append(feature)
-                    feature_objects[feature.name] = feature
-                    progress_bar.text = feature.name
-                    progress_bar()  # pylint: disable=not-callable
-
-            values["items"] = items
-            values["feature_objects"] = feature_objects
-        return values
-
-    @root_validator
-    @classmethod
-    def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # set the following values if it is empty (used mainly by the SDK constructed feature list)
-        # for the feature list constructed during serialization, following codes should be skipped
-        features = list(values["feature_objects"].values())
-        if not values.get("feature_ids"):
-            values["feature_ids"] = [feature.id for feature in features]
-        return values
-
-    @typechecked
-    def __init__(self, items: Sequence[Union[Feature, BaseFeatureGroup]], name: str, **kwargs: Any):
-        super().__init__(items=items, name=name, **kwargs)
 
     @property
     def feature_list_namespace(self) -> FeatureListNamespace:
