@@ -43,7 +43,6 @@ class TileMonitor(TileCommon):
                 value_column_names=self.value_column_names,
                 value_column_types=self.value_column_types,
                 tile_id=self.tile_id,
-                tile_type=self.tile_type,
                 aggregation_id=self.aggregation_id,
             ).execute()
 
@@ -118,7 +117,6 @@ class TileMonitor(TileCommon):
                     value_column_names=self.value_column_names,
                     value_column_types=self.value_column_types,
                     tile_id=self.tile_id,
-                    tile_type=self.tile_type,
                     aggregation_id=self.aggregation_id,
                 )
                 logger.info("Calling tile_registry.execute")

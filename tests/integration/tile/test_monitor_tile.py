@@ -5,7 +5,6 @@ from datetime import datetime
 
 import pytest
 
-from featurebyte.enum import InternalName
 from featurebyte.sql.common import construct_create_table_query
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_monitor import TileMonitor
@@ -36,7 +35,6 @@ async def test_monitor_tile__missing_tile(session, base_sql_model):
 
     tile_generate_ins = TileGenerate(
         session=session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -46,14 +44,12 @@ async def test_monitor_tile__missing_tile(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="ONLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
     await tile_generate_ins.execute()
 
     tile_monitor_ins = TileMonitor(
         session=session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -64,7 +60,6 @@ async def test_monitor_tile__missing_tile(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="ONLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
     await tile_monitor_ins.execute()
@@ -118,7 +113,6 @@ async def test_monitor_tile__updated_tile(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="ONLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
     await tile_generate_ins.execute()
@@ -138,7 +132,6 @@ async def test_monitor_tile__updated_tile(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="ONLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
     await tile_monitor_ins.execute()
@@ -192,7 +185,6 @@ async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="ONLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
     await tile_generate_ins.execute()
@@ -219,7 +211,6 @@ async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
         value_column_names=value_col_names_2,
         value_column_types=value_col_types_2,
         tile_type="ONLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
     await tile_monitor_ins.execute()
@@ -261,7 +252,6 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
 
     tile_generate_ins = TileGenerate(
         session=session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -271,14 +261,12 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="ONLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
     await tile_generate_ins.execute()
 
     tile_monitor_ins = TileMonitor(
         session=session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -289,7 +277,6 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="ONLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
     await tile_monitor_ins.execute()
@@ -301,7 +288,6 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
 
     tile_monitor_ins = TileMonitor(
         session=session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -312,7 +298,6 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="ONLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
     await tile_monitor_ins.execute()
