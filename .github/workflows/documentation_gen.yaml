@@ -84,8 +84,8 @@ jobs:
       continue-on-error: true
       run: diff --new-file -ur docs-base/ docs-updated/ > diff.txt
     - name: Generate HTML
-      run: cat diff.txt | diff2html -i stdin --title='Documentation Differences' -F
-        diff.html --style='side' --renderNothingWhenEmpty
+      run: cat diff.txt | diff2html -i stdin --title="Documentation Differences" -F
+        diff.html --style="side" --renderNothingWhenEmpty
     - name: Upload diff html
       uses: actions/upload-artifact@v3
       with:
