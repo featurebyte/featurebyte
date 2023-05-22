@@ -1,0 +1,100 @@
+# THIS FILE IS GENERATED. PLEASE DO NOT MODIFY DIRECTLY.
+# Please refer to the `documentation.py` file in the `featurebyte/infrastructure` repo if you want to update it.
+
+# This workflow will check to see what diffs will be made to the documentation.
+# If there are any, this will fail the check. This is to ensure that all changes that are being made to
+# documentation are signed off by a developer.
+#
+# To sign off, or skip the documentation check, add:
+# - Add 'Documentation Changes Confirmed' label to the PR
+
+name: documentation
+'on':
+  pull_request:
+    types:
+    - opened
+    - synchronize
+    - reopened
+    - labeled
+    - unlabeled
+    branches:
+    - main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+jobs:
+  build-updated-docs:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'Documentation Changes
+      Confirmed') }}
+    strategy:
+      matrix:
+        python-version:
+        - 3.8.12
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Checkout branch
+      run: git checkout "origin/${{ github.head_ref }}"
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job
+          }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.3.1
+    - name: Configure Poetry
+      run: poetry config virtualenvs.in-project true
+    - name: Install packages needed for build
+      run: sudo apt-get install libsasl2-dev gcc
+    - name: Install wkhtmltopdf
+      run: sudo apt-get install wkhtmltopdf
+    - name: Building docs for current branch
+      run: task docs-persist-reference
+    - name: Cache updated docs
+      run: |-
+        mkdir docs-updated
+        mv site/reference/* docs-updated/
+        rm -rf site/
+    - name: Checkout merge base
+      run: git checkout --force $(git merge-base "origin/${{ github.head_ref }}" origin/main)
+    - name: Building docs for base branch
+      run: task docs-persist-reference
+    - name: Cache base docs
+      run: |-
+        mkdir docs-base
+        mv site/reference/* docs-base/
+        rm -rf site/
+    - name: Install diff2html
+      run: npm install -g diff2html-cli
+    - name: Diff docs
+      continue-on-error: true
+      run: diff --new-file -ur docs-base/ docs-updated/ > diff.txt
+    - name: Generate HTML
+      run: cat diff.txt | diff2html -i stdin --title='Documentation Differences' -F
+        diff.html --style='side' --renderNothingWhenEmpty
+    - name: Upload diff html
+      uses: actions/upload-artifact@v3
+      with:
+        name: docs-diff.html
+        path: diff.html
+    - name: Fail if diff is not empty
+      run: |-
+        if [ -s diff.html ]; then
+          cat diff.txt
+          echo "Documentation changes detected. Please confirm that these changes are expected."
+          exit 1;
+        fi

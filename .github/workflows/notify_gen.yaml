@@ -1,0 +1,44 @@
+# THIS FILE IS GENERATED. PLEASE DO NOT MODIFY DIRECTLY.
+# Please refer to the `notify.py` file in the `featurebyte/infrastructure` repo if you want to update it.
+
+name: notify
+'on':
+  pull_request:
+    types:
+    - closed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+jobs:
+  slack:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name,
+      'breaking') }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Send Slack notification to user-experience channel
+      uses: slackapi/slack-github-action@v1.23.0
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+      with:
+        channel-id: C042PLEC8D9
+        payload: |-
+          {
+              "text": "${{ github.event.repository.name }} Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]",
+              "blocks": [
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "`${{ github.event.repository.name }}` Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]"
+                      }
+                  },
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "Actor: ${{ github.actor }}\\nChanges: ${{ github.event.pull_request._links.html.href }}/files"
+                      }
+                  }
+              ]
+          }

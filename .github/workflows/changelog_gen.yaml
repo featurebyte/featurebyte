@@ -1,0 +1,63 @@
+# THIS FILE IS GENERATED. PLEASE DO NOT MODIFY DIRECTLY.
+# Please refer to the `changelog.py` file in the `featurebyte/infrastructure` repo if you want to update it.
+
+# Any PR must that integrates with the main branch MUST add one changelog entry
+# If a changelog entry is not required, either do one of the following
+# - Add 'Skip Changelog' label to the PR
+# - Add 'dependencies' label to PR
+# - PR title contains text '[chore]'
+
+name: changelog
+permissions:
+  contents: write
+  pull-requests: write
+'on':
+  pull_request:
+    types:
+    - opened
+    - synchronize
+    - reopened
+    - labeled
+    - unlabeled
+    branches:
+    - main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') &&
+      !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title,
+      '[chore]')}}
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Ensure no changes to the CHANGELOG
+      run: |-
+        if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./CHANGELOG.md) ]]; then
+          echo "The CHANGELOG.md was not modified."
+          echo "See CONTRIBUTING.md for more details"
+          echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
+          exit 1
+        else
+          echo "The CHANGELOG.md was modified."
+        fi
+    - name: Ensure addition of at least 1 changelog entry
+      run: task changelog-pr-files
+    - name: Validate changelog entries
+      run: |-
+        echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+        task changelog-pr | tee -a $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+    - uses: mshick/add-pr-comment@v2
+      with: |-
+        **Changelog entries**
+        ```
+        ${{ env.CHANGELOG }}
+        ```
