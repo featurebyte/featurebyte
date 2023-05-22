@@ -408,11 +408,12 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     @property
     def catalog_id(self) -> ObjectId:
         """
-        Returns the catalog ID that is associated with the Feature object.
+        Returns the catalog ID that is associated with the FeatureList object.
+
         Returns
         -------
         ObjectId
-            Catalog ID of the table.
+            Catalog ID of the feature list.
         See Also
         --------
         - [Catalog](/reference/featurebyte.api.catalog.Catalog)
