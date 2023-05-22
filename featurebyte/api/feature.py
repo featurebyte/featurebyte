@@ -1,7 +1,7 @@
 """
 Feature and FeatureList classes
 """
-# pylint: disable=too-many-lines,too-many-ancestors
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
@@ -146,7 +146,7 @@ class Feature(
     @property
     def catalog_id(self) -> ObjectId:
         """
-        Returns the unique identifier (ID) of the Catalog that is associated with the Feature object.
+        Returns the catalog ID that is associated with the Feature object.
 
         Returns
         -------
@@ -163,9 +163,9 @@ class Feature(
             return self.internal_catalog_id
 
     @property
-    def entity_ids(self) -> List[ObjectId]:
+    def entity_ids(self) -> Sequence[ObjectId]:
         """
-        Returns the entity ids associated with the Feature object.
+        Returns the entity IDs associated with the Feature object.
 
         Returns
         -------
@@ -177,9 +177,9 @@ class Feature(
             return self.graph.get_entity_ids(node_name=self.node_name)
 
     @property
-    def table_ids(self) -> List[ObjectId]:
+    def table_ids(self) -> Sequence[ObjectId]:
         """
-        Returns the table ids used by the Feature object.
+        Returns the table IDs used by the Feature object.
 
         Returns
         -------
@@ -189,6 +189,17 @@ class Feature(
             return cast(FeatureModel, self.cached_model).table_ids
         except RecordRetrievalException:
             return self.graph.get_table_ids(node_name=self.node_name)
+
+    @property
+    def feature_list_ids(self) -> Sequence[ObjectId]:
+        """
+        Returns the feature list IDs that use the Feature object.
+
+        Returns
+        -------
+        List[ObjectId]
+        """
+        return cast(FeatureModel, self.cached_model).feature_list_ids
 
     @typechecked
     def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
