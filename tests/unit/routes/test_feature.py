@@ -112,6 +112,13 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                 "feature: ['631161373527e8d21e4197ac'])."
             ),
         ),
+        (
+            {**payload, "node_name": "groupby_1"},
+            (
+                "1 validation error for FeatureModel\n__root__\n  "
+                "Feature graph must have exactly one aggregation output (type=value_error)"
+            ),
+        ),
     ]
 
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
