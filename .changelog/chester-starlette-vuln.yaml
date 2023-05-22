@@ -16,7 +16,7 @@ component: dependencies
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "fixed vulnerability in starlette dependency"
+note: "fixed vulnerability in starlette"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

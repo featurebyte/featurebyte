@@ -374,15 +374,18 @@ tasks:
   changelog:
     desc: "Generate all changelog entries in .changelog"
     cmds:
-      - python .changelog/changelog-gen.py
+      - poetry run python .changelog/changelog-gen.py
 
   changelog-pr:
     desc: "Generate changelog for PR"
     vars:
       clogs:
         sh: git diff origin/main\:./ --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
+    preconditions:
+      - sh: bash -c '[[ "" != "{{.clogs}}" ]]'
+        msg: "No changelog files found in PR"
     cmds:
-      - python .changelog/changelog-gen.py {{.clogs}}
+      - poetry run python .changelog/changelog-gen.py {{.clogs}}
 
   changelog-pr-files:
     desc: "View changelog files in pr"
