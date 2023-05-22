@@ -225,7 +225,6 @@ class TileManager(BaseModel):
             tile_id=tile_spec.aggregation_id,
             entity_column_names=entity_column_names,
             entity_table=temp_entity_table,
-            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
         )
 
         await tile_entity_tracking_ins.execute()
