@@ -54,7 +54,7 @@ jobs:
         poetry version 1
         poetry build
         tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
-        awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > branch.PKG-INFO'
+        awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > branch.PKG-INFO
     - name: Checkout merge base
       run: git checkout --force $(git merge-base "origin/${{ github.head_ref }}" origin/main)
     - name: Build package (main)
@@ -62,7 +62,7 @@ jobs:
         poetry version 1
         poetry build
         tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
-        awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > branch.PKG-INFO'
+        awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > branch.PKG-INFO
     - name: Diff dependencies
       run: |-
         # Write diff to env
