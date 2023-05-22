@@ -343,8 +343,6 @@ class TileManager(BaseModel):
                 value_column_types=tile_spec.value_column_types,
                 tile_type=tile_type,
                 offline_period_minute=offline_minutes,
-                tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
-                tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
                 monitor_periods=monitor_periods,
                 aggregation_id=tile_spec.aggregation_id,
             )

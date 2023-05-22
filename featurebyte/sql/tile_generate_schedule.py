@@ -9,6 +9,7 @@ import dateutil.parser
 from pydantic import Field
 
 from featurebyte.common import date_util
+from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
@@ -25,8 +26,6 @@ class TileGenerateSchedule(TileCommon):
     """
 
     offline_period_minute: int
-    tile_start_date_placeholder: str
-    tile_end_date_placeholder: str
     tile_type: str
     monitor_periods: int
     job_schedule_ts: Optional[str] = Field(default=None)
@@ -121,13 +120,15 @@ class TileGenerateSchedule(TileCommon):
         monitor_tile_end_ts_str = monitor_end_ts.strftime(date_format)
 
         monitor_input_sql = self.sql.replace(
-            f"{self.tile_start_date_placeholder}", "'" + monitor_tile_start_ts_str + "'"
-        ).replace(f"{self.tile_end_date_placeholder}", "'" + monitor_tile_end_ts_str + "'")
+            f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_start_ts_str + "'"
+        ).replace(
+            f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_end_ts_str + "'"
+        )
 
         tile_end_ts_str = tile_end_ts.strftime(date_format)
         generate_input_sql = self.sql.replace(
-            f"{self.tile_start_date_placeholder}", "'" + tile_start_ts_str + "'"
-        ).replace(f"{self.tile_end_date_placeholder}", "'" + tile_end_ts_str + "'")
+            f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", "'" + tile_start_ts_str + "'"
+        ).replace(f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + tile_end_ts_str + "'")
 
         logger.info(
             "Tile Schedule information",
