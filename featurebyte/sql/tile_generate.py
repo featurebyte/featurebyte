@@ -6,6 +6,7 @@ from typing import Optional
 import dateutil.parser
 
 from featurebyte.common import date_util
+from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
@@ -19,10 +20,8 @@ class TileGenerate(TileCommon):
     Tile Generate script
     """
 
-    tile_start_date_column: str
     tile_type: str
     last_tile_start_str: Optional[str]
-    tile_last_start_date_column: Optional[str]
 
     async def execute(self) -> None:
         """
@@ -123,7 +122,7 @@ class TileGenerate(TileCommon):
                 UPDATE TILE_REGISTRY
                     SET
                         LAST_TILE_INDEX_{self.tile_type} = {ind_value},
-                        {self.tile_last_start_date_column}_{self.tile_type} = to_timestamp('{self.last_tile_start_str}')
+                        {InternalName.TILE_LAST_START_DATE}_{self.tile_type} = to_timestamp('{self.last_tile_start_str}')
                 WHERE TILE_ID = '{self.tile_id}'
                 AND AGGREGATION_ID = '{self.aggregation_id}'
             """
