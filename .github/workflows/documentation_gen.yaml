@@ -25,8 +25,7 @@ concurrency:
 jobs:
   build-updated-docs:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'Documentation Changes
-      Confirmed') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'Documentation Changes Confirmed') }}
     strategy:
       matrix:
         python-version:
@@ -48,8 +47,7 @@ jobs:
     - name: Setup cache
       uses: actions/cache@v3
       with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job
-          }}
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
         path: .venv
         restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
     - name: Install Poetry
@@ -84,8 +82,7 @@ jobs:
       continue-on-error: true
       run: diff --new-file -ur docs-base/ docs-updated/ > diff.txt
     - name: Generate HTML
-      run: cat diff.txt | diff2html -i stdin --title="Documentation Differences" -F
-        diff.html --style="side" --renderNothingWhenEmpty
+      run: cat diff.txt | diff2html -i stdin --title="Documentation Differences" -F diff.html --style="side" --renderNothingWhenEmpty
     - name: Upload diff html
       uses: actions/upload-artifact@v3
       with:
