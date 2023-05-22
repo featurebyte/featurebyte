@@ -49,4 +49,16 @@ echo ""
 echo "mongo-rs is established"
 
 # Sleep
-sleep inf
+while true; do
+  echo "Sleeping for 5 minutes"
+  sleep 300
+  echo "Rotating logs"
+  mongosh --quiet --port=27021 --eval 'db.adminCommand( { logRotate : "server" } )'
+  mongosh --quiet --port=27022 --eval 'db.adminCommand( { logRotate : "server" } )'
+
+  echo "Deleting logs"
+  ls -l /data/db1.log*
+  ls -l /data/db2.log*
+  rm -f /data/db1.log*
+  rm -f /data/db2.log*
+done
