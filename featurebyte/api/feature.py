@@ -32,6 +32,7 @@ from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
 from featurebyte.core.accessor.feature_string import FeatureStrAccessorMixin
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
@@ -125,6 +126,21 @@ class Feature(
                 feature_store_id = TabularSource(**tabular_source).feature_store_id
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
+
+    @property
+    def dtype(self) -> DBVarType:
+        """
+        Returns the database variable type of the Feature object.
+
+        Returns
+        -------
+        DBVarType
+        """
+        try:
+            return cast(FeatureModel, self.cached_model).dtype
+        except RecordRetrievalException:
+            operation_structure = self.graph.extract_operation_structure(self.node)
+            return operation_structure.aggregations[0].dtype
 
     @property
     def version(self) -> str:
