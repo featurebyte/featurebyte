@@ -47,7 +47,6 @@ from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObj
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
-from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import (
     convert_to_list_of_strings,
     dataframe_from_arrow_stream,
@@ -61,13 +60,12 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import PydanticObjectId, VersionIdentifier
+from featurebyte.models.base import PydanticObjectId, VersionIdentifier, get_active_catalog_id
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListStatus,
     FeatureReadinessDistribution,
-    FrozenFeatureListModel,
     FrozenFeatureListNamespaceModel,
 )
 from featurebyte.models.tile import TileSpec
@@ -278,9 +276,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
 
 
 # pylint: disable=too-many-public-methods
-class FeatureList(
-    BaseFeatureGroup, FrozenFeatureListModel, DeletableApiObject, SavableApiObject, FeatureJobMixin
-):
+class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, FeatureJobMixin):
     """
     The FeatureList class is used as a constructor to create a FeatureList Object.
 
@@ -318,13 +314,6 @@ class FeatureList(
         hide_keyword_only_params_in_class_docs=True,
     )
 
-    # override FeatureListModel attributes
-    feature_ids: List[PydanticObjectId] = Field(
-        default_factory=list,
-        allow_mutation=False,
-        description="Returns the unique identifier (ID) of the Feature objects associated with the FeatureList object.",
-    )
-
     # class variables
     _route = "/feature_list"
     _update_schema_class = FeatureListUpdate
@@ -338,6 +327,11 @@ class FeatureList(
         "deployed",
         "created_at",
     ]
+
+    # pydantic instance variable (internal use)
+    internal_catalog_id: PydanticObjectId = Field(
+        default_factory=get_active_catalog_id, alias="catalog_id"
+    )
 
     @property
     def version(self) -> str:
@@ -355,6 +349,23 @@ class FeatureList(
         'V230330'
         """
         return cast(FeatureListModel, self.cached_model).version.to_str()
+
+    @property
+    def catalog_id(self) -> ObjectId:
+        """
+        Returns the catalog ID that is associated with the Feature object.
+        Returns
+        -------
+        ObjectId
+            Catalog ID of the table.
+        See Also
+        --------
+        - [Catalog](/reference/featurebyte.api.catalog.Catalog)
+        """
+        try:
+            return cast(FeatureListModel, self.cached_model).catalog_id
+        except RecordRetrievalException:
+            return self.internal_catalog_id
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"items": self.items}
@@ -531,6 +542,20 @@ class FeatureList(
         - [FeatureGroup.feature_names](/reference/featurebyte.api.feature_group.FeatureGroup.feature_names/)
         """
         return super().feature_names
+
+    @property
+    def feature_ids(self) -> Sequence[ObjectId]:
+        """
+        Returns the unique identifier (ID) of the Feature objects associated with the FeatureList object.
+
+        Returns
+        -------
+        List[ObjectId]
+        """
+        try:
+            return cast(FeatureListModel, self.cached_model).feature_ids
+        except RecordRetrievalException:
+            return [feature.id for feature in self.feature_objects.values()]
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
@@ -787,8 +812,6 @@ class FeatureList(
         features = list(values["feature_objects"].values())
         if not values.get("feature_ids"):
             values["feature_ids"] = [feature.id for feature in features]
-        if not values.get("version"):
-            values["version"] = get_version()
         return values
 
     @typechecked
@@ -804,7 +827,10 @@ class FeatureList(
         -------
         FeatureListNamespace
         """
-        return FeatureListNamespace.get_by_id(id=self.feature_list_namespace_id)
+        feature_list_namespace_id = cast(
+            FeatureListModel, self.cached_model
+        ).feature_list_namespace_id
+        return FeatureListNamespace.get_by_id(id=feature_list_namespace_id)
 
     @property
     def online_enabled_feature_ids(self) -> List[PydanticObjectId]:
@@ -834,7 +860,9 @@ class FeatureList(
         try:
             return self.cached_model.readiness_distribution
         except RecordRetrievalException:
-            return self.derive_readiness_distribution(list(self.feature_objects.values()))  # type: ignore
+            return FeatureListModel.derive_readiness_distribution(
+                list(self.feature_objects.values())  # type: ignore
+            )
 
     @property
     def production_ready_fraction(self) -> float:
