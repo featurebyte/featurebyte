@@ -25,6 +25,11 @@ class TileCommon(BaselSqlModel, ABC):
     value_column_names: List[str]
     value_column_types: List[str]
 
+    class Config:
+        """Model configuration"""
+
+        extra = "forbid"
+
     def __init__(self, session: BaseSession, **kwargs: Any):
         """
         Initialize Tile Operation Instance

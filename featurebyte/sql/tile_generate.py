@@ -41,7 +41,6 @@ class TileGenerate(TileCommon):
             sql=tile_sql,
             table_name=self.tile_id,
             table_exist=tile_table_exist_flag,
-            tile_start_date_column=self.tile_start_date_column,
             tile_modulo_frequency_second=self.tile_modulo_frequency_second,
             blind_spot_second=self.blind_spot_second,
             frequency_minute=self.frequency_minute,
@@ -49,7 +48,6 @@ class TileGenerate(TileCommon):
             value_column_names=self.value_column_names,
             value_column_types=self.value_column_types,
             tile_id=self.tile_id,
-            tile_type=self.tile_type,
             aggregation_id=self.aggregation_id,
         ).execute()
 
