@@ -469,9 +469,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
-    feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)
+    feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)  # DEV-556
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
-        allow_mutation=False, default=None
+        allow_mutation=False, default=None  # DEV-556
     )
     readiness_distribution: FeatureReadinessDistribution = Field(
         allow_mutation=False, default_factory=list
