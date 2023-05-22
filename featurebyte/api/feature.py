@@ -32,7 +32,6 @@ from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
 from featurebyte.core.accessor.feature_string import FeatureStrAccessorMixin
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
-from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
