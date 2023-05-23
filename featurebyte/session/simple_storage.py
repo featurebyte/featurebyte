@@ -9,11 +9,14 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import boto3
+from azure.core.credentials import AzureNamedKeyCredential
+from azure.storage.blob import BlobServiceClient
 from bson import ObjectId
 from google.cloud.storage import Client as GCSClient
 from smart_open import open as remote_open
 
 from featurebyte.models.credential import (
+    AzureBlobStorageCredential,
     GCSStorageCredential,
     S3StorageCredential,
     StorageCredential,
@@ -196,3 +199,45 @@ class GCSStorage(SimpleStorage):
         path = path.rstrip("/")
         key = f"{self.key_prefix}/{path}" if self.key_prefix else path
         self.client.get_bucket(self.bucket).delete_blob(blob_name=key)
+
+
+class AzureBlobStorage(SimpleStorage):
+    """
+    Simple Azure Blob storage class
+    """
+
+    def __init__(
+        self,
+        storage_url: str,
+        storage_credential: AzureBlobStorageCredential,
+    ) -> None:
+        super().__init__(storage_url=storage_url, storage_credential=storage_credential)
+        self.client = BlobServiceClient.from_connection_string(
+            conn_str=(
+                f"AccountName={storage_credential.account_name};DefaultEndpointsProtocol=https;"
+                "EndpointSuffix=core.windows.net"
+            ),
+            credential=AzureNamedKeyCredential(
+                name=storage_credential.account_name, key=storage_credential.account_key
+            ),
+        )
+        protocol, path = storage_url.split("//")
+        assert protocol == "azure:"
+        parts = path.split("/")
+        if len(parts) == 0:
+            raise ValueError("Container is missing in storage url")
+        self.container = parts[0]
+        if len(parts) > 1:
+            self.key_prefix = "/".join(parts[1:])
+            self.base_url = f"azure://{self.container}/{self.key_prefix}"
+        else:
+            self.key_prefix = ""
+            self.base_url = f"azure://{self.container}"
+
+    def _get_transport_params(self) -> Dict[str, Any]:
+        return {"client": self.client}
+
+    def delete_object(self, path: str) -> None:
+        path = path.rstrip("/")
+        key = f"{self.key_prefix}/{path}" if self.key_prefix else path
+        self.client.get_container_client(container=self.container).delete_blob(blob=key)  # type: ignore
