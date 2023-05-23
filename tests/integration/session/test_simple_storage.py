@@ -40,7 +40,7 @@ def test_s3_storage():
 
 def test_azure_blob_storage():
     """
-    Test azure blib storage
+    Test Azure Blob storage
     """
     storage = AzureBlobStorage(
         storage_url="azure://storage-test",

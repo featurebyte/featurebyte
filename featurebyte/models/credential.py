@@ -234,7 +234,8 @@ class AzureBlobStorageCredential(BaseStorageCredential):
     Examples
     --------
     >>> azure_blob_storage_credential = AzureBlobStorageCredential(
-    ...   account_name="my_azure_storage", account_key="my_azure_storage_key")
+    ...   account_name="my_azure_storage",
+    ...   account_key="my_azure_storage_key",
     ... )
     """
 
