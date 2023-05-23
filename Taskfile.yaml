@@ -381,7 +381,7 @@ tasks:
     desc: "Generate changelog for PR"
     vars:
       clogs:
-        sh: git diff origin/main\:./ --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
+        sh: git diff origin/main... --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
     preconditions:
       - sh: bash -c '[[ "" != "{{.clogs}}" ]]'
         msg: "No changelog files found in PR"
@@ -393,7 +393,7 @@ tasks:
     desc: "View changelog files in pr"
     vars:
       clogs:
-        sh: git diff origin/main\:./ --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
+        sh: git diff origin/main... --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
     cmds:
       - pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
       - python .changelog/changelog-gen.py --file-mode {{.clogs}}
