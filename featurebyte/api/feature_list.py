@@ -496,6 +496,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         - `version`: The version name.
         - `production_ready_fraction`: The percentage of features that are production-ready.
+        - `default_feature_fraction`: The percentage of features that are default features.
 
         This method is only available for FeatureList objects that are saved in the catalog.
 
@@ -560,6 +561,10 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             'default': ...
           },
           'production_ready_fraction': {
+            'this': 1.0,
+            'default': 1.0
+          },
+          'default_feature_fraction': {
             'this': 1.0,
             'default': 1.0
           },
@@ -873,8 +878,35 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         Returns
         -------
         Fraction of production ready feature
+
+        See Also
+        --------
+        - [FeatureList.info](/reference/featurebyte.api.feature_list.FeatureList.info/)
         """
         return self.readiness_distribution.derive_production_ready_fraction()
+
+    @property
+    def default_feature_fraction(self) -> float:
+        """
+        Retrieve fraction of default features in the feature list
+
+        Returns
+        -------
+        Fraction of default feature
+
+        See Also
+        --------
+        - [Feature.info](/reference/featurebyte.api.feature.Feature.info/)
+        - [Feature.is_default](/reference/featurebyte.api.feature.Feature.is_default/)
+        - [FeatureList.info](/reference/featurebyte.api.feature_list.FeatureList.info/)
+        """
+        namespace_info = self.feature_list_namespace.info()
+        default_feat_ids = set(namespace_info["default_feature_ids"])
+        default_feat_count = 0
+        for feat_id in self.feature_ids:
+            if str(feat_id) in default_feat_ids:
+                default_feat_count += 1
+        return default_feat_count / len(self.feature_ids)
 
     @property
     def deployed(self) -> bool:

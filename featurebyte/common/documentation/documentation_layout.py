@@ -375,6 +375,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.updated_at"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.is_default"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.production_ready_fraction"]),
+        DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.default_feature_fraction"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.version"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.catalog_id"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.feature_ids"]),

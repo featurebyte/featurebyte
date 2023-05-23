@@ -83,6 +83,8 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     # check default feature fraction
     assert feature_list.info()["default_feature_fraction"] == {"this": 2 / 3, "default": 1.0}
     assert feature_list_v1.info()["default_feature_fraction"] == {"this": 1.0, "default": 1.0}
+    assert feature_list.default_feature_fraction == 2 / 3
+    assert feature_list_v1.default_feature_fraction == 1.0
 
     # create a new feature list version by specifying features
     feature_list_v2 = feature_list.create_new_version(
@@ -99,6 +101,9 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     assert feature_list.info()["default_feature_fraction"] == {"this": 2 / 3, "default": 1.0}
     assert feature_list_v1.info()["default_feature_fraction"] == {"this": 1.0, "default": 1.0}
     assert feature_list_v2.info()["default_feature_fraction"] == {"this": 1.0, "default": 1.0}
+    assert feature_list.default_feature_fraction == 2 / 3
+    assert feature_list_v1.default_feature_fraction == 1.0
+    assert feature_list_v2.default_feature_fraction == 1.0
 
     # check feature list ids in feature list namespace
     assert set(feature_list.feature_list_namespace.feature_list_ids) == {
@@ -139,6 +144,8 @@ def test_feature_list__as_default_version(feature_group):
         "this": 1.0,
         "default": 1.0,
     }
+    assert feature_list.default_feature_fraction == 2 / 3
+    assert new_feature_list_version.default_feature_fraction == 1.0
 
     # check setting default version fails when default version mode is not MANUAL
     with pytest.raises(RecordUpdateException) as exc:
