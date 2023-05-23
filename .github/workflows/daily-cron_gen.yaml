@@ -5,7 +5,7 @@ name: Daily Maintenance
 'on':
   workflow_dispatch: {}
   schedule:
-    cron: 0 0 * * *
+  - cron: 0 0 * * *
 permissions:
   actions: write
   contents: write
