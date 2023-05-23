@@ -13,6 +13,7 @@ from featurebyte import TableCleaningOperation
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import TableModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.persistent import Persistent
@@ -28,6 +29,7 @@ from featurebyte.schema.info import (
     BatchRequestTableInfo,
     CatalogInfo,
     CredentialInfo,
+    DefaultFeatureFractionComparison,
     DeploymentInfo,
     DimensionTableInfo,
     EntityBriefInfoList,
@@ -683,6 +685,25 @@ class InfoService(BaseService):
             catalog_name=catalog.name,
         )
 
+    @staticmethod
+    def _compute_default_feature_fraction(
+        feature_list: FeatureListModel,
+        default_feature_list: FeatureListModel,
+        feature_list_namespace_info: FeatureListNamespaceInfo,
+    ) -> DefaultFeatureFractionComparison:
+        default_feature_ids = set(feature_list_namespace_info.default_feature_ids)
+        this_count, default_count = 0, 0
+        for feat_id in feature_list.feature_ids:
+            if feat_id in default_feature_ids:
+                this_count += 1
+        for feat_id in default_feature_list.feature_ids:
+            if feat_id in default_feature_ids:
+                default_count += 1
+        return DefaultFeatureFractionComparison(
+            this=this_count / len(feature_list.feature_ids),
+            default=default_count / len(default_feature_list.feature_ids),
+        )
+
     async def get_feature_list_info(self, document_id: ObjectId, verbose: bool) -> FeatureListInfo:
         """
         Get feature list info
@@ -731,6 +752,9 @@ class InfoService(BaseService):
                 "this": feature_list.readiness_distribution.derive_production_ready_fraction(),
                 "default": default_feature_list.readiness_distribution.derive_production_ready_fraction(),
             },
+            default_feature_fraction=self._compute_default_feature_fraction(
+                feature_list, default_feature_list, namespace_info
+            ),
             versions_info=versions_info,
             deployed=feature_list.deployed,
         )
@@ -796,6 +820,15 @@ class InfoService(BaseService):
             assert table["catalog_id"] == catalog.id
             table["catalog_name"] = catalog.name
 
+        # get default feature ids
+        feat_namespace_to_default_id = {}
+        async for feat_namespace in self.feature_namespace_service.list_documents_iterator(
+            query_filter={"_id": {"$in": namespace.feature_namespace_ids}}
+        ):
+            feat_namespace_to_default_id[feat_namespace["_id"]] = feat_namespace[
+                "default_feature_id"
+            ]
+
         return FeatureListNamespaceInfo(
             name=namespace.name,
             created_at=namespace.created_at,
@@ -810,6 +843,11 @@ class InfoService(BaseService):
             feature_count=len(namespace.feature_namespace_ids),
             status=namespace.status,
             catalog_name=catalog.name,
+            feature_namespace_ids=namespace.feature_namespace_ids,
+            default_feature_ids=[
+                feat_namespace_to_default_id[feat_namespace_id]
+                for feat_namespace_id in namespace.feature_namespace_ids
+            ],
         )
 
     async def get_feature_job_setting_analysis_info(
