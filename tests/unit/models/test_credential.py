@@ -10,6 +10,7 @@ from featurebyte import SnowflakeDetails
 from featurebyte.enum import SourceType
 from featurebyte.models.credential import (
     AccessTokenCredential,
+    AzureBlobStorageCredential,
     CredentialModel,
     DatabaseCredentialType,
     GCSStorageCredential,
@@ -40,6 +41,11 @@ def storage_credential_fixture(request):
                 "type": "service_account",
                 "private_key": "private_key",
             }
+        )
+    elif request.param == StorageCredentialType.AZURE:
+        credential = AzureBlobStorageCredential(
+            account_name="account_name",
+            account_key="account_key",
         )
     else:
         raise ValueError("Invalid storage credential type")

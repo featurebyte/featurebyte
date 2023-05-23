@@ -727,6 +727,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SparkDetails"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "AccessTokenCredential"]),
+        DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "AzureBlobStorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "GCSStorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
