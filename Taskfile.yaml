@@ -374,7 +374,8 @@ tasks:
   changelog:
     desc: "Generate all changelog entries in .changelog"
     cmds:
-      - pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
+      - cmd: pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
+        silent: true
       - python .changelog/changelog-gen.py
 
   changelog-pr:
@@ -386,7 +387,8 @@ tasks:
       - sh: bash -c '[[ "" != "{{.clogs}}" ]]'
         msg: "No changelog files found in PR"
     cmds:
-      - pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
+      - cmd: pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
+        silent: true
       - python .changelog/changelog-gen.py {{.clogs}}
 
   changelog-pr-files:
@@ -395,5 +397,6 @@ tasks:
       clogs:
         sh: git diff origin/main... --numstat | awk '{if ($3 ~ /^.changelog/ && $3 ~ /.yaml$/ && $3 !~ /TEMPLATE[.]yaml$/) { print $3 }}' | sed 's-.changelog/--g' | xargs
     cmds:
-      - pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
+      - cmd: pip show pyyaml 2>&1 >/dev/null || pip install pyyaml
+        silent: true
       - python .changelog/changelog-gen.py --file-mode {{.clogs}}
