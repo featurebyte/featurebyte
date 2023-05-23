@@ -23,19 +23,9 @@ def user():
 
 
 @pytest_asyncio.fixture(name="migration_persistent")
-async def persistent_fixture():
+async def persistent_fixture(persistent):
     """Persistent fixture"""
-    with patch("motor.motor_asyncio.AsyncIOMotorClient.__new__") as mock_new:
-        mongo_client = AsyncMongoMockClient()
-        mock_new.return_value = mongo_client
-        persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test")
-
-        @asynccontextmanager
-        async def start_transaction():
-            yield persistent
-
-        with patch.object(persistent, "start_transaction", start_transaction):
-            yield persistent
+    yield persistent
 
 
 @pytest.fixture(name="schema_metadata_service")
