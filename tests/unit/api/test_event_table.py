@@ -1037,7 +1037,10 @@ def test_create_event_table__duplicated_column_name_in_different_fields(snowflak
             record_creation_timestamp_column="event_timestamp",
         )
 
-    expected_error_message = 'Column "event_timestamp" is duplicated in event_timestamp_column and record_creation_timestamp_column!'
+    expected_error_message = (
+        "event_timestamp_column and record_creation_timestamp_column have to be different columns in the table but "
+        '"event_timestamp" is specified for both.'
+    )
     assert expected_error_message in str(exc.value)
 
 

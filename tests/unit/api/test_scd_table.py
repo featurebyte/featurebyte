@@ -274,7 +274,10 @@ def test_create_scd_table__duplicated_column_name_in_different_fields(
             record_creation_timestamp_column="created_at",
         )
 
-    expected_error_message = 'Column "effective_timestamp" is duplicated in end_timestamp_column and effective_timestamp_column!'
+    expected_error_message = (
+        "end_timestamp_column and effective_timestamp_column have to be different columns in the table but "
+        '"effective_timestamp" is specified for both.'
+    )
     assert expected_error_message in str(exc.value)
 
 

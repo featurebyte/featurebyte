@@ -55,8 +55,8 @@ def construct_data_model_root_validator(
                 if col_name in col_name_to_field_name_map:
                     duplicate_field_name = col_name_to_field_name_map[col_name]
                     raise ValueError(
-                        f'Column "{col_name}" is duplicated in {_sanitize_field_name(field_name)} '
-                        f"and {_sanitize_field_name(duplicate_field_name)}!"
+                        f"{_sanitize_field_name(field_name)} and {_sanitize_field_name(duplicate_field_name)} "
+                        f'have to be different columns in the table but "{col_name}" is specified for both.'
                     )
                 col_name_to_field_name_map[col_name] = field_name
         return values

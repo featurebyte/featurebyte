@@ -177,7 +177,8 @@ def test_create_item_table__duplicated_column_name_in_different_fields(
         )
 
     expected_error_message = (
-        'Column "event_id_col" is duplicated in item_id_column and event_id_column!'
+        "item_id_column and event_id_column have to be different columns in the table but "
+        '"event_id_col" is specified for both.'
     )
     assert expected_error_message in str(exc.value)
 
