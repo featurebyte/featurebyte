@@ -42,7 +42,7 @@ def construct_data_model_root_validator(
             col_dict = dict(col_info)
             col_info_map[col_dict["name"]] = col_dict
 
-        col_name_to_field_name_map = {}
+        col_name_to_field_name_map: dict[str, str] = {}
         for field_name, expected_db_types in expected_column_field_name_type_pairs:
             col_name = values.get(field_name)
             if col_name:

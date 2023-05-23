@@ -3,9 +3,9 @@ SCDTable API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import List, Literal, Optional
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
