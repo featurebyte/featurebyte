@@ -580,6 +580,7 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
             this=feature_list.version.to_str(), default=feature_list.version.to_str()
         ),
         production_ready_fraction={"this": 0.0, "default": 0.0},
+        default_feature_fraction={"this": 1.0, "default": 1.0},
         created_at=feature_list_namespace.created_at,
         updated_at=None,
         deployed=False,
@@ -606,7 +607,7 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
 
 
 @pytest.mark.asyncio
-async def test_get_feature_list_namespace_info(info_service, feature_list_namespace):
+async def test_get_feature_list_namespace_info(info_service, feature_list_namespace, feature):
     """Test get_feature_list_namespace_info"""
     info = await info_service.get_feature_list_namespace_info(
         document_id=feature_list_namespace.id, verbose=False
@@ -626,6 +627,8 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
         default_feature_list_id=feature_list_namespace.default_feature_list_id,
+        feature_namespace_ids=feature_list_namespace.feature_namespace_ids,
+        default_feature_ids=[feature.id],
         status="DRAFT",
         feature_count=1,
         created_at=feature_list_namespace.created_at,

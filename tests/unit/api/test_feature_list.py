@@ -467,6 +467,7 @@ def test_info(saved_feature_list):
         "feature_count": 1,
         "version_count": 1,
         "production_ready_fraction": {"this": 0.0, "default": 0.0},
+        "default_feature_fraction": {"this": 1.0, "default": 1.0},
         "deployed": False,
         "catalog_name": "default",
         "default_feature_list_id": str(saved_feature_list.id),
