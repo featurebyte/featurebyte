@@ -192,22 +192,14 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
         When the Feature get updated
     """
 
-    dtype: DBVarType = Field(
-        allow_mutation=False, description="database variable type for the feature"
-    )
+    dtype: DBVarType = Field(allow_mutation=False, default=DBVarType.UNKNOWN)
     graph: QueryGraph = Field(allow_mutation=False)
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
-    version: VersionIdentifier = Field(
-        allow_mutation=False,
-        default=None,
-        description="Returns the version identifier of a Feature object.",
-    )
+    version: VersionIdentifier = Field(allow_mutation=False, default=None)
     online_enabled: bool = Field(allow_mutation=False, default=False)
-    definition: Optional[str] = Field(
-        allow_mutation=False, default=None, description="Feature Definition"
-    )
+    definition: Optional[str] = Field(allow_mutation=False, default=None)
 
     # list of IDs attached to this feature
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
@@ -231,6 +223,14 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
         values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
         values["table_ids"] = graph.get_table_ids(node_name=node_name)
         values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
+
+        # extract dtype from the graph
+        node = graph.get_node_by_name(node_name)
+        op_struct = graph.extract_operation_structure(node=node)
+        if len(op_struct.aggregations) != 1:
+            raise ValueError("Feature graph must have exactly one aggregation output")
+
+        values["dtype"] = op_struct.aggregations[0].dtype
         return values
 
     @property
