@@ -360,10 +360,10 @@ def test_accessing_saved_scd_table_attributes(saved_scd_table):
     cloned = SCDTable.get_by_id(id=saved_scd_table.id)
     assert cloned.record_creation_timestamp_column is None
     saved_scd_table.update_record_creation_timestamp_column(
-        record_creation_timestamp_column="effective_timestamp"
+        record_creation_timestamp_column="created_at"
     )
-    assert saved_scd_table.record_creation_timestamp_column == "effective_timestamp"
-    assert cloned.record_creation_timestamp_column == "effective_timestamp"
+    assert saved_scd_table.record_creation_timestamp_column == "created_at"
+    assert cloned.record_creation_timestamp_column == "created_at"
 
 
 def test_sdk_code_generation(snowflake_database_table_scd_table, update_fixtures):
