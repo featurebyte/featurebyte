@@ -60,7 +60,7 @@ jobs:
         credentials_json: ${{ secrets.GCR_PYPI_CREDENTIALS_R }}
     - name: Get Version to Publish
       run: |
-        export PACKAGE=$(poetry version --no-ansi | cut -d  -f1)
+        export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
         export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
         export DEV_VERSION=$(gcloud artifacts versions list --project ${GCR_PYPI_PROJECT_ID} --repository=${GCR_PYPI_REPO} --location=${GCR_PYPI_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
           sort --version-sort -r | \
@@ -72,7 +72,7 @@ jobs:
         echo "DEV_VERSION=$(poetry version -s).dev$((DEV_VERSION+=1))" >> $GITHUB_ENV
         echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
     - name: Update Version in pyproject.toml
-      run: sed -i -E "s|^version = "[^"]+"|version = "${{ env.DEV_VERSION }}"|g" pyproject.toml
+      run: sed -i -E "s|^version = \"[^\"]+\"|version = \"${{ env.DEV_VERSION }}\"|g" pyproject.toml
     - name: Set Github Committer Settings
       run: |-
         git config --global user.name "featurebyte[bot]"
