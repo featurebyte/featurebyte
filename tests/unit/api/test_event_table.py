@@ -1027,6 +1027,23 @@ def test_timezone_offset__invalid_column(snowflake_database_table_dimension_tabl
     assert expected in str(exc.value)
 
 
+def test_create_event_table__duplicated_column_name_in_different_fields(snowflake_database_table):
+    """Test EventTable creation failure due to duplicated column name in different fields"""
+    with pytest.raises(ValueError) as exc:
+        snowflake_database_table.create_event_table(
+            name="sf_event_table",
+            event_id_column="col_int",
+            event_timestamp_column="event_timestamp",
+            record_creation_timestamp_column="event_timestamp",
+        )
+
+    expected_error_message = (
+        "event_timestamp_column and record_creation_timestamp_column have to be different columns in the table but "
+        '"event_timestamp" is specified for both.'
+    )
+    assert expected_error_message in str(exc.value)
+
+
 def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     """Check SDK code generation for unsaved table"""
     event_table = snowflake_database_table.create_event_table(

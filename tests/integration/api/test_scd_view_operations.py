@@ -140,7 +140,6 @@ async def test_scd_join_small(session, data_source, source_type):
         name=f"{source_type}_{table_prefix}_SCD_DATA",
         natural_key_column="scd_cust_id",
         effective_timestamp_column="effective_ts",
-        surrogate_key_column="scd_cust_id",
     )
     scd_view = scd_table.get_view()
     event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest")

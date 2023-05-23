@@ -29,6 +29,11 @@ def construct_data_model_root_validator(
     # Note: When `root_validator(pre=True)` is used to decorate this validator, alias key should be used.
     # When `root_validator(pre=False)` is used to decorate, non-alias key should be used.
 
+    def _sanitize_field_name(field_name: str) -> str:
+        if field_name.startswith("internal_"):
+            return field_name[len("internal_") :]
+        return field_name
+
     def _root_validator(cls: Any, values: dict[str, Any]) -> dict[str, Any]:
         _ = cls
         columns_info = values[columns_info_key]
@@ -37,6 +42,7 @@ def construct_data_model_root_validator(
             col_dict = dict(col_info)
             col_info_map[col_dict["name"]] = col_dict
 
+        col_name_to_field_name_map: dict[str, str] = {}
         for field_name, expected_db_types in expected_column_field_name_type_pairs:
             col_name = values.get(field_name)
             if col_name:
@@ -46,6 +52,13 @@ def construct_data_model_root_validator(
                 if expected_db_types and col_dtype not in expected_db_types:
                     dtypes = sorted(str(dtype) for dtype in expected_db_types)
                     raise ValueError(f'Column "{col_name}" is expected to have type(s): {dtypes}')
+                if col_name in col_name_to_field_name_map:
+                    duplicate_field_name = col_name_to_field_name_map[col_name]
+                    raise ValueError(
+                        f"{_sanitize_field_name(field_name)} and {_sanitize_field_name(duplicate_field_name)} "
+                        f'have to be different columns in the table but "{col_name}" is specified for both.'
+                    )
+                col_name_to_field_name_map[col_name] = field_name
         return values
 
     return _root_validator

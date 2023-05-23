@@ -16,7 +16,7 @@ component: guardrails
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "add guardrail to make sure `SCDTable`'s `effective_timestamp_column` differs from `end_timestamp_column`"
+note: "add guardrail to make sure `*Table` creation does not contain shared column name in different parameters"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
