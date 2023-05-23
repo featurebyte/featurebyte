@@ -22,7 +22,7 @@ def user():
     return user
 
 
-@pytest_asyncio.fixture(name="persistent")
+@pytest_asyncio.fixture(name="migration_persistent")
 async def persistent_fixture():
     """Persistent fixture"""
     with patch("motor.motor_asyncio.AsyncIOMotorClient.__new__") as mock_new:
