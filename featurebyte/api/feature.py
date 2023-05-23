@@ -169,7 +169,7 @@ class Feature(
 
         Returns
         -------
-        List[ObjectId]
+        Sequence[ObjectId]
         """
         try:
             return cast(FeatureModel, self.cached_model).entity_ids
@@ -183,7 +183,7 @@ class Feature(
 
         Returns
         -------
-        List[ObjectId]
+        Sequence[ObjectId]
         """
         try:
             return cast(FeatureModel, self.cached_model).table_ids
@@ -197,7 +197,7 @@ class Feature(
 
         Returns
         -------
-        List[ObjectId]
+        Sequence[ObjectId]
         """
         return cast(FeatureModel, self.cached_model).feature_list_ids
 

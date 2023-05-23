@@ -66,16 +66,14 @@ def test_feature_list_creation__success(
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
 
-    assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
+    assert flist.dict(by_alias=True) == {
+        "_id": flist.id,
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
-        "version": "V220501",
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "feature_clusters": None,
         "catalog_id": DEFAULT_CATALOG_ID,
-        "relationships_info": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -83,8 +81,7 @@ def test_feature_list_creation__success(
     with pytest.raises(RecordRetrievalException) as exc:
         _ = flist.status
     error_message = (
-        f'FeatureListNamespace (id: "{flist.feature_list_namespace_id}") not found. '
-        f"Please save the FeatureList object first."
+        f'FeatureList (id: "{flist.id}") not found. Please save the FeatureList object first.'
     )
     assert error_message in str(exc.value)
 
@@ -163,27 +160,24 @@ def test_feature_list__get_historical_features__iteration_logic(
     )
 
 
-@freeze_time("2022-05-01")
 def test_feature_list_creation__feature_and_group(production_ready_feature, feature_group):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList(
         [production_ready_feature, feature_group[["sum_30m", "sum_1d"]]],
         name="my_feature_list",
     )
-    assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
+    assert flist.dict(by_alias=True) == {
+        "_id": flist.id,
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "version": "V220501",
         "feature_ids": [
             production_ready_feature.id,
             feature_group["sum_30m"].id,
             feature_group["sum_1d"].id,
         ],
         "name": "my_feature_list",
-        "feature_clusters": None,
         "catalog_id": DEFAULT_CATALOG_ID,
-        "relationships_info": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -382,7 +376,6 @@ def test_base_feature_group__drop(production_ready_feature, draft_feature):
     assert feat_group1.feature_names == ["draft_feature"]
 
 
-@freeze_time("2022-07-20")
 def test_feature_list__construction(production_ready_feature, draft_feature):
     """
     Test FeatureList creation
@@ -535,7 +528,7 @@ def test_get_feature_list(saved_feature_list):
             ("deployed", False),
             ("feature_clusters", audit_history.new_value.iloc[3]),
             ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
-            ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace_id)),
+            ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace.id)),
             ("name", "my_feature_list"),
             ("online_enabled_feature_ids", []),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
@@ -767,8 +760,7 @@ def test_feature_list_update_status_and_default_version_mode__unsaved_feature_li
     assert feature_list.saved is False
     with pytest.raises(RecordRetrievalException) as exc:
         feature_list.update_status(FeatureListStatus.TEMPLATE)
-    namespace_id = feature_list.feature_list_namespace_id
-    expected = f'FeatureListNamespace (id: "{namespace_id}") not found. Please save the FeatureList object first.'
+    expected = f'FeatureList (id: "{feature_list.id}") not found. Please save the FeatureList object first.'
     assert expected in str(exc.value)
 
     with pytest.raises(RecordRetrievalException) as exc:
@@ -1258,10 +1250,10 @@ def test_delete_feature_list_namespace__success(saved_feature_list):
 
     # check feature list namespace & feature list records are deleted
     with pytest.raises(RecordRetrievalException) as exc_info:
-        FeatureListNamespace.get_by_id(saved_feature_list.feature_list_namespace_id)
+        FeatureListNamespace.get_by_id(saved_feature_list.feature_list_namespace.id)
 
     expected_msg = (
-        f'FeatureListNamespace (id: "{saved_feature_list.feature_list_namespace_id}") not found. '
+        f'FeatureList (id: "{saved_feature_list.id}") not found. '
         "Please save the FeatureList object first."
     )
     assert expected_msg in str(exc_info.value)

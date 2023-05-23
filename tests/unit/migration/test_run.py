@@ -56,10 +56,10 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 
 
 @pytest.mark.asyncio
-async def test_migrate_method_generator(user, persistent, get_credential):
+async def test_migrate_method_generator(user, migration_persistent, get_credential):
     """Test migrate method generator"""
     schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=migration_persistent, catalog_id=DEFAULT_CATALOG_ID
     )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
@@ -68,7 +68,7 @@ async def test_migrate_method_generator(user, persistent, get_credential):
     expected_method_num = len(retrieve_all_migration_methods())
     method_generator = migrate_method_generator(
         user=user,
-        persistent=persistent,
+        persistent=migration_persistent,
         get_credential=get_credential,
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=True,
@@ -88,7 +88,7 @@ async def test_migrate_method_generator(user, persistent, get_credential):
     )
     method_generator = migrate_method_generator(
         user=user,
-        persistent=persistent,
+        persistent=migration_persistent,
         get_credential=get_credential,
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=True,
@@ -101,10 +101,12 @@ async def test_migrate_method_generator(user, persistent, get_credential):
 
 
 @pytest.mark.asyncio
-async def test_migrate_method_generator__exclude_warehouse(user, persistent, get_credential):
+async def test_migrate_method_generator__exclude_warehouse(
+    user, migration_persistent, get_credential
+):
     """Test migrate method generator with include_data_warehouse_migrations=False"""
     schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=migration_persistent, catalog_id=DEFAULT_CATALOG_ID
     )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
@@ -114,7 +116,7 @@ async def test_migrate_method_generator__exclude_warehouse(user, persistent, get
     expected_method_num = len(retrieve_all_migration_methods()) - expected_num_warehouse_migrations
     method_generator = migrate_method_generator(
         user=user,
-        persistent=persistent,
+        persistent=migration_persistent,
         get_credential=get_credential,
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=False,
@@ -123,20 +125,22 @@ async def test_migrate_method_generator__exclude_warehouse(user, persistent, get
 
 
 @pytest_asyncio.fixture(name="migration_check_persistent")
-async def migration_check_user_persistent_fixture(test_dir, persistent):
+async def migration_check_user_persistent_fixture(test_dir, migration_persistent):
     """Insert testing samples into the persistent"""
     fixture_glob_pattern = os.path.join(test_dir, "fixtures/migration/*")
     for file_name in glob.glob(fixture_glob_pattern):
         records = json_util.loads(open(file_name).read())
         collection_name = os.path.basename(file_name)
-        await persistent._insert_many(collection_name=collection_name, documents=records)
-    return persistent
+        await migration_persistent._insert_many(collection_name=collection_name, documents=records)
+    return migration_persistent
 
 
 @pytest.mark.asyncio
-async def test_post_migration_sanity_check(persistent, user):
+async def test_post_migration_sanity_check(migration_persistent, user):
     """Test post_migration_sanity_check"""
-    service = EntityService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    service = EntityService(
+        user=user, persistent=migration_persistent, catalog_id=DEFAULT_CATALOG_ID
+    )
     docs = []
     for i in range(20):
         doc = await service.create_document(
