@@ -287,6 +287,8 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "tables": [
                 {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}
             ],
+            "feature_namespace_ids": create_response_dict["feature_namespace_ids"],
+            "default_feature_ids": response_dict["default_feature_ids"],
             "default_version_mode": "AUTO",
             "default_feature_list_id": response_dict["default_feature_list_id"],
             "dtype_distribution": [{"count": 2, "dtype": "FLOAT"}],
