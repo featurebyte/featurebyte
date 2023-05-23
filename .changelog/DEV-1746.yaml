@@ -16,7 +16,7 @@ component: mongodb
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "mongodb logs to be deleted after 6 hours to avoid filling up disk space"
+note: "mongodb logs to be shipped to stderr to reduce disk usage"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
