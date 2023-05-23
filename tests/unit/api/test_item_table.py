@@ -163,6 +163,25 @@ def test_create_item_table__retrieval_exception(snowflake_database_table_item_ta
             )
 
 
+def test_create_item_table__duplicated_column_name_in_different_fields(
+    snowflake_database_table_item_table, saved_event_table
+):
+    """Test ItemTable creation failure due to duplicated column name"""
+    _ = saved_event_table
+    with pytest.raises(ValueError) as exc:
+        snowflake_database_table_item_table.create_item_table(
+            name="sf_item_table",
+            event_id_column="event_id_col",
+            item_id_column="event_id_col",
+            event_table_name="sf_event_table",
+        )
+
+    expected_error_message = (
+        'Column "event_id_col" is duplicated in item_id_column and event_id_column!'
+    )
+    assert expected_error_message in str(exc.value)
+
+
 def test_deserialization(
     item_table_dict,
     snowflake_feature_store,

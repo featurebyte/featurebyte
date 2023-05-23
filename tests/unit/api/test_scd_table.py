@@ -259,13 +259,10 @@ def test_create_scd_table__retrieval_exception(snowflake_database_table_scd_tabl
             )
 
 
-def test_create_scd_table__effective_timestamp_column_same_as_end_timestamp_column(
+def test_create_scd_table__duplicated_column_name_in_different_fields(
     snowflake_database_table_scd_table,
 ):
-    """
-    Test SCDTable creation failure due to effective_timestamp_column same as end_timestamp_column
-    """
-    # test when effective_timestamp_column is same as end_timestamp_column
+    """Test SCDTable creation failure due to duplicated column name"""
     with pytest.raises(ValueError) as exc:
         snowflake_database_table_scd_table.create_scd_table(
             name="sf_scd_table",
@@ -276,7 +273,8 @@ def test_create_scd_table__effective_timestamp_column_same_as_end_timestamp_colu
             current_flag_column="is_active",
             record_creation_timestamp_column="created_at",
         )
-    expected_error_message = "effective_timestamp_column and end_timestamp_column cannot be same"
+
+    expected_error_message = 'Column "effective_timestamp" is duplicated in end_timestamp_column and effective_timestamp_column!'
     assert expected_error_message in str(exc.value)
 
 
