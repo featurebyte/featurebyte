@@ -22,12 +22,6 @@ def user():
     return user
 
 
-@pytest_asyncio.fixture(name="migration_persistent")
-async def persistent_fixture(persistent):
-    """Persistent fixture"""
-    yield persistent
-
-
 @pytest.fixture(name="schema_metadata_service")
 def schema_metadata_service_fixture(user, persistent):
     """Schema metadata service fixture"""
