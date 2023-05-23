@@ -54,6 +54,7 @@ from featurebyte.feature_utility import list_unsaved_features
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
     AccessTokenCredential,
+    AzureBlobStorageCredential,
     GCSStorageCredential,
     S3StorageCredential,
     UsernamePasswordCredential,
@@ -401,6 +402,7 @@ __all__ = [
     "Table",
     "TableFeatureJobSetting",
     # credentials
+    "AzureBlobStorageCredential",
     "AccessTokenCredential",
     "Credential",
     "GCSStorageCredential",
