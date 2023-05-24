@@ -473,7 +473,7 @@ jobs:
         echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }},${{ needs.test-integration-databricks.result }}" >> $GITHUB_ENV
         echo "TEST_DOCS_RESULT=${{ needs.test-docs.result }}" >> $GITHUB_ENV
         echo "VALIDATE_RESULT=${{ needs.validate.result }}" >> $GITHUB_ENV
-        echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV"
+        echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
     - env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       if: ${{ env.CHANNEL_ID != '' }}
