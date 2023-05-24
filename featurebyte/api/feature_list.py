@@ -1086,8 +1086,7 @@ class FeatureList(
         self,
         observation_set: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-        max_batch_size: int = 5000,
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame:
         """
         Returns a DataFrame with feature values for analysis, model training, or evaluation. The historical features
         request data consists of an observation set that combines historical points-in-time and key values of the
@@ -1120,8 +1119,6 @@ class FeatureList(
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events table has different serving name columns than those
             defined in Entities, mapping from original serving name to new name.
-        max_batch_size: int
-            Maximum number of rows per batch.
 
         Returns
         -------
@@ -1129,11 +1126,6 @@ class FeatureList(
             Materialized historical features.
 
             **Note**: `POINT_IN_TIME` values will be converted to UTC time.
-
-        Raises
-        ------
-        RecordRetrievalException
-            Get historical features request failed.
 
         Examples
         --------
@@ -1175,40 +1167,16 @@ class FeatureList(
         - [Feature.preview](/reference/featurebyte.api.feature.Feature.preview/):
           Preview feature group.
         """
-        payload = FeatureListGetHistoricalFeatures(
-            feature_list_id=self.id,
-            feature_clusters=self._get_feature_clusters(),
+        temp_historical_feature_table_name = f"__TEMPORARY_HISTORICAL_FEATURE_TABLE_{ObjectId}"
+        temp_historical_feature_table = self.compute_historical_feature_table(
+            observation_table=observation_set,
+            historical_feature_table_name=temp_historical_feature_table_name,
             serving_names_mapping=serving_names_mapping,
         )
-
-        client = Configurations().get_client()
-        output = []
-        with alive_bar(
-            total=int(np.ceil(len(observation_set) / max_batch_size)),
-            title="Retrieving Historical Feature(s)",
-            **get_alive_bar_additional_params(),
-        ) as progress_bar:
-            for _, batch in observation_set.groupby(
-                np.arange(len(observation_set)) // max_batch_size
-            ):
-                response = client.post(
-                    "/feature_list/historical_features",
-                    data={"payload": payload.json()},
-                    files={"observation_set": dataframe_to_arrow_bytes(batch)},
-                )
-                if response.status_code != HTTPStatus.OK:
-                    raise RecordRetrievalException(
-                        response,
-                        resolution=(
-                            f"\nIf the error is related to connection broken, "
-                            f"try to use a smaller `max_batch_size` parameter (current value: {max_batch_size})."
-                        ),
-                    )
-
-                output.append(dataframe_from_arrow_stream(response.content))
-                progress_bar()  # pylint: disable=not-callable
-
-        return pd.concat(output, ignore_index=True)
+        try:
+            return temp_historical_feature_table.to_pandas()
+        finally:
+            temp_historical_feature_table.delete()
 
     @typechecked
     def compute_historical_feature_table(
