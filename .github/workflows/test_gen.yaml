@@ -173,7 +173,7 @@ jobs:
       with:
         name: python-${{ matrix.python-version }}-.coverage.1
         path: .coverage.1
-  test-integraiton-spark:
+  test-integration-spark:
     needs:
     - build-jar
     runs-on: ubuntu-latest
