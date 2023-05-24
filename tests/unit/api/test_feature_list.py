@@ -2,11 +2,12 @@
 Tests for featurebyte.api.feature_list
 """
 import textwrap
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 import numpy as np
 import pandas as pd
 import pytest
+from bson import ObjectId
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
@@ -15,7 +16,6 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
-from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import InternalName
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -98,30 +98,28 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
             "cust_id": ["C1", "C2"],
         }
     )
-
-    # check success case
-    with patch("featurebyte.session.snowflake.SnowflakeSession.get_async_query_stream"):
-        with patch(
-            "featurebyte.api.feature_list.dataframe_from_arrow_stream"
-        ) as mock_from_arrow_stream:
-            mock_from_arrow_stream.return_value = pd.DataFrame({InternalName.ROW_INDEX: []})
+    mock_feature_table = Mock(name="TempFeatureTable")
+    mock_object_id = ObjectId()
+    with patch.object(
+        FeatureList, "compute_historical_feature_table"
+    ) as mock_compute_historical_feature_table:
+        mock_compute_historical_feature_table.return_value = mock_feature_table
+        with patch("featurebyte.api.feature_list.ObjectId", return_value=mock_object_id):
             flist.compute_historical_features(dataframe)
 
-    # check the case when response status code is not OK
-    with patch("requests.sessions.Session.post") as mock_post:
-        mock_response = mock_post.return_value
-        mock_response.status_code = 500
-        mock_response.text = "Connection broken: InvalidChunkLength(got length b'', 0 bytes read)"
-        with pytest.raises(RecordRetrievalException) as exc:
-            flist.compute_historical_features(dataframe)
-
-    expected_msg = (
-        "Connection broken: InvalidChunkLength(got length b'', 0 bytes read)\n"
-        "If the error is related to connection broken, "
-        "try to use a smaller `max_batch_size` parameter (current value: 5000)."
+    # Check compute_historical_feature_table() is called correctly
+    expected_dataframe = dataframe.copy()
+    expected_dataframe[InternalName.ROW_INDEX] = [0, 1]
+    _, kwargs = mock_compute_historical_feature_table.call_args
+    assert expected_dataframe.equals(kwargs["observation_table"])
+    assert (
+        kwargs["historical_feature_table_name"]
+        == f"__TEMPORARY_HISTORICAL_FEATURE_TABLE_{mock_object_id}"
     )
+    assert kwargs["serving_names_mapping"] is None
 
-    assert expected_msg in str(exc.value)
+    # Check temporary feature table is deleted
+    mock_feature_table.delete.assert_called_once()
 
 
 @freeze_time("2022-05-01")

@@ -22,7 +22,6 @@ from typing import (
 import collections
 from http import HTTPStatus
 
-import numpy as np
 import pandas as pd
 from alive_progress import alive_bar
 from bson.objectid import ObjectId
@@ -1167,7 +1166,7 @@ class FeatureList(
         - [Feature.preview](/reference/featurebyte.api.feature.Feature.preview/):
           Preview feature group.
         """
-        temp_historical_feature_table_name = f"__TEMPORARY_HISTORICAL_FEATURE_TABLE_{ObjectId}"
+        temp_historical_feature_table_name = f"__TEMPORARY_HISTORICAL_FEATURE_TABLE_{ObjectId()}"
         temp_historical_feature_table = self.compute_historical_feature_table(
             observation_table=observation_set,
             historical_feature_table_name=temp_historical_feature_table_name,
