@@ -389,19 +389,19 @@ jobs:
     - name: Download unit test results
       uses: actions/download-artifact@v3
       with:
-        name: python-${{ matrix.python-version }}-pytest-xml.0
+        name: python-${{ matrix.python-version }}-pytest.xml.0
     - name: Download integration test results (snowflake)
       uses: actions/download-artifact@v3
       with:
-        name: python-${{ matrix.python-version }}-pytest-xml.1
+        name: python-${{ matrix.python-version }}-pytest.xml.1
     - name: Download integration test results (spark)
       uses: actions/download-artifact@v3
       with:
-        name: python-${{ matrix.python-version }}-pytest-xml.2
+        name: python-${{ matrix.python-version }}-pytest.xml.2
     - name: Download integration test results (databricks)
       uses: actions/download-artifact@v3
       with:
-        name: python-${{ matrix.python-version }}-pytest-xml.3
+        name: python-${{ matrix.python-version }}-pytest.xml.3
     - name: Download unit coverage results
       uses: actions/download-artifact@v3
       with:
