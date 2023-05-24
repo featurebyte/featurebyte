@@ -173,6 +173,7 @@ class StorageCredentialType(StrEnum):
 
     S3 = "S3"
     GCS = "GCS"
+    AZURE = "AZURE"
 
 
 class BaseStorageCredential(BaseCredential):
@@ -226,8 +227,27 @@ class GCSStorageCredential(BaseStorageCredential):
     )
 
 
+class AzureBlobStorageCredential(BaseStorageCredential):
+    """
+    Data class for a Azure Blob storage credential.
+
+    Examples
+    --------
+    >>> azure_blob_storage_credential = AzureBlobStorageCredential(
+    ...   account_name="my_azure_storage",
+    ...   account_key="my_azure_storage_key",
+    ... )
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.AzureBlobStorageCredential")
+
+    type: StorageCredentialType = Field(StorageCredentialType.AZURE, const=True)
+    account_name: StrictStr
+    account_key: StrictStr
+
+
 StorageCredential = Annotated[
-    Union[S3StorageCredential, GCSStorageCredential],
+    Union[S3StorageCredential, GCSStorageCredential, AzureBlobStorageCredential],
     Field(discriminator="type"),
 ]
 

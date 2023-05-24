@@ -23,6 +23,7 @@ from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.table import Table
+from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
@@ -1573,3 +1574,30 @@ def test_unsaved_feature_repr(
 
     # html representation for unsaved object should be the same as repr
     assert float_feature._repr_html_() == expected_value
+
+
+def test_feature_dtype(
+    float_feature,
+    bool_feature,
+    non_time_based_feature,
+    sum_per_category_feature,
+):
+    """Test feature dtype before and after save"""
+    bool_feature.name = "bool_feat"
+
+    # test feature dtype before save
+    assert float_feature.dtype == DBVarType.FLOAT
+    assert bool_feature.dtype == DBVarType.BOOL
+    assert non_time_based_feature.dtype == DBVarType.FLOAT
+    assert sum_per_category_feature.dtype == DBVarType.OBJECT
+
+    float_feature.save()
+    bool_feature.save()
+    non_time_based_feature.save()
+    sum_per_category_feature.save()
+
+    # test feature dtype after save
+    assert float_feature.dtype == DBVarType.FLOAT
+    assert bool_feature.dtype == DBVarType.BOOL
+    assert non_time_based_feature.dtype == DBVarType.FLOAT
+    assert sum_per_category_feature.dtype == DBVarType.OBJECT

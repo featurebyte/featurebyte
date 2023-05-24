@@ -302,9 +302,9 @@ class FeatureListBriefInfoList(FeatureByteBaseModel):
         return FeatureListBriefInfoList(__root__=feature_list_project.project(paginated_data))
 
 
-class FeatureListNamespaceInfo(NamespaceInfo):
+class BaseFeatureListNamespaceInfo(NamespaceInfo):
     """
-    FeatureListNamespace info schema
+    BaseFeatureListNamespace info schema
     """
 
     dtype_distribution: List[FeatureTypeFeatureCount]
@@ -313,13 +313,32 @@ class FeatureListNamespaceInfo(NamespaceInfo):
     feature_count: int
 
 
-class FeatureListInfo(FeatureListNamespaceInfo):
+class FeatureListNamespaceInfo(BaseFeatureListNamespaceInfo):
+    """
+    FeatureListNamespace info schema
+    """
+
+    feature_namespace_ids: List[PydanticObjectId]
+    default_feature_ids: List[PydanticObjectId]
+
+
+class DefaultFeatureFractionComparison(FeatureByteBaseModel):
+    """
+    DefaultFeatureFractionComparison info schema
+    """
+
+    this: float
+    default: float
+
+
+class FeatureListInfo(BaseFeatureListNamespaceInfo):
     """
     FeatureList info schema
     """
 
     version: VersionComparison
     production_ready_fraction: ProductionReadyFractionComparison
+    default_feature_fraction: DefaultFeatureFractionComparison
     versions_info: Optional[FeatureListBriefInfoList]
     deployed: bool
 

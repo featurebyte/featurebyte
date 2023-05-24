@@ -259,13 +259,10 @@ def test_create_scd_table__retrieval_exception(snowflake_database_table_scd_tabl
             )
 
 
-def test_create_scd_table__effective_timestamp_column_same_as_end_timestamp_column(
+def test_create_scd_table__duplicated_column_name_in_different_fields(
     snowflake_database_table_scd_table,
 ):
-    """
-    Test SCDTable creation failure due to effective_timestamp_column same as end_timestamp_column
-    """
-    # test when effective_timestamp_column is same as end_timestamp_column
+    """Test SCDTable creation failure due to duplicated column name"""
     with pytest.raises(ValueError) as exc:
         snowflake_database_table_scd_table.create_scd_table(
             name="sf_scd_table",
@@ -276,7 +273,11 @@ def test_create_scd_table__effective_timestamp_column_same_as_end_timestamp_colu
             current_flag_column="is_active",
             record_creation_timestamp_column="created_at",
         )
-    expected_error_message = "effective_timestamp_column and end_timestamp_column cannot be same"
+
+    expected_error_message = (
+        "end_timestamp_column and effective_timestamp_column have to be different columns in the table but "
+        '"effective_timestamp" is specified for both.'
+    )
     assert expected_error_message in str(exc.value)
 
 
@@ -360,10 +361,10 @@ def test_accessing_saved_scd_table_attributes(saved_scd_table):
     cloned = SCDTable.get_by_id(id=saved_scd_table.id)
     assert cloned.record_creation_timestamp_column is None
     saved_scd_table.update_record_creation_timestamp_column(
-        record_creation_timestamp_column="effective_timestamp"
+        record_creation_timestamp_column="created_at"
     )
-    assert saved_scd_table.record_creation_timestamp_column == "effective_timestamp"
-    assert cloned.record_creation_timestamp_column == "effective_timestamp"
+    assert saved_scd_table.record_creation_timestamp_column == "created_at"
+    assert cloned.record_creation_timestamp_column == "created_at"
 
 
 def test_sdk_code_generation(snowflake_database_table_scd_table, update_fixtures):

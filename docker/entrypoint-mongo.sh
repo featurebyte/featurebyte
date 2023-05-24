@@ -9,8 +9,8 @@ echo "MONGO_HOSTNAME: ${MONGO_HOSTNAME}"
 # start mongo service
 mkdir -p /data/db1 /data/db2
 echo "Starting mongo servers"
-/usr/bin/mongod --port=27021 --dbpath=/data/db1 --bind_ip_all --replSet rs0 -v --logpath /data/db1.log --logRotate reopen --logappend &
-/usr/bin/mongod --port=27022 --dbpath=/data/db2 --bind_ip_all --replSet rs0 -v --logpath /data/db2.log --logRotate reopen --logappend &
+/usr/bin/mongod --port=27021 --dbpath=/data/db1 --bind_ip_all --replSet rs0 --logpath /dev/stderr &
+/usr/bin/mongod --port=27022 --dbpath=/data/db2 --bind_ip_all --replSet rs0 --logpath /dev/stderr &
 
 # Sleep and wait for server to start
 while ! mongosh --quiet --port=27021 --eval "exit" 2>/dev/null; do sleep 1; done; echo "mongo1 started"
@@ -45,8 +45,5 @@ while ! mongosh --quiet --port=27021 --eval "rs.status()" 1>/dev/null 2>&1; do s
 while [[ 1 -ne "$(mongosh --quiet --port=27021 --eval "rs.status().ok")" ]]; do
   sleep 1;
 done
-echo ""
-echo "mongo-rs is established"
 
-# Sleep
 sleep inf

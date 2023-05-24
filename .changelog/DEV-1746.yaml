@@ -6,17 +6,17 @@
 
 # --- TEMPLATE --- #
 # One of 'breaking', 'deprecation', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern
 # (e.g. gh-actions, docs, middleware, worker)
-component: guardrails
+component: mongodb
 
 # (Optional) One or more tracking issues or pull requests related to the change
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "add guardrail to make sure `*Table` creation does not contain shared column name in different parameters"
+note: "mongodb logs to be shipped to stderr to reduce disk usage"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

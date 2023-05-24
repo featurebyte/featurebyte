@@ -1007,7 +1007,7 @@ def get_non_time_based_feature_fixture(snowflake_item_table, transaction_entity)
     This is a non-time-based feature as it is built from ItemTable.
     """
     snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
-    item_table = ItemTable(**{**snowflake_item_table.json_dict(), "item_id_column": "event_id_col"})
+    item_table = ItemTable(**{**snowflake_item_table.json_dict(), "item_id_column": "item_id_col"})
     item_view = item_table.get_view(event_suffix="_event_table")
     return item_view.groupby("event_id_col").aggregate(
         value_column="item_amount",
