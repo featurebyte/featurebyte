@@ -75,7 +75,13 @@ class FeatureCreateTask(BaseTask):
         graph, node_name = await self.app_container.feature_service.prepare_graph_to_store(
             feature=document
         )
-        document = FeatureModel(**{**document.dict(), "graph": graph, "node_name": node_name})
+        document = FeatureModel(
+            **{
+                **document.dict(),
+                "graph": self._construct_expected_graph(graph),
+                "node_name": node_name,
+            }
+        )
 
         # prepare feature definition
         table_id_to_info: Dict[ObjectId, Dict[str, Any]] = {}
@@ -107,19 +113,18 @@ class FeatureCreateTask(BaseTask):
 
         # retrieve the saved feature & check if it is the same as the expected feature
         feature = await feature_service.get_document(document_id=payload.output_document_id)
-        expected_graph = self._construct_expected_graph(graph=document.graph)
         generated_hash = feature.graph.node_name_to_ref[feature.node_name]
-        expected_hash = expected_graph.node_name_to_ref[document.node_name]
+        expected_hash = document.graph.node_name_to_ref[document.node_name]
         if definition != feature.definition or expected_hash != generated_hash:
             # log the difference between the expected feature and the saved feature
             generated_ref = pformat(feature.graph.node_name_to_ref)
-            expected_ref = pformat(expected_graph.node_name_to_ref)
-            logger.debug(f">>> Generated node_name_to_ref: \n{generated_ref}")
-            logger.debug(f">>> Expected node_name_to_ref: \n{expected_ref}")
-            logger.debug(f">>> Generated graph: \n{pformat(feature.graph.dict())}")
-            logger.debug(f">>> Expected graph: \n{pformat(expected_graph.dict())}")
-            logger.debug(f">>> Generated feature definition: \n{definition}")
-            logger.debug(f">>> Saved feature definition: \n{feature.definition}")
+            expected_ref = pformat(document.graph.node_name_to_ref)
+            logger.info(f">>> Generated node_name_to_ref: \n{generated_ref}")
+            logger.info(f">>> Expected node_name_to_ref: \n{expected_ref}")
+            logger.info(f">>> Generated graph: \n{pformat(feature.graph.dict())}")
+            logger.info(f">>> Expected graph: \n{pformat(document.graph.dict())}")
+            logger.info(f">>> Generated feature definition: \n{definition}")
+            logger.info(f">>> Saved feature definition: \n{feature.definition}")
 
             # prepare the code to delete the feature
             code = (
