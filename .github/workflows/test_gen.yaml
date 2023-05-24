@@ -14,9 +14,9 @@ name: test
     - main
 permissions:
   contents: write
+  pull-requests: write
   repository-projects: read
   issues: write
-  pull-requests: write
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
