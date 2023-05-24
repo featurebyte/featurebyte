@@ -218,7 +218,8 @@ jobs:
       run: |-
         set +e
         task test-integration-spark
-        # capture the exit code from the test run before stashing logsvEXIT_CODE=$?
+        # capture the exit code from the test run before stashing logs
+        EXIT_CODE=$?
         echo $EXIT_CODE > status.txt
         docker logs spark-thrift 2>&1 > spark-thrift.log
         # bail out now if the test run was a failure
