@@ -1,8 +1,6 @@
 """
 Tests for FeatureList route
 """
-# pylint: disable=too-many-lines
-import json
 import textwrap
 from collections import defaultdict
 from http import HTTPStatus
@@ -16,12 +14,7 @@ from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
-from featurebyte.common.utils import (
-    dataframe_from_arrow_stream,
-    dataframe_from_json,
-    dataframe_to_arrow_bytes,
-)
-from featurebyte.enum import SourceType
+from featurebyte.common.utils import dataframe_from_json
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from tests.unit.routes.base import BaseCatalogApiTestSuite

@@ -49,7 +49,6 @@ from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import (
     convert_to_list_of_strings,
-    dataframe_from_arrow_stream,
     dataframe_to_arrow_bytes,
     enforce_observation_set_row_order,
 )

@@ -2,7 +2,7 @@
 Tests for featurebyte.api.feature_list
 """
 import textwrap
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd

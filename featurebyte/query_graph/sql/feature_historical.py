@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import AsyncGenerator, Callable, List, Optional, Union, cast
+from typing import Callable, List, Optional, Union, cast
 
 import datetime
 import time
@@ -374,16 +374,10 @@ async def get_historical_features(
         on demand.
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
-    output_table_details: Optional[TableDetails]
-        Optional output table details to write the results to. If this parameter is provided, the
-        function will return None (intended to be used when handling asynchronous historical
-        requests).
+    output_table_details: TableDetails
+        Output table details to write the results to
     progress_callback: Optional[Callable[[int, str], None]]
         Optional progress callback function
-
-    Returns
-    -------
-    AsyncGenerator[bytes, None]
     """
     tic_ = time.time()
 

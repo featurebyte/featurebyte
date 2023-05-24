@@ -10,7 +10,6 @@ import json
 from http import HTTPStatus
 
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
-from fastapi.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureListModel
