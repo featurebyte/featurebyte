@@ -24,7 +24,6 @@ def check_batch_feature_create(features):
         output_ref = feat_create.graph.node_name_to_ref[feat_create.node_name]
         assert input_ref == output_ref
 
-
     # check input features are all iterated
     assert len(name_to_feat_payload) == 0
 

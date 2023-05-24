@@ -20,6 +20,7 @@ from featurebyte.enum import InternalName
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
+    RecordCreationException,
     RecordDeletionException,
     RecordRetrievalException,
     RecordUpdateException,
@@ -702,12 +703,11 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
         name="feature_list_name",
     )
 
-    with pytest.raises(DuplicatedRecordException) as exc:
+    with pytest.raises(RecordCreationException) as exc:
         feature_list.save()
     expected_msg = (
         'FeatureNamespace (name: "production_ready_feature") already exists. '
-        'Please rename object (name: "production_ready_feature") to something else. '
-        'Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.'
+        'Please rename object (name: "production_ready_feature") to something else.'
     )
     assert expected_msg in str(exc.value)
     assert feature_list[feature.name].id == feature.id

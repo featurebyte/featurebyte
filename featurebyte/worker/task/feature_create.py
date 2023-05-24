@@ -131,8 +131,9 @@ class BatchFeatureCreateTask(BaseTask):
         Execute Deployment Create & Update Task
         """
         payload = cast(BatchFeatureCreateTaskPayload, self.payload)
+        total = len(payload.features)
 
-        for feature_create_data in payload.iterate_features():
+        for i, feature_create_data in enumerate(payload.iterate_features()):
             document = await self.prepare_feature_model(
                 data=feature_create_data, user_id=payload.user_id, catalog_id=payload.catalog_id
             )
@@ -153,5 +154,5 @@ class BatchFeatureCreateTask(BaseTask):
 
             # retrieve the saved feature & check if it is the same as the expected feature
             await self.validate_generated_feature(document=document, definition=definition)
-
-            logger.debug("Complete feature create task")
+            percent = 100 * (i + 1) / total
+            self.update_progress(percent=int(percent), message="Completed {i+1}/{total} features")
