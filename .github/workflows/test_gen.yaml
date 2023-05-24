@@ -501,10 +501,10 @@ jobs:
                   }
               ]
           }
-    - name: Send Slack notification to developer channel
-      uses: slackapi/slack-github-action@v1.23.0
-      env:
+    - env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+      name: Send Slack notification to developer channel
+      uses: slackapi/slack-github-action@v1.23.0
       with:
         channel-id: C03D81HC6Q5
         payload: |-

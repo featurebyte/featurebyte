@@ -15,10 +15,10 @@ jobs:
     if: ${{ github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'breaking') }}
     steps:
     - uses: actions/checkout@v3
-    - name: Send Slack notification to user-experience channel
-      uses: slackapi/slack-github-action@v1.23.0
-      env:
+    - env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+      name: Send Slack notification to user-experience channel
+      uses: slackapi/slack-github-action@v1.23.0
       with:
         channel-id: C042PLEC8D9
         payload: |-
