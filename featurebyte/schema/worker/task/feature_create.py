@@ -7,11 +7,11 @@ from pydantic import Field
 
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.feature import FeatureModel
-from featurebyte.schema.feature import FeatureCreate
+from featurebyte.schema.feature import BatchFeatureCreate
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 
 
-class BatchFeatureCreateTaskPayload(BaseTaskPayload, FeatureCreate):
+class BatchFeatureCreateTaskPayload(BaseTaskPayload, BatchFeatureCreate):
     """
     Batch Feature create task payload
     """

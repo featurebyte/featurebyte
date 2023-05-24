@@ -47,6 +47,7 @@ from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSet
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.feature import (
+    BatchFeatureCreate,
     FeatureCreate,
     FeatureModelResponse,
     FeaturePreview,
@@ -717,9 +718,13 @@ class Feature(
             super().save(conflict_resolution=conflict_resolution, _id=_id)
         else:
             # TODO: handle conflict resolution
-            object_dict = self.post_async_task(
-                route="/feature/batch", payload=self._get_create_payload()
+            feature_create = FeatureCreate(**self._get_create_payload())
+            self.post_async_task(
+                route="/feature/batch",
+                payload=BatchFeatureCreate.create([feature_create]).json_dict(),
+                retrieve_result=False,
             )
+            object_dict = self._get_object_dict_by_id(id_value=feature_create.id)
             type(self).__init__(self, **object_dict, **self._get_init_params_from_object())
 
     @typechecked

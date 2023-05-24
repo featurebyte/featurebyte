@@ -26,6 +26,7 @@ from featurebyte.routes.common.base import (
 )
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature import (
+    BatchFeatureCreate,
     FeatureCreate,
     FeatureModelResponse,
     FeatureNewVersionCreate,
@@ -85,14 +86,14 @@ class FeatureController(
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.task_controller = task_controller
 
-    async def submit_batch_feature_create_task(self, data: FeatureCreate) -> Optional[Task]:
+    async def submit_batch_feature_create_task(self, data: BatchFeatureCreate) -> Optional[Task]:
         """
         Submit Feature Create Task
 
         Parameters
         ----------
-        data: FeatureCreate
-            Feature creation payload
+        data: BatchFeatureCreate
+            Batch Feature creation payload
 
         Returns
         -------
@@ -103,7 +104,6 @@ class FeatureController(
             **{
                 **data.json_dict(),
                 "catalog_id": self.service.catalog_id,
-                "output_document_id": data.id,
             }
         )
         task_id = await self.task_controller.task_manager.submit(payload=payload)

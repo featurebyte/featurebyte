@@ -3,7 +3,7 @@ Feature API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 from datetime import datetime
 
@@ -32,6 +32,63 @@ class FeatureCreate(FeatureByteBaseModel):
     node_name: str
     tabular_source: TabularSource
     feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+
+
+class BatchFeatureItem(FeatureByteBaseModel):
+    """
+    Batch Feature Item schema
+    """
+
+    id: Optional[PydanticObjectId]
+    name: StrictStr
+    node_name: str
+    feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+    tabular_source: TabularSource
+
+
+class BatchFeatureCreate(FeatureByteBaseModel):
+    """
+    Batch Feature Creation schema
+    """
+
+    graph: QueryGraph
+    features: List[BatchFeatureItem]
+
+    @classmethod
+    def create(cls, features: List[FeatureCreate]) -> BatchFeatureCreate:
+        query_graph = QueryGraph()
+        feature_items = []
+        for feature in features:
+            query_graph, node_name_map = query_graph.load(feature.graph)
+            feature_items.append(
+                BatchFeatureItem(
+                    id=feature.id,
+                    name=feature.name,
+                    node_name=node_name_map[feature.node_name],
+                    feature_namespace_id=feature.feature_namespace_id,
+                    tabular_source=feature.tabular_source,
+                )
+            )
+
+        return BatchFeatureCreate(
+            graph=query_graph,
+            features=feature_items,
+        )
+
+    def iterate_features(self) -> Iterator[FeatureCreate]:
+        for feature in self.features:
+            target_node = self.graph.get_node_by_name(feature.node_name)
+            pruned_graph, node_name_map = self.graph.prune(
+                target_node=target_node, aggressive=False
+            )
+            yield FeatureCreate(
+                _id=feature.id,
+                name=feature.name,
+                node_name=node_name_map[feature.node_name],
+                feature_namespace_id=feature.feature_namespace_id,
+                graph=pruned_graph,
+                tabular_source=feature.tabular_source,
+            )
 
 
 class FeatureNewVersionCreate(FeatureByteBaseModel):

@@ -20,6 +20,7 @@ from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
+from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.worker.task.feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.table import TableService
@@ -54,18 +55,18 @@ class BatchFeatureCreateTask(BaseTask):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
-    async def prepare_feature_model(self) -> FeatureModel:
-        payload = cast(BatchFeatureCreateTaskPayload, self.payload)
-
+    async def prepare_feature_model(
+        self, data: FeatureCreate, user_id: ObjectId, catalog_id: ObjectId
+    ) -> FeatureModel:
         # pruning the graph & prepare the feature model
         feature_service: FeatureService = self.app_container.feature_service
         document = FeatureModel(
             **{
-                **payload.json_dict(),
+                **data.json_dict(),
                 "readiness": FeatureReadiness.DRAFT,
-                "version": await feature_service.generate_feature_version(payload.name),
-                "user_id": payload.user_id,
-                "catalog_id": payload.catalog_id,
+                "version": await feature_service.generate_feature_version(data.name),
+                "user_id": user_id,
+                "catalog_id": catalog_id,
             }
         )
         graph, node_name = await self.app_container.feature_service.prepare_graph_to_store(
@@ -73,7 +74,7 @@ class BatchFeatureCreateTask(BaseTask):
         )
         document = FeatureModel(
             **{
-                **document.dict(),
+                **document.json_dict(),
                 "graph": self._construct_expected_graph(graph),
                 "node_name": node_name,
             }
@@ -100,7 +101,7 @@ class BatchFeatureCreateTask(BaseTask):
 
         # retrieve the saved feature & check if it is the same as the expected feature
         feature_service: FeatureService = self.app_container.feature_service
-        feature = await feature_service.get_document(document_id=payload.output_document_id)
+        feature = await feature_service.get_document(document_id=document.id)
         generated_hash = feature.graph.node_name_to_ref[feature.node_name]
         expected_hash = document.graph.node_name_to_ref[document.node_name]
         if definition != feature.definition or expected_hash != generated_hash:
@@ -118,7 +119,7 @@ class BatchFeatureCreateTask(BaseTask):
             code = (
                 "from bson import ObjectId\n"
                 "from featurebyte import Feature\n"
-                f'feat = Feature.get_by_id(ObjectId("{payload.output_document_id}"))'
+                f'feat = Feature.get_by_id(ObjectId("{document.id}"))'
             )
 
             # execute the code to delete the feature & raise the error
@@ -131,23 +132,26 @@ class BatchFeatureCreateTask(BaseTask):
         """
         payload = cast(BatchFeatureCreateTaskPayload, self.payload)
 
-        document = await self.prepare_feature_model()
-        definition = await self.prepare_feature_definition(document=document)
-        code = (
-            f"{definition}\n"
-            "# add statements to save feature\n"
-            "from bson import ObjectId\n"
-            f'output.save(_id=ObjectId("{payload.output_document_id}"))'
-        )
-        logger.debug(f"Prepare to execute feature definition: \n{code}")
+        for feature_create_data in payload.iterate_features():
+            document = await self.prepare_feature_model(
+                data=feature_create_data, user_id=payload.user_id, catalog_id=payload.catalog_id
+            )
+            definition = await self.prepare_feature_definition(document=document)
+            code = (
+                f"{definition}\n"
+                "# add statements to save feature\n"
+                "from bson import ObjectId\n"
+                f'output.save(_id=ObjectId("{document.id}"))'
+            )
+            logger.debug(f"Prepare to execute feature definition: \n{code}")
 
-        os.environ["SDK_EXECUTION_MODE"] = "SERVER"
-        logger.debug(f"Configuration: {Configurations().profile}")
+            os.environ["SDK_EXECUTION_MODE"] = "SERVER"
+            logger.debug(f"Configuration: {Configurations().profile}")
 
-        # execute the code to save the feature
-        await self._execute_sdk_code(catalog_id=payload.catalog_id, code=code)
+            # execute the code to save the feature
+            await self._execute_sdk_code(catalog_id=payload.catalog_id, code=code)
 
-        # retrieve the saved feature & check if it is the same as the expected feature
-        await self.validate_generated_feature(document=document, definition=definition)
+            # retrieve the saved feature & check if it is the same as the expected feature
+            await self.validate_generated_feature(document=document, definition=definition)
 
-        logger.debug("Complete feature create task")
+            logger.debug("Complete feature create task")
