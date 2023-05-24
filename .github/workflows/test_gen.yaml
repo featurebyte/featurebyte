@@ -106,9 +106,9 @@ jobs:
         name: hive-udf
         path: featurebyte/sql/spark/
     - name: Run tests
-      run: |-
-        task test-unit
-        mv .coverage .coverage.0
+      run: task test-unit
+    - name: Moving coverage file by appending 0
+      run: mv .coverage .coverage.0
     - name: Upload test results
       uses: actions/upload-artifact@v3
       with:
@@ -160,9 +160,9 @@ jobs:
         name: hive-udf
         path: featurebyte/sql/spark/
     - name: Run tests
-      run: |-
-        task test-integration-snowflake
-        mv .coverage .coverage.1
+      run: task test-integration-snowflake
+    - name: Moving coverage file by appending 1
+      run: mv .coverage .coverage.1
     - name: Upload test results
       uses: actions/upload-artifact@v3
       with:
@@ -291,9 +291,9 @@ jobs:
         name: hive-udf
         path: featurebyte/sql/databricks/
     - name: Run tests
-      run: |-
-        task test-integration-databricks
-        mv .coverage .coverage.3
+      run: task test-integration-databricks
+    - name: Moving coverage file by appending 3
+      run: mv .coverage .coverage.3
     - name: Upload test results
       uses: actions/upload-artifact@v3
       with:
