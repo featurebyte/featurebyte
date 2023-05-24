@@ -124,45 +124,6 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
     assert expected_msg in str(exc.value)
 
 
-@pytest.mark.parametrize("max_batch_size", [1, 5, 6, 11])
-def test_feature_list__get_historical_features__iteration_logic(
-    single_feat_flist, mocked_compute_tiles_on_demand, max_batch_size
-):
-    """Check compute_historical_features iteration logic"""
-    flist = single_feat_flist
-    row_number = 9
-    dataframe = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.date_range("2022-04-01", freq="D", periods=row_number),
-            "cust_id": [f"C{i}" for i in range(row_number)],
-        }
-    )
-    dataframe["POINT_IN_TIME"] = dataframe.POINT_IN_TIME.dt.strftime("%Y-%m-%d")
-
-    # check iterations logic is correct
-    with patch("requests.sessions.Session.post") as mock_post:
-        with patch(
-            "featurebyte.api.feature_list.dataframe_from_arrow_stream"
-        ) as mock_from_arrow_stream:
-            mock_from_arrow_stream.return_value = pd.DataFrame({InternalName.ROW_INDEX: []})
-            mock_response = mock_post.return_value
-            mock_response.status_code = 200
-            mock_response.context = ""
-            flist.compute_historical_features(dataframe, max_batch_size=max_batch_size)
-
-    # check that no training events are missed
-    training_events_table = []
-    for call_args in mock_post.call_args_list:
-        training_events_bytes = call_args[1]["files"]["observation_set"]
-        training_events_table.append(dataframe_from_arrow_stream(training_events_bytes))
-
-    post_training_events_df = pd.concat(training_events_table)
-    pd.testing.assert_frame_equal(
-        dataframe,
-        post_training_events_df.drop(InternalName.ROW_INDEX, axis=1).reset_index(drop=True),
-    )
-
-
 @freeze_time("2022-05-01")
 def test_feature_list_creation__feature_and_group(production_ready_feature, feature_group):
     """Test FeatureList can be created with valid inputs"""

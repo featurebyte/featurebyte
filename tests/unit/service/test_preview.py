@@ -11,6 +11,7 @@ from featurebyte import Feature, FeatureList, FeatureStore
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeaturePreview
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures, FeatureListPreview
 
@@ -31,6 +32,12 @@ def mock_get_feature_store_session_fixture():
         "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
     ) as mock_get_feature_store_session:
         yield mock_get_feature_store_session
+
+
+@pytest.fixture(name="output_table_details")
+def output_table_details_fixture():
+    """Fixture for a TableDetails for the output location"""
+    return TableDetails(table_name="SOME_HISTORICAL_FEATURE_TABLE")
 
 
 @pytest.mark.asyncio
@@ -198,6 +205,7 @@ async def test_get_historical_features__feature_list_not_deployed(
     production_ready_feature_list,
     get_credential,
     mock_get_historical_features,
+    output_table_details,
 ):
     """
     Test compute_historical_features when feature list is not deployed
@@ -212,6 +220,7 @@ async def test_get_historical_features__feature_list_not_deployed(
         training_events,
         featurelist_get_historical_features,
         get_credential,
+        output_table_details=output_table_details,
     )
     assert mock_get_historical_features.assert_called_once
     call_args = mock_get_historical_features.call_args
@@ -224,6 +233,7 @@ async def test_get_historical_features__feature_list_not_saved(
     production_ready_feature,
     get_credential,
     mock_get_historical_features,
+    output_table_details,
 ):
     """
     Test compute_historical_features when feature list is not saved
@@ -239,6 +249,7 @@ async def test_get_historical_features__feature_list_not_saved(
         training_events,
         featurelist_get_historical_features,
         get_credential,
+        output_table_details=output_table_details,
     )
     assert mock_get_historical_features.assert_called_once
     call_args = mock_get_historical_features.call_args
@@ -251,6 +262,7 @@ async def test_get_historical_features__feature_list_deployed(
     deployed_feature_list,
     get_credential,
     mock_get_historical_features,
+    output_table_details,
 ):
     """
     Test compute_historical_features when feature list is deployed
@@ -265,6 +277,7 @@ async def test_get_historical_features__feature_list_deployed(
         training_events,
         featurelist_get_historical_features,
         get_credential,
+        output_table_details=output_table_details,
     )
     assert mock_get_historical_features.assert_called_once
     call_args = mock_get_historical_features.call_args

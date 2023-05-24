@@ -451,7 +451,7 @@ class PreviewService(BaseService):
         observation_set: Union[pd.DataFrame, ObservationTableModel],
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
         get_credential: Any,
-        output_table_details: Optional[TableDetails] = None,
+        output_table_details: TableDetails,
         progress_callback: Optional[Callable[[int, str], None]] = None,
     ) -> Optional[AsyncGenerator[bytes, None]]:
         """
@@ -465,8 +465,8 @@ class PreviewService(BaseService):
             FeatureListGetHistoricalFeatures object
         get_credential: Any
             Get credential handler function
-        output_table_details: Optional[TableDetails]
-            Optional output table details to write the results to
+        output_table_details: TableDetails
+            Table details to write the results to
         progress_callback: Optional[Callable[[int, str], None]]
             Optional progress callback function
 

@@ -345,12 +345,12 @@ async def get_historical_features(
     nodes: list[Node],
     observation_set: Union[pd.DataFrame, ObservationTableModel],
     source_type: SourceType,
+    output_table_details: TableDetails,
     serving_names_mapping: dict[str, str] | None = None,
     is_feature_list_deployed: bool = False,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    output_table_details: Optional[TableDetails] = None,
     progress_callback: Optional[Callable[[int, str], None]] = None,
-) -> Optional[AsyncGenerator[bytes, None]]:
+) -> None:
     """Get historical features
 
     Parameters
@@ -429,11 +429,6 @@ async def get_historical_features(
     if progress_callback:
         progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, "Computing features")
 
-    # Execute feature query and stream results back
-    if output_table_details is None:
-        sql = sql_to_string(sql_expr, source_type=session.source_type)
-        return session.get_async_query_stream(sql)
-
     # Execute feature query but write results to a table
     expression = get_sql_adapter(session.source_type).create_table_as(
         table_details=output_table_details, select_expr=sql_expr
@@ -444,5 +439,3 @@ async def get_historical_features(
     )
     await session.execute_query_long_running(query)
     logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
-
-    return None
