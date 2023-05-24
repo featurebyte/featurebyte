@@ -82,7 +82,7 @@ jobs:
         git tag "$(poetry version -s)"
         git push origin "$(poetry version -s)"
     - name: Replace docker-compose image tag (server)
-      uses: mikefarah/ya@master
+      uses: mikefarah/yq@master
       with:
         cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ env.DEV_VERSION }}"' featurebyte/docker/featurebyte.yml
     - name: Publish to non-prod artifact registry
