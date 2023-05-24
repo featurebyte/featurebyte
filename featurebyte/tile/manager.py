@@ -191,8 +191,6 @@ class TileManager(BaseModel):
             value_column_names=tile_spec.value_column_names,
             value_column_types=tile_spec.value_column_types,
             tile_type=tile_type,
-            tile_start_date_column=InternalName.TILE_START_DATE,
-            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
             last_tile_start_str=last_tile_start_ts_str,
             aggregation_id=tile_spec.aggregation_id,
         )
@@ -227,7 +225,6 @@ class TileManager(BaseModel):
             tile_id=tile_spec.aggregation_id,
             entity_column_names=entity_column_names,
             entity_table=temp_entity_table,
-            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
         )
 
         await tile_entity_tracking_ins.execute()
@@ -345,10 +342,6 @@ class TileManager(BaseModel):
                 value_column_types=tile_spec.value_column_types,
                 tile_type=tile_type,
                 offline_period_minute=offline_minutes,
-                tile_last_start_date_column=InternalName.TILE_LAST_START_DATE,
-                tile_start_date_column=InternalName.TILE_START_DATE,
-                tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
-                tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
                 monitor_periods=monitor_periods,
                 aggregation_id=tile_spec.aggregation_id,
             )

@@ -90,7 +90,6 @@ async def tables_fixture(session, data_source):
         name=f"{table_prefix}_scd_table_1",
         natural_key_column="scd_cust_id",
         effective_timestamp_column="effective_ts",
-        surrogate_key_column="scd_cust_id",
     )
     scd_table_1["scd_cust_id"].as_entity(customer_entity.name)
     scd_table_1["scd_city"].as_entity(city_entity.name)

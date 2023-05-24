@@ -344,3 +344,9 @@ class ColumnNotFoundError(FeatureByteException):
     """
     Raised when a specified column is not found in the view or table
     """
+
+
+class DockerError(FeatureByteException):
+    """
+    Raised when there is an error with Docker
+    """

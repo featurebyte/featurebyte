@@ -47,8 +47,11 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     feature_list = FeatureList([feature_group], name="my_special_fl")
     feature_list.save()
     assert feature_list.saved is True
-    assert feature_list.version.to_str() == get_version()
+    assert feature_list.version == get_version()
     assert feature_list.feature_list_namespace.default_feature_list_id == feature_list.id
+
+    # check default feature fraction
+    assert feature_list.info()["default_feature_fraction"] == {"this": 1.0, "default": 1.0}
 
     # create a new feature version
     amt_sum_30m = feature_list["amt_sum_30m"]
@@ -64,7 +67,7 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
         ],
         table_cleaning_operations=None,
     )
-    assert amt_sum_30m_v1.version.to_str() == f"{get_version()}_1"
+    assert amt_sum_30m_v1.version == f"{get_version()}_1"
     assert amt_sum_30m.feature_namespace.default_feature_id == amt_sum_30m_v1.id
 
     # create a new feature list version without specifying features
@@ -74,20 +77,33 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
         feature_group["amt_sum_2h"].id,
         feature_group["amt_sum_4h"].id,
     }
-    assert feature_list_v1.version.to_str() == f"{get_version()}_1"
+    assert feature_list_v1.version == f"{get_version()}_1"
     assert feature_list.feature_list_namespace.default_feature_list_id == feature_list_v1.id
+
+    # check default feature fraction
+    assert feature_list.info()["default_feature_fraction"] == {"this": 2 / 3, "default": 1.0}
+    assert feature_list_v1.info()["default_feature_fraction"] == {"this": 1.0, "default": 1.0}
+    assert feature_list.default_feature_fraction == 2 / 3
+    assert feature_list_v1.default_feature_fraction == 1.0
 
     # create a new feature list version by specifying features
     feature_list_v2 = feature_list.create_new_version(
-        features=[
-            FeatureVersionInfo(name=amt_sum_30m_v1.name, version=amt_sum_30m_v1.version.to_str())
-        ],
+        features=[FeatureVersionInfo(name=amt_sum_30m_v1.name, version=amt_sum_30m_v1.version)],
     )
     assert set(feature_list_v2.feature_ids) == set(feature_list_v1.feature_ids)
-    assert feature_list_v2.version.to_str() == f"{get_version()}_2"
+    assert feature_list_v2.version == f"{get_version()}_2"
     assert feature_list.feature_list_namespace.default_feature_list_id == feature_list_v2.id
     assert feature_list.is_default is False
     assert feature_list_v2.is_default is True
+
+    # check default feature fraction
+    assert feature_list_v1.feature_ids == feature_list_v2.feature_ids
+    assert feature_list.info()["default_feature_fraction"] == {"this": 2 / 3, "default": 1.0}
+    assert feature_list_v1.info()["default_feature_fraction"] == {"this": 1.0, "default": 1.0}
+    assert feature_list_v2.info()["default_feature_fraction"] == {"this": 1.0, "default": 1.0}
+    assert feature_list.default_feature_fraction == 2 / 3
+    assert feature_list_v1.default_feature_fraction == 1.0
+    assert feature_list_v2.default_feature_fraction == 1.0
 
     # check feature list ids in feature list namespace
     assert set(feature_list.feature_list_namespace.feature_list_ids) == {
@@ -101,6 +117,9 @@ def test_feature_list__as_default_version(feature_group):
     """Test feature list as_default_version method"""
     feature_list = FeatureList([feature_group], name="my_special_fl")
     feature_list.save()
+
+    # check default feature fraction
+    assert feature_list.info()["default_feature_fraction"] == {"this": 1.0, "default": 1.0}
 
     # create new feature version
     feature_list["amt_sum_30m"].create_new_version(
@@ -118,6 +137,15 @@ def test_feature_list__as_default_version(feature_group):
     # create new feature list version
     new_feature_list_version = feature_list.create_new_version()
     assert new_feature_list_version.is_default is True
+
+    # check default feature fraction
+    assert feature_list.info()["default_feature_fraction"] == {"this": 2 / 3, "default": 1.0}
+    assert new_feature_list_version.info()["default_feature_fraction"] == {
+        "this": 1.0,
+        "default": 1.0,
+    }
+    assert feature_list.default_feature_fraction == 2 / 3
+    assert new_feature_list_version.default_feature_fraction == 1.0
 
     # check setting default version fails when default version mode is not MANUAL
     with pytest.raises(RecordUpdateException) as exc:
@@ -143,7 +171,7 @@ def test_feature_list__as_default_version(feature_group):
     assert (
         FeatureList.get(
             name=feature_list.name,
-            version=new_feature_list_version.version.to_str(),
+            version=new_feature_list_version.version,
         )
         == new_feature_list_version
     )

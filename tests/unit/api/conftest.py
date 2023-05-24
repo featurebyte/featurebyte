@@ -112,7 +112,7 @@ def saved_event_table_fixture(snowflake_event_table):
                 "name": [snowflake_event_table.name],
                 "type": [snowflake_event_table.type],
                 "status": [snowflake_event_table.status],
-                "entities": [[]],
+                "entities": event_table_list["entities"],
                 "created_at": [snowflake_event_table.created_at],
             }
         ),

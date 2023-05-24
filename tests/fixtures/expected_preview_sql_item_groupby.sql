@@ -6,47 +6,36 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     count_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
   FROM (
     SELECT
-      *,
-      F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS "INDEX"
+      index,
+      "cust_id",
+      SUM("a") AS sum_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb,
+      COUNT("a") AS count_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
     FROM (
       SELECT
-        TO_TIMESTAMP(
-          DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMPNTZ)) + tile_index * 3600
-        ) AS __FB_TILE_START_DATE_COLUMN,
-        "cust_id",
-        SUM("a") AS sum_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb,
-        COUNT("a") AS count_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
+        *,
+        F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
       FROM (
         SELECT
-          *,
-          FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMPNTZ))
-            ) / 3600
-          ) AS tile_index
+          *
         FROM (
           SELECT
-            *
-          FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b",
-              (
-                "a" + "b"
-              ) AS "c"
-            FROM "db"."public"."event_table"
-          )
-          WHERE
-            "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMPNTZ)
-            AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "a" AS "a",
+            "b" AS "b",
+            (
+              "a" + "b"
+            ) AS "c"
+          FROM "db"."public"."event_table"
         )
+        WHERE
+          "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMPNTZ)
+          AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
       )
-      GROUP BY
-        tile_index,
-        "cust_id"
     )
+    GROUP BY
+      index,
+      "cust_id"
   ) AS avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
 ), REQUEST_TABLE AS (
   SELECT
@@ -94,7 +83,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     REQ."CUSTOMER_ID",
     "T0"."_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
     "T1"."_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
-    "T2"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1"
+    "T2"."_fb_internal_item_count_None_order_id_None_input_1" AS "_fb_internal_item_count_None_order_id_None_input_1"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -173,7 +162,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   LEFT JOIN (
     SELECT
       REQ."order_id" AS "order_id",
-      COUNT(*) AS "_fb_internal_item_count_None_input_1"
+      COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_1"
     FROM "REQUEST_TABLE_order_id" AS REQ
     INNER JOIN (
       SELECT
@@ -194,5 +183,5 @@ SELECT
   AGG."CUSTOMER_ID",
   "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "a_2h_average",
   "_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "a_48h_average",
-  "_fb_internal_item_count_None_input_1" AS "order_size"
+  "_fb_internal_item_count_None_order_id_None_input_1" AS "order_size"
 FROM _FB_AGGREGATED AS AGG

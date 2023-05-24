@@ -33,7 +33,7 @@ from featurebyte.session.enum import SnowflakeDataType
 
 logger = get_logger(__name__)
 
-get_logger("snowflake.connector").setLevel(logging.ERROR)
+logging.getLogger("snowflake.connector").setLevel(logging.ERROR)
 
 
 class SnowflakeSession(BaseSession):

@@ -442,27 +442,73 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
         ]
 
 
-class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
+class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     """
-    FrozenFeatureListModel store all the attributes that are fixed after object construction.
+    Model for feature list entity
+
+    id: PydanticObjectId
+        FeatureList id of the object
+    name: str
+        Name of the feature list
+    feature_ids: List[PydanticObjectId]
+        List of feature IDs
+    online_enabled_feature_ids: List[PydanticObjectId]
+        List of online enabled feature version id
+    readiness_distribution: List[Dict[str, Any]]
+        Feature readiness distribution of this feature list
+    version: VersionIdentifier
+        Feature list version
+    deployed: bool
+        Whether to deploy this feature list version
+    feature_list_namespace_id: PydanticObjectId
+        Feature list namespace id of the object
+    created_at: Optional[datetime]
+        Datetime when the FeatureList was first saved or published
+    feature_clusters: List[FeatureCluster]
+        List of combined graphs for features from the same feature store
     """
 
-    feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
+    feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)  # DEV-556
+    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
+        allow_mutation=False, default=None  # DEV-556
+    )
+    readiness_distribution: FeatureReadinessDistribution = Field(
+        allow_mutation=False, default_factory=list
+    )
+    deployed: bool = Field(allow_mutation=False, default=False)
+
+    # list of IDs attached to this feature list
+    feature_ids: List[PydanticObjectId]
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )
-    # DEV-556: no longer Optional once migrated
-    feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)
-    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
-        allow_mutation=False, default=None
+    online_enabled_feature_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
     )
 
     # pydantic validators
-    _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
+    _sort_feature_ids_validator = validator(
+        "feature_ids", "online_enabled_feature_ids", allow_reuse=True
+    )(construct_sort_validator())
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # "features" is not an attribute to the FeatureList model, when it appears in the input to
+        # constructor, it is intended to be used to derive other feature-related attributes
+        if "features" in values:
+            values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
+            values["feature_clusters"] = cls.derive_feature_clusters(values["features"])
+            total_count = sum(
+                read_count.count for read_count in values["readiness_distribution"].__root__
+            )
+            if total_count != len(values["feature_ids"]):
+                raise ValueError(
+                    "readiness_distribution total count is different from total feature ids."
+                )
+        return values
 
     @staticmethod
     def derive_readiness_distribution(features: List[FeatureModel]) -> FeatureReadinessDistribution:
@@ -539,74 +585,10 @@ class FrozenFeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("feature_ids"),
             pymongo.operations.IndexModel("feature_list_namespace_id"),
-        ]
-
-
-class FeatureListModel(FrozenFeatureListModel):
-    """
-    Model for feature list entity
-
-    id: PydanticObjectId
-        FeatureList id of the object
-    name: str
-        Name of the feature list
-    feature_ids: List[PydanticObjectId]
-        List of feature IDs
-    online_enabled_feature_ids: List[PydanticObjectId]
-        List of online enabled feature version id
-    readiness_distribution: List[Dict[str, Any]]
-        Feature readiness distribution of this feature list
-    version: VersionIdentifier
-        Feature list version
-    deployed: bool
-        Whether to deploy this feature list version
-    feature_list_namespace_id: PydanticObjectId
-        Feature list namespace id of the object
-    created_at: Optional[datetime]
-        Datetime when the FeatureList was first saved or published
-    feature_clusters: List[FeatureCluster]
-        List of combined graphs for features from the same feature store
-    """
-
-    online_enabled_feature_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    readiness_distribution: FeatureReadinessDistribution = Field(
-        allow_mutation=False, default_factory=list
-    )
-    deployed: bool = Field(allow_mutation=False, default=False)
-
-    @root_validator(pre=True)
-    @classmethod
-    def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # "features" is not an attribute to the FeatureList model, when it appears in the input to
-        # constructor, it is intended to be used to derive other feature-related attributes
-        if "features" in values:
-            values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
-            values["feature_clusters"] = cls.derive_feature_clusters(values["features"])
-        return values
-
-    @validator("readiness_distribution")
-    @classmethod
-    def _validate_readiness_distribution(cls, value: Any, values: dict[str, Any]) -> Any:
-        total_count = sum(read_count.count for read_count in value.__root__)
-        if total_count != len(values["feature_ids"]):
-            raise ValueError(
-                "readiness_distribution total count is different from total feature ids."
-            )
-        return value
-
-    class Settings(FrozenFeatureListModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        indexes = FrozenFeatureListModel.Settings.indexes + [
+            pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("online_enabled_feature_ids"),
             pymongo.operations.IndexModel("deployed"),
             [

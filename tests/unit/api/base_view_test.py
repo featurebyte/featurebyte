@@ -127,6 +127,14 @@ class BaseViewTestSuite:
             }
         ]
         assert metadata.table_id == data_under_test_with_imputation.id
+        assert (
+            view.column_cleaning_operations
+            == data_under_test_with_imputation.column_cleaning_operations
+        )
+
+        # check sub-setting view without including the column with column cleaning operations
+        cols = [col for col in view.columns if col != self.col]
+        assert view[cols].column_cleaning_operations == []
 
         # check that cleaning graph is created
         nested_graph = view.node.parameters.graph
@@ -505,3 +513,24 @@ class BaseViewTestSuite:
         # check filtering
         filtered_column = view_under_test[self.col][mask]
         assert filtered_column.node.type == NodeType.FILTER
+
+    def test_view_column_cleaning_operations(self, data_under_test_with_imputation):
+        """Test view column cleaning operations property"""
+        factory_kwargs = {}
+        if self.view_type == ViewType.ITEM_VIEW:
+            factory_kwargs["event_suffix"] = "_event"
+
+        # test column with cleaning operations
+        view = self.create_view(data_under_test_with_imputation, **factory_kwargs)
+        view_col = view[self.col]
+        assert view_col.cleaning_operations == [MissingValueImputation(imputed_value=-1)]
+
+        # test column without cleaning operations
+        other_col = next(col for col in view.columns if col != self.col)
+        view_col = view[other_col]
+        assert view_col.cleaning_operations == []
+
+        # test column without parent view
+        derived_col = view_col + 1
+        assert derived_col.parent is None
+        assert derived_col.cleaning_operations is None

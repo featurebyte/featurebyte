@@ -225,6 +225,7 @@ def _get_table_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE_COLUMN, EXPLORE, "TableColumn.preview"]),
         DocLayoutItem([TABLE_COLUMN, EXPLORE, "TableColumn.sample"]),
         DocLayoutItem([TABLE_COLUMN, INFO, "TableColumn.name"]),
+        DocLayoutItem([TABLE_COLUMN, INFO, "TableColumn.cleaning_operations"]),
         DocLayoutItem([TABLE_COLUMN, LINEAGE, "TableColumn.preview_sql"]),
     ]
 
@@ -248,6 +249,7 @@ def _get_entity_layout() -> List[DocLayoutItem]:
         DocLayoutItem([ENTITY, INFO, "Entity.serving_names"]),
         DocLayoutItem([ENTITY, INFO, "Entity.updated_at"]),
         DocLayoutItem([ENTITY, LINEAGE, "Entity.id"]),
+        DocLayoutItem([ENTITY, LINEAGE, "Entity.catalog_id"]),
         DocLayoutItem([ENTITY, MANAGE, "Entity.update_name"]),
     ]
 
@@ -279,13 +281,12 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, LINEAGE, "Feature.entity_ids"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.primary_entity"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_list_ids"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_namespace_id"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_store"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.graph"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.id"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.definition"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.sql"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.catalog_id"]),
+        DocLayoutItem([FEATURE, MANAGE, "Feature.delete"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.get_feature_jobs_status"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.as_default_version"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.create_new_version"]),
@@ -374,6 +375,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.updated_at"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.is_default"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.production_ready_fraction"]),
+        DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.default_feature_fraction"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.version"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.catalog_id"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.feature_ids"]),
@@ -381,6 +383,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.sql"]),
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.primary_entity"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.get_feature_jobs_status"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.delete"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.as_default_version"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.create_new_version"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.list_versions"]),
@@ -452,6 +455,7 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.name"]),
         DocLayoutItem([RELATIONSHIP, INFO, "Relationship.updated_at"]),
         DocLayoutItem([RELATIONSHIP, LINEAGE, "Relationship.id"]),
+        DocLayoutItem([RELATIONSHIP, LINEAGE, "Relationship.catalog_id"]),
         DocLayoutItem([RELATIONSHIP, MANAGE, "Relationship.enable"]),
         DocLayoutItem([RELATIONSHIP, MANAGE, "Relationship.disable"]),
     ]
@@ -498,6 +502,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, INFO, "SCDView.surrogate_key_column"]),
         DocLayoutItem([VIEW, INFO, "View.columns"]),
         DocLayoutItem([VIEW, INFO, "View.columns_info"]),
+        DocLayoutItem([VIEW, INFO, "View.column_cleaning_operations"]),
         DocLayoutItem([VIEW, INFO, "View.dtypes"]),
         DocLayoutItem([VIEW, INFO, "View.entity_columns"]),
         DocLayoutItem([VIEW, INFO, "View.timestamp_column"]),
@@ -564,6 +569,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_datetime"]),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_numeric"]),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.name"]),
+        DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.cleaning_operations"]),
         DocLayoutItem([VIEW_COLUMN, LAGS, "ChangeViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LAGS, "EventViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.feature_store"]),
@@ -669,6 +675,11 @@ def _get_utility_methods_layout() -> List[DocLayoutItem]:
             doc_path_override="core.timedelta.to_timedelta.md",
             is_pure_method=True,
         ),
+        DocLayoutItem(
+            [UTILITY_METHODS, LIST, "list_unsaved_features"],
+            doc_path_override="feature_utility.list_unsaved_features.md",
+            is_pure_method=True,
+        ),
     ]
 
 
@@ -716,6 +727,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SparkDetails"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "AccessTokenCredential"]),
+        DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "AzureBlobStorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "GCSStorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),

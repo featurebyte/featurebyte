@@ -1,6 +1,7 @@
 """
 Tile Monitor Job
 """
+from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
@@ -15,7 +16,6 @@ class TileMonitor(TileCommon):
     """
 
     monitor_sql: str
-    tile_start_date_column: str
     tile_type: str
 
     async def execute(self) -> None:
@@ -36,7 +36,6 @@ class TileMonitor(TileCommon):
                 sql=tile_sql,
                 table_name=self.tile_id,
                 table_exist=True,
-                tile_start_date_column=self.tile_start_date_column,
                 tile_modulo_frequency_second=self.tile_modulo_frequency_second,
                 blind_spot_second=self.blind_spot_second,
                 frequency_minute=self.frequency_minute,
@@ -44,19 +43,18 @@ class TileMonitor(TileCommon):
                 value_column_names=self.value_column_names,
                 value_column_types=self.value_column_types,
                 tile_id=self.tile_id,
-                tile_type=self.tile_type,
                 aggregation_id=self.aggregation_id,
             ).execute()
 
             new_tile_sql = f"""
                 select
-                    {self.tile_start_date_column},
-                    F_TIMESTAMP_TO_INDEX(
-                        {self.tile_start_date_column},
+                    F_INDEX_TO_TIMESTAMP(
+                        INDEX,
                         {self.tile_modulo_frequency_second},
                         {self.blind_spot_second},
                         {self.frequency_minute}
-                    ) as INDEX,
+                    ) as {InternalName.TILE_START_DATE},
+                    INDEX,
                     {self.entity_column_names_str},
                     {self.value_column_names_str}
                 from ({self.monitor_sql})
@@ -87,7 +85,7 @@ class TileMonitor(TileCommon):
                         DATEADD(
                             SECOND,
                             ({self.blind_spot_second}+{self.frequency_minute}*60),
-                            a.{self.tile_start_date_column}
+                            a.{InternalName.TILE_START_DATE}
                         ) as EXPECTED_CREATED_AT,
                         current_timestamp() as CREATED_AT
                     from
@@ -112,7 +110,6 @@ class TileMonitor(TileCommon):
                     sql=tile_sql,
                     table_name=monitor_table_name,
                     table_exist=True,
-                    tile_start_date_column=self.tile_start_date_column,
                     tile_modulo_frequency_second=self.tile_modulo_frequency_second,
                     blind_spot_second=self.blind_spot_second,
                     frequency_minute=self.frequency_minute,
@@ -120,7 +117,6 @@ class TileMonitor(TileCommon):
                     value_column_names=self.value_column_names,
                     value_column_types=self.value_column_types,
                     tile_id=self.tile_id,
-                    tile_type=self.tile_type,
                     aggregation_id=self.aggregation_id,
                 )
                 logger.info("Calling tile_registry.execute")
@@ -146,7 +142,7 @@ class TileMonitor(TileCommon):
                     WHEN NOT MATCHED THEN
                         INSERT
                         (
-                            {self.tile_start_date_column},
+                            {InternalName.TILE_START_DATE},
                             INDEX,
                             {self.entity_column_names_str},
                             {self.value_column_names_str},
@@ -156,7 +152,7 @@ class TileMonitor(TileCommon):
                             CREATED_AT
                         ) VALUES
                         (
-                            b.{self.tile_start_date_column},
+                            b.{InternalName.TILE_START_DATE},
                             b.INDEX,
                             {entity_column_names_str_src},
                             {value_insert_cols_str},
@@ -172,7 +168,7 @@ class TileMonitor(TileCommon):
                 INSERT INTO TILE_MONITOR_SUMMARY(TILE_ID, TILE_START_DATE, TILE_TYPE, CREATED_AT)
                 SELECT
                     '{self.tile_id}' as TILE_ID,
-                    {self.tile_start_date_column} as TILE_START_DATE,
+                    {InternalName.TILE_START_DATE} as TILE_START_DATE,
                     TILE_TYPE,
                     current_timestamp()
                 FROM ({compare_sql})

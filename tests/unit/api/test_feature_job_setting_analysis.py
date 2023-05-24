@@ -101,17 +101,6 @@ def test_info(saved_analysis):
             "late_data_allowance": 5e-05,
             "min_featurejob_period": 60,
         },
-        "analysis_parameters": {
-            "event_table_name": "sf_event_table",
-            "creation_date_column": "created_at",
-            "event_timestamp_column": "event_timestamp",
-            "blind_spot_buffer": 5,
-            "job_time_buffer": 5,
-            "frequency": 180,
-            "granularity": 5,
-            "reading_at": 1,
-            "job_time_modulo_frequency": 61,
-        },
         "recommendation": {
             "blind_spot": "395s",
             "frequency": "180s",

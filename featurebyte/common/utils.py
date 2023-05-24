@@ -16,10 +16,8 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import pygments
 from alive_progress import alive_bar
 from dateutil import parser
-from pygments.formatters.html import HtmlFormatter
 from requests import Response
 
 from featurebyte.common.env_util import get_alive_bar_additional_params
@@ -402,21 +400,3 @@ def convert_to_list_of_strings(value: Optional[Union[str, List[str]]]) -> List[s
     if isinstance(value, list):
         output = value
     return output
-
-
-class CodeStr(str):
-    """
-    Code string content that can be displayed in markdown format
-    """
-
-    def _repr_html_(self) -> str:
-        lexer = pygments.lexers.get_lexer_by_name("python")
-        highlighted_code = pygments.highlight(
-            str(self).strip(),
-            lexer=lexer,
-            formatter=HtmlFormatter(noclasses=True, nobackground=True),
-        )
-        return (
-            '<div style="margin:30px; padding: 20px; border:1px solid #aaa">'
-            f"{highlighted_code}</div>"
-        )

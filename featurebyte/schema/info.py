@@ -32,7 +32,7 @@ from featurebyte.schema.feature import (
     TableFeatureJobSettingComparison,
     VersionComparison,
 )
-from featurebyte.schema.feature_job_setting_analysis import AnalysisOptions, AnalysisParameters
+from featurebyte.schema.feature_job_setting_analysis import AnalysisOptions
 from featurebyte.schema.feature_list import ProductionReadyFractionComparison
 
 
@@ -302,29 +302,45 @@ class FeatureListBriefInfoList(FeatureByteBaseModel):
         return FeatureListBriefInfoList(__root__=feature_list_project.project(paginated_data))
 
 
-class FeatureListInfo(NamespaceInfo):
+class BaseFeatureListNamespaceInfo(NamespaceInfo):
     """
-    FeatureList info schema
-    """
-
-    dtype_distribution: List[FeatureTypeFeatureCount]
-    status: FeatureListStatus
-    feature_count: int
-    version: VersionComparison
-    production_ready_fraction: ProductionReadyFractionComparison
-    versions_info: Optional[FeatureListBriefInfoList]
-    deployed: bool
-
-
-class FeatureListNamespaceInfo(NamespaceInfo):
-    """
-    FeatureListNamespace info schema
+    BaseFeatureListNamespace info schema
     """
 
     dtype_distribution: List[FeatureTypeFeatureCount]
     default_feature_list_id: PydanticObjectId
     status: FeatureListStatus
     feature_count: int
+
+
+class FeatureListNamespaceInfo(BaseFeatureListNamespaceInfo):
+    """
+    FeatureListNamespace info schema
+    """
+
+    feature_namespace_ids: List[PydanticObjectId]
+    default_feature_ids: List[PydanticObjectId]
+
+
+class DefaultFeatureFractionComparison(FeatureByteBaseModel):
+    """
+    DefaultFeatureFractionComparison info schema
+    """
+
+    this: float
+    default: float
+
+
+class FeatureListInfo(BaseFeatureListNamespaceInfo):
+    """
+    FeatureList info schema
+    """
+
+    version: VersionComparison
+    production_ready_fraction: ProductionReadyFractionComparison
+    default_feature_fraction: DefaultFeatureFractionComparison
+    versions_info: Optional[FeatureListBriefInfoList]
+    deployed: bool
 
 
 class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
@@ -335,7 +351,6 @@ class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
     created_at: datetime
     event_table_name: str
     analysis_options: AnalysisOptions
-    analysis_parameters: AnalysisParameters
     recommendation: FeatureJobSetting
     catalog_name: str
 

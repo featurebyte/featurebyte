@@ -305,7 +305,6 @@ def _get_resource_detail_for_pure_fn(resource_descriptor: str) -> ResourceDetail
     """
     if "!!" not in resource_descriptor:
         raise ValueError(f"Invalid resource descriptor: {resource_descriptor}")
-
     parts = resource_descriptor.split("!!")
     module_path = parts[0]
     method_name = parts[1]

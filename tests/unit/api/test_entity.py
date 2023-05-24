@@ -11,6 +11,7 @@ from bson import ObjectId
 from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
 
+from featurebyte.api.catalog import Catalog
 from featurebyte.api.entity import Entity
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import (
@@ -114,7 +115,7 @@ def test_entity_creation(entity):
     )
     assert expected_msg in str(exc.value)
 
-    with mock.patch("featurebyte.api.api_object.Configurations"):
+    with mock.patch("featurebyte.api.savable_api_object.Configurations"):
         with pytest.raises(RecordCreationException):
             Entity(name="Customer", serving_names=["cust_id"]).save()
 
@@ -398,3 +399,12 @@ def test_entity_name_synchronization_issue(entity):
     cloned_entity.update_name("customer")
     assert entity.name == "customer"
     assert cloned_entity.name == "customer"
+
+
+def test_catalog_id(entity):
+    """
+    Test catalog_id
+    """
+    entity = Entity.get_by_id(entity.id)
+    catalog = Catalog.get_active()
+    assert entity.catalog_id == catalog.id

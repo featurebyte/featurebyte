@@ -1,6 +1,7 @@
 """
 Tests for Feature route
 """
+import copy
 import textwrap
 from collections import defaultdict
 from datetime import datetime
@@ -19,6 +20,15 @@ from featurebyte.common.utils import dataframe_from_json
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from tests.unit.routes.base import BaseCatalogApiTestSuite
+
+
+def _replace_groupby_node_entity_ids(payload, entity_ids):
+    """Replace groupby node entity_ids with the given entity_ids"""
+    output = copy.deepcopy(payload)
+    for i, node in enumerate(payload["graph"]["nodes"]):
+        if node["type"] == "groupby":
+            output["graph"]["nodes"][i]["parameters"]["entity_ids"] = entity_ids
+    return output
 
 
 class TestFeatureApi(BaseCatalogApiTestSuite):
@@ -93,14 +103,20 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         ),
         (
             {
-                **payload,
+                **_replace_groupby_node_entity_ids(payload, ["631161373527e8d21e4197ac"]),
                 "_id": object_id,
-                "entity_ids": ["631161373527e8d21e4197ac"],
             },
             (
                 'Feature (name: "sum_30m") object(s) within the same namespace must have '
                 "the same \"entity_ids\" value (namespace: ['63f94ed6ea1f050131379214'], "
                 "feature: ['631161373527e8d21e4197ac'])."
+            ),
+        ),
+        (
+            {**payload, "node_name": "groupby_1"},
+            (
+                "1 validation error for FeatureModel\n__root__\n  "
+                "Feature graph must have exactly one aggregation output (type=value_error)"
             ),
         ),
     ]

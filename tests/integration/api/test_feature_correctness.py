@@ -15,6 +15,31 @@ from tests.util.helper import fb_assert_frame_equal, get_lagged_series_pandas
 logger = get_logger(__name__)
 
 
+def apply_agg_func_on_filtered_dataframe(agg_func, category, df_filtered, variable_column_name):
+    """
+    Helper function to apply an aggregation function on a dataframe filtered to contain only the
+    data within the feature window for a specific entity
+    """
+    if category is None:
+        out = agg_func(df_filtered[variable_column_name])
+    else:
+        out = {}
+        category_vals = df_filtered[category].unique()
+        for category_val in category_vals:
+            if pd.isnull(category_val):
+                category_val = "__MISSING__"
+                category_mask = df_filtered[category].isnull()
+            else:
+                category_mask = df_filtered[category] == category_val
+            feature_value = agg_func(df_filtered[category_mask][variable_column_name])
+            out[category_val] = feature_value
+        if not out:
+            out = None
+        else:
+            out = json.dumps(pd.Series(out).to_dict())
+    return out
+
+
 def calculate_aggregate_over_ground_truth(
     df,
     point_in_time,
@@ -54,24 +79,9 @@ def calculate_aggregate_over_ground_truth(
         mask &= utc_event_timestamps >= window_start
     df_filtered = df[mask]
 
-    if category is None:
-        out = agg_func(df_filtered[variable_column_name])
-    else:
-        out = {}
-        category_vals = df_filtered[category].unique()
-        for category_val in category_vals:
-            if pd.isnull(category_val):
-                category_val = "__MISSING__"
-                category_mask = df_filtered[category].isnull()
-            else:
-                category_mask = df_filtered[category] == category_val
-            feature_value = agg_func(df_filtered[category_mask][variable_column_name])
-            out[category_val] = feature_value
-        if not out:
-            out = None
-        else:
-            out = json.dumps(pd.Series(out).to_dict())
-    return out
+    return apply_agg_func_on_filtered_dataframe(
+        agg_func, category, df_filtered, variable_column_name
+    )
 
 
 def calculate_aggregate_asat_ground_truth(
@@ -83,6 +93,7 @@ def calculate_aggregate_asat_ground_truth(
     entity_value,
     variable_column_name,
     agg_func,
+    category=None,
 ):
     """
     Reference implementation for aggregate_asat
@@ -104,9 +115,10 @@ def calculate_aggregate_asat_ground_truth(
     df_current = df.groupby(natural_key_column_name).apply(_extract_current_record)
 
     df_filtered = df_current[df_current[entity_column_name] == entity_value]
-    out = agg_func(df_filtered[variable_column_name])
 
-    return out
+    return apply_agg_func_on_filtered_dataframe(
+        agg_func, category, df_filtered, variable_column_name
+    )
 
 
 @pytest.fixture(scope="session")
@@ -323,14 +335,44 @@ def test_aggregate_over(
         transaction_data_upper_case, event_view
     )
 
-    features = []
-    df_expected_all = [observation_set]
     df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
+
+    common_args = (
+        df,
+        entity_column_name,
+        event_timestamp_column_name,
+        event_view,
+        feature_parameters,
+        frequency,
+        time_modulo_frequency,
+        blind_spot,
+    )
+    check_aggregate_over(observation_set, *common_args)
+
+    # Test with a subset of data but with POINT_IN_TIME shifted forward to trigger tile updates
+    observation_set_new = observation_set.sample(n=100, random_state=0).reset_index(drop=True)
+    observation_set_new["POINT_IN_TIME"] = observation_set_new["POINT_IN_TIME"] + pd.Timedelta("1d")
+    check_aggregate_over(observation_set_new, *common_args)
+
+
+def check_aggregate_over(
+    observation_set,
+    df,
+    entity_column_name,
+    event_timestamp_column_name,
+    event_view,
+    feature_parameters,
+    frequency,
+    time_modulo_frequency,
+    blind_spot,
+):
+    df_expected_all = [observation_set]
     utc_event_timestamps = pd.to_datetime(df[event_timestamp_column_name], utc=True).dt.tz_localize(
         None
     )
 
     elapsed_time_ref = 0
+    features = []
     for (
         variable_column_name,
         agg_name,
@@ -406,7 +448,8 @@ def test_aggregate_asat(
     Test that aggregate_asat produces correct feature values
     """
     feature_parameters = [
-        (None, "count", "asat_count", lambda x: len(x)),
+        (None, "count", "asat_count", lambda x: len(x), None),
+        (None, "count", "asat_count_by_day_of_month", lambda x: len(x), "day"),
     ]
 
     scd_view = scd_table.get_view()
@@ -421,13 +464,17 @@ def test_aggregate_asat(
         scd_dataframe[effective_timestamp_column], utc=True
     ).dt.tz_localize(None)
 
+    scd_view["day"] = scd_view["Effective Timestamp"].dt.day
+    scd_dataframe["day"] = scd_dataframe["Effective Timestamp"].dt.day
+
     for (
         variable_column_name,
         agg_name,
         feature_name,
         agg_func_callable,
+        category,
     ) in feature_parameters:
-        feature = scd_view.groupby(entity_column_name).aggregate_asat(
+        feature = scd_view.groupby(entity_column_name, category=category).aggregate_asat(
             method=agg_name,
             value_column=variable_column_name,
             feature_name=feature_name,
@@ -444,6 +491,7 @@ def test_aggregate_asat(
             entity_column_name=entity_column_name,
             variable_column_name=variable_column_name,
             agg_func=agg_func_callable,
+            category=category,
         )[[feature_name]]
 
         df_expected_all.append(df_expected)
@@ -464,4 +512,4 @@ def test_aggregate_asat(
         ["POINT_IN_TIME", entity_column_name]
     ).reset_index(drop=True)
 
-    fb_assert_frame_equal(df_historical_features, df_expected, [])
+    fb_assert_frame_equal(df_historical_features, df_expected, ["asat_count_by_day_of_month"])

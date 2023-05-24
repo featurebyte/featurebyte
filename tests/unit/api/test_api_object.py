@@ -12,22 +12,18 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.feature import Feature, FeatureNamespace
-from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
+from featurebyte.api.feature_list import FeatureListNamespace
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.models.feature import (
     FeatureModel,
     FeatureNamespaceModel,
-    FrozenFeatureModel,
     FrozenFeatureNamespaceModel,
 )
 from featurebyte.models.feature_list import (
-    FeatureListModel,
     FeatureListNamespaceModel,
-    FrozenFeatureListModel,
     FrozenFeatureListNamespaceModel,
 )
 from featurebyte.schema.feature import FeatureUpdate
-from featurebyte.schema.feature_list import FeatureListUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 from featurebyte.schema.task import TaskStatus
@@ -240,14 +236,12 @@ def test_api_object_list_empty():
 @pytest.mark.parametrize(
     "api_object_class,frozen_model_class,model_class,update_schema_class",
     [
-        (Feature, FrozenFeatureModel, FeatureModel, FeatureUpdate),
         (
             FeatureNamespace,
             FrozenFeatureNamespaceModel,
             FeatureNamespaceModel,
             FeatureNamespaceUpdate,
         ),
-        (FeatureList, FrozenFeatureListModel, FeatureListModel, FeatureListUpdate),
         (
             FeatureListNamespace,
             FrozenFeatureListNamespaceModel,

@@ -3,6 +3,7 @@ Tile Generate entity tracking Job script
 """
 from typing import Any, List
 
+from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
@@ -16,7 +17,6 @@ class TileGenerateEntityTracking(BaselSqlModel):
     Tile Generate entity tracking script
     """
 
-    tile_last_start_date_column: str
     entity_column_names: List[str]
     tile_id: str
     entity_table: str
@@ -57,6 +57,7 @@ class TileGenerateEntityTracking(BaselSqlModel):
         escaped_entity_column_names_str = ",".join(escaped_entity_column_names)
 
         # create table or insert new records or update existing records
+        tile_last_start_date_column = InternalName.TILE_LAST_START_DATE
         if not tracking_table_exist_flag:
             create_sql = construct_create_table_query(
                 tracking_table_name, self.entity_table, session=self._session
@@ -70,19 +71,19 @@ class TileGenerateEntityTracking(BaselSqlModel):
                     merge into {tracking_table_name} a using ({self.entity_table}) b
                         on {entity_filter_cols_str}
                         when matched then
-                            update set a.{self.tile_last_start_date_column} = b.{self.tile_last_start_date_column}
+                            update set a.{tile_last_start_date_column} = b.{tile_last_start_date_column}
                         when not matched then
-                            insert ({escaped_entity_column_names_str}, {self.tile_last_start_date_column})
-                                values ({entity_insert_cols_str}, b.{self.tile_last_start_date_column})
+                            insert ({escaped_entity_column_names_str}, {tile_last_start_date_column})
+                                values ({entity_insert_cols_str}, b.{tile_last_start_date_column})
                 """
             else:
                 merge_sql = f"""
                     merge into {tracking_table_name} a using ({self.entity_table}) b
                         on true
                         when matched then
-                            update set a.{self.tile_last_start_date_column} = b.{self.tile_last_start_date_column}
+                            update set a.{tile_last_start_date_column} = b.{tile_last_start_date_column}
                         when not matched then
-                            insert ({self.tile_last_start_date_column})
-                                values (b.{self.tile_last_start_date_column})
+                            insert ({tile_last_start_date_column})
+                                values (b.{tile_last_start_date_column})
                 """
             await retry_sql(session=self._session, sql=merge_sql)

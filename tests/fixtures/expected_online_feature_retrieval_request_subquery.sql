@@ -22,7 +22,7 @@ WITH ONLINE_REQUEST_TABLE AS (
     REQ."POINT_IN_TIME",
     "T0"."_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
     "T0"."_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
-    "T1"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1"
+    "T1"."_fb_internal_item_count_None_order_id_None_input_1" AS "_fb_internal_item_count_None_order_id_None_input_1"
   FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -35,7 +35,7 @@ WITH ONLINE_REQUEST_TABLE AS (
   LEFT JOIN (
     SELECT
       REQ."order_id" AS "order_id",
-      COUNT(*) AS "_fb_internal_item_count_None_input_1"
+      COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_1"
     FROM "REQUEST_TABLE_order_id" AS REQ
     INNER JOIN (
       SELECT
@@ -54,5 +54,5 @@ WITH ONLINE_REQUEST_TABLE AS (
 SELECT
   AGG."CUSTOMER_ID",
   "_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "a_48h_average",
-  "_fb_internal_item_count_None_input_1" AS "order_size"
+  "_fb_internal_item_count_None_order_id_None_input_1" AS "order_size"
 FROM _FB_AGGREGATED AS AGG

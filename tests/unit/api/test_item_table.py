@@ -163,6 +163,26 @@ def test_create_item_table__retrieval_exception(snowflake_database_table_item_ta
             )
 
 
+def test_create_item_table__duplicated_column_name_in_different_fields(
+    snowflake_database_table_item_table, saved_event_table
+):
+    """Test ItemTable creation failure due to duplicated column name"""
+    _ = saved_event_table
+    with pytest.raises(ValueError) as exc:
+        snowflake_database_table_item_table.create_item_table(
+            name="sf_item_table",
+            event_id_column="event_id_col",
+            item_id_column="event_id_col",
+            event_table_name="sf_event_table",
+        )
+
+    expected_error_message = (
+        "item_id_column and event_id_column have to be different columns in the table but "
+        '"event_id_col" is specified for both.'
+    )
+    assert expected_error_message in str(exc.value)
+
+
 def test_deserialization(
     item_table_dict,
     snowflake_feature_store,
@@ -303,7 +323,7 @@ def test_item_table__record_creation_exception(
     """
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
-        with patch("featurebyte.api.api_object.Configurations"):
+        with patch("featurebyte.api.savable_api_object.Configurations"):
             with patch("featurebyte.api.api_object.ApiObject.get") as mock_get:
                 mock_get.return_value = snowflake_event_table
                 snowflake_database_table_item_table.create_item_table(

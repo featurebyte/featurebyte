@@ -137,6 +137,8 @@ class DataSource:
         List[str]
             List of tables.
 
+            **Note**: Tables with names that begins with `__` are excluded.
+
         Raises
         ------
         RecordRetrievalException

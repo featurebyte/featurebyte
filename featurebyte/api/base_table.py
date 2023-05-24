@@ -1,6 +1,7 @@
 """
 DataColumn class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, ClassVar, List, Literal, Optional, Tuple, Type, TypeVar, Union, cast
@@ -14,8 +15,9 @@ from pandas import DataFrame
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, ForeignKeyMapping, SavableApiObject
+from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.entity import Entity
+from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.source_table import AbstractTableData, SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
@@ -65,6 +67,41 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         """
         column_info = next(col for col in self.parent.columns_info if col.name == self.name)
         return cast(ColumnInfo, column_info)
+
+    @property
+    def cleaning_operations(self) -> List[CleaningOperation]:
+        """
+        Cleaning operations applied to the column of the table.
+
+        Returns
+        -------
+        List[CleaningOperation]
+            List of cleaning operations applied to the column of the table.
+
+        Examples
+        --------
+        Show the list of cleaning operations of the event table amount column after updating the critical
+        data info.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(
+        ...    cleaning_operations=[
+        ...        fb.MissingValueImputation(imputed_value=0),
+        ...    ]
+        ... )
+        >>> event_table["Amount"].cleaning_operations
+        [MissingValueImputation(imputed_value=0, type=missing)]
+
+        Empty list of column cleaning operations of the event table amount column.
+
+        >>> event_table["Amount"].update_critical_data_info(cleaning_operations=[])
+        >>> event_table["Amount"].cleaning_operations
+        []
+        """
+        for column_cleaning_operations in self.parent.column_cleaning_operations:
+            if column_cleaning_operations.column_name == self.name:
+                return cast(List[CleaningOperation], column_cleaning_operations.cleaning_operations)
+        return []
 
     @property
     def feature_store(self) -> FeatureStoreModel:
@@ -609,6 +646,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
 
     @property
     def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+        # pylint: disable=line-too-long
         """
         List of column cleaning operations associated with this table. Column cleaning operation is a list of
         cleaning operations to be applied to a column of this table.
@@ -620,11 +658,29 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
 
         Examples
         --------
-        Show the list of column cleaning operations of an event table
+        Show the list of column cleaning operations of an event table.
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(
+        ...   cleaning_operations=[
+        ...     fb.MissingValueImputation(imputed_value=0),
+        ...     fb.ValueBeyondEndpointImputation(
+        ...       type="less_than", end_point=0, imputed_value=0
+        ...     ),
+        ...   ]
+        ... )
+        >>> event_table.column_cleaning_operations
+        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing), ValueBeyondEndpointImputation(imputed_value=0, type=less_than, end_point=0)])]
+
+        Empty list of column cleaning operations after resetting the cleaning operations.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["Amount"].update_critical_data_info(
+        ...   cleaning_operations=[]
+        ... )
         >>> event_table.column_cleaning_operations
         []
+
 
         See Also
         --------

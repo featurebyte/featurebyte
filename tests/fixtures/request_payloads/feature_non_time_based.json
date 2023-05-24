@@ -5,10 +5,6 @@
         "Run `pytest --update-fixtures` to update it."
     ],
     "_id": "6414004bc6834e5117ec1575",
-    "dtype": "FLOAT",
-    "entity_ids": [
-        "63f94ed6ea1f050131379204"
-    ],
     "feature_namespace_id": "6414004bc6834e5117ec1576",
     "graph": {
         "edges": [

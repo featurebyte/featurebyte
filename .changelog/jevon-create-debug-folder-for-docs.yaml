@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: docs
+
+issues: []
+
+note: "automatically create `debug` folder if it doesn't exist when running docs"
+
+subtext:

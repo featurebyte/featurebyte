@@ -782,7 +782,7 @@ def create_generic_tile_spec():
     """
     Helper to create a generic tile_spec
     """
-    col_names_list = [InternalName.TILE_START_DATE, "PRODUCT_ACTION", "CUST_ID", "VALUE"]
+    col_names_list = ["INDEX", "PRODUCT_ACTION", "CUST_ID", "VALUE"]
     col_names = ",".join(col_names_list)
     table_name = "TEMP_TABLE"
     start = InternalName.TILE_START_DATE_SQL_PLACEHOLDER

@@ -51,7 +51,6 @@ def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature, u
     assert isinstance(new_feature, Feature)
 
     assert new_feature.entity_ids == latest_event_timestamp_feature.entity_ids
-    assert new_feature.entity_identifiers == latest_event_timestamp_feature.entity_identifiers
     assert new_feature.feature_store == latest_event_timestamp_feature.feature_store
     assert new_feature.tabular_source == latest_event_timestamp_feature.tabular_source
 

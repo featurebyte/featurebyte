@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 import copy
 
+from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.api.lag import LaggableViewColumn
@@ -15,7 +16,6 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import validate_type_is_feature
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -268,7 +268,7 @@ class EventView(View, GroupByMixin, RawMixin):
         ValueError
             raised when the feature is created from more than one entity
         """
-        entity_columns = feature.entity_identifiers
+        entity_columns = feature.graph.get_entity_columns(node_name=feature.node_name)
         if len(entity_columns) != 1:
             raise ValueError(
                 "The feature should only be based on one entity. We are currently unable to add features "
@@ -277,7 +277,7 @@ class EventView(View, GroupByMixin, RawMixin):
         return entity_columns[0]
 
     @staticmethod
-    def _get_feature_entity_id(feature: Feature) -> PydanticObjectId:
+    def _get_feature_entity_id(feature: Feature) -> ObjectId:
         """
         Get the entity ID of the feature.
 
@@ -288,7 +288,7 @@ class EventView(View, GroupByMixin, RawMixin):
 
         Returns
         -------
-        PydanticObjectId
+        ObjectId
             entity ID
 
         Raises
@@ -296,7 +296,7 @@ class EventView(View, GroupByMixin, RawMixin):
         ValueError
             raised when the feature is created from more than one entity
         """
-        entity_ids = feature.entity_ids
+        entity_ids = feature.graph.get_entity_ids(node_name=feature.node_name)
         if len(entity_ids) != 1:
             raise ValueError(
                 "The feature should only be based on one entity. We are currently unable to add features "
@@ -304,13 +304,13 @@ class EventView(View, GroupByMixin, RawMixin):
             )
         return entity_ids[0]
 
-    def _get_col_with_entity_id(self, entity_id: PydanticObjectId) -> Optional[str]:
+    def _get_col_with_entity_id(self, entity_id: ObjectId) -> Optional[str]:
         """
         Tries to find a single column with the matching entity ID.
 
         Parameters
         ----------
-        entity_id: PydanticObjectId
+        entity_id: ObjectId
             entity ID to search for
 
         Returns

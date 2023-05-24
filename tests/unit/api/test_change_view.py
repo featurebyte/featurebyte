@@ -153,22 +153,31 @@ def test_view_mode__auto_manual_equality_check(snowflake_scd_table_with_imputati
     )
 
 
-def test_get_default_feature_job_setting():
+@pytest.fixture(name="patched_datetime")
+def patched_datetime_fixture():
     """
-    Test get_default_feature_job_setting
+    Patch datetime function which influences the default feature job setting for ChangeView
     """
-    # default is returned if nothing is provided
     datetime_mock = Mock(wraps=datetime)
     mocked_hour = 11
     mocked_minute = 15
     datetime_mock.now.return_value = datetime(1999, 1, 1, mocked_hour, mocked_minute, 0)
     with patch("featurebyte.api.change_view.datetime", new=datetime_mock):
-        feature_job_setting = ChangeView.get_default_feature_job_setting()
-        assert feature_job_setting == FeatureJobSetting(
-            blind_spot="0",
-            time_modulo_frequency=f"{mocked_hour}h{mocked_minute}m",
-            frequency="24h",
-        )
+        yield
+
+
+@pytest.mark.usefixtures("patched_datetime")
+def test_get_default_feature_job_setting():
+    """
+    Test get_default_feature_job_setting
+    """
+    # default is returned if nothing is provided
+    feature_job_setting = ChangeView.get_default_feature_job_setting()
+    assert feature_job_setting == FeatureJobSetting(
+        blind_spot="0",
+        time_modulo_frequency=f"11h15m",
+        frequency="24h",
+    )
 
     job_setting_provided = FeatureJobSetting(
         blind_spot="1h", time_modulo_frequency="1h", frequency="12h"
@@ -378,6 +387,7 @@ def test_update_feature_job_setting(snowflake_change_view):
     assert snowflake_change_view.default_feature_job_setting == new_feature_job_setting
 
 
+@pytest.mark.usefixtures("patched_datetime")
 def test_aggregate_over_feature_tile_sql(feature_from_change_view):
     """
     Test tile sql is as expected for a feature created from ChangeView
@@ -390,19 +400,13 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 86400
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          index,
           "col_text",
           COUNT(*) AS value_{expected_aggregation_id}
         FROM (
           SELECT
             *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "new_effective_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
-              ) / 86400
-            ) AS tile_index
+            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "new_effective_timestamp"), 40500, 0, 1440) AS index
           FROM (
             SELECT
               *
@@ -451,7 +455,7 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
           )
         )
         GROUP BY
-          tile_index,
+          index,
           "col_text"
         """
     ).strip()

@@ -30,14 +30,13 @@ async def test_generate_tile(session, base_sql_model):
     value_col_names_str = ",".join(value_col_names)
     fmt_timestamp_expr = format_timestamp_expr(session, InternalName.TILE_START_DATE)
     tile_sql = (
-        f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
+        f"SELECT index,{entity_col_names_str},{value_col_names_str} FROM {table_name} "
         f"WHERE {fmt_timestamp_expr} >= '2022-06-05 23:48:00' "
         f"AND {fmt_timestamp_expr} < '2022-06-05 23:58:00'"
     )
 
     tile_generate_ins = TileGenerate(
         session=session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -47,7 +46,6 @@ async def test_generate_tile(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="OFFLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
 
@@ -76,14 +74,13 @@ async def test_generate_tile_no_data(session, base_sql_model):
     value_col_names_str = ",".join(value_col_names)
     fmt_timestamp_expr = format_timestamp_expr(session, InternalName.TILE_START_DATE)
     tile_sql = (
-        f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} "
+        f"SELECT index,{entity_col_names_str},{value_col_names_str} "
         f"FROM {table_name} "
         f"WHERE {fmt_timestamp_expr} > '2022-06-05 23:58:00'"
     )
 
     tile_generate_ins = TileGenerate(
         session=session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -93,7 +90,6 @@ async def test_generate_tile_no_data(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="OFFLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
 
@@ -122,7 +118,7 @@ async def test_generate_tile_new_value_column(session, base_sql_model):
     value_col_names_str = ",".join(value_col_names)
     fmt_timestamp_expr = format_timestamp_expr(session, InternalName.TILE_START_DATE)
     tile_sql = (
-        f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
+        f"SELECT index,{entity_col_names_str},{value_col_names_str} FROM {table_name} "
         f"WHERE {fmt_timestamp_expr} >= '2022-06-05 23:48:00' "
         f"AND {fmt_timestamp_expr} < '2022-06-05 23:58:00'"
     )
@@ -138,7 +134,6 @@ async def test_generate_tile_new_value_column(session, base_sql_model):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="OFFLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
 
@@ -152,7 +147,7 @@ async def test_generate_tile_new_value_column(session, base_sql_model):
     value_col_types_2 = ["FLOAT", "FLOAT"]
     value_col_names_2_str = ",".join(value_col_names_2)
     tile_sql_2 = (
-        f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_2_str} FROM {table_name} "
+        f"SELECT index,{entity_col_names_str},{value_col_names_2_str} FROM {table_name} "
         f"WHERE {fmt_timestamp_expr} >= '2022-06-05 23:48:00' "
         f"AND {fmt_timestamp_expr} < '2022-06-05 23:58:00'"
     )
@@ -168,7 +163,6 @@ async def test_generate_tile_new_value_column(session, base_sql_model):
         value_column_names=value_col_names_2,
         value_column_types=value_col_types_2,
         tile_type="OFFLINE",
-        tile_start_date_column=InternalName.TILE_START_DATE,
         aggregation_id=agg_id,
     )
 

@@ -123,7 +123,9 @@ class FeatureStoreWarehouseService(BaseService):
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
-        return await db_session.list_tables(database_name=database_name, schema_name=schema_name)
+        tables = await db_session.list_tables(database_name=database_name, schema_name=schema_name)
+        # exclude tables with names that has a "__" prefix
+        return [table_name for table_name in tables if not table_name.startswith("__")]
 
     async def list_columns(
         self,

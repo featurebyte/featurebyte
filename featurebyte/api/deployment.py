@@ -21,7 +21,7 @@ from featurebyte.api.feature_job import FeatureJobStatusResult
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.table import Table
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.utils import CodeStr
+from featurebyte.common.formatting_util import CodeStr
 from featurebyte.config import Configurations
 from featurebyte.exception import FeatureListNotOnlineEnabledError
 from featurebyte.models.base import PydanticObjectId

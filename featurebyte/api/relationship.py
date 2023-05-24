@@ -63,7 +63,7 @@ class Relationship(ApiObject):
 
     # pydantic instance variable (internal use)
     internal_enabled: bool = Field(alias="enabled")
-    internal_updated_by: PydanticObjectId = Field(alias="updated_by")
+    internal_updated_by: Optional[PydanticObjectId] = Field(alias="updated_by")
 
     @property
     def enabled(self) -> bool:
@@ -81,7 +81,7 @@ class Relationship(ApiObject):
             return self.internal_enabled
 
     @property
-    def updated_by(self) -> PydanticObjectId:
+    def updated_by(self) -> Optional[PydanticObjectId]:
         """
         Who the relationship was updated by
 
@@ -94,6 +94,22 @@ class Relationship(ApiObject):
             return self.cached_model.updated_by
         except RecordRetrievalException:
             return self.internal_updated_by
+
+    @property
+    def catalog_id(self) -> PydanticObjectId:
+        """
+        Returns the unique identifier (ID) of the Catalog that is associated with the Relationship object.
+
+        Returns
+        -------
+        PydanticObjectId
+            Catalog ID of the relationship.
+
+        See Also
+        --------
+        - [Catalog](/reference/featurebyte.api.catalog.Catalog)
+        """
+        return self.cached_model.catalog_id  # pylint: disable=no-member
 
     @classmethod
     @typechecked

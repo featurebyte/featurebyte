@@ -1007,7 +1007,7 @@ def get_non_time_based_feature_fixture(snowflake_item_table, transaction_entity)
     This is a non-time-based feature as it is built from ItemTable.
     """
     snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
-    item_table = ItemTable(**{**snowflake_item_table.json_dict(), "item_id_column": "event_id_col"})
+    item_table = ItemTable(**{**snowflake_item_table.json_dict(), "item_id_column": "item_id_col"})
     item_view = item_table.get_view(event_suffix="_event_table")
     return item_view.groupby("event_id_col").aggregate(
         value_column="item_amount",
@@ -1023,8 +1023,6 @@ def float_feature_fixture(feature_group):
     """
     feature = feature_group["sum_1d"]
     assert isinstance(feature, Feature)
-    assert feature.protected_columns == {"cust_id"}
-    assert feature.inherited_columns == {"cust_id"}
     assert feature_group["sum_1d"].table_ids == feature.table_ids
     global_graph = GlobalQueryGraph()
     assert id(feature.graph.nodes) == id(global_graph.nodes)
@@ -1038,8 +1036,6 @@ def bool_feature_fixture(float_feature):
     """
     bool_feature = float_feature > 100.0
     assert isinstance(bool_feature, Feature)
-    assert bool_feature.protected_columns == float_feature.protected_columns
-    assert bool_feature.inherited_columns == float_feature.inherited_columns
     assert bool_feature.table_ids == float_feature.table_ids
     yield bool_feature
 

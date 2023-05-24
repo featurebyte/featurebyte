@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from enum import Enum
 
+from python_on_whales import DockerException
 from python_on_whales.docker_client import DockerClient
 from rich.align import Align
 from rich.console import Console
@@ -22,6 +23,7 @@ from featurebyte.api.feature_store import FeatureStore, SourceType
 from featurebyte.common.path_util import get_package_root
 from featurebyte.config import Configurations
 from featurebyte.datasets.app import import_dataset
+from featurebyte.exception import DockerError
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.node.schema import SparkDetails
 
@@ -148,50 +150,59 @@ def start_app(
         List of services to start
     verbose : bool
         Print verbose output
+
+    Raises
+    ------
+    DockerError
+        Docker compose fails to start
     """
-    services = services or get_service_names(app_name)
+    try:
+        services = services or get_service_names(app_name)
 
-    # Load config to ensure it exists before starting containers
-    config = Configurations()  # pylint: disable=unused-variable
-    __setup_network()
+        # Load config to ensure it exists before starting containers
+        Configurations()
+        __setup_network()
 
-    with get_docker_client() as docker:
-        docker.compose.up(services=services, detach=True)
+        with get_docker_client() as docker:
+            docker.compose.up(services=services, detach=True)
 
-        # Wait for all services to be healthy
-        def _wait_for_healthy(spinner_status: Optional[Status] = None) -> None:
-            while True:
-                unhealthy_containers = []
-                for container in docker.compose.ps():
-                    health = container.state.health.status if container.state.health else "N/A"
-                    if health not in {"healthy", "N/A"}:
-                        unhealthy_containers.append(container.name)
-                if len(unhealthy_containers) == 0:
-                    break
-                statuses = (
-                    Text("Services: [")
-                    + Text(", ").join(map(lambda s: Text(s, style="red"), unhealthy_containers))
-                    + Text("] are unhealthy", style="None")
-                )
-                if spinner_status:
-                    spinner_status.update(statuses)
-                time.sleep(1)
+            # Wait for all services to be healthy
+            def _wait_for_healthy(spinner_status: Optional[Status] = None) -> None:
+                while True:
+                    unhealthy_containers = []
+                    for container in docker.compose.ps():
+                        health = container.state.health.status if container.state.health else "N/A"
+                        if health not in {"healthy", "N/A"}:
+                            unhealthy_containers.append(container.name)
+                    if len(unhealthy_containers) == 0:
+                        break
+                    statuses = (
+                        Text("Services: [")
+                        + Text(", ").join(map(lambda s: Text(s, style="red"), unhealthy_containers))
+                        + Text("] are unhealthy", style="None")
+                    )
+                    if spinner_status:
+                        spinner_status.update(statuses)
+                    time.sleep(1)
 
-        if verbose:
-            with console.status("Waiting for services to be healthy...") as spinner_status:
-                _wait_for_healthy(spinner_status)
-                message = (
-                    """
-                    [bold green]Featurebyte application started successfully![/]
+            if verbose:
+                with console.status("Waiting for services to be healthy...") as spinner_status:
+                    _wait_for_healthy(spinner_status)
+                    message = (
+                        """
+                        [bold green]Featurebyte application started successfully![/]
 
-                    API server now running at: [cyan underline]http://127.0.0.1:8088[/].
-                    You can now use the featurebyte SDK with the API server.
-                    """
-                )
-            console.print(Panel(Align.left(message), title="FeatureByte Services", width=120))
-        else:
-            _wait_for_healthy()
-
+                        API server now running at: [cyan underline]http://127.0.0.1:8088[/].
+                        You can now use the featurebyte SDK with the API server.
+                        """
+                    )
+                console.print(Panel(Align.left(message), title="FeatureByte Services", width=120))
+            else:
+                _wait_for_healthy()
+    except DockerException as exc:
+        if "Is the docker daemon running" in str(exc):
+            raise DockerError("Docker is not running, please start docker and try again.") from exc
+        raise DockerError(f"Failed to start application: {exc.stderr}") from exc
 
 def start_playground(datasets: Optional[List[str]] = None,
                      force_import: bool = False, verbose: bool = True) -> None:

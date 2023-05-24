@@ -23,6 +23,7 @@ from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.table import Table
+from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
@@ -42,7 +43,10 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     TableCleaningOperation,
 )
-from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    GroupOperationStructure,
+    OperationStructure,
+)
 from tests.util.helper import check_aggressively_pruned_graph, check_sdk_code_generation, get_node
 
 
@@ -200,12 +204,9 @@ def test_feature_deserialization(
             time_modulo_frequency="5m",
         ),
     )
-    same_float_feature_dict = feature_group["sum_1d"].dict(
-        exclude={"id": True, "feature_namespace_id": True}
-    )
+    same_float_feature_dict = feature_group["sum_1d"].dict(exclude={"id": True})
     float_feature_dict.pop("_id")
     float_feature_dict.pop("feature_store")
-    float_feature_dict.pop("feature_namespace_id")
 
     # as serialization only perform non-aggressive pruning (all travelled nodes are kept)
     # here we need to perform aggressive pruning & compare the final graph to make sure they are the same
@@ -558,8 +559,7 @@ def test_create_new_version(saved_feature, snowflake_event_table):
     assert new_version.saved is True
 
     saved_feature_version = saved_feature.version
-    assert saved_feature_version.suffix is None
-    assert new_version.version == {"name": saved_feature_version.name, "suffix": 1}
+    assert new_version.version == f"{saved_feature_version}_1"
 
     new_version_dict = new_version.dict()
     assert new_version_dict["graph"]["nodes"][1]["type"] == "graph"
@@ -718,7 +718,7 @@ def test_feature__as_default_version(saved_feature):
     assert Feature.get(name=saved_feature.name) == saved_feature
 
     # check get by name and version
-    assert Feature.get(name=saved_feature.name, version=new_version.version.to_str()) == new_version
+    assert Feature.get(name=saved_feature.name, version=new_version.version) == new_version
 
 
 def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
@@ -735,12 +735,19 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
         frequency="30m",
         time_modulo_frequency="5m",
     )
-    feature_group_by_cust_id = event_view.groupby("cust_id").aggregate_over(
+    feature_group_by_cust_id_30m = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m"],
         feature_job_setting=feature_job_setting,
-        feature_names=["sum_30m_by_cust_id"],
+        feature_names=["sum_30m_by_cust_id_30m"],
+    )
+    feature_group_by_cust_id_1h = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["1h"],
+        feature_job_setting=feature_job_setting,
+        feature_names=["sum_30m_by_cust_id_1h"],
     )
     feature_group_by_binary = event_view.groupby("col_binary").aggregate_over(
         value_column="col_float",
@@ -750,14 +757,19 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
         feature_names=["sum_30m_by_binary"],
     )
     composite_feature = (
-        feature_group_by_cust_id["sum_30m_by_cust_id"]
+        feature_group_by_cust_id_30m["sum_30m_by_cust_id_30m"]
+        + feature_group_by_cust_id_1h["sum_30m_by_cust_id_1h"]
         + feature_group_by_binary["sum_30m_by_binary"]
     )
-    assert set(composite_feature.entity_identifiers) == {"cust_id", "col_binary"}
 
     assert composite_feature.primary_entity == [
         Entity.get_by_id(cust_id_entity.id),
         Entity.get_by_id(entity.id),
+    ]
+    assert composite_feature.entity_ids == sorted([cust_id_entity.id, entity.id])
+    assert composite_feature.graph.get_entity_columns(node_name=composite_feature.node_name) == [
+        "col_binary",
+        "cust_id",
     ]
 
 
@@ -842,10 +854,6 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
 
     with pytest.raises(RecordRetrievalException) as exc:
         float_feature.update_default_version_mode(DefaultVersionMode.MANUAL)
-    namespace_id = float_feature.feature_namespace_id
-    expected = (
-        f'FeatureNamespace (id: "{namespace_id}") not found. Please save the Feature object first.'
-    )
     assert expected in str(exc.value)
 
 
@@ -888,23 +896,15 @@ def test_list_filter(saved_feature):
     assert feature_list.shape[0] == 0
 
 
-def test_is_time_based(saved_feature):
+def test_is_time_based(saved_feature, non_time_based_feature):
     """
     Test is_time_based
     """
-    # Default saved_feature is time based
-    is_time_based = saved_feature.is_time_based
-    assert is_time_based
+    # window aggregation feature is time based
+    assert saved_feature.is_time_based is True
 
-    # Mock out GroupOperationStructure to have time-based property set to true
-    with patch(
-        "featurebyte.models.feature.FrozenFeatureModel.extract_operation_structure"
-    ) as mocked_extract:
-        mocked_extract.return_value = GroupOperationStructure(
-            row_index_lineage=("item_groupby_1",),
-            is_time_based=False,
-        )
-        assert not saved_feature.is_time_based
+    # item aggregation feature is not time based
+    assert non_time_based_feature.is_time_based is False
 
 
 def test_list_versions(saved_feature):
@@ -928,7 +928,7 @@ def test_list_versions(saved_feature):
                     saved_feature.id,
                 ],
                 "name": ["new_feat2", "new_feat1", saved_feature.name],
-                "version": [saved_feature.version.to_str()] * 3,
+                "version": [saved_feature.version] * 3,
                 "dtype": [saved_feature.dtype] * 3,
                 "readiness": [saved_feature.readiness] * 3,
                 "online_enabled": [saved_feature.online_enabled] * 3,
@@ -950,7 +950,7 @@ def test_list_versions(saved_feature):
             {
                 "id": [saved_feature.id],
                 "name": [saved_feature.name],
-                "version": [saved_feature.version.to_str()],
+                "version": [saved_feature.version],
                 "dtype": [saved_feature.dtype],
                 "readiness": [saved_feature.readiness],
                 "online_enabled": [saved_feature.online_enabled],
@@ -959,6 +959,7 @@ def test_list_versions(saved_feature):
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
                 "created_at": [saved_feature.created_at],
+                "is_default": [True],
             }
         ),
     )
@@ -1116,7 +1117,7 @@ def test_feature_deletion_failure(saved_feature):
     with pytest.raises(RecordDeletionException) as exc_info:
         saved_feature.delete()
 
-    version = feature_list.version.to_str()
+    version = feature_list.version
     expected_msg = (
         "Feature is still in use by feature list(s). Please remove the following feature list(s) first:\n"
         f"[{{'id': '{feature_list.id}',\n  'name': 'test_feature_list',\n  'version': '{version}'}}]"
@@ -1563,3 +1564,40 @@ def test_list_unsaved_features(
         )
     finally:
         activate_and_get_catalog("default")
+
+
+def test_unsaved_feature_repr(
+    float_feature,
+):
+    expected_value = f"Feature[FLOAT](name=sum_1d, node_name={float_feature.node_name})"
+    assert repr(float_feature) == expected_value
+
+    # html representation for unsaved object should be the same as repr
+    assert float_feature._repr_html_() == expected_value
+
+
+def test_feature_dtype(
+    float_feature,
+    bool_feature,
+    non_time_based_feature,
+    sum_per_category_feature,
+):
+    """Test feature dtype before and after save"""
+    bool_feature.name = "bool_feat"
+
+    # test feature dtype before save
+    assert float_feature.dtype == DBVarType.FLOAT
+    assert bool_feature.dtype == DBVarType.BOOL
+    assert non_time_based_feature.dtype == DBVarType.FLOAT
+    assert sum_per_category_feature.dtype == DBVarType.OBJECT
+
+    float_feature.save()
+    bool_feature.save()
+    non_time_based_feature.save()
+    sum_per_category_feature.save()
+
+    # test feature dtype after save
+    assert float_feature.dtype == DBVarType.FLOAT
+    assert bool_feature.dtype == DBVarType.BOOL
+    assert non_time_based_feature.dtype == DBVarType.FLOAT
+    assert sum_per_category_feature.dtype == DBVarType.OBJECT

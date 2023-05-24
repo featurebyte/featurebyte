@@ -3,7 +3,7 @@ This module contains TaskExecutor class
 """
 from __future__ import annotations
 
-from typing import Any, Awaitable
+from typing import Any, Awaitable, Optional
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -11,6 +11,7 @@ from threading import Thread
 from uuid import UUID
 
 import gevent
+from celery.exceptions import SoftTimeLimitExceeded
 
 from featurebyte.config import get_home_path
 from featurebyte.enum import WorkerCommand
@@ -39,21 +40,28 @@ def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
     loop.run_forever()
 
 
-def run_async(coro: Awaitable[Any]) -> Any:
+def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
     """
     Run async function in both async and non-async context
     Parameters
     ----------
     coro: Coroutine
         Coroutine to run
+    timeout: Optional[int]
+        Timeout in seconds, default to None (no timeout)
 
     Returns
     -------
     Any
         result from function call
+
+    Raises
+    ------
+    SoftTimeLimitExceeded
+        timeout is exceeded
     """
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         logger.debug("Use existing async loop", extra={"loop": loop})
     except RuntimeError:
         loop = asyncio.new_event_loop()
@@ -62,13 +70,20 @@ def run_async(coro: Awaitable[Any]) -> Any:
         thread = Thread(target=start_background_loop, args=(loop,), daemon=True)
         thread.start()
 
-    tasks = asyncio.all_tasks()
-    logger.debug("Asyncio tasks", extra={"num_tasks": len(tasks)})
+    logger.debug("Asyncio tasks", extra={"num_tasks": len(asyncio.all_tasks(loop=loop))})
+
+    logger.info("Start task", extra={"timeout": timeout})
     future = asyncio.run_coroutine_threadsafe(coro, loop)
-    event = gevent.event.Event()
-    future.add_done_callback(lambda _: event.set())
-    event.wait()
-    return future.result()
+    try:
+        with gevent.Timeout(seconds=timeout, exception=TimeoutError):
+            event = gevent.event.Event()
+            future.add_done_callback(lambda _: event.set())
+            event.wait()
+            return future.result()
+    except TimeoutError as exc:
+        # try to cancel the job if it has not started
+        future.cancel()
+        raise SoftTimeLimitExceeded(f"Task timed out after {timeout}s") from exc
 
 
 class TaskExecutor:
@@ -156,7 +171,9 @@ def execute_io_task(self: Any, **payload: Any) -> Any:
     -------
     Any
     """
-    return run_async(execute_task(self.request.id, **payload))
+    # gevent celery worker pool does not support soft time limit,
+    # so we let "run_async" handle the timeout enforcement
+    return run_async(execute_task(self.request.id, **payload), timeout=self.request.timelimit[1])
 
 
 @celery.task(bind=True)

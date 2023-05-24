@@ -47,7 +47,9 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         self, test_api_client_persistent, user_id
     ):  # pylint: disable=arguments-differ
         """Post route success response object"""
-        _, persistent = test_api_client_persistent
+        api_client, persistent = test_api_client_persistent
+        self._save_entity(api_client, DEFAULT_CATALOG_ID)
+
         user = Mock()
         user.id = user_id
         feature_list_namespace_service = FeatureListNamespaceService(
@@ -85,7 +87,6 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         """Setup for get_info route testing"""
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
-            ("entity", "entity"),
             ("event_table", "event_table"),
             ("feature", "feature_sum_2h"),
             ("feature", "feature_sum_30m"),
@@ -95,12 +96,22 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
+    def _save_entity(self, api_client, catalog_id):
+        """Save entity"""
+        payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
+        response = api_client.post(
+            "/entity", json=payload, headers={"active-catalog-id": str(catalog_id)}
+        )
+        assert response.status_code == HTTPStatus.CREATED
+
     @pytest_asyncio.fixture
     async def create_multiple_success_responses(
         self, test_api_client_persistent, user_id
     ):  # pylint: disable=arguments-differ
         """Post multiple success responses"""
         test_api_client, persistent = test_api_client_persistent
+        self._save_entity(test_api_client, catalog_id=DEFAULT_CATALOG_ID)
+
         user = Mock()
         user.id = user_id
         feature_list_namespace_service = FeatureListNamespaceService(
@@ -276,6 +287,8 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "tables": [
                 {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}
             ],
+            "feature_namespace_ids": create_response_dict["feature_namespace_ids"],
+            "default_feature_ids": response_dict["default_feature_ids"],
             "default_version_mode": "AUTO",
             "default_feature_list_id": response_dict["default_feature_list_id"],
             "dtype_distribution": [{"count": 2, "dtype": "FLOAT"}],
@@ -295,7 +308,9 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         self, test_api_client_persistent, user_id, catalog_id
     ):  # pylint: disable=arguments-differ
         """Post route success response object"""
-        _, persistent = test_api_client_persistent
+        test_api_client, persistent = test_api_client_persistent
+        self._save_entity(test_api_client, catalog_id)
+
         user = Mock()
         user.id = user_id
         feature_list_namespace_service = FeatureListNamespaceService(

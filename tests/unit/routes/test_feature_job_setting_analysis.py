@@ -293,3 +293,76 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             ),
             "content-type": "application/pdf",
         }
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
+        """Test retrieve info"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+
+        expected_info_response = {
+            "created_at": response_dict["created_at"],
+            "event_table_name": "sf_event_table",
+            "analysis_options": {
+                "analysis_date": "2022-04-18T23:59:55.799000",
+                "analysis_start": "2022-03-21T23:59:55.799000",
+                "analysis_length": 2419200,
+                "blind_spot_buffer_setting": 5,
+                "exclude_late_job": False,
+                "job_time_buffer_setting": "auto",
+                "late_data_allowance": 5e-05,
+                "min_featurejob_period": 60,
+            },
+            "recommendation": {
+                "blind_spot": "395s",
+                "frequency": "180s",
+                "time_modulo_frequency": "61s",
+            },
+            "catalog_name": "default",
+        }
+        assert response_dict.items() == expected_info_response.items()
+
+    @pytest.mark.asyncio
+    async def test_list_records_with_warehouse_info(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test retrieve info"""
+        test_api_client, _ = test_api_client_persistent
+        _ = create_success_response
+        response = test_api_client.get(self.base_route)
+        assert response.status_code == HTTPStatus.OK, response.text
+
+        wh_record_fields = [
+            "job_frequency",
+            "job_interval",
+            "job_time_modulo_frequency",
+            "jobs_count",
+            "missing_jobs_count",
+        ]
+        warehouse_info = response.json()["data"][0]["stats_on_wh_jobs"]
+        warehouse_record = {field: warehouse_info[field] for field in wh_record_fields}
+
+        expected_warehouse_record = {
+            "job_frequency": {"best_estimate": 180, "confidence": "high"},
+            "job_interval": {
+                "avg": 180.16713693942486,
+                "max": 541.0,
+                "median": 180.0,
+                "min": 128.0,
+            },
+            "job_time_modulo_frequency": {
+                "ends": 55,
+                "ends_wo_late": 5,
+                "job_at_end_of_cycle": False,
+                "starts": 2,
+            },
+            "jobs_count": 3354,
+            "missing_jobs_count": 5,
+        }
+        assert warehouse_record == expected_warehouse_record

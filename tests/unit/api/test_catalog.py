@@ -19,7 +19,7 @@ from bson import ObjectId
 from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
 
-from featurebyte.api.api_object import ApiObject, DeletableApiObject, SavableApiObject
+from featurebyte.api.api_object import ApiObject
 from featurebyte.api.base_table import TableApiObject, TableListMixin
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
@@ -40,6 +40,7 @@ from featurebyte.api.item_table import ItemTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
+from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.table import Table
 from featurebyte.exception import (

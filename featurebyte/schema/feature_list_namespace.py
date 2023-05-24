@@ -13,12 +13,20 @@ from featurebyte.models.feature_list import (
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
+class FeatureListNamespaceModelResponse(FeatureListNamespaceModel):
+    """
+    Extended FeatureListNamespace model
+    """
+
+    primary_entity_ids: List[PydanticObjectId]
+
+
 class FeatureListNamespaceList(PaginationMixin):
     """
     Paginated list of FeatureListNamespace
     """
 
-    data: List[FeatureListNamespaceModel]
+    data: List[FeatureListNamespaceModelResponse]
 
 
 class FeatureListNamespaceUpdate(FeatureByteBaseModel):

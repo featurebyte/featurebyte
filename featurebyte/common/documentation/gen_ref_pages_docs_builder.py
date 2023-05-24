@@ -537,16 +537,22 @@ def _add_pure_methods_to_doc_groups(
     Dict[DocGroupKey, DocGroupValue]
         The doc groups.
     """
-    doc_groups[
-        DocGroupKey(
-            module_path="featurebyte.core.timedelta",
-            attribute_name="to_timedelta",
+    methods = [
+        ("featurebyte.core.timedelta", "to_timedelta"),
+        ("featurebyte.feature_utility", "list_unsaved_features"),
+    ]
+    for method in methods:
+        doc_groups[
+            DocGroupKey(
+                module_path=method[0],
+                attribute_name=method[1],
+            )
+        ] = DocGroupValue(
+            doc_group=[],
+            obj_type="method",
+            proxy_path="",
         )
-    ] = DocGroupValue(
-        doc_group=[],
-        obj_type="method",
-        proxy_path="",
-    )
+
     return doc_groups
 
 
@@ -782,7 +788,11 @@ class DocsBuilder:
         with self.gen_files_open(filepath, "w") as fd:
             fd.writelines(output)
         if DEBUG_MODE:
-            with open(f"debug/{local_path}_local.txt", "w") as local_file:
+            debug_folder = "debug"
+            file_exists = os.path.exists(debug_folder)
+            if not file_exists:
+                os.makedirs(debug_folder)
+            with open(f"{debug_folder}/{local_path}_local.txt", "w") as local_file:
                 local_file.writelines(output)
 
     def _build_and_write_to_file(

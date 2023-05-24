@@ -1,7 +1,7 @@
 """
 Feature and FeatureList classes
 """
-# pylint: disable=too-many-lines,too-many-ancestors
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
@@ -15,33 +15,29 @@ from bson import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ConflictResolution, DeletableApiObject, SavableApiObject
+from featurebyte.api.api_object import ConflictResolution
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_namespace import FeatureNamespace
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_util import FEATURE_COMMON_LIST_FIELDS, FEATURE_LIST_FOREIGN_KEYS
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
+from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.formatting_util import CodeStr
 from featurebyte.common.typing import Scalar, ScalarSequence
-from featurebyte.common.utils import CodeStr, dataframe_from_json, enforce_observation_set_row_order
+from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
 from featurebyte.core.accessor.feature_string import FeatureStrAccessorMixin
-from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId, VersionIdentifier
-from featurebyte.models.feature import (
-    DefaultVersionMode,
-    FeatureModel,
-    FeatureReadiness,
-    FrozenFeatureModel,
-)
+from featurebyte.models.base import PydanticObjectId, VersionIdentifier, get_active_catalog_id
+from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.models.tile import TileSpec
@@ -49,12 +45,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
-from featurebyte.query_graph.node.generic import (
-    AliasNode,
-    GroupByNode,
-    ItemGroupbyNode,
-    ProjectNode,
-)
+from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.feature import (
     FeatureCreate,
     FeatureModelResponse,
@@ -67,9 +58,7 @@ logger = get_logger(__name__)
 
 
 class Feature(
-    ProtectedColumnsQueryObject,
     Series,
-    FrozenFeatureModel,
     DeletableApiObject,
     SavableApiObject,
     CdAccessorMixin,
@@ -112,6 +101,11 @@ class Feature(
     ]
     _list_foreign_keys = FEATURE_LIST_FOREIGN_KEYS
 
+    # pydantic instance variable (internal use)
+    internal_catalog_id: PydanticObjectId = Field(
+        default_factory=get_active_catalog_id, alias="catalog_id"
+    )
+
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
 
@@ -132,6 +126,81 @@ class Feature(
                 feature_store_id = TabularSource(**tabular_source).feature_store_id
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
+
+    @property
+    def version(self) -> str:
+        """
+        Returns the version identifier of a Feature object.
+
+        Returns
+        -------
+        str
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("CustomerProductGroupCounts_7d")
+        >>> feature.version  # doctest: +SKIP
+        'V230323'
+        """
+        return cast(FeatureModel, self.cached_model).version.to_str()
+
+    @property
+    def catalog_id(self) -> ObjectId:
+        """
+        Returns the catalog ID that is associated with the Feature object.
+
+        Returns
+        -------
+        ObjectId
+            Catalog ID of the table.
+
+        See Also
+        --------
+        - [Catalog](/reference/featurebyte.api.catalog.Catalog)
+        """
+        try:
+            return cast(FeatureModel, self.cached_model).catalog_id
+        except RecordRetrievalException:
+            return self.internal_catalog_id
+
+    @property
+    def entity_ids(self) -> Sequence[ObjectId]:
+        """
+        Returns the entity IDs associated with the Feature object.
+
+        Returns
+        -------
+        Sequence[ObjectId]
+        """
+        try:
+            return cast(FeatureModel, self.cached_model).entity_ids
+        except RecordRetrievalException:
+            return self.graph.get_entity_ids(node_name=self.node_name)
+
+    @property
+    def table_ids(self) -> Sequence[ObjectId]:
+        """
+        Returns the table IDs used by the Feature object.
+
+        Returns
+        -------
+        Sequence[ObjectId]
+        """
+        try:
+            return cast(FeatureModel, self.cached_model).table_ids
+        except RecordRetrievalException:
+            return self.graph.get_table_ids(node_name=self.node_name)
+
+    @property
+    def feature_list_ids(self) -> Sequence[ObjectId]:
+        """
+        Returns the feature list IDs that use the Feature object.
+
+        Returns
+        -------
+        Sequence[ObjectId]
+        """
+        return cast(FeatureModel, self.cached_model).feature_list_ids
 
     @typechecked
     def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
@@ -201,6 +270,11 @@ class Feature(
         -------
         Dict[str, Any]
             Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.info()  # doctest: +SKIP
         """
         return super().info(verbose)
 
@@ -339,17 +413,25 @@ class Feature(
         --------
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature.list_versions()  # doctest: +SKIP
-                name  version  dtype readiness  online_enabled             table    entities              created_at
-            0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838
+                 name  version  dtype readiness  online_enabled             table    entities              created_at  is_default
+            0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838        True
         """
-        return self._list(include_id=include_id, params={"name": self.name})
+        output = self._list(include_id=True, params={"name": self.name})
+        default_feature_id = self.feature_namespace.default_feature_id
+        output["is_default"] = output["id"] == default_feature_id
+        columns = output.columns
+        if not include_id:
+            columns = [column for column in columns if column != "id"]
+        return output[columns]
 
     def delete(self) -> None:
         """
-        Delete a feature. A feature can only be deleted if
-        * the feature readiness is DRAFT
-        * the feature is not used in any feature list
-        * the feature is not a default feature with manual version mode
+        Deletes a feature from the persistent data store. A feature can only be deleted from the persistent data
+        store if:
+
+        - the feature readiness is DRAFT
+        - the feature is not used in any feature list
+        - the feature is not a default feature with manual version mode
 
         Examples
         --------
@@ -418,47 +500,6 @@ class Feature(
         return super().__setattr__(key, value)
 
     @property
-    def protected_attributes(self) -> List[str]:
-        """
-        List of protected attributes used to extract protected_columns
-
-        Returns
-        -------
-        List[str]
-        """
-        return ["entity_identifiers"]
-
-    @property
-    def entity_identifiers(self) -> List[str]:
-        """
-        Entity identifiers column names
-
-        Returns
-        -------
-        List[str]
-        """
-        entity_ids: list[str] = []
-        for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY):
-            entity_ids.extend(cast(GroupByNode, node).parameters.keys)
-        for node in self.graph.iterate_nodes(
-            target_node=self.node, node_type=NodeType.ITEM_GROUPBY
-        ):
-            entity_ids.extend(cast(ItemGroupbyNode, node).parameters.keys)
-        return entity_ids
-
-    @property
-    def inherited_columns(self) -> set[str]:
-        """
-        Special columns set which will be automatically added to the object of same class
-        derived from current object
-
-        Returns
-        -------
-        set[str]
-        """
-        return set(self.entity_identifiers)
-
-    @property
     def feature_namespace(self) -> FeatureNamespace:
         """
         FeatureNamespace object of current feature
@@ -467,7 +508,8 @@ class Feature(
         -------
         FeatureNamespace
         """
-        return FeatureNamespace.get_by_id(id=self.feature_namespace_id)
+        feature_namespace_id = cast(FeatureModel, self.cached_model).feature_namespace_id
+        return FeatureNamespace.get_by_id(id=feature_namespace_id)
 
     @property
     def readiness(self) -> FeatureReadiness:
@@ -557,7 +599,7 @@ class Feature(
         bool
             True if the feature is time based, False otherwise.
         """
-        operation_structure = self.extract_operation_structure()
+        operation_structure = self.graph.extract_operation_structure(self.node)
         return operation_structure.is_time_based
 
     @property
@@ -658,11 +700,23 @@ class Feature(
             "retrieve" will handle the conflict error by retrieving the object with the same name.
         _id: Optional[str]
             The ID of the object to be saved. This is used internally by the SDK when saving a new object that is
+
+        Examples
+        --------
+        >>> grocery_invoice_view = catalog.get_view("GROCERYINVOICE")
+        >>> invoice_amount_avg_60days = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
+        ...   value_column="Amount",
+        ...   method="avg",
+        ...   feature_names=["InvoiceAmountAvg_60days"],
+        ...   windows=["60d"],
+        ... )["InvoiceAmountAvg_60days"]
+        >>> invoice_amount_avg_60days.save()  # doctest: +SKIP
         """
         sdk_execution_mode = os.environ.get("SDK_EXECUTION_MODE")
         if sdk_execution_mode == "SERVER":
             super().save(conflict_resolution=conflict_resolution, _id=_id)
         else:
+            # TODO: handle conflict resolution
             object_dict = self.post_async_task(
                 route="/feature/definition", payload=self._get_create_payload()
             )

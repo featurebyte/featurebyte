@@ -7,7 +7,7 @@ from typing import cast
 
 from dataclasses import dataclass
 
-from sqlglot import expressions, parse_one
+from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName
@@ -25,7 +25,7 @@ from featurebyte.query_graph.transform.operation_structure import OperationStruc
 
 
 @dataclass
-class BuildTileNode(TableNode):
+class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
     """Tile builder node
 
     This node is responsible for generating the tile building SQL for a groupby operation.
@@ -36,7 +36,10 @@ class BuildTileNode(TableNode):
     value_by: str | None
     tile_specs: list[TileSpec]
     timestamp: str
-    frequency: int
+    frequency_minute: int
+    blind_spot: int
+    time_modulo_frequency: int
+
     is_on_demand: bool
     is_order_dependent: bool
     query_node_type = NodeType.GROUPBY
@@ -46,29 +49,30 @@ class BuildTileNode(TableNode):
 
     @property
     def sql(self) -> Expression:
-        start_date_expr = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
-        start_date_epoch = self.context.adapter.to_epoch_seconds(
-            cast(Expression, parse_one(f"CAST({start_date_expr} AS TIMESTAMP)"))
-        ).sql()
-        timestamp_epoch = self.context.adapter.to_epoch_seconds(
-            quoted_identifier(self.timestamp)
-        ).sql()
-
         input_filtered = self._get_input_filtered_within_date_range()
-        input_tiled = select(
-            "*",
-            f"FLOOR(({timestamp_epoch} - {start_date_epoch}) / {self.frequency}) AS tile_index",
-        ).from_(input_filtered.subquery())
-
-        tile_start_date = f"TO_TIMESTAMP({start_date_epoch} + tile_index * {self.frequency})"
+        tile_index_expr = alias_(
+            expressions.Anonymous(
+                this="F_TIMESTAMP_TO_INDEX",
+                expressions=[
+                    self.context.adapter.convert_to_utc_timestamp(
+                        quoted_identifier(self.timestamp)
+                    ),
+                    make_literal_value(self.time_modulo_frequency),
+                    make_literal_value(self.blind_spot),
+                    make_literal_value(self.frequency_minute),
+                ],
+            ),
+            alias="index",
+        )
+        input_tiled = select("*", tile_index_expr).from_(input_filtered.subquery())
         keys = [quoted_identifier(k) for k in self.keys]
         if self.value_by is not None:
             keys.append(quoted_identifier(self.value_by))
 
         if self.is_order_dependent:
-            return self._get_tile_sql_order_dependent(keys, tile_start_date, input_tiled)
+            return self._get_tile_sql_order_dependent(keys, input_tiled)
 
-        return self._get_tile_sql_order_independent(keys, tile_start_date, input_tiled)
+        return self._get_tile_sql_order_independent(keys, input_tiled)
 
     def _get_input_filtered_within_date_range(self) -> Select:
         """
@@ -110,6 +114,7 @@ class BuildTileNode(TableNode):
 
         Entity table is expected to have these columns:
         * entity column(s)
+        * InternalName.ENTITY_TABLE_START_DATE
         * InternalName.ENTITY_TABLE_END_DATE
 
         Returns
@@ -117,7 +122,7 @@ class BuildTileNode(TableNode):
         Select
         """
         entity_table = InternalName.ENTITY_TABLE_NAME.value
-        start_date = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
+        start_date = InternalName.ENTITY_TABLE_START_DATE.value
         end_date = InternalName.ENTITY_TABLE_END_DATE.value
 
         join_conditions: list[Expression] = []
@@ -130,7 +135,9 @@ class BuildTileNode(TableNode):
         join_conditions.append(
             expressions.GTE(
                 this=get_qualified_column_identifier(self.timestamp, "R"),
-                expression=expressions.Identifier(this=start_date),
+                expression=get_qualified_column_identifier(
+                    start_date, entity_table, quote_column=False
+                ),
             )
         )
         join_conditions.append(
@@ -160,24 +167,22 @@ class BuildTileNode(TableNode):
     def _get_tile_sql_order_independent(
         self,
         keys: list[Expression],
-        tile_start_date: str,
         input_tiled: expressions.Select,
     ) -> Expression:
         groupby_sql = (
             select(
-                f"{tile_start_date} AS {InternalName.TILE_START_DATE}",
+                "index",
                 *keys,
                 *[alias_(spec.tile_expr, alias=spec.tile_column_name) for spec in self.tile_specs],
             )
             .from_(input_tiled.subquery())
-            .group_by("tile_index", *keys)
+            .group_by("index", *keys)
         )
         return groupby_sql
 
     def _get_tile_sql_order_dependent(
         self,
         keys: list[Expression],
-        tile_start_date: str,
         input_tiled: expressions.Select,
     ) -> Expression:
         def _make_window_expr(expr: str | Expression) -> Expression:
@@ -186,7 +191,7 @@ class BuildTileNode(TableNode):
                     expressions.Ordered(this=quoted_identifier(self.timestamp), desc=True),
                 ]
             )
-            partition_by = [cast(Expression, expressions.Identifier(this="tile_index"))] + keys
+            partition_by = [cast(Expression, expressions.Identifier(this="index"))] + keys
             window_expr = expressions.Window(this=expr, partition_by=partition_by, order=order)
             return window_expr
 
@@ -200,7 +205,7 @@ class BuildTileNode(TableNode):
             ],
         ]
         inner_expr = select(
-            alias_(tile_start_date, alias=InternalName.TILE_START_DATE, quoted=False),
+            "index",
             *keys,
             *window_exprs,
         ).from_(input_tiled.subquery())
@@ -211,7 +216,7 @@ class BuildTileNode(TableNode):
         )
         tile_expr = (
             select(
-                InternalName.TILE_START_DATE,
+                "index",
                 *keys,
                 *[spec.tile_column_name for spec in self.tile_specs],
             )
@@ -278,7 +283,9 @@ class BuildTileNode(TableNode):
             value_by=parameters["value_by"],
             tile_specs=tile_specs,
             timestamp=parameters["timestamp"],
-            frequency=parameters["frequency"],
+            frequency_minute=parameters["frequency"] // 60,
+            blind_spot=parameters["blind_spot"],
+            time_modulo_frequency=parameters["time_modulo_frequency"],
             is_on_demand=is_on_demand,
             is_order_dependent=aggregator.is_order_dependent,
         )

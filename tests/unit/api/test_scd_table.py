@@ -259,6 +259,28 @@ def test_create_scd_table__retrieval_exception(snowflake_database_table_scd_tabl
             )
 
 
+def test_create_scd_table__duplicated_column_name_in_different_fields(
+    snowflake_database_table_scd_table,
+):
+    """Test SCDTable creation failure due to duplicated column name"""
+    with pytest.raises(ValueError) as exc:
+        snowflake_database_table_scd_table.create_scd_table(
+            name="sf_scd_table",
+            natural_key_column="col_text",
+            surrogate_key_column="col_int",
+            effective_timestamp_column="effective_timestamp",
+            end_timestamp_column="effective_timestamp",
+            current_flag_column="is_active",
+            record_creation_timestamp_column="created_at",
+        )
+
+    expected_error_message = (
+        "end_timestamp_column and effective_timestamp_column have to be different columns in the table but "
+        '"effective_timestamp" is specified for both.'
+    )
+    assert expected_error_message in str(exc.value)
+
+
 def assert_info_helper(scd_table_info):
     """
     Helper function to assert info from SCD table.
@@ -339,10 +361,10 @@ def test_accessing_saved_scd_table_attributes(saved_scd_table):
     cloned = SCDTable.get_by_id(id=saved_scd_table.id)
     assert cloned.record_creation_timestamp_column is None
     saved_scd_table.update_record_creation_timestamp_column(
-        record_creation_timestamp_column="effective_timestamp"
+        record_creation_timestamp_column="created_at"
     )
-    assert saved_scd_table.record_creation_timestamp_column == "effective_timestamp"
-    assert cloned.record_creation_timestamp_column == "effective_timestamp"
+    assert saved_scd_table.record_creation_timestamp_column == "created_at"
+    assert cloned.record_creation_timestamp_column == "created_at"
 
 
 def test_sdk_code_generation(snowflake_database_table_scd_table, update_fixtures):

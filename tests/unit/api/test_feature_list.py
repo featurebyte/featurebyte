@@ -66,16 +66,14 @@ def test_feature_list_creation__success(
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
 
-    assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
+    assert flist.dict(by_alias=True) == {
+        "_id": flist.id,
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
-        "version": "V220501",
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "feature_clusters": None,
         "catalog_id": DEFAULT_CATALOG_ID,
-        "relationships_info": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -83,8 +81,7 @@ def test_feature_list_creation__success(
     with pytest.raises(RecordRetrievalException) as exc:
         _ = flist.status
     error_message = (
-        f'FeatureListNamespace (id: "{flist.feature_list_namespace_id}") not found. '
-        f"Please save the FeatureList object first."
+        f'FeatureList (id: "{flist.id}") not found. Please save the FeatureList object first.'
     )
     assert error_message in str(exc.value)
 
@@ -163,27 +160,24 @@ def test_feature_list__get_historical_features__iteration_logic(
     )
 
 
-@freeze_time("2022-05-01")
 def test_feature_list_creation__feature_and_group(production_ready_feature, feature_group):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList(
         [production_ready_feature, feature_group[["sum_30m", "sum_1d"]]],
         name="my_feature_list",
     )
-    assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
+    assert flist.dict(by_alias=True) == {
+        "_id": flist.id,
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "version": "V220501",
         "feature_ids": [
             production_ready_feature.id,
             feature_group["sum_30m"].id,
             feature_group["sum_1d"].id,
         ],
         "name": "my_feature_list",
-        "feature_clusters": None,
         "catalog_id": DEFAULT_CATALOG_ID,
-        "relationships_info": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -382,7 +376,6 @@ def test_base_feature_group__drop(production_ready_feature, draft_feature):
     assert feat_group1.feature_names == ["draft_feature"]
 
 
-@freeze_time("2022-07-20")
 def test_feature_list__construction(production_ready_feature, draft_feature):
     """
     Test FeatureList creation
@@ -391,10 +384,9 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
     assert feature_list.saved is False
     assert feature_list.feature_ids == [production_ready_feature.id, draft_feature.id]
     assert feature_list.feature_names == ["production_ready_feature", "draft_feature"]
-    assert feature_list.version == "V220720"
-    assert list(feature_list.feature_objects.keys()) == [
-        "production_ready_feature",
+    assert sorted(feature_list.feature_objects.keys()) == [
         "draft_feature",
+        "production_ready_feature",
     ]
     assert dict(feature_list.feature_objects) == {
         "production_ready_feature": production_ready_feature,
@@ -454,7 +446,6 @@ def test_deserialization(production_ready_feature, draft_feature):
         assert mock_get_by_id.call_count == 1
 
     # check consistency between loaded feature list & original feature list
-    assert loaded_feature_list.version == expected_version
     assert loaded_feature_list.feature_ids == feature_list.feature_ids
 
 
@@ -476,27 +467,28 @@ def test_info(saved_feature_list):
         "feature_count": 1,
         "version_count": 1,
         "production_ready_fraction": {"this": 0.0, "default": 0.0},
+        "default_feature_fraction": {"this": 1.0, "default": 1.0},
         "deployed": False,
         "catalog_name": "default",
+        "default_feature_list_id": str(saved_feature_list.id),
+        "created_at": info_dict["created_at"],
+        "version": info_dict["version"],
+        "updated_at": info_dict["updated_at"],
+        "versions_info": None,
     }
-    assert info_dict.items() > expected_info.items(), info_dict
-    assert "created_at" in info_dict, info_dict
-    assert "version" in info_dict, info_dict
-    assert set(info_dict["version"]) == {"this", "default"}, info_dict["version"]
+    assert info_dict == expected_info, info_dict
 
     verbose_info_dict = saved_feature_list.info(verbose=True)
-    assert verbose_info_dict.items() > expected_info.items(), verbose_info_dict
-    assert "created_at" in verbose_info_dict, verbose_info_dict
-    assert "version" in verbose_info_dict, verbose_info_dict
-    assert set(verbose_info_dict["version"]) == {"this", "default"}, verbose_info_dict["version"]
-
-    assert "versions_info" in verbose_info_dict, verbose_info_dict
-    assert len(verbose_info_dict["versions_info"]) == 1, verbose_info_dict
-    assert set(verbose_info_dict["versions_info"][0]) == {
-        "version",
-        "readiness_distribution",
-        "created_at",
-        "production_ready_fraction",
+    assert verbose_info_dict == {
+        **expected_info,
+        "versions_info": [
+            {
+                "production_ready_fraction": 0.0,
+                "readiness_distribution": [{"readiness": "DRAFT", "count": 1}],
+                "created_at": verbose_info_dict["versions_info"][0]["created_at"],
+                "version": verbose_info_dict["versions_info"][0]["version"],
+            }
+        ],
     }, verbose_info_dict
 
 
@@ -537,14 +529,14 @@ def test_get_feature_list(saved_feature_list):
             ("deployed", False),
             ("feature_clusters", audit_history.new_value.iloc[3]),
             ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
-            ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace_id)),
+            ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace.id)),
             ("name", "my_feature_list"),
             ("online_enabled_feature_ids", []),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
             ("relationships_info", audit_history.new_value.iloc[9]),
             ("updated_at", None),
             ("user_id", None),
-            ("version.name", saved_feature_list.version.name),
+            ("version.name", saved_feature_list.version),
             ("version.suffix", None),
         ],
         columns=["field_name", "new_value"],
@@ -580,6 +572,7 @@ def test_list(saved_feature_list):
                 "online_frac": 0.0,
                 "tables": [["sf_event_table"]],
                 "entities": [["customer"]],
+                "primary_entities": [["customer"]],
                 "created_at": [saved_feature_list_namespace.created_at],
             }
         ),
@@ -607,14 +600,9 @@ def test_list_versions(saved_feature_list):
                 "id": [flist_2.id, flist_1.id, saved_feature_list.id],
                 "name": [flist_2.name, flist_1.name, saved_feature_list.name],
                 "version": [
-                    flist_2.version.to_str(),
-                    flist_1.version.to_str(),
-                    saved_feature_list.version.to_str(),
-                ],
-                "feature_list_namespace_id": [
-                    flist_2.feature_list_namespace_id,
-                    flist_1.feature_list_namespace_id,
-                    saved_feature_list.feature_list_namespace.id,
+                    flist_2.version,
+                    flist_1.version,
+                    saved_feature_list.version,
                 ],
                 "num_feature": [2, 2, 1],
                 "online_frac": [0.0] * 3,
@@ -634,12 +622,11 @@ def test_list_versions(saved_feature_list):
             {
                 "id": [saved_feature_list.id],
                 "name": [saved_feature_list.name],
-                "version": [saved_feature_list.version.to_str()],
-                "feature_list_namespace_id": [saved_feature_list.feature_list_namespace.id],
-                "num_feature": 1,
+                "version": [saved_feature_list.version],
                 "online_frac": 0.0,
                 "deployed": [saved_feature_list.deployed],
                 "created_at": [saved_feature_list.created_at],
+                "is_default": [True],
             }
         ),
     )
@@ -774,8 +761,7 @@ def test_feature_list_update_status_and_default_version_mode__unsaved_feature_li
     assert feature_list.saved is False
     with pytest.raises(RecordRetrievalException) as exc:
         feature_list.update_status(FeatureListStatus.TEMPLATE)
-    namespace_id = feature_list.feature_list_namespace_id
-    expected = f'FeatureListNamespace (id: "{namespace_id}") not found. Please save the FeatureList object first.'
+    expected = f'FeatureList (id: "{feature_list.id}") not found. Please save the FeatureList object first.'
     assert expected in str(exc.value)
 
     with pytest.raises(RecordRetrievalException) as exc:
@@ -817,9 +803,7 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     _assert_all_features_in_list_with_enabled_status(feature_list, True)
 
     deployments = list_deployments(include_id=True)
-    expected_deployment_name = (
-        f"Deployment with {feature_list.name}_{feature_list.version.to_str()}"
-    )
+    expected_deployment_name = f"Deployment with {feature_list.name}_{feature_list.version}"
     assert_frame_equal(
         deployments[
             ["name", "catalog_name", "feature_list_name", "feature_list_version", "num_feature"]
@@ -830,7 +814,7 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
                     "name": expected_deployment_name,
                     "catalog_name": "default",
                     "feature_list_name": feature_list.name,
-                    "feature_list_version": feature_list.version.to_str(),
+                    "feature_list_version": feature_list.version,
                     "num_feature": len(feature_list.feature_names),
                 }
             ]
@@ -997,6 +981,15 @@ def test_list_filter(saved_feature_list):
     feature_lists = FeatureList.list(table="other_data", entity="customer")
     assert feature_lists.shape[0] == 0
 
+    feature_lists = FeatureList.list(primary_entity="customer")
+    assert feature_lists.shape[0] == 1
+
+    feature_lists = FeatureList.list(primary_entity=["customer"])
+    assert feature_lists.shape[0] == 1
+
+    feature_lists = FeatureList.list(primary_entity=["customer", "other_entity"])
+    assert feature_lists.shape[0] == 0
+
 
 def test_save_feature_group(saved_feature_list):
     """Test feature group saving"""
@@ -1046,7 +1039,7 @@ def test_list_features(saved_feature_list, float_feature):
             {
                 "id": [float_feature.id],
                 "name": [float_feature.name],
-                "version": [float_feature.version.to_str()],
+                "version": [float_feature.version],
                 "dtype": [float_feature.dtype],
                 "readiness": [float_feature.readiness],
                 "online_enabled": [float_feature.online_enabled],
@@ -1261,10 +1254,10 @@ def test_delete_feature_list_namespace__success(saved_feature_list):
 
     # check feature list namespace & feature list records are deleted
     with pytest.raises(RecordRetrievalException) as exc_info:
-        FeatureListNamespace.get_by_id(saved_feature_list.feature_list_namespace_id)
+        FeatureListNamespace.get_by_id(saved_feature_list.feature_list_namespace.id)
 
     expected_msg = (
-        f'FeatureListNamespace (id: "{saved_feature_list.feature_list_namespace_id}") not found. '
+        f'FeatureList (id: "{saved_feature_list.id}") not found. '
         "Please save the FeatureList object first."
     )
     assert expected_msg in str(exc_info.value)

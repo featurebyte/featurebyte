@@ -15,19 +15,13 @@ def test_extended_feature_model__float_feature(float_feature):
     expected_sql = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 1800
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          index,
           "cust_id",
           SUM("col_float") AS value_sum_{aggregation_id}
         FROM (
           SELECT
             *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
-              ) / 1800
-            ) AS tile_index
+            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "event_timestamp"), 300, 600, 30) AS index
           FROM (
             SELECT
               *
@@ -49,7 +43,7 @@ def test_extended_feature_model__float_feature(float_feature):
           )
         )
         GROUP BY
-          tile_index,
+          index,
           "cust_id"
         """
     ).strip()
@@ -79,20 +73,14 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
     expected_sql = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 1800
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          index,
           "cust_id",
           "col_int",
           SUM("col_float") AS value_sum_{aggregation_id}
         FROM (
           SELECT
             *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
-              ) / 1800
-            ) AS tile_index
+            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "event_timestamp"), 300, 600, 30) AS index
           FROM (
             SELECT
               *
@@ -114,7 +102,7 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
           )
         )
         GROUP BY
-          tile_index,
+          index,
           "cust_id",
           "col_int"
         """

@@ -10,7 +10,6 @@ from datetime import datetime
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
-from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
@@ -29,11 +28,9 @@ class FeatureCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    dtype: DBVarType
     graph: QueryGraph
     node_name: str
     tabular_source: TabularSource
-    entity_ids: List[PydanticObjectId] = Field(min_items=0)
     feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 

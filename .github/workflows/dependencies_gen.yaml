@@ -1,0 +1,84 @@
+# THIS FILE IS GENERATED. PLEASE DO NOT MODIFY DIRECTLY.
+# Please refer to the `dependencies.py` file in the `featurebyte/infrastructure` repo if you want to update it.
+
+# This workflow checks the differences dependencies between main and the PR
+# Labelling a PR with `dependencies` will skip this check
+
+name: dependencies
+'on':
+  pull_request:
+    types:
+    - opened
+    - synchronize
+    - reopened
+    - labeled
+    - unlabeled
+    branches:
+    - main
+    - release/*
+permissions:
+  contents: write
+  repository-projects: read
+  pull-requests: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+jobs:
+  diff-deps:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+    strategy:
+      matrix:
+        python-version:
+        - 3.8.12
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Checkout branch
+      run: git checkout "origin/${{ github.head_ref }}"
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.3.1
+    - name: Build package (branch)
+      run: |-
+        poetry version 1
+        poetry build
+        tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
+        awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > branch.PKG-INFO
+    - name: Checkout merge base
+      run: git checkout --force $(git merge-base "origin/${{ github.head_ref }}" origin/main)
+    - name: Build package (main)
+      run: |-
+        poetry version 1
+        poetry build
+        tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
+        awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > main.PKG-INFO
+    - name: Diff dependencies
+      run: |-
+        # Write diff to env
+        echo "DIFF<<EOF" >> $GITHUB_ENV
+        set +e
+        diff -u main.PKG-INFO branch.PKG-INFO >> $GITHUB_ENV
+        set -e
+        echo "EOF" >> $GITHUB_ENV
+
+        # Test if it actually fails
+        diff -u main.PKG-INFO branch.PKG-INFO
+    - uses: mshick/add-pr-comment@v2
+      if: failure()
+      with:
+        message: |-
+          **Diff**
+          ```diff
+          ${{ env.DIFF }}
+          ```

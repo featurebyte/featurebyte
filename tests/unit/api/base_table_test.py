@@ -170,3 +170,14 @@ class BaseTableTestSuite:
                     to_timestamp="2020-01-02",
                 )
             assert "timestamp_column must be specified." in str(exc.value)
+
+    def test_table_column_cleaning_operations(self, imputed_table_under_test):
+        """Test table column cleaning operations property"""
+        # test column cleaning operations
+        table_col = imputed_table_under_test[self.col]
+        assert table_col.cleaning_operations == [MissingValueImputation(imputed_value=0)]
+
+        # test column without cleaning operations
+        other_col = next(col for col in imputed_table_under_test.columns if col != self.col)
+        table_col = imputed_table_under_test[other_col]
+        assert table_col.cleaning_operations == []

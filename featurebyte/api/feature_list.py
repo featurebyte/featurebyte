@@ -33,9 +33,7 @@ from featurebyte.api.api_object import (
     PAGINATED_CALL_PAGE_SIZE,
     ApiObject,
     ConflictResolution,
-    DeletableApiObject,
     ForeignKeyMapping,
-    SavableApiObject,
 )
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
@@ -45,11 +43,12 @@ from featurebyte.api.feature_job import FeatureJobMixin, FeatureJobStatusResult
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
-from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import (
+    convert_to_list_of_strings,
     dataframe_from_arrow_stream,
     dataframe_to_arrow_bytes,
     enforce_observation_set_row_order,
@@ -61,14 +60,12 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import PydanticObjectId, VersionIdentifier
+from featurebyte.models.base import PydanticObjectId, VersionIdentifier, get_active_catalog_id
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListModel,
-    FeatureListNamespaceModel,
     FeatureListStatus,
     FeatureReadinessDistribution,
-    FrozenFeatureListModel,
     FrozenFeatureListNamespaceModel,
 )
 from featurebyte.models.tile import TileSpec
@@ -80,7 +77,10 @@ from featurebyte.schema.feature_list import (
     FeatureListUpdate,
     FeatureVersionInfo,
 )
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
+from featurebyte.schema.feature_list_namespace import (
+    FeatureListNamespaceModelResponse,
+    FeatureListNamespaceUpdate,
+)
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 
 if TYPE_CHECKING:
@@ -112,8 +112,8 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     _route = "/feature_list_namespace"
     _update_schema_class = FeatureListNamespaceUpdate
 
-    _list_schema = FeatureListNamespaceModel
-    _get_schema = FeatureListNamespaceModel
+    _list_schema = FeatureListNamespaceModelResponse
+    _get_schema = FeatureListNamespaceModelResponse
     _list_fields = [
         "name",
         "num_feature",
@@ -123,11 +123,13 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         "online_frac",
         "tables",
         "entities",
+        "primary_entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
         ForeignKeyMapping("table_ids", TableApiObject, "tables"),
+        ForeignKeyMapping("primary_entity_ids", Entity, "primary_entities"),
     ]
 
     @property
@@ -230,6 +232,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     def list(
         cls,
         include_id: Optional[bool] = False,
+        primary_entity: Optional[Union[str, List[str]]] = None,
         entity: Optional[str] = None,
         table: Optional[str] = None,
     ) -> pd.DataFrame:
@@ -240,6 +243,9 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         ----------
         include_id: Optional[bool]
             Whether to include id in the list
+        primary_entity: Optional[Union[str, List[str]]]
+            Name of entity used to filter results. If multiple entities are provided, the filtered results will
+            contain feature lists that are associated with all the entities.
         entity: Optional[str]
             Name of entity used to filter results
         table: Optional[str]
@@ -251,6 +257,13 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
             Table of feature lists
         """
         feature_lists = super().list(include_id=include_id)
+        target_entities = convert_to_list_of_strings(primary_entity)
+        if target_entities:
+            feature_lists = feature_lists[
+                feature_lists.primary_entities.apply(
+                    lambda primary_entities: set(target_entities).issubset(primary_entities)
+                )
+            ]
         if entity:
             feature_lists = feature_lists[
                 feature_lists.entities.apply(lambda entities: entity in entities)
@@ -263,9 +276,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
 
 
 # pylint: disable=too-many-public-methods
-class FeatureList(
-    BaseFeatureGroup, FrozenFeatureListModel, DeletableApiObject, SavableApiObject, FeatureJobMixin
-):
+class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, FeatureJobMixin):
     """
     The FeatureList class is used as a constructor to create a FeatureList Object.
 
@@ -303,18 +314,6 @@ class FeatureList(
         hide_keyword_only_params_in_class_docs=True,
     )
 
-    # override FeatureListModel attributes
-    feature_ids: List[PydanticObjectId] = Field(
-        default_factory=list,
-        allow_mutation=False,
-        description="Returns the unique identifier (ID) of the Feature objects associated with the FeatureList object.",
-    )
-    version: VersionIdentifier = Field(
-        allow_mutation=False,
-        default=None,
-        description="Returns the version identifier of a FeatureList object.",
-    )
-
     # class variables
     _route = "/feature_list"
     _update_schema_class = FeatureListUpdate
@@ -323,12 +322,106 @@ class FeatureList(
     _list_fields = [
         "name",
         "version",
-        "feature_list_namespace_id",
         "num_feature",
         "online_frac",
         "deployed",
         "created_at",
     ]
+
+    # pydantic instance variable (internal use)
+    internal_catalog_id: PydanticObjectId = Field(
+        default_factory=get_active_catalog_id, alias="catalog_id"
+    )
+    internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "feature_ids" in values:
+            # FeatureList object constructed in SDK will not have feature_ids attribute,
+            # only the record retrieved from the persistent contains this attribute.
+            # Use this check to decide whether to make API call to retrieve features.
+            items = []
+            feature_objects = collections.OrderedDict()
+            id_value = values["_id"]
+            feature_store_map: Dict[ObjectId, FeatureStore] = {}
+            with alive_bar(
+                total=len(values["feature_ids"]),
+                title="Loading Feature(s)",
+                **get_alive_bar_additional_params(),
+            ) as progress_bar:
+                for feature_dict in cls.iterate_api_object_using_paginated_routes(
+                    route="/feature",
+                    params={"feature_list_id": id_value, "page_size": PAGINATED_CALL_PAGE_SIZE},
+                ):
+                    # store the feature store retrieve result to reuse it if same feature store are called again
+                    feature_store_id = TabularSource(
+                        **feature_dict["tabular_source"]
+                    ).feature_store_id
+                    if feature_store_id not in feature_store_map:
+                        feature_store_map[feature_store_id] = FeatureStore.get_by_id(
+                            feature_store_id
+                        )
+                    feature_dict["feature_store"] = feature_store_map[feature_store_id]
+
+                    # deserialize feature record into feature object
+                    feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
+                    items.append(feature)
+                    feature_objects[feature.name] = feature
+                    progress_bar.text = feature.name
+                    progress_bar()  # pylint: disable=not-callable
+
+            values["items"] = items
+            values["feature_objects"] = feature_objects
+        return values
+
+    @root_validator
+    @classmethod
+    def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # set the following values if it is empty (used mainly by the SDK constructed feature list)
+        # for the feature list constructed during serialization, following codes should be skipped
+        features = list(values["feature_objects"].values())
+        values["internal_feature_ids"] = [feature.id for feature in features]
+        return values
+
+    @typechecked
+    def __init__(self, items: Sequence[Union[Feature, BaseFeatureGroup]], name: str, **kwargs: Any):
+        super().__init__(items=items, name=name, **kwargs)
+
+    @property
+    def version(self) -> str:
+        """
+        Returns the version identifier of a FeatureList object.
+
+        Returns
+        -------
+        str
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.version  # doctest: +SKIP
+        'V230330'
+        """
+        return cast(FeatureListModel, self.cached_model).version.to_str()
+
+    @property
+    def catalog_id(self) -> ObjectId:
+        """
+        Returns the catalog ID that is associated with the FeatureList object.
+
+        Returns
+        -------
+        ObjectId
+            Catalog ID of the feature list.
+        See Also
+        --------
+        - [Catalog](/reference/featurebyte.api.catalog.Catalog)
+        """
+        try:
+            return cast(FeatureListModel, self.cached_model).catalog_id
+        except RecordRetrievalException:
+            return self.internal_catalog_id
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"items": self.items}
@@ -368,6 +461,11 @@ class FeatureList(
         Returns
         -------
         FeatureJobStatusResult
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.get_feature_jobs_status()  # doctest: +SKIP
         """
         return super().get_feature_jobs_status(
             job_history_window=job_history_window, job_duration_tolerance=job_duration_tolerance
@@ -398,6 +496,7 @@ class FeatureList(
 
         - `version`: The version name.
         - `production_ready_fraction`: The percentage of features that are production-ready.
+        - `default_feature_fraction`: The percentage of features that are default features.
 
         This method is only available for FeatureList objects that are saved in the catalog.
 
@@ -454,6 +553,7 @@ class FeatureList(
               'count': 1
             }
           ],
+          'default_feature_list_id': ...,
           'status': 'DRAFT',
           'feature_count': 1,
           'version': {
@@ -461,6 +561,10 @@ class FeatureList(
             'default': ...
           },
           'production_ready_fraction': {
+            'this': 1.0,
+            'default': 1.0
+          },
+          'default_feature_fraction': {
             'this': 1.0,
             'default': 1.0
           },
@@ -499,6 +603,20 @@ class FeatureList(
         - [FeatureGroup.feature_names](/reference/featurebyte.api.feature_group.FeatureGroup.feature_names/)
         """
         return super().feature_names
+
+    @property
+    def feature_ids(self) -> Sequence[ObjectId]:
+        """
+        Returns the unique identifier (ID) of the Feature objects associated with the FeatureList object.
+
+        Returns
+        -------
+        Sequence[ObjectId]
+        """
+        try:
+            return cast(FeatureListModel, self.cached_model).feature_ids
+        except RecordRetrievalException:
+            return self.internal_feature_ids
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
@@ -580,6 +698,14 @@ class FeatureList(
         ------
         DuplicatedRecordException
             When a record with the same key exists at the persistent data store.
+
+        Examples
+        --------
+        >>> feature_list = fb.FeatureList([
+        ...     catalog.get_feature("InvoiceCount_60days"),
+        ...     catalog.get_feature("InvoiceAmountAvg_60days"),
+        ... ], name="feature_lists_invoice_features")
+        >>> feature_list.save()  # doctest: +SKIP
         """
         try:
             super().save(conflict_resolution=conflict_resolution)
@@ -593,14 +719,14 @@ class FeatureList(
 
     def delete(self) -> None:
         """
-        Delete a FeatureList object from the persistent data store. A feature list can only be deleted if
-        * the feature list status is DRAFT
-        * the feature list is not a default feature list with manual version mode
+        Deletes a FeatureList object from the persistent data store. A feature list can only be deleted from the
+        persistent data store if:
+
+        - the feature list status is DRAFT
+        - the feature list is not a default feature list with manual version mode
 
         Examples
         --------
-        Delete a FeatureList.
-
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.delete()  # doctest: +SKIP
         """
@@ -702,63 +828,6 @@ class FeatureList(
         """
         return super().preview(observation_set=observation_set)
 
-    @root_validator(pre=True)
-    @classmethod
-    def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "feature_ids" in values:
-            # FeatureList object constructed in SDK will not have feature_ids attribute,
-            # only the record retrieved from the persistent contains this attribute.
-            # Use this check to decide whether to make API call to retrieve features.
-            items = []
-            feature_objects = collections.OrderedDict()
-            id_value = values["_id"]
-            feature_store_map: Dict[ObjectId, FeatureStore] = {}
-            with alive_bar(
-                total=len(values["feature_ids"]),
-                title="Loading Feature(s)",
-                **get_alive_bar_additional_params(),
-            ) as progress_bar:
-                for feature_dict in cls.iterate_api_object_using_paginated_routes(
-                    route="/feature",
-                    params={"feature_list_id": id_value, "page_size": PAGINATED_CALL_PAGE_SIZE},
-                ):
-                    # store the feature store retrieve result to reuse it if same feature store are called again
-                    feature_store_id = TabularSource(
-                        **feature_dict["tabular_source"]
-                    ).feature_store_id
-                    if feature_store_id not in feature_store_map:
-                        feature_store_map[feature_store_id] = FeatureStore.get_by_id(
-                            feature_store_id
-                        )
-                    feature_dict["feature_store"] = feature_store_map[feature_store_id]
-
-                    # deserialize feature record into feature object
-                    feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
-                    items.append(feature)
-                    feature_objects[feature.name] = feature
-                    progress_bar.text = feature.name
-                    progress_bar()  # pylint: disable=not-callable
-
-            values["items"] = items
-            values["feature_objects"] = feature_objects
-        return values
-
-    @root_validator
-    @classmethod
-    def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # set the following values if it is empty (used mainly by the SDK constructed feature list)
-        # for the feature list constructed during serialization, following codes should be skipped
-        features = list(values["feature_objects"].values())
-        if not values.get("feature_ids"):
-            values["feature_ids"] = [feature.id for feature in features]
-        if not values.get("version"):
-            values["version"] = get_version()
-        return values
-
-    @typechecked
-    def __init__(self, items: Sequence[Union[Feature, BaseFeatureGroup]], name: str, **kwargs: Any):
-        super().__init__(items=items, name=name, **kwargs)
-
     @property
     def feature_list_namespace(self) -> FeatureListNamespace:
         """
@@ -768,7 +837,10 @@ class FeatureList(
         -------
         FeatureListNamespace
         """
-        return FeatureListNamespace.get_by_id(id=self.feature_list_namespace_id)
+        feature_list_namespace_id = cast(
+            FeatureListModel, self.cached_model
+        ).feature_list_namespace_id
+        return FeatureListNamespace.get_by_id(id=feature_list_namespace_id)
 
     @property
     def online_enabled_feature_ids(self) -> List[PydanticObjectId]:
@@ -798,7 +870,9 @@ class FeatureList(
         try:
             return self.cached_model.readiness_distribution
         except RecordRetrievalException:
-            return self.derive_readiness_distribution(list(self.feature_objects.values()))  # type: ignore
+            return FeatureListModel.derive_readiness_distribution(
+                list(self.feature_objects.values())  # type: ignore
+            )
 
     @property
     def production_ready_fraction(self) -> float:
@@ -808,8 +882,35 @@ class FeatureList(
         Returns
         -------
         Fraction of production ready feature
+
+        See Also
+        --------
+        - [FeatureList.info](/reference/featurebyte.api.feature_list.FeatureList.info/)
         """
         return self.readiness_distribution.derive_production_ready_fraction()
+
+    @property
+    def default_feature_fraction(self) -> float:
+        """
+        Retrieve fraction of default features in the feature list
+
+        Returns
+        -------
+        Fraction of default feature
+
+        See Also
+        --------
+        - [Feature.info](/reference/featurebyte.api.feature.Feature.info/)
+        - [Feature.is_default](/reference/featurebyte.api.feature.Feature.is_default/)
+        - [FeatureList.info](/reference/featurebyte.api.feature_list.FeatureList.info/)
+        """
+        namespace_info = self.feature_list_namespace.info()
+        default_feat_ids = set(namespace_info["default_feature_ids"])
+        default_feat_count = 0
+        for feat_id in self.feature_ids:
+            if str(feat_id) in default_feat_ids:
+                default_feat_count += 1
+        return default_feat_count / len(self.feature_ids)
 
     @property
     def deployed(self) -> bool:
@@ -893,15 +994,15 @@ class FeatureList(
         List saved FeatureList versions (calling from FeatureList class):
 
         >>> FeatureList.list_versions()  # doctest: +SKIP
-                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at
-        0  invoice_feature_list  641d2f94f8d79eb6fee0a335            1          0.0     False 2023-03-24 05:05:24.875
+                           name  num_feature  online_frac  deployed              created_at
+        0  invoice_feature_list            1          0.0     False 2023-03-24 05:05:24.875
 
         List FeatureList versions with the same name (calling from FeatureList object):
 
         >>> feature_list = catalog.get_feature_list("invoice_feature_list") # doctest: +SKIP
         >>> feature_list.list_versions()  # doctest: +SKIP
-                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at
-        0  invoice_feature_list  641d02af94ede33779acc6c8            1          0.0     False 2023-03-24 01:53:51.515
+                           name  num_feature  online_frac  deployed              created_at
+        0  invoice_feature_list            1          0.0     False 2023-03-24 01:53:51.515
 
         See Also
         --------
@@ -927,15 +1028,22 @@ class FeatureList(
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.list_versions()  # doctest: +SKIP
-                           name feature_list_namespace_id  num_feature  online_frac  deployed              created_at
-        0  invoice_feature_list  641d02af94ede33779acc6c8            1          0.0     False 2023-03-24 01:53:51.515
+                           name  online_frac  deployed              created_at  is_default
+        0  invoice_feature_list          0.0     False 2023-03-24 01:53:51.515        True
         """
-        return self._list(include_id=include_id, params={"name": self.name})
+        output = self._list(include_id=True, params={"name": self.name})
+        default_feature_list_id = self.feature_list_namespace.default_feature_list_id
+        output["is_default"] = output["id"] == default_feature_list_id
+        exclude_cols = {"num_feature"}
+        if not include_id:
+            exclude_cols.add("id")
+        return output[[col for col in output.columns if col not in exclude_cols]]
 
     @classmethod
     def list(
         cls,
         include_id: Optional[bool] = False,
+        primary_entity: Optional[Union[str, List[str]]] = None,
         entity: Optional[str] = None,
         table: Optional[str] = None,
     ) -> pd.DataFrame:
@@ -946,6 +1054,9 @@ class FeatureList(
         ----------
         include_id: Optional[bool]
             Whether to include id in the list
+        primary_entity: Optional[Union[str, List[str]]] = None,
+            Name of entity used to filter results. If multiple entities are provided, the filtered results will
+            contain feature lists that are associated with all the entities.
         entity: Optional[str]
             Name of entity used to filter results
         table: Optional[str]
@@ -956,7 +1067,9 @@ class FeatureList(
         pd.DataFrame
             Table of feature lists
         """
-        return FeatureListNamespace.list(include_id=include_id, entity=entity, table=table)
+        return FeatureListNamespace.list(
+            include_id=include_id, primary_entity=primary_entity, entity=entity, table=table
+        )
 
     def list_features(self) -> pd.DataFrame:
         """

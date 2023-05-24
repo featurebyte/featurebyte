@@ -7,24 +7,52 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
   FROM (
     SELECT
-      *,
-      F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS "INDEX"
+      index,
+      "cust_id",
+      SUM("a") AS sum_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb,
+      COUNT("a") AS count_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
     FROM (
       SELECT
-        TO_TIMESTAMP(
-          DATE_PART(EPOCH_SECOND, CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ)) + tile_index * 3600
-        ) AS __FB_TILE_START_DATE_COLUMN,
+        *,
+        F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
+      FROM (
+        SELECT
+          *
+        FROM (
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "a" AS "a",
+            "b" AS "b",
+            (
+              "a" + "b"
+            ) AS "c"
+          FROM "db"."public"."event_table"
+        )
+        WHERE
+          "ts" >= CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ)
+          AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
+      )
+    )
+    GROUP BY
+      index,
+      "cust_id"
+  ) AS avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
+  RIGHT JOIN (
+    SELECT
+      index,
+      "cust_id",
+      value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+    FROM (
+      SELECT
+        index,
         "cust_id",
-        SUM("a") AS sum_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb,
-        COUNT("a") AS count_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
+        ROW_NUMBER() OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
+        FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
       FROM (
         SELECT
           *,
-          FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ))
-            ) / 3600
-          ) AS tile_index
+          F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
         FROM (
           SELECT
             *
@@ -33,10 +61,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
               "ts" AS "ts",
               "cust_id" AS "cust_id",
               "a" AS "a",
-              "b" AS "b",
-              (
-                "a" + "b"
-              ) AS "c"
+              "b" AS "b"
             FROM "db"."public"."event_table"
           )
           WHERE
@@ -44,56 +69,9 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
             AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
         )
       )
-      GROUP BY
-        tile_index,
-        "cust_id"
     )
-  ) AS avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
-  RIGHT JOIN (
-    SELECT
-      *,
-      F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS "INDEX"
-    FROM (
-      SELECT
-        __FB_TILE_START_DATE_COLUMN,
-        "cust_id",
-        value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
-      FROM (
-        SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
-          "cust_id",
-          ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-          FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
-        FROM (
-          SELECT
-            *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ))
-              ) / 3600
-            ) AS tile_index
-          FROM (
-            SELECT
-              *
-            FROM (
-              SELECT
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "a" AS "a",
-                "b" AS "b"
-              FROM "db"."public"."event_table"
-            )
-            WHERE
-              "ts" >= CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ)
-              AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
-          )
-        )
-      )
-      WHERE
-        "__FB_ROW_NUMBER" = 1
-    )
+    WHERE
+      "__FB_ROW_NUMBER" = 1
   ) AS latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
     ON avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb.INDEX = latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73.INDEX
     AND avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb."cust_id" = latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73."cust_id"
@@ -105,51 +83,40 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     value_latest_3b3c2a8389d7720826731fefb7060b6578050e04
   FROM (
     SELECT
-      *,
-      F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS "INDEX"
+      index,
+      "cust_id",
+      "biz_id",
+      value_latest_3b3c2a8389d7720826731fefb7060b6578050e04
     FROM (
       SELECT
-        __FB_TILE_START_DATE_COLUMN,
+        index,
         "cust_id",
         "biz_id",
-        value_latest_3b3c2a8389d7720826731fefb7060b6578050e04
+        ROW_NUMBER() OVER (PARTITION BY index, "cust_id", "biz_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
+        FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id", "biz_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_3b3c2a8389d7720826731fefb7060b6578050e04
       FROM (
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST('1970-01-01 00:15:00' AS TIMESTAMPNTZ)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
-          "cust_id",
-          "biz_id",
-          ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id", "biz_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-          FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id", "biz_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_3b3c2a8389d7720826731fefb7060b6578050e04
+          *,
+          F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
         FROM (
           SELECT
-            *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('1970-01-01 00:15:00' AS TIMESTAMPNTZ))
-              ) / 3600
-            ) AS tile_index
+            *
           FROM (
             SELECT
-              *
-            FROM (
-              SELECT
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "a" AS "a",
-                "b" AS "b"
-              FROM "db"."public"."event_table"
-            )
-            WHERE
-              "ts" >= CAST('1970-01-01 00:15:00' AS TIMESTAMPNTZ)
-              AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b"
+            FROM "db"."public"."event_table"
           )
+          WHERE
+            "ts" >= CAST('1970-01-01 00:15:00' AS TIMESTAMPNTZ)
+            AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
         )
       )
-      WHERE
-        "__FB_ROW_NUMBER" = 1
     )
+    WHERE
+      "__FB_ROW_NUMBER" = 1
   ) AS latest_3b3c2a8389d7720826731fefb7060b6578050e04
 ), REQUEST_TABLE AS (
   SELECT
@@ -223,8 +190,8 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     "T1"."_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
     "T2"."_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
     "T3"."_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73" AS "_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73",
-    "T4"."_fb_internal_item_count_None_input_1" AS "_fb_internal_item_count_None_input_1",
-    "T5"."_fb_internal_as_at_count_None_input_2" AS "_fb_internal_as_at_count_None_input_2"
+    "T4"."_fb_internal_item_count_None_order_id_None_input_1" AS "_fb_internal_item_count_None_order_id_None_input_1",
+    "T5"."_fb_internal_as_at_count_None_membership_status_None_input_2" AS "_fb_internal_as_at_count_None_membership_status_None_input_2"
   FROM (
     SELECT
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
@@ -478,7 +445,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   LEFT JOIN (
     SELECT
       REQ."order_id" AS "order_id",
-      COUNT(*) AS "_fb_internal_item_count_None_input_1"
+      COUNT(*) AS "_fb_internal_item_count_None_order_id_None_input_1"
     FROM "REQUEST_TABLE_order_id" AS REQ
     INNER JOIN (
       SELECT
@@ -495,9 +462,9 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     ON REQ."order_id" = T4."order_id"
   LEFT JOIN (
     SELECT
-      REQ."POINT_IN_TIME",
-      REQ."MEMBERSHIP_STATUS",
-      COUNT(*) AS "_fb_internal_as_at_count_None_input_2"
+      REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+      REQ."MEMBERSHIP_STATUS" AS "MEMBERSHIP_STATUS",
+      COUNT(*) AS "_fb_internal_as_at_count_None_membership_status_None_input_2"
     FROM "REQUEST_TABLE_POINT_IN_TIME_MEMBERSHIP_STATUS" AS REQ
     INNER JOIN (
       SELECT
@@ -530,12 +497,12 @@ SELECT
   AGG."CUSTOMER_ID",
   "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "a_2h_average",
   "_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "a_48h_average",
-  "_fb_internal_item_count_None_input_1" AS "order_size",
+  "_fb_internal_item_count_None_order_id_None_input_1" AS "order_size",
   (
     "_fb_internal_lookup_cust_value_1_input_4" + "_fb_internal_lookup_cust_value_2_input_4"
   ) AS "MY FEATURE",
   "_fb_internal_lookup_membership_status_input_2" AS "Current Membership Status",
   "_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73" AS "a_latest_value_past_90d",
   "_fb_internal_latest_3b3c2a8389d7720826731fefb7060b6578050e04" AS "a_latest_value",
-  "_fb_internal_as_at_count_None_input_2" AS "asat_feature"
+  "_fb_internal_as_at_count_None_membership_status_None_input_2" AS "asat_feature"
 FROM _FB_AGGREGATED AS AGG
