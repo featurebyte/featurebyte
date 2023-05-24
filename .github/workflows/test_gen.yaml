@@ -5,9 +5,10 @@ name: test
 'on':
   workflow_dispatch: {}
   pull_request:
-  - opened
-  - synchronize
-  - reopened
+    types:
+    - opened
+    - synchronize
+    - reopened
   push:
     branches:
     - main
