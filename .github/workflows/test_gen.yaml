@@ -114,7 +114,7 @@ jobs:
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.0
         path: pytest.xml.0
-    - name: Upload unit coverage results
+    - name: Upload coverage results
       uses: actions/upload-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-.coverage.0
@@ -168,7 +168,7 @@ jobs:
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.1
         path: pytest.xml.1
-    - name: Upload unit coverage results
+    - name: Upload coverage results
       uses: actions/upload-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-.coverage.1
@@ -245,7 +245,7 @@ jobs:
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.2
         path: pytest.xml.2
-    - name: Upload integration coverage results
+    - name: Upload coverage results
       uses: actions/upload-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-.coverage.2
@@ -299,7 +299,7 @@ jobs:
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.3
         path: pytest.xml.3
-    - name: Upload unit coverage results
+    - name: Upload coverage results
       uses: actions/upload-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-.coverage.3
