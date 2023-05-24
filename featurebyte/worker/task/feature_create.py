@@ -54,11 +54,7 @@ class FeatureCreateTask(BaseTask):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
-    async def execute(self) -> Any:
-        """
-        Execute Deployment Create & Update Task
-        """
-
+    async def prepare_feature_model(self) -> FeatureModel:
         payload = cast(FeatureCreateTaskPayload, self.payload)
 
         # pruning the graph & prepare the feature model
@@ -82,7 +78,9 @@ class FeatureCreateTask(BaseTask):
                 "node_name": node_name,
             }
         )
+        return document
 
+    async def prepare_feature_definition(self, document: FeatureModel) -> str:
         # prepare feature definition
         table_id_to_info: Dict[ObjectId, Dict[str, Any]] = {}
         table_service: TableService = self.app_container.table_service
@@ -95,23 +93,13 @@ class FeatureCreateTask(BaseTask):
             to_use_saved_data=True,
             table_id_to_info=table_id_to_info,
         )
-        definition = sdk_code_gen_state.code_generator.generate(to_format=True)
+        return sdk_code_gen_state.code_generator.generate(to_format=True)
 
-        code = (
-            f"{definition}\n"
-            "# add statements to save feature\n"
-            "from bson import ObjectId\n"
-            f'output.save(_id=ObjectId("{payload.output_document_id}"))'
-        )
-        logger.debug(f"Prepare to execute feature definition: \n{code}")
-
-        os.environ["SDK_EXECUTION_MODE"] = "SERVER"
-        logger.debug(f"Configuration: {Configurations().profile}")
-
-        # execute the code to save the feature
-        await self._execute_sdk_code(catalog_id=payload.catalog_id, code=code)
+    async def validate_generated_feature(self, document: FeatureModel, definition: str) -> None:
+        payload = cast(FeatureCreateTaskPayload, self.payload)
 
         # retrieve the saved feature & check if it is the same as the expected feature
+        feature_service: FeatureService = self.app_container.feature_service
         feature = await feature_service.get_document(document_id=payload.output_document_id)
         generated_hash = feature.graph.node_name_to_ref[feature.node_name]
         expected_hash = document.graph.node_name_to_ref[document.node_name]
@@ -133,9 +121,33 @@ class FeatureCreateTask(BaseTask):
                 f'feat = Feature.get_by_id(ObjectId("{payload.output_document_id}"))'
             )
 
-            # execute the code to delete the feature
+            # execute the code to delete the feature & raise the error
             await self._execute_sdk_code(catalog_id=payload.catalog_id, code=code)
-
             raise DocumentInconsistencyError("Inconsistent feature definition detected!")
+
+    async def execute(self) -> Any:
+        """
+        Execute Deployment Create & Update Task
+        """
+        payload = cast(FeatureCreateTaskPayload, self.payload)
+
+        document = await self.prepare_feature_model()
+        definition = await self.prepare_feature_definition(document=document)
+        code = (
+            f"{definition}\n"
+            "# add statements to save feature\n"
+            "from bson import ObjectId\n"
+            f'output.save(_id=ObjectId("{payload.output_document_id}"))'
+        )
+        logger.debug(f"Prepare to execute feature definition: \n{code}")
+
+        os.environ["SDK_EXECUTION_MODE"] = "SERVER"
+        logger.debug(f"Configuration: {Configurations().profile}")
+
+        # execute the code to save the feature
+        await self._execute_sdk_code(catalog_id=payload.catalog_id, code=code)
+
+        # retrieve the saved feature & check if it is the same as the expected feature
+        await self.validate_generated_feature(document=document, definition=definition)
 
         logger.debug("Complete feature create task")
