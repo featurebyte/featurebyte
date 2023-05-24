@@ -683,8 +683,8 @@ class Feature(
         return primary_entity
 
     @typechecked
-    def save(  # pylint: disable=useless-parent-delegation
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[str] = None
+    def save(
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
     ) -> None:
         """
         Adds a Feature object to the catalog.
@@ -698,7 +698,7 @@ class Feature(
         conflict_resolution: ConflictResolution
             "raise" will raise an error when we encounter a conflict error.
             "retrieve" will handle the conflict error by retrieving the object with the same name.
-        _id: Optional[str]
+        _id: Optional[ObjectId]
             The ID of the object to be saved. This is used internally by the SDK when saving a new object that is
 
         Examples

@@ -677,7 +677,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
                 progress_bar()  # pylint: disable=not-callable
 
     def save(
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[str] = None
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
     ) -> None:
         """
         Adds a FeatureList object to the catalog.
@@ -691,8 +691,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         conflict_resolution: ConflictResolution
             "raise" raises error when we encounter a conflict error (default).
             "retrieve" handle conflict error by retrieving the object with the same name.
-        _id: Optional[str]
-            The ID of the FeatureList object. If None, a random ID will be assigned.
+        _id: Optional[ObjectId]
+            The ID of the object to be saved. This is used internally by the SDK when saving a new object that is
 
         Raises
         ------
@@ -708,7 +708,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> feature_list.save()  # doctest: +SKIP
         """
         try:
-            super().save(conflict_resolution=conflict_resolution)
+            super().save(conflict_resolution=conflict_resolution, _id=_id)
         except DuplicatedRecordException as exc:
             if conflict_resolution == "raise":
                 raise DuplicatedRecordException(

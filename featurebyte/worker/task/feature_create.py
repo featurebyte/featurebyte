@@ -8,13 +8,17 @@ from typing import Any, Dict, cast
 import asyncio
 import concurrent.futures
 import os
+from pprint import pformat
 
 from bson import ObjectId
 
 from featurebyte.config import Configurations
+from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import activate_catalog
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 from featurebyte.schema.worker.task.feature_create import FeatureCreateTaskPayload
 from featurebyte.service.feature import FeatureService
@@ -30,6 +34,25 @@ class FeatureCreateTask(BaseTask):
     """
 
     payload_class = FeatureCreateTaskPayload
+
+    @staticmethod
+    def _construct_expected_graph(graph: QueryGraphModel) -> QueryGraphModel:
+        output = graph.dict()
+        for node in output["nodes"]:
+            if node["type"] == NodeType.GRAPH:
+                # replace the view graph mode to manual
+                if "view_mode" in node["parameters"]["metadata"]:
+                    node["parameters"]["metadata"]["view_mode"] = "manual"
+        return QueryGraphModel(**output)
+
+    @staticmethod
+    async def _execute_sdk_code(catalog_id: ObjectId, code: str):
+        # activate the correct catalog before executing the code
+        activate_catalog(catalog_id=catalog_id)
+
+        # execute the code
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
     async def execute(self) -> Any:
         """
@@ -61,59 +84,53 @@ class FeatureCreateTask(BaseTask):
             table = await table_service.get_document(document_id=table_id)
             table_id_to_info[table_id] = table.dict()
 
-        sdk_code_gen_state = SDKCodeExtractor(graph=payload.graph).extract(
-            node=payload.graph.get_node_by_name(payload.node_name),
+        sdk_code_gen_state = SDKCodeExtractor(graph=document.graph).extract(
+            node=document.graph.get_node_by_name(document.node_name),
             to_use_saved_data=True,
             table_id_to_info=table_id_to_info,
         )
         definition = sdk_code_gen_state.code_generator.generate(to_format=True)
-        code = f'{definition}output.save(_id="{payload.output_document_id}")'
+
+        code = (
+            f"{definition}\n"
+            "# add statements to save feature\n"
+            "from bson import ObjectId\n"
+            f'output.save(_id=ObjectId("{payload.output_document_id}"))'
+        )
         logger.debug(f"Prepare to execute feature definition: \n{code}")
 
         os.environ["SDK_EXECUTION_MODE"] = "SERVER"
         logger.debug(f"Configuration: {Configurations().profile}")
 
-        # activate the correct catalog before executing the code
-        activate_catalog(catalog_id=payload.catalog_id)
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            await asyncio.get_event_loop().run_in_executor(pool, exec, code)
+        # execute the code to save the feature
+        await self._execute_sdk_code(catalog_id=payload.catalog_id, code=code)
 
+        # retrieve the saved feature & check if it is the same as the expected feature
         feature = await feature_service.get_document(document_id=payload.output_document_id)
+        expected_graph = self._construct_expected_graph(graph=document.graph)
         generated_hash = feature.graph.node_name_to_ref[feature.node_name]
-        expected_hash = graph.node_name_to_ref[node_name]
+        expected_hash = expected_graph.node_name_to_ref[document.node_name]
         if definition != feature.definition or expected_hash != generated_hash:
             # log the difference between the expected feature and the saved feature
-            logger.debug(f">>> Generated node_name_to_ref: \n{graph.node_name_to_ref}")
-            logger.debug(f">>> Expected node_name_to_ref: \n{feature.graph.node_name_to_ref}")
-            logger.debug(f">>> Generated graph: \n{graph.dict()}")
-            logger.debug(f">>> Expected graph: \n{feature.graph.dict()}")
+            generated_ref = pformat(feature.graph.node_name_to_ref)
+            expected_ref = pformat(expected_graph.node_name_to_ref)
+            logger.debug(f">>> Generated node_name_to_ref: \n{generated_ref}")
+            logger.debug(f">>> Expected node_name_to_ref: \n{expected_ref}")
+            logger.debug(f">>> Generated graph: \n{pformat(feature.graph.dict())}")
+            logger.debug(f">>> Expected graph: \n{pformat(expected_graph.dict())}")
             logger.debug(f">>> Generated feature definition: \n{definition}")
             logger.debug(f">>> Saved feature definition: \n{feature.definition}")
 
-            import pickle
+            # prepare the code to delete the feature
+            code = (
+                "from bson import ObjectId\n"
+                "from featurebyte import Feature\n"
+                f'feat = Feature.get_by_id(ObjectId("{payload.output_document_id}"))'
+            )
 
-            from featurebyte.config import get_home_path
+            # execute the code to delete the feature
+            await self._execute_sdk_code(catalog_id=payload.catalog_id, code=code)
 
-            home_path = get_home_path()
-            feature_path = home_path.joinpath(f"{feature.name}_dict.pkl")
-            graph_path = home_path.joinpath(f"{feature.name}_graph.pkl")
-            definition_path = home_path.joinpath(f"{feature.name}_definition.txt")
-            expected_definition_path = home_path.joinpath(f"{feature.name}_expected_definition.txt")
-            payload_path = home_path.joinpath(f"{feature.name}_payload.pkl")
-            with open(feature_path, "wb") as f:
-                pickle.dump(feature.dict(by_alias=True), f)
-            with open(graph_path, "wb") as f:
-                pickle.dump([graph.dict(), node_name], f)
-            with open(definition_path, "w") as f:
-                f.write(feature.definition)
-            with open(expected_definition_path, "w") as f:
-                f.write(definition)
-            with open(payload_path, "wb") as f:
-                pickle.dump(payload.dict(by_alias=True), f)
-
-            # delete the feature if the definition is not consistent
-            # feat = Feature.get_by_id(payload.output_document_id)
-            # feat.delete()
-            # raise DocumentInconsistencyError("Inconsistent feature definition detected!")
+            raise DocumentInconsistencyError("Inconsistent feature definition detected!")
 
         logger.debug("Complete feature create task")

@@ -203,9 +203,6 @@ class ClassEnum(Enum):
     # non-featurebyte related
     OBJECT_ID = ("bson", "ObjectId")
 
-    # catalog
-    CATALOG = ("featurebyte", "Catalog")
-
     # feature store
     FEATURE_STORE = ("featurebyte", "FeatureStore")
 
