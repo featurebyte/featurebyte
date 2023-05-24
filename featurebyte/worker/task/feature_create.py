@@ -20,7 +20,7 @@ from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
-from featurebyte.schema.worker.task.feature_create import FeatureCreateTaskPayload
+from featurebyte.schema.worker.task.feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.table import TableService
 from featurebyte.worker.task.base import BaseTask
@@ -28,12 +28,12 @@ from featurebyte.worker.task.base import BaseTask
 logger = get_logger(__name__)
 
 
-class FeatureCreateTask(BaseTask):
+class BatchFeatureCreateTask(BaseTask):
     """
-    FeatureList Deploy Task
+    Batch feature creation task
     """
 
-    payload_class = FeatureCreateTaskPayload
+    payload_class = BatchFeatureCreateTaskPayload
 
     @staticmethod
     def _construct_expected_graph(graph: QueryGraphModel) -> QueryGraphModel:
@@ -55,7 +55,7 @@ class FeatureCreateTask(BaseTask):
             await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
     async def prepare_feature_model(self) -> FeatureModel:
-        payload = cast(FeatureCreateTaskPayload, self.payload)
+        payload = cast(BatchFeatureCreateTaskPayload, self.payload)
 
         # pruning the graph & prepare the feature model
         feature_service: FeatureService = self.app_container.feature_service
@@ -96,7 +96,7 @@ class FeatureCreateTask(BaseTask):
         return sdk_code_gen_state.code_generator.generate(to_format=True)
 
     async def validate_generated_feature(self, document: FeatureModel, definition: str) -> None:
-        payload = cast(FeatureCreateTaskPayload, self.payload)
+        payload = cast(BatchFeatureCreateTaskPayload, self.payload)
 
         # retrieve the saved feature & check if it is the same as the expected feature
         feature_service: FeatureService = self.app_container.feature_service
@@ -129,7 +129,7 @@ class FeatureCreateTask(BaseTask):
         """
         Execute Deployment Create & Update Task
         """
-        payload = cast(FeatureCreateTaskPayload, self.payload)
+        payload = cast(BatchFeatureCreateTaskPayload, self.payload)
 
         document = await self.prepare_feature_model()
         definition = await self.prepare_feature_definition(document=document)

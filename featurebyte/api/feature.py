@@ -718,7 +718,7 @@ class Feature(
         else:
             # TODO: handle conflict resolution
             object_dict = self.post_async_task(
-                route="/feature/definition", payload=self._get_create_payload()
+                route="/feature/batch", payload=self._get_create_payload()
             )
             type(self).__init__(self, **object_dict, **self._get_init_params_from_object())
 

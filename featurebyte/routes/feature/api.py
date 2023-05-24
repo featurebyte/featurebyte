@@ -50,13 +50,13 @@ async def create_feature(
     return feature
 
 
-@router.post("/definition", response_model=Task, status_code=HTTPStatus.CREATED)
+@router.post("/batch", response_model=Task, status_code=HTTPStatus.CREATED)
 async def submit_feature_create_task(request: Request, data: FeatureCreate) -> Task:
     """
     Submit Feature Create Task
     """
     controller = request.state.app_container.feature_controller
-    task: Task = await controller.submit_feature_create_task(data=data)
+    task: Task = await controller.submit_batch_feature_create_task(data=data)
     return task
 
 

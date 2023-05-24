@@ -11,11 +11,11 @@ from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 
 
-class FeatureCreateTaskPayload(BaseTaskPayload, FeatureCreate):
+class BatchFeatureCreateTaskPayload(BaseTaskPayload, FeatureCreate):
     """
-    Feature create task payload
+    Batch Feature create task payload
     """
 
     output_collection_name = FeatureModel.collection_name()
-    command = WorkerCommand.FEATURE_CREATE
+    command = WorkerCommand.BATCH_FEATURE_CREATE
     task_type: TaskType = Field(default=TaskType.CPU_TASK)

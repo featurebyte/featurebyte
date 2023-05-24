@@ -36,7 +36,7 @@ from featurebyte.schema.feature import (
 )
 from featurebyte.schema.info import FeatureInfo
 from featurebyte.schema.task import Task
-from featurebyte.schema.worker.task.feature_create import FeatureCreateTaskPayload
+from featurebyte.schema.worker.task.feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -85,7 +85,7 @@ class FeatureController(
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.task_controller = task_controller
 
-    async def submit_feature_create_task(self, data: FeatureCreate) -> Optional[Task]:
+    async def submit_batch_feature_create_task(self, data: FeatureCreate) -> Optional[Task]:
         """
         Submit Feature Create Task
 
@@ -99,7 +99,7 @@ class FeatureController(
         Optional[Task]
             Task object
         """
-        payload = FeatureCreateTaskPayload(
+        payload = BatchFeatureCreateTaskPayload(
             **{
                 **data.json_dict(),
                 "catalog_id": self.service.catalog_id,
