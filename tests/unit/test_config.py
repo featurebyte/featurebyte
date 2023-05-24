@@ -19,6 +19,7 @@ from featurebyte.config import (
 )
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.logging import get_logger
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 
 logger = get_logger(__name__)
 
@@ -164,3 +165,39 @@ def test_empty_configuration_file():
     """
     with tempfile.NamedTemporaryFile() as file_handle:
         Configurations(file_handle.name)
+
+
+@patch("featurebyte.config.get_home_path")
+@patch("featurebyte.config.Configurations.check_sdk_versions")
+def test_client_redirection(mock_check_sdk_versions, mock_get_home_path):
+    """
+    Test client disallows redirection.
+    Redirection can fail for some endpoints as POST requests gets redirected to GET.
+    """
+    mock_check_sdk_versions.return_value = {"remote sdk": 0.1, "local sdk": 0.1}
+    mock_get_home_path.return_value = Path("tests/fixtures/config")
+
+    Configurations.use_profile("featurebyte1")
+    # expect 30x response to be returned as is instead of following redirection
+    client = Configurations().get_client()
+    assert isinstance(client, APIClient)
+    with patch("featurebyte.config.BaseAPIClient.request") as mock_request:
+        mock_request.return_value.status_code = 301
+        response = client.get("/user/me")
+        # response should be 301
+        assert response.status_code == 301
+        mock_request.assert_called_once_with(
+            "GET",
+            "https://app1.featurebyte.com/api/v1/user/me",
+            allow_redirects=False,
+            headers={"active-catalog-id": str(DEFAULT_CATALOG_ID)},
+        )
+
+        # check api token included in header
+        assert client.headers == {
+            "user-agent": "Python SDK",
+            "Accept-Encoding": "gzip, deflate",
+            "accept": "application/json",
+            "Connection": "keep-alive",
+            "Authorization": "Bearer API_TOKEN_VALUE1",
+        }

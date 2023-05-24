@@ -172,6 +172,7 @@ class APIClient(BaseAPIClient):
                 "active-catalog-id", str(get_active_catalog_id())
             )
             kwargs["headers"] = headers
+            kwargs["allow_redirects"] = False
             return super().request(
                 method,
                 self.base_url + str(url),
