@@ -39,8 +39,8 @@ from featurebyte.tile.manager import TILE_COMPUTE_PROGRESS_MAX_PERCENT
 from featurebyte.tile.tile_cache import TileCache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
-FB_ROW_INDEX_COLUMN = "__FB_ROW_INDEX"
 NUM_FEATURES_PER_QUERY = 50
+FB_ROW_INDEX_FOR_JOIN = "__FB_ROW_INDEX_FOR_JOIN"
 
 
 logger = get_logger(__name__)
@@ -104,7 +104,7 @@ class DataFrameObservationSet(ObservationSet):
     async def register_as_request_table(
         self, session: BaseSession, request_table_name: str
     ) -> None:
-        self.dataframe[FB_ROW_INDEX_COLUMN] = np.arange(self.dataframe.shape[0])
+        self.dataframe[FB_ROW_INDEX_FOR_JOIN] = np.arange(self.dataframe.shape[0])
         await session.register_table(request_table_name, self.dataframe)
 
 
@@ -134,7 +134,7 @@ class MaterializedTableObservationSet(ObservationSet):
         query = sql_to_string(
             expressions.select(
                 "*",
-                expressions.alias_(row_number, alias=FB_ROW_INDEX_COLUMN, quoted=True),
+                expressions.alias_(row_number, alias=FB_ROW_INDEX_FOR_JOIN, quoted=True),
             ).from_(
                 get_fully_qualified_table_name(self.observation_table.location.table_details.dict())
             ),
@@ -352,8 +352,8 @@ def construct_join_feature_sets_query(
             ),
             join_type="left",
             on=expressions.EQ(
-                this=get_qualified_column_identifier(FB_ROW_INDEX_COLUMN, "REQ"),
-                expression=get_qualified_column_identifier(FB_ROW_INDEX_COLUMN, table_alias),
+                this=get_qualified_column_identifier(FB_ROW_INDEX_FOR_JOIN, "REQ"),
+                expression=get_qualified_column_identifier(FB_ROW_INDEX_FOR_JOIN, table_alias),
             ),
         )
         expr = expr.select(*[f'{table_alias}."{name}"' for name in feature_set.feature_names])
@@ -406,7 +406,7 @@ def get_historical_features_query_set(
         feature_set_expr = plan.construct_combined_sql(
             request_table_name=request_table_name,
             point_in_time_column=SpecialColumnName.POINT_IN_TIME,
-            request_table_columns=[FB_ROW_INDEX_COLUMN] + request_table_columns,
+            request_table_columns=[FB_ROW_INDEX_FOR_JOIN] + request_table_columns,
         )
         feature_set_table_name = f"__TEMP_{ObjectId()}"
         feature_sets.append(
