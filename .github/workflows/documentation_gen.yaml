@@ -60,7 +60,7 @@ jobs:
       run: sudo apt-get install libsasl2-dev gcc
     - name: Install wkhtmltopdf
       run: |-
-        sudo apt get update
+        sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Building docs for current branch
       run: task docs-persist-reference

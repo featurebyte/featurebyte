@@ -101,7 +101,7 @@ jobs:
       run: sudo apt-get install libsasl2-dev gcc
     - name: Install wkhtmltopdf
       run: |-
-        sudo apt get update
+        sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
       uses: actions/download-artifact@v3
@@ -157,7 +157,7 @@ jobs:
       run: sudo apt-get install libsasl2-dev gcc
     - name: Install wkhtmltopdf
       run: |-
-        sudo apt get update
+        sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
       uses: actions/download-artifact@v3
@@ -213,7 +213,7 @@ jobs:
       run: sudo apt-get install libsasl2-dev gcc
     - name: Install wkhtmltopdf
       run: |-
-        sudo apt get update
+        sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
       uses: actions/download-artifact@v3
@@ -292,7 +292,7 @@ jobs:
       run: sudo apt-get install libsasl2-dev gcc
     - name: Install wkhtmltopdf
       run: |-
-        sudo apt get update
+        sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
       uses: actions/download-artifact@v3
@@ -348,7 +348,7 @@ jobs:
       run: sudo apt-get install libsasl2-dev gcc
     - name: Install wkhtmltopdf
       run: |-
-        sudo apt get update
+        sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
       uses: actions/download-artifact@v3
