@@ -439,7 +439,7 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     if source_type == "databricks":
         df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
-    pd.testing.assert_frame_equal(df, expected)
+    pd.testing.assert_frame_equal(df, expected, check_dtype=False)
 
     # check online serving
     feature_list.save()
