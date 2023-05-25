@@ -1324,6 +1324,8 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     # pylint: disable=too-many-locals
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_2h = feature_group["sum_2h"]
+    feature_sum_30m.save()
+    feature_sum_2h.save()
     feature_iet = iet_entropy(
         view=snowflake_event_view_with_entity,
         group_by_col="cust_id",
@@ -1368,8 +1370,8 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         entity_ids=feature_sum_30m.entity_ids,
         table_ids=feature_sum_30m.table_ids,
         feature_namespace_ids=[
-            feature_sum_30m.feature_namespace_id,
-            feature_sum_2h.feature_namespace_id,
+            feature_sum_30m.feature_namespace.id,
+            feature_sum_2h.feature_namespace.id,
         ],
     )
     feature_job_setting_analysis = FeatureJobSettingAnalysisCreate(
