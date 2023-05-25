@@ -450,6 +450,7 @@ def get_historical_features_query_set(
     HistoricalFeatureQuerySet
     """
     if len(node_groups) == 1:
+        # Fallback to simpler non-batched query if there is only one group to avoid overhead
         sql_expr, _ = get_historical_features_expr(
             graph=graph,
             nodes=node_groups[0],
