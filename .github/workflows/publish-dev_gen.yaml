@@ -105,15 +105,16 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         push: true
-        tags: |-
+        tags: |
           ${{ env.SERVER_IMAGE_REPO }}:${{ env.SHORT_HASH }}
           ${{ env.SERVER_IMAGE_REPO }}:${{ env.DEV_VERSION }}
+          ${{ env.SERVER_IMAGE_REPO }}:latest
         context: .
-        platforms: |-
+        platforms: |
           linux/amd64
           linux/arm64
         file: docker/Dockerfile
-        cache-from: type=registry,ref=${{ env.SERVER_IMAGE_REPO }}:${{ env.REF_VERSION }}
+        cache-from: type=registry,ref=${{ env.SERVER_IMAGE_REPO }}:latest
         cache-to: type-inline
   slack:
     runs-on: ubuntu-latest
