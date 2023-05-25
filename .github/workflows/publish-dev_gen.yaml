@@ -84,6 +84,10 @@ jobs:
     - name: Replace docker-compose image tag (server)
       uses: mikefarah/yq@master
       with:
+        cmd: yq -i '.services.featurebyte-server.image = "${{ env.SERVER_IMAGE_REPO }}:${{ env.DEV_VERSION }}"' featurebyte/docker/featurebyte.yml
+    - name: Replace docker-compose image tag (worker)
+      uses: mikefarah/yq@master
+      with:
         cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ env.DEV_VERSION }}"' featurebyte/docker/featurebyte.yml
     - name: Publish to non-prod artifact registry
       run: |-
