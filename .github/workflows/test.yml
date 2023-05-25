@@ -155,7 +155,6 @@ jobs:
           poetry config virtualenvs.in-project true
       - name: Adding C headers + Install dependencies
         run: |
-          sudo apt-get update
           sudo apt-get install libsasl2-dev gcc
           sudo apt-get install wkhtmltopdf
       - name: Download hive-udf
