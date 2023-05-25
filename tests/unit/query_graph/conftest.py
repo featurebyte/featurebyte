@@ -1042,6 +1042,31 @@ def time_since_last_event_feature_node_fixture(global_graph, input_node):
     return time_since_last_event_feature_node
 
 
+@pytest.fixture(name="feature_nodes_all_types")
+def feature_nodes_all_types_fixture(
+    mixed_point_in_time_and_item_aggregations,
+    lookup_feature_node,
+    scd_lookup_feature_node,
+    latest_value_aggregation_feature_node,
+    latest_value_without_window_feature_node,
+    aggregate_asat_feature_node,
+):
+    """
+    Fixture for feature query graph nodes of multiple types
+    """
+    _, groupby_node, item_groupby_feature_node = mixed_point_in_time_and_item_aggregations
+    nodes = [
+        groupby_node,
+        item_groupby_feature_node,
+        lookup_feature_node,
+        scd_lookup_feature_node,
+        latest_value_aggregation_feature_node,
+        latest_value_without_window_feature_node,
+        aggregate_asat_feature_node,
+    ]
+    return nodes
+
+
 @pytest.fixture(name="event_table_details")
 def get_event_table_details_fixture():
     """

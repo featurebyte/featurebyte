@@ -1,10 +1,11 @@
 """
 Tests for featurebyte.query_graph.feature_historical.py
 """
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
@@ -13,18 +14,23 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
+    FeatureQuery,
+    HistoricalFeatureQuerySet,
     convert_point_in_time_dtype_if_needed,
     get_historical_features,
     get_historical_features_expr,
+    get_historical_features_query_set,
     get_internal_observation_set,
+    split_nodes,
     validate_historical_requests_point_in_time,
 )
+from featurebyte.session.base import BaseSession
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
 def get_historical_features_sql(**kwargs):
     """Get historical features SQL"""
-    expr = get_historical_features_expr(**kwargs)
+    expr, _ = get_historical_features_expr(**kwargs)
     source_type = kwargs["source_type"]
     return sql_to_string(expr, source_type=source_type)
 
@@ -34,11 +40,13 @@ def mocked_session_fixture():
     """Fixture for a mocked session object"""
     with patch("featurebyte.service.session_manager.SessionManager") as session_manager_cls:
         session_manager = AsyncMock(name="MockedSessionManager")
-        mocked_session = Mock(name="MockedSession", sf_schema="FEATUREBYTE")
-        mocked_session.register_table = AsyncMock()
-        mocked_session.execute_query_long_running = AsyncMock()
-        mocked_session.generate_session_unique_id = Mock(return_value="1")
-        mocked_session.source_type = SourceType.SNOWFLAKE
+        mocked_session = Mock(
+            name="MockedSession",
+            spec=BaseSession,
+            database_name="sf_database",
+            schema_name="sf_schema",
+            source_type=SourceType.SNOWFLAKE,
+        )
         session_manager_cls.return_value = session_manager
         yield mocked_session
 
@@ -47,6 +55,17 @@ def mocked_session_fixture():
 def output_table_details_fixture():
     """Fixture for a TableDetails for the output location"""
     return TableDetails(table_name="SOME_HISTORICAL_FEATURE_TABLE")
+
+
+@pytest.fixture(name="fixed_object_id")
+def fixed_object_id_fixture():
+    """Fixture to for a fixed ObjectId in featurebyte.query_graph.sql.feature_historical"""
+    oid = ObjectId("646f1b781d1e7970788b32ec")
+    with patch(
+        "featurebyte.query_graph.sql.feature_historical.ObjectId",
+        return_value=oid,
+    ) as mocked:
+        yield mocked
 
 
 @pytest.mark.asyncio
@@ -251,3 +270,91 @@ def test_get_historical_feature_sql__with_missing_value_imputation(
         "tests/fixtures/expected_historical_requests_with_missing_value_imputation.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_get_historical_feature_query_set__single_batch(
+    float_feature, output_table_details, fixed_object_id, update_fixtures
+):
+    """
+    Test historical features are calculated in single batch when there are not many nodes
+    """
+    request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
+    query_set = get_historical_features_query_set(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=float_feature.graph,
+        node_groups=[[float_feature.node]],
+        request_table_columns=request_table_columns,
+        source_type=SourceType.SNOWFLAKE,
+        output_table_details=output_table_details,
+    )
+    assert query_set.feature_queries == []
+    assert_equal_with_expected_fixture(
+        query_set.output_query,
+        "tests/fixtures/expected_historical_requests_single_batch_output_query.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_get_historical_feature_query_set__multiple_batches(
+    global_graph,
+    feature_nodes_all_types,
+    output_table_details,
+    fixed_object_id,
+    update_fixtures,
+):
+    """
+    Test historical features are executed in batches when there are many nodes
+    """
+    request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
+    query_set = get_historical_features_query_set(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=global_graph,
+        node_groups=split_nodes(feature_nodes_all_types, 2),
+        request_table_columns=request_table_columns,
+        source_type=SourceType.SNOWFLAKE,
+        output_table_details=output_table_details,
+    )
+    for i, feature_query in enumerate(query_set.feature_queries):
+        assert_equal_with_expected_fixture(
+            feature_query.sql,
+            f"tests/fixtures/expected_historical_requests_multiple_batches_feature_set_{i}.sql",
+            update_fixture=update_fixtures,
+        )
+    assert_equal_with_expected_fixture(
+        query_set.output_query,
+        "tests/fixtures/expected_historical_requests_multiple_batches_output_query.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_historical_feature_query_set_execute(mocked_session):
+    """
+    Test HistoricalFeatureQuerySet execution
+    """
+    feature_queries = [
+        FeatureQuery(
+            sql="some_feature_query_1",
+            table_name="A",
+            feature_names=["F1"],
+        ),
+        FeatureQuery(
+            sql="some_feature_query_2",
+            table_name="B",
+            feature_names=["F2"],
+        ),
+    ]
+    historical_feature_query_set = HistoricalFeatureQuerySet(
+        feature_queries=feature_queries,
+        output_query="some_final_join_query",
+    )
+    await historical_feature_query_set.execute(mocked_session)
+    assert mocked_session.execute_query_long_running.call_args_list == [
+        call("some_feature_query_1"),
+        call("some_feature_query_2"),
+        call("some_final_join_query"),
+    ]
+    assert mocked_session.drop_table.call_args_list == [
+        call(database_name="sf_database", schema_name="sf_schema", table_name="A", if_exists=True),
+        call(database_name="sf_database", schema_name="sf_schema", table_name="B", if_exists=True),
+    ]
