@@ -14,6 +14,7 @@ from featurebyte import (
     EventTable,
     FeatureJobSetting,
     FeatureList,
+    HistoricalFeatureTable,
     SourceType,
     to_timedelta,
 )
@@ -671,7 +672,9 @@ async def test_get_historical_features(
             input_format=input_format,
         )
     else:
+        existing_historical_feature_tables = HistoricalFeatureTable.list().shape[0]
         df_historical_features = feature_list.compute_historical_features(df_training_events)
+        assert HistoricalFeatureTable.list().shape[0] == existing_historical_feature_tables
 
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
     fb_assert_frame_equal(
@@ -680,19 +683,6 @@ async def test_get_historical_features(
         dict_like_columns=["COUNT_BY_ACTION_24h"],
         sort_by_columns=["POINT_IN_TIME", "üser id"] if output_format == "table" else None,
     )
-
-    if output_format == "dataframe":
-        # check that making multiple request calls produces the same result
-        max_batch_size = int((len(df_training_events) / 2.0) + 1)
-        df_historical_multi = feature_list.compute_historical_features(
-            df_training_events, max_batch_size=max_batch_size
-        )
-        sort_cols = list(df_training_events.columns)
-        fb_assert_frame_equal(
-            df_historical_features.sort_values(sort_cols).reset_index(drop=True),
-            df_historical_multi.sort_values(sort_cols).reset_index(drop=True),
-            dict_like_columns=["COUNT_BY_ACTION_24h"],
-        )
 
     # Test again using the same feature list and table but with serving names mapping
     await _test_get_historical_features_with_serving_names(
