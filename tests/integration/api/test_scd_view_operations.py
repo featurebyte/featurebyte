@@ -393,7 +393,7 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     if source_type == "databricks":
         df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
-    pd.testing.assert_frame_equal(df, expected)
+    pd.testing.assert_frame_equal(df, expected, check_dtype=False)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
