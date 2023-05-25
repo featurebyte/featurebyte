@@ -18,8 +18,8 @@ name: dependencies
     - release/*
 permissions:
   contents: write
-  repository-projects: read
   pull-requests: write
+  repository-projects: read
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
@@ -74,8 +74,8 @@ jobs:
 
         # Test if it actually fails
         diff -u main.PKG-INFO branch.PKG-INFO
-    - uses: mshick/add-pr-comment@v2
-      if: failure()
+    - if: failure()
+      uses: mshick/add-pr-comment@v2
       with:
         message: |-
           **Diff**

@@ -1,0 +1,540 @@
+# THIS FILE IS GENERATED. PLEASE DO NOT MODIFY DIRECTLY.
+# Please refer to the `test.py` file in the `featurebyte/infrastructure` repo if you want to update it.
+
+name: test
+'on':
+  workflow_dispatch: {}
+  pull_request:
+    types:
+    - opened
+    - synchronize
+    - reopened
+  push:
+    branches:
+    - main
+permissions:
+  contents: write
+  pull-requests: write
+  repository-projects: read
+  issues: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+env:
+  SNOWFLAKE_USER: github
+  SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+  SNOWFLAKE_ACCOUNT: fm54506.us-central1.gcp
+  SNOWFLAKE_WAREHOUSE: COMPUTE_WH
+  SNOWFLAKE_DATABASE: FEATUREBYTE_TESTING
+  SNOWFLAKE_SCHEMA: PUBLIC
+  SNOWFLAKE_SCHEMA_FEATUREBYTE: FEATUREBYTE
+  DATABRICKS_ACCESS_TOKEN: ${{ secrets.DATABRICKS_ACCESS_TOKEN }}
+  DATABRICKS_SERVER_HOSTNAME: ${{ secrets.DATABRICKS_SERVER_HOSTNAME }}
+  DATABRICKS_HTTP_PATH: sql/protocolv1/o/2085793316075774/0319-021506-hzmupduq
+  DATABRICKS_CATALOG: hive_metastore
+  DATABRICKS_SCHEMA_FEATUREBYTE: FEATUREBYTE_GITHUB
+  DATABRICKS_STORAGE_URL: ${{ secrets.DATABRICKS_STORAGE_URL }}
+  DATABRICKS_STORAGE_ACCESS_KEY_ID: ${{ secrets.DATABRICKS_S3_ACCESS_KEY }}
+  DATABRICKS_STORAGE_ACCESS_KEY_SECRET: ${{ secrets.DATABRICKS_S3_SECRET_KEY }}
+  GCS_CLOUD_STORAGE_RW_TEST: ${{ secrets.GCS_CLOUD_STORAGE_RW_TEST }}
+  AZURE_STORAGE_ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+  AZURE_STORAGE_ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+jobs:
+  build-jar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v3
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Setup gradle cache
+      uses: actions/cache@v3
+      with:
+        path: hive-udf/.gradle
+        key: gradle-cache-${{ runner.os }}
+    - name: Setup gradle build cache
+      uses: actions/cache@v3
+      with:
+        path: hive-udf/lib/build
+        key: gradle-build-cache-${{ runner.os }}
+    - name: Building hive-udf
+      run: task build-jar
+    - name: Upload hive-udf
+      uses: actions/upload-artifact@v3
+      with:
+        name: hive-udf
+        path: hive-udf/lib/build/libs/*
+  test-unit:
+    needs:
+    - build-jar
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version:
+        - 3.8.12
+    steps:
+    - uses: actions/checkout@v3
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.3.1
+    - name: Configure Poetry
+      run: poetry config virtualenvs.in-project true
+    - name: Install packages needed for build
+      run: sudo apt-get install libsasl2-dev gcc
+    - name: Install wkhtmltopdf
+      run: |-
+        sudo apt-get update
+        sudo apt-get install wkhtmltopdf
+    - name: Download hive-udf
+      uses: actions/download-artifact@v3
+      with:
+        name: hive-udf
+        path: featurebyte/sql/spark/
+    - name: Run tests
+      run: task test-unit
+    - name: Moving coverage file by appending 0
+      run: mv .coverage .coverage.0
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.0
+        path: pytest.xml.0
+    - name: Upload coverage results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.0
+        path: .coverage.0
+  test-integration-snowflake:
+    needs:
+    - build-jar
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version:
+        - 3.8.12
+    steps:
+    - uses: actions/checkout@v3
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.3.1
+    - name: Configure Poetry
+      run: poetry config virtualenvs.in-project true
+    - name: Install packages needed for build
+      run: sudo apt-get install libsasl2-dev gcc
+    - name: Install wkhtmltopdf
+      run: |-
+        sudo apt-get update
+        sudo apt-get install wkhtmltopdf
+    - name: Download hive-udf
+      uses: actions/download-artifact@v3
+      with:
+        name: hive-udf
+        path: featurebyte/sql/spark/
+    - name: Run tests
+      run: task test-integration-snowflake
+    - name: Moving coverage file by appending 1
+      run: mv .coverage .coverage.1
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.1
+        path: pytest.xml.1
+    - name: Upload coverage results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.1
+        path: .coverage.1
+  test-integration-spark:
+    needs:
+    - build-jar
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version:
+        - 3.8.12
+    steps:
+    - uses: actions/checkout@v3
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.3.1
+    - name: Configure Poetry
+      run: poetry config virtualenvs.in-project true
+    - name: Install packages needed for build
+      run: sudo apt-get install libsasl2-dev gcc
+    - name: Install wkhtmltopdf
+      run: |-
+        sudo apt-get update
+        sudo apt-get install wkhtmltopdf
+    - name: Download hive-udf
+      uses: actions/download-artifact@v3
+      with:
+        name: hive-udf
+        path: featurebyte/sql/spark/
+    - name: Run tests
+      continue-on-error: true
+      run: |-
+        set +e
+        task test-integration-spark
+        # capture the exit code from the test run before stashing logs
+        EXIT_CODE=$?
+        echo $EXIT_CODE > status.txt
+        docker logs spark-thrift 2>&1 > spark-thrift.log
+        # bail out now if the test run was a failure
+        if [ $EXIT_CODE -ne 0 ]; then
+          exit $EXIT_CODE
+        fi
+        task test-teardown
+        mv .coverage .coverage.2
+    - name: Upload spark-thrift log file
+      uses: actions/upload-artifact@v3
+      with:
+        name: spark-thrift-logs
+        path: spark-thrift.log
+        retention-days: 5
+    - name: Check test status
+      run: |
+        EXIT_CODE=$(cat status.txt)
+        if [ $EXIT_CODE -ne 0 ]; then
+          exit $EXIT_CODE
+        fi
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.2
+        path: pytest.xml.2
+    - name: Upload coverage results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.2
+        path: .coverage.2
+  test-integration-databricks:
+    needs:
+    - build-jar
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version:
+        - 3.8.12
+    steps:
+    - uses: actions/checkout@v3
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.3.1
+    - name: Configure Poetry
+      run: poetry config virtualenvs.in-project true
+    - name: Install packages needed for build
+      run: sudo apt-get install libsasl2-dev gcc
+    - name: Install wkhtmltopdf
+      run: |-
+        sudo apt-get update
+        sudo apt-get install wkhtmltopdf
+    - name: Download hive-udf
+      uses: actions/download-artifact@v3
+      with:
+        name: hive-udf
+        path: featurebyte/sql/databricks/
+    - name: Run tests
+      run: task test-integration-databricks
+    - name: Moving coverage file by appending 3
+      run: mv .coverage .coverage.3
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.3
+        path: pytest.xml.3
+    - name: Upload coverage results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.3
+        path: .coverage.3
+  test-docs:
+    needs:
+    - build-jar
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version:
+        - 3.8.12
+    steps:
+    - uses: actions/checkout@v3
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.3.1
+    - name: Configure Poetry
+      run: poetry config virtualenvs.in-project true
+    - name: Install packages needed for build
+      run: sudo apt-get install libsasl2-dev gcc
+    - name: Install wkhtmltopdf
+      run: |-
+        sudo apt-get update
+        sudo apt-get install wkhtmltopdf
+    - name: Download hive-udf
+      uses: actions/download-artifact@v3
+      with:
+        name: hive-udf
+        path: featurebyte/sql/spark/
+    - name: Test documentation
+      run: task test-docs
+  validate:
+    needs:
+    - test-unit
+    - test-integration-spark
+    - test-integration-databricks
+    - test-docs
+    - test-integration-snowflake
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version:
+        - 3.8.12
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.3.1
+    - name: Configure Poetry
+      run: poetry config virtualenvs.in-project true
+    - name: Install dependencies
+      run: poetry install -n --sync
+    - name: Download unit test results
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.0
+    - name: Download integration test results (snowflake)
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.1
+    - name: Download integration test results (spark)
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.2
+    - name: Download integration test results (databricks)
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.3
+    - name: Download unit coverage results
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.0
+    - name: Download integration coverage results (snowflake)
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.1
+    - name: Download integration coverage results (spark)
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.2
+    - name: Download integration coverage results (databricks)
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.3
+    - name: Merge test results
+      run: task test-merge
+    - name: Test Coverage Report
+      id: coverageComment
+      uses: MishaKav/pytest-coverage-comment@main
+      with:
+        pytest-coverage-path: pytest-coverage.txt
+        junitxml-path: pytest.xml
+    - name: Check test output
+      run: |-
+        if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
+          exit 1
+        fi
+    - name: Update Coverage Badge
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      uses: schneegans/dynamic-badges-action@v1.6.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: 773e2960183c0 a6fe24c644d95d71fdb
+        filename: coverage.json
+        label: coverage
+        message: ${{ steps.coverageComment.outputs.coverage }}
+        color: ${{ steps.coverageComment.outputs.color }}
+  slack:
+    needs:
+    - build-jar
+    - test-unit
+    - test-integration-snowflake
+    - test-integration-spark
+    - test-integration-databricks
+    - test-docs
+    - validate
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - if: ${{ github.event_name == 'pull_request' }}
+      name: Get Author Email (PR)
+      run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")" >> $GITHUB_ENV
+    - if: ${{ github.event_name != 'pull_request' }}
+      name: Get Author Email (PUSH)
+      run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_REF_NAME}")" >> $GITHUB_ENV
+    - name: Get Channel ID
+      run: |-
+        export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${{ secrets.SLACK_OAUTH }}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+        echo "CHANNEL_ID=${AUTHOR_ID}" >> $GITHUB_ENV
+    - name: Get Results
+      run: |
+        echo "BUILD_JAR_RESULT=${{ needs.build-jar.result }}" >> $GITHUB_ENV
+        echo "TEST_UNIT_RESULT=${{ needs.test-unit.result }}" >> $GITHUB_ENV
+        echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }},${{ needs.test-integration-databricks.result }}" >> $GITHUB_ENV
+        echo "TEST_DOCS_RESULT=${{ needs.test-docs.result }}" >> $GITHUB_ENV
+        echo "VALIDATE_RESULT=${{ needs.validate.result }}" >> $GITHUB_ENV
+        echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
+    - env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+      if: ${{ env.CHANNEL_ID != '' }}
+      name: Send Slack notification with workflow result.
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        channel-id: ${{ env.CHANNEL_ID }}
+        payload: |-
+          {
+              "text": "${{ env.REPOSITORY }}[${{ github.workflow }}] [${{ env.BUILD_JAR_RESULT }}, ${{ env.TEST_UNIT_RESULT }}, ${{ env.TEST_INTEG_RESULT }}, ${{ env.TEST_DOCS_RESULT}}, ${{ env.VALIDATE_RESULT }}]",
+              "blocks": [
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                      }
+                  },
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "```build_jar: [${{ env.BUILD_JAR_RESULT }}]\n--> test_unit [${{ env.TEST_UNIT_RESULT }}]\n--> test_integration [${{ env.TEST_INTEG_RESULT }}]\n--> test_docs [${{ env.TEST_DOCS_RESULT }}]\n----> validate [${{ env.VALIDATE_RESULT }}]```"
+                      }
+                  }
+              ]
+          }
+    - env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+      name: Send Slack notification to developer channel
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        channel-id: C03D81HC6Q5
+        payload: |-
+          {
+              "text": "${{ env.REPOSITORY }}[${{ github.workflow }}] [${{ env.BUILD_JAR_RESULT }}, ${{ env.TEST_UNIT_RESULT }}, ${{ env.TEST_INTEG_RESULT }}, ${{ env.TEST_DOCS_RESULT}}, ${{ env.VALIDATE_RESULT }}]",
+              "blocks": [
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                      }
+                  },
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "```build_jar: [${{ env.BUILD_JAR_RESULT }}]\n--> test_unit [${{ env.TEST_UNIT_RESULT }}]\n--> test_integration [${{ env.TEST_INTEG_RESULT }}]\n--> test_docs [${{ env.TEST_DOCS_RESULT }}]\n----> validate [${{ env.VALIDATE_RESULT }}]```"
+                      }
+                  }
+              ]
+          }
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure') }}

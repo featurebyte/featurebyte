@@ -7,8 +7,8 @@ name: Daily Maintenance
   schedule:
   - cron: 0 0 * * *
 permissions:
-  actions: write
   contents: write
+  actions: write
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
