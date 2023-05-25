@@ -173,7 +173,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict == {
             "name": self.payload["name"],
-            "deployment_name": 'Deployment (feature_list: "sf_feature_list")',
+            "deployment_name": "my_deployment",
             "batch_request_table_name": "batch_request_table",
             "table_details": {
                 "database_name": "sf_database",

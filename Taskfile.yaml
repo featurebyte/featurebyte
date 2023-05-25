@@ -201,7 +201,8 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
-      - poetry run pytest --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit tests/unit/conftest.py
+      - poetry run pytest --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
+      - poetry run pytest --timeout=240 --update-fixtures tests/unit/test_generate_payload_fixtures.py
 
   test-integration:
     desc: Runs integration tests

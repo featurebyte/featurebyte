@@ -422,7 +422,7 @@ async def feature_non_time_based_fixture(
 ):
     """Feature model (non-time-based feature)"""
     _ = event_table, item_table, entity_transaction
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_non_time_based.json")
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_item_event.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         feature = await feature_service.create_document(data=FeatureCreate(**payload))
