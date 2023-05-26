@@ -19,7 +19,8 @@ from featurebyte.persistent.base import DuplicateDocumentError, Persistent
 
 class MongoDB(Persistent):
     """
-    Persistent storage using MongoDB
+    Persistent storage using MongoDB. Note that this class is not thread-safe.
+    Do not use the same instance in multiple threads.
     """
 
     def __init__(self, uri: str, database: str = "featurebyte", client: Any = None) -> None:
@@ -336,5 +337,4 @@ class MongoDB(Persistent):
                     yield self
         finally:
             if self._session:
-                self._session.end_session()
                 self._session = None

@@ -10,7 +10,6 @@ import json
 from http import HTTPStatus
 
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
-from fastapi.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureListModel
@@ -176,25 +175,6 @@ async def get_feature_list_preview(
             featurelist_preview=featurelist_preview, get_credential=request.state.get_credential
         ),
     )
-
-
-@router.post("/historical_features")
-async def get_historical_features(
-    request: Request,
-    payload: str = Form(),
-    observation_set: UploadFile = File(description="Observation set data in parquet format"),
-) -> StreamingResponse:
-    """
-    Retrieve historical features
-    """
-    featurelist_get_historical_features = FeatureListGetHistoricalFeatures(**json.loads(payload))
-    controller = request.state.app_container.feature_list_controller
-    result: StreamingResponse = await controller.compute_historical_features(
-        observation_set=observation_set,
-        featurelist_get_historical_features=featurelist_get_historical_features,
-        get_credential=request.state.get_credential,
-    )
-    return result
 
 
 @router.post("/sql", response_model=str)

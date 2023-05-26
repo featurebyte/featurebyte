@@ -451,9 +451,9 @@ class PreviewService(BaseService):
         observation_set: Union[pd.DataFrame, ObservationTableModel],
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
         get_credential: Any,
-        output_table_details: Optional[TableDetails] = None,
+        output_table_details: TableDetails,
         progress_callback: Optional[Callable[[int, str], None]] = None,
-    ) -> Optional[AsyncGenerator[bytes, None]]:
+    ) -> None:
         """
         Get historical features for Feature List
 
@@ -465,15 +465,10 @@ class PreviewService(BaseService):
             FeatureListGetHistoricalFeatures object
         get_credential: Any
             Get credential handler function
-        output_table_details: Optional[TableDetails]
-            Optional output table details to write the results to
+        output_table_details: TableDetails
+            Table details to write the results to
         progress_callback: Optional[Callable[[int, str], None]]
             Optional progress callback function
-
-        Returns
-        -------
-        AsyncGenerator[bytes, None]
-            Asynchronous bytes generator
         """
         # multiple feature stores not supported
         feature_clusters = featurelist_get_historical_features.feature_clusters
@@ -514,7 +509,7 @@ class PreviewService(BaseService):
         except DocumentNotFoundError:
             is_feature_list_deployed = False
 
-        return await get_historical_features(
+        await get_historical_features(
             session=db_session,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,

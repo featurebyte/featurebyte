@@ -10,7 +10,6 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import UploadFile
 from fastapi.exceptions import HTTPException
-from fastapi.responses import StreamingResponse
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
@@ -18,7 +17,6 @@ from featurebyte.exception import (
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
     TooRecentPointInTimeError,
-    UnexpectedServingNamesMappingError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
@@ -273,55 +271,6 @@ class FeatureListController(
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
-
-    async def compute_historical_features(
-        self,
-        observation_set: UploadFile,
-        featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
-        get_credential: Any,
-    ) -> StreamingResponse:
-        """
-        Get historical features for Feature List
-
-        Parameters
-        ----------
-        observation_set: UploadFile
-            Uploaded file
-        featurelist_get_historical_features: FeatureListGetHistoricalFeatures
-            FeatureListGetHistoricalFeatures object
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        StreamingResponse
-            StreamingResponse object
-
-        Raises
-        ------
-        HTTPException
-            Invalid request payload
-        """
-        try:
-            bytestream = await self.preview_service.compute_historical_features(
-                observation_set=dataframe_from_arrow_stream(observation_set.file),
-                featurelist_get_historical_features=featurelist_get_historical_features,
-                get_credential=get_credential,
-            )
-            assert bytestream is not None
-        except (
-            MissingPointInTimeColumnError,
-            TooRecentPointInTimeError,
-            RequiredEntityNotProvidedError,
-            UnexpectedServingNamesMappingError,
-        ) as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
-            ) from exc
-        return StreamingResponse(
-            bytestream,
-            media_type="application/octet-stream",
-        )
 
     async def get_info(
         self,

@@ -195,6 +195,7 @@ def config_fixture():
             "level": "DEBUG",
         },
     }
+
     with tempfile.TemporaryDirectory() as tempdir:
         config_file_path = os.path.join(tempdir, "config.yaml")
         with open(config_file_path, "w") as file_handle:
@@ -202,7 +203,14 @@ def config_fixture():
             file_handle.flush()
             with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
                 with TestClient(app) as client:
-                    mock_request.side_effect = client.request
+
+                    def wrapped_test_client_request_func(*args, stream=None, **kwargs):
+                        _ = stream
+                        response = client.request(*args, **kwargs)
+                        response.iter_content = response.iter_bytes
+                        return response
+
+                    mock_request.side_effect = wrapped_test_client_request_func
                     yield Configurations(config_file_path=config_file_path)
 
 

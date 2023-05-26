@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import AsyncGenerator, Callable, List, Optional, Union, cast
+from typing import Callable, List, Optional, Union, cast
 
 import datetime
 import time
@@ -345,12 +345,12 @@ async def get_historical_features(
     nodes: list[Node],
     observation_set: Union[pd.DataFrame, ObservationTableModel],
     source_type: SourceType,
+    output_table_details: TableDetails,
     serving_names_mapping: dict[str, str] | None = None,
     is_feature_list_deployed: bool = False,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    output_table_details: Optional[TableDetails] = None,
     progress_callback: Optional[Callable[[int, str], None]] = None,
-) -> Optional[AsyncGenerator[bytes, None]]:
+) -> None:
     """Get historical features
 
     Parameters
@@ -374,16 +374,10 @@ async def get_historical_features(
         on demand.
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
-    output_table_details: Optional[TableDetails]
-        Optional output table details to write the results to. If this parameter is provided, the
-        function will return None (intended to be used when handling asynchronous historical
-        requests).
+    output_table_details: TableDetails
+        Output table details to write the results to
     progress_callback: Optional[Callable[[int, str], None]]
         Optional progress callback function
-
-    Returns
-    -------
-    AsyncGenerator[bytes, None]
     """
     tic_ = time.time()
 
@@ -429,11 +423,6 @@ async def get_historical_features(
     if progress_callback:
         progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, "Computing features")
 
-    # Execute feature query and stream results back
-    if output_table_details is None:
-        sql = sql_to_string(sql_expr, source_type=session.source_type)
-        return session.get_async_query_stream(sql)
-
     # Execute feature query but write results to a table
     expression = get_sql_adapter(session.source_type).create_table_as(
         table_details=output_table_details, select_expr=sql_expr
@@ -444,5 +433,3 @@ async def get_historical_features(
     )
     await session.execute_query_long_running(query)
     logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
-
-    return None

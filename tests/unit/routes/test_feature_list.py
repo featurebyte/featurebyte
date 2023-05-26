@@ -1,8 +1,6 @@
 """
 Tests for FeatureList route
 """
-# pylint: disable=too-many-lines
-import json
 import textwrap
 from collections import defaultdict
 from http import HTTPStatus
@@ -16,12 +14,7 @@ from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
-from featurebyte.common.utils import (
-    dataframe_from_arrow_stream,
-    dataframe_from_json,
-    dataframe_to_arrow_bytes,
-)
-from featurebyte.enum import SourceType
+from featurebyte.common.utils import dataframe_from_json
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from tests.unit.routes.base import BaseCatalogApiTestSuite
@@ -728,45 +721,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "feature_clusters": featurelist_feature_clusters,
             "serving_names_mapping": {},
         }
-
-    def test_get_historical_features_200(
-        self,
-        test_api_client_persistent,
-        featurelist_get_historical_features_payload,
-        mock_get_session,
-    ):
-        """Test feature list compute_historical_features"""
-        test_api_client, _ = test_api_client_persistent
-        observation_set = pd.DataFrame({"cust_id": [0, 1, 2], "POINT_IN_TIME": ["2022-04-01"] * 3})
-        expected_df = pd.DataFrame({"a": [0, 1, 2]})
-
-        async def mock_get_async_query_stream(query):
-            _ = query
-            yield dataframe_to_arrow_bytes(expected_df)
-
-        expected_df = pd.DataFrame({"a": [0, 1, 2]})
-
-        mock_session = mock_get_session.return_value
-        mock_session.get_async_query_stream = mock_get_async_query_stream
-        mock_session.source_type = SourceType.SNOWFLAKE
-        mock_session.generate_session_unique_id = Mock(return_value="1")
-
-        with patch("featurebyte.sql.tile_registry.TileRegistry.execute") as _:
-            with test_api_client.stream(
-                "POST",
-                f"{self.base_route}/historical_features",
-                data={"payload": json.dumps(featurelist_get_historical_features_payload)},
-                files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
-            ) as response:
-                assert response.status_code == HTTPStatus.OK
-
-                # test streaming download works
-                content = b""
-                for chunk in response.iter_bytes():
-                    content += chunk
-
-                df = dataframe_from_arrow_stream(content)
-                assert_frame_equal(df, expected_df)
 
     def test_sql_200(self, test_api_client_persistent, featurelist_preview_payload):
         """Test featurelist sql (success)"""
