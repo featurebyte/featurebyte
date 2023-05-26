@@ -95,7 +95,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             "data": [
                 {
                     "_id": response_dict["data"][0]["_id"],
-                    "name": 'Deployment (feature_list: "sf_feature_list")_2',
+                    "name": "my_deployment_2",
                     "feature_list_id": response_dict["data"][0]["feature_list_id"],
                     "enabled": False,
                     "catalog_id": str(DEFAULT_CATALOG_ID),
@@ -105,7 +105,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                 },
                 {
                     "_id": response_dict["data"][1]["_id"],
-                    "name": 'Deployment (feature_list: "sf_feature_list")_1',
+                    "name": "my_deployment_1",
                     "feature_list_id": response_dict["data"][1]["feature_list_id"],
                     "enabled": False,
                     "catalog_id": str(DEFAULT_CATALOG_ID),
@@ -115,7 +115,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                 },
                 {
                     "_id": response_dict["data"][2]["_id"],
-                    "name": 'Deployment (feature_list: "sf_feature_list")_0',
+                    "name": "my_deployment_0",
                     "feature_list_id": response_dict["data"][2]["feature_list_id"],
                     "enabled": False,
                     "catalog_id": str(DEFAULT_CATALOG_ID),
@@ -155,7 +155,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             "data": [
                 {
                     "_id": deployment_id,
-                    "name": 'Deployment (feature_list: "sf_feature_list")',
+                    "name": "my_deployment",
                     "catalog_name": "default",
                     "feature_list_name": "sf_feature_list",
                     "feature_list_version": expected_version,
@@ -234,7 +234,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict == {
-            "name": 'Deployment (feature_list: "sf_feature_list")',
+            "name": "my_deployment",
             "feature_list_name": "sf_feature_list",
             "feature_list_version": response_dict["feature_list_version"],
             "num_feature": 1,
