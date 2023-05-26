@@ -223,7 +223,3 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
                 json_to_write["_COMMENT"] = generated_comment
                 fhandle.write(json.dumps(json_to_write, indent=4, sort_keys=True))
             output_filenames.append(filename)
-
-        raise AssertionError(
-            f"Fixtures {output_filenames} updated, please set update_fixture to False"
-        )
