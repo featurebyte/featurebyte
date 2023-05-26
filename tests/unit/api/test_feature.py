@@ -1229,7 +1229,7 @@ def test_feature_definition(feature_with_clean_column_names):
     expected = (
         header
         + textwrap.dedent(
-            """
+            f"""
     from bson import ObjectId
     from featurebyte import ColumnCleaningOperation
     from featurebyte import EventTable
@@ -1265,6 +1265,7 @@ def test_feature_definition(feature_with_clean_column_names):
     )
     feat = grouped["sum_30m"]
     output = feat
+    output.save(_id=ObjectId("{feature.id}"))
     """
         ).strip()
     )

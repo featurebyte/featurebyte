@@ -674,7 +674,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
                 progress_bar.text = text
                 progress_bar()  # pylint: disable=not-callable
 
-    def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
+    def save(
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+    ) -> None:
         """
         Adds a FeatureList object to the catalog.
 
@@ -687,6 +689,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         conflict_resolution: ConflictResolution
             "raise" raises error when we encounter a conflict error (default).
             "retrieve" handle conflict error by retrieving the object with the same name.
+        _id: Optional[ObjectId]
+            The object ID to be used when saving the object. If not provided, a new object ID will be generated.
 
         Raises
         ------

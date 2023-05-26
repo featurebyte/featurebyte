@@ -17,6 +17,7 @@ from featurebyte.models.feature import (
     FeatureReadiness,
 )
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
@@ -71,6 +72,31 @@ async def validate_feature_version_and_namespace_consistency(
             )
 
 
+def sanitize_query_graph_for_feature_definition(graph: QueryGraphModel) -> QueryGraphModel:
+    """
+    Sanitize the query graph for feature creation
+
+    Parameters
+    ----------
+    graph: QueryGraphModel
+        The query graph
+
+    Returns
+    -------
+    QueryGraphModel
+    """
+    # Since the generated feature definition contains all the settings in manual mode,
+    # we need to sanitize the graph to make sure that the graph is in manual mode.
+    # Otherwise, the generated feature definition & graph hash before and after
+    # feature creation could be different.
+    output = graph.dict()
+    for node in output["nodes"]:
+        if node["type"] == NodeType.GRAPH:
+            if "view_mode" in node["parameters"]["metadata"]:
+                node["parameters"]["metadata"]["view_mode"] = "manual"
+    return QueryGraphModel(**output)
+
+
 class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureServiceUpdate]):
     """
     FeatureService class
@@ -92,20 +118,9 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
-    async def prepare_graph_to_store(self, feature: FeatureModel) -> tuple[QueryGraphModel, str]:
-        """
-        Prepare the graph to store
-
-        Parameters
-        ----------
-        feature: FeatureModel
-            Feature object
-
-        Returns
-        -------
-        Tuple[GraphNode, str]
-            GraphNode object & target node name
-        """
+    async def _prepare_graph_to_store(
+        self, feature: FeatureModel, sanitize_for_definition: bool = False
+    ) -> tuple[QueryGraphModel, str]:
         # reconstruct view graph node to remove unused column cleaning operations
         graph, node_name_map = await self.view_construction_service.construct_graph(
             query_graph=feature.graph,
@@ -118,9 +133,27 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         pruned_graph, pruned_node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
             target_node=node, aggressive=True
         )
+        if sanitize_for_definition:
+            pruned_graph = sanitize_query_graph_for_feature_definition(graph=pruned_graph)
         return pruned_graph, pruned_node_name_map[node.name]
 
-    async def create_document(self, data: FeatureCreate) -> FeatureModel:
+    async def prepare_feature_model(
+        self, data: FeatureCreate, sanitize_for_definition: bool
+    ) -> FeatureModel:
+        """
+        Prepare the feature model by pruning the query graph
+
+        Parameters
+        ----------
+        data: FeatureCreate
+            Feature creation data
+        sanitize_for_definition: bool
+            Whether to sanitize the query graph for generating feature definition
+
+        Returns
+        -------
+        FeatureModel
+        """
         document = FeatureModel(
             **{
                 **data.json_dict(),
@@ -131,43 +164,63 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             }
         )
 
-        # prepare the raw graph (without getting aggressively pruned) & aggressively pruned graph
-        raw_graph = document.graph
-        graph, node_name = await self.prepare_graph_to_store(feature=document)
+        # prepare the graph to store
+        graph, node_name = await self._prepare_graph_to_store(
+            feature=document, sanitize_for_definition=sanitize_for_definition
+        )
 
-        # create a new feature document (so that the derived attributes like table_ids is
-        # generated properly)
-        document = FeatureModel(**{**document.json_dict(), "graph": graph, "node_name": node_name})
+        # create a new feature document (so that the derived attributes like table_ids is generated properly)
+        return FeatureModel(**{**document.json_dict(), "graph": graph, "node_name": node_name})
 
+    async def prepare_feature_definition(self, document: FeatureModel) -> str:
+        """
+        Prepare the feature definition for the given feature document
+
+        Parameters
+        ----------
+        document: FeatureModel
+            Feature document
+
+        Returns
+        -------
+        str
+        """
+        # check whether table has been saved at persistent storage
+        table_service = TableService(
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+        )
+        table_id_to_info: Dict[ObjectId, Dict[str, Any]] = {}
+        for table_id in document.table_ids:
+            table = await table_service.get_document(document_id=table_id)
+            table_id_to_info[table_id] = table.dict()
+
+        # create feature definition
+        graph, node_name = document.graph, document.node_name
+        sdk_code_gen_state = SDKCodeExtractor(graph=graph).extract(
+            node=graph.get_node_by_name(node_name),
+            to_use_saved_data=True,
+            table_id_to_info=table_id_to_info,
+            output_id=document.id,
+        )
+        definition = sdk_code_gen_state.code_generator.generate(to_format=True)
+        return definition
+
+    async def create_document(self, data: FeatureCreate) -> FeatureModel:
+        document = await self.prepare_feature_model(data=data, sanitize_for_definition=False)
         async with self.persistent.start_transaction() as session:
             # check any conflict with existing documents
             await self._check_document_unique_constraints(document=document)
 
-            # check whether table has been saved at persistent storage
-            table_service = TableService(
-                user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-            )
-            table_id_to_info: Dict[ObjectId, Dict[str, Any]] = {}
-            for table_id in document.table_ids:
-                table = await table_service.get_document(document_id=table_id)
-                table_id_to_info[table_id] = table.dict()
+            # prepare feature definition
+            definition = await self.prepare_feature_definition(document=document)
 
-            # create feature definition
-            sdk_code_gen_state = SDKCodeExtractor(graph=graph).extract(
-                node=graph.get_node_by_name(node_name),
-                to_use_saved_data=True,
-                table_id_to_info=table_id_to_info,
-            )
-            definition = sdk_code_gen_state.code_generator.generate(to_format=True)
-
+            # insert the document
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
                 document={
                     **document.dict(by_alias=True),
-                    "graph": graph.dict(),
-                    "node_name": node_name,
                     "definition": definition,
-                    "raw_graph": raw_graph.dict(),
+                    "raw_graph": data.graph.dict(),
                 },
                 user_id=self.user.id,
             )

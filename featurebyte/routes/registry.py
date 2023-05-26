@@ -288,6 +288,7 @@ app_container_config.add_controller(
         "version_service",
         "info_service",
         "feature_store_warehouse_service",
+        "task_controller",
     ],
 )
 app_container_config.add_controller(
