@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Callable
 
 
-def set_progress_range(
+def get_ranged_progress_callback(
     progress_callback: Callable[[int, str], None],
     from_percent: int | float,
     to_percent: int | float,

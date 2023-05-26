@@ -16,7 +16,7 @@ from bson import ObjectId
 from pandas.api.types import is_datetime64_any_dtype
 from sqlglot import expressions
 
-from featurebyte.common.progress import set_progress_range
+from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logging import get_logger
@@ -660,7 +660,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals
     # Compute tiles on demand if required
     if not is_feature_list_deployed:
         tile_cache_progress_callback = (
-            set_progress_range(
+            get_ranged_progress_callback(
                 progress_callback,
                 0,
                 TILE_COMPUTE_PROGRESS_MAX_PERCENT,
@@ -680,7 +680,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals
                 request_table_columns=request_table_columns,
                 serving_names_mapping=serving_names_mapping,
                 parent_serving_preparation=parent_serving_preparation,
-                progress_callback=set_progress_range(
+                progress_callback=get_ranged_progress_callback(
                     tile_cache_progress_callback,
                     100 * i / len(node_groups),
                     100 * (i + 1) / len(node_groups),
@@ -708,7 +708,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals
     )
     await historical_feature_query_set.execute(
         session,
-        set_progress_range(
+        get_ranged_progress_callback(
             progress_callback,
             TILE_COMPUTE_PROGRESS_MAX_PERCENT,
             100,
