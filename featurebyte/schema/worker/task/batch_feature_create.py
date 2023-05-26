@@ -6,7 +6,6 @@ from __future__ import annotations
 from pydantic import Field
 
 from featurebyte.enum import WorkerCommand
-from featurebyte.models.feature import FeatureModel
 from featurebyte.schema.feature import BatchFeatureCreate
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 

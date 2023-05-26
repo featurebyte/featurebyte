@@ -832,7 +832,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
     ):
         """Test batch feature create async task"""
         _ = mock_snowflake_session
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
         # prepare batch feature create payload
@@ -879,7 +879,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         """Test batch feature create async task"""
         _ = mock_snowflake_session
         mock_is_generated_feature_consistent.return_value = False
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
         # prepare batch feature create payload

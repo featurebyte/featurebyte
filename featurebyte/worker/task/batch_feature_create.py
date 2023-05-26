@@ -117,6 +117,11 @@ class BatchFeatureCreateTask(BaseTask):
     async def execute(self) -> Any:
         """
         Execute Deployment Create & Update Task
+
+        Raises
+        ------
+        DocumentInconsistencyError
+            If the generated feature is not the same as the expected feature
         """
         payload = cast(BatchFeatureCreateTaskPayload, self.payload)
         feature_service: FeatureService = self.app_container.feature_service
