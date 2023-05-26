@@ -16,7 +16,7 @@ def progress_callback_fixture():
     return Mock(name="mock_progress_callback")
 
 
-def test_set_progress_range(progress_callback):
+def test_get_ranged_progress_callback(progress_callback):
     """
     Test that get_ranged_progress_callback works as expected
     """
@@ -30,7 +30,7 @@ def test_set_progress_range(progress_callback):
     ]
 
 
-def test_set_progress_range_nested(progress_callback):
+def test_get_ranged_progress_callback_nested(progress_callback):
     """
     Test that nested get_ranged_progress_callback calls work as expected
     """
