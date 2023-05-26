@@ -833,11 +833,20 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         test_api_client, persistent = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
-        # check feature is not created
-        response = test_api_client.get(f"{self.base_route}/{self.payload['_id']}")
-        assert response.status_code == HTTPStatus.NOT_FOUND
+        # prepare batch feature create payload
+        payload_1 = self.payload.copy()
+        payload_2 = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
+        feature_create_1 = FeatureCreate(**payload_1)
+        feature_create_2 = FeatureCreate(**payload_2)
+        feature_creates = [feature_create_1, feature_create_2]
+        batch_feature_create = BatchFeatureCreate.create(features=feature_creates)
 
-        batch_feature_create = BatchFeatureCreate.create(features=[FeatureCreate(**self.payload)])
+        # check feature is not created
+        for feat_create in feature_creates:
+            response = test_api_client.get(f"{self.base_route}/{feat_create.id}")
+            assert response.status_code == HTTPStatus.NOT_FOUND
+
+        # create feature
         task_response = test_api_client.post(
             f"{self.base_route}/batch", json=batch_feature_create.json_dict()
         )
@@ -848,5 +857,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response_dict["traceback"] is None
 
         # check feature is created
-        response = test_api_client.get(f"{self.base_route}/{self.payload['_id']}")
-        assert response.status_code == HTTPStatus.OK
+        for feat_create in feature_creates:
+            response = test_api_client.get(f"{self.base_route}/{feat_create.id}")
+            response_dict = response.json()
+            assert response_dict["name"] == feat_create.name
+            assert response.status_code == HTTPStatus.OK

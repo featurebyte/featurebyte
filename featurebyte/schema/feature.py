@@ -37,12 +37,14 @@ class FeatureCreate(FeatureByteBaseModel):
 class BatchFeatureItem(FeatureByteBaseModel):
     """
     Batch Feature Item schema
+
+    Note: feature_namespace_id is not included in this schema because there is no way to set it explicitly
+    through the SDK currently.
     """
 
     id: Optional[PydanticObjectId]
     name: StrictStr
     node_name: str
-    feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
     tabular_source: TabularSource
 
 
@@ -77,7 +79,6 @@ class BatchFeatureCreate(FeatureByteBaseModel):
                     id=feature.id,
                     name=feature.name,
                     node_name=node_name_map[feature.node_name],
-                    feature_namespace_id=feature.feature_namespace_id,
                     tabular_source=feature.tabular_source,
                 )
             )
@@ -105,7 +106,6 @@ class BatchFeatureCreate(FeatureByteBaseModel):
                 _id=feature.id,
                 name=feature.name,
                 node_name=node_name_map[feature.node_name],
-                feature_namespace_id=feature.feature_namespace_id,
                 graph=pruned_graph,
                 tabular_source=feature.tabular_source,
             )
