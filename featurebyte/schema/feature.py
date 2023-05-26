@@ -91,9 +91,10 @@ class BatchFeatureCreate(FeatureByteBaseModel):
         """
         Iterate over the batch feature create payload and yield feature create payloads
 
-        Returns
+        Yields
         -------
         Iterator[FeatureCreate]
+            List of feature create payloads
         """
         for feature in self.features:
             target_node = self.graph.get_node_by_name(feature.node_name)

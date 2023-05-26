@@ -35,9 +35,10 @@ async def set_environment_variable(variable: str, value: Any) -> AsyncIterator[N
     value: Any
         The value to set
 
-    Returns
-    -------
+    Yields
+    ------
     AsyncIterator[None]
+        The context manager
     """
     previous_value = os.environ.get(variable)
     os.environ[variable] = value
@@ -88,6 +89,11 @@ class BatchFeatureCreateTask(BaseTask):
             The feature document used to generate the feature definition
         definition: str
             Feature definition used at server side to generate the feature
+
+        Raises
+        ------
+        DocumentInconsistencyError
+            If the generated feature is not the same as the expected feature
         """
         # retrieve the saved feature & check if it is the same as the expected feature
         feature_service: FeatureService = self.app_container.feature_service
