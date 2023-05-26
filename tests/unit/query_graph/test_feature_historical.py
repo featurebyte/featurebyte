@@ -332,6 +332,7 @@ async def test_historical_feature_query_set_execute(mocked_session):
     """
     Test HistoricalFeatureQuerySet execution
     """
+    progress_callback = Mock(name="mock_progress_callback")
     feature_queries = [
         FeatureQuery(
             sql="some_feature_query_1",
@@ -348,7 +349,7 @@ async def test_historical_feature_query_set_execute(mocked_session):
         feature_queries=feature_queries,
         output_query="some_final_join_query",
     )
-    await historical_feature_query_set.execute(mocked_session)
+    await historical_feature_query_set.execute(mocked_session, progress_callback)
     assert mocked_session.execute_query_long_running.call_args_list == [
         call("some_feature_query_1"),
         call("some_feature_query_2"),
@@ -357,4 +358,9 @@ async def test_historical_feature_query_set_execute(mocked_session):
     assert mocked_session.drop_table.call_args_list == [
         call(database_name="sf_database", schema_name="sf_schema", table_name="A", if_exists=True),
         call(database_name="sf_database", schema_name="sf_schema", table_name="B", if_exists=True),
+    ]
+    assert progress_callback.call_args_list == [
+        call(33, "Computing features"),
+        call(66, "Computing features"),
+        call(100, "Computing features"),
     ]
