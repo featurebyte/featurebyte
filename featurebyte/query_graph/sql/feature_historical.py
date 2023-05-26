@@ -16,6 +16,7 @@ from bson import ObjectId
 from pandas.api.types import is_datetime64_any_dtype
 from sqlglot import expressions
 
+from featurebyte.common.progress import set_progress_range
 from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logging import get_logger
@@ -35,12 +36,14 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.manager import TILE_COMPUTE_PROGRESS_MAX_PERCENT
 from featurebyte.tile.tile_cache import TileCache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 NUM_FEATURES_PER_QUERY = 50
 FB_ROW_INDEX_FOR_JOIN = "__FB_ROW_INDEX_FOR_JOIN"
+
+PROGRESS_MESSAGE_COMPUTING_FEATURES = "Computing features"
+TILE_COMPUTE_PROGRESS_MAX_PERCENT = 50  #  Progress percentage to report at end of tile computation
 
 
 logger = get_logger(__name__)
@@ -175,7 +178,11 @@ class HistoricalFeatureQuerySet:
     feature_queries: list[FeatureQuery]
     output_query: str
 
-    async def execute(self, session: BaseSession) -> None:
+    async def execute(
+        self,
+        session: BaseSession,
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+    ) -> None:
         """
         Execute the feature queries to materialize historical features
 
@@ -183,13 +190,24 @@ class HistoricalFeatureQuerySet:
         ----------
         session: BaseSession
             Session object
+        progress_callback: Optional[Callable[[int, str], None]]
+            Optional progress callback function
         """
+        total_num_queries = len(self.feature_queries) + 1
         materialized_feature_table = []
         try:
-            for feature_query in self.feature_queries:
+            for i, feature_query in enumerate(self.feature_queries):
                 await session.execute_query_long_running(feature_query.sql)
                 materialized_feature_table.append(feature_query.table_name)
+                if progress_callback:
+                    progress_callback(
+                        int(100 * (i + 1) / total_num_queries),
+                        PROGRESS_MESSAGE_COMPUTING_FEATURES,
+                    )
+
             await session.execute_query_long_running(self.output_query)
+            if progress_callback:
+                progress_callback(100, PROGRESS_MESSAGE_COMPUTING_FEATURES)
 
         finally:
             for table_name in materialized_feature_table:
@@ -578,7 +596,7 @@ async def compute_tiles_on_demand(
     )
 
 
-async def get_historical_features(
+async def get_historical_features(  # pylint: disable=too-many-locals
     session: BaseSession,
     graph: QueryGraph,
     nodes: list[Node],
@@ -641,8 +659,17 @@ async def get_historical_features(
 
     # Compute tiles on demand if required
     if not is_feature_list_deployed:
+        tile_cache_progress_callback = (
+            set_progress_range(
+                progress_callback,
+                0,
+                TILE_COMPUTE_PROGRESS_MAX_PERCENT,
+            )
+            if progress_callback
+            else None
+        )
         tic = time.time()
-        for _nodes in node_groups:
+        for i, _nodes in enumerate(node_groups):
             logger.debug("Checking and computing tiles on demand for %d nodes", len(_nodes))
             await compute_tiles_on_demand(
                 session=session,
@@ -653,13 +680,20 @@ async def get_historical_features(
                 request_table_columns=request_table_columns,
                 serving_names_mapping=serving_names_mapping,
                 parent_serving_preparation=parent_serving_preparation,
-                progress_callback=progress_callback,
+                progress_callback=set_progress_range(
+                    tile_cache_progress_callback,
+                    100 * i / len(node_groups),
+                    100 * (i + 1) / len(node_groups),
+                )
+                if tile_cache_progress_callback
+                else None,
             )
+
         elapsed = time.time() - tic
         logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
 
     if progress_callback:
-        progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, "Computing features")
+        progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES)
 
     # Generate SQL code that computes the features
     historical_feature_query_set = get_historical_features_query_set(
@@ -672,5 +706,14 @@ async def get_historical_features(
         request_table_name=request_table_name,
         parent_serving_preparation=parent_serving_preparation,
     )
-    await historical_feature_query_set.execute(session)
+    await historical_feature_query_set.execute(
+        session,
+        set_progress_range(
+            progress_callback,
+            TILE_COMPUTE_PROGRESS_MAX_PERCENT,
+            100,
+        )
+        if progress_callback
+        else None,
+    )
     logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
