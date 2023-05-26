@@ -37,6 +37,7 @@ class BaseApiTestSuite:
     class_name = None
     payload = None
     async_create = False
+    time_limit = 10
     wrap_payload_on_create = False
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
@@ -158,6 +159,26 @@ class BaseApiTestSuite:
             json={"enabled": True},
         )
         assert response.status_code == HTTPStatus.OK, response.json()
+
+    def wait_for_results(self, api_client, create_response):
+        """
+        Wait for async job to complete
+        """
+        task_submission = create_response.json()
+        if not create_response.is_success:
+            raise AssertionError(f'Task submission failed: {task_submission["detail"]}')
+        task_id = task_submission["id"]
+
+        start_time = datetime.now()
+        while (datetime.now() - start_time).seconds < self.time_limit:
+            response = api_client.get(f"/task/{task_id}")
+            task_status = response.json()
+            status = task_status["status"]
+            if status not in ["PENDING", "RECEIVED", "STARTED"]:
+                if status in ["SUCCESS", "FAILURE"]:
+                    break
+            sleep(0.1)
+        return response
 
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """Setup for post route"""
@@ -435,29 +456,7 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
     BaseAsyncApiTestSuite contains common api tests with async creation routes
     """
 
-    time_limit = 10
     async_create = True
-
-    def wait_for_results(self, api_client, create_response):
-        """
-        Wait for async job to complete
-        """
-        task_submission = create_response.json()
-        if not create_response.is_success:
-            raise AssertionError(f'Task submission failed: {task_submission["detail"]}')
-        task_id = task_submission["id"]
-
-        start_time = datetime.now()
-        while (datetime.now() - start_time).seconds < self.time_limit:
-            response = api_client.get(f"/task/{task_id}")
-            task_status = response.json()
-            status = task_status["status"]
-            if status not in ["PENDING", "RECEIVED", "STARTED"]:
-                if status in ["SUCCESS", "FAILURE"]:
-                    break
-            sleep(0.1)
-
-        return response
 
     @pytest_asyncio.fixture()
     async def create_success_response(self, test_api_client_persistent):

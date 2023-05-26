@@ -16,6 +16,5 @@ class BatchFeatureCreateTaskPayload(BaseTaskPayload, BatchFeatureCreate):
     Batch Feature create task payload
     """
 
-    output_collection_name = FeatureModel.collection_name()
     command = WorkerCommand.BATCH_FEATURE_CREATE
     task_type: TaskType = Field(default=TaskType.CPU_TASK)

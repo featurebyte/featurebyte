@@ -34,7 +34,6 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
     payload = BaseAsyncApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_job_setting_analysis.json"
     )
-    async_create = True
 
     create_conflict_payload_expected_detail_pairs = [
         (
