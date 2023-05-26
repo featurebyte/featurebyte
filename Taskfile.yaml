@@ -212,7 +212,7 @@ tasks:
       - poetry.lock
       - pyproject.toml
       - featurebyte/**/*
-      - tests/**/*
+      - tests/unit/test_generate_payload_fixtures.py
     cmds:
       - poetry run pytest --timeout=240 --update-fixtures tests/unit/test_generate_payload_fixtures.py
 
