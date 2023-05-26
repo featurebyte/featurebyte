@@ -8,11 +8,11 @@ from typing import Any, Dict, cast
 import asyncio
 import concurrent.futures
 import os
+from contextlib import asynccontextmanager
 from pprint import pformat
 
 from bson import ObjectId
 
-from featurebyte.config import Configurations
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import activate_catalog
@@ -27,6 +27,20 @@ from featurebyte.service.table import TableService
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
+
+
+@asynccontextmanager
+async def set_environment_variable(variable, value):
+    previous_value = os.environ.get(variable)
+    os.environ[variable] = value
+
+    try:
+        yield
+    finally:
+        if previous_value is not None:
+            os.environ[variable] = previous_value
+        else:
+            del os.environ[variable]
 
 
 class BatchFeatureCreateTask(BaseTask):
@@ -52,8 +66,9 @@ class BatchFeatureCreateTask(BaseTask):
         activate_catalog(catalog_id=catalog_id)
 
         # execute the code
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            await asyncio.get_event_loop().run_in_executor(pool, exec, code)
+        async with set_environment_variable("SDK_EXECUTION_MODE", "SERVER"):
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
     async def prepare_feature_model(
         self, data: FeatureCreate, user_id: ObjectId, catalog_id: ObjectId
@@ -145,9 +160,6 @@ class BatchFeatureCreateTask(BaseTask):
                 f'output.save(_id=ObjectId("{document.id}"))'
             )
             logger.debug(f"Prepare to execute feature definition: \n{code}")
-
-            os.environ["SDK_EXECUTION_MODE"] = "SERVER"
-            logger.debug(f"Configuration: {Configurations().profile}")
 
             # execute the code to save the feature
             await self._execute_sdk_code(catalog_id=payload.catalog_id, code=code)

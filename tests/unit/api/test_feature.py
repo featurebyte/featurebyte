@@ -25,7 +25,6 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.table import Table
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
-    ObjectHasBeenSavedError,
     RecordCreationException,
     RecordDeletionException,
     RecordRetrievalException,
@@ -373,12 +372,15 @@ def test_feature_save__exception_due_to_feature_saved_before(float_feature, save
     """
     _ = saved_feature
     assert saved_feature.saved is True
-    with pytest.raises(ObjectHasBeenSavedError) as exc:
+    with pytest.raises(RecordCreationException) as exc:
         float_feature.save()
-    expected_msg = f'Feature (id: "{float_feature.id}") has been saved before.'
+    expected_msg = (
+        f'Feature (id: "{float_feature.id}") already exists. '
+        f'Get the existing object by `Feature.get_by_id(id="{float_feature.id}")`.'
+    )
     assert expected_msg in str(exc.value)
 
-    # check that saving a saved feature twice won't throw ObjectHasBeenSavedError
+    # check that saving a saved feature twice won't throw RecordCreationException
     feature_id = saved_feature.id
     saved_feature.save(conflict_resolution="retrieve")
     assert saved_feature.id == feature_id

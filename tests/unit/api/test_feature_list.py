@@ -18,7 +18,6 @@ from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
 from featurebyte.enum import InternalName
 from featurebyte.exception import (
-    DuplicatedRecordException,
     ObjectHasBeenSavedError,
     RecordCreationException,
     RecordDeletionException,
@@ -968,11 +967,15 @@ def test_save_feature_group(saved_feature_list):
         assert feature.saved is True
 
     # check that object has been saved error is thrown
-    feat = feature_group["feat_0"]
-    feat[feat < 0] = 0
-    feature_group["feat_0"] = feat
-    with pytest.raises(ObjectHasBeenSavedError):
+    with pytest.raises(RecordCreationException) as exc:
         feature_group.save()
+
+    feat_id = feature_group["feat_0"].id
+    expected_error = (
+        f'Feature (id: "{feat_id}") already exists. '
+        f'Get the existing object by `Feature.get_by_id(id="{feat_id}")`'
+    )
+    assert expected_error in str(exc.value)
 
     # check that "retrieve" conflict resolution works properly
     feature_group.save(conflict_resolution="retrieve")

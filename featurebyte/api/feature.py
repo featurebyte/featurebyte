@@ -717,14 +717,24 @@ class Feature(
         if sdk_execution_mode == "SERVER":
             super().save(conflict_resolution=conflict_resolution, _id=_id)
         else:
-            # TODO: handle conflict resolution
             feature_create = FeatureCreate(**self._get_create_payload())
-            self.post_async_task(
-                route="/feature/batch",
-                payload=BatchFeatureCreate.create([feature_create]).json_dict(),
-                retrieve_result=False,
-            )
-            object_dict = self._get_object_dict_by_id(id_value=feature_create.id)
+            try:
+                self.post_async_task(
+                    route="/feature/batch",
+                    payload=BatchFeatureCreate.create([feature_create]).json_dict(),
+                    retrieve_result=False,
+                )
+                object_dict = self._get_object_dict_by_id(id_value=feature_create.id)
+            except RecordCreationException as exc:
+                traceback_message = exc.response.json()["traceback"]
+                has_dup_exception = (
+                    "featurebyte.exception.DuplicatedRecordException" in traceback_message
+                )
+                if conflict_resolution == "retrieve" and has_dup_exception:
+                    object_dict = self._get_object_dict_by_name(name=feature_create.name)
+                else:
+                    raise exc
+
             type(self).__init__(self, **object_dict, **self._get_init_params_from_object())
 
     @typechecked
