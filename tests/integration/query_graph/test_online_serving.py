@@ -1,6 +1,7 @@
 """
 Integration test for online store SQL generation
 """
+import os
 import time
 from unittest.mock import patch
 
@@ -17,6 +18,7 @@ from tests.util.helper import create_batch_request_table_from_dataframe, fb_asse
 
 
 @pytest.fixture(name="features", scope="session")
+@patch.dict(os.environ, {"SDK_EXECUTION_MODE": "SERVER"})
 def features_fixture(event_table, source_type):
     """
     Fixture for feature

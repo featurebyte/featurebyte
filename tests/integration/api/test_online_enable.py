@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import time
 from textwrap import dedent
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -54,6 +55,7 @@ async def app_service_fixture(persistent):
         proc.terminate()
 
 
+@patch.dict(os.environ, {"SDK_EXECUTION_MODE": "SERVER"})
 @pytest.fixture(name="online_enabled_feature_list_and_deployment", scope="module")
 def online_enabled_feature_list_and_deployment_fixture(event_table, config):
     """
