@@ -643,7 +643,7 @@ async def get_historical_features(
     if not is_feature_list_deployed:
         tic = time.time()
         for _nodes in node_groups:
-            logger.debug(f"Checking and computing tiles on demand for %d nodes", len(_nodes))
+            logger.debug("Checking and computing tiles on demand for %d nodes", len(_nodes))
             await compute_tiles_on_demand(
                 session=session,
                 graph=graph,
@@ -656,7 +656,7 @@ async def get_historical_features(
                 progress_callback=progress_callback,
             )
         elapsed = time.time() - tic
-        logger.debug(f"Done checking and computing tiles on demand", extra={"duration": elapsed})
+        logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
 
     if progress_callback:
         progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, "Computing features")
