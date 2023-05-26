@@ -6,7 +6,7 @@ import textwrap
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -827,7 +827,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_batch_feature_create(self, test_api_client_persistent, mock_snowflake_session):
+    async def test_batch_feature_create__success(
+        self, test_api_client_persistent, mock_snowflake_session
+    ):
         """Test batch feature create async task"""
         _ = mock_snowflake_session
         test_api_client, persistent = test_api_client_persistent
@@ -846,7 +848,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             response = test_api_client.get(f"{self.base_route}/{feat_create.id}")
             assert response.status_code == HTTPStatus.NOT_FOUND
 
-        # create feature
+        # create batch feature create task
         task_response = test_api_client.post(
             f"{self.base_route}/batch", json=batch_feature_create.json_dict()
         )
@@ -862,3 +864,38 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             response_dict = response.json()
             assert response_dict["name"] == feat_create.name
             assert response.status_code == HTTPStatus.OK
+
+    @pytest.mark.asyncio
+    @patch(
+        "featurebyte.worker.task.batch_feature_create.BatchFeatureCreateTask.is_generated_feature_consistent",
+        new_callable=AsyncMock,
+    )
+    async def test_batch_feature_create__failure(
+        self,
+        mock_is_generated_feature_consistent,
+        test_api_client_persistent,
+        mock_snowflake_session,
+    ):
+        """Test batch feature create async task"""
+        _ = mock_snowflake_session
+        mock_is_generated_feature_consistent.return_value = False
+        test_api_client, persistent = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # prepare batch feature create payload
+        feature_create = FeatureCreate(**self.payload)
+        batch_feature_create = BatchFeatureCreate.create(features=[feature_create])
+
+        # create batch feature create task
+        task_response = test_api_client.post(
+            f"{self.base_route}/batch", json=batch_feature_create.json_dict()
+        )
+        response = self.wait_for_results(test_api_client, task_response)
+        response_dict = response.json()
+        expected_traceback = "featurebyte.exception.DocumentInconsistencyError: Inconsistent feature definition detected!"
+        assert expected_traceback in response_dict["traceback"]
+        assert response_dict["status"] == "FAILURE"
+
+        # check feature is not created
+        response = test_api_client.get(f"{self.base_route}/{feature_create.id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND

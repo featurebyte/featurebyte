@@ -79,7 +79,9 @@ class BatchFeatureCreateTask(BaseTask):
 
     payload_class = BatchFeatureCreateTaskPayload
 
-    async def validate_generated_feature(self, document: FeatureModel, definition: str) -> None:
+    async def is_generated_feature_consistent(
+        self, document: FeatureModel, definition: str
+    ) -> bool:
         """
         Validate the generated feature against the expected feature
 
@@ -90,17 +92,17 @@ class BatchFeatureCreateTask(BaseTask):
         definition: str
             Feature definition used at server side to generate the feature
 
-        Raises
-        ------
-        DocumentInconsistencyError
-            If the generated feature is not the same as the expected feature
+        Returns
+        -------
+        bool
         """
         # retrieve the saved feature & check if it is the same as the expected feature
         feature_service: FeatureService = self.app_container.feature_service
         feature = await feature_service.get_document(document_id=document.id)
         generated_hash = feature.graph.node_name_to_ref[feature.node_name]
         expected_hash = document.graph.node_name_to_ref[document.node_name]
-        if definition != feature.definition or expected_hash != generated_hash:
+        is_consistent = definition == feature.definition and expected_hash == generated_hash
+        if not is_consistent:
             # log the difference between the expected feature and the saved feature
             logger.debug(
                 "Generated feature is not the same as the expected feature",
@@ -110,10 +112,7 @@ class BatchFeatureCreateTask(BaseTask):
                     "match_definition": definition == feature.definition,
                 },
             )
-
-            # delete the generated feature & raise an error
-            await self.app_container.feature_controller.delete_feature(feature_id=document.id)
-            raise DocumentInconsistencyError("Inconsistent feature definition detected!")
+        return is_consistent
 
     async def execute(self) -> Any:
         """
@@ -135,7 +134,13 @@ class BatchFeatureCreateTask(BaseTask):
             await execute_sdk_code(catalog_id=payload.catalog_id, code=definition)
 
             # retrieve the saved feature & check if it is the same as the expected feature
-            await self.validate_generated_feature(document=document, definition=definition)
+            is_consistent = await self.is_generated_feature_consistent(
+                document=document, definition=definition
+            )
+            if not is_consistent:
+                # delete the generated feature & raise an error
+                await self.app_container.feature_controller.delete_feature(feature_id=document.id)
+                raise DocumentInconsistencyError("Inconsistent feature definition detected!")
 
             # update the progress
             percent = 100 * (i + 1) / total

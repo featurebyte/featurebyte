@@ -37,9 +37,6 @@ class FeatureCreate(FeatureByteBaseModel):
 class BatchFeatureItem(FeatureByteBaseModel):
     """
     Batch Feature Item schema
-
-    Note: feature_namespace_id is not included in this schema because there is no way to set it explicitly
-    through the SDK currently.
     """
 
     id: Optional[PydanticObjectId]
