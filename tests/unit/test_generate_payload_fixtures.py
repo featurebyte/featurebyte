@@ -182,9 +182,9 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             output_filenames.append(filename)
 
         # save feature & generate feature list namespace
-        with open(os.path.join(base_path, "feature_sum_30m.json"), "w") as fhandle:
+        with open(os.path.join(base_path, "feature_sum_30m.json")) as fhandle:
             feat_sum_30m_dict = json.load(fhandle)
-        with open(os.path.join(base_path, "feature_sum_2h.json"), "w") as fhandle:
+        with open(os.path.join(base_path, "feature_sum_2h.json")) as fhandle:
             feat_sum_2h_dict = json.load(fhandle)
         feature_list_namespace = FeatureListNamespaceModel(
             _id=ObjectId(),
