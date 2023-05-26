@@ -4,6 +4,7 @@ This module contains session to EventView integration tests
 import json
 import os.path
 from unittest import mock
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -553,6 +554,15 @@ def run_test_conditional_assign_feature(feature_group):
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
 
+@pytest.fixture
+def patched_num_features_per_query():
+    """
+    Patch the NUM_FEATURES_PER_QUERY parameter to trigger executing feature query in batches
+    """
+    with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 4):
+        yield
+
+
 @pytest.mark.parametrize(
     "in_out_formats",
     [
@@ -562,6 +572,7 @@ def run_test_conditional_assign_feature(feature_group):
     ],
 )
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
+@pytest.mark.usefixtures("patched_num_features_per_query")
 @pytest.mark.asyncio
 async def test_get_historical_features(
     session, data_source, feature_group, feature_group_per_category, in_out_formats

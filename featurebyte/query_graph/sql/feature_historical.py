@@ -3,13 +3,16 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import Callable, List, Optional, Union, cast
+from typing import Callable, List, Optional, Tuple, Union, cast
 
 import datetime
 import time
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
+import numpy as np
 import pandas as pd
+from bson import ObjectId
 from pandas.api.types import is_datetime64_any_dtype
 from sqlglot import expressions
 
@@ -25,6 +28,8 @@ from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     get_fully_qualified_table_name,
+    get_qualified_column_identifier,
+    quoted_identifier,
     sql_to_string,
 )
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
@@ -34,6 +39,8 @@ from featurebyte.tile.manager import TILE_COMPUTE_PROGRESS_MAX_PERCENT
 from featurebyte.tile.tile_cache import TileCache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
+NUM_FEATURES_PER_QUERY = 50
+FB_ROW_INDEX_FOR_JOIN = "__FB_ROW_INDEX_FOR_JOIN"
 
 
 logger = get_logger(__name__)
@@ -64,7 +71,10 @@ class ObservationSet(ABC):
 
     @abstractmethod
     async def register_as_request_table(
-        self, session: BaseSession, request_table_name: str
+        self,
+        session: BaseSession,
+        request_table_name: str,
+        add_row_index: bool,
     ) -> None:
         """
         Register the observation set as the request table in the session
@@ -75,6 +85,9 @@ class ObservationSet(ABC):
             Session
         request_table_name : str
             Request table name
+        add_row_index : bool
+            Whether to add row index column FB_ROW_INDEX_FOR_JOIN to the request table. This is
+            needed when the historical features are materialized in batches.
         """
 
 
@@ -95,8 +108,10 @@ class DataFrameObservationSet(ObservationSet):
         return self.dataframe[SpecialColumnName.POINT_IN_TIME].max()
 
     async def register_as_request_table(
-        self, session: BaseSession, request_table_name: str
+        self, session: BaseSession, request_table_name: str, add_row_index: bool
     ) -> None:
+        if add_row_index:
+            self.dataframe[FB_ROW_INDEX_FOR_JOIN] = np.arange(self.dataframe.shape[0])
         await session.register_table(request_table_name, self.dataframe)
 
 
@@ -117,15 +132,73 @@ class MaterializedTableObservationSet(ObservationSet):
         return pd.to_datetime(self.observation_table.most_recent_point_in_time)
 
     async def register_as_request_table(
-        self, session: BaseSession, request_table_name: str
+        self, session: BaseSession, request_table_name: str, add_row_index: bool
     ) -> None:
+        columns = ["*"]
+
+        if add_row_index:
+            row_number = expressions.Window(
+                this=expressions.Anonymous(this="ROW_NUMBER"),
+                order=expressions.Order(expressions=[expressions.Literal.number(1)]),
+            )
+            columns.append(
+                expressions.alias_(row_number, alias=FB_ROW_INDEX_FOR_JOIN, quoted=True),
+            )
+
         query = sql_to_string(
-            expressions.select("*").from_(
+            expressions.select(*columns).from_(
                 get_fully_qualified_table_name(self.observation_table.location.table_details.dict())
             ),
             source_type=session.source_type,
         )
         await session.register_table_with_query(request_table_name, query)
+
+
+@dataclass
+class FeatureQuery:
+    """
+    FeatureQuery represents a sql query that materializes a temporary table for a set of features
+    """
+
+    sql: str
+    table_name: str
+    feature_names: list[str]
+
+
+@dataclass
+class HistoricalFeatureQuerySet:
+    """
+    HistoricalFeatureQuerySet is a collection of FeatureQuery that materializes intermediate feature
+    tables and a final query that joins them into one.
+    """
+
+    feature_queries: list[FeatureQuery]
+    output_query: str
+
+    async def execute(self, session: BaseSession) -> None:
+        """
+        Execute the feature queries to materialize historical features
+
+        Parameters
+        ----------
+        session: BaseSession
+            Session object
+        """
+        materialized_feature_table = []
+        try:
+            for feature_query in self.feature_queries:
+                await session.execute_query_long_running(feature_query.sql)
+                materialized_feature_table.append(feature_query.table_name)
+            await session.execute_query_long_running(self.output_query)
+
+        finally:
+            for table_name in materialized_feature_table:
+                await session.drop_table(
+                    database_name=session.database_name,
+                    schema_name=session.schema_name,
+                    table_name=table_name,
+                    if_exists=True,
+                )
 
 
 def get_internal_observation_set(
@@ -162,17 +235,17 @@ def convert_point_in_time_dtype_if_needed(observation_set: pd.DataFrame) -> pd.D
     -------
     pd.DataFrame
     """
+    observation_set = observation_set.copy()
+
     if SpecialColumnName.POINT_IN_TIME not in observation_set.columns:
         return observation_set
 
     if not is_datetime64_any_dtype(observation_set[SpecialColumnName.POINT_IN_TIME]):
-        observation_set = observation_set.copy()
         observation_set[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
             observation_set[SpecialColumnName.POINT_IN_TIME]
         )
 
     # convert point in time to tz-naive UTC timestamps
-    observation_set = observation_set.copy()
     observation_set[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
         observation_set[SpecialColumnName.POINT_IN_TIME], utc=True
     ).dt.tz_localize(None)
@@ -230,7 +303,7 @@ def get_historical_features_expr(
     source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
-) -> expressions.Select:
+) -> Tuple[expressions.Select, list[str]]:
     """Construct the SQL code that extracts historical features
 
     Parameters
@@ -252,7 +325,8 @@ def get_historical_features_expr(
 
     Returns
     -------
-    expressions.Select
+    Tuple[expressions.Select], list[str]
+        Tuple of feature query syntax tree and the list of feature names
     """
     planner = FeatureExecutionPlanner(
         graph,
@@ -263,11 +337,179 @@ def get_historical_features_expr(
     )
     plan = planner.generate_plan(nodes)
 
-    return plan.construct_combined_sql(
+    historical_features_expr = plan.construct_combined_sql(
         request_table_name=request_table_name,
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=request_table_columns,
     )
+    feature_names = plan.feature_names
+    return historical_features_expr, feature_names
+
+
+def split_nodes(
+    nodes: list[Node],
+    num_features_per_query: int,
+) -> list[list[Node]]:
+    """
+    Split nodes into multiple lists, each containing at most `num_features_per_query` nodes. Nodes
+    within the same group after splitting will be executed in the same query.
+
+    Parameters
+    ----------
+    nodes : list[Node]
+        List of nodes
+    num_features_per_query : int
+        Number of features per query
+
+    Returns
+    -------
+    list[list[Node]]
+    """
+    result = []
+    for i in range(0, len(nodes), num_features_per_query):
+        current_nodes = nodes[i : i + num_features_per_query]
+        result.append(current_nodes)
+    return result
+
+
+def construct_join_feature_sets_query(
+    feature_queries: list[FeatureQuery],
+    request_table_name: str,
+    request_table_columns: list[str],
+) -> expressions.Select:
+    """
+    Construct the SQL code that joins the results of intermediate feature queries
+
+    Parameters
+    ----------
+    feature_queries : list[FeatureQuery]
+        List of feature queries
+    request_table_name : str
+        Name of request table
+    request_table_columns : list[str]
+        List of column names in the request table. This should exclude the FB_ROW_INDEX_FOR_JOIN
+        column which is only used for joining.
+
+    Returns
+    -------
+    expressions.Select
+    """
+    expr = expressions.select(
+        *(get_qualified_column_identifier(col, "REQ") for col in request_table_columns)
+    ).from_(f"{request_table_name} AS REQ")
+    for i, feature_set in enumerate(feature_queries):
+        table_alias = f"T{i}"
+        expr = expr.join(
+            expressions.Table(
+                this=quoted_identifier(feature_set.table_name),
+                alias=expressions.TableAlias(this=expressions.Identifier(this=table_alias)),
+            ),
+            join_type="left",
+            on=expressions.EQ(
+                this=get_qualified_column_identifier(FB_ROW_INDEX_FOR_JOIN, "REQ"),
+                expression=get_qualified_column_identifier(FB_ROW_INDEX_FOR_JOIN, table_alias),
+            ),
+        )
+        expr = expr.select(*[f'{table_alias}."{name}"' for name in feature_set.feature_names])
+    return expr
+
+
+def get_historical_features_query_set(
+    request_table_name: str,
+    graph: QueryGraph,
+    node_groups: list[list[Node]],
+    request_table_columns: list[str],
+    source_type: SourceType,
+    output_table_details: TableDetails,
+    serving_names_mapping: dict[str, str] | None = None,
+    parent_serving_preparation: Optional[ParentServingPreparation] = None,
+) -> HistoricalFeatureQuerySet:
+    """Construct the SQL code that extracts historical features
+
+    Parameters
+    ----------
+    request_table_name : str
+        Name of request table to use
+    graph : QueryGraph
+        Query graph
+    node_groups : list[list[Node]]
+        List of query graph node in groups
+    request_table_columns : list[str]
+        List of column names in the training events
+    source_type : SourceType
+        Source type information
+    output_table_details: TableDetails
+        Output table details to write the results to
+    serving_names_mapping : dict[str, str] | None
+        Optional mapping from original serving name to new serving name
+    parent_serving_preparation: Optional[ParentServingPreparation]
+        Preparation required for serving parent features
+
+    Returns
+    -------
+    HistoricalFeatureQuerySet
+    """
+    if len(node_groups) == 1:
+        # Fallback to simpler non-batched query if there is only one group to avoid overhead
+        sql_expr, _ = get_historical_features_expr(
+            graph=graph,
+            nodes=node_groups[0],
+            request_table_columns=request_table_columns,
+            serving_names_mapping=serving_names_mapping,
+            source_type=source_type,
+            request_table_name=request_table_name,
+            parent_serving_preparation=parent_serving_preparation,
+        )
+        output_query = sql_to_string(
+            get_sql_adapter(source_type).create_table_as(
+                table_details=output_table_details,
+                select_expr=sql_expr,
+            ),
+            source_type=source_type,
+        )
+        return HistoricalFeatureQuerySet(feature_queries=[], output_query=output_query)
+
+    feature_queries = []
+    feature_set_table_name_prefix = f"__TEMP_{ObjectId()}"
+
+    for i, nodes_group in enumerate(node_groups):
+        feature_set_expr, feature_names = get_historical_features_expr(
+            graph=graph,
+            nodes=nodes_group,
+            request_table_columns=[FB_ROW_INDEX_FOR_JOIN] + request_table_columns,
+            serving_names_mapping=serving_names_mapping,
+            source_type=source_type,
+            request_table_name=request_table_name,
+            parent_serving_preparation=parent_serving_preparation,
+        )
+        feature_set_table_name = f"{feature_set_table_name_prefix}_{i}"
+        query = sql_to_string(
+            get_sql_adapter(source_type).create_table_as(
+                table_details=TableDetails(table_name=feature_set_table_name),
+                select_expr=feature_set_expr,
+            ),
+            source_type,
+        )
+        feature_queries.append(
+            FeatureQuery(
+                sql=query,
+                table_name=feature_set_table_name,
+                feature_names=feature_names,
+            )
+        )
+    output_expr = construct_join_feature_sets_query(
+        feature_queries=feature_queries,
+        request_table_name=request_table_name,
+        request_table_columns=request_table_columns,
+    )
+    output_query = sql_to_string(
+        get_sql_adapter(source_type).create_table_as(
+            table_details=output_table_details,
+            select_expr=output_expr,
+        ),
+        source_type=source_type,
+    )
+    return HistoricalFeatureQuerySet(feature_queries=feature_queries, output_query=output_query)
 
 
 async def compute_tiles_on_demand(
@@ -306,7 +548,6 @@ async def compute_tiles_on_demand(
     progress_callback: Optional[Callable[[int, str], None]]
         Optional progress callback function
     """
-    tic = time.time()
     tile_cache = TileCache(session=session)
 
     if parent_serving_preparation is None:
@@ -335,8 +576,6 @@ async def compute_tiles_on_demand(
         serving_names_mapping=serving_names_mapping,
         progress_callback=progress_callback,
     )
-    elapsed = time.time() - tic
-    logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
 
 
 async def get_historical_features(
@@ -390,46 +629,48 @@ async def get_historical_features(
     # use a unique request table name
     request_id = session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
-
-    # Generate SQL code that computes the features
     request_table_columns = observation_set.columns
-    sql_expr = get_historical_features_expr(
-        graph=graph,
-        nodes=nodes,
-        request_table_columns=request_table_columns,
-        serving_names_mapping=serving_names_mapping,
-        source_type=source_type,
-        request_table_name=request_table_name,
-        parent_serving_preparation=parent_serving_preparation,
-    )
+
+    # Process nodes in batches
+    node_groups = split_nodes(nodes, NUM_FEATURES_PER_QUERY)
 
     # Execute feature SQL code
-    await observation_set.register_as_request_table(session, request_table_name)
+    await observation_set.register_as_request_table(
+        session, request_table_name, add_row_index=len(node_groups) > 1
+    )
 
     # Compute tiles on demand if required
     if not is_feature_list_deployed:
-        await compute_tiles_on_demand(
-            session=session,
-            graph=graph,
-            nodes=nodes,
-            request_id=request_id,
-            request_table_name=request_table_name,
-            request_table_columns=request_table_columns,
-            serving_names_mapping=serving_names_mapping,
-            parent_serving_preparation=parent_serving_preparation,
-            progress_callback=progress_callback,
-        )
+        tic = time.time()
+        for _nodes in node_groups:
+            logger.debug("Checking and computing tiles on demand for %d nodes", len(_nodes))
+            await compute_tiles_on_demand(
+                session=session,
+                graph=graph,
+                nodes=_nodes,
+                request_id=request_id,
+                request_table_name=request_table_name,
+                request_table_columns=request_table_columns,
+                serving_names_mapping=serving_names_mapping,
+                parent_serving_preparation=parent_serving_preparation,
+                progress_callback=progress_callback,
+            )
+        elapsed = time.time() - tic
+        logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
 
     if progress_callback:
         progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, "Computing features")
 
-    # Execute feature query but write results to a table
-    expression = get_sql_adapter(session.source_type).create_table_as(
-        table_details=output_table_details, select_expr=sql_expr
+    # Generate SQL code that computes the features
+    historical_feature_query_set = get_historical_features_query_set(
+        graph=graph,
+        node_groups=node_groups,
+        request_table_columns=request_table_columns,
+        serving_names_mapping=serving_names_mapping,
+        source_type=source_type,
+        output_table_details=output_table_details,
+        request_table_name=request_table_name,
+        parent_serving_preparation=parent_serving_preparation,
     )
-    query = sql_to_string(
-        expression,
-        source_type=session.source_type,
-    )
-    await session.execute_query_long_running(query)
+    await historical_feature_query_set.execute(session)
     logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")

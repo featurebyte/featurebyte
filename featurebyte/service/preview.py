@@ -609,7 +609,7 @@ class PreviewService(BaseService):
             feature_cluster.node_names[0]
         ).parameters.feature_store_details.type
 
-        expr = get_historical_features_expr(
+        expr, _ = get_historical_features_expr(
             request_table_name=REQUEST_TABLE_NAME,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,

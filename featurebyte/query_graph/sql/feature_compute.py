@@ -98,6 +98,16 @@ class FeatureExecutionPlan:
             out.update(aggregator.get_required_entity_ids())
         return out
 
+    @property
+    def feature_names(self) -> list[str]:
+        """Returns the list of feature names
+
+        Returns
+        -------
+        list[str]
+        """
+        return list(self.feature_specs.keys())
+
     def iter_aggregators(self) -> Iterable[AggregatorType]:
         """Iterate over all the aggregators
 
