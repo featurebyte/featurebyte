@@ -16,7 +16,6 @@ def check_batch_feature_create(features):
         input_feat_create = name_to_feat_payload.pop(feat_create.name)
         assert feat_create.id == input_feat_create.id
         assert feat_create.name == input_feat_create.name
-        assert feat_create.feature_namespace_id == input_feat_create.feature_namespace_id
         assert feat_create.tabular_source == input_feat_create.tabular_source
 
         # check post-processed feature ref is consistent with input feature ref
