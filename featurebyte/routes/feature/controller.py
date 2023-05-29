@@ -30,6 +30,7 @@ from featurebyte.schema.feature import (
     FeatureNewVersionCreate,
     FeaturePaginatedList,
     FeaturePreview,
+    FeatureServiceCreate,
     FeatureSQL,
     FeatureUpdate,
 )
@@ -95,7 +96,9 @@ class FeatureController(
             Newly created feature object
         """
         if isinstance(data, FeatureCreate):
-            document = await self.service.create_document(data=data)
+            document = await self.service.create_document(
+                data=FeatureServiceCreate(**data.json_dict())
+            )
         else:
             document = await self.version_service.create_new_feature_version(data=data)
 

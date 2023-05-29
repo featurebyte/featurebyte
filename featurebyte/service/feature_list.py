@@ -18,7 +18,7 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
 )
 from featurebyte.schema.feature import FeatureServiceUpdate
-from featurebyte.schema.feature_list import FeatureListCreate, FeatureListServiceUpdate
+from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
@@ -69,7 +69,7 @@ async def validate_feature_list_version_and_namespace_consistency(
 
 
 class FeatureListService(
-    BaseDocumentService[FeatureListModel, FeatureListCreate, FeatureListServiceUpdate]
+    BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]
 ):
     """
     FeatureListService class
@@ -180,7 +180,7 @@ class FeatureListService(
         count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
-    async def create_document(self, data: FeatureListCreate) -> FeatureListModel:
+    async def create_document(self, data: FeatureListServiceCreate) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(
             **{
@@ -191,24 +191,23 @@ class FeatureListService(
                 "catalog_id": self.catalog_id,
             }
         )
+        # check any conflict with existing documents
+        await self._check_document_unique_constraints(document=document)
+
+        # check whether the feature(s) in the feature list saved to persistent or not
+        feature_data = await self._extract_feature_data(document)
+        relationships_info = await self._extract_relationships_info(feature_data["features"])
+
+        # update document with derived output
+        document = FeatureListModel(
+            **{
+                **document.dict(by_alias=True),
+                "features": feature_data["features"],
+                "relationships_info": relationships_info,
+            }
+        )
 
         async with self.persistent.start_transaction() as session:
-            # check any conflict with existing documents
-            await self._check_document_unique_constraints(document=document)
-
-            # check whether the feature(s) in the feature list saved to persistent or not
-            feature_data = await self._extract_feature_data(document)
-            relationships_info = await self._extract_relationships_info(feature_data["features"])
-
-            # update document with derived output
-            document = FeatureListModel(
-                **{
-                    **document.dict(by_alias=True),
-                    "features": feature_data["features"],
-                    "relationships_info": relationships_info,
-                }
-            )
-
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
                 document=document.dict(by_alias=True),

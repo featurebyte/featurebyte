@@ -1278,8 +1278,6 @@ def api_object_to_id_fixture():
         "feature_iet",
         "feature_list_single",
         "feature_list_multi",
-        "feature_namespace",
-        "feature_list_namespace",
         "feature_job_setting_analysis",
         "context",
     ]

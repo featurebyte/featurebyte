@@ -22,12 +22,19 @@ from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, Pagi
 
 class FeatureListCreate(FeatureByteBaseModel):
     """
-    FeatureList Creation schema
+    Feature List Creation schema
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     feature_ids: List[PydanticObjectId] = Field(min_items=1)
+
+
+class FeatureListServiceCreate(FeatureListCreate):
+    """
+    Feature List Service Creation schema
+    """
+
     feature_list_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 

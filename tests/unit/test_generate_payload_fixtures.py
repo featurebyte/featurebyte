@@ -2,15 +2,9 @@
 Test module for generating payload fixtures for testing api route
 """
 import json
-import os.path
 
-from bson import ObjectId
-
-from featurebyte import AggFunc, DefaultVersionMode, FeatureJobSetting, FeatureList
-from featurebyte.enum import DBVarType
+from featurebyte import AggFunc, FeatureJobSetting, FeatureList
 from featurebyte.models.credential import UsernamePasswordCredential
-from featurebyte.models.feature import FeatureReadiness
-from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.request_input import SourceTableRequestInput
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
@@ -21,7 +15,6 @@ from featurebyte.schema.credential import CredentialCreate
 from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
-from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
@@ -69,16 +62,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     feature_list = FeatureList([feature_sum_30m], name="sf_feature_list")
     feature_list_multiple = FeatureList(
         [feature_sum_30m, feature_sum_2h], name="sf_feature_list_multiple"
-    )
-    feature_namespace = FeatureNamespaceCreate(
-        _id=ObjectId(),
-        name=feature_sum_30m.name,
-        dtype=DBVarType.FLOAT,
-        feature_ids=[feature_sum_30m.id],
-        readiness=FeatureReadiness.DRAFT,
-        default_feature_id=feature_sum_30m.id,
-        entity_ids=feature_sum_30m.entity_ids,
-        table_ids=feature_sum_30m.table_ids,
     )
     feature_job_setting_analysis = FeatureJobSettingAnalysisCreate(
         _id="62f301e841b73757c9ff879a",
@@ -181,30 +164,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
                 fhandle.write(json.dumps(json_payload, indent=4, sort_keys=True))
             output_filenames.append(filename)
 
-        # save feature & generate feature list namespace
-        with open(os.path.join(base_path, "feature_sum_30m.json")) as fhandle:
-            feat_sum_30m_dict = json.load(fhandle)
-        with open(os.path.join(base_path, "feature_sum_2h.json")) as fhandle:
-            feat_sum_2h_dict = json.load(fhandle)
-        feature_list_namespace = FeatureListNamespaceModel(
-            _id=ObjectId(),
-            name=feature_list_multiple.name,
-            feature_list_ids=[feature_list_multiple.id],
-            dtype_distribution=[{"dtype": "FLOAT", "count": 2}],
-            readiness_distribution=[{"readiness": "DRAFT", "count": 2}],
-            default_feature_list_id=feature_list_multiple.id,
-            default_version_mode=DefaultVersionMode.AUTO,
-            entity_ids=feature_sum_30m.entity_ids,
-            table_ids=feature_sum_30m.table_ids,
-            feature_namespace_ids=[
-                feat_sum_30m_dict["feature_namespace_id"],
-                feat_sum_2h_dict["feature_namespace_id"],
-            ],
-        )
-
         schema_payload_name_pairs = [
-            (feature_namespace, "feature_namespace"),
-            (feature_list_namespace, "feature_list_namespace"),
             (feature_job_setting_analysis, "feature_job_setting_analysis"),
             (context, "context"),
             (deployment, "deployment"),

@@ -20,7 +20,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
-from featurebyte.schema.feature import FeatureCreate, FeatureServiceUpdate
+from featurebyte.schema.feature import FeatureServiceCreate, FeatureServiceUpdate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceServiceUpdate,
@@ -71,7 +71,7 @@ async def validate_feature_version_and_namespace_consistency(
             )
 
 
-class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureServiceUpdate]):
+class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, FeatureServiceUpdate]):
     """
     FeatureService class
     """
@@ -120,7 +120,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         )
         return pruned_graph, pruned_node_name_map[node.name]
 
-    async def create_document(self, data: FeatureCreate) -> FeatureModel:
+    async def create_document(self, data: FeatureServiceCreate) -> FeatureModel:
         document = FeatureModel(
             **{
                 **data.json_dict(),
