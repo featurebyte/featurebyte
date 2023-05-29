@@ -182,8 +182,8 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         self.setup_creation_route(test_api_client)
 
         # save another feature
-        payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
-        response = test_api_client.post("/feature", json=payload)
+        feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
+        response = test_api_client.post("/feature", json=feature_payload)
         assert response.status_code == HTTPStatus.CREATED
 
         # make sure the payload feature_ids is in non-sorted order
