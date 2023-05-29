@@ -158,7 +158,16 @@ def snowflake_query_map_fixture():
     query_map = {
         "SHOW DATABASES": [{"name": "sf_database"}],
         'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],
-        'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_table"}],
+        'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [
+            {"name": "sf_table"},
+            {"name": "sf_table_no_tz"},
+            {"name": "items_table"},
+            {"name": "items_table_same_event_id"},
+            {"name": "fixed_table"},
+            {"name": "non_scalar_table"},
+            {"name": "scd_table"},
+            {"name": "dimension_table"},
+        ],
         'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_view"}],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
             {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},

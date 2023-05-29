@@ -58,6 +58,13 @@ async def test_snowflake_session__credential_from_config(snowflake_session_dict)
     assert await session.list_schemas(database_name="sf_database") == ["sf_schema"]
     assert await session.list_tables(database_name="sf_database", schema_name="sf_schema") == [
         "sf_table",
+        "sf_table_no_tz",
+        "items_table",
+        "items_table_same_event_id",
+        "fixed_table",
+        "non_scalar_table",
+        "scd_table",
+        "dimension_table",
         "sf_view",
     ]
     assert await session.list_table_schema(
