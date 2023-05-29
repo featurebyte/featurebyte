@@ -3,12 +3,12 @@ Batch feature create task
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, cast
+from typing import Any, Iterator, cast
 
 import asyncio
 import concurrent.futures
 import os
-from contextlib import asynccontextmanager
+from contextlib import contextmanager
 
 from bson import ObjectId
 
@@ -23,8 +23,8 @@ from featurebyte.worker.task.base import BaseTask
 logger = get_logger(__name__)
 
 
-@asynccontextmanager
-async def set_environment_variable(variable: str, value: Any) -> AsyncIterator[None]:
+@contextmanager
+def set_environment_variable(variable: str, value: Any) -> Iterator[None]:
     """
     Set the environment variable within the context
 
@@ -37,7 +37,7 @@ async def set_environment_variable(variable: str, value: Any) -> AsyncIterator[N
 
     Yields
     ------
-    AsyncIterator[None]
+    Iterator[None]
         The context manager
     """
     previous_value = os.environ.get(variable)
@@ -67,7 +67,7 @@ async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
     activate_catalog(catalog_id=catalog_id)
 
     # execute the code
-    async with set_environment_variable("SDK_EXECUTION_MODE", "SERVER"):
+    with set_environment_variable("SDK_EXECUTION_MODE", "SERVER"):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 

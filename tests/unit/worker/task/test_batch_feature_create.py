@@ -20,11 +20,10 @@ def fixture_catalog(snowflake_feature_store):
     return catalog
 
 
-@pytest.mark.asyncio
-async def test_set_environment_variable():
+def test_set_environment_variable():
     """Test set environment variable"""
     assert "TEST_ENV" not in os.environ
-    async with set_environment_variable("TEST_ENV", "TEST"):
+    with set_environment_variable("TEST_ENV", "TEST"):
         assert os.environ["TEST_ENV"] == "TEST"
     assert "TEST_ENV" not in os.environ
 
