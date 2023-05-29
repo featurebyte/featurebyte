@@ -21,7 +21,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
-from featurebyte.schema.feature import FeatureCreate, FeatureServiceUpdate
+from featurebyte.schema.feature import FeatureServiceCreate, FeatureServiceUpdate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceServiceUpdate,
@@ -97,7 +97,7 @@ def sanitize_query_graph_for_feature_definition(graph: QueryGraphModel) -> Query
     return QueryGraphModel(**output)
 
 
-class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureServiceUpdate]):
+class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, FeatureServiceUpdate]):
     """
     FeatureService class
     """
@@ -138,7 +138,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         return pruned_graph, pruned_node_name_map[node.name]
 
     async def prepare_feature_model(
-        self, data: FeatureCreate, sanitize_for_definition: bool
+        self, data: FeatureServiceCreate, sanitize_for_definition: bool
     ) -> FeatureModel:
         """
         Prepare the feature model by pruning the query graph
@@ -205,7 +205,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         definition = sdk_code_gen_state.code_generator.generate(to_format=True)
         return definition
 
-    async def create_document(self, data: FeatureCreate) -> FeatureModel:
+    async def create_document(self, data: FeatureServiceCreate) -> FeatureModel:
         document = await self.prepare_feature_model(data=data, sanitize_for_definition=False)
         async with self.persistent.start_transaction() as session:
             # check any conflict with existing documents

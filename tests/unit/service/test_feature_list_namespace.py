@@ -5,8 +5,8 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import FeatureListStatus
-from featurebyte.schema.feature import FeatureCreate
-from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.feature import FeatureServiceCreate
+from featurebyte.schema.feature_list import FeatureListServiceCreate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 
 
@@ -24,14 +24,16 @@ async def test_update_document(
     feat_dict = feature.dict(by_alias=True)
     feat_dict["_id"] = ObjectId()
     feat_dict["version"] = {"name": "V220917"}
-    new_feat = await feature_service.create_document(data=FeatureCreate(**feat_dict))
+    new_feat = await feature_service.create_document(data=FeatureServiceCreate(**feat_dict))
 
     # add new feature list with the same feature list namespace ID
     flist_dict = feature_list.dict(by_alias=True)
     flist_dict["_id"] = ObjectId()
     flist_dict["version"] = {"name": "V220917"}
     flist_dict["feature_ids"] = [new_feat.id]
-    new_flist = await feature_list_service.create_document(data=FeatureListCreate(**flist_dict))
+    new_flist = await feature_list_service.create_document(
+        data=FeatureListServiceCreate(**flist_dict)
+    )
 
     # check updated namespace
     namespace = await feature_list_namespace_service.get_document(
@@ -44,7 +46,7 @@ async def test_update_document(
     feat_dict["_id"] = ObjectId()
     feat_dict["name"] = "random_name"
     feat_dict["feature_namespace_id"] = ObjectId()
-    new_feat = await feature_service.create_document(data=FeatureCreate(**feat_dict))
+    new_feat = await feature_service.create_document(data=FeatureServiceCreate(**feat_dict))
     assert new_feat.feature_namespace_id != feature.feature_namespace_id
 
     # add a new feature list with different feature list namespace ID
@@ -54,7 +56,9 @@ async def test_update_document(
     flist_dict["version"] = {"name": "V220917"}
     flist_dict["feature_ids"] = [new_feat.id]
     flist_dict["feature_list_namespace_id"] = ObjectId()
-    new_flist = await feature_list_service.create_document(data=FeatureListCreate(**flist_dict))
+    new_flist = await feature_list_service.create_document(
+        data=FeatureListServiceCreate(**flist_dict)
+    )
 
     # check updated namespace
     namespace = await feature_list_namespace_service.get_document(

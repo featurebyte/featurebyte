@@ -13,7 +13,7 @@ from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundEr
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import SQLiteDetails
-from featurebyte.schema.feature import FeatureCreate
+from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.service.feature import FeatureService, sanitize_query_graph_for_feature_definition
 
 
@@ -57,7 +57,7 @@ async def test_update_document__inconsistency_error(feature_service, feature):
     data_dict["name"] = "random_name"
     with pytest.raises(DocumentInconsistencyError) as exc:
         await feature_service.create_document(
-            data=FeatureCreate(**data_dict),
+            data=FeatureServiceCreate(**data_dict),
         )
     expected_msg = (
         'Feature (name: "random_name") object(s) within the same namespace must have the same "name" value '
