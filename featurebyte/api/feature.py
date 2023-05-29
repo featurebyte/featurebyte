@@ -46,9 +46,9 @@ from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSet
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.feature import (
-    FeatureCreate,
     FeatureModelResponse,
     FeaturePreview,
+    FeatureServiceCreate,
     FeatureSQL,
     FeatureUpdate,
 )
@@ -109,7 +109,7 @@ class Feature(
         return {"feature_store": self.feature_store}
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = FeatureCreate(**self.json_dict())
+        data = FeatureServiceCreate(**self.json_dict())
         return data.json_dict()
 
     def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:

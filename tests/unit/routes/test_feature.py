@@ -22,15 +22,6 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
-def _replace_groupby_node_entity_ids(payload, entity_ids):
-    """Replace groupby node entity_ids with the given entity_ids"""
-    output = copy.deepcopy(payload)
-    for i, node in enumerate(payload["graph"]["nodes"]):
-        if node["type"] == "groupby":
-            output["graph"]["nodes"][i]["parameters"]["entity_ids"] = entity_ids
-    return output
-
-
 class TestFeatureApi(BaseCatalogApiTestSuite):
     """
     TestFeatureApi class
@@ -93,24 +84,6 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                     "type": "value_error.missing",
                 },
             ],
-        ),
-        (
-            {**payload, "_id": object_id, "name": "random_name"},
-            (
-                'Feature (name: "random_name") object(s) within the same namespace must have '
-                'the same "name" value (namespace: "sum_30m", feature: "random_name").'
-            ),
-        ),
-        (
-            {
-                **_replace_groupby_node_entity_ids(payload, ["631161373527e8d21e4197ac"]),
-                "_id": object_id,
-            },
-            (
-                'Feature (name: "sum_30m") object(s) within the same namespace must have '
-                "the same \"entity_ids\" value (namespace: ['63f94ed6ea1f050131379214'], "
-                "feature: ['631161373527e8d21e4197ac'])."
-            ),
         ),
         (
             {**payload, "node_name": "groupby_1"},
@@ -180,38 +153,6 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             response_dict["created_at"]
         )
         assert feat_namespace_docs[0]["updated_at"] is None
-
-        # create a new feature version with the same namespace
-        new_payload = self.payload.copy()
-        new_payload["_id"] = str(ObjectId())
-        new_response = test_api_client.post("/feature", json=new_payload)
-        new_response_dict = new_response.json()
-        # graph gets aggressively pruned during saving and hash is regenerated
-        expected_response = new_payload.copy()
-        expected_response["graph"] = new_response_dict["graph"]
-        assert new_response.status_code == HTTPStatus.CREATED
-        expected_response.pop("_COMMENT")
-        assert new_response_dict.items() >= expected_response.items()
-        assert new_response_dict["version"] == {"name": get_version(), "suffix": 1}
-
-        # check feature namespace with the new feature version
-        feat_namespace_docs, match_count = await persistent.find(
-            collection_name="feature_namespace",
-            query_filter={"name": self.payload["name"]},
-        )
-        assert match_count == 1
-        assert feat_namespace_docs[0]["name"] == self.payload["name"]
-        assert feat_namespace_docs[0]["feature_ids"] == [
-            ObjectId(self.payload["_id"]),
-            ObjectId(new_payload["_id"]),
-        ]
-        assert feat_namespace_docs[0]["readiness"] == "DRAFT"
-        assert feat_namespace_docs[0]["default_feature_id"] == ObjectId(new_payload["_id"])
-        assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
-        assert feat_namespace_docs[0]["created_at"] >= datetime.fromisoformat(
-            response_dict["created_at"]
-        )
-        assert feat_namespace_docs[0]["updated_at"] > feat_namespace_docs[0]["created_at"]
 
     def test_create_201__create_new_version(
         self, test_api_client_persistent, create_success_response

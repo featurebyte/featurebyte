@@ -8,7 +8,7 @@ from featurebyte import FeatureJobSetting, TableFeatureJobSetting
 from featurebyte.exception import DocumentError, DocumentInconsistencyError
 from featurebyte.models.entity import ParentEntity
 from featurebyte.schema.entity import EntityCreate
-from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
+from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListNewVersionCreate,
@@ -40,7 +40,7 @@ async def test_update_document__inconsistency_error(
     feat_data_dict["_id"] = ObjectId()
     feat_data_dict["name"] = "random_name"
     feat_data_dict["feature_namespace_id"] = ObjectId()
-    new_feat = await feature_service.create_document(data=FeatureCreate(**feat_data_dict))
+    new_feat = await feature_service.create_document(data=FeatureServiceCreate(**feat_data_dict))
 
     flist_data_dict = feature_list.dict(by_alias=True)
     flist_data_dict["_id"] = ObjectId()

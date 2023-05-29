@@ -26,7 +26,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.generic import GroupByNode
-from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
+from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
@@ -265,7 +265,7 @@ class VersionService(BaseService):
             use_source_settings=False,
         )
         return await self.feature_service.create_document(
-            data=FeatureCreate(**new_feature.dict(by_alias=True))
+            data=FeatureServiceCreate(**new_feature.dict(by_alias=True))
         )
 
     async def create_new_feature_version_using_source_settings(

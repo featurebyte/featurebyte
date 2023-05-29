@@ -26,7 +26,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableCleaningOperation,
 )
 from featurebyte.schema.event_table import EventTableServiceUpdate
-from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
+from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListNewVersionCreate,
@@ -239,7 +239,7 @@ async def feature_sum_2h_fixture(test_dir, feature_service, feature):
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_2h.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature = await feature_service.create_document(data=FeatureCreate(**payload))
+        feature = await feature_service.create_document(data=FeatureServiceCreate(**payload))
         return feature
 
 

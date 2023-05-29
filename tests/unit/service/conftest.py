@@ -22,7 +22,7 @@ from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_table import DimensionTableCreate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.event_table import EventTableCreate, EventTableServiceUpdate
-from featurebyte.schema.feature import FeatureCreate
+from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
@@ -392,7 +392,7 @@ def feature_factory_fixture(test_dir, feature_service):
         fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
         with open(fixture_path, encoding="utf") as fhandle:
             payload = json.loads(fhandle.read())
-            feature = await feature_service.create_document(data=FeatureCreate(**payload))
+            feature = await feature_service.create_document(data=FeatureServiceCreate(**payload))
             return feature
 
     return factory
@@ -412,7 +412,7 @@ async def feature_iet_fixture(test_dir, event_table, entity, feature_service):
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_iet.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature = await feature_service.create_document(data=FeatureCreate(**payload))
+        feature = await feature_service.create_document(data=FeatureServiceCreate(**payload))
         return feature
 
 
@@ -425,7 +425,7 @@ async def feature_non_time_based_fixture(
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_item_event.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature = await feature_service.create_document(data=FeatureCreate(**payload))
+        feature = await feature_service.create_document(data=FeatureServiceCreate(**payload))
         return feature
 
 
@@ -438,7 +438,7 @@ async def feature_item_event_fixture(
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_item_event.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature = await feature_service.create_document(data=FeatureCreate(**payload))
+        feature = await feature_service.create_document(data=FeatureServiceCreate(**payload))
         return feature
 
 
@@ -510,7 +510,7 @@ async def insert_feature_into_persistent(
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
     with open(fixture_path) as fhandle:
         payload = json.loads(fhandle.read())
-        payload = FeatureCreate(**payload, user_id=user.id).dict(by_alias=True)
+        payload = FeatureServiceCreate(**payload, user_id=user.id).dict(by_alias=True)
         payload["_id"] = ObjectId()
         payload["readiness"] = readiness
         payload["catalog_id"] = catalog_id or DEFAULT_CATALOG_ID

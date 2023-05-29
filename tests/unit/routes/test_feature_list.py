@@ -90,24 +90,41 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             )
             assert response.status_code == HTTPStatus.CREATED, response.json()
 
+    @staticmethod
+    def _save_a_new_version(api_client, feature_id, time_modulo_frequency=None):
+        """Save a new version of a feature"""
+        feature_response = api_client.post(
+            "/feature",
+            json={
+                "source_feature_id": feature_id,
+                "table_feature_job_settings": [
+                    {
+                        "table_name": "sf_event_table",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": time_modulo_frequency or "12h",
+                        },
+                    }
+                ],
+            },
+        )
+        assert feature_response.status_code == HTTPStatus.CREATED, feature_response.text
+        return feature_response
+
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
+        feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
         for i in range(3):
             # make a new feature from feature_sum_30m & create a new feature_ids
-            feature_payload = self.load_payload(
-                "tests/fixtures/request_payloads/feature_sum_30m.json"
-            )
-            new_feature_id = str(ObjectId())
-            response = api_client.post(
-                "/feature",
-                json={**feature_payload, "_id": new_feature_id},
-            )
+            response = self._save_a_new_version(api_client, feature_payload["_id"], f"{i+1}h")
             assert response.status_code == HTTPStatus.CREATED
+            new_version_id = response.json()["_id"]
 
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
-            payload["feature_ids"] = [new_feature_id]
+            payload["feature_ids"] = [new_version_id]
             payload["feature_list_namespace_id"] = str(ObjectId())
             yield payload
 
@@ -127,19 +144,13 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         test_api_client, persistent = test_api_client_persistent
         # create a new feature
-        feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
-        feature_payload["version"] = {"name": get_version(), "suffix": 1}
-        feature_id = await persistent.insert_one(
-            collection_name="feature",
-            document={
-                **feature_payload,
-                "_id": ObjectId(),
-                "user_id": ObjectId(user_id),
-                "readiness": "PRODUCTION_READY",
-                "catalog_id": DEFAULT_CATALOG_ID,
-            },
-            user_id=user_id,
+        feature_response = self._save_a_new_version(test_api_client, result["feature_ids"][0])
+        feature_id = feature_response.json()["_id"]
+        response = test_api_client.patch(
+            f"/feature/{feature_id}",
+            json={"readiness": "PRODUCTION_READY", "ignore_guardrails": True},
         )
+        assert response.status_code == HTTPStatus.OK, response.json()
 
         # prepare a new payload with existing feature list namespace
         new_payload = self.payload.copy()
@@ -193,22 +204,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # create a new feature version
         feature_id = create_response_dict["feature_ids"][0]
-        feature_response = test_api_client.post(
-            "/feature",
-            json={
-                "source_feature_id": feature_id,
-                "table_feature_job_settings": [
-                    {
-                        "table_name": "sf_event_table",
-                        "feature_job_setting": {
-                            "blind_spot": "1d",
-                            "frequency": "1d",
-                            "time_modulo_frequency": "1h",
-                        },
-                    }
-                ],
-            },
-        )
+        feature_response = self._save_a_new_version(test_api_client, feature_id)
         feature_response_dict = feature_response.json()
 
         # then create a new feature list version
@@ -286,11 +282,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         self.setup_creation_route(api_client=test_api_client)
 
         # create another feature with the same name
-        feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
-        new_feature_id = str(ObjectId())
-        feature_payload["_id"] = new_feature_id
-        response = test_api_client.post("/feature", json=feature_payload)
+        feature_dict = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        response = self._save_a_new_version(test_api_client, feature_dict["_id"])
         assert response.status_code == HTTPStatus.CREATED, response.text
+        new_feature_id = response.json()["_id"]
 
         payload = self.load_payload("tests/fixtures/request_payloads/feature_list_single.json")
         payload["feature_ids"].append(new_feature_id)
@@ -352,22 +347,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # create a new feature version
         feature_id = create_response_dict["feature_ids"][0]
-        feature_response = test_api_client.post(
-            "/feature",
-            json={
-                "source_feature_id": feature_id,
-                "table_feature_job_settings": [
-                    {
-                        "table_name": "sf_event_table",
-                        "feature_job_setting": {
-                            "blind_spot": "1d",
-                            "frequency": "1d",
-                            "time_modulo_frequency": "1h",
-                        },
-                    }
-                ],
-            },
-        )
+        feature_response = self._save_a_new_version(test_api_client, feature_id)
         assert feature_response.status_code == HTTPStatus.CREATED
 
         # then create a new feature list version

@@ -148,7 +148,9 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         ]
         self.post_payloads(test_api_client, api_object_filename_pairs, None)
         payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
-        doc_id = payload["feature_namespace_id"]
+        feature_id = payload["_id"]
+        feature_response = test_api_client.get(f"/feature/{feature_id}")
+        doc_id = feature_response.json()["feature_namespace_id"]
         response = test_api_client.patch(
             f"{self.base_route}/{doc_id}", json={"default_version_mode": "MANUAL"}
         )
