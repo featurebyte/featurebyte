@@ -126,6 +126,7 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
     }
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_get_online_serving_code(online_enabled_feature_list_and_deployment, app_service):
     """
     Get the code for online serving
