@@ -25,7 +25,7 @@ from tests.unit.routes.base import BaseApiTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-class TestFeatureStoreApi(BaseApiTestSuite):
+class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-methods
     """
     TestFeatureStoreApi
     """
@@ -152,6 +152,25 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             ],
         }
 
+    def test_list_schemas__424(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
+        """
+        Test list schemas with non-existent database
+        """
+        test_api_client, _ = test_api_client_persistent
+        assert create_success_response.status_code == HTTPStatus.CREATED
+        feature_store = create_success_response.json()
+
+        mock_get_session.return_value.list_databases.return_value = ["database"]
+        response = test_api_client.post(
+            f"{self.base_route}/schema/?database_name=some_database", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.FAILED_DEPENDENCY
+        assert response.json() == {
+            "detail": "Database not found. Please specify a valid database name.",
+        }
+
     def test_list_schemas__200(
         self, test_api_client_persistent, create_success_response, mock_get_session
     ):
@@ -162,15 +181,16 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
+        mock_get_session.return_value.list_databases.return_value = ["x"]
         schemas = ["a", "b", "c"]
         mock_get_session.return_value.list_schemas.return_value = schemas
         response = test_api_client.post(
-            f"{self.base_route}/schema?database_name=x", json=feature_store
+            f"{self.base_route}/schema?database_name=X", json=feature_store
         )
         assert response.status_code == HTTPStatus.OK
         assert response.json() == schemas
 
-    def test_list_tables_422(self, test_api_client_persistent, create_success_response):
+    def test_list_tables__422(self, test_api_client_persistent, create_success_response):
         """
         Test list tables
         """
@@ -195,6 +215,27 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             ],
         }
 
+    def test_list_tables__424(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
+        """
+        Test list tables with non-existent schema
+        """
+        test_api_client, _ = test_api_client_persistent
+        assert create_success_response.status_code == HTTPStatus.CREATED
+        feature_store = create_success_response.json()
+
+        mock_get_session.return_value.list_databases.return_value = ["database"]
+        mock_get_session.return_value.list_schemas.return_value = ["schema"]
+        response = test_api_client.post(
+            f"{self.base_route}/table/?database_name=database&schema_name=some_schema",
+            json=feature_store,
+        )
+        assert response.status_code == HTTPStatus.FAILED_DEPENDENCY
+        assert response.json() == {
+            "detail": "Schema not found. Please specify a valid schema name.",
+        }
+
     def test_list_tables__200(
         self, test_api_client_persistent, create_success_response, mock_get_session
     ):
@@ -205,10 +246,12 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
+        mock_get_session.return_value.list_databases.return_value = ["x"]
+        mock_get_session.return_value.list_schemas.return_value = ["y"]
         tables = ["a", "b", "c", "__d", "__e", "__f"]
         mock_get_session.return_value.list_tables.return_value = tables
         response = test_api_client.post(
-            f"{self.base_route}/table?database_name=x&schema_name=y", json=feature_store
+            f"{self.base_route}/table?database_name=X&schema_name=Y", json=feature_store
         )
         assert response.status_code == HTTPStatus.OK
         # tables with names that has a "__" prefix should be excluded
@@ -244,6 +287,28 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             ],
         }
 
+    def test_list_columns__424(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
+        """
+        Test list columns with non-existent table
+        """
+        test_api_client, _ = test_api_client_persistent
+        assert create_success_response.status_code == HTTPStatus.CREATED
+        feature_store = create_success_response.json()
+
+        mock_get_session.return_value.list_databases.return_value = ["database"]
+        mock_get_session.return_value.list_schemas.return_value = ["schema"]
+        mock_get_session.return_value.list_tables.return_value = ["table"]
+        response = test_api_client.post(
+            f"{self.base_route}/column?database_name=database&schema_name=schema&table_name=some_table",
+            json=feature_store,
+        )
+        assert response.status_code == HTTPStatus.FAILED_DEPENDENCY
+        assert response.json() == {
+            "detail": "Table not found. Please specify a valid table name.",
+        }
+
     def test_list_columns__200(
         self, test_api_client_persistent, create_success_response, mock_get_session
     ):
@@ -254,10 +319,13 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
+        mock_get_session.return_value.list_databases.return_value = ["x"]
+        mock_get_session.return_value.list_schemas.return_value = ["y"]
+        mock_get_session.return_value.list_tables.return_value = ["z"]
         columns = {"a": "TIMESTAMP", "b": "INT", "c": "BOOL"}
         mock_get_session.return_value.list_table_schema.return_value = columns
         response = test_api_client.post(
-            f"{self.base_route}/column?database_name=x&schema_name=y&table_name=z",
+            f"{self.base_route}/column?database_name=X&schema_name=Y&table_name=Z",
             json=feature_store,
         )
         assert response.status_code == HTTPStatus.OK
