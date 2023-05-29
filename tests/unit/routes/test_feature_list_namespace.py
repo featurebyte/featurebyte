@@ -2,16 +2,12 @@
 Test for FeatureListNamespace route
 """
 from http import HTTPStatus
-from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
 from bson import ObjectId
-from requests import Response
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.models.feature_list import FeatureListNamespaceModel
-from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -23,7 +19,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
     class_name = "FeatureListNamespace"
     base_route = "/feature_list_namespace"
     payload = BaseCatalogApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/feature_list_namespace.json"
+        "tests/fixtures/request_payloads/feature_list_multi.json"
     )
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
@@ -89,13 +85,13 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
 
     def multiple_success_payload_generator(self, api_client):
         """Generate multiple success payloads"""
+        feature_list_payload = self.load_payload(
+            "tests/fixtures/request_payloads/feature_list_multi.json"
+        )
         for i in range(3):
-            feature_list_payload = self.load_payload(
-                "tests/fixtures/request_payloads/feature_list_multi.json"
-            )
+            feature_list_payload = feature_list_payload.copy()
             feature_list_payload["_id"] = str(ObjectId())
             feature_list_payload["name"] = f'{feature_list_payload["name"]}_{i}'
-            feature_list_payload["feature_list_namespace_id"] = str(ObjectId())
             yield feature_list_payload
 
     @pytest_asyncio.fixture
@@ -110,6 +106,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             feature_list_namespace_id = feature_list_response.json()["feature_list_namespace_id"]
             response = test_api_client.get(f"{self.base_route}/{feature_list_namespace_id}")
             assert response.status_code == HTTPStatus.OK
+            output.append(response)
         return output
 
     def _create_fl_namespace_with_manual_version_mode_and_new_feature_id(self, test_api_client):
@@ -292,21 +289,25 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
 
     @pytest_asyncio.fixture
     async def create_success_response_non_default_catalog(
-        self, test_api_client_persistent, user_id, catalog_id
-    ):  # pylint: disable=arguments-differ
+        self, test_api_client_persistent, catalog_id
+    ):
         """Post route success response object"""
-        test_api_client, persistent = test_api_client_persistent
-        self.setup_creation_route(test_api_client, catalog_id)
+        api_client, _ = test_api_client_persistent
+        self.setup_creation_route(api_client, catalog_id=catalog_id)
 
-        user = Mock()
-        user.id = user_id
-        feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+        feature_list_payload = self.load_payload(
+            "tests/fixtures/request_payloads/feature_list_multi.json"
         )
-        document = await feature_list_namespace_service.create_document(
-            data=FeatureListNamespaceModel(**self.payload)
+        feature_list_response = api_client.post(
+            "/feature_list",
+            headers={"active-catalog-id": str(catalog_id)},
+            json=feature_list_payload,
         )
-        response = Response()
-        response._content = bytes(document.json(by_alias=True), "utf-8")
-        response.status_code = HTTPStatus.CREATED
+        feature_list_namespace_id = feature_list_response.json()["feature_list_namespace_id"]
+
+        response = api_client.get(
+            f"{self.base_route}/{feature_list_namespace_id}",
+            headers={"active-catalog-id": str(catalog_id)},
+        )
+        assert response.status_code == HTTPStatus.OK
         return response

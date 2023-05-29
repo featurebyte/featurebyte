@@ -33,9 +33,6 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
     payload = BaseCatalogApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_sum_30m.json"
     )
-    namespace_payload = BaseCatalogApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/feature_namespace.json"
-    )
     object_id = str(ObjectId())
     create_conflict_payload_expected_detail_pairs = [
         (
