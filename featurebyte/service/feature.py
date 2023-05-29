@@ -145,7 +145,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
 
         Parameters
         ----------
-        data: FeatureCreate
+        data: FeatureServiceCreate
             Feature creation data
         sanitize_for_definition: bool
             Whether to sanitize the query graph for generating feature definition
