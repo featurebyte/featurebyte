@@ -1,7 +1,6 @@
 """
 Tests for Feature route
 """
-import copy
 import textwrap
 from collections import defaultdict
 from datetime import datetime
@@ -138,7 +137,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response_dict["version"] == {"name": get_version(), "suffix": None}
 
         # check feature namespace
-        test_api_client, persistent = test_api_client_persistent
+        _, persistent = test_api_client_persistent
         feat_namespace_docs, match_count = await persistent.find(
             collection_name="feature_namespace",
             query_filter={"name": self.payload["name"]},

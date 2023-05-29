@@ -10,8 +10,8 @@ from featurebyte.models.entity import ParentEntity
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import (
-    FeatureListCreate,
     FeatureListNewVersionCreate,
+    FeatureListServiceCreate,
     FeatureVersionInfo,
 )
 
@@ -25,7 +25,7 @@ async def test_update_document__duplicated_feature_error(feature_list_service, f
     data_dict["feature_ids"] = data_dict["feature_ids"] * 2
     with pytest.raises(DocumentError) as exc:
         await feature_list_service.create_document(
-            data=FeatureListCreate(**data_dict),
+            data=FeatureListServiceCreate(**data_dict),
         )
     expected_msg = "Two Feature objects must not share the same name in a FeatureList object."
     assert expected_msg in str(exc.value)
@@ -48,7 +48,7 @@ async def test_update_document__inconsistency_error(
     flist_data_dict["feature_ids"] = [new_feat.id]
     with pytest.raises(DocumentInconsistencyError) as exc:
         await feature_list_service.create_document(
-            data=FeatureListCreate(**flist_data_dict),
+            data=FeatureListServiceCreate(**flist_data_dict),
         )
     expected_msg = (
         'FeatureList (name: "random_name") object(s) within the same namespace must have the same '
@@ -62,7 +62,7 @@ async def test_update_document__inconsistency_error(
     flist_data_dict["feature_ids"] += [new_feat.id]
     with pytest.raises(DocumentInconsistencyError) as exc:
         await feature_list_service.create_document(
-            data=FeatureListCreate(**flist_data_dict),
+            data=FeatureListServiceCreate(**flist_data_dict),
         )
     expected_msg = (
         'FeatureList (name: "sf_feature_list") object(s) within the same namespace must share the '
@@ -152,7 +152,7 @@ async def test_feature_list__contains_relationships_info(
 
     # check these relationships are included in the feature list
     feature_list = await feature_list_service.create_document(
-        data=FeatureListCreate(name="my_feature_list", feature_ids=[feature.id])
+        data=FeatureListServiceCreate(name="my_feature_list", feature_ids=[feature.id])
     )
     relationships_info = feature_list.relationships_info
     assert len(relationships_info) == 5

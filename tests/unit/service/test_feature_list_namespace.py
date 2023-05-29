@@ -6,7 +6,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.schema.feature import FeatureServiceCreate
-from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.feature_list import FeatureListServiceCreate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 
 
@@ -31,7 +31,9 @@ async def test_update_document(
     flist_dict["_id"] = ObjectId()
     flist_dict["version"] = {"name": "V220917"}
     flist_dict["feature_ids"] = [new_feat.id]
-    new_flist = await feature_list_service.create_document(data=FeatureListCreate(**flist_dict))
+    new_flist = await feature_list_service.create_document(
+        data=FeatureListServiceCreate(**flist_dict)
+    )
 
     # check updated namespace
     namespace = await feature_list_namespace_service.get_document(
@@ -54,7 +56,9 @@ async def test_update_document(
     flist_dict["version"] = {"name": "V220917"}
     flist_dict["feature_ids"] = [new_feat.id]
     flist_dict["feature_list_namespace_id"] = ObjectId()
-    new_flist = await feature_list_service.create_document(data=FeatureListCreate(**flist_dict))
+    new_flist = await feature_list_service.create_document(
+        data=FeatureListServiceCreate(**flist_dict)
+    )
 
     # check updated namespace
     namespace = await feature_list_namespace_service.get_document(

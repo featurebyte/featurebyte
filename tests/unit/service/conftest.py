@@ -23,7 +23,7 @@ from featurebyte.schema.dimension_table import DimensionTableCreate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.event_table import EventTableCreate, EventTableServiceUpdate
 from featurebyte.schema.feature import FeatureServiceCreate
-from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.feature_list import FeatureListServiceCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_table import ItemTableCreate
@@ -465,7 +465,9 @@ async def feature_list_fixture(test_dir, feature, feature_list_service):
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_list_single.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature_list = await feature_list_service.create_document(data=FeatureListCreate(**payload))
+        feature_list = await feature_list_service.create_document(
+            data=FeatureListServiceCreate(**payload)
+        )
         return feature_list
 
 
@@ -480,7 +482,7 @@ async def feature_list_namespace_fixture(feature_list_namespace_service, feature
 @pytest_asyncio.fixture(name="production_ready_feature_list")
 async def production_ready_feature_list_fixture(production_ready_feature, feature_list_service):
     """Fixture for a production ready feature list"""
-    data = FeatureListCreate(
+    data = FeatureListServiceCreate(
         name="Production Ready Feature List",
         feature_ids=[production_ready_feature.id],
     )
@@ -564,7 +566,7 @@ async def setup_for_feature_readiness_fixture(
 
     # create another feature list version
     new_flist = await feature_list_service.create_document(
-        data=FeatureListCreate(
+        data=FeatureListServiceCreate(
             feature_ids=[new_feature_id],
             feature_list_namespace_id=feature_list.feature_list_namespace_id,
             name="sf_feature_list",

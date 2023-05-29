@@ -70,8 +70,8 @@ from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (
-    FeatureListCreate,
     FeatureListGetHistoricalFeatures,
+    FeatureListServiceCreate,
     FeatureListUpdate,
     FeatureVersionInfo,
 )
@@ -653,7 +653,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
     def _get_create_payload(self) -> dict[str, Any]:
         feature_ids = [feature.id for feature in self.feature_objects.values()]
-        data = FeatureListCreate(
+        data = FeatureListServiceCreate(
             **{**self.json_dict(exclude_none=True), "feature_ids": feature_ids}
         )
         return data.json_dict()

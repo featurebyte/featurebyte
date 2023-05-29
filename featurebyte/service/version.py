@@ -27,7 +27,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
-from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
+from featurebyte.schema.feature_list import FeatureListNewVersionCreate, FeatureListServiceCreate
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -372,5 +372,5 @@ class VersionService(BaseService):
             feature_list, feature_namespaces["data"], data
         )
         return await self.feature_list_service.create_document(
-            data=FeatureListCreate(**new_feature_list.dict(by_alias=True)),
+            data=FeatureListServiceCreate(**new_feature_list.dict(by_alias=True)),
         )
