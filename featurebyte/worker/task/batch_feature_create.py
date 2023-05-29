@@ -3,12 +3,10 @@ Batch feature create task
 """
 from __future__ import annotations
 
-from typing import Any, Iterator, cast
+from typing import Any, cast
 
 import asyncio
 import concurrent.futures
-import os
-from contextlib import contextmanager
 
 from bson import ObjectId
 
@@ -16,40 +14,12 @@ from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import activate_catalog
 from featurebyte.models.feature import FeatureModel
+from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.service.feature import FeatureService
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
-
-
-@contextmanager
-def set_environment_variable(variable: str, value: Any) -> Iterator[None]:
-    """
-    Set the environment variable within the context
-
-    Parameters
-    ----------
-    variable: str
-        The environment variable
-    value: Any
-        The value to set
-
-    Yields
-    ------
-    Iterator[None]
-        The context manager
-    """
-    previous_value = os.environ.get(variable)
-    os.environ[variable] = value
-
-    try:
-        yield
-    finally:
-        if previous_value is not None:
-            os.environ[variable] = previous_value
-        else:
-            del os.environ[variable]
 
 
 async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
@@ -67,9 +37,8 @@ async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
     activate_catalog(catalog_id=catalog_id)
 
     # execute the code
-    with set_environment_variable("SDK_EXECUTION_MODE", "SERVER"):
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            await asyncio.get_event_loop().run_in_executor(pool, exec, code)
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
 
 class BatchFeatureCreateTask(BaseTask):
@@ -107,6 +76,8 @@ class BatchFeatureCreateTask(BaseTask):
             logger.debug(
                 "Generated feature is not the same as the expected feature",
                 extra={
+                    "feature_id": feature.id,
+                    "name": feature.name,
                     "expected_hash": expected_hash,
                     "generated_hash": generated_hash,
                     "match_definition": definition == feature.definition,
@@ -130,7 +101,7 @@ class BatchFeatureCreateTask(BaseTask):
         for i, feature_create_data in enumerate(payload.iterate_features()):
             # prepare the feature document & definition
             document = await feature_service.prepare_feature_model(
-                data=feature_create_data,
+                data=FeatureServiceCreate(**feature_create_data.json_dict()),
                 sanitize_for_definition=True,
             )
             definition = await feature_service.prepare_feature_definition(document=document)

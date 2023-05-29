@@ -1,7 +1,6 @@
 """
 Test batch feature creation task
 """
-import os
 import textwrap
 
 import pytest
@@ -9,7 +8,7 @@ import pytest
 from featurebyte import RecordRetrievalException
 from featurebyte.api.catalog import Catalog, Entity
 from featurebyte.models.base import activate_catalog
-from featurebyte.worker.task.batch_feature_create import execute_sdk_code, set_environment_variable
+from featurebyte.worker.task.batch_feature_create import execute_sdk_code
 
 
 @pytest.fixture(name="test_catalog")
@@ -18,14 +17,6 @@ def fixture_catalog(snowflake_feature_store):
     catalog = Catalog(name="test_catalog", default_feature_store_ids=[snowflake_feature_store.id])
     catalog.save()
     return catalog
-
-
-def test_set_environment_variable():
-    """Test set environment variable"""
-    assert "TEST_ENV" not in os.environ
-    with set_environment_variable("TEST_ENV", "TEST"):
-        assert os.environ["TEST_ENV"] == "TEST"
-    assert "TEST_ENV" not in os.environ
 
 
 @pytest.mark.asyncio
