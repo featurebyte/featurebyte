@@ -350,3 +350,15 @@ class DockerError(FeatureByteException):
     """
     Raised when there is an error with Docker
     """
+
+
+class DatabaseNotFoundError(FeatureByteException):
+    """
+    Raise when the requested database does not exist in the data warehouse
+    """
+
+
+class SchemaNotFoundError(FeatureByteException):
+    """
+    Raise when the requested schema does not exist in the data warehouse
+    """

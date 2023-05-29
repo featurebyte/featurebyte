@@ -15,6 +15,7 @@ from sqlglot import expressions
 
 from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.common.utils import dataframe_to_json
+from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
@@ -88,7 +89,19 @@ class FeatureStoreWarehouseService(BaseService):
         -------
         List[str]
             List of schema names
+
+        Raises
+        ------
+        DatabaseNotFoundError
+            If database does not exist
         """
+        # check database exists
+        databases = await self.list_databases(
+            feature_store=feature_store, get_credential=get_credential
+        )
+        if database_name not in databases:
+            raise DatabaseNotFoundError(f"Database {database_name} not found.")
+
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
@@ -119,7 +132,28 @@ class FeatureStoreWarehouseService(BaseService):
         -------
         List[str]
             List of table names
+
+        Raises
+        ------
+        DatabaseNotFoundError
+            If database does not exist
+        SchemaNotFoundError
+            If schema does not exist
         """
+        # check database exists
+        databases = await self.list_databases(
+            feature_store=feature_store, get_credential=get_credential
+        )
+        if database_name not in databases:
+            raise DatabaseNotFoundError(f"Database {database_name} not found.")
+
+        # check schema exists
+        schemas = await self.list_schemas(
+            feature_store=feature_store, database_name=database_name, get_credential=get_credential
+        )
+        if schema_name not in schemas:
+            raise SchemaNotFoundError(f"Schema {schema_name} not found.")
+
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )

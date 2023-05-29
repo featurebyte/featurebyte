@@ -97,7 +97,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
 
         Raises
         ------
-        HTTPException
+        DocumentNotFound
             If the object not found
         """
         document = await self.service.get_document(

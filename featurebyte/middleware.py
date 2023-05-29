@@ -15,6 +15,7 @@ from starlette.responses import JSONResponse
 
 from featurebyte.exception import (
     CredentialsError,
+    DatabaseNotFoundError,
     DocumentConflictError,
     DocumentError,
     DocumentNotFoundError,
@@ -23,6 +24,7 @@ from featurebyte.exception import (
     NoFeatureStorePresentError,
     QueryNotSupportedError,
     RequiredEntityNotProvidedError,
+    SchemaNotFoundError,
     UnexpectedServingNamesMappingError,
 )
 from featurebyte.logging import get_logger
@@ -196,6 +198,18 @@ ExecutionContext.register(
     NoFeatureStorePresentError,
     handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
     handle_message="No feature store found. Please create one before trying to access this functionality.",
+)
+
+ExecutionContext.register(
+    DatabaseNotFoundError,
+    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
+    handle_message="Database not found. Please specify a valid database name.",
+)
+
+ExecutionContext.register(
+    SchemaNotFoundError,
+    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
+    handle_message="Schema not found. Please specify a valid schema name.",
 )
 
 
