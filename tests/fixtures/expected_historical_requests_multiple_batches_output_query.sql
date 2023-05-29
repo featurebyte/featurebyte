@@ -2,14 +2,14 @@ CREATE TABLE "SOME_HISTORICAL_FEATURE_TABLE" AS
 SELECT
   REQ."POINT_IN_TIME",
   REQ."CUSTOMER_ID",
-  T0."a_2h_average",
-  T0."a_48h_average",
+  T2."a_2h_average",
+  T2."a_48h_average",
   T0."order_size",
-  T1."MY FEATURE",
+  T2."MY FEATURE",
   T1."Current Membership Status",
-  T2."a_latest_value_past_90d",
-  T2."a_latest_value",
-  T3."asat_feature"
+  T3."a_latest_value_past_90d",
+  T1."a_latest_value",
+  T0."asat_feature"
 FROM REQUEST_TABLE AS REQ
 LEFT JOIN "__TEMP_646f1b781d1e7970788b32ec_0" AS T0
   ON REQ."__FB_ROW_INDEX_FOR_JOIN" = T0."__FB_ROW_INDEX_FOR_JOIN"

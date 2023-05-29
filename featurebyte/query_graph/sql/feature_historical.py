@@ -35,6 +35,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
+from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec, TileBasedAggregationSpec
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import TileCache
 
@@ -365,8 +366,10 @@ def get_historical_features_expr(
 
 
 def split_nodes(
+    graph: QueryGraph,
     nodes: list[Node],
     num_features_per_query: int,
+    is_tile_cache: bool = False,
 ) -> list[list[Node]]:
     """
     Split nodes into multiple lists, each containing at most `num_features_per_query` nodes. Nodes
@@ -374,24 +377,57 @@ def split_nodes(
 
     Parameters
     ----------
+    graph: QueryGraph
+        Query graph
     nodes : list[Node]
         List of nodes
     num_features_per_query : int
         Number of features per query
+    is_tile_cache : bool
+        Whether the output will be used for tile cache queries
 
     Returns
     -------
     list[list[Node]]
     """
+    planner = FeatureExecutionPlanner(graph=graph, is_online_serving=False)
+
+    def get_sort_key(node: Node) -> str:
+        mapped_node = planner.graph.get_node_by_name(planner.node_name_map[node.name])
+        agg_specs = planner.get_aggregation_specs(mapped_node)
+        agg_spec = agg_specs[0]
+
+        parts = [agg_spec.aggregation_type.value]
+        if isinstance(agg_spec, TileBasedAggregationSpec):
+            if is_tile_cache:
+                # Tile cache queries joins with entity tracker tables. These tables are organized by
+                # aggregation_id. The split should be random across different aggregation_id.
+                parts.append(agg_spec.aggregation_id)
+            else:
+                # Tile based aggregation joins with tile tables. Sort by tile_table_id first to
+                # group nodes that join with the same tile table.
+                parts.extend([agg_spec.tile_table_id, agg_spec.aggregation_id])
+        else:
+            assert isinstance(agg_spec, NonTileBasedAggregationSpec)
+            # These queries join with source tables directly. Sort by query node name of the source
+            # to group nodes that join with the same source table.
+            query_node = planner.graph.get_node_by_name(agg_spec.aggregation_source.query_node_name)
+            parts.append(query_node.name)
+
+        key = ",".join(parts)
+        return key
+
     result = []
-    for i in range(0, len(nodes), num_features_per_query):
-        current_nodes = nodes[i : i + num_features_per_query]
+    sorted_nodes = sorted(nodes, key=get_sort_key)
+    for i in range(0, len(sorted_nodes), num_features_per_query):
+        current_nodes = sorted_nodes[i : i + num_features_per_query]
         result.append(current_nodes)
     return result
 
 
 def construct_join_feature_sets_query(
     feature_queries: list[FeatureQuery],
+    output_feature_names: list[str],
     request_table_name: str,
     request_table_columns: list[str],
 ) -> expressions.Select:
@@ -402,6 +438,8 @@ def construct_join_feature_sets_query(
     ----------
     feature_queries : list[FeatureQuery]
         List of feature queries
+    output_feature_names : list[str]
+        List of output feature names
     request_table_name : str
         Name of request table
     request_table_columns : list[str]
@@ -415,6 +453,8 @@ def construct_join_feature_sets_query(
     expr = expressions.select(
         *(get_qualified_column_identifier(col, "REQ") for col in request_table_columns)
     ).from_(f"{request_table_name} AS REQ")
+
+    table_alias_by_feature = {}
     for i, feature_set in enumerate(feature_queries):
         table_alias = f"T{i}"
         expr = expr.join(
@@ -428,8 +468,15 @@ def construct_join_feature_sets_query(
                 expression=get_qualified_column_identifier(FB_ROW_INDEX_FOR_JOIN, table_alias),
             ),
         )
-        expr = expr.select(*[f'{table_alias}."{name}"' for name in feature_set.feature_names])
-    return expr
+        for feature_name in feature_set.feature_names:
+            table_alias_by_feature[feature_name] = table_alias
+
+    return expr.select(
+        *[
+            get_qualified_column_identifier(name, table_alias_by_feature[name])
+            for name in output_feature_names
+        ]
+    )
 
 
 def get_historical_features_query_set(
@@ -439,6 +486,7 @@ def get_historical_features_query_set(
     request_table_columns: list[str],
     source_type: SourceType,
     output_table_details: TableDetails,
+    output_feature_names: list[str],
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
 ) -> HistoricalFeatureQuerySet:
@@ -458,6 +506,8 @@ def get_historical_features_query_set(
         Source type information
     output_table_details: TableDetails
         Output table details to write the results to
+    output_feature_names : list[str]
+        List of output feature names
     serving_names_mapping : dict[str, str] | None
         Optional mapping from original serving name to new serving name
     parent_serving_preparation: Optional[ParentServingPreparation]
@@ -517,6 +567,7 @@ def get_historical_features_query_set(
         )
     output_expr = construct_join_feature_sets_query(
         feature_queries=feature_queries,
+        output_feature_names=output_feature_names,
         request_table_name=request_table_name,
         request_table_columns=request_table_columns,
     )
@@ -596,6 +647,25 @@ async def compute_tiles_on_demand(
     )
 
 
+def get_feature_names(graph: QueryGraph, nodes: list[Node]) -> list[str]:
+    """
+    Get feature names given a list of ndoes
+
+    Parameters
+    ----------
+    graph: QueryGraph
+        Query graph
+    nodes: list[Node]
+        List of query graph node
+
+    Returns
+    -------
+    list[str]
+    """
+    planner = FeatureExecutionPlanner(graph=graph, is_online_serving=False)
+    return planner.generate_plan(nodes).feature_names
+
+
 async def get_historical_features(  # pylint: disable=too-many-locals
     session: BaseSession,
     graph: QueryGraph,
@@ -650,7 +720,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals
     request_table_columns = observation_set.columns
 
     # Process nodes in batches
-    node_groups = split_nodes(nodes, NUM_FEATURES_PER_QUERY)
+    node_groups = split_nodes(graph, nodes, NUM_FEATURES_PER_QUERY)
 
     # Execute feature SQL code
     await observation_set.register_as_request_table(
@@ -669,7 +739,11 @@ async def get_historical_features(  # pylint: disable=too-many-locals
             else None
         )
         tic = time.time()
-        for i, _nodes in enumerate(node_groups):
+        # Process nodes in batches
+        tile_cache_node_groups = split_nodes(
+            graph, nodes, NUM_FEATURES_PER_QUERY, is_tile_cache=True
+        )
+        for i, _nodes in enumerate(tile_cache_node_groups):
             logger.debug("Checking and computing tiles on demand for %d nodes", len(_nodes))
             await compute_tiles_on_demand(
                 session=session,
@@ -682,8 +756,8 @@ async def get_historical_features(  # pylint: disable=too-many-locals
                 parent_serving_preparation=parent_serving_preparation,
                 progress_callback=get_ranged_progress_callback(
                     tile_cache_progress_callback,
-                    100 * i / len(node_groups),
-                    100 * (i + 1) / len(node_groups),
+                    100 * i / len(tile_cache_node_groups),
+                    100 * (i + 1) / len(tile_cache_node_groups),
                 )
                 if tile_cache_progress_callback
                 else None,
@@ -703,6 +777,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals
         serving_names_mapping=serving_names_mapping,
         source_type=source_type,
         output_table_details=output_table_details,
+        output_feature_names=get_feature_names(graph, nodes),
         request_table_name=request_table_name,
         parent_serving_preparation=parent_serving_preparation,
     )

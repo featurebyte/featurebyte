@@ -17,6 +17,7 @@ from featurebyte.query_graph.sql.feature_historical import (
     FeatureQuery,
     HistoricalFeatureQuerySet,
     convert_point_in_time_dtype_if_needed,
+    get_feature_names,
     get_historical_features,
     get_historical_features_expr,
     get_historical_features_query_set,
@@ -286,6 +287,7 @@ def test_get_historical_feature_query_set__single_batch(
         request_table_columns=request_table_columns,
         source_type=SourceType.SNOWFLAKE,
         output_table_details=output_table_details,
+        output_feature_names=[float_feature.node.name],
     )
     assert query_set.feature_queries == []
     assert_equal_with_expected_fixture(
@@ -309,10 +311,11 @@ def test_get_historical_feature_query_set__multiple_batches(
     query_set = get_historical_features_query_set(
         request_table_name=REQUEST_TABLE_NAME,
         graph=global_graph,
-        node_groups=split_nodes(feature_nodes_all_types, 2),
+        node_groups=split_nodes(global_graph, feature_nodes_all_types, 2),
         request_table_columns=request_table_columns,
         source_type=SourceType.SNOWFLAKE,
         output_table_details=output_table_details,
+        output_feature_names=get_feature_names(global_graph, feature_nodes_all_types),
     )
     for i, feature_query in enumerate(query_set.feature_queries):
         assert_equal_with_expected_fixture(

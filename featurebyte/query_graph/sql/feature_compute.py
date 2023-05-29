@@ -3,7 +3,7 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional, Type, Union
+from typing import Iterable, Optional, Sequence, Type, Union
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -46,6 +46,7 @@ from featurebyte.query_graph.transform.flattening import GraphFlatteningTransfor
 AggregatorType = Union[
     LatestAggregator, LookupAggregator, WindowAggregator, ItemAggregator, AsAtAggregator
 ]
+AggregationSpecType = Union[TileBasedAggregationSpec, NonTileBasedAggregationSpec]
 
 
 class FeatureExecutionPlan:
@@ -426,75 +427,70 @@ class FeatureExecutionPlanner:
         node : Node
             Query graph node
         """
+        agg_specs = self.get_aggregation_specs(node)
+        for agg_spec in agg_specs:
+            self.plan.add_aggregation_spec(agg_spec)
+        self.update_feature_specs(node)
+
+    def get_aggregation_specs(self, node: Node) -> list[AggregationSpecType]:
+        """Get list of aggregation specs for a given query graph node
+
+        Parameters
+        ----------
+        node : Node
+            Query graph node
+
+        Returns
+        -------
+        AggregationSpec
+        """
         groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.GROUPBY))
         item_groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.ITEM_GROUPBY))
         lookup_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP))
         asat_nodes = list(self.graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT))
+
+        out: list[AggregationSpecType] = []
         if groupby_nodes:
             # Feature involves window aggregations. In this case, tiling applies. Even if
             # ITEM_GROUPBY nodes are involved, their results would have already been incorporated in
             # tiles, so we only need to handle GROUPBY node type here.
             for groupby_node in groupby_nodes:
-                self.parse_and_update_specs_from_groupby(groupby_node)
+                out.extend(self.get_specs_from_groupby(groupby_node))
+
         elif item_groupby_nodes:
             # Feature involves non-time-aware aggregations
             for item_groupby_node in item_groupby_nodes:
-                self.parse_and_update_specs_from_item_groupby(item_groupby_node)
+                out.extend(self.get_non_tiling_specs(ItemAggregationSpec, item_groupby_node))
+
         if lookup_nodes:
             for lookup_node in lookup_nodes:
-                self.parse_and_update_specs_from_lookup(lookup_node)
+                out.extend(self.get_non_tiling_specs(LookupSpec, lookup_node))
+
         if asat_nodes:
             for asat_node in asat_nodes:
-                self.parse_and_update_specs_from_asat(asat_node)
-        self.update_feature_specs(node)
+                out.extend(self.get_non_tiling_specs(AggregateAsAtSpec, asat_node))
 
-    def parse_and_update_specs_from_groupby(self, groupby_node: Node) -> None:
+        return out
+
+    def get_specs_from_groupby(self, groupby_node: Node) -> Sequence[TileBasedAggregationSpec]:
         """Update FeatureExecutionPlan with a groupby query node
 
         Parameters
         ----------
         groupby_node : Node
             Groupby query node
+
+        Returns
+        -------
+        list[AggregationSpec]
         """
-        agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
+        return TileBasedAggregationSpec.from_groupby_query_node(
             groupby_node, self.adapter, serving_names_mapping=self.serving_names_mapping
         )
-        for agg_spec in agg_specs:
-            self.plan.add_aggregation_spec(agg_spec)
 
-    def parse_and_update_specs_from_item_groupby(self, node: Node) -> None:
-        """Update FeatureExecutionPlan with an item groupby query node
-
-        Parameters
-        ----------
-        node : Node
-            Query graph node
-        """
-        self.get_non_tiling_specs_and_update_plan(ItemAggregationSpec, node)
-
-    def parse_and_update_specs_from_lookup(self, node: Node) -> None:
-        """Update FeatureExecutionPlan with a lookup query node
-
-        Parameters
-        ----------
-        node : Node
-            Query graph node
-        """
-        self.get_non_tiling_specs_and_update_plan(LookupSpec, node)
-
-    def parse_and_update_specs_from_asat(self, node: Node) -> None:
-        """Update FeatureExecutionPlan with a AggregateAsAt node
-
-        Parameters
-        ----------
-        node : Node
-            Query graph node
-        """
-        self.get_non_tiling_specs_and_update_plan(AggregateAsAtSpec, node)
-
-    def get_non_tiling_specs_and_update_plan(
+    def get_non_tiling_specs(
         self, spec_cls: Type[NonTileBasedAggregationSpec], node: Node
-    ) -> None:
+    ) -> Sequence[NonTileBasedAggregationSpec]:
         """
         Update FeatureExecutionPlan with a node that produces NonTileBasedAggregationSpec
 
@@ -504,16 +500,18 @@ class FeatureExecutionPlanner:
             Query graph node
         spec_cls: Type[NonTileBasedAggregationSpec]
             Aggregation specification class
+
+        Returns
+        -------
+        list[AggregationSpec]
         """
-        agg_specs = spec_cls.from_query_graph_node(
+        return spec_cls.from_query_graph_node(
             node,
             graph=self.graph,
             source_type=self.source_type,
             serving_names_mapping=self.serving_names_mapping,
             is_online_serving=self.is_online_serving,
         )
-        for agg_spec in agg_specs:
-            self.plan.add_aggregation_spec(agg_spec)
 
     def update_feature_specs(self, node: Node) -> None:
         """Update FeatureExecutionPlan with a query graph node
