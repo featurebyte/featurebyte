@@ -6,10 +6,8 @@ from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 import inspect
 from http import HTTPStatus
 
-import requests
 from fastapi import FastAPI, Request, Response
 from pydantic import ValidationError
-from starlette.background import BackgroundTasks
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
