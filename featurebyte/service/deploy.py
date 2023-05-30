@@ -228,10 +228,9 @@ class DeployService(BaseService):
             return_document=False,
         )
 
-    async def update_feature_list(
+    async def _update_feature_list(
         self,
         feature_list_id: ObjectId,
-        deployed: bool,
         get_credential: Any,
         update_progress: Optional[Callable[[int, str], None]] = None,
         return_document: bool = True,
@@ -243,8 +242,6 @@ class DeployService(BaseService):
         ----------
         feature_list_id: ObjectId
             Target feature list ID
-        deployed: bool
-            Target deployed status
         get_credential: Any
             Get credential handler function
         update_progress: Callable[[int, str], None]
@@ -264,9 +261,14 @@ class DeployService(BaseService):
         if update_progress:
             update_progress(0, "Start updating feature list")
 
+        list_deployment_results = await self.deployment_service.list_documents(
+            query_filter={"feature_list_id": feature_list_id, "enabled": True}
+        )
+        target_deployed = list_deployment_results["total"] > 0
         document = await self.feature_list_service.get_document(document_id=feature_list_id)
-        if document.deployed != deployed:
-            await self._validate_deployed_operation(document, deployed)
+
+        if document.deployed != target_deployed:
+            await self._validate_deployed_operation(document, target_deployed)
 
             # variables to store feature list's & features' initial state
             original_deployed = document.deployed
@@ -275,7 +277,7 @@ class DeployService(BaseService):
             try:
                 feature_list = await self.feature_list_service.update_document(
                     document_id=feature_list_id,
-                    data=FeatureListServiceUpdate(deployed=deployed),
+                    data=FeatureListServiceUpdate(deployed=target_deployed),
                     document=document,
                     return_document=True,
                 )
@@ -368,20 +370,26 @@ class DeployService(BaseService):
         default_deployment_name = (
             f"Deployment with {feature_list.name}_{feature_list.version.to_str()}"
         )
-        await self.update_feature_list(
-            feature_list_id=feature_list_id,
-            deployed=to_enable_deployment,
-            get_credential=get_credential,
-            update_progress=update_progress,
-        )
-        await self.deployment_service.create_document(
-            data=DeploymentModel(
-                _id=deployment_id,
-                name=deployment_name or default_deployment_name,
-                feature_list_id=feature_list_id,
-                enabled=to_enable_deployment,
+        try:
+            await self.deployment_service.create_document(
+                data=DeploymentModel(
+                    _id=deployment_id,
+                    name=deployment_name or default_deployment_name,
+                    feature_list_id=feature_list_id,
+                    enabled=to_enable_deployment,
+                )
             )
-        )
+            await self._update_feature_list(
+                feature_list_id=feature_list_id,
+                get_credential=get_credential,
+                update_progress=update_progress,
+            )
+        except Exception as exc:
+            try:
+                await self.deployment_service.delete_document(document_id=deployment_id)
+            except Exception as delete_exc:
+                raise delete_exc from exc
+            raise exc
 
     async def update_deployment(
         self,
@@ -405,14 +413,24 @@ class DeployService(BaseService):
             Update progress handler function
         """
         deployment = await self.deployment_service.get_document(document_id=deployment_id)
-        if deployment.enabled != enabled:
-            await self.update_feature_list(
-                feature_list_id=deployment.feature_list_id,
-                deployed=enabled,
-                get_credential=get_credential,
-                update_progress=update_progress,
-            )
-            await self.deployment_service.update_document(
-                document_id=deployment_id,
-                data=DeploymentUpdate(enabled=enabled),
-            )
+        original_enabled = deployment.enabled
+        if original_enabled != enabled:
+            try:
+                await self.deployment_service.update_document(
+                    document_id=deployment_id,
+                    data=DeploymentUpdate(enabled=enabled),
+                )
+                await self._update_feature_list(
+                    feature_list_id=deployment.feature_list_id,
+                    get_credential=get_credential,
+                    update_progress=update_progress,
+                )
+            except Exception as exc:
+                try:
+                    await self.deployment_service.update_document(
+                        document_id=deployment_id,
+                        data=DeploymentUpdate(enabled=original_enabled),
+                    )
+                except Exception as revert_exc:
+                    raise revert_exc from exc
+                raise exc

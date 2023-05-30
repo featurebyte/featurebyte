@@ -150,15 +150,18 @@ class BaseApiTestSuite:
         )
         assert response.status_code == HTTPStatus.OK, response.json()
 
-    @staticmethod
-    def enable_deployment(api_client, deployment_id, catalog_id):
+    def update_deployment_enabled(self, api_client, deployment_id, catalog_id, enabled=True):
         """Enable deployment"""
         response = api_client.patch(
             f"/deployment/{deployment_id}",
             headers={"active-catalog-id": str(catalog_id)},
-            json={"enabled": True},
+            json={"enabled": enabled},
         )
-        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.status_code == HTTPStatus.OK
+        self.wait_for_results(api_client, response)
+        deployment_response = api_client.get(f"/deployment/{deployment_id}")
+        assert deployment_response.status_code == HTTPStatus.OK
+        assert deployment_response.json()["enabled"] == enabled
 
     def wait_for_results(self, api_client, create_response):
         """

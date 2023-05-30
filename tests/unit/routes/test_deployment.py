@@ -174,7 +174,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         assert response.json() == expected_response
 
         # enable deployment
-        self.enable_deployment(test_api_client, deployment_id, DEFAULT_CATALOG_ID)
+        self.update_deployment_enabled(test_api_client, deployment_id, DEFAULT_CATALOG_ID)
 
         # check all deployments again
         response = test_api_client.get("/deployment/all/?enabled=true")
@@ -194,7 +194,14 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json() == expected_response
 
-    def test_update_200__enable_and_disable_deployment(
+    @staticmethod
+    def check_feature_list_deployed(api_client, feature_list_id, expected_deployed):
+        feature_list_response = api_client.get(f"/feature_list/{feature_list_id}")
+        feature_list_dict = feature_list_response.json()
+        assert feature_list_response.status_code == HTTPStatus.OK
+        assert feature_list_dict["deployed"] == expected_deployed
+
+    def test_update_200__enable_and_disable_single_deployment(
         self, test_api_client_persistent, create_success_response
     ):
         """Test update 200"""
@@ -202,29 +209,56 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
         create_response_dict = create_success_response.json()
         deployment_id = create_response_dict["_id"]
+        feature_list_id = create_response_dict["feature_list_id"]
 
-        # enable deployment
-        self.enable_deployment(test_api_client, deployment_id, DEFAULT_CATALOG_ID)
+        # enable deployment & disable deployment
+        self.update_deployment_enabled(test_api_client, deployment_id, DEFAULT_CATALOG_ID, True)
+        self.check_feature_list_deployed(test_api_client, feature_list_id, True)
+        self.update_deployment_enabled(test_api_client, deployment_id, DEFAULT_CATALOG_ID, False)
+        self.check_feature_list_deployed(test_api_client, feature_list_id, False)
 
-        # get deployment and check if it is enabled
-        response = test_api_client.get(f"{self.base_route}/{deployment_id}")
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK
-        assert response_dict["enabled"] is True
+    def test_update_200__enable_and_disable_multiple_deployment_for_the_same_feature_list(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test multiple deployment for same feature list"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        catalog_id = DEFAULT_CATALOG_ID
+        deployment_id = response_dict["_id"]
+        feature_list_id = response_dict["feature_list_id"]
 
-        # disable deployment
-        response = test_api_client.patch(
-            f"{self.base_route}/{deployment_id}", json={"enabled": False}
-        )
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK
-        assert response_dict["status"] == "SUCCESS", response_dict
+        # check create a new deployment with same feature list
+        another_payload = self.payload.copy()
+        another_payload.update({"name": "another_deployment", "_id": None})
+        task_response = test_api_client.post(self.base_route, json=another_payload)
+        task_response = self.wait_for_results(test_api_client, task_response)
+        task_response_dict = task_response.json()
+        assert task_response.status_code == HTTPStatus.OK
+        assert task_response_dict["status"] == "SUCCESS"
 
-        # get deployment and check if it is disabled
-        response = test_api_client.get(f"{self.base_route}/{deployment_id}")
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK
-        assert response_dict["enabled"] is False
+        another_deployment_response = test_api_client.get(task_response_dict["output_path"])
+        another_deployment_dict = another_deployment_response.json()
+        assert another_deployment_dict["feature_list_id"] == feature_list_id
+        another_deployment_id = another_deployment_dict["_id"]
+
+        # enable deployments & check feature list deployed status
+        self.update_deployment_enabled(test_api_client, deployment_id, catalog_id, True)
+        self.check_feature_list_deployed(test_api_client, feature_list_id, True)
+        self.update_deployment_enabled(test_api_client, another_deployment_id, catalog_id, True)
+        self.check_feature_list_deployed(test_api_client, feature_list_id, True)
+
+        # disable deployments & check feature list deployed status
+        # note that the expected deployed status is True because at least one deployment is enabled
+        self.update_deployment_enabled(test_api_client, deployment_id, catalog_id, False)
+        self.check_feature_list_deployed(test_api_client, feature_list_id, True)
+        self.update_deployment_enabled(test_api_client, another_deployment_id, catalog_id, False)
+        self.check_feature_list_deployed(test_api_client, feature_list_id, False)
+
+        # create enable & disable deployment again & check feature list deployed status
+        self.update_deployment_enabled(test_api_client, another_deployment_id, catalog_id, True)
+        self.check_feature_list_deployed(test_api_client, feature_list_id, True)
+        self.update_deployment_enabled(test_api_client, another_deployment_id, catalog_id, False)
+        self.check_feature_list_deployed(test_api_client, feature_list_id, False)
 
     def test_info_200(self, test_api_client_persistent, create_success_response):
         """Test info route"""
@@ -262,7 +296,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
         # Deploy feature list
         deployment_doc = create_success_response.json()
-        self.enable_deployment(test_api_client, deployment_doc["_id"], DEFAULT_CATALOG_ID)
+        self.update_deployment_enabled(test_api_client, deployment_doc["_id"], DEFAULT_CATALOG_ID)
 
         # Request online features
         deployment_id = deployment_doc["_id"]
@@ -314,7 +348,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         """Test feature list get_online_features with invalid number of rows"""
         test_api_client, _ = test_api_client_persistent
         deployment_doc = create_success_response.json()
-        self.enable_deployment(test_api_client, deployment_doc["_id"], DEFAULT_CATALOG_ID)
+        self.update_deployment_enabled(test_api_client, deployment_doc["_id"], DEFAULT_CATALOG_ID)
 
         # Request online features
         deployment_id = deployment_doc["_id"]
@@ -350,7 +384,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         mock_session.execute_query = mock_execute_query
 
         deployment_doc = create_success_response.json()
-        self.enable_deployment(test_api_client, deployment_doc["_id"], DEFAULT_CATALOG_ID)
+        self.update_deployment_enabled(test_api_client, deployment_doc["_id"], DEFAULT_CATALOG_ID)
 
         # Request online features
         deployment_id = deployment_doc["_id"]
