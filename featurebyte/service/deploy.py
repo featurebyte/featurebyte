@@ -368,7 +368,7 @@ class DeployService(BaseService):
 
         Raises
         ------
-        DocumentCreationError
+        DocumentCreationError, Exception
             When there is an unexpected error during deployment creation
         """
         feature_list = await self.feature_list_service.get_document(document_id=feature_list_id)
@@ -421,7 +421,7 @@ class DeployService(BaseService):
 
         Raises
         ------
-        DocumentUpdateError
+        DocumentUpdateError, Exception
             When there is an unexpected error during deployment update
         """
         deployment = await self.deployment_service.get_document(document_id=deployment_id)

@@ -7,12 +7,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.exception import (
-    DocumentCreationError,
-    DocumentError,
-    DocumentNotFoundError,
-    DocumentUpdateError,
-)
+from featurebyte.exception import DocumentError, DocumentNotFoundError, DocumentUpdateError
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
 
