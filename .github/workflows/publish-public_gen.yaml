@@ -158,6 +158,7 @@ jobs:
         cache-to: type=inline
   slack:
     if: ${{ always() }}
+    runs-on: ubuntu-latest
     needs:
     - publish
     steps:
