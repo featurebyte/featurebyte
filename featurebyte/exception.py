@@ -216,6 +216,12 @@ class DocumentConflictError(DocumentError):
     """
 
 
+class DocumentCreationError(DocumentError):
+    """
+    Raise when the document invalid creation happens
+    """
+
+
 class DocumentUpdateError(DocumentError):
     """
     Raise when the document invalid update happens

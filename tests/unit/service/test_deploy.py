@@ -7,7 +7,12 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.exception import DocumentNotFoundError, DocumentUpdateError
+from featurebyte.exception import (
+    DocumentCreationError,
+    DocumentError,
+    DocumentNotFoundError,
+    DocumentUpdateError,
+)
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
 
@@ -43,7 +48,7 @@ async def test_create_enabled_deployment__not_all_features_are_online_enabled(
 ):
     """Test create deployment (not all features are online enabled validation error)"""
     deployment_id = ObjectId()
-    with pytest.raises(DocumentUpdateError) as exc:
+    with pytest.raises(DocumentError) as exc:
         await app_container.deploy_service.create_deployment(
             feature_list_id=feature_list.id,
             deployment_id=deployment_id,
@@ -65,7 +70,7 @@ async def test_update_deployment__not_all_features_are_online_enabled(
     app_container, disabled_deployment
 ):
     """Test update deployment (not all features are online enabled validation error)"""
-    with pytest.raises(DocumentUpdateError) as exc:
+    with pytest.raises(DocumentError) as exc:
         await app_container.deploy_service.update_deployment(
             deployment_id=disabled_deployment.id, enabled=True, get_credential=Mock()
         )
@@ -236,7 +241,7 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_li
     ) as mock_update_fl_namespace:
         error_msg = "random error when calling _update_feature_list_namespace!!"
         mock_update_fl_namespace.side_effect = Exception(error_msg)
-        with pytest.raises(Exception) as exc:
+        with pytest.raises(DocumentError) as exc:
             _ = await app_container.deploy_service.update_deployment(
                 deployment_id=disabled_deployment_with_production_ready_features.id,
                 enabled=True,
@@ -244,7 +249,8 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_li
             )
 
         # check exception message
-        assert error_msg in str(exc.value)
+        assert "Failed to update deployment" in str(exc.value)
+        assert error_msg in str(exc.value.__context__)
 
     # check the mocked method is called once
     assert mock_update_fl_namespace.call_count == 2
@@ -275,7 +281,7 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_is
     ) as mock_update_feature:
         error_msg = "random error when calling _update_feature!!"
         mock_update_feature.side_effect = Exception(error_msg)
-        with pytest.raises(Exception) as exc:
+        with pytest.raises(DocumentError) as exc:
             _ = await app_container.deploy_service.update_deployment(
                 deployment_id=disabled_deployment_with_production_ready_features.id,
                 enabled=True,
@@ -283,7 +289,8 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_is
             )
 
         # check exception message
-        assert error_msg in str(exc.value)
+        assert "Failed to update deployment" in str(exc.value)
+        assert error_msg in str(exc.value.__context__)
 
     # check the mocked method is called once
     mock_update_feature.assert_called_once()

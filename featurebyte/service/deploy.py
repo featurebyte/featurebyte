@@ -7,7 +7,7 @@ from typing import Any, Callable, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentUpdateError
+from featurebyte.exception import DocumentCreationError, DocumentError, DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
@@ -365,6 +365,11 @@ class DeployService(BaseService):
             Get credential handler function
         update_progress: Callable[[int, str], None]
             Update progress handler function
+
+        Raises
+        ------
+        DocumentCreationError
+            When there is an unexpected error during deployment creation
         """
         feature_list = await self.feature_list_service.get_document(document_id=feature_list_id)
         default_deployment_name = (
@@ -388,8 +393,10 @@ class DeployService(BaseService):
             try:
                 await self.deployment_service.delete_document(document_id=deployment_id)
             except Exception as delete_exc:
-                raise delete_exc from exc
-            raise exc
+                raise DocumentCreationError("Failed to create deployment") from delete_exc
+            if isinstance(exc, DocumentError):
+                raise exc
+            raise DocumentCreationError("Failed to create deployment") from exc
 
     async def update_deployment(
         self,
@@ -411,6 +418,11 @@ class DeployService(BaseService):
             Get credential handler function
         update_progress: Callable[[int, str], None]
             Update progress handler function
+
+        Raises
+        ------
+        DocumentUpdateError
+            When there is an unexpected error during deployment update
         """
         deployment = await self.deployment_service.get_document(document_id=deployment_id)
         original_enabled = deployment.enabled
@@ -432,5 +444,7 @@ class DeployService(BaseService):
                         data=DeploymentUpdate(enabled=original_enabled),
                     )
                 except Exception as revert_exc:
-                    raise revert_exc from exc
-                raise exc
+                    raise DocumentUpdateError("Failed to update deployment") from revert_exc
+                if isinstance(exc, DocumentError):
+                    raise exc
+                raise DocumentUpdateError("Failed to update deployment") from exc
