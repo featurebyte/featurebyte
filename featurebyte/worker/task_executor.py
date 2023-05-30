@@ -13,6 +13,7 @@ from uuid import UUID
 import gevent
 from celery.exceptions import SoftTimeLimitExceeded
 
+from featurebyte.config import get_home_path
 from featurebyte.enum import WorkerCommand
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
@@ -103,6 +104,19 @@ class TaskExecutor:
             get_credential=credential_provider.get_credential,
             get_storage=get_storage,
             get_temp_storage=get_temp_storage,
+        )
+
+        home_path = get_home_path()
+        if not home_path.exists():
+            home_path.mkdir(parents=True)
+
+        # override config file of the featurebyte-worker
+        config_path = home_path.joinpath("config.yaml")
+        config_path.write_text(
+            "# featurebyte-worker config file\n"
+            "profile:\n"
+            "  - name: worker\n"
+            "    api_url: http://featurebyte-server:8088\n\n"
         )
 
     async def execute(self) -> Any:

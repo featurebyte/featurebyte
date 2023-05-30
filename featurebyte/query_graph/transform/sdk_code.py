@@ -11,13 +11,16 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
+    ClassEnum,
     CodeGenerationConfig,
     CodeGenerationContext,
     CodeGenerator,
     ExpressionStr,
+    StatementStr,
     StatementT,
     VariableNameGenerator,
     VarNameExpressionInfo,
+    get_object_class_from_function_call,
 )
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -255,6 +258,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         feature_store_name: Optional[str] = None,
         feature_store_id: Optional[ObjectId] = None,
         table_id_to_info: Optional[Dict[ObjectId, Dict[str, Any]]] = None,
+        output_id: Optional[ObjectId] = None,
         **kwargs: Any,
     ) -> SDKCodeGlobalState:
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
@@ -286,4 +290,9 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
             final_output_name, node_name=None
         )
         global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
+        if output_id:
+            statement = get_object_class_from_function_call(
+                callable_name=f"{output_var}.save", _id=ClassEnum.OBJECT_ID(output_id)
+            )
+            global_state.code_generator.add_statements(statements=[StatementStr(statement)])
         return global_state

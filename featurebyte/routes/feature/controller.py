@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Union, cast
+from typing import Any, Dict, Literal, Optional, Union, cast
 
 from http import HTTPStatus
 from pprint import pformat
@@ -24,7 +24,9 @@ from featurebyte.routes.common.base import (
     DerivePrimaryEntityMixin,
     PaginatedDocument,
 )
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature import (
+    BatchFeatureCreate,
     FeatureCreate,
     FeatureModelResponse,
     FeatureNewVersionCreate,
@@ -35,6 +37,8 @@ from featurebyte.schema.feature import (
     FeatureUpdate,
 )
 from featurebyte.schema.info import FeatureInfo
+from featurebyte.schema.task import Task
+from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -47,6 +51,7 @@ from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
 
+# pylint: disable=too-many-instance-attributes
 class FeatureController(
     BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList],
     DerivePrimaryEntityMixin,
@@ -68,7 +73,9 @@ class FeatureController(
         version_service: VersionService,
         info_service: InfoService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
+        task_controller: TaskController,
     ):
+        # pylint: disable=too-many-arguments
         super().__init__(service)
         self.feature_namespace_service = feature_namespace_service
         self.entity_service = entity_service
@@ -78,6 +85,30 @@ class FeatureController(
         self.version_service = version_service
         self.info_service = info_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
+        self.task_controller = task_controller
+
+    async def submit_batch_feature_create_task(self, data: BatchFeatureCreate) -> Optional[Task]:
+        """
+        Submit Feature Create Task
+
+        Parameters
+        ----------
+        data: BatchFeatureCreate
+            Batch Feature creation payload
+
+        Returns
+        -------
+        Optional[Task]
+            Task object
+        """
+        payload = BatchFeatureCreateTaskPayload(
+            **{
+                **data.json_dict(),
+                "catalog_id": self.service.catalog_id,
+            }
+        )
+        task_id = await self.task_controller.task_manager.submit(payload=payload)
+        return await self.task_controller.task_manager.get_task(task_id=str(task_id))
 
     async def create_feature(
         self, data: Union[FeatureCreate, FeatureNewVersionCreate]

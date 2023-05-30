@@ -24,6 +24,7 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.common.base import DeleteResponse
 from featurebyte.schema.feature import (
+    BatchFeatureCreate,
     FeatureCreate,
     FeatureModelResponse,
     FeatureNewVersionCreate,
@@ -33,6 +34,7 @@ from featurebyte.schema.feature import (
     FeatureUpdate,
 )
 from featurebyte.schema.info import FeatureInfo
+from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/feature")
 
@@ -47,6 +49,16 @@ async def create_feature(
     controller = request.state.app_container.feature_controller
     feature: FeatureModelResponse = await controller.create_feature(data=data)
     return feature
+
+
+@router.post("/batch", response_model=Task, status_code=HTTPStatus.CREATED)
+async def submit_batch_feature_create_task(request: Request, data: BatchFeatureCreate) -> Task:
+    """
+    Submit Batch Feature Create Task
+    """
+    controller = request.state.app_container.feature_controller
+    task: Task = await controller.submit_batch_feature_create_task(data=data)
+    return task
 
 
 @router.get("/{feature_id}", response_model=FeatureModelResponse)

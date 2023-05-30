@@ -506,7 +506,14 @@ async def deployed_feature_list_fixture(
 
 
 async def insert_feature_into_persistent(
-    test_dir, user, persistent, readiness, name=None, catalog_id=None, version=None
+    test_dir,
+    user,
+    persistent,
+    readiness,
+    name=None,
+    catalog_id=None,
+    version=None,
+    namespace_id=None,
 ):
     """Insert a feature into persistent"""
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
@@ -518,6 +525,8 @@ async def insert_feature_into_persistent(
         payload["catalog_id"] = catalog_id or DEFAULT_CATALOG_ID
         if name:
             payload["name"] = name
+        if namespace_id:
+            payload["feature_namespace_id"] = namespace_id
         if version:
             payload["version"] = version
         feature_id = await persistent.insert_one(
@@ -553,6 +562,7 @@ async def setup_for_feature_readiness_fixture(
         user=user,
         persistent=persistent,
         readiness="DEPRECATED",
+        namespace_id=feature.feature_namespace_id,
     )
     feat_namespace = await feature_namespace_service.update_document(
         document_id=feature.feature_namespace_id,

@@ -682,7 +682,9 @@ class Feature(
         return primary_entity
 
     @typechecked
-    def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
+    def save(
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+    ) -> None:
         """
         Adds a Feature object to the catalog.
 
@@ -695,6 +697,8 @@ class Feature(
         conflict_resolution: ConflictResolution
             "raise" will raise an error when we encounter a conflict error.
             "retrieve" will handle the conflict error by retrieving the object with the same name.
+        _id: Optional[ObjectId]
+            The object ID to be used when saving the object. If not provided, a new object ID will be generated.
 
         Examples
         --------
@@ -707,7 +711,7 @@ class Feature(
         ... )["InvoiceAmountAvg_60days"]
         >>> invoice_amount_avg_60days.save()  # doctest: +SKIP
         """
-        super().save(conflict_resolution=conflict_resolution)
+        super().save(conflict_resolution=conflict_resolution, _id=_id)
 
     @typechecked
     def astype(
