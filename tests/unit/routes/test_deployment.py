@@ -196,6 +196,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
     @staticmethod
     def check_feature_list_deployed(api_client, feature_list_id, expected_deployed):
+        """Check feature list deployed status"""
         feature_list_response = api_client.get(f"/feature_list/{feature_list_id}")
         feature_list_dict = feature_list_response.json()
         assert feature_list_response.status_code == HTTPStatus.OK
