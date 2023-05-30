@@ -27,7 +27,7 @@ concurrency:
 jobs:
   changelog:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
     steps:
     - uses: actions/checkout@v3
       with:
@@ -39,12 +39,12 @@ jobs:
     - name: Ensure no changes to the CHANGELOG
       run: |-
         if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./CHANGELOG.md) ]]; then
-          echo "The CHANGELOG.md was not modified."
-          echo "See CONTRIBUTING.md for more details"
+          echo "The CHANGELOG.md was modified."
           echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
+          echo "See CONTRIBUTING.md for more details"
           exit 1
         else
-          echo "The CHANGELOG.md was modified."
+          echo "The CHANGELOG.md was not modified."
         fi
     - name: Ensure addition of at least 1 changelog entry
       run: task changelog-pr-files
