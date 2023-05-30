@@ -3,10 +3,12 @@ Batch feature create task
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Iterator, cast
 
 import asyncio
 import concurrent.futures
+import os
+from contextlib import contextmanager
 
 from bson import ObjectId
 
@@ -20,6 +22,35 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
+
+
+@contextmanager
+def set_environment_variable(variable: str, value: Any) -> Iterator[None]:
+    """
+    Set the environment variable within the context
+
+    Parameters
+    ----------
+    variable: str
+        The environment variable
+    value: Any
+        The value to set
+
+    Yields
+    ------
+    Iterator[None]
+        The context manager
+    """
+    previous_value = os.environ.get(variable)
+    os.environ[variable] = value
+
+    try:
+        yield
+    finally:
+        if previous_value is not None:
+            os.environ[variable] = previous_value
+        else:
+            del os.environ[variable]
 
 
 async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
@@ -37,8 +68,9 @@ async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
     activate_catalog(catalog_id=catalog_id)
 
     # execute the code
-    with concurrent.futures.ThreadPoolExecutor() as pool:
-        await asyncio.get_event_loop().run_in_executor(pool, exec, code)
+    with set_environment_variable("SDK_EXECUTION_MODE", "SERVER"):
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
 
 class BatchFeatureCreateTask(BaseTask):
@@ -76,8 +108,6 @@ class BatchFeatureCreateTask(BaseTask):
             logger.debug(
                 "Generated feature is not the same as the expected feature",
                 extra={
-                    "feature_id": feature.id,
-                    "name": feature.name,
                     "expected_hash": expected_hash,
                     "generated_hash": generated_hash,
                     "match_definition": definition == feature.definition,
