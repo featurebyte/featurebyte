@@ -64,6 +64,7 @@ Before submitting your code please do the following steps:
 3. Edit documentation if you have changed something significant
 4. Run `task format` to format your changes.
 5. Run `task lint` to ensure that types, security and docstrings are okay.
+6. Add a changelog file in .changelog/ folder. Refer to `.changelog/TEMPLATE.yaml`.
 
 
 ### Checking documentation
