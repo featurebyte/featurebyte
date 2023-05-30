@@ -95,7 +95,9 @@ def get_node(graph_dict, node_name):
     return next(node for node in graph_dict["nodes"] if node["name"] == node_name)
 
 
-def add_groupby_operation(graph, groupby_node_params, input_node):
+def add_groupby_operation(
+    graph, groupby_node_params, input_node, override_tile_id=None, override_aggregation_id=None
+):
     """
     Helper function to add a groupby node
     """
@@ -103,10 +105,14 @@ def add_groupby_operation(graph, groupby_node_params, input_node):
         node_type=NodeType.GROUPBY,
         node_params={
             **groupby_node_params,
-            "tile_id": get_tile_table_identifier("deadbeef1234", groupby_node_params),
+            "tile_id": get_tile_table_identifier("deadbeef1234", groupby_node_params)
+            if override_tile_id is None
+            else override_tile_id,
             "aggregation_id": get_aggregation_identifier(
                 graph.node_name_to_ref[input_node.name], groupby_node_params
-            ),
+            )
+            if override_aggregation_id is None
+            else override_aggregation_id,
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[input_node],

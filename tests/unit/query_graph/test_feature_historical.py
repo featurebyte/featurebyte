@@ -367,3 +367,53 @@ async def test_historical_feature_query_set_execute(mocked_session):
         call(66, "Computing features"),
         call(100, "Computing features"),
     ]
+
+
+@pytest.fixture
+def patched_num_features_per_query():
+    """
+    Patch the NUM_FEATURES_PER_QUERY parameter to trigger executing feature query in batches
+    """
+    with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 1):
+        yield
+
+
+@pytest.mark.asyncio
+async def test_get_historical_features__tile_cache_multiple_batches(
+    query_graph_with_different_groupby_nodes,
+    output_table_details,
+    fixed_object_id,
+    mocked_session,
+    mocked_compute_tiles_on_demand,
+    patched_num_features_per_query,
+):
+    """
+    Test that nodes for tile cache are batched correctly
+    """
+    df_request = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
+            "cust_id": ["C1", "C2"],
+        }
+    )
+    mocked_session.generate_session_unique_id.return_value = "1"
+    nodes, graph = query_graph_with_different_groupby_nodes
+    nodes = nodes[::-1]
+    _ = await get_historical_features(
+        session=mocked_session,
+        graph=graph,
+        nodes=nodes,
+        observation_set=df_request,
+        source_type=SourceType.SNOWFLAKE,
+        output_table_details=output_table_details,
+    )
+    assert len(mocked_compute_tiles_on_demand.call_args_list) == 2
+
+    nodes = []
+    for call_args in mocked_compute_tiles_on_demand.call_args_list:
+        _, kwargs = call_args
+        current_nodes = kwargs["nodes"]
+        nodes.extend([node.name for node in current_nodes])
+
+    expected_nodes = ["groupby_2", "groupby_1"]
+    assert nodes == expected_nodes

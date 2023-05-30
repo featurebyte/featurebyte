@@ -566,8 +566,8 @@ def patched_num_features_per_query():
 @pytest.mark.parametrize(
     "in_out_formats",
     [
-        # ("dataframe", "dataframe"),
-        # ("dataframe", "table"),
+        ("dataframe", "dataframe"),
+        ("dataframe", "table"),
         ("table", "table"),
     ],
 )
