@@ -283,7 +283,7 @@ def test_get_historical_feature_query_set__single_batch(
     query_set = get_historical_features_query_set(
         request_table_name=REQUEST_TABLE_NAME,
         graph=float_feature.graph,
-        node_groups=[[float_feature.node]],
+        nodes=[float_feature.node],
         request_table_columns=request_table_columns,
         source_type=SourceType.SNOWFLAKE,
         output_table_details=output_table_details,
@@ -308,15 +308,16 @@ def test_get_historical_feature_query_set__multiple_batches(
     Test historical features are executed in batches when there are many nodes
     """
     request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
-    query_set = get_historical_features_query_set(
-        request_table_name=REQUEST_TABLE_NAME,
-        graph=global_graph,
-        node_groups=split_nodes(global_graph, feature_nodes_all_types, 2),
-        request_table_columns=request_table_columns,
-        source_type=SourceType.SNOWFLAKE,
-        output_table_details=output_table_details,
-        output_feature_names=get_feature_names(global_graph, feature_nodes_all_types),
-    )
+    with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 2):
+        query_set = get_historical_features_query_set(
+            request_table_name=REQUEST_TABLE_NAME,
+            graph=global_graph,
+            nodes=feature_nodes_all_types,
+            request_table_columns=request_table_columns,
+            source_type=SourceType.SNOWFLAKE,
+            output_table_details=output_table_details,
+            output_feature_names=get_feature_names(global_graph, feature_nodes_all_types),
+        )
     for i, feature_query in enumerate(query_set.feature_queries):
         assert_equal_with_expected_fixture(
             feature_query.sql,
@@ -369,15 +370,6 @@ async def test_historical_feature_query_set_execute(mocked_session):
     ]
 
 
-@pytest.fixture
-def patched_num_features_per_query():
-    """
-    Patch the NUM_FEATURES_PER_QUERY parameter to trigger executing feature query in batches
-    """
-    with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 1):
-        yield
-
-
 @pytest.mark.asyncio
 async def test_get_historical_features__tile_cache_multiple_batches(
     query_graph_with_different_groupby_nodes,
@@ -385,7 +377,6 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     fixed_object_id,
     mocked_session,
     mocked_compute_tiles_on_demand,
-    patched_num_features_per_query,
 ):
     """
     Test that nodes for tile cache are batched correctly
@@ -398,15 +389,17 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     )
     mocked_session.generate_session_unique_id.return_value = "1"
     nodes, graph = query_graph_with_different_groupby_nodes
-    nodes = nodes[::-1]
-    _ = await get_historical_features(
-        session=mocked_session,
-        graph=graph,
-        nodes=nodes,
-        observation_set=df_request,
-        source_type=SourceType.SNOWFLAKE,
-        output_table_details=output_table_details,
-    )
+
+    with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 1):
+        _ = await get_historical_features(
+            session=mocked_session,
+            graph=graph,
+            nodes=nodes,
+            observation_set=df_request,
+            source_type=SourceType.SNOWFLAKE,
+            output_table_details=output_table_details,
+        )
+
     assert len(mocked_compute_tiles_on_demand.call_args_list) == 2
 
     nodes = []

@@ -479,10 +479,10 @@ def construct_join_feature_sets_query(
     )
 
 
-def get_historical_features_query_set(
+def get_historical_features_query_set(  # pylint: disable=too-many-locals
     request_table_name: str,
     graph: QueryGraph,
-    node_groups: list[list[Node]],
+    nodes: list[Node],
     request_table_columns: list[str],
     source_type: SourceType,
     output_table_details: TableDetails,
@@ -498,8 +498,8 @@ def get_historical_features_query_set(
         Name of request table to use
     graph : QueryGraph
         Query graph
-    node_groups : list[list[Node]]
-        List of query graph node in groups
+    nodes : list[Node]
+        List of query graph nodes
     request_table_columns : list[str]
         List of column names in the training events
     source_type : SourceType
@@ -517,11 +517,14 @@ def get_historical_features_query_set(
     -------
     HistoricalFeatureQuerySet
     """
+    # Process nodes in batches
+    node_groups = split_nodes(graph, nodes, NUM_FEATURES_PER_QUERY)
+
     if len(node_groups) == 1:
         # Fallback to simpler non-batched query if there is only one group to avoid overhead
         sql_expr, _ = get_historical_features_expr(
             graph=graph,
-            nodes=node_groups[0],
+            nodes=nodes,
             request_table_columns=request_table_columns,
             serving_names_mapping=serving_names_mapping,
             source_type=source_type,
@@ -719,12 +722,9 @@ async def get_historical_features(  # pylint: disable=too-many-locals
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
     request_table_columns = observation_set.columns
 
-    # Process nodes in batches
-    node_groups = split_nodes(graph, nodes, NUM_FEATURES_PER_QUERY)
-
     # Execute feature SQL code
     await observation_set.register_as_request_table(
-        session, request_table_name, add_row_index=len(node_groups) > 1
+        session, request_table_name, add_row_index=len(nodes) > NUM_FEATURES_PER_QUERY
     )
 
     # Compute tiles on demand if required
@@ -772,7 +772,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals
     # Generate SQL code that computes the features
     historical_feature_query_set = get_historical_features_query_set(
         graph=graph,
-        node_groups=node_groups,
+        nodes=nodes,
         request_table_columns=request_table_columns,
         serving_names_mapping=serving_names_mapping,
         source_type=source_type,
