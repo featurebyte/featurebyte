@@ -6,10 +6,8 @@ from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 import inspect
 from http import HTTPStatus
 
-import requests
 from fastapi import FastAPI, Request, Response
 from pydantic import ValidationError
-from starlette.background import BackgroundTasks
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
@@ -253,71 +251,4 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR
             )
-        return response
-
-
-class TelemetryMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware used by FastAPI to send telemetry logs
-    """
-
-    def __init__(self, app: FastAPI, endpoint: str, user_id: str, user_ip: str):
-        super().__init__(app)
-        self.endpoint = endpoint
-        self.user_id = user_id
-        self.user_ip = user_ip
-
-    async def _send_telemetry(self, payload: Dict[str, Any]) -> None:
-        try:
-            requests.post(self.endpoint, json=payload, timeout=1)  # set timeout to 1 second
-        except Exception:  # pylint: disable=broad-except
-            pass
-
-    async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
-        """
-        Telemetry middleware "main" call
-
-        Parameters
-        ----------
-        request: Request
-            Request object to be handled
-        call_next: Callable[[Request], Awaitable[Response]]
-            Function that will handle the request
-
-        Returns
-        -------
-        Response
-        """
-        # Render the response
-        response = await call_next(request)
-
-        # Ignore telemetry for status endpoint
-        if request.url.path in ["/status"]:
-            return response
-
-        if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
-            trace = response.body.decode("utf-8")
-        else:
-            trace = str(response.status_code)
-
-        # Render payload to server
-        payload = {
-            "method": request.method,
-            "path": request.url.path,
-            "user": self.user_id,
-            "ip": self.user_ip,
-            "trace": trace,
-        }
-        if response.background is None:
-            background = BackgroundTasks()
-            background.add_task(self._send_telemetry, payload)
-            response.background = background
-        else:
-            background = BackgroundTasks()
-            background.add_task(response.background)
-            background.add_task(self._send_telemetry, payload)
-            response.background = background
-
         return response
