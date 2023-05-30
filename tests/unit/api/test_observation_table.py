@@ -86,10 +86,14 @@ def test_shape(observation_table_from_source):
     assert observation_table_from_source.shape() == (100, 2)
 
 
-def test_data_source(observation_table_from_source):
+@patch(
+    "featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService.check_table_exists"
+)
+def test_data_source(mock_check_table_exists, observation_table_from_source):
     """
     Test the underlying SourceTable is constructed properly
     """
+    _ = mock_check_table_exists
     observation_table = observation_table_from_source
     source_table = observation_table._source_table
     assert source_table.feature_store.id == observation_table.location.feature_store_id

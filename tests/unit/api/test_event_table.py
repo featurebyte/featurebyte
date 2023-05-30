@@ -672,6 +672,9 @@ def test_get_event_table__schema_has_been_changed(mock_get_session, mock_logger,
     Test retrieving event table after table schema has been changed
     """
     recent_schema = {"column": "INT"}
+    mock_get_session.return_value.list_databases.return_value = ["sf_database"]
+    mock_get_session.return_value.list_schemas.return_value = ["sf_schema"]
+    mock_get_session.return_value.list_tables.return_value = ["sf_table"]
     mock_get_session.return_value.list_table_schema.return_value = recent_schema
     _ = EventTable.get_by_id(saved_event_table.id)
     assert mock_logger.warning.call_args.args[0] == "Table schema has been changed."
