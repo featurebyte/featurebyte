@@ -1,9 +1,0 @@
-change_type: enhancement
-
-component: workflows
-
-issues: []
-
-note: "Update daily cron, dependencies and lint workflows to use code defined github workflows."
-
-subtext:
