@@ -251,6 +251,8 @@ class StorageType(StrEnum):
     FILE = "file", "Local file storage."
     S3 = "s3", "S3 Storage."
     GCS = "gcs", "Google Cloud Storage."
+    AZURE = "azure", "Azure Blob Storage."
+    WEBHDFS = "webhdfs", "WebHDFS."
 
 
 class SpecialColumnName(StrEnum):

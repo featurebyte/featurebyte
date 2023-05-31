@@ -128,6 +128,7 @@ python-multipart = "^0.0.6"
 python-on-whales = "^0.60.0"
 redis = {version = "^5.0.0b1", optional = true, allow-prereleases = true}
 requests = "^2.27.1"
+requests-kerberos = { version = "^0.14.0", optional = true }
 rich = "^13.3.4"
 sasl = { version = "^0.3.1", optional = true }
 smart-open = { version = "^6.3.0", extras = ["azure", "gcs"], optional = true }
@@ -141,7 +142,7 @@ websocket-client = "^1.5.1"
 wheel = "0.40.0"
 
 [tool.poetry.extras]
-server = ["cachetools", "databricks-cli", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "aioredis"]
+server = ["cachetools", "databricks-cli", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "aioredis", "requests-kerberos"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
