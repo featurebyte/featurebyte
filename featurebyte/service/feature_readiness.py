@@ -307,6 +307,16 @@ class FeatureReadinessService(BaseService):
         ):
             raise DocumentUpdateError("Cannot update feature readiness to DRAFT.")
 
+        if (
+            document.readiness == FeatureReadiness.DRAFT
+            and target_readiness == FeatureReadiness.DEPRECATED
+        ):
+            raise DocumentUpdateError(
+                "Cannot update feature readiness from DRAFT to DEPRECATED. "
+                "Valid transitions are DRAFT -> PUBLIC_DRAFT or DRAFT -> PRODUCTION_READY. "
+                "Please delete the feature instead if it is no longer needed."
+            )
+
     async def update_feature(
         self,
         feature_id: ObjectId,

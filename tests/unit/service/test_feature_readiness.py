@@ -303,6 +303,26 @@ async def test_feature_readiness__prohibit_transition_to_draft(feature, feature_
 
 
 @pytest.mark.asyncio
+async def test_feature_readiness__prohibit_deprecate_draft_feature(
+    feature, feature_readiness_service
+):
+    """Test that it is not possible to deprecate a feature with DRAFT readiness level"""
+    assert feature.readiness == "DRAFT"
+
+    with pytest.raises(DocumentUpdateError) as exc:
+        await feature_readiness_service.update_feature(
+            feature_id=feature.id, readiness="DEPRECATED"
+        )
+
+    expected_msg = (
+        "Cannot update feature readiness from DRAFT to DEPRECATED. "
+        "Valid transitions are DRAFT -> PUBLIC_DRAFT or DRAFT -> PRODUCTION_READY. "
+        "Please delete the feature instead if it is no longer needed."
+    )
+    assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
 async def test_feature_readiness__update_feature_namespace_with_deletion__auto_mode(
     feature_readiness_service, feature_namespace_service, feature, setup_for_feature_readiness
 ):
