@@ -26,6 +26,7 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
+from featurebyte.query_graph.sql.tile_util import get_previous_job_epoch_expr
 from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
@@ -591,46 +592,6 @@ class TileCache:
         return point_in_time_epoch_expr
 
     @staticmethod
-    def _get_previous_job_epoch_expr(
-        point_in_time_epoch_expr: Expression, tile_info: TileGenSql
-    ) -> Expression:
-        """Get the SQL expression for the epoch second of previous feature job
-
-        Parameters
-        ----------
-        point_in_time_epoch_expr : Expression
-            Expression for point-in-time in epoch second
-        tile_info : TileGenSql
-            Tile table information
-
-        Returns
-        -------
-        str
-        """
-        frequency = make_literal_value(tile_info.frequency)
-        time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
-
-        # FLOOR((POINT_IN_TIME - TIME_MODULO_FREQUENCY) / FREQUENCY)
-        previous_job_index_expr = expressions.Floor(
-            this=expressions.Div(
-                this=expressions.Paren(
-                    this=expressions.Sub(
-                        this=point_in_time_epoch_expr, expression=time_modulo_frequency
-                    )
-                ),
-                expression=frequency,
-            )
-        )
-
-        # PREVIOUS_JOB_INDEX * FREQUENCY + TIME_MODULO_FREQUENCY
-        previous_job_epoch_expr = expressions.Add(
-            this=expressions.Mul(this=previous_job_index_expr, expression=frequency),
-            expression=time_modulo_frequency,
-        )
-
-        return previous_job_epoch_expr
-
-    @staticmethod
     def _get_last_tile_start_date_expr(
         point_in_time_epoch_expr: Expression, tile_info: TileGenSql
     ) -> Expression:
@@ -648,9 +609,7 @@ class TileCache:
         Expression
         """
         # Convert point in time to feature job time, then last tile start date
-        previous_job_epoch_expr = TileCache._get_previous_job_epoch_expr(
-            point_in_time_epoch_expr, tile_info
-        )
+        previous_job_epoch_expr = get_previous_job_epoch_expr(point_in_time_epoch_expr, tile_info)
         blind_spot = make_literal_value(tile_info.blind_spot)
         frequency = make_literal_value(tile_info.frequency)
 
@@ -685,9 +644,7 @@ class TileCache:
         -------
         Tuple[Expression, Expression]
         """
-        previous_job_epoch_expr = self._get_previous_job_epoch_expr(
-            point_in_time_epoch_expr, tile_info
-        )
+        previous_job_epoch_expr = get_previous_job_epoch_expr(point_in_time_epoch_expr, tile_info)
         frequency = make_literal_value(tile_info.frequency)
         blind_spot = make_literal_value(tile_info.blind_spot)
         time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)

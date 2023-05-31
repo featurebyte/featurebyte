@@ -62,29 +62,34 @@ def get_feature_preview_sql(
     execution_plan = planner.generate_plan(nodes)
 
     if point_in_time_and_serving_name_list:
-        # build required tiles
-        tic = time.time()
-        point_in_time_list = [
-            entry[SpecialColumnName.POINT_IN_TIME] for entry in point_in_time_and_serving_name_list
-        ]
-        tile_compute_plan = OnDemandTileComputePlan(point_in_time_list, source_type=source_type)
-        for node in nodes:
-            tile_compute_plan.process_node(graph, node)
-        cte_statements = sorted(tile_compute_plan.construct_on_demand_tile_ctes())
-        elapsed = time.time() - tic
-        logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
-
         # prepare request table
         tic = time.time()
         df_request = pd.DataFrame(point_in_time_and_serving_name_list)
         request_table_sql = construct_dataframe_sql_expr(
             df_request, [SpecialColumnName.POINT_IN_TIME]
         )
-        cte_statements.append((request_table_name, request_table_sql))
+        cte_statements = [(request_table_name, request_table_sql)]
         elapsed = time.time() - tic
         logger.debug(f"Constructing request table SQL took {elapsed:.2}s")
 
         request_table_columns = df_request.columns.tolist()
+
+        # build required tiles
+        tic = time.time()
+        point_in_time_list = [
+            entry[SpecialColumnName.POINT_IN_TIME] for entry in point_in_time_and_serving_name_list
+        ]
+        tile_compute_plan = OnDemandTileComputePlan(
+            point_in_time_list,
+            request_table_name=request_table_name,
+            source_type=source_type,
+        )
+        for node in nodes:
+            tile_compute_plan.process_node(graph, node)
+        cte_statements.extend(sorted(tile_compute_plan.construct_on_demand_tile_ctes()))
+        elapsed = time.time() - tic
+        logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
+
     else:
         cte_statements = None
         request_table_columns = None

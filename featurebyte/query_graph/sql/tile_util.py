@@ -5,10 +5,12 @@ from __future__ import annotations
 
 from typing import Any, Optional, Tuple, cast
 
-from sqlglot import parse_one
+from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.interpreter import TileGenSql
 
 
 def calculate_first_and_last_tile_indices(
@@ -128,3 +130,43 @@ def update_maximum_window_size_dict(
             max_window_size_dict[key] = None
         else:
             max_window_size_dict[key] = max(existing_window_size, window_size)
+
+
+def get_previous_job_epoch_expr(
+    point_in_time_epoch_expr: Expression, tile_info: TileGenSql
+) -> Expression:
+    """Get the SQL expression for the epoch second of previous feature job
+
+    Parameters
+    ----------
+    point_in_time_epoch_expr : Expression
+        Expression for point-in-time in epoch second
+    tile_info : TileGenSql
+        Tile table information
+
+    Returns
+    -------
+    str
+    """
+    frequency = make_literal_value(tile_info.frequency)
+    time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
+
+    # FLOOR((POINT_IN_TIME - TIME_MODULO_FREQUENCY) / FREQUENCY)
+    previous_job_index_expr = expressions.Floor(
+        this=expressions.Div(
+            this=expressions.Paren(
+                this=expressions.Sub(
+                    this=point_in_time_epoch_expr, expression=time_modulo_frequency
+                )
+            ),
+            expression=frequency,
+        )
+    )
+
+    # PREVIOUS_JOB_INDEX * FREQUENCY + TIME_MODULO_FREQUENCY
+    previous_job_epoch_expr = expressions.Add(
+        this=expressions.Mul(this=previous_job_index_expr, expression=frequency),
+        expression=time_modulo_frequency,
+    )
+
+    return previous_job_epoch_expr
