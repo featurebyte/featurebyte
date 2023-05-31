@@ -98,7 +98,7 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libsasl2-dev gcc
+      run: sudo apt-get install libsasl2-dev gcc libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -156,7 +156,7 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libsasl2-dev gcc
+      run: sudo apt-get install libsasl2-dev gcc libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -212,7 +212,7 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libsasl2-dev gcc
+      run: sudo apt-get install libsasl2-dev gcc libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -291,7 +291,7 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libsasl2-dev gcc
+      run: sudo apt-get install libsasl2-dev gcc libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -347,7 +347,7 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libsasl2-dev gcc
+      run: sudo apt-get install libsasl2-dev gcc libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update

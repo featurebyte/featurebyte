@@ -167,7 +167,9 @@ class KerberosKeytabCredential(BaseDatabaseCredential):
 
     Examples
     --------
-    >>> kerberos_key_tab_credential = KerberosKeytabCredential.from_file(keytab="/path/to/keytab")  # doctest: +SKIP
+    >>> kerberos_key_tab_credential = KerberosKeytabCredential.from_file(
+    ... keytab="/path/to/keytab", principal="user@FEATUREBYTE.COM"
+    ... )  # doctest: +SKIP
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.KerberosKeytabCredential")

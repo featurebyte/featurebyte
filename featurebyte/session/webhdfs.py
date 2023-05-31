@@ -92,7 +92,7 @@ def webhdfs_delete(http_uri: str, kerberos: bool = False, ssl: bool = False) -> 
 
     kwargs = _get_request_params(kerberos=kerberos)
     payload = {"op": "DELETE"}
-    response = requests.delete(http_uri, params=payload, **kwargs)
+    response = requests.delete(http_uri, params=payload, timeout=TIMEOUT, **kwargs)
     if response.status_code != HTTPStatus.OK:
         raise WebHdfsException(msg=response.text, status_code=response.status_code)
 
@@ -111,7 +111,7 @@ def _get_request_params(kerberos: bool = False) -> Dict[str, Any]:
     Dict[str, Any]
         Request parameters
     """
-    kwargs = {"verify": False, "timeout": TIMEOUT}  # ignore SSL certificate verification
+    kwargs = {"verify": False}  # ignore SSL certificate verification
     if kerberos:
         kwargs["auth"] = requests_kerberos.HTTPKerberosAuth()
     return kwargs
@@ -145,7 +145,9 @@ class BufferedInput(BufferedInputBase):
 
         payload = {"op": "OPEN", "offset": "0"}
         kwargs = _get_request_params(kerberos=kerberos)
-        self._response = requests.get(self._uri, params=payload, stream=True, **kwargs)
+        self._response = requests.get(
+            self._uri, params=payload, stream=True, timeout=TIMEOUT, **kwargs
+        )
         if self._response.status_code != HTTPStatus.OK:
             raise WebHdfsException(msg=self._response.text, status_code=self._response.status_code)
         self._buf = b""
@@ -190,13 +192,19 @@ class BufferedOutput(BufferedOutputBase):  # pylint: disable=too-many-instance-a
         # creating empty file first
         payload = {"op": "CREATE", "overwrite": "True"}
         kwargs = _get_request_params(kerberos=kerberos)
-        init_response = requests.put(self._uri, params=payload, allow_redirects=False, **kwargs)
+        init_response = requests.put(
+            self._uri, params=payload, allow_redirects=False, timeout=TIMEOUT, **kwargs
+        )
         if not init_response.status_code == HTTPStatus.TEMPORARY_REDIRECT:
             raise WebHdfsException(msg=init_response.text, status_code=init_response.status_code)
         uri = init_response.headers["location"]
 
         response = requests.put(
-            uri, data="", headers={"content-type": "application/octet-stream"}, **kwargs
+            uri,
+            data="",
+            headers={"content-type": "application/octet-stream"},
+            timeout=TIMEOUT,
+            **kwargs,
         )
         if not response.status_code == HTTPStatus.CREATED:
             raise WebHdfsException(msg=response.text, status_code=response.status_code)
@@ -204,7 +212,9 @@ class BufferedOutput(BufferedOutputBase):  # pylint: disable=too-many-instance-a
     def _upload(self, data: bytes) -> None:
         payload = {"op": "APPEND"}
         kwargs = _get_request_params(kerberos=self._kerberos)
-        init_response = requests.post(self._uri, params=payload, allow_redirects=False, **kwargs)
+        init_response = requests.post(
+            self._uri, params=payload, allow_redirects=False, timeout=TIMEOUT, **kwargs
+        )
         if not init_response.status_code == HTTPStatus.TEMPORARY_REDIRECT:
             raise WebHdfsException(msg=init_response.text, status_code=init_response.status_code)
         uri = init_response.headers["location"]
@@ -213,6 +223,7 @@ class BufferedOutput(BufferedOutputBase):  # pylint: disable=too-many-instance-a
             uri,
             data=data,
             headers={"content-type": "application/octet-stream"},
+            timeout=TIMEOUT,
             **kwargs,
         )
         if not response.status_code == HTTPStatus.OK:
