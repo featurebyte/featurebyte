@@ -323,6 +323,30 @@ def groupby_node_params_sum_agg_fixture():
     return node_params
 
 
+@pytest.fixture(name="groupby_node_params_different_feature_job_settings")
+def groupby_node_params_different_feature_job_settings_fixture():
+    """Fixture groupby node parameters
+
+    Same feature job settings as groupby_node_params_fixture, but with different aggregation and
+    different feature windows
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "sum",
+        "time_modulo_frequency": 900,  # 15m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a_2h_sum_v2", "a_36h_sum_v2"],
+        "windows": ["2h", "36h"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    return node_params
+
+
 @pytest.fixture(name="query_graph_with_groupby")
 def query_graph_with_groupby_fixture(query_graph_and_assign_node, groupby_node_params):
     """Fixture of a query graph with a groupby operation"""
@@ -410,6 +434,33 @@ def query_graph_with_similar_groupby_nodes(
     node2 = add_groupby_operation(graph, groupby_node_params_max_agg, assign_node)
     node3 = add_groupby_operation(graph, groupby_node_params_sum_agg, assign_node)
     return [node1, node2, node3], graph
+
+
+@pytest.fixture(name="query_graph_with_different_groupby_nodes")
+def query_graph_with_different_groupby_nodes_fixture(
+    query_graph_and_assign_node,
+    groupby_node_params,
+    groupby_node_params_different_feature_job_settings,
+):
+    """
+    Fixture of a query graph with two different groupby nodes (different job settings)
+    """
+    graph, assign_node = query_graph_and_assign_node
+    node1 = add_groupby_operation(
+        graph,
+        groupby_node_params,
+        assign_node,
+        override_tile_id="tile_id_1",
+        override_aggregation_id="agg_id_2",
+    )
+    node2 = add_groupby_operation(
+        graph,
+        groupby_node_params_different_feature_job_settings,
+        assign_node,
+        override_tile_id="tile_id_2",
+        override_aggregation_id="agg_id_1",
+    )
+    return [node1, node2], graph
 
 
 @pytest.fixture(name="complex_feature_query_graph")

@@ -1,51 +1,70 @@
 CREATE TABLE "__TEMP_646f1b781d1e7970788b32ec_3" AS
-WITH "REQUEST_TABLE_POINT_IN_TIME_MEMBERSHIP_STATUS" AS (
-  SELECT DISTINCT
+WITH "REQUEST_TABLE_W7776000_F3600_BS900_M1800_CUSTOMER_ID" AS (
+  SELECT
     "POINT_IN_TIME",
-    "MEMBERSHIP_STATUS"
-  FROM REQUEST_TABLE
+    "CUSTOMER_ID",
+    FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
+    ) / 3600) AS "__FB_LAST_TILE_INDEX",
+    FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
+    ) / 3600) - 2160 AS "__FB_FIRST_TILE_INDEX"
+  FROM (
+    SELECT DISTINCT
+      "POINT_IN_TIME",
+      "CUSTOMER_ID"
+    FROM REQUEST_TABLE
+  )
 ), _FB_AGGREGATED AS (
   SELECT
     REQ."__FB_ROW_INDEX_FOR_JOIN",
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_as_at_count_None_membership_status_None_input_2" AS "_fb_internal_as_at_count_None_membership_status_None_input_2"
+    "T0"."_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73" AS "_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
-      REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-      REQ."MEMBERSHIP_STATUS" AS "MEMBERSHIP_STATUS",
-      COUNT(*) AS "_fb_internal_as_at_count_None_membership_status_None_input_2"
-    FROM "REQUEST_TABLE_POINT_IN_TIME_MEMBERSHIP_STATUS" AS REQ
-    INNER JOIN (
+      *
+    FROM (
       SELECT
-        *,
-        LEAD("effective_ts") OVER (PARTITION BY "cust_id" ORDER BY "effective_ts") AS "__FB_END_TS"
+        "POINT_IN_TIME",
+        "CUSTOMER_ID",
+        ROW_NUMBER() OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "__FB_ROW_NUMBER",
+        FIRST_VALUE(value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73) OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73"
       FROM (
         SELECT
-          "effective_ts" AS "effective_ts",
-          "cust_id" AS "cust_id",
-          "membership_status" AS "membership_status"
-        FROM "db"."public"."customer_profile_table"
+          REQ."POINT_IN_TIME",
+          REQ."CUSTOMER_ID",
+          TILE.INDEX,
+          TILE.value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+        FROM "REQUEST_TABLE_W7776000_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
+        INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
+          ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 2160) = FLOOR(TILE.INDEX / 2160)
+          AND REQ."CUSTOMER_ID" = TILE."cust_id"
+        WHERE
+          TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
+        UNION ALL
+        SELECT
+          REQ."POINT_IN_TIME",
+          REQ."CUSTOMER_ID",
+          TILE.INDEX,
+          TILE.value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+        FROM "REQUEST_TABLE_W7776000_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
+        INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
+          ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 2160) - 1 = FLOOR(TILE.INDEX / 2160)
+          AND REQ."CUSTOMER_ID" = TILE."cust_id"
+        WHERE
+          TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
       )
-    ) AS SCD
-      ON REQ."MEMBERSHIP_STATUS" = SCD."membership_status"
-      AND (
-        SCD."effective_ts" <= REQ."POINT_IN_TIME"
-        AND (
-          SCD."__FB_END_TS" > REQ."POINT_IN_TIME" OR SCD."__FB_END_TS" IS NULL
-        )
-      )
-    GROUP BY
-      REQ."POINT_IN_TIME",
-      REQ."MEMBERSHIP_STATUS"
+    )
+    WHERE
+      "__FB_ROW_NUMBER" = 1
   ) AS T0
-    ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
-    AND REQ."MEMBERSHIP_STATUS" = T0."MEMBERSHIP_STATUS"
+    ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME" AND REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
 )
 SELECT
   AGG."__FB_ROW_INDEX_FOR_JOIN",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_as_at_count_None_membership_status_None_input_2" AS "asat_feature"
+  "_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73" AS "a_latest_value_past_90d"
 FROM _FB_AGGREGATED AS AGG

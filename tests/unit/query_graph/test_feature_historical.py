@@ -17,6 +17,7 @@ from featurebyte.query_graph.sql.feature_historical import (
     FeatureQuery,
     HistoricalFeatureQuerySet,
     convert_point_in_time_dtype_if_needed,
+    get_feature_names,
     get_historical_features,
     get_historical_features_expr,
     get_historical_features_query_set,
@@ -282,10 +283,11 @@ def test_get_historical_feature_query_set__single_batch(
     query_set = get_historical_features_query_set(
         request_table_name=REQUEST_TABLE_NAME,
         graph=float_feature.graph,
-        node_groups=[[float_feature.node]],
+        nodes=[float_feature.node],
         request_table_columns=request_table_columns,
         source_type=SourceType.SNOWFLAKE,
         output_table_details=output_table_details,
+        output_feature_names=[float_feature.node.name],
     )
     assert query_set.feature_queries == []
     assert_equal_with_expected_fixture(
@@ -306,14 +308,16 @@ def test_get_historical_feature_query_set__multiple_batches(
     Test historical features are executed in batches when there are many nodes
     """
     request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
-    query_set = get_historical_features_query_set(
-        request_table_name=REQUEST_TABLE_NAME,
-        graph=global_graph,
-        node_groups=split_nodes(feature_nodes_all_types, 2),
-        request_table_columns=request_table_columns,
-        source_type=SourceType.SNOWFLAKE,
-        output_table_details=output_table_details,
-    )
+    with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 2):
+        query_set = get_historical_features_query_set(
+            request_table_name=REQUEST_TABLE_NAME,
+            graph=global_graph,
+            nodes=feature_nodes_all_types,
+            request_table_columns=request_table_columns,
+            source_type=SourceType.SNOWFLAKE,
+            output_table_details=output_table_details,
+            output_feature_names=get_feature_names(global_graph, feature_nodes_all_types),
+        )
     for i, feature_query in enumerate(query_set.feature_queries):
         assert_equal_with_expected_fixture(
             feature_query.sql,
@@ -364,3 +368,45 @@ async def test_historical_feature_query_set_execute(mocked_session):
         call(66, "Computing features"),
         call(100, "Computing features"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_get_historical_features__tile_cache_multiple_batches(
+    query_graph_with_different_groupby_nodes,
+    output_table_details,
+    fixed_object_id,
+    mocked_session,
+    mocked_compute_tiles_on_demand,
+):
+    """
+    Test that nodes for tile cache are batched correctly
+    """
+    df_request = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
+            "cust_id": ["C1", "C2"],
+        }
+    )
+    mocked_session.generate_session_unique_id.return_value = "1"
+    nodes, graph = query_graph_with_different_groupby_nodes
+
+    with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 1):
+        _ = await get_historical_features(
+            session=mocked_session,
+            graph=graph,
+            nodes=nodes,
+            observation_set=df_request,
+            source_type=SourceType.SNOWFLAKE,
+            output_table_details=output_table_details,
+        )
+
+    assert len(mocked_compute_tiles_on_demand.call_args_list) == 2
+
+    nodes = []
+    for call_args in mocked_compute_tiles_on_demand.call_args_list:
+        _, kwargs = call_args
+        current_nodes = kwargs["nodes"]
+        nodes.extend([node.name for node in current_nodes])
+
+    expected_nodes = ["groupby_2", "groupby_1"]
+    assert nodes == expected_nodes
