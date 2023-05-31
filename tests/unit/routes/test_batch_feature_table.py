@@ -90,7 +90,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             if api_object == "deployment":
                 assert response.json()["status"] == "SUCCESS"
                 deployment_id = response.json()["payload"]["output_document_id"]
-                self.enable_deployment(api_client, deployment_id, catalog_id)
+                self.update_deployment_enabled(api_client, deployment_id, catalog_id)
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""

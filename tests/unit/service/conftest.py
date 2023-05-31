@@ -492,15 +492,22 @@ async def production_ready_feature_list_fixture(production_ready_feature, featur
 
 @pytest_asyncio.fixture(name="deployed_feature_list")
 async def deployed_feature_list_fixture(
-    online_enable_service_data_warehouse_mocks, deploy_service, production_ready_feature_list
+    online_enable_service_data_warehouse_mocks,
+    deploy_service,
+    feature_list_service,
+    production_ready_feature_list,
 ):
     """Fixture for a deployed feature list"""
     _ = online_enable_service_data_warehouse_mocks
-    updated_feature_list = await deploy_service.update_feature_list(
+    await deploy_service.create_deployment(
         feature_list_id=production_ready_feature_list.id,
-        deployed=True,
+        deployment_id=ObjectId(),
+        deployment_name="test-deployment",
+        to_enable_deployment=True,
         get_credential=Mock(),
-        return_document=True,
+    )
+    updated_feature_list = await feature_list_service.get_document(
+        document_id=production_ready_feature_list.id
     )
     return updated_feature_list
 

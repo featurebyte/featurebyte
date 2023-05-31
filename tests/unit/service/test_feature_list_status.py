@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_list import FeatureListStatus
@@ -13,10 +14,10 @@ from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServic
 
 @pytest_asyncio.fixture(name="feature_list_namespace_deployed")
 async def feature_list_namespace_deployed_fixture(
+    feature_list,
     deploy_service,
     feature_readiness_service,
     feature_list_namespace_service,
-    feature_list,
     mock_update_data_warehouse,
 ):
     """Feature list namespace deployed fixture"""
@@ -31,14 +32,14 @@ async def feature_list_namespace_deployed_fixture(
             readiness="PRODUCTION_READY",
         )
 
-    updated_feature_list = await deploy_service.update_feature_list(
+    await deploy_service.create_deployment(
         feature_list_id=feature_list.id,
-        deployed=True,
+        deployment_id=ObjectId(),
+        deployment_name="test_deployment",
+        to_enable_deployment=True,
         get_credential=Mock(),
     )
-    namespace = await feature_list_namespace_service.get_document(
-        document_id=updated_feature_list.feature_list_namespace_id
-    )
+    namespace = await feature_list_namespace_service.get_document(document_id=namespace.id)
     assert namespace.status == FeatureListStatus.DEPLOYED
     return namespace
 
@@ -112,6 +113,7 @@ async def test_feature_list_status__deployed_feature_list_transition_check(
 
 @pytest.mark.asyncio
 async def test_feature_list_status__deployed_feature_namespace_transit_to_public_draft(
+    app_container,
     deploy_service,
     feature_list_namespace_service,
     feature_list_namespace_deployed,
@@ -124,13 +126,17 @@ async def test_feature_list_status__deployed_feature_namespace_transit_to_public
     _ = mock_update_data_warehouse
     assert feature_list_namespace_deployed.status == FeatureListStatus.DEPLOYED
     feature_list_id = feature_list_namespace_deployed.feature_list_ids[0]
-    updated_feature_list = await deploy_service.update_feature_list(
-        feature_list_id=feature_list_id,
-        deployed=False,
-        get_credential=Mock(),
-    )
+    async for deployment in app_container.deployment_service.list_documents_iterator(
+        query_filter={"feature_list_id": feature_list_id, "enabled": True}
+    ):
+        await deploy_service.update_deployment(
+            deployment_id=deployment["_id"],
+            enabled=False,
+            get_credential=Mock(),
+        )
+
     namespace = await feature_list_namespace_service.get_document(
-        document_id=updated_feature_list.feature_list_namespace_id
+        document_id=feature_list_namespace_deployed.id
     )
     assert namespace.deployed_feature_list_ids == []
     assert namespace.status == FeatureListStatus.PUBLIC_DRAFT
