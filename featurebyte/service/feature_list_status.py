@@ -63,18 +63,28 @@ class FeatureListStatusService(BaseService):
             # if no change in status, do nothing
             return
 
+        if (
+            feature_list_namespace.status == FeatureListStatus.DRAFT
+            and target_feature_list_status == FeatureListStatus.DEPRECATED
+        ):
+            raise DocumentUpdateError(
+                "Not allowed to update status of feature list from DRAFT to DEPRECATED. "
+                "Valid status transition: DRAFT -> PUBLIC_DRAFT or DRAFT -> TEMPLATE. "
+                "Please delete feature list instead if it is no longer needed."
+            )
+
         if target_feature_list_status == FeatureListStatus.DRAFT:
             # feature list is not allowed to be updated to draft status
             raise DocumentUpdateError(
                 f'Not allowed to update status of FeatureList (name: "{feature_list_namespace.name}") '
-                f"to draft status."
+                "to draft status."
             )
 
         if target_feature_list_status == FeatureListStatus.DEPLOYED:
             if not deployed_feature_list_ids:
                 raise DocumentUpdateError(
                     f'Not allowed to update status of FeatureList (name: "{feature_list_namespace.name}") '
-                    f"to deployed status without deployed feature list."
+                    "to deployed status without deployed feature list."
                 )
 
         if feature_list_namespace.status == FeatureListStatus.DEPLOYED:
