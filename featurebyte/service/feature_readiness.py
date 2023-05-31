@@ -312,7 +312,7 @@ class FeatureReadinessService(BaseService):
             and target_readiness == FeatureReadiness.DEPRECATED
         ):
             raise DocumentUpdateError(
-                "Cannot update feature readiness from DRAFT to DEPRECATED. "
+                "Not allowed to update feature readiness from DRAFT to DEPRECATED. "
                 "Valid transitions are DRAFT -> PUBLIC_DRAFT or DRAFT -> PRODUCTION_READY. "
                 "Please delete the feature instead if it is no longer needed."
             )

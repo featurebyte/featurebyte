@@ -62,6 +62,27 @@ async def test_feature_list_status__not_allow_update_to_deployed_without_deploye
     assert expected_msg in str(exc.value)
 
 
+@pytest.mark.asyncio
+async def test_feature_list_status__prohibit_deprecate_draft_feature_list(
+    feature_list_status_service, feature_list_namespace
+):
+    """Test deployed status validation check."""
+    assert feature_list_namespace.status == FeatureListStatus.DRAFT
+
+    with pytest.raises(DocumentUpdateError) as exc:
+        await feature_list_status_service.update_feature_list_namespace_status(
+            feature_list_namespace_id=feature_list_namespace.id,
+            target_feature_list_status=FeatureListStatus.DEPRECATED,
+        )
+
+    expected_msg = (
+        "Not allowed to update status of feature list from DRAFT to DEPRECATED. "
+        "Valid status transition: DRAFT -> PUBLIC_DRAFT or DRAFT -> TEMPLATE. "
+        "Please use delete feature list instead if it is no longer needed."
+    )
+    assert expected_msg in str(exc.value)
+
+
 async def check_transit_to_draft_is_not_allow(feature_list_status_service, feature_list_namespace):
     """Test that a feature list namespace cannot be updated to draft status."""
     with pytest.raises(DocumentUpdateError) as exc:

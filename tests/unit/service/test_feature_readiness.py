@@ -315,7 +315,7 @@ async def test_feature_readiness__prohibit_deprecate_draft_feature(
         )
 
     expected_msg = (
-        "Cannot update feature readiness from DRAFT to DEPRECATED. "
+        "Not allowed to update feature readiness from DRAFT to DEPRECATED. "
         "Valid transitions are DRAFT -> PUBLIC_DRAFT or DRAFT -> PRODUCTION_READY. "
         "Please delete the feature instead if it is no longer needed."
     )
