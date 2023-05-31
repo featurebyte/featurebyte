@@ -70,7 +70,7 @@ class FeatureListStatusService(BaseService):
             raise DocumentUpdateError(
                 "Not allowed to update status of feature list from DRAFT to DEPRECATED. "
                 "Valid status transition: DRAFT -> PUBLIC_DRAFT or DRAFT -> TEMPLATE. "
-                "Please use delete feature list instead if it is no longer needed."
+                "Please delete feature list instead if it is no longer needed."
             )
 
         if target_feature_list_status == FeatureListStatus.DRAFT:

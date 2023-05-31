@@ -78,7 +78,7 @@ async def test_feature_list_status__prohibit_deprecate_draft_feature_list(
     expected_msg = (
         "Not allowed to update status of feature list from DRAFT to DEPRECATED. "
         "Valid status transition: DRAFT -> PUBLIC_DRAFT or DRAFT -> TEMPLATE. "
-        "Please use delete feature list instead if it is no longer needed."
+        "Please delete feature list instead if it is no longer needed."
     )
     assert expected_msg in str(exc.value)
 
