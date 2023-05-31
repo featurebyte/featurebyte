@@ -4,7 +4,7 @@
 
 ### Python
 
-We use `python` >=3.8 with `poetry` to manage the dependencies. </br><small>Refer to [poetry](https://python-poetry.org/docs/#installation) for installation instructions.</small>
+We use `python` >=3.8 with `poetry>=1.5` to manage the dependencies. </br><small>Refer to [poetry](https://python-poetry.org/docs/#installation) for installation instructions.</small>
 
 ### Java
 
