@@ -4,6 +4,7 @@ Document model for stored credentials
 from typing import Dict, List, Literal, Optional, Union
 from typing_extensions import Annotated
 
+import base64  # pylint: disable=wrong-import-order
 import os  # pylint: disable=wrong-import-order
 
 import pymongo
@@ -111,6 +112,7 @@ class DatabaseCredentialType(StrEnum):
 
     USERNAME_PASSWORD = "USERNAME_PASSWORD"
     ACCESS_TOKEN = "ACCESS_TOKEN"
+    KERBEROS_KEYTAB = "KERBEROS_KEYTAB"
 
 
 class BaseDatabaseCredential(BaseCredential):
@@ -159,8 +161,59 @@ class AccessTokenCredential(BaseDatabaseCredential):
     access_token: StrictStr = Field(description="The access token used to connect.")
 
 
+class KerberosKeytabCredential(BaseDatabaseCredential):
+    """
+    Data class for a kerberos key tab credential.
+
+    Examples
+    --------
+    >>> kerberos_key_tab_credential = KerberosKeytabCredential.from_file(keytab="/path/to/keytab")  # doctest: +SKIP
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.KerberosKeytabCredential")
+
+    type: Literal[DatabaseCredentialType.KERBEROS_KEYTAB] = Field(
+        DatabaseCredentialType.KERBEROS_KEYTAB, const=True
+    )
+    principal: StrictStr = Field(description="The principal used to connect.")
+    encoded_key_tab: StrictStr = Field(description="The key tab used to connect.")
+
+    @property
+    def keytab(self) -> bytes:
+        """
+        Returns the keytab
+
+        Returns
+        -------
+        bytes
+            The key tab
+        """
+        return base64.b64decode(self.encoded_key_tab)
+
+    @classmethod
+    def from_file(cls, keytab_filepath: str, principal: str) -> "KerberosKeytabCredential":
+        """
+        Create a KerberosKeytabCredential from a keytab file.
+
+        Parameters
+        ----------
+        keytab_filepath: str
+            Path to the keytab file.
+        principal: str
+            Principal to use with the keytab.
+
+        Returns
+        -------
+        KerberosKeytabCredential
+        """
+        return KerberosKeytabCredential(
+            principal=principal,
+            encoded_key_tab=base64.b64encode(open(keytab_filepath, "rb").read()).decode("utf-8"),
+        )
+
+
 DatabaseCredential = Annotated[
-    Union[UsernamePasswordCredential, AccessTokenCredential],
+    Union[UsernamePasswordCredential, AccessTokenCredential, KerberosKeytabCredential],
     Field(discriminator="type"),
 ]
 

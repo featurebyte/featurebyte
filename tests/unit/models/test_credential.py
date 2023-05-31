@@ -14,6 +14,7 @@ from featurebyte.models.credential import (
     CredentialModel,
     DatabaseCredentialType,
     GCSStorageCredential,
+    KerberosKeytabCredential,
     S3StorageCredential,
     StorageCredentialType,
     UsernamePasswordCredential,
@@ -66,6 +67,11 @@ def database_credential_fixture(request):
         credential = AccessTokenCredential(access_token="access_token")
     elif request.param == DatabaseCredentialType.USERNAME_PASSWORD:
         credential = UsernamePasswordCredential(username="test", password="password")
+    elif request.param == DatabaseCredentialType.KERBEROS_KEYTAB:
+        credential = KerberosKeytabCredential.from_file(
+            keytab_filepath="tests/fixtures/hive.service.keytab",
+            principal="principal@REALM",
+        )
     else:
         raise ValueError("Invalid credential type")
     return credential.json_dict()
@@ -114,3 +120,18 @@ def test_credentials_serialize_json(feature_store, database_credential, storage_
     # check that the credential is decrypted correctly
     deserialized_credential.decrypt()
     assert deserialized_credential.json_dict() == credential.json_dict()
+
+
+def test_kerberos_keytab_credential_from_file():
+    """
+    Test KerberosKeytabCredential.from_file
+    """
+    credential = KerberosKeytabCredential.from_file(
+        keytab_filepath="tests/fixtures/hive.service.keytab",
+        principal="principal@REALM",
+    )
+    assert credential.principal == "principal@REALM"
+    assert credential.type == DatabaseCredentialType.KERBEROS_KEYTAB
+
+    with open("tests/fixtures/hive.service.keytab", "rb") as f:
+        assert credential.keytab == f.read()

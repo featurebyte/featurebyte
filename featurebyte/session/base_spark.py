@@ -17,12 +17,14 @@ from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
+    AzureBlobStorageCredential,
     GCSStorageCredential,
     S3StorageCredential,
     StorageCredential,
 )
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 from featurebyte.session.simple_storage import (
+    AzureBlobStorage,
     FileMode,
     FileSimpleStorage,
     GCSStorage,
@@ -103,6 +105,19 @@ class BaseSparkSession(BaseSession, ABC):
                     f"Unsupported storage credential for GCS: {self.storage_credential.__class__.__name__}"
                 )
             self._storage = GCSStorage(
+                storage_url=self.storage_url,
+                storage_credential=self.storage_credential,
+            )
+        elif self.storage_type == StorageType.AZURE:
+            if self.storage_credential is None:
+                raise NotImplementedError("Storage credential is required for Azure Blob Storage")
+            if self.storage_credential is None or not isinstance(
+                self.storage_credential, AzureBlobStorageCredential
+            ):
+                raise NotImplementedError(
+                    f"Unsupported storage credential for Azure Blob Storage: {self.storage_credential.__class__.__name__}"
+                )
+            self._storage = AzureBlobStorage(
                 storage_url=self.storage_url,
                 storage_credential=self.storage_credential,
             )

@@ -21,6 +21,7 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     StorageCredential,
 )
+from featurebyte.session.webhdfs import webhdfs_delete, webhdfs_open
 
 FileMode = Literal["r", "w", "rb", "wb"]
 
@@ -62,8 +63,8 @@ class SimpleStorage(ABC):
         Test connection to storage
         """
         conn_test_filename = f"_conn_test_{ObjectId()}"
-        with self.open(path=conn_test_filename, mode="w") as file_obj:
-            file_obj.write("OK")
+        with self.open(path=conn_test_filename, mode="wb") as file_obj:
+            file_obj.write(b"OK")
         self.delete_object(path=conn_test_filename)
 
     @abstractmethod
@@ -241,3 +242,45 @@ class AzureBlobStorage(SimpleStorage):
         path = path.rstrip("/")
         key = f"{self.key_prefix}/{path}" if self.key_prefix else path
         self.client.get_container_client(container=self.container).delete_blob(blob=key)  # type: ignore
+
+
+class WebHDFSStorage(SimpleStorage):
+    """
+    Simple WebHDFS storage class
+    """
+
+    def __init__(
+        self,
+        storage_url: str,
+        kerberos: bool = False,
+    ) -> None:
+        self.kerberos = kerberos
+        super().__init__(storage_url=storage_url)
+        protocol, path = storage_url.split("//")
+        assert protocol in {"http:", "https:"}
+        self.ssl = protocol == "https:"
+        parts = path.split("/")
+        if len(parts) == 0:
+            raise ValueError("HDFS hostname is missing in storage url")
+        self.hostname = parts[0]
+        if len(parts) > 1:
+            self.key_prefix = "/".join(parts[1:])
+            self.base_url = f"webhdfs://{self.hostname}/{self.key_prefix}"
+        else:
+            self.key_prefix = ""
+            self.base_url = f"webhdfs://{self.hostname}"
+
+    @contextmanager
+    def open(self, path: str, mode: FileMode) -> Any:
+        path = path.lstrip("/")
+        with webhdfs_open(
+            f"{self.base_url}/{path}",
+            mode=mode,
+            kerberos=self.kerberos,
+            ssl=self.ssl,
+        ) as file_obj:
+            yield file_obj
+
+    def delete_object(self, path: str) -> None:
+        path = path.rstrip("/")
+        webhdfs_delete(f"{self.base_url}/{path}", kerberos=self.kerberos, ssl=self.ssl)

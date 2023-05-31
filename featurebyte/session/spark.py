@@ -4,22 +4,26 @@ SparkSession class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Optional, OrderedDict
+from typing import Any, AsyncGenerator, Optional, OrderedDict, Union
 
 import collections
+import subprocess
+import tempfile
 
 import pandas as pd
 import pyarrow as pa
 from pandas.core.dtypes.common import is_datetime64_dtype, is_float_dtype
 from pyarrow import Schema
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 from pyhive.exc import OperationalError
 from pyhive.hive import Cursor
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.logging import get_logger
+from featurebyte.models.credential import AccessTokenCredential, KerberosKeytabCredential
 from featurebyte.session.base_spark import BaseSparkSession
 from featurebyte.session.hive import AuthType, HiveConnection
+from featurebyte.session.simple_storage import WebHDFSStorage
 
 logger = get_logger(__name__)
 
@@ -30,26 +34,41 @@ class SparkSession(BaseSparkSession):
     """
 
     _no_schema_error = OperationalError
+    _connection: Optional[HiveConnection] = PrivateAttr(None)
 
     port: int
     use_http_transport: bool
     use_ssl: bool
-    access_token: Optional[str]
     source_type: SourceType = Field(SourceType.SPARK, const=True)
+    database_credential: Optional[Union[KerberosKeytabCredential, AccessTokenCredential]]
 
     def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
-
         auth = None
         scheme = None
+        access_token = None
+        kerberos_service_name = None
+
+        # perform authentication initialization prior to super().__init__()
+        # so that we can use kerberos cache to authenticate storage
+        database_credential = data.get("database_credential")
+        if database_credential:
+            if isinstance(database_credential, KerberosKeytabCredential):
+                # create a temporary keytab file to specify the KDC
+                with tempfile.NamedTemporaryFile(mode="wb", suffix=".keytab") as keytab_file:
+                    keytab_file.write(database_credential.keytab)
+                    keytab_file.flush()
+                    cmd = ["kinit", "-kt", keytab_file.name, database_credential.principal]
+                    subprocess.run(cmd, check=True)
+                auth = AuthType.KERBEROS
+                kerberos_service_name = "hive"
+            else:
+                auth = AuthType.TOKEN
+
+        super().__init__(**data)
 
         # determine transport scheme
         if self.use_http_transport:
             scheme = "https" if self.use_ssl else "http"
-
-        # determine auth mechanism
-        if self.access_token:
-            auth = AuthType.TOKEN
 
         self._connection = HiveConnection(
             host=self.host,
@@ -57,9 +76,10 @@ class SparkSession(BaseSparkSession):
             catalog=self.database_name,
             database=self.schema_name,
             port=self.port,
-            access_token=self.access_token,
+            access_token=access_token,
             auth=auth,
             scheme=scheme,
+            kerberos_service_name=kerberos_service_name,
         )
         # Always use UTC for session timezone
         cursor = self._connection.cursor()
@@ -67,8 +87,21 @@ class SparkSession(BaseSparkSession):
         cursor.close()
 
     def __del__(self) -> None:
-        if self._connection:
+        if hasattr(self, "_connection") and self._connection:
             self._connection.close()
+
+    def _initialize_storage(self) -> None:
+        # support for webhdfs
+        if self.storage_type == StorageType.WEBHDFS:
+            self._storage = WebHDFSStorage(
+                storage_url=self.storage_url,
+                kerberos=(
+                    self.database_credential is not None
+                    and isinstance(self.database_credential, KerberosKeytabCredential)
+                ),
+            )
+        else:
+            super()._initialize_storage()
 
     @classmethod
     def is_threadsafe(cls) -> bool:
