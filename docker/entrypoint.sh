@@ -27,8 +27,7 @@ setup_permissions() {
     fi
     if [ "$HOST_UID" = '1000' ]; then
       echo "Using default user id 1000, skipping user modification."
-    else
-      usermod -u "${HOST_UID}" -o "${NON_PRIVUSER}"
+    else usermod -u "${HOST_UID}" -o "${NON_PRIVUSER}"
     fi
     chown -R "${HOST_UID}:${HOST_GID}" /app
   fi
@@ -65,7 +64,7 @@ EOF
 
 _main() {
   setup_permissions
-#  setup_kdc
+  setup_kdc
   if [ "$(id -u)" = '0' ]; then
     # Running as root, downgrading to normal user
     exec gosu "${NON_PRIVUSER}:${NON_PRIVGROUP}" "$BASH_SOURCE" "$@"
