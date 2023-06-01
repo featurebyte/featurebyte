@@ -191,10 +191,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         payload_multi["feature_ids"] = list(reversed(payload_multi["feature_ids"]))
         assert payload_multi["feature_ids"] != sorted(payload_multi["feature_ids"])
 
-        # check that feature_ids in post response are sorted
+        # check that feature_ids in post response are same order as in payload
         response = test_api_client.post("/feature_list", json=payload_multi)
         assert response.status_code == HTTPStatus.CREATED
-        assert response.json()["feature_ids"] == sorted(payload_multi["feature_ids"])
+        assert response.json()["feature_ids"] == payload_multi["feature_ids"]
 
     @pytest.fixture(name="new_feature_list_version_response")
     def new_feature_list_version_response_fixture(

@@ -8,7 +8,7 @@ component: feature
 issues: []
 
 # A brief description of the change.
-note: "refactor feature class to drop `FrozenFeatureModel` inheritance"
+note: "block feature readiness & feature list status transition from DRAFT to DEPRECATED"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

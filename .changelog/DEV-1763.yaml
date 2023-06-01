@@ -2,13 +2,13 @@
 change_type: enhancement
 
 # The name of the component
-component: feature
+component: feature-list
 
 # (Optional) One or more tracking issues or pull requests related to the change
 issues: []
 
 # A brief description of the change.
-note: "add POST `/feature/batch` endpoint to support batch feature creation"
+note: "update feature list to preserve feature order"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

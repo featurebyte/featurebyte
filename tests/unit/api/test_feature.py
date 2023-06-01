@@ -1101,7 +1101,7 @@ def test_feature_synchronization(saved_feature):
     assert cloned_feat.default_version_mode == target_mode
 
     # update original feature's readiness (stored at feature record)
-    target_readiness = FeatureReadiness.DEPRECATED
+    target_readiness = FeatureReadiness.PUBLIC_DRAFT
     assert saved_feature.readiness != target_readiness
     saved_feature.update_readiness(target_readiness)
     assert saved_feature.readiness == target_readiness

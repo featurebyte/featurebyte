@@ -488,9 +488,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     )
 
     # pydantic validators
-    _sort_feature_ids_validator = validator(
-        "feature_ids", "online_enabled_feature_ids", allow_reuse=True
-    )(construct_sort_validator())
+    _sort_feature_ids_validator = validator("online_enabled_feature_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
     @root_validator(pre=True)

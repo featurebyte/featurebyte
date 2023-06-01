@@ -1013,17 +1013,15 @@ def test_list_features(saved_feature_list, float_feature):
 
 
 @freeze_time("2023-01-20 06:30:00")
-@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_get_feature_jobs_status(
-    mock_execute_query, saved_feature_list, feature_job_logs, update_fixtures
-):
-    """
-    Test get_feature_jobs_status
-    """
-    mock_execute_query.return_value = feature_job_logs
-    job_status_result = saved_feature_list.get_feature_jobs_status(
-        job_history_window=24, job_duration_tolerance=1700
-    )
+def test_get_feature_jobs_status(saved_feature_list, feature_job_logs, update_fixtures):
+    """Test get_feature_jobs_status"""
+    with patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
+        mock_execute_query.return_value = feature_job_logs
+        job_status_result = saved_feature_list.get_feature_jobs_status(
+            job_history_window=24, job_duration_tolerance=1700
+        )
 
     # check request_parameters content
     assert job_status_result.request_parameters == {
@@ -1081,9 +1079,7 @@ def test_get_feature_jobs_status(
         raise ValueError("Fixtures updated. Please run test again without --update-fixtures flag")
 
 
-@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 def test_get_feature_jobs_status_feature_without_tile(
-    mock_execute_query,
     saved_scd_table,
     cust_id_entity,
     snowflake_event_table,
@@ -1093,14 +1089,19 @@ def test_get_feature_jobs_status_feature_without_tile(
     """
     Test get_feature_jobs_status for feature without tile
     """
-    mock_execute_query.return_value = feature_job_logs[:0]
     saved_scd_table["col_text"].as_entity(cust_id_entity.name)
 
     scd_view = saved_scd_table.get_view()
     feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
     feature_list = FeatureList([feature, float_feature], name="FeatureList")
     feature_list.save()
-    job_status_result = feature_list.get_feature_jobs_status()
+
+    with patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
+        mock_execute_query.return_value = feature_job_logs[:0]
+        job_status_result = feature_list.get_feature_jobs_status()
+
     assert job_status_result.feature_tile_table.shape == (1, 2)
     assert job_status_result.feature_job_summary.shape == (1, 10)
     assert job_status_result.job_session_logs.shape == (0, 12)
@@ -1265,3 +1266,18 @@ def test_primary_entity__saved_feature_list(saved_feature_list, cust_id_entity):
     Test primary_entity attribute for an unsaved feature list
     """
     assert saved_feature_list.primary_entity == [Entity.get_by_id(cust_id_entity.id)]
+
+
+def test_feature_list__features_order_is_kept(float_feature, non_time_based_feature):
+    """Test feature list features order is kept after save"""
+    # save features first
+    float_feature.save()
+    non_time_based_feature.save()
+
+    feature_list_1 = FeatureList([float_feature, non_time_based_feature], "test_feature_list_1")
+    feature_list_1.save()
+    assert feature_list_1.feature_names == [float_feature.name, non_time_based_feature.name]
+
+    feature_list_2 = FeatureList([non_time_based_feature, float_feature], "test_feature_list_2")
+    feature_list_2.save()
+    assert feature_list_2.feature_names == [non_time_based_feature.name, float_feature.name]
