@@ -29,17 +29,29 @@ def start(
     app_name: ApplicationName = typer.Argument(
         default="featurebyte", help="Name of application to start"
     ),
+    krb5_realm: str = typer.Option(default=None, help="Kerberos realm, eg: ATHENA.MIT.EDU"),
+    krb5_kdc: str = typer.Option(
+        default=None, help="Kerberos KDC hostname, eg: kerberos.mit.edu:88"
+    ),
 ) -> None:
     """Start application"""
-    start_app(app_name)
+    start_app(app_name, krb5_realm=krb5_realm, krb5_kdc=krb5_kdc)
 
 
 @app.command(name="playground")
 def playground(
     force_import: bool = typer.Option(default=False, help="Import datasets even if they exist"),
+    krb5_realm: str = typer.Option(default=None, help="Kerberos realm, eg: ATHENA.MIT.EDU"),
+    krb5_kdc: str = typer.Option(
+        default=None, help="Kerberos KDC hostname, eg: kerberos.mit.edu:88"
+    ),
 ) -> None:
     """Start playground environment"""
-    start_playground(force_import=force_import)
+    start_playground(
+        force_import=force_import,
+        krb5_realm=krb5_realm,
+        krb5_kdc=krb5_kdc,
+    )
 
 
 @app.callback(invoke_without_command=True)

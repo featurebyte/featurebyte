@@ -56,6 +56,8 @@ services:
       - "LOG_LEVEL=${LOG_LEVEL}"
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
+      - "KRB5_REALM=${KRB5_REALM}"
+      - "KRB5_KDC=${KRB5_KDC}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8088/status"]
       interval: 5s
@@ -87,6 +89,8 @@ services:
       - "LOG_LEVEL=${LOG_LEVEL}"
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
+      - "KRB5_REALM=${KRB5_REALM}"
+      - "KRB5_KDC=${KRB5_KDC}"
     command: ["bash", "/docker-entrypoint.sh", "worker"]
     volumes:
       - files-data:/app/.featurebyte/data/files
