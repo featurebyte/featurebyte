@@ -76,7 +76,7 @@ def test_webhdfs_storage():
         )
         krb5_config_file.flush()
         os.environ["KRB5_CONFIG"] = krb5_config_file.name
-        SparkSession(
+        session = SparkSession(
             host="analytics-cluster-m.us-central1-c.c.vpc-host-nonprod-xa739-xz970.internal",
             port=10003,
             http_path="cliservice",
@@ -92,3 +92,4 @@ def test_webhdfs_storage():
                 principal="hive/analytics-cluster-m.us-central1-c.c.vpc-host-nonprod-xa739-xz970.internal@DATAPROC.FEATUREBYTE.COM",
             ),
         )
+        session.test_storage_connection()
