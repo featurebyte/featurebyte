@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional, Tuple, cast
 
 from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression, Select
+from sqlglot.expressions import Expression
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.sql.adapter import BaseAdapter
@@ -14,7 +14,6 @@ from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import TileGenSql
-from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 
 
 def calculate_first_and_last_tile_indices(

@@ -55,6 +55,13 @@ class OnDemandTileComputePlan:
 
     @property
     def adapter(self) -> BaseAdapter:
+        """
+        Returns an instance of BaseAdapter based on the source type
+
+        Returns
+        -------
+        BaseAdapter
+        """
         return get_sql_adapter(self.source_type)
 
     def process_node(self, graph: QueryGraphModel, node: Node) -> None:
@@ -256,6 +263,27 @@ def get_tile_sql(
     request_table_name: str,
     window: Optional[int],
 ) -> Select:
+    """
+    Construct the SQL query that would compute the tiles for a given TileGenSql.
+
+    TileGenSql already contains the template for the tile SQL. This function fills in the entity
+    table placeholder so that the SQL is complete.
+
+    Parameters
+    ----------
+    adapter : BaseAdapter
+        Instance of BaseAdapter for generating engine specific SQL
+    tile_info : TileGenSql
+        Tile table information
+    request_table_name : str
+        Name of the request table
+    window : Optional[int]
+        Window size in seconds. None for features with an unbounded window.
+
+    Returns
+    -------
+    Select
+    """
     point_in_time_epoch_expr = adapter.to_epoch_seconds(
         expressions.Max(this=expressions.Identifier(this=SpecialColumnName.POINT_IN_TIME.value))
     )
