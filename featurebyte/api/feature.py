@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
 
+import os
 import time
 from http import HTTPStatus
 
@@ -46,6 +47,7 @@ from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSet
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.feature import (
+    BatchFeatureCreate,
     FeatureCreate,
     FeatureModelResponse,
     FeaturePreview,
@@ -711,7 +713,31 @@ class Feature(
         ... )["InvoiceAmountAvg_60days"]
         >>> invoice_amount_avg_60days.save()  # doctest: +SKIP
         """
-        super().save(conflict_resolution=conflict_resolution, _id=_id)
+        sdk_execution_mode = os.environ.get("SDK_EXECUTION_MODE")
+        if sdk_execution_mode == "SERVER":
+            super().save(conflict_resolution=conflict_resolution, _id=_id)
+        else:
+            self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
+            feature_create = FeatureCreate(**self._get_create_payload())
+            try:
+                self.post_async_task(
+                    route="/feature/batch",
+                    payload=BatchFeatureCreate.create([feature_create]).json_dict(),
+                    retrieve_result=False,
+                    has_output_url=False,
+                )
+                object_dict = self._get_object_dict_by_id(id_value=feature_create.id)
+            except RecordCreationException as exc:
+                traceback_message = exc.response.json()["traceback"]
+                has_dup_exception = (
+                    "featurebyte.exception.DuplicatedRecordException" in traceback_message
+                )
+                if conflict_resolution == "retrieve" and has_dup_exception:
+                    object_dict = self._get_object_dict_by_name(name=feature_create.name)
+                else:
+                    raise exc
+
+            type(self).__init__(self, **object_dict, **self._get_init_params_from_object())
 
     @typechecked
     def astype(

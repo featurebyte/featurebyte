@@ -47,6 +47,12 @@ class SavableApiObject(ApiObject):
         """
         _ = conflict_resolution
 
+    def _check_object_not_been_saved(self, conflict_resolution: ConflictResolution) -> None:
+        if self.saved and conflict_resolution == "raise":
+            raise ObjectHasBeenSavedError(
+                f'{type(self).__name__} (id: "{self.id}") has been saved before.'
+            )
+
     @typechecked
     def save(
         self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
@@ -94,11 +100,7 @@ class SavableApiObject(ApiObject):
         >>> entity.save()  # doctest: +SKIP
         Entity (id: <entity.id>) has been saved before.
         """
-        if self.saved and conflict_resolution == "raise":
-            raise ObjectHasBeenSavedError(
-                f'{type(self).__name__} (id: "{self.id}") has been saved before.'
-            )
-
+        self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
         self._pre_save_operations(conflict_resolution=conflict_resolution)
         client = Configurations().get_client()
         payload = self._get_create_payload()
