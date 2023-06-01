@@ -1265,3 +1265,18 @@ def test_primary_entity__saved_feature_list(saved_feature_list, cust_id_entity):
     Test primary_entity attribute for an unsaved feature list
     """
     assert saved_feature_list.primary_entity == [Entity.get_by_id(cust_id_entity.id)]
+
+
+def test_feature_list__features_order_is_kept(float_feature, non_time_based_feature):
+    """Test feature list features order is kept after save"""
+    # save features first
+    float_feature.save()
+    non_time_based_feature.save()
+
+    feature_list_1 = FeatureList([float_feature, non_time_based_feature], "test_feature_list_1")
+    feature_list_1.save()
+    assert feature_list_1.feature_names == [float_feature.name, non_time_based_feature.name]
+
+    feature_list_2 = FeatureList([non_time_based_feature, float_feature], "test_feature_list_2")
+    feature_list_2.save()
+    assert feature_list_2.feature_names == [non_time_based_feature.name, float_feature.name]
