@@ -394,8 +394,9 @@ class CountDictAccessor:
 
     def get_relative_frequency(self, key: Union[Scalar, Feature]) -> Feature:
         """
-        Computes the relative frequency of a specific key in the Cross Aggregate feature. The key may either be a
-        lookup feature or a scalar value.
+        Computes the relative frequency of a specific key in the Cross Aggregate feature. The key
+        may either be a lookup feature or a scalar value. If the key does not exist, the relative
+        frequency will be 0.
 
         Parameters
         ----------
