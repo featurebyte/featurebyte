@@ -6,7 +6,7 @@
 
 # --- TEMPLATE --- #
 # One of 'breaking', 'deprecation', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern
 # (e.g. gh-actions, docs, middleware, worker)
