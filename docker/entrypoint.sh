@@ -35,30 +35,30 @@ setup_permissions() {
 
 setup_kdc() {
   echo "Setting up KDC"
+  export KRB5_CONFIG=/app/krb5.conf
+
   if [ -f "${KRB5_CONFIG}" ]; then
     echo "KRB5_CONFIG already exists, skipping KDC setup"
     return
   fi
 
-  export KRB5_CONFIG=/app/krb5.conf
+  # skip if KRB5_REALM or KRB5_KDC is not set
   if [ -z "${KRB5_REALM}" ]; then
-    echo "KRB5_REALM is set, setting up KDC"
+    echo "KRB5_REALM not set, skipping KDC setup"
 
-    if [ -z "${KRB5_KDC}" ]; then
-      KRB5_KDC="kdc = ${KRB5_KDC}"
-    fi
-
+  elif [ -z "${KRB5_KDC}" ]; then
+    echo "KRB5_KDC not set, skipping KDC setup"
+  else
+    echo "Setting up KDC"
     cat <<EOF > ${KRB5_CONFIG}
 [libdefaults]
     default_realm = ${KRB5_REALM}
 
 [realms]
     ${KRB5_REALM} = {
-        ${KRB5_KDC}
+        kdc = ${KRB5_KDC}
     }
 EOF
-  else
-    echo "KRB5_REALM not set, skipping KDC setup"
   fi
 }
 
