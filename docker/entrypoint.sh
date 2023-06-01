@@ -34,9 +34,38 @@ setup_permissions() {
   fi
 }
 
+setup_kdc() {
+  echo "Setting up KDC"
+  if [ -f "${KRB5_CONFIG}" ]; then
+    echo "KRB5_CONFIG already exists, skipping KDC setup"
+    return
+  fi
+
+  export KRB5_CONFIG=/app/krb5.conf
+  if [ -z "${KRB5_REALM}" ]; then
+    echo "KRB5_REALM is set, setting up KDC"
+
+    if [ -z "${KRB5_KDC}" ]; then
+      KRB5_KDC="kdc = ${KRB5_KDC}"
+    fi
+
+    cat <<EOF > ${KRB5_CONFIG}
+[libdefaults]
+    default_realm = ${KRB5_REALM}
+
+[realms]
+    ${KRB5_REALM} = {
+        ${KRB5_KDC}
+    }
+EOF
+  else
+    echo "KRB5_REALM not set, skipping KDC setup"
+  fi
+}
+
 _main() {
   setup_permissions
-
+#  setup_kdc
   if [ "$(id -u)" = '0' ]; then
     # Running as root, downgrading to normal user
     exec gosu "${NON_PRIVUSER}:${NON_PRIVGROUP}" "$BASH_SOURCE" "$@"
