@@ -1,4 +1,8 @@
-WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
+WITH REQUEST_TABLE AS (
+  SELECT
+    CAST('2022-04-20 10:00:00' AS TIMESTAMP) AS `POINT_IN_TIME`,
+    'C1' AS `CUSTOMER_ID`
+), TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   SELECT
     avg_8b1b0ac73d607b2ad9cd1bd83be10878d3137e5b.INDEX,
     avg_8b1b0ac73d607b2ad9cd1bd83be10878d3137e5b.`cust_id`,
@@ -15,9 +19,41 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
         *,
         F_TIMESTAMP_TO_INDEX(`ts`, 1800, 900, 60) AS index
       FROM (
+        WITH __FB_ENTITY_TABLE_NAME AS (
+          (
+            SELECT
+              `CUSTOMER_ID` AS `cust_id`,
+              TO_TIMESTAMP(
+                FLOOR((
+                  UNIX_TIMESTAMP(MAX(POINT_IN_TIME)) - 1800
+                ) / 3600) * 3600 + 1800 - 900
+              ) AS `__FB_ENTITY_TABLE_END_DATE`,
+              DATEADD(
+                microsecond,
+                (
+                  48 * 3600 * CAST(1000000 AS LONG) / CAST(1 AS LONG)
+                ) * -1 % 60000000.0,
+                DATEADD(
+                  minute,
+                  (
+                    48 * 3600 * CAST(1000000 AS LONG) / CAST(1 AS LONG)
+                  ) * -1 / 60000000.0,
+                  TO_TIMESTAMP(
+                    FLOOR((
+                      UNIX_TIMESTAMP(MAX(POINT_IN_TIME)) - 1800
+                    ) / 3600) * 3600 + 1800 - 900
+                  )
+                )
+              ) AS `__FB_ENTITY_TABLE_START_DATE`
+            FROM `REQUEST_TABLE`
+            GROUP BY
+              `CUSTOMER_ID`
+          )
+        )
         SELECT
-          *
-        FROM (
+          R.*
+        FROM __FB_ENTITY_TABLE_NAME
+        INNER JOIN (
           SELECT
             `ts` AS `ts`,
             `cust_id` AS `cust_id`,
@@ -27,20 +63,16 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
               `a` + `b`
             ) AS `c`
           FROM `db`.`public`.`event_table`
-        )
-        WHERE
-          `ts` >= CAST('2022-04-18 09:15:00' AS TIMESTAMP)
-          AND `ts` < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
+        ) AS R
+          ON R.`cust_id` = __FB_ENTITY_TABLE_NAME.`cust_id`
+          AND R.`ts` >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+          AND R.`ts` < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
       )
     )
     GROUP BY
       index,
       `cust_id`
   ) AS avg_8b1b0ac73d607b2ad9cd1bd83be10878d3137e5b
-), REQUEST_TABLE AS (
-  SELECT
-    CAST('2022-04-20 10:00:00' AS TIMESTAMP) AS `POINT_IN_TIME`,
-    'C1' AS `CUSTOMER_ID`
 ), `REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID` AS (
   SELECT
     `POINT_IN_TIME`,
