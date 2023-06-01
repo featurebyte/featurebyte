@@ -93,11 +93,7 @@ def get_feature_preview_sql(
 
         # build required tiles
         tic = time.time()
-        point_in_time_list = [
-            entry[SpecialColumnName.POINT_IN_TIME] for entry in point_in_time_and_serving_name_list
-        ]
         tile_compute_plan = OnDemandTileComputePlan(
-            point_in_time_list,
             request_table_name=request_table_name,
             source_type=source_type,
         )

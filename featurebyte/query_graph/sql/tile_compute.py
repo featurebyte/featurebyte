@@ -17,7 +17,6 @@ from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
-from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import (
     get_previous_job_epoch_expr,
     update_maximum_window_size_dict,
@@ -35,17 +34,17 @@ class OnDemandTileComputePlan:
 
     Parameters
     ----------
-    point_in_time_list : list[str]
-        List of point in time values specified when calling preview
+    request_table_name : str
+        Name of request table to use
+    source_type : SourceType
+        Source type information
     """
 
     def __init__(
         self,
-        point_in_time_list: list[str],
         request_table_name: str,
         source_type: SourceType,
     ):
-        self.point_in_time_list = point_in_time_list
         self.processed_agg_ids: set[str] = set()
         self.max_window_size_by_tile_id: dict[str, Optional[int]] = {}
         self.tile_infos: list[TileGenSql] = []
@@ -93,16 +92,9 @@ class OnDemandTileComputePlan:
         prev_aliases: dict[str, str] = {}
 
         for tile_info in self.tile_infos:
-            # Convert template SQL with concrete start and end timestamps, based on the requested
-            # point-in-time and feature window sizes
-            # tile_sql_expr = get_tile_sql_from_point_in_time(
-            #     sql_template=tile_info.sql_template,
-            #     point_in_time_list=self.point_in_time_list,
-            #     frequency=tile_info.frequency,
-            #     time_modulo_frequency=tile_info.time_modulo_frequency,
-            #     blind_spot=tile_info.blind_spot,
-            #     window=self.get_max_window_size(tile_info.tile_table_id),
-            # )
+            # Construct tile SQL using an entity table (a table with entity column(s) as the primary
+            # key representing the entities of interest) created from the request table and feature
+            # window sizes
             tile_sql_expr = get_tile_sql(
                 adapter=self.adapter,
                 tile_info=tile_info,
@@ -254,129 +246,6 @@ def epoch_seconds_to_timestamp(num_seconds: int) -> pd.Timestamp:
     pd.Timestamp
     """
     return pd.Timestamp(num_seconds, unit="s")
-
-
-def compute_start_end_date_from_point_in_time(
-    point_in_time_list: list[str],
-    frequency: int,
-    time_modulo_frequency: int,
-    blind_spot: int,
-    num_tiles: Optional[int],
-) -> tuple[pd.Timestamp, pd.Timestamp]:
-    """Compute start and end dates to fill in the placeholders in tile SQL template
-
-    Parameters
-    ----------
-    point_in_time_list : list[str]
-        List of point in time. This will determine the range of data required to build tiles
-    frequency : int
-        Frequency in feature job setting
-    time_modulo_frequency : int
-        Time modulo frequency in feature job setting
-    blind_spot : int
-        Blind spot in feature job setting
-    num_tiles : int
-        Number of tiles required. This is calculated from feature window size.
-
-    Returns
-    -------
-    tuple[pd.Timestamp, pd.Timestamp]
-        Tuple of start and end dates
-    """
-    # Convert point in time to UNIX timestamp
-    point_in_time_epoch_seconds_list = [
-        get_epoch_seconds(point_in_time) for point_in_time in point_in_time_list
-    ]
-
-    def _compute_end_date_epoch_seconds(point_in_time_epoch_seconds: int) -> int:
-        """
-        Compute end date based on point in time in epoch seconds
-
-        Parameters
-        ----------
-        point_in_time_epoch_seconds : int
-            Point in time in epoch seconds
-
-        Returns
-        -------
-        int
-            End date
-        """
-        # Calculate the time of the latest feature job before point in time
-        last_job_index = (point_in_time_epoch_seconds - time_modulo_frequency) // frequency
-        last_job_time_epoch_seconds = last_job_index * frequency + time_modulo_frequency
-        # Compute end date in epoch seconds
-        return last_job_time_epoch_seconds - blind_spot
-
-    # Compute end date of latest point in time
-    latest_end_date_epoch_seconds = _compute_end_date_epoch_seconds(
-        max(point_in_time_epoch_seconds_list)
-    )
-
-    # Compute start date of earliest point in time based on number of tiles required
-    earliest_end_date_epoch_seconds = _compute_end_date_epoch_seconds(
-        min(point_in_time_epoch_seconds_list)
-    )
-    if num_tiles is not None:
-        start_date_epoch_seconds = earliest_end_date_epoch_seconds - num_tiles * frequency
-        start_date = epoch_seconds_to_timestamp(start_date_epoch_seconds)
-    else:
-        # In this case, we need a timestamp that is earlier than all possible event timestamps and
-        # aligns with the tile boundary. This computes the earliest possible timestamp at around the
-        # beginning of epoch.
-        start_date = epoch_seconds_to_timestamp(time_modulo_frequency - blind_spot)
-
-    return start_date, epoch_seconds_to_timestamp(latest_end_date_epoch_seconds)
-
-
-# def get_tile_sql_from_point_in_time(
-#     sql_template: SqlExpressionTemplate,
-#     point_in_time_list: list[str],
-#     frequency: int,
-#     time_modulo_frequency: int,
-#     blind_spot: int,
-#     window: Optional[int],
-# ) -> Select:
-#     """Fill in start date and end date placeholders for template tile SQL
-#
-#     Parameters
-#     ----------
-#     sql_template : SqlExpressionTemplate
-#         Tile SQL template expression
-#     point_in_time_list : list[str]
-#         List of point in time in the request
-#     frequency : int
-#         Frequency in feature job setting
-#     time_modulo_frequency : int
-#         Time modulo frequency in feature job setting
-#     blind_spot : int
-#         Blind spot in feature job setting
-#     window : Optional[int]
-#         Window size. If None, it means the feature requires unbounded window.
-#
-#     Returns
-#     -------
-#     Select
-#     """
-#     if window:
-#         num_tiles = int(window // frequency)
-#     else:
-#         num_tiles = None
-#     start_date, end_date = compute_start_end_date_from_point_in_time(
-#         point_in_time_list,
-#         frequency=frequency,
-#         time_modulo_frequency=time_modulo_frequency,
-#         blind_spot=blind_spot,
-#         num_tiles=num_tiles,
-#     )
-#     out_expr = sql_template.render(
-#         {
-#             InternalName.TILE_START_DATE_SQL_PLACEHOLDER: str(start_date),
-#             InternalName.TILE_END_DATE_SQL_PLACEHOLDER: str(end_date),
-#         },
-#         as_str=False,
-#     )
-#     return cast(Select, out_expr)
 
 
 def get_tile_sql(
