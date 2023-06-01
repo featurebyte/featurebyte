@@ -37,7 +37,7 @@ WITH REQUEST_TABLE AS (
                 ) * -1,
                 TO_TIMESTAMP(
                   FLOOR((
-                    DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
+                    DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
                   ) / 3600) * 3600 + 1800 - 900
                 )
               ) AS "__FB_ENTITY_TABLE_START_DATE"
@@ -95,7 +95,7 @@ WITH REQUEST_TABLE AS (
                 ) * -1,
                 TO_TIMESTAMP(
                   FLOOR((
-                    DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
+                    DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
                   ) / 3600) * 3600 + 1800 - 900
                 )
               ) AS "__FB_ENTITY_TABLE_START_DATE"
@@ -155,7 +155,7 @@ WITH REQUEST_TABLE AS (
                 ) * -1,
                 TO_TIMESTAMP(
                   FLOOR((
-                    DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
+                    DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
                   ) / 3600) * 3600 + 1800 - 900
                 )
               ) AS "__FB_ENTITY_TABLE_START_DATE"

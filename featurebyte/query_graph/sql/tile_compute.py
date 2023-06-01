@@ -7,7 +7,7 @@ from typing import Optional, cast
 
 import pandas as pd
 from sqlglot import expressions
-from sqlglot.expressions import Select, select
+from sqlglot.expressions import Expression, Select, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -284,10 +284,16 @@ def get_tile_sql(
     -------
     Select
     """
-    point_in_time_epoch_expr = adapter.to_epoch_seconds(
-        expressions.Max(this=expressions.Identifier(this=SpecialColumnName.POINT_IN_TIME.value))
-    )
-    previous_job_epoch_expr = get_previous_job_epoch_expr(point_in_time_epoch_expr, tile_info)
+
+    def get_tile_boundary(point_in_time_expr: Expression) -> Expression:
+        previous_job_epoch_expr = get_previous_job_epoch_expr(
+            adapter.to_epoch_seconds(point_in_time_expr), tile_info
+        )
+        return expressions.Anonymous(
+            this="TO_TIMESTAMP",
+            expressions=[expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)],
+        )
+
     blind_spot = make_literal_value(tile_info.blind_spot)
     time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
 
@@ -296,10 +302,9 @@ def get_tile_sql(
     else:
         num_tiles = None
 
-    # TO_TIMESTAMP(PREVIOUS_JOB_EPOCH - BLIND_SPOT)
-    end_date_expr = expressions.Anonymous(
-        this="TO_TIMESTAMP",
-        expressions=[expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)],
+    # Tile end date is determined from the latest point in time per entity
+    end_date_expr = get_tile_boundary(
+        expressions.Max(this=expressions.Identifier(this=SpecialColumnName.POINT_IN_TIME.value))
     )
 
     if num_tiles:
@@ -314,10 +319,15 @@ def get_tile_sql(
             ),
             expression=make_literal_value(-1),
         )
-
-        # TILE_END_DATE - NUM_TILES * FREQUENCY
+        # Tile start date is determined from the earliest point in time per entity minus the largest
+        # feature window
         start_date_expr = adapter.dateadd_microsecond(
-            minus_num_tiles_in_microseconds, end_date_expr
+            minus_num_tiles_in_microseconds,
+            get_tile_boundary(
+                expressions.Min(
+                    this=expressions.Identifier(this=SpecialColumnName.POINT_IN_TIME.value)
+                )
+            ),
         )
     else:
         start_date_expr = get_earliest_tile_start_date_expr(

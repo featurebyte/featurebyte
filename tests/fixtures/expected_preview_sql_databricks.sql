@@ -40,7 +40,7 @@ WITH REQUEST_TABLE AS (
                   ) * -1 / 60000000.0,
                   TO_TIMESTAMP(
                     FLOOR((
-                      UNIX_TIMESTAMP(MAX(POINT_IN_TIME)) - 1800
+                      UNIX_TIMESTAMP(MIN(POINT_IN_TIME)) - 1800
                     ) / 3600) * 3600 + 1800 - 900
                   )
                 )
