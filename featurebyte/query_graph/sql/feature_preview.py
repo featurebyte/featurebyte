@@ -15,7 +15,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.common import CteStatement, CteStatements, sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
@@ -62,6 +62,7 @@ def get_feature_preview_sql(
     execution_plan = planner.generate_plan(nodes)
 
     exclude_columns = set()
+    cte_statements: Optional[list[CteStatement]] = None
     if point_in_time_and_serving_name_list:
         # prepare request table
         tic = time.time()
@@ -82,10 +83,9 @@ def get_feature_preview_sql(
                 join_steps=parent_serving_preparation.join_steps,
                 feature_store_details=parent_serving_preparation.feature_store_details,
             )
-            request_table_query = sql_to_string(request_table_expr, source_type)
             request_table_name = "JOINED_PARENTS_" + request_table_name
             request_table_columns = request_table_columns + parent_entity_columns
-            cte_statements.append((request_table_name, request_table_query))
+            cte_statements.append((request_table_name, request_table_expr))
             exclude_columns.update(parent_entity_columns)
 
         elapsed = time.time() - tic
@@ -99,12 +99,12 @@ def get_feature_preview_sql(
         )
         for node in nodes:
             tile_compute_plan.process_node(graph, node)
-        cte_statements.extend(sorted(tile_compute_plan.construct_on_demand_tile_ctes()))
+        tile_compute_ctes = sorted(tile_compute_plan.construct_on_demand_tile_ctes())
+        cte_statements.extend(tile_compute_ctes)
         elapsed = time.time() - tic
         logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
 
     else:
-        cte_statements = None
         request_table_columns = None
 
     tic = time.time()
