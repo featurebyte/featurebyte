@@ -9,6 +9,7 @@ from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.interpreter import TileGenSql
 
@@ -170,3 +171,37 @@ def get_previous_job_epoch_expr(
     )
 
     return previous_job_epoch_expr
+
+
+def get_earliest_tile_start_date_expr(
+    adapter: BaseAdapter,
+    time_modulo_frequency: Expression,
+    blind_spot: Expression,
+) -> Expression:
+    """
+    Get the SQL expression for the earliest tile start date based on feature job settings
+
+    Parameters
+    ----------
+    adapter: BaseAdapter
+        SQL adapter for generating engine specific SQL expressions
+    time_modulo_frequency : Expression
+        Expression for time modulo frequency in feature job settings
+    blind_spot : Expression
+        Expression for blind spot in feature job settings
+
+    Returns
+    -------
+    Expression
+    """
+    # DATEADD(s, TIME_MODULO_FREQUENCY - BLIND_SPOT, CAST('1970-01-01' AS TIMESTAMP))
+    tile_boundaries_offset = expressions.Paren(
+        this=expressions.Sub(this=time_modulo_frequency, expression=blind_spot)
+    )
+    tile_boundaries_offset_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
+        tile_boundaries_offset, "second", "microsecond"
+    )
+    return adapter.dateadd_microsecond(
+        tile_boundaries_offset_microsecond,
+        cast(Expression, parse_one("CAST('1970-01-01' AS TIMESTAMP)")),
+    )

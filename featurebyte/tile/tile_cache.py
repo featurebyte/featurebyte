@@ -26,7 +26,10 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
-from featurebyte.query_graph.sql.tile_util import get_previous_job_epoch_expr
+from featurebyte.query_graph.sql.tile_util import (
+    get_earliest_tile_start_date_expr,
+    get_previous_job_epoch_expr,
+)
 from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
@@ -654,26 +657,20 @@ class TileCache:
             this="TO_TIMESTAMP",
             expressions=[expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)],
         )
+        earliest_start_date_expr = get_earliest_tile_start_date_expr(
+            adapter=self.adapter,
+            time_modulo_frequency=time_modulo_frequency,
+            blind_spot=blind_spot,
+        )
 
-        # DATEADD(s, TIME_MODULO_FREQUENCY - BLIND_SPOT, CAST('1970-01-01' AS TIMESTAMP))
-        tile_boundaries_offset = expressions.Paren(
-            this=expressions.Sub(this=time_modulo_frequency, expression=blind_spot)
-        )
-        tile_boundaries_offset_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
-            tile_boundaries_offset, "second", "microsecond"
-        )
-        frequency_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
-            frequency, "second", "microsecond"
-        )
-        earliest_start_date_expr = self.adapter.dateadd_microsecond(
-            tile_boundaries_offset_microsecond,
-            cast(Expression, parse_one("CAST('1970-01-01' AS TIMESTAMP)")),
-        )
         # This expression will be evaluated in a group by statement with the entity value as the
         # group by key. We can use ANY_VALUE because the recorded last tile start date is the same
         # across all rows within the group.
         recorded_last_tile_start_date_expr = self.adapter.any_value(
             expressions.Identifier(this=tile_info.aggregation_id)
+        )
+        frequency_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
+            frequency, "second", "microsecond"
         )
         start_date_expr = expressions.Case(
             ifs=[

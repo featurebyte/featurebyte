@@ -18,6 +18,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.tile_util import (
+    get_earliest_tile_start_date_expr,
     get_previous_job_epoch_expr,
     update_maximum_window_size_dict,
 )
@@ -290,16 +291,10 @@ def get_tile_sql(
             minus_num_tiles_in_microseconds, end_date_expr
         )
     else:
-        # DATEADD(s, TIME_MODULO_FREQUENCY - BLIND_SPOT, CAST('1970-01-01' AS TIMESTAMP))
-        tile_boundaries_offset = expressions.Paren(
-            this=expressions.Sub(this=time_modulo_frequency, expression=blind_spot)
-        )
-        tile_boundaries_offset_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
-            tile_boundaries_offset, "second", "microsecond"
-        )
-        start_date_expr = adapter.dateadd_microsecond(
-            tile_boundaries_offset_microsecond,
-            cast(Expression, parse_one("CAST('1970-01-01' AS TIMESTAMP)")),
+        start_date_expr = get_earliest_tile_start_date_expr(
+            adapter=adapter,
+            time_modulo_frequency=time_modulo_frequency,
+            blind_spot=blind_spot,
         )
 
     # Tile compute sql uses original table columns instead of serving names
