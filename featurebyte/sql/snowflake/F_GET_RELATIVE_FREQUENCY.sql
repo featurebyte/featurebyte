@@ -6,6 +6,9 @@ $$
   if (!COUNTS) {
     return;
   }
+  if (KEY_TO_USE === undefined) {
+    return;
+  }
   if (!(KEY_TO_USE in COUNTS)) {
     return 0;
   }

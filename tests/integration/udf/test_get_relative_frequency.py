@@ -13,7 +13,7 @@ ascending_values = {"a": 1, "b": 2, "c": 3}
     "dictionary, key, expected",
     [
         (None, "null", np.nan),
-        ({"a": 1}, "null", 0),
+        ({"a": 1}, "null", np.nan),
         (same_values, "'non_existing_key'", 0),
         (same_values, "'a'", float(1 / 3)),
         (same_values, "'c'", float(1 / 3)),
