@@ -185,7 +185,7 @@ class FeatureListService(
         document = FeatureListModel(
             **{
                 **data.json_dict(),
-                "feature_ids": sorted(data.feature_ids),
+                "feature_ids": data.feature_ids,
                 "version": await self._get_feature_list_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
