@@ -341,6 +341,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             # Use this check to decide whether to make API call to retrieve features.
             items = []
             feature_objects = collections.OrderedDict()
+            feature_id_to_object = {}
             id_value = values["_id"]
             feature_store_map: Dict[ObjectId, FeatureStore] = {}
             with alive_bar(
@@ -364,10 +365,15 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
                     # deserialize feature record into feature object
                     feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
-                    items.append(feature)
-                    feature_objects[feature.name] = feature
+                    feature_id_to_object[str(feature.id)] = feature
                     progress_bar.text = feature.name
                     progress_bar()  # pylint: disable=not-callable
+
+                # preserve the order of features
+                for feature_id in values["feature_ids"]:
+                    feature = feature_id_to_object[str(feature_id)]
+                    feature_objects[feature.name] = feature
+                    items.append(feature)
 
             values["items"] = items
             values["feature_objects"] = feature_objects

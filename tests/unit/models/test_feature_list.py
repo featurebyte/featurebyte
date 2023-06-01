@@ -69,7 +69,7 @@ def test_feature_list_model(feature_list_model_dict):
     feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
     serialized_feature_list = feature_list.dict(exclude={"id": True})
     feature_list_dict_sorted_ids = {
-        key: sorted(value) if key.endswith("_ids") else value
+        key: sorted(value) if key.endswith("_ids") and key != "feature_ids" else value
         for key, value in feature_list_model_dict.items()
     }
     assert serialized_feature_list == feature_list_dict_sorted_ids
