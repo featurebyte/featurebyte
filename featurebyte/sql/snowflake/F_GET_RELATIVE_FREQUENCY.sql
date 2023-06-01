@@ -6,7 +6,7 @@ $$
   if (!COUNTS) {
     return;
   }
-  if (!KEY_TO_USE in COUNTS) {
+  if (!(KEY_TO_USE in COUNTS)) {
     return 0;
   }
   var counts_arr = Object.values(COUNTS);
