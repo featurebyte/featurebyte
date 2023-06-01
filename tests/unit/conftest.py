@@ -88,17 +88,20 @@ def mock_api_client_fixture():
 
 
 @pytest.fixture(autouse=True)
-def mock_websocket_client_fixture():
+def mock_websocket_client_fixture(request):
     """
     Mock Configurations.get_websocket_client to use test client
     """
-    with mock.patch(
-        "featurebyte.config.Configurations.get_websocket_client"
-    ) as mock_get_websocket_client:
-        mock_get_websocket_client.return_value.__enter__.return_value.receive_json.return_value = (
-            None
-        )
-        yield mock_get_websocket_client
+    if "no_mock_websocket_client" in request.keywords:
+        yield
+    else:
+        with mock.patch(
+            "featurebyte.config.Configurations.get_websocket_client"
+        ) as mock_get_websocket_client:
+            mock_get_websocket_client.return_value.__enter__.return_value.receive_json.return_value = (
+                None
+            )
+            yield mock_get_websocket_client
 
 
 @pytest.fixture(name="storage")
