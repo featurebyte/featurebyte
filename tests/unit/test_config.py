@@ -5,9 +5,11 @@ import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
+from uuid import uuid4
 
 import pytest
 import requests.exceptions
+from websocket import WebSocketAddressException
 
 from featurebyte.config import (
     DEFAULT_HOME_PATH,
@@ -16,6 +18,7 @@ from featurebyte.config import (
     LocalStorageSettings,
     LoggingSettings,
     Profile,
+    WebsocketClient,
 )
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.logging import get_logger
@@ -201,3 +204,17 @@ def test_client_redirection(mock_check_sdk_versions, mock_get_home_path):
             "Connection": "keep-alive",
             "Authorization": "Bearer API_TOKEN_VALUE1",
         }
+
+
+@pytest.mark.no_mock_websocket_client
+def test_websocket_ssl():
+    """
+    Test websocket with ssl
+    """
+    config = Configurations("tests/fixtures/config/config.yaml")
+
+    # getting a websocket client with ssl url should not fail
+    config.profile.api_url = "https://some_endpoint"
+    with pytest.raises(WebSocketAddressException):
+        with config.get_websocket_client(str(uuid4())) as ws_client:
+            assert isinstance(ws_client, WebsocketClient)
