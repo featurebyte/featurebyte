@@ -4,7 +4,7 @@ Feature preview SQL generation
 # pylint: disable=too-many-locals
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, List, Optional, cast
 
 import time
 
@@ -62,8 +62,8 @@ def get_feature_preview_sql(
     execution_plan = planner.generate_plan(nodes)
 
     exclude_columns = set()
-    cte_statements: Optional[list[CteStatement]] = None
-    request_table_columns: Optional[list[str]] = None
+    cte_statements: Optional[List[CteStatement]] = None
+    request_table_columns: Optional[List[str]] = None
 
     if point_in_time_and_serving_name_list:
         # prepare request table
@@ -73,7 +73,7 @@ def get_feature_preview_sql(
             df_request, [SpecialColumnName.POINT_IN_TIME]
         )
         cte_statements = [(request_table_name, request_table_sql)]
-        request_table_columns = cast(list[str], df_request.columns.tolist())
+        request_table_columns = cast(List[str], df_request.columns.tolist())
 
         if parent_serving_preparation is not None:
             (
