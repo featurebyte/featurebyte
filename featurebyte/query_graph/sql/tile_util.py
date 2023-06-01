@@ -6,12 +6,15 @@ from __future__ import annotations
 from typing import Any, Optional, Tuple, cast
 
 from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression
+from sqlglot.expressions import Expression, Select
 
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import TileGenSql
+from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 
 
 def calculate_first_and_last_tile_indices(
@@ -205,3 +208,48 @@ def get_earliest_tile_start_date_expr(
         tile_boundaries_offset_microsecond,
         cast(Expression, parse_one("CAST('1970-01-01' AS TIMESTAMP)")),
     )
+
+
+def construct_entity_table_query(
+    tile_info: TileGenSql,
+    entity_source_expr: expressions.Select,
+    start_date_expr: Expression,
+    end_date_expr: Expression,
+) -> expressions.Select:
+    """
+    Construct the entity table query that will be used to filter the source table (e.g. EventTable)
+    before building tiles. The start and end dates are to be provided, and this function is
+    responsible for constructing the table in the expected format.
+
+    Parameters
+    ----------
+    tile_info : TileGenSql
+        Tile table information
+    entity_source_expr : expressions.Select
+        Table from which the entity table will be constructed
+    start_date_expr : Expression
+        Expression for the tile start date
+    end_date_expr : Expression
+        Expression for the tile end date
+
+    Returns
+    -------
+    expressions.Select
+    """
+
+    # Tile compute sql uses original table columns instead of serving names
+    serving_names_to_keys = [
+        f"{quoted_identifier(serving_name).sql()} AS {quoted_identifier(col).sql()}"
+        for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
+    ]
+
+    # This is the groupby keys used to construct the entity table
+    serving_names = [f"{quoted_identifier(col).sql()}" for col in tile_info.serving_names]
+
+    entity_table_expr = entity_source_expr.select(
+        *serving_names_to_keys,
+        expressions.alias_(end_date_expr, InternalName.ENTITY_TABLE_END_DATE.value),
+        expressions.alias_(start_date_expr, InternalName.ENTITY_TABLE_START_DATE.value),
+    ).group_by(*serving_names)
+
+    return entity_table_expr

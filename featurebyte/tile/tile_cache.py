@@ -27,6 +27,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.tile_util import (
+    construct_entity_table_query,
     get_earliest_tile_start_date_expr,
     get_previous_job_epoch_expr,
 )
@@ -526,30 +527,25 @@ class TileCache:
             point_in_time_epoch_expr, tile_info
         )
 
-        # Tile compute sql uses original table columns instead of serving names
-        serving_names_to_keys = [
-            f"{quoted_identifier(serving_name).sql()} AS {quoted_identifier(col).sql()}"
-            for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
-        ]
-
-        # This is the groupby keys used to construct the entity table
-        serving_names = [f"{quoted_identifier(col).sql()}" for col in tile_info.serving_names]
-
+        # Entity table can be constructed from the working table by filtering for rows with outdated
+        # tiles that require recomputation
         tile_cache_working_table_name = (
             f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         )
-        entity_table_expr = (
+        entity_source_expr = (
             select(
-                *serving_names_to_keys,
                 expressions.alias_(
                     last_tile_start_date_expr, InternalName.TILE_LAST_START_DATE.value
                 ),
-                expressions.alias_(end_date_expr, InternalName.ENTITY_TABLE_END_DATE.value),
-                expressions.alias_(start_date_expr, InternalName.ENTITY_TABLE_START_DATE.value),
             )
             .from_(tile_cache_working_table_name)
             .where(working_table_filter)
-            .group_by(*serving_names)
+        )
+        entity_table_expr = construct_entity_table_query(
+            tile_info=tile_info,
+            entity_source_expr=entity_source_expr,
+            start_date_expr=start_date_expr,
+            end_date_expr=end_date_expr,
         )
 
         tile_compute_sql = cast(

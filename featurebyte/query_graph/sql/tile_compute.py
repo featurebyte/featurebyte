@@ -6,8 +6,8 @@ from __future__ import annotations
 from typing import Optional, cast
 
 import pandas as pd
-from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression, Select, select
+from sqlglot import expressions
+from sqlglot.expressions import Select, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -18,6 +18,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.tile_util import (
+    construct_entity_table_query,
     get_earliest_tile_start_date_expr,
     get_previous_job_epoch_expr,
     update_maximum_window_size_dict,
@@ -297,23 +298,11 @@ def get_tile_sql(
             blind_spot=blind_spot,
         )
 
-    # Tile compute sql uses original table columns instead of serving names
-    serving_names_to_keys = [
-        f"{quoted_identifier(serving_name).sql()} AS {quoted_identifier(col).sql()}"
-        for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
-    ]
-
-    # This is the groupby keys used to construct the entity table
-    serving_names = [f"{quoted_identifier(col).sql()}" for col in tile_info.serving_names]
-
-    entity_table_expr = (
-        select(
-            *serving_names_to_keys,
-            expressions.alias_(end_date_expr, InternalName.ENTITY_TABLE_END_DATE.value),
-            expressions.alias_(start_date_expr, InternalName.ENTITY_TABLE_START_DATE.value),
-        )
-        .from_(quoted_identifier(request_table_name))
-        .group_by(*serving_names)
+    entity_table_expr = construct_entity_table_query(
+        tile_info=tile_info,
+        entity_source_expr=select().from_(quoted_identifier(request_table_name)),
+        start_date_expr=start_date_expr,
+        end_date_expr=end_date_expr,
     )
 
     return cast(
