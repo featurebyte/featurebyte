@@ -18,6 +18,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
+from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.query_graph.sql.tile_compute import OnDemandTileComputePlan
 
 logger = get_logger(__name__)
@@ -57,10 +58,10 @@ def get_feature_preview_sql(
         graph,
         source_type=source_type,
         is_online_serving=False,
-        parent_serving_preparation=parent_serving_preparation,
     )
     execution_plan = planner.generate_plan(nodes)
 
+    exclude_columns = set()
     if point_in_time_and_serving_name_list:
         # prepare request table
         tic = time.time()
@@ -69,10 +70,26 @@ def get_feature_preview_sql(
             df_request, [SpecialColumnName.POINT_IN_TIME]
         )
         cte_statements = [(request_table_name, request_table_sql)]
+        request_table_columns = df_request.columns.tolist()
+
+        if parent_serving_preparation is not None:
+            (
+                request_table_expr,
+                parent_entity_columns,
+            ) = construct_request_table_with_parent_entities(
+                request_table_name=request_table_name,
+                request_table_columns=request_table_columns,
+                join_steps=parent_serving_preparation.join_steps,
+                feature_store_details=parent_serving_preparation.feature_store_details,
+            )
+            request_table_query = sql_to_string(request_table_expr, source_type)
+            request_table_name = "JOINED_PARENTS_" + request_table_name
+            request_table_columns = request_table_columns + parent_entity_columns
+            cte_statements.append((request_table_name, request_table_query))
+            exclude_columns.update(parent_entity_columns)
+
         elapsed = time.time() - tic
         logger.debug(f"Constructing request table SQL took {elapsed:.2}s")
-
-        request_table_columns = df_request.columns.tolist()
 
         # build required tiles
         tic = time.time()
@@ -101,6 +118,7 @@ def get_feature_preview_sql(
             point_in_time_column=SpecialColumnName.POINT_IN_TIME,
             request_table_columns=request_table_columns,
             prior_cte_statements=cte_statements,
+            exclude_columns=exclude_columns,
         ),
         source_type=source_type,
     )
