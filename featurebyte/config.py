@@ -453,7 +453,7 @@ class Configurations:
             Invalid settings
         """
         if self.profile:
-            url = self.profile.api_url.replace("http://", "ws://")
+            url = self.profile.api_url.replace("http://", "ws://").replace("https://", "wss://")
             url = f"{url}/ws/{task_id}"
             websocket_client = WebsocketClient(url=url, access_token=self.profile.api_token)
             try:
