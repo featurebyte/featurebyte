@@ -295,7 +295,7 @@ class FeatureExecutionPlan:
         self,
         request_table_name: str,
         point_in_time_column: str,
-        request_table_columns: list[str],
+        request_table_columns: Optional[list[str]],
         prior_cte_statements: Optional[CteStatements] = None,
         exclude_post_aggregation: bool = False,
         exclude_columns: Optional[set[str]] = None,
@@ -308,7 +308,7 @@ class FeatureExecutionPlan:
             Name of request table to use
         point_in_time_column : str
             Point in time column
-        request_table_columns : list[str]
+        request_table_columns : Optional[list[str]]
             Request table columns
         prior_cte_statements : Optional[list[tuple[str, str]]]
             Other CTE statements to incorporate to the final SQL (namely the request data SQL and
@@ -332,6 +332,7 @@ class FeatureExecutionPlan:
             exclude_columns = set()
 
         if self.parent_serving_preparation is not None:
+            assert request_table_columns is not None
             (
                 updated_request_table_expr,
                 new_columns,

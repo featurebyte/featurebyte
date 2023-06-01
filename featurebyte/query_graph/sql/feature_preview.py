@@ -4,7 +4,7 @@ Feature preview SQL generation
 # pylint: disable=too-many-locals
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import time
 
@@ -15,7 +15,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import CteStatement, CteStatements, sql_to_string
+from featurebyte.query_graph.sql.common import CteStatement, sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
@@ -63,6 +63,8 @@ def get_feature_preview_sql(
 
     exclude_columns = set()
     cte_statements: Optional[list[CteStatement]] = None
+    request_table_columns: Optional[list[str]] = None
+
     if point_in_time_and_serving_name_list:
         # prepare request table
         tic = time.time()
@@ -71,7 +73,7 @@ def get_feature_preview_sql(
             df_request, [SpecialColumnName.POINT_IN_TIME]
         )
         cte_statements = [(request_table_name, request_table_sql)]
-        request_table_columns = df_request.columns.tolist()
+        request_table_columns = cast(list[str], df_request.columns.tolist())
 
         if parent_serving_preparation is not None:
             (
@@ -103,9 +105,6 @@ def get_feature_preview_sql(
         cte_statements.extend(tile_compute_ctes)
         elapsed = time.time() - tic
         logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
-
-    else:
-        request_table_columns = None
 
     tic = time.time()
     preview_sql = sql_to_string(
