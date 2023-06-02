@@ -23,8 +23,8 @@ services:
     container_name: spark-thrift-test
     image: featurebyte/cluster-apache-spark:3.3.1
     ports:
-      - "10000:10000"
-      - "4040:4040"
+      - "10009:10000"
+      - "4049:4040"
     environment:
       - SPARK_MASTER=local
       - SPARK_LOCAL_IP=spark-thrift
