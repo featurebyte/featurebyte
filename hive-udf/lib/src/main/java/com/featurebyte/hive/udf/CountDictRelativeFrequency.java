@@ -38,7 +38,8 @@ public class CountDictRelativeFrequency extends CountDictSingleStringArgumentUDF
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
     String key = getStringArgument(arguments);
     if (!counts.containsKey(key)) {
-      return null;
+      output.set(0.0);
+      return output;
     }
     double keyValue = convertMapValueAsDouble(counts.get(key));
     double total = 0.0;
