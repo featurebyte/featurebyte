@@ -235,5 +235,6 @@ addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--d
 doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 markers = [
     "disable_task_manager_mock: disable use of autouse task manager fixture",
+    "no_mock_websocket_client: skip mocking websocket client",
 ]
 norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]

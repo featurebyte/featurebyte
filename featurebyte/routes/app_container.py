@@ -10,7 +10,7 @@ from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.registry import app_container_config
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
-from featurebyte.service.task_manager import AbstractTaskManager
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 
@@ -25,7 +25,7 @@ class AppContainer:
         user: Any,
         persistent: Persistent,
         temp_storage: Storage,
-        task_manager: AbstractTaskManager,
+        task_manager: TaskManager,
         storage: Storage,
         app_config: AppContainerConfig,
         catalog_id: ObjectId,
@@ -41,7 +41,7 @@ class AppContainer:
             persistent instance
         temp_storage: Storage
             temp storage
-        task_manager: AbstractTaskManager
+        task_manager: TaskManager
             task manager
         storage: Storage
             permanent storage
@@ -58,6 +58,7 @@ class AppContainer:
             "task_controller": TaskController(task_manager=task_manager),
             "tempdata_controller": TempDataController(temp_storage=temp_storage),
             "credential_provider": MongoBackedCredentialProvider(persistent=persistent),
+            "task_manager": task_manager,
         }
 
         # build no dependency objects
@@ -100,7 +101,7 @@ class AppContainer:
         user: Any,
         persistent: Persistent,
         temp_storage: Storage,
-        task_manager: AbstractTaskManager,
+        task_manager: TaskManager,
         storage: Storage,
         container_id: ObjectId,
     ) -> Any:

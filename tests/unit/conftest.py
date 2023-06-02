@@ -32,7 +32,7 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
-from featurebyte.app import User, app
+from featurebyte.app import User, app, get_celery
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import AggFunc, InternalName
 from featurebyte.feature_manager.manager import FeatureManager
@@ -1307,7 +1307,9 @@ def app_container_fixture(persistent):
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
     user = User()
-    task_manager = TaskManager(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    task_manager = TaskManager(
+        user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
+    )
     return AppContainer.get_instance(
         user=user,
         persistent=persistent,
@@ -1353,6 +1355,7 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_credential
                     get_persistent=lambda: persistent,
                     get_storage=lambda: storage,
                     get_temp_storage=lambda: temp_storage,
+                    get_celery=get_celery,
                 )
                 try:
                     await task.execute()
@@ -1387,7 +1390,9 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_credential
 
             mock_submit.side_effect = submit
 
-            with patch("featurebyte.service.task_manager.celery") as mock_celery:
+            with patch("featurebyte.app.get_celery") as mock_get_celery, mock.patch(
+                "featurebyte.worker.task_executor.get_celery"
+            ) as mock_get_celery_worker:
 
                 def get_task(task_id):
                     status = task_status.get(task_id)
@@ -1395,5 +1400,6 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_credential
                         return None
                     return Mock(status=status)
 
-                mock_celery.AsyncResult.side_effect = get_task
+                mock_get_celery.return_value.AsyncResult.side_effect = get_task
+                mock_get_celery_worker.return_value.AsyncResult.side_effect = get_task
                 yield

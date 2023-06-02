@@ -13,6 +13,7 @@ from featurebyte.models.periodic_task import Interval
 from featurebyte.schema.task import TaskId
 from featurebyte.schema.worker.task.test import TestTaskPayload
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.worker import celery
 
 
 async def wait_for_async_task(
@@ -31,12 +32,14 @@ async def wait_for_async_task(
 
 
 @pytest.fixture(name="task_manager")
-@pytest.mark.disable_task_manager_mock
 def task_manager_fixture(celery_service):
     """Task manager fixture"""
     persistent = celery_service
     return TaskManager(
-        user=User(id=ObjectId()), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=User(id=ObjectId()),
+        persistent=persistent,
+        celery=celery,
+        catalog_id=DEFAULT_CATALOG_ID,
     )
 
 
@@ -53,7 +56,6 @@ async def test_submit_task(task_manager):
 
 
 @pytest.mark.asyncio
-@pytest.mark.disable_task_manager_mock
 async def test_schedule_interval_task(task_manager):
     """Test task manager service"""
     payload = TestTaskPayload(

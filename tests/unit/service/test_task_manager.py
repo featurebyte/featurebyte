@@ -4,7 +4,7 @@ Test for task manager service
 import datetime
 import math
 import time
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -28,16 +28,18 @@ def user_id_fixture():
 @pytest.fixture(name="celery")
 def celery_fixture():
     """Celery fixture"""
-    with patch("featurebyte.service.task_manager.celery") as mock_celery:
-        mock_celery.send_task.side_effect = lambda *args, **kwargs: Mock(id=uuid4())
-        mock_celery.AsyncResult.return_value.status = TaskStatus.STARTED
-        yield mock_celery
+    mock_celery = Mock()
+    mock_celery.send_task.side_effect = lambda *args, **kwargs: Mock(id=uuid4())
+    mock_celery.AsyncResult.return_value.status = TaskStatus.STARTED
+    yield mock_celery
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(user_id, persistent):
+def task_manager_fixture(user_id, persistent, celery):
     """Task manager fixture"""
-    yield TaskManager(user=User(id=user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    yield TaskManager(
+        user=User(id=user_id), persistent=persistent, celery=celery, catalog_id=DEFAULT_CATALOG_ID
+    )
 
 
 @pytest.mark.asyncio

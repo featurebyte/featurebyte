@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from bson import ObjectId
+from celery import Celery
 from pydantic import PrivateAttr
 
 from featurebyte.logging import get_logger
@@ -47,12 +48,14 @@ class WorkingSchemaService(BaseService):
 
     _task_manager: TaskManager = PrivateAttr()
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+    def __init__(self, user: Any, persistent: Persistent, celery: Celery, catalog_id: ObjectId):
         super().__init__(user, persistent, catalog_id)
         self.feature_service = FeatureService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self._task_manager = TaskManager(user=user, persistent=persistent, catalog_id=catalog_id)
+        self._task_manager = TaskManager(
+            user=user, persistent=persistent, celery=celery, catalog_id=catalog_id
+        )
 
     async def recreate_working_schema(
         self, feature_store_id: ObjectId, session: BaseSession

@@ -10,12 +10,9 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId, json_util
 
+from featurebyte.app import get_celery
 from featurebyte.migration.migration_data_service import SchemaMetadataService
-from featurebyte.migration.model import (
-    MigrationMetadata,
-    SchemaMetadataCreate,
-    SchemaMetadataUpdate,
-)
+from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
 from featurebyte.migration.run import (
     _extract_migrate_method_marker,
     _extract_migrate_methods,
@@ -70,6 +67,7 @@ async def test_migrate_method_generator(user, persistent, get_credential):
         user=user,
         persistent=persistent,
         get_credential=get_credential,
+        celery=get_celery(),
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=True,
     )
@@ -90,6 +88,7 @@ async def test_migrate_method_generator(user, persistent, get_credential):
         user=user,
         persistent=persistent,
         get_credential=get_credential,
+        celery=get_celery(),
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=True,
     )
@@ -116,6 +115,7 @@ async def test_migrate_method_generator__exclude_warehouse(user, persistent, get
         user=user,
         persistent=persistent,
         get_credential=get_credential,
+        celery=get_celery(),
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=False,
     )
@@ -177,6 +177,7 @@ async def test_run_migration(migration_check_persistent, user, get_credential):
         user=user,
         persistent=persistent,
         get_credential=get_credential,
+        celery=get_celery(),
         include_data_warehouse_migrations=False,
     )
 
@@ -187,6 +188,7 @@ async def test_run_migration(migration_check_persistent, user, get_credential):
         user=user,
         persistent=persistent,
         get_credential=get_credential,
+        celery=get_celery(),
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=False,
     ):

@@ -50,6 +50,8 @@ async def celery_service_fixture():
             "--app",
             "featurebyte.worker.start.celery",
             "worker",
+            "-Q",
+            "cpu_task,cpu_task:1,cpu_task:2,cpu_task:3",
             "--loglevel=INFO",
             "--beat",
             "--scheduler",

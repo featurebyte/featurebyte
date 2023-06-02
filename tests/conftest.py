@@ -20,12 +20,6 @@ def pytest_addoption(parser):
     parser.addoption("--source-types", type=str, default=None)
 
 
-def pytest_configure(config):
-    """Configure pytest"""
-    # register an additional marker
-    config.addinivalue_line("markers", "no_mock_websocket_client: skip mocking websocket client")
-
-
 @pytest.fixture(scope="session")
 def update_fixtures(pytestconfig):
     """Fixture corresponding to pytest --update-fixtures option"""

@@ -584,7 +584,8 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure__event
 
 @pytest.fixture(name="mock_celery")
 def mock_celery_fixture():
-    with patch("featurebyte.service.task_manager.celery") as mock_celery:
+    with patch("featurebyte.app.get_celery") as mock_get_celery:
+        mock_celery = mock_get_celery.return_value
         mock_celery.send_task.side_effect = lambda *args, **kwargs: Mock(id=uuid4())
         mock_celery.AsyncResult.return_value.status = TaskStatus.STARTED
         yield mock_celery

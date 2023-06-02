@@ -21,10 +21,11 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
-from featurebyte.worker import celery
+from featurebyte.worker import get_celery
 from featurebyte.worker.task.base import TASK_MAP
 
 logger = get_logger(__name__)
+celery = get_celery()
 
 
 def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -104,6 +105,7 @@ class TaskExecutor:
             get_credential=credential_provider.get_credential,
             get_storage=get_storage,
             get_temp_storage=get_temp_storage,
+            get_celery=get_celery,
         )
 
         home_path = get_home_path()
@@ -155,7 +157,7 @@ async def execute_task(request_id: UUID, **payload: Any) -> Any:
         progress.put({"percent": -1})
 
 
-@celery.task(bind=True)
+@celery.task(bind=True, name="featurebyte.worker.task_executor.execute_io_task")
 def execute_io_task(self: Any, **payload: Any) -> Any:
     """
     Execute Celery task
@@ -176,7 +178,7 @@ def execute_io_task(self: Any, **payload: Any) -> Any:
     return run_async(execute_task(self.request.id, **payload), timeout=self.request.timelimit[1])
 
 
-@celery.task(bind=True)
+@celery.task(bind=True, name="featurebyte.worker.task_executor.execute_cpu_task")
 def execute_cpu_task(self: Any, **payload: Any) -> Any:
     """
     Execute Celery task

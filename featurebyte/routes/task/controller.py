@@ -10,7 +10,7 @@ from http import HTTPStatus
 from fastapi import HTTPException
 
 from featurebyte.schema.task import Task, TaskList
-from featurebyte.service.task_manager import AbstractTaskManager
+from featurebyte.service.task_manager import TaskManager
 
 
 class TaskController:
@@ -18,7 +18,7 @@ class TaskController:
     TaskController
     """
 
-    def __init__(self, task_manager: AbstractTaskManager):
+    def __init__(self, task_manager: TaskManager):
         self.task_manager = task_manager
 
     async def get_task(self, task_id: str) -> Task:

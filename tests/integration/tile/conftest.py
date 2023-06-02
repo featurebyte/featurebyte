@@ -6,6 +6,7 @@ from datetime import datetime
 import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte.app import get_celery
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.feature import FeatureReadiness
@@ -96,7 +97,10 @@ async def mock_feature_fixture(feature_model_dict, feature_store):
 @pytest_asyncio.fixture(name="tile_manager")
 async def tile_manager_fixture(session, tile_spec, feature, persistent):
     task_manager = TaskManager(
-        user=User(id=feature.user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=User(id=feature.user_id),
+        persistent=persistent,
+        celery=get_celery(),
+        catalog_id=DEFAULT_CATALOG_ID,
     )
     yield TileManager(session=session, task_manager=task_manager)
 

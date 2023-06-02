@@ -94,7 +94,7 @@ app_container_config.add_service_with_extra_deps(
     ],
 )
 app_container_config.add_service_with_extra_deps(
-    "online_enable_service", OnlineEnableService, ["session_manager_service"]
+    "online_enable_service", OnlineEnableService, ["session_manager_service", "task_manager"]
 )
 app_container_config.add_service_with_extra_deps(
     "entity_validation_service",

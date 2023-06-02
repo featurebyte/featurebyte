@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 
 from bson import ObjectId
+from celery import Celery
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
@@ -150,6 +151,7 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
     """
 
     get_credential: Any
+    celery: Celery
 
     async def create_document(self, data: DocumentUpdateSchema) -> Document:  # type: ignore[override]
         # Currently any implementation of DataWarehouseMigrationMixin is required to only make
@@ -208,6 +210,17 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
             Callback to retrieve credential
         """
         self.get_credential = get_credential
+
+    def set_celery(self, celery: Celery) -> None:
+        """
+        Set the celery instance
+
+        Parameters
+        ----------
+        celery: Celery
+            Celery instance
+        """
+        self.celery = celery
 
     async def migrate_record(self, document: Document, version: Optional[int]) -> None:
         # Data warehouse migration requires version to be provided when calling migrate_all_records

@@ -239,7 +239,10 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
         self, feature_store: FeatureStoreModel, session: BaseSession
     ) -> None:
         working_schema_service = WorkingSchemaService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+            user=self.user,
+            persistent=self.persistent,
+            celery=self.celery,
+            catalog_id=self.catalog_id,
         )
         await working_schema_service.recreate_working_schema(
             feature_store_id=feature_store.id, session=session
