@@ -49,6 +49,8 @@ from featurebyte.worker import get_celery
 
 logger = get_logger(__name__)
 
+celery = get_celery()
+
 
 def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
     """
@@ -88,7 +90,7 @@ def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
             task_manager=TaskManager(
                 user=request.state.user,
                 persistent=request.state.persistent,
-                celery=get_celery(),
+                celery=celery,
                 catalog_id=active_catalog_id,
             ),
             storage=get_storage(),

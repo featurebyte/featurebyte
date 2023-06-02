@@ -1358,7 +1358,7 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
 
             mock_submit.side_effect = submit
 
-            with patch("featurebyte.app.get_celery") as mock_get_celery, mock.patch(
+            with patch("featurebyte.app.celery") as mock_celery, mock.patch(
                 "featurebyte.worker.task_executor.get_celery"
             ) as mock_get_celery_worker:
 
@@ -1368,6 +1368,6 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
                         return None
                     return Mock(status=status)
 
-                mock_get_celery.return_value.AsyncResult.side_effect = get_task
+                mock_celery.return_value.AsyncResult.side_effect = get_task
                 mock_get_celery_worker.return_value.AsyncResult.side_effect = get_task
                 yield

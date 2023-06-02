@@ -7,13 +7,13 @@ import time
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.app import celery
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.periodic_task import Interval
 from featurebyte.schema.task import TaskId
 from featurebyte.schema.worker.task.test import TestTaskPayload
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.worker import celery
 
 
 async def wait_for_async_task(

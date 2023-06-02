@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Awaitable, Optional
 
 import asyncio
+import os
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 from uuid import UUID
@@ -113,12 +114,14 @@ class TaskExecutor:
             home_path.mkdir(parents=True)
 
         # override config file of the featurebyte-worker
+        featurebyte_server = os.environ.get("FEATUREBYTE_SERVER", "featurebyte-server")
         config_path = home_path.joinpath("config.yaml")
         config_path.write_text(
             "# featurebyte-worker config file\n"
             "profile:\n"
             "  - name: worker\n"
-            "    api_url: http://featurebyte-server:8088\n\n"
+            f"    api_url: http://{featurebyte_server}:8088\n\n",
+            encoding="utf-8",
         )
 
     async def execute(self) -> Any:
