@@ -352,7 +352,7 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
         return SparkDetails(
             host="localhost",
-            port=10000,
+            port=10009,
             http_path="cliservice",
             use_http_transport=False,
             storage_type=StorageType.FILE,
