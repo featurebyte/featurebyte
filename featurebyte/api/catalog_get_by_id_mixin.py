@@ -21,6 +21,7 @@ from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
+from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.view import View
 
@@ -381,6 +382,31 @@ class CatalogGetByIdMixin:
         >>> batch_feature_table = catalog.get_batch_feature_table_by_id(ObjectId())  # doctest: +SKIP
         """
         return BatchFeatureTable.get_by_id(id=id)
+
+    @update_and_reset_catalog
+    def get_static_source_table_by_id(
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> StaticSourceTable:
+        """
+        Get static source table by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Static source table id.
+
+        Returns
+        -------
+        StaticSourceTable
+            Static source table object.
+
+        Examples
+        --------
+        Get a saved static source table.
+
+        >>> static_source_table = catalog.get_static_source_table_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return StaticSourceTable.get_by_id(id=id)
 
     @update_and_reset_catalog
     def get_deployment_by_id(

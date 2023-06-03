@@ -22,6 +22,7 @@
 /relationship_info
 /scd_table
 /semantic
+/static_source_table
 /status
 /table
 /task

@@ -253,6 +253,12 @@ def observation_table_service(app_container):
     return app_container.observation_table_service
 
 
+@pytest.fixture(name="static_source_table_service")
+def static_source_table_service(app_container):
+    """StaticSourceTableService fixture"""
+    return app_container.static_source_table_service
+
+
 @pytest_asyncio.fixture(name="feature_store")
 async def feature_store_fixture(test_dir, feature_store_service):
     """FeatureStore model"""

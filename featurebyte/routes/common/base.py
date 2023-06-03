@@ -35,6 +35,7 @@ from featurebyte.service.relationship import ParentT, RelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
@@ -61,6 +62,7 @@ DocumentServiceT = TypeVar(
     ObservationTableService,
     HistoricalFeatureTableService,
     BatchRequestTableService,
+    StaticSourceTableService,
     BatchFeatureTableService,
     DeploymentService,
 )

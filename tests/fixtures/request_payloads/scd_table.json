@@ -11,7 +11,7 @@
             "dtype": "INT",
             "entity_id": null,
             "name": "col_int",
-            "semantic_id": "646f6c1a0ed28a5271fb02b7"
+            "semantic_id": "647b5ba7875a4313db21a1bd"
         },
         {
             "critical_data_info": null,
@@ -32,7 +32,7 @@
             "dtype": "VARCHAR",
             "entity_id": null,
             "name": "col_text",
-            "semantic_id": "646f6c1a0ed28a5271fb02b5"
+            "semantic_id": "647b5ba7875a4313db21a1bb"
         },
         {
             "critical_data_info": null,
@@ -85,7 +85,7 @@
     "record_creation_timestamp_column": null,
     "surrogate_key_column": "col_int",
     "tabular_source": {
-        "feature_store_id": "646f6c190ed28a5271fb02a1",
+        "feature_store_id": "647b5ba6875a4313db21a1a7",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

@@ -435,3 +435,13 @@ class BatchFeatureTableInfo(BaseInfo):
     batch_request_table_name: str
     deployment_name: str
     table_details: TableDetails
+
+
+class StaticSourceTableInfo(BaseInfo):
+    """
+    StaticSourceTable info schema
+    """
+
+    type: RequestInputType
+    feature_store_name: str
+    table_details: TableDetails

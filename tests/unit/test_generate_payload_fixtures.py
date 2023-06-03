@@ -18,6 +18,7 @@ from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
+from featurebyte.schema.static_source_table import StaticSourceTableCreate
 from tests.util.helper import iet_entropy
 
 
@@ -119,6 +120,13 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         batch_request_table_id=batch_request_table.id,
         deployment_id=deployment.id,
     )
+    static_source_table = StaticSourceTableCreate(
+        name="static_source_table",
+        feature_store_id=snowflake_feature_store.id,
+        request_input=SourceTableRequestInput(
+            source=snowflake_event_table.tabular_source,
+        ),
+    )
     catalog = CatalogCreate(
         name="grocery",
         default_feature_store_ids=[snowflake_feature_store.id],
@@ -173,6 +181,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (historical_feature_table, "historical_feature_table"),
             (batch_request_table, "batch_request_table"),
             (batch_feature_table, "batch_feature_table"),
+            (static_source_table, "static_source_table"),
             (catalog, "catalog"),
             (credential, "credential"),
         ]

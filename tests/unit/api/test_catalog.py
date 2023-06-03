@@ -42,6 +42,7 @@ from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.scd_table import SCDTable
+from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -90,6 +91,7 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_batch_request_tables", BatchRequestTable, "list"),
         MethodMetadata("list_batch_feature_tables", BatchFeatureTable, "list"),
         MethodMetadata("list_deployments", Deployment, "list"),
+        MethodMetadata("list_static_source_tables", StaticSourceTable, "list"),
     ]
 
 
@@ -108,6 +110,7 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_batch_request_table", BatchRequestTable, "get"),
         MethodMetadata("get_batch_feature_table", BatchFeatureTable, "get"),
         MethodMetadata("get_deployment", Deployment, "get"),
+        MethodMetadata("get_static_source_table", StaticSourceTable, "get"),
     ]
 
 
@@ -136,6 +139,7 @@ def catalog_get_by_id_list():
         MethodMetadata("get_batch_request_table_by_id", BatchRequestTable, "get_by_id"),
         MethodMetadata("get_batch_feature_table_by_id", BatchFeatureTable, "get_by_id"),
         MethodMetadata("get_deployment_by_id", Deployment, "get_by_id"),
+        MethodMetadata("get_static_source_table_by_id", StaticSourceTable, "get_by_id"),
     ]
 
 

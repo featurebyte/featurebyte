@@ -11,7 +11,7 @@
             "dtype": "INT",
             "entity_id": "63f94ed6ea1f050131379204",
             "name": "col_int",
-            "semantic_id": "646f6c190ed28a5271fb02a9"
+            "semantic_id": "647b5ba7875a4313db21a1af"
         },
         {
             "critical_data_info": null,
@@ -53,7 +53,7 @@
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
             "name": "event_timestamp",
-            "semantic_id": "646f6c190ed28a5271fb02a7"
+            "semantic_id": "647b5ba7875a4313db21a1ad"
         },
         {
             "critical_data_info": null,
@@ -82,7 +82,7 @@
     "name": "sf_event_table",
     "record_creation_timestamp_column": "created_at",
     "tabular_source": {
-        "feature_store_id": "646f6c190ed28a5271fb02a1",
+        "feature_store_id": "647b5ba6875a4313db21a1a7",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

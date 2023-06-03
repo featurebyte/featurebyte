@@ -22,8 +22,10 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.batch_request_table import SourceTableBatchRequestInput
 from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
-from featurebyte.models.request_input import SourceTableRequestInput
+from featurebyte.models.observation_table import SourceTableObservationInput
+from featurebyte.models.static_source_table import SourceTableStaticSourceInput
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -33,6 +35,7 @@ from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
+from featurebyte.schema.static_source_table import StaticSourceTableCreate
 
 if TYPE_CHECKING:
     from featurebyte.api.batch_request_table import BatchRequestTable
@@ -41,6 +44,7 @@ if TYPE_CHECKING:
     from featurebyte.api.item_table import ItemTable
     from featurebyte.api.observation_table import ObservationTable
     from featurebyte.api.scd_table import SCDTable
+    from featurebyte.api.static_source_table import StaticSourceTable
 else:
     DimensionTable = TypeVar("DimensionTable")
     EventTable = TypeVar("EventTable")
@@ -536,7 +540,7 @@ class SourceTable(AbstractTableData):
         Create an event table from a source table.
 
         >>> # Register GroceryInvoice as an event data
-        >>> source_table = ds.get_table(  # doctest: +SKIP
+        >>> source_table = ds.get_source_table(  # doctest: +SKIP
         ...   database_name="spark_catalog",
         ...   schema_name="GROCERY",
         ...   table_name="GROCERYINVOICE"
@@ -618,7 +622,7 @@ class SourceTable(AbstractTableData):
         ...   schema_name="GROCERY",
         ...   table_name="INVOICEITEMS"
         ... )
-        >>> items_table.create_item_table(  # doctest: +SKIP
+        >>> source_table.create_item_table(  # doctest: +SKIP
         ...   name="INVOICEITEMS",
         ...   event_id_column="GroceryInvoiceGuid",
         ...   item_id_column="GroceryInvoiceItemGuid",
@@ -1054,7 +1058,7 @@ class SourceTable(AbstractTableData):
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=SourceTableRequestInput(
+            request_input=SourceTableObservationInput(
                 source=self.tabular_source,
                 columns=columns,
                 columns_rename_mapping=columns_rename_mapping,
@@ -1113,7 +1117,7 @@ class SourceTable(AbstractTableData):
         payload = BatchRequestTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=SourceTableRequestInput(
+            request_input=SourceTableBatchRequestInput(
                 source=self.tabular_source,
                 columns=columns,
                 columns_rename_mapping=columns_rename_mapping,
@@ -1123,3 +1127,62 @@ class SourceTable(AbstractTableData):
             route="/batch_request_table", payload=payload.json_dict()
         )
         return BatchRequestTable.get_by_id(batch_request_table_doc["_id"])
+
+    def create_static_source_table(
+        self,
+        name: str,
+        sample_rows: Optional[int] = None,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
+    ) -> StaticSourceTable:
+        """
+        Creates a StaticSourceTable from the SourceTable.
+
+        Parameters
+        ----------
+        name: str
+            Static source table name.
+        sample_rows: Optional[int]
+            Optionally sample the source table to this number of rows before creating the
+            static source table.
+        columns: Optional[list[str]]
+            Include only these columns when creating the static source table. If None, all columns are
+            included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the source table using this mapping from old column names to new
+            column names when creating the static source table. If None, no columns are renamed.
+
+        Returns
+        -------
+        StaticSourceTable
+
+        Examples
+        --------
+        >>> ds = fb.FeatureStore.get(<feature_store_name>).get_data_source()  # doctest: +SKIP
+        >>> source_table = ds.get_source_table(  # doctest: +SKIP
+        ...   database_name="<data_base_name>",
+        ...   schema_name="<schema_name>",
+        ...   table_name=<table_name>
+        ... )
+        >>> static_source_table = source_table.create_static_source_table(  # doctest: +SKIP
+        ...   name="<static_source_table_name>",
+        ...   sample_rows=desired_sample_size,
+        ... )
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.static_source_table import StaticSourceTable
+
+        payload = StaticSourceTableCreate(
+            name=name,
+            feature_store_id=self.feature_store.id,
+            request_input=SourceTableStaticSourceInput(
+                source=self.tabular_source,
+                columns=columns,
+                columns_rename_mapping=columns_rename_mapping,
+            ),
+            sample_rows=sample_rows,
+        )
+        static_source_table_doc = StaticSourceTable.post_async_task(
+            route="/static_source_table", payload=payload.json_dict()
+        )
+        return StaticSourceTable.get_by_id(static_source_table_doc["_id"])
