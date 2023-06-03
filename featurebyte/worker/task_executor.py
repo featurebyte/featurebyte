@@ -114,13 +114,13 @@ class TaskExecutor:
             home_path.mkdir(parents=True)
 
         # override config file of the featurebyte-worker
-        featurebyte_server = os.environ.get("FEATUREBYTE_SERVER", "featurebyte-server")
+        featurebyte_server = os.environ.get("FEATUREBYTE_SERVER", "http://featurebyte-server:8088")
         config_path = home_path.joinpath("config.yaml")
         config_path.write_text(
             "# featurebyte-worker config file\n"
             "profile:\n"
             "  - name: worker\n"
-            f"    api_url: http://{featurebyte_server}:8088\n\n",
+            f"    api_url: {featurebyte_server}\n\n",
             encoding="utf-8",
         )
 

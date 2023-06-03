@@ -7,7 +7,6 @@ import time
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.app import celery
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.periodic_task import Interval
@@ -34,7 +33,7 @@ async def wait_for_async_task(
 @pytest.fixture(name="task_manager")
 def task_manager_fixture(celery_service):
     """Task manager fixture"""
-    persistent = celery_service
+    persistent, celery = celery_service
     return TaskManager(
         user=User(id=ObjectId()),
         persistent=persistent,
