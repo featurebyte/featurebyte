@@ -1368,6 +1368,6 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
                         return None
                     return Mock(status=status)
 
-                mock_celery.return_value.AsyncResult.side_effect = get_task
+                mock_celery.AsyncResult.side_effect = get_task
                 mock_get_celery_worker.return_value.AsyncResult.side_effect = get_task
                 yield
