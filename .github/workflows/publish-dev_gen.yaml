@@ -143,7 +143,7 @@ jobs:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       if: ${{ env.CHANNEL_ID != '' }}
       name: Send Slack notification with workflow result.
-      uses: slackapi/slack-github-action@v1.23.0
+      uses: slackapi/slack-github-action@v1.24.0
       with:
         channel-id: ${{ env.CHANNEL_ID }}
         payload: |-
@@ -161,7 +161,7 @@ jobs:
                       "type": "section",
                       "text": {
                           "type": "mrkdwn",
-                          "text": "```lint: [${{ env.PUBLISH_RESULT }}]```"
+                          "text": "```publish: [${{ env.PUBLISH_RESULT }}]```"
                       }
                   }
               ]

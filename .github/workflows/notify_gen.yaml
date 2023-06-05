@@ -18,7 +18,7 @@ jobs:
     - env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       name: Send Slack notification to user-experience channel
-      uses: slackapi/slack-github-action@v1.23.0
+      uses: slackapi/slack-github-action@v1.24.0
       with:
         channel-id: C042PLEC8D9
         payload: |-
