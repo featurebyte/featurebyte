@@ -718,10 +718,14 @@ class Feature(
         ... )["InvoiceAmountAvg_60days"]
         >>> invoice_amount_avg_60days.save()  # doctest: +SKIP
         """
-        sdk_execution_mode = os.environ.get("SDK_EXECUTION_MODE")
+        sdk_execution_mode = os.environ.get("FEATUREBYTE_SDK_EXECUTION_MODE")
         if sdk_execution_mode == "SERVER":
+            # server mode save a feature by POST /feature/ endpoint directly without running the feature definition.
             super().save(conflict_resolution=conflict_resolution, _id=_id)
         else:
+            # For non-server mode, a feature is saved by POST /feature/batch endpoint. A task is created to run the
+            # feature definition and save the feature. The task is executed asynchronously. The feature definition is
+            # validated before saving the feature.
             self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
             feature_create = FeatureCreate(**self._get_create_payload())
             assert feature_create.id is not None

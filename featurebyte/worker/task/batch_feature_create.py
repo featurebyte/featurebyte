@@ -68,7 +68,7 @@ async def execute_sdk_code(catalog_id: ObjectId, code: str) -> None:
     activate_catalog(catalog_id=catalog_id)
 
     # execute the code
-    with set_environment_variable("SDK_EXECUTION_MODE", "SERVER"):
+    with set_environment_variable("FEATUREBYTE_SDK_EXECUTION_MODE", "SERVER"):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             await asyncio.get_event_loop().run_in_executor(pool, exec, code)
 
