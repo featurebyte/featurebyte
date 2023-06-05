@@ -76,8 +76,6 @@ class SavableApiObject(ApiObject):
 
         Raises
         ------
-        ObjectHasBeenSavedError
-            If the object has been saved before.
         DuplicatedRecordException
             When a record with the same key exists at the persistent data store.
         RecordCreationException
