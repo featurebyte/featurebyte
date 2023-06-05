@@ -112,7 +112,7 @@ class Feature(
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = FeatureCreate(**self.json_dict())
-        return data.json_dict()
+        return data.json_dict(exclude_none=True)
 
     def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
         tile_specs = ExtendedFeatureModel(**self.dict()).tile_specs
@@ -719,6 +719,7 @@ class Feature(
         else:
             self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
             feature_create = FeatureCreate(**self._get_create_payload())
+            assert feature_create.id is not None
             try:
                 self.post_async_task(
                     route="/feature/batch",
