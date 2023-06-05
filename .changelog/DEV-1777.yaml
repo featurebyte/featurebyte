@@ -8,7 +8,7 @@ component: task_manager
 issues: []
 
 # A brief description of the change.
-note: "refactor task manager to take celery object as a parameter"
+note: "refactor task manager to take celery object as a parameter, and refactor task executor to import tasks explicitly"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
