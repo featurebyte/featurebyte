@@ -172,13 +172,13 @@ class FeatureExecutionPlan:
         tuple[expressions.Select, List[str]]
         """
         assert self.parent_serving_preparation is not None
-        table_expr, new_columns = construct_request_table_with_parent_entities(
+        parent_serving_result = construct_request_table_with_parent_entities(
             request_table_name=request_table_name,
             request_table_columns=request_table_columns,
             join_steps=self.parent_serving_preparation.join_steps,
             feature_store_details=self.parent_serving_preparation.feature_store_details,
         )
-        return table_expr, new_columns
+        return parent_serving_result.table_expr, parent_serving_result.parent_entity_columns
 
     def construct_combined_aggregation_cte(
         self,

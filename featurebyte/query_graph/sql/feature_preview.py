@@ -76,19 +76,16 @@ def get_feature_preview_sql(
         request_table_columns = cast(List[str], df_request.columns.tolist())
 
         if parent_serving_preparation is not None:
-            (
-                request_table_expr,
-                parent_entity_columns,
-            ) = construct_request_table_with_parent_entities(
+            parent_serving_result = construct_request_table_with_parent_entities(
                 request_table_name=request_table_name,
                 request_table_columns=request_table_columns,
                 join_steps=parent_serving_preparation.join_steps,
                 feature_store_details=parent_serving_preparation.feature_store_details,
             )
-            request_table_name = "JOINED_PARENTS_" + request_table_name
-            request_table_columns = request_table_columns + parent_entity_columns
-            cte_statements.append((request_table_name, request_table_expr))
-            exclude_columns.update(parent_entity_columns)
+            request_table_name = parent_serving_result.new_request_table_name
+            request_table_columns = parent_serving_result.new_request_table_columns
+            cte_statements.append((request_table_name, parent_serving_result.table_expr))
+            exclude_columns.update(parent_serving_result.parent_entity_columns)
 
         elapsed = time.time() - tic
         logger.debug(f"Constructing request table SQL took {elapsed:.2}s")
