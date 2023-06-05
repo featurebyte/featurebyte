@@ -702,6 +702,11 @@ class Feature(
         _id: Optional[ObjectId]
             The object ID to be used when saving the object. If not provided, a new object ID will be generated.
 
+        Raises
+        ------
+        RecordCreationException
+            When the feature object cannot be saved using feature definition.
+
         Examples
         --------
         >>> grocery_invoice_view = catalog.get_view("GROCERYINVOICE")

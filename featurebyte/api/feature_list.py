@@ -668,7 +668,17 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     def _pre_save_operations(self, conflict_resolution: ConflictResolution = "raise") -> None:
         feature_payloads = []
         for feat in self.feature_objects.values():
-            if not feat.saved:
+            if conflict_resolution == "retrieve":
+                # If conflict_resolution is retrieve, we will retrieve the feature from the catalog based on the
+                # feature name and update the feature object with the retrieved feature.
+                feat_name = feat.name
+                assert feat_name is not None
+                try:
+                    feat = Feature.get(name=feat_name)
+                    self.feature_objects[feat_name] = feat
+                except RecordRetrievalException:
+                    feature_payloads.append(FeatureCreate(**feat.json_dict()))
+            if conflict_resolution == "raise" and not feat.saved:
                 feature_payloads.append(FeatureCreate(**feat.json_dict()))
 
         self.post_async_task(

@@ -1281,3 +1281,22 @@ def test_feature_list__features_order_is_kept(float_feature, non_time_based_feat
     feature_list_2 = FeatureList([non_time_based_feature, float_feature], "test_feature_list_2")
     feature_list_2.save()
     assert feature_list_2.feature_names == [non_time_based_feature.name, float_feature.name]
+
+
+def test_feature_list_save__different_feature_are_used_due_to_conflict_resolution(float_feature):
+    """
+    Test feature list saving in bad state due to some feature has been saved (when the feature id is different)
+    """
+    feat_name = float_feature.name
+    new_feat = float_feature + 123
+    new_feat.name = feat_name
+    new_feat.save()
+    assert new_feat.saved
+
+    # check that metadata of the feature info is not empty
+    assert new_feat.info()["metadata"] is not None
+
+    # check the different feature is used to save the feature list if conflict_resolution is set to "retrieve"
+    feature_list = FeatureList([float_feature], name="my_fl")
+    feature_list.save(conflict_resolution="retrieve")
+    assert feature_list[feat_name].id == new_feat.id
