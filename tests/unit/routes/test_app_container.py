@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from bson import ObjectId
 
-from featurebyte.app import User
+from featurebyte.app import User, get_celery
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.routes.app_container_config import AppContainerConfig
@@ -26,7 +26,7 @@ def app_container_constructor_params_fixture(persistent):
         "temp_storage": get_temp_storage(),
         "storage": get_storage(),
         "task_manager": TaskManager(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
         ),
         "catalog_id": DEFAULT_CATALOG_ID,
     }
@@ -41,7 +41,7 @@ def test_construction__empty_app_config_has_two_instances(app_container_construc
         **app_container_constructor_params,
         app_config=app_container_config,
     )
-    assert len(app_container.instance_map) == 3
+    assert len(app_container.instance_map) == 4
 
 
 def test_construction__get_attr(app_container_constructor_params):
@@ -118,7 +118,7 @@ def test_construction__build_with_full_config(app_container_constructor_params):
         **app_container_constructor_params,
         app_config=app_container_config,
     )
-    assert len(app_container.instance_map) == 7
+    assert len(app_container.instance_map) == 8
 
 
 def test_construction__build_with_missing_deps(app_container_constructor_params):

@@ -45,6 +45,7 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
+from featurebyte.worker import get_celery
 
 logger = get_logger(__name__)
 
@@ -87,6 +88,7 @@ def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
             task_manager=TaskManager(
                 user=request.state.user,
                 persistent=request.state.persistent,
+                celery=get_celery(),
                 catalog_id=active_catalog_id,
             ),
             storage=get_storage(),

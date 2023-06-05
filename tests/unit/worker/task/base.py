@@ -12,6 +12,7 @@ from unittest.mock import Mock
 import pytest
 import pytest_asyncio
 
+from featurebyte.app import get_celery
 from featurebyte.models.base import User
 from featurebyte.worker.task.base import BaseTask
 
@@ -84,6 +85,7 @@ class BaseTaskTestSuite:
             get_credential=get_credential,
             get_storage=lambda: storage,
             get_temp_storage=lambda: temp_storage,
+            get_celery=get_celery,
         )
 
         await task.execute()

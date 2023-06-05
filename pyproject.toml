@@ -136,6 +136,7 @@ sqlglot = "^10.1.3,<10.4"  # SQL generation doesn't match as >10.4 double quotes
 thrift-sasl = { version = "^0.4.3", optional = true }
 typeguard = "^2.13.3"
 typer = "^0.7.0"
+typing-extensions = "4.5.0"
 uvicorn = { version = "^0.21.1", extras = ["standard"], optional = true }
 websocket-client = "^1.5.1"
 wheel = "0.40.0"
@@ -235,5 +236,6 @@ addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--d
 doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 markers = [
     "disable_task_manager_mock: disable use of autouse task manager fixture",
+    "no_mock_websocket_client: skip mocking websocket client",
 ]
 norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]

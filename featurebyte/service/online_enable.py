@@ -41,6 +41,7 @@ class OnlineEnableService(BaseService):
         persistent: Persistent,
         catalog_id: ObjectId,
         session_manager_service: SessionManagerService,
+        task_manager: TaskManager,
     ):
         super().__init__(user, persistent, catalog_id)
         self.feature_service = FeatureService(
@@ -56,7 +57,7 @@ class OnlineEnableService(BaseService):
         self.feature_list_service = FeatureListService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self._task_manager = TaskManager(user=user, persistent=persistent, catalog_id=catalog_id)
+        self._task_manager = task_manager
 
     @classmethod
     def _extract_online_enabled_feature_ids(

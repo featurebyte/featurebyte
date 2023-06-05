@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 import pytest_asyncio
 
+from featurebyte.app import get_celery
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
@@ -26,7 +27,10 @@ async def mock_scheduler_fixture(feature, tile_spec, persistent):
     job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 
     task_manager = TaskManager(
-        user=User(id=feature.user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=User(id=feature.user_id),
+        persistent=persistent,
+        celery=get_celery(),
+        catalog_id=DEFAULT_CATALOG_ID,
     )
     tile_scheduler = TileScheduler(task_manager=task_manager)
 

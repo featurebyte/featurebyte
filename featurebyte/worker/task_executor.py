@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Awaitable, Optional
 
 import asyncio
+import os
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 from uuid import UUID
@@ -21,10 +22,11 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
-from featurebyte.worker import celery
+from featurebyte.worker import get_celery
 from featurebyte.worker.task.base import TASK_MAP
 
 logger = get_logger(__name__)
+celery = get_celery()
 
 
 def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -104,6 +106,7 @@ class TaskExecutor:
             get_credential=credential_provider.get_credential,
             get_storage=get_storage,
             get_temp_storage=get_temp_storage,
+            get_celery=get_celery,
         )
 
         home_path = get_home_path()
@@ -111,12 +114,14 @@ class TaskExecutor:
             home_path.mkdir(parents=True)
 
         # override config file of the featurebyte-worker
+        featurebyte_server = os.environ.get("FEATUREBYTE_SERVER", "http://featurebyte-server:8088")
         config_path = home_path.joinpath("config.yaml")
         config_path.write_text(
             "# featurebyte-worker config file\n"
             "profile:\n"
             "  - name: worker\n"
-            "    api_url: http://featurebyte-server:8088\n\n"
+            f"    api_url: {featurebyte_server}\n\n",
+            encoding="utf-8",
         )
 
     async def execute(self) -> Any:
@@ -155,7 +160,7 @@ async def execute_task(request_id: UUID, **payload: Any) -> Any:
         progress.put({"percent": -1})
 
 
-@celery.task(bind=True)
+@celery.task(bind=True, name="featurebyte.worker.task_executor.execute_io_task")
 def execute_io_task(self: Any, **payload: Any) -> Any:
     """
     Execute Celery task
@@ -176,7 +181,7 @@ def execute_io_task(self: Any, **payload: Any) -> Any:
     return run_async(execute_task(self.request.id, **payload), timeout=self.request.timelimit[1])
 
 
-@celery.task(bind=True)
+@celery.task(bind=True, name="featurebyte.worker.task_executor.execute_cpu_task")
 def execute_cpu_task(self: Any, **payload: Any) -> Any:
     """
     Execute Celery task

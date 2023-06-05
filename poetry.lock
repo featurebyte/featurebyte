@@ -4,7 +4,7 @@
 server = ["aioredis", "boto3", "cachetools", "celery", "celerybeat-mongo", "databricks-cli", "databricks-sql-connector", "fastapi", "featurebyte-freeware", "gevent", "motor", "pdfkit", "pyhive", "redis", "sasl", "smart-open", "snowflake-connector-python", "thrift-sasl", "uvicorn"]
 
 [metadata]
-content-hash = "f42efdc1bbf84c621f28adeaa5730f00f3428f80fe50f755ab0a7252ef9c07a7"
+content-hash = "552f6d609b8b9fe9d3248e3e95b5ed0e2f8ef70822131a86230058ae5506239f"
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
 
@@ -4737,13 +4737,13 @@ version = "1.26.25.13"
 [[package]]
 description = "Backported and Experimental Type Hints for Python 3.7+"
 files = [
-    {file = "typing_extensions-4.6.2-py3-none-any.whl", hash = "sha256:3a8b36f13dd5fdc5d1b16fe317f5668545de77fa0b8e02006381fd49d731ab98"},
-    {file = "typing_extensions-4.6.2.tar.gz", hash = "sha256:06006244c70ac8ee83fa8282cb188f697b8db25bc8b4df07be1873c43897060c"},
+    {file = "typing_extensions-4.5.0-py3-none-any.whl", hash = "sha256:fb33085c39dd998ac16d1431ebc293a8b3eedd00fd4a32de0ff79002c19511b4"},
+    {file = "typing_extensions-4.5.0.tar.gz", hash = "sha256:5cb5f4a79139d699607b3ef622a1dedafa84e115ab0024e0d9c044a9479ca7cb"},
 ]
 name = "typing-extensions"
 optional = false
 python-versions = ">=3.7"
-version = "4.6.2"
+version = "4.5.0"
 
 [[package]]
 description = "HTTP library with thread-safe connection pooling, file post, and more."

@@ -6,6 +6,7 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte import FeatureList
+from featurebyte.app import get_celery
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV8
 from featurebyte.models.base import DEFAULT_CATALOG_ID
@@ -67,6 +68,7 @@ def migration_service_fixture(user, persistent, get_cred):
         user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
     service.set_credential_callback(get_cred)
+    service.set_celery(get_celery())
     return service
 
 

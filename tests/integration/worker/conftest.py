@@ -11,8 +11,8 @@ import pymongo
 import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte.app import get_celery
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.worker import celery
 from tests.integration.conftest import MONGO_CONNECTION
 
 
@@ -42,7 +42,14 @@ async def celery_service_fixture():
     client = pymongo.MongoClient(MONGO_CONNECTION)
     persistent = MongoDB(uri=MONGO_CONNECTION, database=database_name)
     env = os.environ.copy()
-    env.update({"MONGODB_URI": MONGO_CONNECTION, "MONGODB_DB": database_name})
+    env.update(
+        {
+            "MONGODB_URI": MONGO_CONNECTION,
+            "MONGODB_DB": database_name,
+            "FEATUREBYTE_SERVER": "http://127.0.0.1:8080",
+        }
+    )
+    celery = get_celery()
     celery.conf.mongodb_backend_settings["database"] = database_name
     proc = subprocess.Popen(
         [
@@ -50,6 +57,8 @@ async def celery_service_fixture():
             "--app",
             "featurebyte.worker.start.celery",
             "worker",
+            "-Q",
+            "cpu_task,cpu_task:1,cpu_task:2,cpu_task:3",
             "--loglevel=INFO",
             "--beat",
             "--scheduler",
@@ -61,6 +70,6 @@ async def celery_service_fixture():
     thread = RunThread(proc.stdout)
     thread.daemon = True
     thread.start()
-    yield persistent
+    yield persistent, celery
     proc.terminate()
     client.drop_database(database_name)

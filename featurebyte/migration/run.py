@@ -8,6 +8,8 @@ from typing import Any, AsyncGenerator, Callable, cast
 import importlib
 import inspect
 
+from celery import Celery
+
 from featurebyte.common.path_util import import_submodules
 from featurebyte.logging import get_logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
@@ -25,6 +27,7 @@ from featurebyte.persistent.mongo import MongoDB
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+from featurebyte.worker import get_celery
 
 BaseDocumentServiceT = BaseDocumentService[
     FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
@@ -108,6 +111,7 @@ async def migrate_method_generator(
     user: Any,
     persistent: Persistent,
     get_credential: Any,
+    celery: Celery,
     schema_metadata: SchemaMetadataModel,
     include_data_warehouse_migrations: bool,
 ) -> AsyncGenerator[tuple[BaseDocumentServiceT, Callable[..., Any]], None]:
@@ -122,6 +126,8 @@ async def migrate_method_generator(
         Persistent storage object
     get_credential: Any
         Callback to retrieve credential
+    celery: Celery
+        Celery object
     schema_metadata: SchemaMetadataModel
         Schema metadata
     include_data_warehouse_migrations: bool
@@ -147,6 +153,7 @@ async def migrate_method_generator(
             if not include_data_warehouse_migrations:
                 continue
             migrate_service.set_credential_callback(get_credential)
+            migrate_service.set_celery(celery)
         migrate_method = getattr(migrate_service, migrate_method_data["method"])
         yield migrate_service, migrate_method
 
@@ -181,6 +188,7 @@ async def run_migration(
     user: Any,
     persistent: Persistent,
     get_credential: Any,
+    celery: Celery,
     include_data_warehouse_migrations: bool = True,
 ) -> None:
     """
@@ -194,6 +202,8 @@ async def run_migration(
         Persistent object
     get_credential: Any
         Callback to retrieve credential
+    celery: Celery
+        Celery object
     include_data_warehouse_migrations: bool
         Whether to include data warehouse migrations
     """
@@ -207,6 +217,7 @@ async def run_migration(
         user=user,
         persistent=persistent,
         get_credential=get_credential,
+        celery=celery,
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=include_data_warehouse_migrations,
     )
@@ -240,5 +251,6 @@ async def run_mongo_migration(persistent: MongoDB) -> None:
         User(),
         persistent,
         credential_provider.get_credential,
+        celery=get_celery(),
         include_data_warehouse_migrations=False,
     )

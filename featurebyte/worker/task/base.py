@@ -16,7 +16,7 @@ from featurebyte.service.task_manager import TaskManager
 TASK_MAP: Dict[Enum, type[BaseTask]] = {}
 
 
-class BaseTask:
+class BaseTask:  # pylint: disable=too-many-instance-attributes
     """
     Base class for Task
     """
@@ -32,6 +32,7 @@ class BaseTask:
         get_storage: Any,
         get_temp_storage: Any,
         get_credential: Any,
+        get_celery: Any,
     ):
         if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
@@ -41,6 +42,7 @@ class BaseTask:
         self.get_storage = get_storage
         self.get_temp_storage = get_temp_storage
         self.get_credential = get_credential
+        self.get_celery = get_celery
         self.progress = progress
         self._app_container = None
 
@@ -85,6 +87,7 @@ class BaseTask:
                 task_manager=TaskManager(
                     user=self.user,
                     persistent=self.get_persistent(),
+                    celery=self.get_celery(),
                     catalog_id=self.payload.catalog_id,
                 ),
                 storage=self.get_storage(),

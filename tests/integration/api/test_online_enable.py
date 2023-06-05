@@ -13,9 +13,12 @@ import pytest_asyncio
 import requests
 
 from featurebyte import FeatureList
+from featurebyte.logging import get_logger
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.integration.conftest import MONGO_CONNECTION
 from tests.integration.worker.conftest import RunThread
+
+logger = get_logger(__name__)
 
 
 @pytest_asyncio.fixture(scope="session", name="app_service")
@@ -39,19 +42,22 @@ async def app_service_fixture(persistent):
         thread.daemon = True
         thread.start()
 
-        # wait for service to start
-        start = time.time()
-        while time.time() - start < 50:
-            try:
-                response = requests.get("http://localhost:8080/status", timeout=5)
-                if response.status_code == 200:
-                    break
-            except requests.exceptions.ConnectionError:
-                pass
-            await asyncio.sleep(1)
-
-        yield persistent
-        proc.terminate()
+        try:
+            # wait for service to start
+            start = time.time()
+            while time.time() - start < 60:
+                try:
+                    response = requests.get("http://localhost:8080/status", timeout=5)
+                    if response.status_code == 200:
+                        logger.info("service started")
+                        yield persistent
+                        return
+                except requests.exceptions.ConnectionError:
+                    pass
+                await asyncio.sleep(1)
+            raise TimeoutError("service did not start")
+        finally:
+            proc.terminate()
 
 
 @pytest.fixture(name="online_enabled_feature_list_and_deployment", scope="module")
@@ -142,7 +148,8 @@ def test_get_online_serving_code(online_enabled_feature_list_and_deployment, app
             last_line = code_content.split("\n")[-1]
             file_obj.write(f"\nprint({last_line})")
 
-        result = subprocess.check_output(["python", code_path])
+        logger.info(code_content)
+        result = subprocess.check_output(["python", code_path], stderr=subprocess.STDOUT)
         assert dedent(result.decode("utf8")) == (
             "  PRODUCT_ACTION FEATURE_FOR_ONLINE_ENABLE_TESTING\n"
             "0         detail                              None\n"
@@ -153,7 +160,9 @@ def test_get_online_serving_code(online_enabled_feature_list_and_deployment, app
         code_path = os.path.join(tempdir, "online_serving.sh")
         with open(code_path, "w", encoding="utf8") as file_obj:
             file_obj.write(code_content)
-        result = subprocess.check_output(["sh", code_path])
-        assert result.decode("utf8") == (
+
+        logger.info(code_content)
+        result = subprocess.check_output(["sh", code_path], stderr=subprocess.STDOUT)
+        assert result.decode("utf8").endswith(
             '{"features":[{"PRODUCT_ACTION":"detail","FEATURE_FOR_ONLINE_ENABLE_TESTING":null}]}'
         )

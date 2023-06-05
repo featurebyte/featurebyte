@@ -1306,7 +1306,7 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
     Mock celery task manager for testing
     """
     _ = mock_app_callbacks
-    if "disable_task_manager_mock" in request.keywords:
+    if request.module.__name__ == "test_task_manager":
         yield
     else:
         task_status = {}
@@ -1323,6 +1323,7 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
                     get_persistent=lambda: persistent,
                     get_storage=lambda: storage,
                     get_temp_storage=lambda: temp_storage,
+                    get_celery=lambda: None,
                 )
                 try:
                     await task.execute()
@@ -1357,7 +1358,9 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
 
             mock_submit.side_effect = submit
 
-            with patch("featurebyte.service.task_manager.celery") as mock_celery:
+            with patch("featurebyte.app.get_celery") as mock_get_celery, mock.patch(
+                "featurebyte.worker.task_executor.get_celery"
+            ) as mock_get_celery_worker:
 
                 def get_task(task_id):
                     status = task_status.get(task_id)
@@ -1365,5 +1368,6 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
                         return None
                     return Mock(status=status)
 
-                mock_celery.AsyncResult.side_effect = get_task
+                mock_get_celery.return_value.AsyncResult.side_effect = get_task
+                mock_get_celery_worker.return_value.AsyncResult.side_effect = get_task
                 yield

@@ -6,10 +6,10 @@ from __future__ import annotations
 from typing import Any, Optional, Union, cast
 
 import datetime
-from abc import abstractmethod
 from uuid import UUID
 
 from bson.objectid import ObjectId
+from celery import Celery
 
 from featurebyte.logging import get_logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
@@ -18,7 +18,6 @@ from featurebyte.persistent import Persistent
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.periodic_task import PeriodicTaskService
-from featurebyte.worker import celery
 
 TaskId = Union[ObjectId, UUID]
 
@@ -26,88 +25,18 @@ TaskId = Union[ObjectId, UUID]
 logger = get_logger(__name__)
 
 
-class AbstractTaskManager:
-    """
-    AbstractTaskManager defines interface for TaskManager
-    """
-
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId) -> None:
-        """
-        TaskManager constructor
-
-        Parameters
-        ----------
-        user: Any
-            User
-        persistent: Persistent
-            Persistent
-        catalog_id: ObjectId
-            Catalog ID
-        """
-        self.user = user
-        self.persistent = persistent
-        self.catalog_id = catalog_id
-
-    @abstractmethod
-    async def submit(self, payload: BaseTaskPayload) -> TaskId:
-        """
-        Submit task request given task payload
-
-        Parameters
-        ----------
-        payload: BaseTaskPayload
-            Task payload object
-
-        Returns
-        -------
-        TaskId
-            Task identifier used to check task status
-        """
-
-    @abstractmethod
-    async def get_task(self, task_id: str) -> Optional[Task]:
-        """
-        Retrieve task status given ID
-
-        Parameters
-        ----------
-        task_id: str
-            Task ID
-
-        Returns
-        -------
-        Task
-        """
-
-    @abstractmethod
-    async def list_tasks(
-        self,
-        page: int = 1,
-        page_size: int = 10,
-        ascending: bool = True,
-    ) -> tuple[list[Task], int]:
-        """
-        List task statuses of this user
-
-        Parameters
-        ----------
-        page: int
-            Page number
-        page_size: int
-            Page size
-        ascending: bool
-            Sorting order
-
-        Returns
-        -------
-        tuple[list[Task], int]
-        """
-
-
-class TaskManager(AbstractTaskManager):
+class TaskManager:
     """
     TaskManager class is responsible for submitting task request & task status retrieval
     """
+
+    def __init__(
+        self, user: Any, persistent: Persistent, celery: Celery, catalog_id: ObjectId
+    ) -> None:
+        self.user = user
+        self.persistent = persistent
+        self.celery = celery
+        self.catalog_id = catalog_id
 
     async def submit(self, payload: BaseTaskPayload) -> TaskId:
         """
@@ -126,7 +55,7 @@ class TaskManager(AbstractTaskManager):
         assert self.user.id == payload.user_id
         kwargs = payload.json_dict()
         kwargs["task_output_path"] = payload.task_output_path
-        task = celery.send_task(payload.task, kwargs=kwargs)
+        task = self.celery.send_task(payload.task, kwargs=kwargs)
         return cast(TaskId, task.id)
 
     async def get_task(self, task_id: str) -> Task | None:
@@ -144,7 +73,7 @@ class TaskManager(AbstractTaskManager):
             Task object
         """
         task_id = str(task_id)
-        task_result = celery.AsyncResult(task_id)
+        task_result = self.celery.AsyncResult(task_id)
         payload = {}
         output_path = None
         traceback = None
@@ -176,6 +105,22 @@ class TaskManager(AbstractTaskManager):
         page_size: int = 10,
         ascending: bool = True,
     ) -> tuple[list[Task], int]:
+        """
+        List tasks.
+
+        Parameters
+        ----------
+        page: int
+            Page number
+        page_size: int
+            Page size
+        ascending: bool
+            Sort direction
+
+        Returns
+        -------
+        tuple[list[Task], int]
+        """
         # Perform the query
         results, total = await self.persistent.find(
             collection_name=TaskModel.collection_name(),

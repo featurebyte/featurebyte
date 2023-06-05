@@ -1,6 +1,6 @@
 """
 Start worker
 """
-from . import celery
+from .task_executor import celery
 
 celery.autodiscover_tasks(["featurebyte.worker.task_executor"])

@@ -7,6 +7,7 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.app import get_celery
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.service.task_manager import TaskManager
 from tests.util.task import LongRunningPayload
@@ -22,7 +23,10 @@ class TestTaskStatusApi:
     def task_manager(self, user_id, persistent):
         """Task manager fixture"""
         yield TaskManager(
-            user=User(id=user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            user=User(id=user_id),
+            persistent=persistent,
+            celery=get_celery(),
+            catalog_id=DEFAULT_CATALOG_ID,
         )
 
     @pytest_asyncio.fixture

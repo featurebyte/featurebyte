@@ -2,7 +2,7 @@
 This module contains integration tests for FeatureSnowflake
 """
 import copy
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import PropertyMock, patch
 
 import numpy as np
@@ -11,7 +11,7 @@ import pytest
 import pytest_asyncio
 from pandas.testing import assert_frame_equal
 
-from featurebyte.enum import InternalName
+from featurebyte.app import get_celery
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
@@ -51,6 +51,7 @@ def snowflake_feature_manager_no_sf_scheduling_fixture(extended_feature_model, p
     task_manager = TaskManager(
         user=User(id=extended_feature_model.user_id),
         persistent=persistent,
+        celery=get_celery(),
         catalog_id=DEFAULT_CATALOG_ID,
     )
     feature_manager._tile_manager._task_manager = task_manager
