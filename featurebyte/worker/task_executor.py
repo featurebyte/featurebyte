@@ -7,11 +7,13 @@ from typing import Any, Awaitable, Optional
 
 import asyncio
 import os
+from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 from uuid import UUID
 
 import gevent
+from celery import Task
 from celery.exceptions import SoftTimeLimitExceeded
 
 from featurebyte.config import get_home_path
@@ -26,7 +28,6 @@ from featurebyte.worker import get_celery
 from featurebyte.worker.task.base import TASK_MAP
 
 logger = get_logger(__name__)
-celery = get_celery()
 
 
 def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -108,7 +109,12 @@ class TaskExecutor:
             get_temp_storage=get_temp_storage,
             get_celery=get_celery,
         )
+        self._setup_worker_config()
 
+    def _setup_worker_config(self) -> None:
+        """
+        Setup featurebyte config file for the worker
+        """
         home_path = get_home_path()
         if not home_path.exists():
             home_path.mkdir(parents=True)
@@ -131,70 +137,81 @@ class TaskExecutor:
         await self.task.execute()
 
 
-async def execute_task(request_id: UUID, **payload: Any) -> Any:
+class BaseCeleryTask(Task):
     """
-    Execute Celery task
-
-    Parameters
-    ----------
-    request_id: UUID
-        Request ID
-    payload: Any
-        Task payload
-
-    Returns
-    -------
-    Any
+    Base Celery task
     """
-    progress = Progress(user_id=payload.get("user_id"), task_id=request_id)
-    executor = TaskExecutor(payload=payload, progress=progress)
-    # send initial progress to indicate task is started
-    progress.put({"percent": 0})
-    try:
-        return_val = await executor.execute()
-        # send final progress to indicate task is completed
-        progress.put({"percent": 100})
-        return return_val
-    finally:
-        # indicate stream is closed
-        progress.put({"percent": -1})
+
+    name = "base_task"
+    progress_class = Progress
+    executor_class = TaskExecutor
+
+    async def execute_task(self: Any, request_id: UUID, **payload: Any) -> Any:
+        """
+        Execute Celery task
+
+        Parameters
+        ----------
+        request_id: UUID
+            Request ID
+        payload: Any
+            Task payload
+
+        Returns
+        -------
+        Any
+        """
+        progress = self.progress_class(user_id=payload.get("user_id"), task_id=request_id)
+        executor = self.executor_class(payload=payload, progress=progress)
+        # send initial progress to indicate task is started
+        progress.put({"percent": 0})
+        try:
+            return_val = await executor.execute()
+            # send final progress to indicate task is completed
+            progress.put({"percent": 100})
+            return return_val
+        finally:
+            # indicate stream is closed
+            progress.put({"percent": -1})
+
+    @abstractmethod
+    def run(self: Any, *args: Any, **payload: Any) -> Any:
+        """
+        Execute Celery task
+
+        Parameters
+        ----------
+        args: Any
+            Task arguments
+        payload: Any
+            Task payload
+
+        Returns
+        -------
+        Any
+        """
+        raise NotImplementedError
 
 
-@celery.task(bind=True, name="featurebyte.worker.task_executor.execute_io_task")
-def execute_io_task(self: Any, **payload: Any) -> Any:
+class IOBoundTask(BaseCeleryTask):
     """
-    Execute Celery task
-
-    Parameters
-    ----------
-    self: Any
-        Celery Task
-    payload: Any
-        Task payload
-
-    Returns
-    -------
-    Any
+    Celery task for IO bound task
     """
-    # gevent celery worker pool does not support soft time limit,
-    # so we let "run_async" handle the timeout enforcement
-    return run_async(execute_task(self.request.id, **payload), timeout=self.request.timelimit[1])
+
+    name = "featurebyte.worker.task_executor.execute_io_task"
+
+    def run(self: Any, *args: Any, **payload: Any) -> Any:
+        return run_async(
+            self.execute_task(self.request.id, **payload), timeout=self.request.timelimit[1]
+        )
 
 
-@celery.task(bind=True, name="featurebyte.worker.task_executor.execute_cpu_task")
-def execute_cpu_task(self: Any, **payload: Any) -> Any:
+class CPUBoundTask(BaseCeleryTask):
     """
-    Execute Celery task
-
-    Parameters
-    ----------
-    self: Any
-        Celery Task
-    payload: Any
-        Task payload
-
-    Returns
-    -------
-    Any
+    Celery task for CPU bound task
     """
-    return asyncio.run(execute_task(self.request.id, **payload))
+
+    name = "featurebyte.worker.task_executor.execute_cpu_task"
+
+    def run(self: Any, *args: Any, **payload: Any) -> Any:
+        return asyncio.run(self.execute_task(self.request.id, **payload))

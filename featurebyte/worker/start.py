@@ -1,6 +1,9 @@
 """
 Start worker
 """
-from .task_executor import celery
+from featurebyte.worker import get_celery
+from featurebyte.worker.task_executor import CPUBoundTask, IOBoundTask
 
-celery.autodiscover_tasks(["featurebyte.worker.task_executor"])
+celery = get_celery()
+celery.register_task(CPUBoundTask())
+celery.register_task(IOBoundTask())
