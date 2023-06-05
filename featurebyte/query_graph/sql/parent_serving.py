@@ -3,7 +3,9 @@ SQL generation for looking up parent entities
 """
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import List
+
+from dataclasses import dataclass
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
@@ -19,12 +21,33 @@ from featurebyte.query_graph.sql.common import SQLType, get_qualified_column_ide
 from featurebyte.query_graph.sql.specs import AggregationSource, LookupSpec
 
 
+@dataclass
+class ParentEntityLookupResult:
+    """
+    Result of updating a request table with parent entities
+
+    table_expr: Select
+        Expression of the updated request table
+    parent_entity_columns: list[str]
+        Parent entity column names that were joined
+    new_request_table_name: str
+        Name of the updated request table
+    new_request_table_columns: list[str]
+        Column names of the updated request table
+    """
+
+    table_expr: Select
+    parent_entity_columns: List[str]
+    new_request_table_name: str
+    new_request_table_columns: List[str]
+
+
 def construct_request_table_with_parent_entities(
     request_table_name: str,
     request_table_columns: list[str],
     join_steps: list[JoinStep],
     feature_store_details: FeatureStoreDetails,
-) -> Tuple[Select, List[str]]:
+) -> ParentEntityLookupResult:
     """
     Construct a query to join parent entities into the request table
 
@@ -42,8 +65,7 @@ def construct_request_table_with_parent_entities(
 
     Returns
     -------
-    Tuple[Select, List[str]]
-        Tuple of sql query and list of parent entities column names that are joined
+    ParentEntityLookupResult
     """
     table_expr = select(
         *[get_qualified_column_identifier(col, "REQ") for col in request_table_columns]
@@ -61,7 +83,12 @@ def construct_request_table_with_parent_entities(
         current_columns.append(join_step.parent_serving_name)
         new_columns.append(join_step.parent_serving_name)
 
-    return table_expr, new_columns
+    return ParentEntityLookupResult(
+        table_expr=table_expr,
+        parent_entity_columns=new_columns,
+        new_request_table_name="JOINED_PARENTS_" + request_table_name,
+        new_request_table_columns=current_columns,
+    )
 
 
 def _apply_join_step(

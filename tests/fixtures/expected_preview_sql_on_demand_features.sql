@@ -1,4 +1,8 @@
-WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
+WITH REQUEST_TABLE AS (
+  SELECT
+    CAST('2022-04-20 10:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
+    'C1' AS "CUSTOMER_ID"
+), TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   SELECT
     latest_f243fc3de55421dea9679ba6aec5bc0ac03ffe30.INDEX,
     latest_f243fc3de55421dea9679ba6aec5bc0ac03ffe30."cust_id",
@@ -19,29 +23,51 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
           *,
           F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
         FROM (
+          WITH __FB_ENTITY_TABLE_NAME AS (
+            (
+              SELECT
+                "CUSTOMER_ID" AS "cust_id",
+                TO_TIMESTAMP(
+                  FLOOR((
+                    DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
+                  ) / 3600) * 3600 + 1800 - 900
+                ) AS "__FB_ENTITY_TABLE_END_DATE",
+                DATEADD(
+                  microsecond,
+                  (
+                    2160 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
+                  ) * -1,
+                  TO_TIMESTAMP(
+                    FLOOR((
+                      DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
+                    ) / 3600) * 3600 + 1800 - 900
+                  )
+                ) AS "__FB_ENTITY_TABLE_START_DATE"
+              FROM "REQUEST_TABLE"
+              GROUP BY
+                "CUSTOMER_ID"
+            )
+          )
           SELECT
-            *
-          FROM (
+            R.*
+          FROM __FB_ENTITY_TABLE_NAME
+          INNER JOIN (
             SELECT
               "ts" AS "ts",
               "cust_id" AS "cust_id",
               "a" AS "a",
               "b" AS "b"
             FROM "db"."public"."event_table"
-          )
-          WHERE
-            "ts" >= CAST('2022-01-20 09:15:00' AS TIMESTAMPNTZ)
-            AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
+          ) AS R
+            ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+            AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+            AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
         )
       )
     )
     WHERE
       "__FB_ROW_NUMBER" = 1
   ) AS latest_f243fc3de55421dea9679ba6aec5bc0ac03ffe30
-), REQUEST_TABLE AS (
-  SELECT
-    CAST('2022-04-20 10:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
-    'C1' AS "CUSTOMER_ID"
 ), "REQUEST_TABLE_W7776000_F3600_BS900_M1800_CUSTOMER_ID" AS (
   SELECT
     "POINT_IN_TIME",

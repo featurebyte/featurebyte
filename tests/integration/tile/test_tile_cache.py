@@ -105,8 +105,8 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
     assert len(requests) == 1
     df_entity_expected = pd.DataFrame(
         {
-            "ÜSER ID": [1.0, 2.0, 3.0, 4.0, np.nan],
             "LAST_TILE_START_DATE": pd.to_datetime(["2001-01-02 07:45:00"] * 5),
+            "ÜSER ID": [1.0, 2.0, 3.0, 4.0, np.nan],
             "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(["2001-01-02 08:45:00"] * 5),
             "__FB_ENTITY_TABLE_START_DATE": pd.to_datetime(["1969-12-31 23:45:00"] * 5),
         }
@@ -149,8 +149,8 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
     assert len(requests) == 1
     df_entity_expected = pd.DataFrame(
         {
-            "ÜSER ID": [3, 4, np.nan],
             "LAST_TILE_START_DATE": pd.to_datetime(["2001-01-03 07:45:00"] * 3),
+            "ÜSER ID": [3, 4, np.nan],
             "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(["2001-01-03 08:45:00"] * 3),
             "__FB_ENTITY_TABLE_START_DATE": pd.to_datetime(["2001-01-02 08:45:00"] * 3),
         }
@@ -194,10 +194,10 @@ async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_categor
     assert len(requests) == 1
     df_entity_expected = pd.DataFrame(
         {
-            "ÜSER ID": [1, 6, 7],
             "LAST_TILE_START_DATE": pd.to_datetime(
                 ["2001-01-03 07:45:00"] + ["2001-01-02 07:45:00"] * 2
             ),
+            "ÜSER ID": [1, 6, 7],
             "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(
                 ["2001-01-03 08:45:00"] + ["2001-01-02 08:45:00"] * 2
             ),

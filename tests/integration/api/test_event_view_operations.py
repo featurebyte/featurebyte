@@ -325,6 +325,29 @@ def test_feature_operations__feature_group_preview(feature_group):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
+def test_feature_preview__same_entity_multiple_point_in_times(feature_group):
+    """
+    Test previewing features when the same entity has multiple point in times in the request data
+    """
+    preview_data = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2001-01-20 10:00:00", "2001-01-02 10:00:00"],
+            "üser id": [1, 1],
+        }
+    )
+    df_feature_preview = feature_group.preview(preview_data)
+    df_expected = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-01-20 10:00:00", "2001-01-02 10:00:00"]),
+            "üser id": [1, 1],
+            "COUNT_2h": [0, 3],
+            "COUNT_24h": [17, 14],
+        }
+    )
+    fb_assert_frame_equal(df_feature_preview, df_expected)
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_isnull_compare_with_bool(event_view):
     """
     Test a special case of using isnull with bool literal

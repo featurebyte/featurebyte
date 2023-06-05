@@ -4,7 +4,7 @@ from featurebyte.query_graph.sql.tile_compute import OnDemandTileComputePlan
 
 def test_combine_tile_tables(query_graph_with_similar_groupby_nodes):
     nodes, graph = query_graph_with_similar_groupby_nodes
-    plan = OnDemandTileComputePlan("2022-04-20 10:00:00", SourceType.SNOWFLAKE)
+    plan = OnDemandTileComputePlan("REQUEST_TABLE", SourceType.SNOWFLAKE)
 
     # Check that each groupby node has the same tile_id. Their respective tile sqls have to be
     # merged into one

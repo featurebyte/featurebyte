@@ -627,14 +627,14 @@ async def compute_tiles_on_demand(
     else:
         # Lookup parent entities and join them with the request table since tile computation
         # requires these entity columns to be present in the request table.
-        request_table_expr, _ = construct_request_table_with_parent_entities(
+        parent_serving_result = construct_request_table_with_parent_entities(
             request_table_name=request_table_name,
             request_table_columns=request_table_columns,
             join_steps=parent_serving_preparation.join_steps,
             feature_store_details=parent_serving_preparation.feature_store_details,
         )
-        request_table_query = sql_to_string(request_table_expr, session.source_type)
-        effective_request_table_name = "JOINED_PARENTS_" + request_table_name
+        request_table_query = sql_to_string(parent_serving_result.table_expr, session.source_type)
+        effective_request_table_name = parent_serving_result.new_request_table_name
         await session.register_table_with_query(
             effective_request_table_name,
             request_table_query,

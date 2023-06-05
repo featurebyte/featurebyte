@@ -26,6 +26,11 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
+from featurebyte.query_graph.sql.tile_util import (
+    construct_entity_table_query,
+    get_earliest_tile_start_date_expr,
+    get_previous_job_epoch_expr,
+)
 from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
@@ -522,30 +527,25 @@ class TileCache:
             point_in_time_epoch_expr, tile_info
         )
 
-        # Tile compute sql uses original table columns instead of serving names
-        serving_names_to_keys = [
-            f"{quoted_identifier(serving_name).sql()} AS {quoted_identifier(col).sql()}"
-            for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
-        ]
-
-        # This is the groupby keys used to construct the entity table
-        serving_names = [f"{quoted_identifier(col).sql()}" for col in tile_info.serving_names]
-
+        # Entity table can be constructed from the working table by filtering for rows with outdated
+        # tiles that require recomputation
         tile_cache_working_table_name = (
             f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         )
-        entity_table_expr = (
+        entity_source_expr = (
             select(
-                *serving_names_to_keys,
                 expressions.alias_(
                     last_tile_start_date_expr, InternalName.TILE_LAST_START_DATE.value
                 ),
-                expressions.alias_(end_date_expr, InternalName.ENTITY_TABLE_END_DATE.value),
-                expressions.alias_(start_date_expr, InternalName.ENTITY_TABLE_START_DATE.value),
             )
             .from_(tile_cache_working_table_name)
             .where(working_table_filter)
-            .group_by(*serving_names)
+        )
+        entity_table_expr = construct_entity_table_query(
+            tile_info=tile_info,
+            entity_source_expr=entity_source_expr,
+            start_date_expr=start_date_expr,
+            end_date_expr=end_date_expr,
         )
 
         tile_compute_sql = cast(
@@ -591,46 +591,6 @@ class TileCache:
         return point_in_time_epoch_expr
 
     @staticmethod
-    def _get_previous_job_epoch_expr(
-        point_in_time_epoch_expr: Expression, tile_info: TileGenSql
-    ) -> Expression:
-        """Get the SQL expression for the epoch second of previous feature job
-
-        Parameters
-        ----------
-        point_in_time_epoch_expr : Expression
-            Expression for point-in-time in epoch second
-        tile_info : TileGenSql
-            Tile table information
-
-        Returns
-        -------
-        str
-        """
-        frequency = make_literal_value(tile_info.frequency)
-        time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
-
-        # FLOOR((POINT_IN_TIME - TIME_MODULO_FREQUENCY) / FREQUENCY)
-        previous_job_index_expr = expressions.Floor(
-            this=expressions.Div(
-                this=expressions.Paren(
-                    this=expressions.Sub(
-                        this=point_in_time_epoch_expr, expression=time_modulo_frequency
-                    )
-                ),
-                expression=frequency,
-            )
-        )
-
-        # PREVIOUS_JOB_INDEX * FREQUENCY + TIME_MODULO_FREQUENCY
-        previous_job_epoch_expr = expressions.Add(
-            this=expressions.Mul(this=previous_job_index_expr, expression=frequency),
-            expression=time_modulo_frequency,
-        )
-
-        return previous_job_epoch_expr
-
-    @staticmethod
     def _get_last_tile_start_date_expr(
         point_in_time_epoch_expr: Expression, tile_info: TileGenSql
     ) -> Expression:
@@ -648,9 +608,7 @@ class TileCache:
         Expression
         """
         # Convert point in time to feature job time, then last tile start date
-        previous_job_epoch_expr = TileCache._get_previous_job_epoch_expr(
-            point_in_time_epoch_expr, tile_info
-        )
+        previous_job_epoch_expr = get_previous_job_epoch_expr(point_in_time_epoch_expr, tile_info)
         blind_spot = make_literal_value(tile_info.blind_spot)
         frequency = make_literal_value(tile_info.frequency)
 
@@ -685,9 +643,7 @@ class TileCache:
         -------
         Tuple[Expression, Expression]
         """
-        previous_job_epoch_expr = self._get_previous_job_epoch_expr(
-            point_in_time_epoch_expr, tile_info
-        )
+        previous_job_epoch_expr = get_previous_job_epoch_expr(point_in_time_epoch_expr, tile_info)
         frequency = make_literal_value(tile_info.frequency)
         blind_spot = make_literal_value(tile_info.blind_spot)
         time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
@@ -697,26 +653,20 @@ class TileCache:
             this="TO_TIMESTAMP",
             expressions=[expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)],
         )
+        earliest_start_date_expr = get_earliest_tile_start_date_expr(
+            adapter=self.adapter,
+            time_modulo_frequency=time_modulo_frequency,
+            blind_spot=blind_spot,
+        )
 
-        # DATEADD(s, TIME_MODULO_FREQUENCY - BLIND_SPOT, CAST('1970-01-01' AS TIMESTAMP))
-        tile_boundaries_offset = expressions.Paren(
-            this=expressions.Sub(this=time_modulo_frequency, expression=blind_spot)
-        )
-        tile_boundaries_offset_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
-            tile_boundaries_offset, "second", "microsecond"
-        )
-        frequency_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
-            frequency, "second", "microsecond"
-        )
-        earliest_start_date_expr = self.adapter.dateadd_microsecond(
-            tile_boundaries_offset_microsecond,
-            cast(Expression, parse_one("CAST('1970-01-01' AS TIMESTAMP)")),
-        )
         # This expression will be evaluated in a group by statement with the entity value as the
         # group by key. We can use ANY_VALUE because the recorded last tile start date is the same
         # across all rows within the group.
         recorded_last_tile_start_date_expr = self.adapter.any_value(
             expressions.Identifier(this=tile_info.aggregation_id)
+        )
+        frequency_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
+            frequency, "second", "microsecond"
         )
         start_date_expr = expressions.Case(
             ifs=[
