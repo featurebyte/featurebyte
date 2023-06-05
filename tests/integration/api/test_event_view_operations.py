@@ -2,7 +2,6 @@
 This module contains session to EventView integration tests
 """
 import json
-import os.path
 from unittest import mock
 from unittest.mock import patch
 
@@ -10,18 +9,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import (
-    AggFunc,
-    EventTable,
-    FeatureJobSetting,
-    FeatureList,
-    HistoricalFeatureTable,
-    SourceType,
-    to_timedelta,
-)
-from featurebyte.config import Configurations
+from featurebyte import AggFunc, FeatureList, HistoricalFeatureTable, SourceType, to_timedelta
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.query_graph.node.schema import ColumnSpec
 from tests.util.helper import (
     assert_preview_result_equal,
     compute_historical_feature_table_dataframe_helper,

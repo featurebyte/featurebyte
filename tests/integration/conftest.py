@@ -35,7 +35,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from featurebyte import Configurations, DatabricksDetails, FeatureJobSetting, SnowflakeDetails
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.app import app, get_celery
+from featurebyte.app import app
 from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.feature_manager.manager import FeatureManager
