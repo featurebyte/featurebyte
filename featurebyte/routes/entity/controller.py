@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.entity import EntityModel, ParentEntity
-from featurebyte.routes.common.base import BaseDocumentController, RelationshipMixin
+from featurebyte.models.entity import EntityModel
+from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityServiceUpdate, EntityUpdate
 from featurebyte.schema.info import EntityInfo
 from featurebyte.service.entity import EntityService
@@ -14,10 +14,7 @@ from featurebyte.service.info import InfoService
 from featurebyte.service.relationship import EntityRelationshipService
 
 
-class EntityController(
-    BaseDocumentController[EntityModel, EntityService, EntityList],
-    RelationshipMixin[EntityModel, ParentEntity],
-):
+class EntityController(BaseDocumentController[EntityModel, EntityService, EntityList]):
     """
     Entity Controller
     """
