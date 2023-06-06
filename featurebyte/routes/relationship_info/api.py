@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Optional, cast
 
-from http import HTTPStatus
-
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
@@ -22,25 +20,12 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
 )
 from featurebyte.schema.relationship_info import (
-    RelationshipInfoCreate,
     RelationshipInfoInfo,
     RelationshipInfoList,
     RelationshipInfoUpdate,
 )
 
 router = APIRouter(prefix="/relationship_info")
-
-
-@router.post("", response_model=RelationshipInfoModel, status_code=HTTPStatus.CREATED)
-async def create_relationship_info(
-    request: Request, data: RelationshipInfoCreate
-) -> RelationshipInfoModel:
-    """
-    Create relationship info
-    """
-    controller = request.state.app_container.relationship_info_controller
-    relationship_info: RelationshipInfoModel = await controller.create_relationship_info(data=data)
-    return relationship_info
 
 
 @router.get("", response_model=RelationshipInfoList)
