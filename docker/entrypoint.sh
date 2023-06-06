@@ -46,7 +46,7 @@ _main() {
     if [ "$1" = 'scheduler' ]; then
       celery --app featurebyte.worker.start.celery beat --loglevel=INFO --scheduler featurebyte.worker.schedulers.MongoScheduler --max-interval=1
     elif [ "$1" = 'worker:cpu' ]; then
-      celery --app featurebyte.worker.start.celery worker -Q io_task,io_task:1,io_task:2,io_task:3 --loglevel=INFO --pool=gevent -c 1000
+      celery --app featurebyte.worker.start.celery worker -Q cpu_task,cpu_task:1,cpu_task:2,cpu_task:3 --loglevel=INFO --pool=prefork
     elif [ "$1" = 'worker:io' ]; then
       celery --app featurebyte.worker.start.celery worker -Q io_task,io_task:1,io_task:2,io_task:3 --loglevel=INFO --pool=gevent -c 1000
     elif [ "$1" = 'worker' ]; then
