@@ -22,7 +22,7 @@ def agg_specs_no_window(global_graph, latest_value_without_window_feature_node):
     assert len(parent_nodes) == 1
     groupby_node = global_graph.get_node_by_name(parent_nodes[0])
     return TileBasedAggregationSpec.from_groupby_query_node(
-        groupby_node, adapter=get_sql_adapter(SourceType.SNOWFLAKE)
+        global_graph, groupby_node, adapter=get_sql_adapter(SourceType.SNOWFLAKE)
     )
 
 

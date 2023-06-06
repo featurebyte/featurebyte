@@ -9,7 +9,7 @@ import pytest
 from bson import ObjectId
 from sqlglot import select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
@@ -24,7 +24,7 @@ from featurebyte.query_graph.sql.specs import (
 
 
 @pytest.fixture(name="agg_spec_template")
-def agg_spec_template_fixture():
+def agg_spec_template_fixture(expected_pruned_graph_and_node_1):
     """Fixture for an AggregationSpec"""
     agg_spec = TileBasedAggregationSpec(
         window=86400,
@@ -42,6 +42,8 @@ def agg_spec_template_fixture():
         is_order_dependent=False,
         tile_value_columns=["value"],
         entity_ids=[ObjectId()],
+        dtype=DBVarType.FLOAT,
+        **expected_pruned_graph_and_node_1,
     )
     return agg_spec
 
@@ -221,7 +223,12 @@ def test_non_time_aware_request_table_plan(item_agg_spec):
     assert_sql_equal(sql.sql(pretty=True), expected_sql)
 
 
-def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggregation_id):
+def test_feature_execution_planner(
+    query_graph_with_groupby,
+    groupby_node_aggregation_id,
+    expected_pruned_graph_and_node_1,
+    expected_pruned_graph_and_node_2,
+):
     """Test FeatureExecutionPlanner generates the correct plan from groupby node"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     planner = FeatureExecutionPlanner(
@@ -254,6 +261,8 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
+                dtype=DBVarType.FLOAT,
+                **expected_pruned_graph_and_node_1,
             )
         ],
         [
@@ -279,6 +288,8 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
+                dtype=DBVarType.FLOAT,
+                **expected_pruned_graph_and_node_2,
             )
         ],
     ]
@@ -300,7 +311,10 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
 
 
 def test_feature_execution_planner__serving_names_mapping(
-    query_graph_with_groupby, groupby_node_aggregation_id
+    query_graph_with_groupby,
+    groupby_node_aggregation_id,
+    expected_pruned_graph_and_node_1,
+    expected_pruned_graph_and_node_2,
 ):
     """Test FeatureExecutionPlanner with serving names mapping provided"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
@@ -338,6 +352,8 @@ def test_feature_execution_planner__serving_names_mapping(
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
+                dtype=DBVarType.FLOAT,
+                **expected_pruned_graph_and_node_1,
             )
         ],
         [
@@ -363,6 +379,8 @@ def test_feature_execution_planner__serving_names_mapping(
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
+                dtype=DBVarType.FLOAT,
+                **expected_pruned_graph_and_node_2,
             )
         ],
     ]

@@ -13,16 +13,15 @@ from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     CteStatements,
     get_qualified_column_identifier,
     quoted_identifier,
 )
-from featurebyte.query_graph.sql.online_serving_util import (
-    get_online_store_table_name_from_entity_ids,
-)
+from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
 from featurebyte.query_graph.sql.specs import (
     AggregationSpec,
     NonTileBasedAggregationSpec,
@@ -313,12 +312,14 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         self.agg_result_names_by_online_store_table: dict[str, set[str]] = defaultdict(set)
         self.original_serving_names_by_online_store_table: dict[str, list[str]] = {}
         self.request_serving_names_by_online_store_table: dict[str, list[str]] = {}
+        self.dtype_by_online_store_table: dict[str, DBVarType] = {}
 
     def update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
         super().update(aggregation_spec)
         if self.is_online_serving:
-            table_name = get_online_store_table_name_from_entity_ids(
-                set(aggregation_spec.entity_ids if aggregation_spec.entity_ids is not None else [])
+            table_name = get_online_store_table_name(
+                set(aggregation_spec.entity_ids if aggregation_spec.entity_ids is not None else []),
+                self.adapter.get_physical_type_from_dtype(aggregation_spec.dtype),
             )
             self.agg_result_names_by_online_store_table[table_name].add(
                 aggregation_spec.agg_result_name
@@ -329,6 +330,7 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
             self.request_serving_names_by_online_store_table[
                 table_name
             ] = aggregation_spec.serving_names
+            self.dtype_by_online_store_table[table_name] = aggregation_spec.dtype
 
     def update_aggregation_table_expr(
         self,
@@ -408,7 +410,15 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
             agg_result_names = sorted(agg_result_names_set)
             serving_names = self._alias_original_serving_names_to_request_serving_names(table_name)
             quoted_agg_result_names = [quoted_identifier(name) for name in agg_result_names]
-            expr = select(*serving_names, *quoted_agg_result_names).from_(table_name)
+            pivoted_online_store = self._pivot_online_store_table(
+                table_name=table_name,
+                agg_result_names=agg_result_names,
+                serving_names=self.original_serving_names_by_online_store_table[table_name],
+                dtype=self.dtype_by_online_store_table[table_name],
+            )
+            expr = select(*serving_names, *quoted_agg_result_names).from_(
+                pivoted_online_store.subquery()
+            )
             join_keys = self.request_serving_names_by_online_store_table[table_name]
             query = LeftJoinableSubquery(
                 expr,
@@ -420,6 +430,82 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         return self._update_with_left_joins(
             table_expr, current_query_index=current_query_index, queries=left_join_queries
         )
+
+    def _pivot_online_store_table(
+        self,
+        table_name: str,
+        agg_result_names: list[str],
+        serving_names: list[str],
+        dtype: DBVarType,
+    ) -> Select:
+        """
+        Pivot the online store table from long to wide format. See an example below.
+
+        Physical online store table's schema:
+
+        CUST_ID  AGGREGATION_RESULT_NAME  VALUE
+        ---------------------------------------
+        C1       agg_id_1_30d             1.0
+        C1       agg_id_1_90d             3.0
+        C2       agg_id_1_30d             10.0
+        C2       agg_id_1_90d             33.0
+        C3       agg_id_1_90d             100.0
+
+        Pivoted table's schema:
+
+        CUST_ID  agg_id_1_30d  agg_id_1_90d
+        -----------------------------------
+        C1       1.0           3.0
+        C2       10.0          33.0
+        C3       NULL          100.0
+        """
+
+        literal_agg_result_names = [make_literal_value(name) for name in agg_result_names]
+        value_column = self.adapter.online_store_pivot_prepare_value_column(dtype)
+        filtered_online_store = (
+            select(
+                *[quoted_identifier(serving_name) for serving_name in serving_names],
+                quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+                value_column,
+            )
+            .from_(table_name)
+            .where(
+                expressions.In(
+                    this=quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+                    expressions=literal_agg_result_names,
+                )
+            )
+        )
+        pivots = [
+            expressions.Pivot(
+                expressions=[
+                    self.adapter.online_store_pivot_aggregation_func(
+                        quoted_identifier(InternalName.ONLINE_STORE_VALUE_COLUMN.value)
+                    )
+                ],
+                field=expressions.In(
+                    this=quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+                    expressions=literal_agg_result_names,
+                ),
+            )
+        ]
+        pivot_subquery = expressions.Subquery(this=filtered_online_store, pivots=pivots)
+        pivot_result = select(
+            *[
+                self.adapter.online_store_pivot_finalise_serving_name(serving_name)
+                for serving_name in serving_names
+            ],
+            *[
+                expressions.Alias(
+                    this=self.adapter.online_store_pivot_finalise_value_column(
+                        agg_result_name, dtype
+                    ),
+                    alias=quoted_identifier(agg_result_name),
+                )
+                for agg_result_name in agg_result_names
+            ],
+        ).from_(pivot_subquery)
+        return pivot_result
 
     def _alias_original_serving_names_to_request_serving_names(
         self, online_store_table_name: str

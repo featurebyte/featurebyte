@@ -4,20 +4,23 @@ Tests for featurebyte.query_graph.feature_common
 
 from bson import ObjectId
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 
 
 def test_aggregation_spec__from_groupby_query_node(
-    query_graph_with_groupby, groupby_node_aggregation_id
+    query_graph_with_groupby,
+    groupby_node_aggregation_id,
+    expected_pruned_graph_and_node_1,
+    expected_pruned_graph_and_node_2,
 ):
     """
     Test constructing list of AggregationSpec from groupby query graph node
     """
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-        groupby_node, adapter=get_sql_adapter(SourceType.SNOWFLAKE)
+        query_graph_with_groupby, groupby_node, adapter=get_sql_adapter(SourceType.SNOWFLAKE)
     )
     expected_agg_specs = [
         TileBasedAggregationSpec(
@@ -42,6 +45,8 @@ def test_aggregation_spec__from_groupby_query_node(
                 f"count_value_avg_{groupby_node_aggregation_id}",
             ],
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
+            dtype=DBVarType.FLOAT,
+            **expected_pruned_graph_and_node_1,
         ),
         TileBasedAggregationSpec(
             window=172800,
@@ -65,13 +70,18 @@ def test_aggregation_spec__from_groupby_query_node(
                 f"count_value_avg_{groupby_node_aggregation_id}",
             ],
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
+            dtype=DBVarType.FLOAT,
+            **expected_pruned_graph_and_node_2,
         ),
     ]
     assert agg_specs == expected_agg_specs
 
 
 def test_aggregation_spec__override_serving_names(
-    query_graph_with_groupby, groupby_node_aggregation_id
+    query_graph_with_groupby,
+    groupby_node_aggregation_id,
+    expected_pruned_graph_and_node_1,
+    expected_pruned_graph_and_node_2,
 ):
     """
     Test constructing list of AggregationSpec with serving names mapping provided
@@ -81,6 +91,7 @@ def test_aggregation_spec__override_serving_names(
         "CUSTOMER_ID": "NEW_CUST_ID",
     }
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
+        query_graph_with_groupby,
         groupby_node,
         adapter=get_sql_adapter(SourceType.SNOWFLAKE),
         serving_names_mapping=serving_names_mapping,
@@ -108,6 +119,8 @@ def test_aggregation_spec__override_serving_names(
                 f"count_value_avg_{groupby_node_aggregation_id}",
             ],
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
+            dtype=DBVarType.FLOAT,
+            **expected_pruned_graph_and_node_1,
         ),
         TileBasedAggregationSpec(
             window=172800,
@@ -131,6 +144,8 @@ def test_aggregation_spec__override_serving_names(
                 f"count_value_avg_{groupby_node_aggregation_id}",
             ],
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
+            dtype=DBVarType.FLOAT,
+            **expected_pruned_graph_and_node_2,
         ),
     ]
     assert agg_specs == expected_agg_specs

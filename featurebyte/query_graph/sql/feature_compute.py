@@ -486,7 +486,7 @@ class FeatureExecutionPlanner:
         list[AggregationSpec]
         """
         return TileBasedAggregationSpec.from_groupby_query_node(
-            groupby_node, self.adapter, serving_names_mapping=self.serving_names_mapping
+            self.graph, groupby_node, self.adapter, serving_names_mapping=self.serving_names_mapping
         )
 
     def get_non_tiling_specs(

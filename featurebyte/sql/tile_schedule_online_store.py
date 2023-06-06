@@ -8,6 +8,7 @@ from datetime import datetime
 import pandas as pd
 from pydantic import Field
 
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.logging import get_logger
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
@@ -85,18 +86,21 @@ class TileScheduleOnlineStore(BaselSqlModel):
 
             logger.debug(f"{f_name}, {fs_table}, {f_entity_columns}, {f_value_type}")
 
-            entity_columns = (
-                [col.replace('"', "") for col in f_entity_columns.split(",")]
-                if f_entity_columns
-                else []
-            )
-
             # check if feature store table exists
             fs_table_exist_flag = await self.table_exists(fs_table)
             logger.debug(f"fs_table_exist_flag: {fs_table_exist_flag}")
 
-            entities_fname_str = ", ".join(
-                [self.quote_column(col) for col in entity_columns + [f_name]]
+            quoted_result_name_column = self.quote_column(
+                InternalName.ONLINE_STORE_RESULT_NAME_COLUMN
+            )
+            quoted_value_column = self.quote_column(InternalName.ONLINE_STORE_VALUE_COLUMN)
+            quoted_entity_columns = (
+                [self.quote_column(col.replace('"', "")) for col in f_entity_columns.split(",")]
+                if f_entity_columns
+                else []
+            )
+            column_names = ", ".join(
+                quoted_entity_columns + [quoted_result_name_column, quoted_value_column]
             )
 
             current_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -104,65 +108,59 @@ class TileScheduleOnlineStore(BaselSqlModel):
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
                 create_sql = construct_create_table_query(
-                    fs_table, f"select {entities_fname_str} from ({f_sql})", session=self._session
+                    fs_table,
+                    f"select {column_names} from ({f_sql})",
+                    session=self._session,
+                    partition_keys=quoted_result_name_column,
                 )
                 await self.retry_sql(create_sql)
 
+                if self._session.source_type == SourceType.SNOWFLAKE:
+                    await self.retry_sql(
+                        f"ALTER TABLE {fs_table} ALTER {quoted_result_name_column} SET DATA TYPE STRING",
+                    )
+
                 await self.retry_sql(
-                    f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP",
+                    f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT TIMESTAMP",
                 )
 
                 await self.retry_sql(
-                    sql=f"UPDATE {fs_table} SET UPDATED_AT_{f_name} = to_timestamp('{current_ts}')",
+                    sql=f"UPDATE {fs_table} SET UPDATED_AT = to_timestamp('{current_ts}')",
                 )
             else:
                 # feature store table already exists, insert records with the input feature sql
-                entity_insert_cols = []
-                entity_filter_cols = []
-                for element in entity_columns:
-                    quote_element = self.quote_column(element)
-                    entity_insert_cols.append(f"b.{quote_element}")
-                    entity_filter_cols.append(f"a.{quote_element} = b.{quote_element}")
 
-                entity_insert_cols_str = ", ".join(entity_insert_cols)
-                entity_filter_cols_str = " AND ".join(entity_filter_cols)
+                value_args = []
+                if quoted_entity_columns:
+                    value_args.extend([f"b.{element}" for element in quoted_entity_columns])
+                value_args += [f"b.{quoted_result_name_column}", f"b.{quoted_value_column}"]
+                value_args = ", ".join(value_args)  # type: ignore[assignment]
 
-                # check whether feature value column exists, if not add the new column
-                cols = await self.get_table_columns(fs_table)
-                col_exists = f_name.upper() in cols
-
-                quote_f_name = self.quote_column(f_name)
-
-                if not col_exists:
-                    await self.retry_sql(
-                        f"ALTER TABLE {fs_table} ADD COLUMN {quote_f_name} {f_value_type}",
-                    )
-                    await self.retry_sql(
-                        f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP",
-                    )
-                    logger.debug(f"done adding column ({f_name}) to table {fs_table}")
-
-                # update or insert feature values for entities that are in entity universe
-                if entity_columns:
-                    on_condition_str = entity_filter_cols_str
-                    values_args = f"{entity_insert_cols_str}, b.{quote_f_name}"
-                else:
-                    on_condition_str = "true"
-                    values_args = f"b.{quote_f_name}"
+                keys = " AND ".join(
+                    [f"a.{col} = b.{col}" for col in quoted_entity_columns]
+                    + [f"a.{quoted_result_name_column} = b.{quoted_result_name_column}"]
+                )
 
                 # update or insert feature values for entities that are in entity universe
                 merge_sql = f"""
                      merge into {fs_table} a using ({f_sql}) b
-                         on {on_condition_str}
+                         on {keys}
                          when matched then
-                             update set a.{quote_f_name} = b.{quote_f_name}, a.UPDATED_AT_{f_name} = to_timestamp('{current_ts}')
+                             update set
+                               a.{quoted_value_column} = b.{quoted_value_column},
+                               a.UPDATED_AT = to_timestamp('{current_ts}')
                          when not matched then
-                             insert ({entities_fname_str}, UPDATED_AT_{f_name})
-                                 values ({values_args}, to_timestamp('{current_ts}'))
+                             insert ({column_names}, UPDATED_AT)
+                                 values ({value_args}, to_timestamp('{current_ts}'))
                  """
 
                 await self.retry_sql(sql=merge_sql)
 
                 # remove feature values for entities that are not in entity universe
-                remove_values_sql = f"""UPDATE {fs_table} SET {quote_f_name} = NULL WHERE UPDATED_AT_{f_name} < to_timestamp('{current_ts}')"""
+                remove_values_sql = f"""
+                    UPDATE {fs_table} SET {quoted_value_column} = NULL
+                    WHERE
+                      UPDATED_AT < to_timestamp('{current_ts}')
+                      AND {quoted_result_name_column} = '{f_name}'
+                    """
                 await self.retry_sql(sql=remove_values_sql)

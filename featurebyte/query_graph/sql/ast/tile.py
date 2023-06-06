@@ -314,7 +314,7 @@ class AggregatedTilesNode(TableNode):
         sql_node = None
         if context.sql_type == SQLType.POST_AGGREGATION:
             agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-                context.query_node, context.adapter
+                context.graph, context.query_node, context.adapter
             )
             columns_map = {}
             for agg_spec in agg_specs:
