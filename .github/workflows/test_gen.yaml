@@ -99,6 +99,8 @@ jobs:
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
       run: sudo apt-get install libsasl2-dev gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -157,6 +159,8 @@ jobs:
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
       run: sudo apt-get install libsasl2-dev gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -213,6 +217,8 @@ jobs:
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
       run: sudo apt-get install libsasl2-dev gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -292,6 +298,8 @@ jobs:
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
       run: sudo apt-get install libsasl2-dev gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -348,6 +356,8 @@ jobs:
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
       run: sudo apt-get install libsasl2-dev gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -490,7 +500,7 @@ jobs:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       if: ${{ env.CHANNEL_ID != '' }}
       name: Send Slack notification with workflow result.
-      uses: slackapi/slack-github-action@v1.23.0
+      uses: slackapi/slack-github-action@v1.24.0
       with:
         channel-id: ${{ env.CHANNEL_ID }}
         payload: |-
@@ -516,7 +526,7 @@ jobs:
     - env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       name: Send Slack notification to developer channel
-      uses: slackapi/slack-github-action@v1.23.0
+      uses: slackapi/slack-github-action@v1.24.0
       with:
         channel-id: C03D81HC6Q5
         payload: |-

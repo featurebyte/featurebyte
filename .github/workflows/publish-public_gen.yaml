@@ -157,14 +157,17 @@ jobs:
         cache-from: type=registry,ref=${{ env.SERVER_IMAGE_REPO }}:latest
         cache-to: type=inline
   slack:
-    if: ${{ always() }}
     runs-on: ubuntu-latest
+    if: ${{ always() }}
     needs:
     - publish
     steps:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
+    - if: ${{ github.event_name == 'pull_request' }}
+      name: Get Author Email (PR)
+      run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")" >> $GITHUB_ENV
     - if: ${{ github.event_name != 'pull_request' }}
       name: Get Author Email (PUSH)
       run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_REF_NAME}")" >> $GITHUB_ENV
@@ -172,17 +175,17 @@ jobs:
       run: |-
         export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${{ secrets.SLACK_OAUTH }}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
         echo "CHANNEL_ID=${AUTHOR_ID}" >> $GITHUB_ENV
-    - name: Load REPOSITORY into env
-      run: echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
     - name: Load PUBLISH_RESULT into env
       run: echo "PUBLISH_RESULT=${{ needs.publish.result }}" >> $GITHUB_ENV
     - name: Load REPOSITORY_URL into env
       run: echo "REPOSITORY_URL=https://github.com/$(echo '${{ github.repository }}')" >> $GITHUB_ENV
+    - name: Load REPOSITORY into env
+      run: echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
     - env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       if: ${{ env.CHANNEL_ID != '' }}
       name: Send Slack notification with workflow result.
-      uses: slackapi/slack-github-action@v1.23.0
+      uses: slackapi/slack-github-action@v1.24.0
       with:
         channel-id: ${{ env.CHANNEL_ID }}
         payload: |-
