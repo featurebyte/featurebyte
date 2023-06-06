@@ -16,7 +16,7 @@ from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
 
 
-@pytest.fixture(name="features", scope="session")
+@pytest.fixture(name="features", scope="module")
 def features_fixture(event_table, source_type):
     """
     Fixture for feature

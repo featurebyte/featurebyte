@@ -69,6 +69,7 @@ from featurebyte.models.feature_list import (
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.deployment import DeploymentCreate
+from featurebyte.schema.feature import BatchFeatureCreate, FeatureCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
@@ -665,20 +666,27 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return data.json_dict()
 
     def _pre_save_operations(self, conflict_resolution: ConflictResolution = "raise") -> None:
-        with alive_bar(
-            total=len(self.feature_objects),
-            title="Saving Feature(s)",
-            **get_alive_bar_additional_params(),
-        ) as progress_bar:
-            for feat_name in self.feature_objects:
-                text = f'Feature "{feat_name}" has been saved before.'
-                if not self.feature_objects[feat_name].saved:
-                    self.feature_objects[feat_name].save(conflict_resolution=conflict_resolution)
-                    text = f'Feature "{feat_name}" is saved.'
+        feature_payloads = []
+        for feat in self.feature_objects.values():
+            if conflict_resolution == "retrieve":
+                # If conflict_resolution is retrieve, we will retrieve the feature from the catalog based on the
+                # feature name and update the feature object with the retrieved feature.
+                feat_name = feat.name
+                assert feat_name is not None
+                try:
+                    feat = Feature.get(name=feat_name)
+                    self.feature_objects[feat_name] = feat
+                except RecordRetrievalException:
+                    feature_payloads.append(FeatureCreate(**feat.json_dict()))
+            if conflict_resolution == "raise" and not feat.saved:
+                feature_payloads.append(FeatureCreate(**feat.json_dict()))
 
-                # update progress bar
-                progress_bar.text = text
-                progress_bar()  # pylint: disable=not-callable
+        self.post_async_task(
+            route="/feature/batch",
+            payload=BatchFeatureCreate.create(feature_payloads).json_dict(),
+            retrieve_result=False,
+            has_output_url=False,
+        )
 
     def save(
         self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None

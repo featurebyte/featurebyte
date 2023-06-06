@@ -2,7 +2,6 @@
 This module contains session to EventView integration tests
 """
 import json
-import os.path
 from unittest import mock
 from unittest.mock import patch
 
@@ -10,18 +9,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import (
-    AggFunc,
-    EventTable,
-    FeatureJobSetting,
-    FeatureList,
-    HistoricalFeatureTable,
-    SourceType,
-    to_timedelta,
-)
-from featurebyte.config import Configurations
+from featurebyte import AggFunc, FeatureList, HistoricalFeatureTable, SourceType, to_timedelta
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.query_graph.node.schema import ColumnSpec
 from tests.util.helper import (
     assert_preview_result_equal,
     compute_historical_feature_table_dataframe_helper,
@@ -105,73 +94,6 @@ def get_mocked_session_manager(session):
     ) as mocked_session:
         mocked_session.return_value = session
         yield
-
-
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@mock.patch("featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService.list_columns")
-@mock.patch("featurebyte.app.get_persistent")
-def test_feature_list_saving_in_bad_state__feature_id_is_different(
-    mock_persistent,
-    mock_list_columns,
-    mongo_persistent,
-    test_dir,
-    config,
-    feature_store,
-    mock_session_manager,
-    noop_validate_feature_store_id_not_used_in_warehouse,
-):
-    """
-    Test feature list saving in bad state due to some feature has been saved (when the feature id is different)
-    """
-    _ = (
-        feature_store,
-        mock_session_manager,
-        noop_validate_feature_store_id_not_used_in_warehouse,
-    )
-    mock_persistent.return_value = mongo_persistent[0]
-    client = Configurations().get_client()
-    route_fixture_path_pairs = [
-        ("/entity", "entity.json"),
-        ("/feature_store", "feature_store.json"),
-        ("/event_table", "event_table.json"),
-    ]
-    base_path = os.path.join(test_dir, "fixtures/request_payloads")
-    for route, fixture_path in route_fixture_path_pairs:
-        with open(f"{base_path}/{fixture_path}") as fhandle:
-            payload = json.loads(fhandle.read())
-            response = client.post(route, json=payload)
-            assert response.status_code == 201
-
-            if route == "/event_table":
-                column_specs = [ColumnSpec(**col_info) for col_info in payload["columns_info"]]
-                mock_list_columns.return_value = column_specs
-
-    event_table = EventTable.get_by_id(id=response.json()["_id"])
-    event_table.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
-        )
-    )
-    event_table.cust_id.as_entity("customer")
-    event_view = event_table.get_view()
-    feature_group = event_view.groupby("cust_id").aggregate_over(
-        method="count",
-        windows=["2h", "24h"],
-        feature_names=["COUNT_2h", "COUNT_24h"],
-    )
-    feature_2h = feature_group["COUNT_2h"] + 123
-    feature_2h.name = "COUNT_2h"
-    feature_2h.save()
-    assert feature_2h.saved
-
-    # check that feature info of count aggregation is not empty
-    assert feature_2h.info()["metadata"] is not None
-
-    # resolve the error by retrieving the feature with the same name
-    # (check that ID value are updated after saved)
-    feature_list = FeatureList([feature_group], name="my_fl")
-    feature_list.save(conflict_resolution="retrieve")
-    assert feature_list[feature_2h.name].id == feature_2h.id
 
 
 @pytest.fixture(name="event_view")

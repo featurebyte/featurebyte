@@ -809,6 +809,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         payload: dict[str, Any],
         delay: float = POLLING_INTERVAL,
         retrieve_result: bool = True,
+        has_output_url: bool = True,
         is_payload_json: bool = True,
         files: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
@@ -825,6 +826,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
             Delay used in polling the task
         retrieve_result: bool
             Whether to retrieve result from output_url
+        has_output_url: bool
+            Whether the task response has output_url
         is_payload_json: bool
             Whether the payload should be passed via the json parameter. If False, the payload will
             be passed via the data parameter. Set this to False for routes that expects
@@ -852,7 +855,10 @@ class ApiObject(FeatureByteBaseDocumentModel):
         if create_response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=create_response)
         return cls._poll_async_task(
-            task_response=create_response, delay=delay, retrieve_result=retrieve_result
+            task_response=create_response,
+            delay=delay,
+            retrieve_result=retrieve_result,
+            has_output_url=has_output_url,
         )
 
     def patch_async_task(

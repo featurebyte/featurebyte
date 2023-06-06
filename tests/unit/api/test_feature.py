@@ -1068,19 +1068,23 @@ def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, f
     )
 
 
-@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 def test_get_feature_jobs_status_feature_without_tile(
-    mock_execute_query, saved_scd_table, cust_id_entity, feature_job_logs
+    saved_scd_table, cust_id_entity, feature_job_logs
 ):
     """
     Test get_feature_jobs_status for feature without tile
     """
-    mock_execute_query.return_value = feature_job_logs[:0]
     saved_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = saved_scd_table.get_view()
     feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
     feature.save()
-    job_status_result = feature.get_feature_jobs_status()
+
+    with patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
+        mock_execute_query.return_value = feature_job_logs[:0]
+        job_status_result = feature.get_feature_jobs_status()
+
     assert job_status_result.feature_tile_table.shape == (0, 2)
     assert job_status_result.feature_job_summary.shape == (0, 10)
     assert job_status_result.job_session_logs.shape == (0, 12)

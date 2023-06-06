@@ -20,6 +20,7 @@ from featurebyte.enum import InternalName
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
+    RecordCreationException,
     RecordDeletionException,
     RecordRetrievalException,
     RecordUpdateException,
@@ -661,12 +662,11 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
         name="feature_list_name",
     )
 
-    with pytest.raises(DuplicatedRecordException) as exc:
+    with pytest.raises(RecordCreationException) as exc:
         feature_list.save()
     expected_msg = (
         'FeatureNamespace (name: "production_ready_feature") already exists. '
-        'Please rename object (name: "production_ready_feature") to something else. '
-        'Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.'
+        'Please rename object (name: "production_ready_feature") to something else.'
     )
     assert expected_msg in str(exc.value)
     assert feature_list[feature.name].id == feature.id
@@ -1281,3 +1281,22 @@ def test_feature_list__features_order_is_kept(float_feature, non_time_based_feat
     feature_list_2 = FeatureList([non_time_based_feature, float_feature], "test_feature_list_2")
     feature_list_2.save()
     assert feature_list_2.feature_names == [non_time_based_feature.name, float_feature.name]
+
+
+def test_feature_list_save__different_feature_are_used_due_to_conflict_resolution(float_feature):
+    """
+    Test feature list saving in bad state due to some feature has been saved (when the feature id is different)
+    """
+    feat_name = float_feature.name
+    new_feat = float_feature + 123
+    new_feat.name = feat_name
+    new_feat.save()
+    assert new_feat.saved
+
+    # check that metadata of the feature info is not empty
+    assert new_feat.info()["metadata"] is not None
+
+    # check the different feature is used to save the feature list if conflict_resolution is set to "retrieve"
+    feature_list = FeatureList([float_feature], name="my_fl")
+    feature_list.save(conflict_resolution="retrieve")
+    assert feature_list[feat_name].id == new_feat.id
