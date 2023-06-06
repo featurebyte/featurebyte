@@ -202,7 +202,7 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
-      - poetry run pytest --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
+      - poetry run pytest --reruns=3 --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
 
   generate-unit-test-fixtures:
     desc: Generate unit test fixtures

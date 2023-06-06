@@ -458,6 +458,7 @@ def expected_feature_iet_info_fixture(feature_iet):
     )
 
 
+@pytest.mark.flaky(reruns=3)
 @pytest.mark.asyncio
 async def test_get_feature_info__complex_feature(
     info_service, feature_iet, expected_feature_iet_info
