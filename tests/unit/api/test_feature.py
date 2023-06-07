@@ -2,6 +2,7 @@
 Unit test for Feature classes
 """
 import textwrap
+import time
 from datetime import datetime
 from unittest.mock import patch
 
@@ -1606,3 +1607,31 @@ def test_feature_dtype(
     assert bool_feature.dtype == DBVarType.BOOL
     assert non_time_based_feature.dtype == DBVarType.FLOAT
     assert sum_per_category_feature.dtype == DBVarType.OBJECT
+
+
+@pytest.mark.flaky(reruns=3)
+@pytest.mark.asyncio
+async def test_feature_loading_time(mock_api_object_cache, saved_feature, persistent):
+    """Test feature loading time (to detect changes in performance)"""
+    # mock api object cache to disable caching
+    _ = mock_api_object_cache
+    sample_size = 10
+    feature_loading_limit = 200
+
+    # get elapsed time with persistent
+    start = time.time()
+    for _ in range(sample_size):
+        _ = await persistent.find_one(
+            collection_name="feature", query_filter={"_id": saved_feature.id}
+        )
+    persistent_elapsed_time = time.time() - start
+
+    # get end-to-end elapsed time
+    start = time.time()
+    for _ in range(sample_size):
+        _ = Feature.get_by_id(saved_feature.id)
+    elapsed_time = time.time() - start
+
+    # compute persistent elapsed time to elapsed time ratio
+    ratio = elapsed_time / persistent_elapsed_time
+    assert ratio < feature_loading_limit, ratio
