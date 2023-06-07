@@ -114,8 +114,8 @@ jobs:
       uses: mikefarah/yq@master
       with:
         cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
-    - name: Publish to Test-PyPI
-      if: ${{ github.event.inputs.test-pypi == 'true' }}
+    - if: ${{ github.event.inputs.test-pypi == 'true' }}
+      name: Publish to Test-PyPI
       run: |-
         task install
         poetry publish --build -r test-pypi
