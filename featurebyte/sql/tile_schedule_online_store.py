@@ -1,7 +1,7 @@
 """
 Tile Generate online store Job Script
 """
-from typing import Any
+from typing import Any, Union
 
 from datetime import datetime
 
@@ -25,7 +25,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
     job_schedule_ts_str: str
     retry_num: int = Field(default=10)
 
-    async def retry_sql(self, sql: str) -> pd.DataFrame | None:
+    async def retry_sql(self, sql: str) -> Union[pd.DataFrame, None]:
         """
         Execute sql query with retry
 

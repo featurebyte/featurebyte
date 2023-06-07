@@ -244,7 +244,7 @@ async def check_concurrent_online_store_table_updates(
     # updates occur when tile jobs associated with different aggregation ids write to the same
     # online store table. The logic below finds such a table and the associated aggregation ids.
     online_store_table_name_to_aggregation_id = defaultdict(set)
-    for feature_name, feature_object in feature_list.feature_objects.items():
+    for _, feature_object in feature_list.feature_objects.items():
         for query in get_online_feature_spec(feature_object).precompute_queries:
             online_store_table_name_to_aggregation_id[query.table_name].add(query.aggregation_id)
 
@@ -270,7 +270,7 @@ async def check_concurrent_online_store_table_updates(
         )
         try:
             await online_store_job.execute()
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             out.put(e)
 
     out = Queue()
