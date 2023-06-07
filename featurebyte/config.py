@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 import json
 import os
+import time
 from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
@@ -14,6 +15,7 @@ import websocket
 import yaml
 from pydantic import AnyHttpUrl, BaseModel, Field, validator
 from requests import Response
+from websocket import WebSocketConnectionClosedException
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import get_version
@@ -202,8 +204,16 @@ class WebsocketClient:
             Access token to used for authentication
         """
         if access_token:
-            url = f"{url}?token={access_token}"
-        self._ws = websocket.create_connection(url, enable_multithread=True)
+            self._url = f"{url}?token={access_token}"
+        else:
+            self._url = url
+        self._reconnect()
+
+    def _reconnect(self) -> None:
+        """
+        Reconnect websocket connection
+        """
+        self._ws = websocket.create_connection(self._url, enable_multithread=True)
 
     def close(self) -> None:
         """
@@ -219,8 +229,21 @@ class WebsocketClient:
         -------
         bytes
             Message
+
+        Raises
+        ------
+        TimeoutError
+            No message received from websocket server
         """
-        return cast(bytes, self._ws.recv())
+        start_time = time.time()
+        # maintain connection for up to 3 minutes without receiving any new message
+        while (time.time() - start_time) < 180:
+            try:
+                return cast(bytes, self._ws.recv())
+            except WebSocketConnectionClosedException:
+                # reconnect on unexpected connection close
+                self._reconnect()
+        raise TimeoutError("No message received from websocket server")
 
     def receive_json(self) -> Optional[Dict[str, Any]]:
         """
