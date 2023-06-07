@@ -4,7 +4,7 @@
 # To view the generated changelog, run the following command:
 # task changelog-pr
 
-# --- TEMPLATE --- #
+# ---- TEMPLATE ---- #
 # One of 'breaking', 'deprecation', 'enhancement', 'bug_fix'
 change_type: bug_fix
 
