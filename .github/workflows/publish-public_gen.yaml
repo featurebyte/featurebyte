@@ -114,13 +114,13 @@ jobs:
       uses: mikefarah/yq@master
       with:
         cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
-    - name: Publish to Test-PyPI
-      if: ${{ github.event.inputs.test-pypi == 'true' }}
+    - if: ${{ github.event.inputs.test-pypi == 'true' }}
+      name: Publish to Test-PyPI
       run: |-
         task install
         poetry publish --build -r test-pypi
-    - name: Publish to PyPI
-      if: ${{ github.event.inputs.pypi == 'true' }}
+    - if: ${{ github.event.inputs.pypi == 'true' }}
+      name: Publish to PyPI
       run: |-
         task install
         poetry publish --build
@@ -128,8 +128,8 @@ jobs:
       run: |-
         git config --global user.name "featurebyte[bot]"
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
-    - name: Tagging Version
-      if: ${{ github.event.inputs.pypi == 'true' }}
+    - if: ${{ github.event.inputs.pypi == 'true' }}
+      name: Tagging Version
       run: |-
         # Tagging version only when pushed to PyPI
         git tag "release/${{ github.event.inputs.version }}"
@@ -190,7 +190,7 @@ jobs:
         channel-id: ${{ env.CHANNEL_ID }}
         payload: |-
           {
-              "text": "${{ env.REPOSITORY }}[${{ github.workflow }}] [${{ env.PUBLISH_RESULT }}]",
+              "text": "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.PUBLISH_RESULT }}]",
               "blocks": [
                   {
                       "type": "section",

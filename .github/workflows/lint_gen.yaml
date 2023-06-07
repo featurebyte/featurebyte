@@ -80,7 +80,7 @@ jobs:
         channel-id: ${{ env.CHANNEL_ID }}
         payload: |-
           {
-              "text": "${{ env.REPOSITORY }}[${{ github.workflow }}] [${{ env.LINT_RESULT }}]",
+              "text": "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.LINT_RESULT }}]",
               "blocks": [
                   {
                       "type": "section",
