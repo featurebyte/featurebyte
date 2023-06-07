@@ -44,10 +44,6 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     TableCleaningOperation,
 )
-from featurebyte.query_graph.node.metadata.operation import (
-    GroupOperationStructure,
-    OperationStructure,
-)
 from tests.util.helper import check_aggressively_pruned_graph, check_sdk_code_generation, get_node
 
 
