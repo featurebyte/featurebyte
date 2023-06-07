@@ -16,7 +16,7 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 
 def get_all_deps_for_key(
-    key: str, class_def_mapping: Dict[str, ClassDefinition]
+    key: str, class_def_mapping: Dict[str, ClassDefinition], existing_deps: Dict[str, Any]
 ) -> Dict[str, ClassDefinition]:
     """
     Get dependencies for a given key.
@@ -27,6 +27,8 @@ def get_all_deps_for_key(
         key to get dependencies for
     class_def_mapping: Dict[str, ClassDefinition]
         mapping of key to class definition
+    existing_deps: Dict[str, Any]
+        existing dependencies
 
     Returns
     -------
@@ -34,6 +36,8 @@ def get_all_deps_for_key(
         dependencies
     """
     # Get class definition
+    if key in existing_deps:
+        return {}
     class_def = class_def_mapping[key]
     dependencies = class_def.dependencies
     all_deps = {key: class_def}
@@ -42,7 +46,7 @@ def get_all_deps_for_key(
 
     # Recursively get all dependencies
     for dep in dependencies:
-        deps_for_key = get_all_deps_for_key(dep, class_def_mapping)
+        deps_for_key = get_all_deps_for_key(dep, class_def_mapping, existing_deps)
         all_deps.update(deps_for_key)
 
     return all_deps
@@ -234,7 +238,9 @@ class LazyAppContainer:
             return self.instance_map[key]
 
         # Build instance
-        deps = get_all_deps_for_key(key, app_container_config.get_class_def_mapping())
+        deps = get_all_deps_for_key(
+            key, app_container_config.get_class_def_mapping(), self.instance_map
+        )
         new_deps = build_deps(
             list(deps.values()), self.instance_map, self.user, self.persistent, self.catalog_id
         )
