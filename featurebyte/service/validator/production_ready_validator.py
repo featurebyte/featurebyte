@@ -4,7 +4,7 @@ Production ready validator
 from typing import Any, Dict, List, cast
 
 from featurebyte import ColumnCleaningOperation, FeatureJobSetting
-from featurebyte.exception import NoChangesInFeatureVersionError
+from featurebyte.exception import DocumentUpdateError, NoChangesInFeatureVersionError
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
@@ -94,8 +94,8 @@ class ProductionReadyValidator:
 
         Raises
         ------
-        ValueError
-            raised if there are any differences
+        DocumentUpdateError
+            raised if there are any differences between the promoted feature version and table defaults
         """
         if not feature_job_setting_diff and not cleaning_ops_diff:
             return
@@ -104,7 +104,7 @@ class ProductionReadyValidator:
             diff_format_dict["feature_job_setting"] = feature_job_setting_diff
         if cleaning_ops_diff:
             diff_format_dict["cleaning_operations"] = cleaning_ops_diff
-        raise ValueError(
+        raise DocumentUpdateError(
             "Discrepancies found between the promoted feature version you are trying to promote to "
             "PRODUCTION_READY, and the input table.\n"
             f"{diff_format_dict}\n"
@@ -124,7 +124,7 @@ class ProductionReadyValidator:
 
         Raises
         ------
-        ValueError
+        DocumentUpdateError
             raised when there is another feature version with the same name that is production ready
         """
         query_filter = {
@@ -135,7 +135,7 @@ class ProductionReadyValidator:
             query_filter=query_filter
         ):
             if feature_doc["_id"] != promoted_feature.id:
-                raise ValueError(
+                raise DocumentUpdateError(
                     f"Found another feature version that is already PRODUCTION_READY. Please deprecate the feature "
                     f"\"{promoted_feature.name}\" with ID {feature_doc['_id']} first before promoting the promoted "
                     "version as there can only be one feature version that is production ready at any point in time. "
@@ -153,7 +153,7 @@ class ProductionReadyValidator:
 
         Raises
         ------
-        ValueError
+        DocumentUpdateError
             raise when deprecated tables are found
         """
         query_filter = {
@@ -164,7 +164,7 @@ class ProductionReadyValidator:
             query_filter=query_filter
         ):
             table_name = table_doc["name"]
-            raise ValueError(
+            raise DocumentUpdateError(
                 f'Found a deprecated table "{table_name}" that is used by the feature "{promoted_feature.name}". '
                 "We are unable to promote the feature to PRODUCTION_READY right now."
             )

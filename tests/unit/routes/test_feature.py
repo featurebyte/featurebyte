@@ -377,8 +377,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         )
         assert negative_response.json()["total"] == 0, negative_response.json()
 
-    def test_update_200(self, test_api_client_persistent, create_success_response):
-        """Test update (success)"""
+    def test_update_200_and_422(self, test_api_client_persistent, create_success_response):
+        """Test update (success & unprocessable entity)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         assert create_response_dict["readiness"] == "DRAFT"
@@ -388,6 +388,43 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         )
         assert response.status_code == HTTPStatus.OK
         assert response.json()["readiness"] == "PRODUCTION_READY"
+
+        # create a new version & attempt to update to production ready
+        new_feature_id = self.create_new_feature_version(test_api_client, doc_id)
+        response = test_api_client.patch(
+            f"{self.base_route}/{new_feature_id}", json={"readiness": "PRODUCTION_READY"}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        expected_error_message = (
+            "Found another feature version that is already PRODUCTION_READY. "
+            f'Please deprecate the feature "sum_30m" with ID {doc_id} first '
+            f"before promoting the promoted version as there can only be one feature version "
+            f"that is production ready at any point in time. "
+            f"We are unable to promote the feature with ID {new_feature_id} right now."
+        )
+        assert response.json()["detail"] == expected_error_message
+
+        # deprecate the original feature
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"readiness": "DEPRECATED"}
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        # promote the new feature to production ready
+        response = test_api_client.patch(
+            f"{self.base_route}/{new_feature_id}", json={"readiness": "PRODUCTION_READY"}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        expected_error_message = (
+            "Discrepancies found between the promoted feature version you are trying to promote to "
+            "PRODUCTION_READY, and the input table.\n"
+            "{'feature_job_setting': {"
+            "'data_source': FeatureJobSetting(blind_spot='600s', frequency='1800s', time_modulo_frequency='300s'), "
+            "'promoted_feature': "
+            "FeatureJobSetting(blind_spot='82800s', frequency='86400s', time_modulo_frequency='3600s')}}\n"
+            "Please fix these issues first before trying to promote your feature to PRODUCTION_READY."
+        )
+        assert response.json()["detail"] == expected_error_message
 
     def test_delete_204(self, test_api_client_persistent, create_success_response):
         """Test delete (success)"""
@@ -421,24 +458,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         namespace_id = create_response_dict["feature_namespace_id"]
 
         # create another feature in the same namespace
-        response = test_api_client.post(
-            f"{self.base_route}",
-            json={
-                "source_feature_id": doc_id,
-                "table_feature_job_settings": [
-                    {
-                        "table_name": "sf_event_table",
-                        "feature_job_setting": {
-                            "blind_spot": "1d",
-                            "frequency": "1d",
-                            "time_modulo_frequency": "1h",
-                        },
-                    }
-                ],
-            },
-        )
-        assert response.status_code == HTTPStatus.CREATED
-        new_feature_id = response.json()["_id"]
+        new_feature_id = self.create_new_feature_version(test_api_client, doc_id)
 
         # check namespace before delete
         namespace_dict = test_api_client.get(f"/feature_namespace/{namespace_id}").json()
