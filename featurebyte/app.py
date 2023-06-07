@@ -30,6 +30,7 @@ import featurebyte.routes.periodic_tasks.api as periodic_tasks_api
 import featurebyte.routes.relationship_info.api as relationship_info_api
 import featurebyte.routes.scd_table.api as scd_table_api
 import featurebyte.routes.semantic.api as semantic_api
+import featurebyte.routes.static_source_table.api as static_source_table_api
 import featurebyte.routes.table.api as table_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
@@ -127,6 +128,7 @@ def get_app() -> FastAPI:
         relationship_info_api,
         scd_table_api,
         semantic_api,
+        static_source_table_api,
         table_api,
         task_api,
         temp_data_api,

@@ -13,6 +13,7 @@ from featurebyte.schema.worker.task.materialized_table_delete import (
 from featurebyte.service.validator.materialized_table_delete import (
     check_delete_batch_request_table,
     check_delete_observation_table,
+    check_delete_static_source_table,
 )
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
@@ -76,6 +77,17 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         )
         return cast(MaterializedTableModel, document)
 
+    async def _delete_static_source_table(self) -> MaterializedTableModel:
+        document = await check_delete_static_source_table(
+            static_source_table_service=self.app_container.static_source_table_service,
+            table_service=self.app_container.table_service,
+            document_id=self.task_payload.document_id,
+        )
+        await self.app_container.static_source_table_service.delete_document(
+            document_id=self.task_payload.document_id
+        )
+        return cast(MaterializedTableModel, document)
+
     async def execute(self) -> Any:
         """
         Execute Deployment Create & Update Task
@@ -86,6 +98,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
             MaterializedTableCollectionName.BATCH_FEATURE: self._delete_batch_feature_table,
             MaterializedTableCollectionName.OBSERVATION: self._delete_observation_table,
             MaterializedTableCollectionName.HISTORICAL_FEATURE: self._delete_historical_feature_table,
+            MaterializedTableCollectionName.STATIC_SOURCE: self._delete_static_source_table,
         }
 
         # delete document stored at mongo

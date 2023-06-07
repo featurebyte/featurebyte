@@ -48,7 +48,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         ),
         (
             payload_multi,
-            'Feature (id: "646f6c1b0ed28a5271fb02c5") not found. Please save the Feature object first.',
+            f'Feature (id: "{payload_multi["feature_ids"][1]}") not found. Please save the Feature object first.',
         ),
         (
             {**payload, "feature_ids": []},

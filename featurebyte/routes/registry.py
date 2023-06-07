@@ -28,6 +28,7 @@ from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.routes.scd_table.controller import SCDTableController
 from featurebyte.routes.semantic.controller import SemanticController
+from featurebyte.routes.static_source_table.controller import StaticSourceTableController
 from featurebyte.routes.table.controller import TableController
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
@@ -65,6 +66,7 @@ from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
+from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
 from featurebyte.service.table_columns_info import TableColumnsInfoService
 from featurebyte.service.table_status import TableStatusService
@@ -167,6 +169,13 @@ app_container_config.add_service_with_extra_deps(
     "batch_feature_table_service",
     BatchFeatureTableService,
     ["feature_store_service"],
+)
+app_container_config.add_service_with_extra_deps(
+    "static_source_table_service",
+    StaticSourceTableService,
+    [
+        "feature_store_service",
+    ],
 )
 app_container_config.add_service_with_extra_deps(
     "feature_readiness_service",
@@ -422,6 +431,17 @@ app_container_config.add_controller(
         "context_service",
         "feature_list_service",
         "online_serving_service",
+        "info_service",
+        "task_controller",
+    ],
+)
+app_container_config.add_controller(
+    "static_source_table_controller",
+    StaticSourceTableController,
+    [
+        "static_source_table_service",
+        "preview_service",
+        "table_service",
         "info_service",
         "task_controller",
     ],

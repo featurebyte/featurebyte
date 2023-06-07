@@ -46,6 +46,7 @@ from featurebyte.schema.info import (
     ItemTableInfo,
     ObservationTableInfo,
     SCDTableInfo,
+    StaticSourceTableInfo,
     TableBriefInfoList,
 )
 from featurebyte.schema.relationship_info import RelationshipInfoInfo
@@ -75,6 +76,7 @@ from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
 from featurebyte.service.user_service import UserService
 
@@ -161,6 +163,12 @@ class InfoService(BaseService):
             context_service=self.context_service,
         )
         self.batch_feature_table_service = BatchFeatureTableService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            feature_store_service=self.feature_store_service,
+        )
+        self.static_source_table_service = StaticSourceTableService(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
@@ -1122,4 +1130,37 @@ class InfoService(BaseService):
             table_details=batch_feature_table.location.table_details,
             created_at=batch_feature_table.created_at,
             updated_at=batch_feature_table.updated_at,
+        )
+
+    async def get_static_source_table_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> StaticSourceTableInfo:
+        """
+        Get static source table info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        StaticSourceTableInfo
+        """
+        _ = verbose
+        static_source_table = await self.static_source_table_service.get_document(
+            document_id=document_id
+        )
+        feature_store = await self.feature_store_service.get_document(
+            document_id=static_source_table.location.feature_store_id
+        )
+        return StaticSourceTableInfo(
+            name=static_source_table.name,
+            type=static_source_table.request_input.type,
+            feature_store_name=feature_store.name,
+            table_details=static_source_table.location.table_details,
+            created_at=static_source_table.created_at,
+            updated_at=static_source_table.updated_at,
         )

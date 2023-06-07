@@ -30,6 +30,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import (
     append_rsuffix_to_column_info,
@@ -55,6 +56,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_request_table import ViewBatchRequestInput
 from featurebyte.models.observation_table import ViewObservationInput
+from featurebyte.models.static_source_table import ViewStaticSourceInput
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
@@ -67,6 +69,7 @@ from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
+from featurebyte.schema.static_source_table import StaticSourceTableCreate
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -1621,3 +1624,56 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             route="/batch_request_table", payload=payload.json_dict()
         )
         return BatchRequestTable.get_by_id(batch_request_table_doc["_id"])
+
+    def create_static_source_table(
+        self,
+        name: str,
+        sample_rows: Optional[int] = None,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
+    ) -> StaticSourceTable:
+        """
+        Creates an StaticSourceTable from the View.
+
+        Parameters
+        ----------
+        name: str
+            Name of the StaticSourceTable.
+        sample_rows: Optional[int]
+            Optionally sample the source table to this number of rows before creating the
+            static source table.
+        columns: Optional[list[str]]
+            Include only these columns in the view when creating the static source table. If None, all
+            columns are included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the view using this mapping from old column names to new column names
+            when creating the static source table. If None, no columns are renamed.
+
+        Returns
+        -------
+        StaticSourceTable
+            StaticSourceTable object.
+
+        Examples
+        --------
+        >>> static_source_table = view.create_static_source_table(  # doctest: +SKIP
+        ...   name="<static_source_table_name>",
+        ...   sample_rows=10000,
+        ... )
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        payload = StaticSourceTableCreate(
+            name=name,
+            feature_store_id=self.feature_store.id,
+            request_input=ViewStaticSourceInput(
+                graph=pruned_graph,
+                node_name=mapped_node.name,
+                columns=columns,
+                columns_rename_mapping=columns_rename_mapping,
+            ),
+            sample_rows=sample_rows,
+        )
+        static_source_table_doc = StaticSourceTable.post_async_task(
+            route="/static_source_table", payload=payload.json_dict()
+        )
+        return StaticSourceTable.get_by_id(static_source_table_doc["_id"])

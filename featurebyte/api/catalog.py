@@ -28,6 +28,7 @@ from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
@@ -756,6 +757,29 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return BatchFeatureTable.list(include_id=include_id)
 
     @update_and_reset_catalog
+    def list_static_source_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        List saved static source tables.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of static source tables.
+
+        Examples
+        --------
+        List saved static source tables.
+
+        >>> static_source_tables = catalog.list_static_source_tables()
+        """
+        return StaticSourceTable.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def list_deployments(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved deployments.
@@ -1136,3 +1160,26 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name") # doctest: +SKIP
         """
         return BatchFeatureTable.get(name=name)
+
+    @update_and_reset_catalog
+    def get_static_source_table(self, name: str) -> StaticSourceTable:
+        """
+        Get static source table by name.
+
+        Parameters
+        ----------
+        name: str
+            Static source table name.
+
+        Returns
+        -------
+        StaticSourceTable
+            Static source table object.
+
+        Examples
+        --------
+        Get a saved static source table.
+
+        >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
+        """
+        return StaticSourceTable.get(name=name)

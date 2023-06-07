@@ -775,7 +775,7 @@ def snowflake_event_view_entity_feature_job_fixture(
 
 
 @pytest.fixture(name="patched_observation_table_service")
-def patched_observation_table_service():
+def patched_observation_table_service_fixture():
     """
     Patch ObservationTableService.validate_materialized_table_and_get_metadata
     """
@@ -794,6 +794,30 @@ def patched_observation_table_service():
 
     with patch(
         "featurebyte.service.observation_table.ObservationTableService.validate_materialized_table_and_get_metadata",
+        Mock(side_effect=mocked_get_additional_metadata),
+    ):
+        yield
+
+
+@pytest.fixture(name="patched_static_source_table_service")
+def patched_static_source_table_service_fixture():
+    """
+    Patch StaticSourceTableService.validate_materialized_table_and_get_metadata
+    """
+
+    async def mocked_get_additional_metadata(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return {
+            "columns_info": [
+                {"name": "cust_id", "dtype": "INT"},
+                {"name": "timestamp", "dtype": "TIMESTAMP"},
+            ],
+            "num_rows": 100,
+        }
+
+    with patch(
+        "featurebyte.service.static_source_table.StaticSourceTableService.validate_materialized_table_and_get_metadata",
         Mock(side_effect=mocked_get_additional_metadata),
     ):
         yield
@@ -888,6 +912,30 @@ def observation_table_from_view_fixture(snowflake_event_view, patched_observatio
     """
     _ = patched_observation_table_service
     return snowflake_event_view.create_observation_table("observation_table_from_event_view")
+
+
+@pytest.fixture(name="static_source_table_from_source")
+def static_source_table_from_source_fixture(
+    snowflake_database_table, patched_static_source_table_service
+):
+    """
+    Static source table created from SourceTable
+    """
+    _ = patched_static_source_table_service
+    return snowflake_database_table.create_static_source_table(
+        "static_source_table_from_source_table"
+    )
+
+
+@pytest.fixture(name="static_source_table_from_view")
+def static_source_table_from_view_fixture(
+    snowflake_event_view, patched_static_source_table_service
+):
+    """
+    Static source table created from EventView
+    """
+    _ = patched_static_source_table_service
+    return snowflake_event_view.create_static_source_table("static_source_table_from_event_view")
 
 
 @pytest.fixture(name="historical_feature_table")

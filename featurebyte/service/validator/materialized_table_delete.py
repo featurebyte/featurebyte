@@ -6,10 +6,13 @@ from bson import ObjectId
 from featurebyte.exception import DocumentDeletionError
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.models.static_source_table import StaticSourceTableModel
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.static_source_table import StaticSourceTableService
+from featurebyte.service.table import TableService
 
 MATERIALIZED_TABLE_DELETE_ERROR_MESSAGE = (
     "Cannot delete {table_name} Table {document_id} because it is referenced by "
@@ -102,6 +105,52 @@ async def check_delete_batch_request_table(
                 document_id=document.id,
                 table_name="Batch Request",
                 ref_table_name="Batch Feature",
+                ref_document_ids=reference_ids,
+                total_ref_documents=len(reference_ids),
+            )
+        )
+    return document
+
+
+async def check_delete_static_source_table(
+    static_source_table_service: StaticSourceTableService,
+    table_service: TableService,
+    document_id: ObjectId,
+) -> StaticSourceTableModel:
+    """
+    Check delete static source table given the document id & services
+
+    Parameters
+    ----------
+    static_source_table_service: StaticSourceTableService
+        Static source table service
+    table_service: TableService
+        Table service
+    document_id: ObjectId
+        Document id to delete
+
+    Returns
+    -------
+    StaticSourceTableModel
+
+    Raises
+    ------
+    DocumentDeletionError
+        If the document cannot be deleted
+    """
+    document = await static_source_table_service.get_document(document_id=document_id)
+    reference_ids = [
+        str(doc["_id"])
+        async for doc in table_service.list_documents_iterator(
+            query_filter={"tabular_source": document.location.dict()}
+        )
+    ]
+    if reference_ids:
+        raise DocumentDeletionError(
+            MATERIALIZED_TABLE_DELETE_ERROR_MESSAGE.format(
+                document_id=document.id,
+                table_name="Static Source",
+                ref_table_name="Featurebyte",
                 ref_document_ids=reference_ids,
                 total_ref_documents=len(reference_ids),
             )
