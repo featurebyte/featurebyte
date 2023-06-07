@@ -5,6 +5,9 @@ from typing import Any
 
 from datetime import datetime
 
+import pandas as pd
+from pydantic import Field
+
 from featurebyte.logging import get_logger
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
@@ -20,6 +23,22 @@ class TileScheduleOnlineStore(BaselSqlModel):
 
     aggregation_id: str
     job_schedule_ts_str: str
+    retry_num: int = Field(default=10)
+
+    async def retry_sql(self, sql: str) -> pd.DataFrame | None:
+        """
+        Execute sql query with retry
+
+        Parameters
+        ----------
+        sql: str
+            SQL query
+
+        Returns
+        -------
+        pd.DataFrame | None
+        """
+        return await retry_sql(self._session, sql, retry_num=self.retry_num)
 
     def __init__(self, session: BaseSession, **kwargs: Any):
         """
@@ -50,7 +69,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
             WHERE
               AGGREGATION_ID ILIKE '{self.aggregation_id}' AND IS_DELETED = FALSE
         """
-        online_store_df = await retry_sql(self._session, select_sql)
+        online_store_df = await self.retry_sql(select_sql)
         if online_store_df is None or len(online_store_df) == 0:
             return
 
@@ -87,15 +106,13 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 create_sql = construct_create_table_query(
                     fs_table, f"select {entities_fname_str} from ({f_sql})", session=self._session
                 )
-                await retry_sql(self._session, create_sql)
+                await self.retry_sql(create_sql)
 
-                await retry_sql(
-                    self._session,
+                await self.retry_sql(
                     f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP",
                 )
 
-                await retry_sql(
-                    session=self._session,
+                await self.retry_sql(
                     sql=f"UPDATE {fs_table} SET UPDATED_AT_{f_name} = to_timestamp('{current_ts}')",
                 )
             else:
@@ -117,12 +134,10 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 quote_f_name = self.quote_column(f_name)
 
                 if not col_exists:
-                    await retry_sql(
-                        self._session,
+                    await self.retry_sql(
                         f"ALTER TABLE {fs_table} ADD COLUMN {quote_f_name} {f_value_type}",
                     )
-                    await retry_sql(
-                        self._session,
+                    await self.retry_sql(
                         f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT_{f_name} TIMESTAMP",
                     )
                     logger.debug(f"done adding column ({f_name}) to table {fs_table}")
@@ -146,8 +161,8 @@ class TileScheduleOnlineStore(BaselSqlModel):
                                  values ({values_args}, to_timestamp('{current_ts}'))
                  """
 
-                await retry_sql(session=self._session, sql=merge_sql)
+                await self.retry_sql(sql=merge_sql)
 
                 # remove feature values for entities that are not in entity universe
                 remove_values_sql = f"""UPDATE {fs_table} SET {quote_f_name} = NULL WHERE UPDATED_AT_{f_name} < to_timestamp('{current_ts}')"""
-                await retry_sql(session=self._session, sql=remove_values_sql)
+                await self.retry_sql(sql=remove_values_sql)
