@@ -720,6 +720,24 @@ def test_feature__as_default_version(saved_feature):
     # check get by name and version
     assert Feature.get(name=saved_feature.name, version=new_version.version) == new_version
 
+    # check logic to prevent setting lower readiness version as default
+    saved_feature.update_readiness(FeatureReadiness.PUBLIC_DRAFT)
+    with pytest.raises(RecordUpdateException) as exc:
+        new_version.as_default_version()
+
+    error_msg = (
+        f"Cannot set default feature ID to {new_version.id} "
+        f"because it has lower readiness level than PUBLIC_DRAFT."
+    )
+    assert error_msg in str(exc.value)
+    assert new_version.is_default is False
+    assert saved_feature.is_default is True
+
+    new_version.update_readiness(FeatureReadiness.PUBLIC_DRAFT)
+    new_version.as_default_version()
+    assert new_version.is_default is True
+    assert saved_feature.is_default is False
+
 
 def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
     """Test composite features' property"""

@@ -7,6 +7,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import Feature, FeatureJobSetting, MissingValueImputation
+from featurebyte.exception import DocumentUpdateError
 from featurebyte.models import FeatureModel
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
@@ -105,7 +106,7 @@ async def test_validate(
     )
 
     # Verify that validates throws an error without ignore_guardrails
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(DocumentUpdateError) as exc:
         await production_ready_validator.validate(promoted_feature=feature.cached_model)
     exception_str = format_exception_string_for_comparison(str(exc.value))
     expected_exception_str = format_exception_string_for_comparison(
@@ -140,7 +141,7 @@ async def test_assert_no_other_production_ready_feature__exists(
     Test that assert throws an error if there are other production ready features with the same name.
 
     """
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(DocumentUpdateError) as exc:
         another_feature = FeatureModel(**{**production_ready_feature.dict(), "_id": ObjectId()})
         await production_ready_validator._assert_no_other_production_ready_feature(another_feature)
 
@@ -186,7 +187,7 @@ async def test_assert_no_deprecated_tables(
     table = await event_table_service.get_document(document_id=table_id)
     assert table.status == TableStatus.DEPRECATED
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(DocumentUpdateError) as exc:
         await production_ready_validator._assert_no_deprecated_table(promoted_feature=feature)
 
     expected_msg = (
@@ -290,7 +291,7 @@ def test_raise_error_if_diffs_present():
 
     # Feature job setting errors found, but no cleaning ops errors
     some_error_diff = {"random key": "random stuff"}
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(DocumentUpdateError) as exc:
         ProductionReadyValidator._raise_error_if_diffs_present(some_error_diff, {})
     str_exc = str(exc.value)
     assert "Discrepancies found" in str_exc
@@ -298,7 +299,7 @@ def test_raise_error_if_diffs_present():
     assert "cleaning_operations" not in str_exc
 
     # Cleaning ops errors found, but no feature job setting errors
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(DocumentUpdateError) as exc:
         ProductionReadyValidator._raise_error_if_diffs_present({}, some_error_diff)
     str_exc = str(exc.value)
     assert "Discrepancies found" in str_exc
@@ -306,7 +307,7 @@ def test_raise_error_if_diffs_present():
     assert "cleaning_operations" in str_exc
 
     # Both feature job setting, and cleaning ops errors found
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(DocumentUpdateError) as exc:
         ProductionReadyValidator._raise_error_if_diffs_present(some_error_diff, some_error_diff)
     str_exc = str(exc.value)
     assert "Discrepancies found" in str_exc

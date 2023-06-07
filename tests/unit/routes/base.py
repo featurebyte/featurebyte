@@ -516,6 +516,29 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.CREATED
         return ObjectId(response.json()["_id"])
 
+    @staticmethod
+    def create_new_feature_version(test_api_client, feature_id):
+        """Create new feature version"""
+        post_feature_response = test_api_client.post(
+            "/feature",
+            json={
+                "source_feature_id": feature_id,
+                "table_feature_job_settings": [
+                    {
+                        "table_name": "sf_event_table",
+                        "feature_job_setting": {
+                            "blind_spot": "23h",
+                            "frequency": "24h",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
+            },
+        )
+        assert post_feature_response.status_code == HTTPStatus.CREATED
+        new_feature_id = post_feature_response.json()["_id"]
+        return new_feature_id
+
     @pytest_asyncio.fixture()
     async def create_success_response_non_default_catalog(
         self, test_api_client_persistent, catalog_id

@@ -157,26 +157,10 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         feature_id = response_dict["default_feature_id"]
 
         # update current default feature to production ready
-        test_api_client.patch(f"feature/{feature_id}", json={"readiness": "PRODUCTION_READY"})
+        test_api_client.patch(f"feature/{feature_id}", json={"readiness": "PUBLIC_DRAFT"})
 
         # create a new feature and set it as default feature
-        post_feature_response = test_api_client.post(
-            "/feature",
-            json={
-                "source_feature_id": feature_id,
-                "table_feature_job_settings": [
-                    {
-                        "table_name": "sf_event_table",
-                        "feature_job_setting": {
-                            "blind_spot": "23h",
-                            "frequency": "24h",
-                            "time_modulo_frequency": "1h",
-                        },
-                    }
-                ],
-            },
-        )
-        new_feature_id = post_feature_response.json()["_id"]
+        new_feature_id = self.create_new_feature_version(test_api_client, feature_id)
 
         # check feature namespace response (make sure new feature ID is included)
         namespace_response = test_api_client.get(f"{self.base_route}/{feature_namespace_id}")
@@ -184,9 +168,13 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         assert namespace_response_dict["default_version_mode"] == "MANUAL"
         assert namespace_response_dict["feature_ids"] == [feature_id, new_feature_id]
         assert namespace_response_dict["default_feature_id"] == feature_id
-        assert namespace_response_dict["readiness"] == "PRODUCTION_READY"
+        assert namespace_response_dict["readiness"] == "PUBLIC_DRAFT"
 
         # test update new default feature ID
+        response = test_api_client.patch(
+            f"feature/{new_feature_id}", json={"readiness": "PUBLIC_DRAFT"}
+        )
+        assert response.status_code == HTTPStatus.OK
         update_response = test_api_client.patch(
             f"{self.base_route}/{feature_namespace_id}", json={"default_feature_id": new_feature_id}
         )
@@ -194,7 +182,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         assert update_response.status_code == HTTPStatus.OK
         assert namespace_response_dict["feature_ids"] == [feature_id, new_feature_id]
         assert update_response_dict["default_feature_id"] == new_feature_id
-        assert update_response_dict["readiness"] == "DRAFT"
+        assert update_response_dict["readiness"] == "PUBLIC_DRAFT"
 
         # check update version mode back to AUTO and the default feature id get updated
         update_response = test_api_client.patch(
@@ -204,8 +192,8 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         assert update_response.status_code == HTTPStatus.OK
         assert update_response_dict["default_version_mode"] == "AUTO"
         assert update_response_dict["feature_ids"] == [feature_id, new_feature_id]
-        assert update_response_dict["default_feature_id"] == feature_id
-        assert update_response_dict["readiness"] == "PRODUCTION_READY"
+        assert update_response_dict["default_feature_id"] == new_feature_id
+        assert update_response_dict["readiness"] == "PUBLIC_DRAFT"
 
         # check update default feature ID on AUTO mode
         update_response = test_api_client.patch(

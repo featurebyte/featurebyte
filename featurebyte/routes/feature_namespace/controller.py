@@ -8,7 +8,7 @@ from typing import Any, Literal, cast
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature import DefaultVersionMode, FeatureModel
+from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.routes.common.base import (
     BaseDocumentController,
     DerivePrimaryEntityMixin,
@@ -162,6 +162,22 @@ class FeatureNamespaceController(
             if feature_namespace.default_version_mode != DefaultVersionMode.MANUAL:
                 raise DocumentUpdateError(
                     "Cannot set default feature ID when default version mode is not MANUAL."
+                )
+
+            # check new default feature ID exists & make sure it is the highest readiness level among all versions
+            new_default_feature = await self.feature_service.get_document(
+                document_id=data.default_feature_id
+            )
+            max_readiness = new_default_feature.readiness
+            async for feature_dict in self.feature_service.list_documents_iterator(
+                query_filter={"_id": {"$in": feature_namespace.feature_ids}}
+            ):
+                max_readiness = max(max_readiness, FeatureReadiness(feature_dict["readiness"]))
+
+            if new_default_feature.readiness != max_readiness:
+                raise DocumentUpdateError(
+                    f"Cannot set default feature ID to {new_default_feature.id} "
+                    f"because it has lower readiness level than {max_readiness}."
                 )
 
             # update feature namespace default feature ID and update feature readiness
