@@ -3,7 +3,7 @@ App container config module.
 
 This contains all our registrations for dependency injection.
 """
-from typing import List
+from typing import Dict, List, Optional
 
 from dataclasses import dataclass
 
@@ -21,6 +21,11 @@ class ClassDefinition:
     class_: type
     dependencies: List[str]
 
+    # Ordering is a parameter to determine the order in which the dependencies are built.
+    # The lower the value, the earlier the dependency is built.
+    # If definitions have the same order, they are built in no particular order.
+    ordering: int
+
 
 class AppContainerConfig:
     """
@@ -37,6 +42,21 @@ class AppContainerConfig:
         # Controllers can depend on any object defined above.
         self.controllers: List[ClassDefinition] = []
 
+        self.dependency_mapping: Dict[str, ClassDefinition] = {}
+
+    def get_class_def_mapping(self) -> Dict[str, ClassDefinition]:
+        """
+        Get class definitions, keyed by name.
+        """
+        # Return if already populated
+        if self.dependency_mapping:
+            return self.dependency_mapping
+
+        # Populate
+        for dep in self._all_dependencies():
+            self.dependency_mapping[dep.name] = dep
+        return self.dependency_mapping
+
     def add_no_dep_objects(self, name: str, class_: type) -> None:
         """
         Register a class with no dependencies.
@@ -49,7 +69,7 @@ class AppContainerConfig:
             type we are registering
         """
         self.no_dependency_objects.append(
-            ClassDefinition(name=name, class_=class_, dependencies=[])
+            ClassDefinition(name=name, class_=class_, dependencies=[], ordering=10)
         )
 
     def add_service_with_extra_deps(self, name: str, class_: type, dependencies: List[str]) -> None:
@@ -70,6 +90,7 @@ class AppContainerConfig:
                 name=name,
                 class_=class_,
                 dependencies=dependencies,
+                ordering=30,
             )
         )
 
@@ -89,6 +110,7 @@ class AppContainerConfig:
                 name=name,
                 class_=class_,
                 dependencies=[],
+                ordering=20,
             )
         )
 
@@ -110,6 +132,7 @@ class AppContainerConfig:
                 name=name,
                 class_=class_,
                 dependencies=dependencies,
+                ordering=40,
             )
         )
 

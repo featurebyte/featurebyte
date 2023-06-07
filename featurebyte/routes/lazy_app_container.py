@@ -1,0 +1,242 @@
+"""
+Lazy app container functions the same as the app_container, but only initializes dependencies when needed.
+"""
+from typing import Any, Dict, List
+
+from bson import ObjectId
+
+from featurebyte.persistent import Persistent
+from featurebyte.routes.app_container_config import ClassDefinition
+from featurebyte.routes.registry import app_container_config
+from featurebyte.routes.task.controller import TaskController
+from featurebyte.routes.temp_data.controller import TempDataController
+from featurebyte.service.task_manager import TaskManager
+from featurebyte.storage import Storage
+from featurebyte.utils.credential import MongoBackedCredentialProvider
+
+
+def get_all_deps_for_key(
+    key: str, class_def_mapping: Dict[str, ClassDefinition]
+) -> Dict[str, ClassDefinition]:
+    """
+    Get dependencies for a given key.
+
+    Parameters
+    ----------
+    key: str
+        key to get dependencies for
+    class_def_mapping: Dict[str, ClassDefinition]
+        mapping of key to class definition
+
+    Returns
+    -------
+    Dict[str, ClassDefinition]
+        dependencies
+    """
+    # Get class definition
+    class_def = class_def_mapping[key]
+    dependencies = class_def.dependencies
+    all_deps = {key: class_def}
+    if not dependencies:
+        return all_deps
+
+    # Recursively get all dependencies
+    for dep in dependencies:
+        deps_for_key = get_all_deps_for_key(dep, class_def_mapping)
+        all_deps.update(deps_for_key)
+
+    return all_deps
+
+
+def build_no_dep(class_def: ClassDefinition) -> Any:
+    """
+    Build a class with no dependencies.
+
+    Parameters
+    ----------
+    class_def: ClassDefinition
+        class definition
+
+    Returns
+    -------
+    Any
+    """
+    return class_def.class_()
+
+
+def build_service(
+    class_def: ClassDefinition, user: Any, persistent: Persistent, catalog_id: ObjectId
+) -> Any:
+    """
+    Build a service with the given dependencies.
+
+    Parameters
+    ----------
+    class_def: ClassDefinition
+        class definition
+    user: Any
+        user object
+    persistent: Persistent
+        persistent object
+    catalog_id: ObjectId
+        catalog id
+
+    Returns
+    -------
+    Any
+    """
+    return class_def.class_(user=user, persistent=persistent, catalog_id=catalog_id)
+
+
+def build_service_with_deps(
+    class_def: ClassDefinition,
+    user: Any,
+    persistent: Persistent,
+    catalog_id: ObjectId,
+    instance_map: Dict[str, Any],
+) -> Any:
+    """
+    Build a service with the given dependencies.
+
+    Parameters
+    ----------
+    class_def: ClassDefinition
+        class definition
+    user: Any
+        user object
+    persistent: Persistent
+        persistent object
+    catalog_id: ObjectId
+        catalog id
+    instance_map: Dict[str, Any]
+        mapping of key to instance
+
+    Returns
+    -------
+    Any
+    """
+    extra_depends = class_def.dependencies
+    # Seed depend_instances with the normal user and persistent objects
+    depend_instances = [user, persistent, catalog_id]
+    for s_name in extra_depends:
+        depend_instances.append(instance_map[s_name])
+    return class_def.class_(*depend_instances)
+
+
+def build_controllers(class_definition: ClassDefinition, instance_map: Dict[str, Any]) -> Any:
+    """
+    Build a controller with the given dependencies.
+
+    Parameters
+    ----------
+    class_definition: ClassDefinition
+        class definition
+    instance_map: Dict[str, Any]
+        mapping of key to instance
+
+    Returns
+    -------
+    Any
+    """
+    depends = class_definition.dependencies
+    depend_instances = []
+    for s_name in depends:
+        depend_instances.append(instance_map[s_name])
+    return class_definition.class_(*depend_instances)
+
+
+def build_deps(
+    deps: List[ClassDefinition],
+    existing_deps: Dict[str, Any],
+    user: Any,
+    persistent: Persistent,
+    catalog_id: ObjectId,
+) -> Dict[str, Any]:
+    """
+    Build dependencies for a given list of class definitions.
+
+    Parameters
+    ----------
+    deps: List[ClassDefinition]
+        list of class definitions
+    existing_deps: Dict[str, Any]
+        mapping of key to instance
+    user: Any
+        user object
+    persistent: Persistent
+        persistent object
+    catalog_id: ObjectId
+        catalog id
+
+    Returns
+    -------
+    Dict[str, Any]
+    """
+    # Sort deps by order
+    deps = sorted(deps, key=lambda x: x.ordering)
+
+    # Build deps
+    new_deps = {}
+    new_deps.update(existing_deps)
+    for dep in deps:
+        # Skip if built already
+        if dep.name in new_deps:
+            continue
+        # Build dependencies for this dep
+        if dep.ordering == 10:
+            new_deps[dep.name] = build_no_dep(dep)
+        elif dep.ordering == 20:
+            new_deps[dep.name] = build_service(dep, user, persistent, catalog_id)
+        elif dep.ordering == 30:
+            new_deps[dep.name] = build_service_with_deps(
+                dep, user, persistent, catalog_id, new_deps
+            )
+        elif dep.ordering == 40:
+            new_deps[dep.name] = build_controllers(dep, new_deps)
+    return new_deps
+
+
+class LazyAppContainer:
+    """
+    LazyAppContainer is a container for all the services and controllers used in the app.
+
+    We only initialize the dependencies that are needed for a given request as invoked by __getattr__.
+    """
+
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        temp_storage: Storage,
+        task_manager: TaskManager,
+        storage: Storage,
+        catalog_id: ObjectId,
+    ):
+        self.user = user
+        self.persistent = persistent
+        self.temp_storage = temp_storage
+        self.task_manager = task_manager
+        self.storage = storage
+        self.catalog_id = catalog_id
+
+        # Used to cache instances if they've already been built
+        # Pre-load with some default deps
+        self.instance_map: Dict[str, Any] = {
+            "task_controller": TaskController(task_manager=task_manager),
+            "tempdata_controller": TempDataController(temp_storage=temp_storage),
+            "credential_provider": MongoBackedCredentialProvider(persistent=persistent),
+            "task_manager": task_manager,
+        }
+
+    def __getattr__(self, key: str) -> Any:
+        # Return instance if it's been built before already
+        if key in self.instance_map:
+            return self.instance_map[key]
+
+        # Build instance
+        deps = get_all_deps_for_key(key, app_container_config.get_class_def_mapping())
+        new_deps = build_deps(
+            list(deps.values()), self.instance_map, self.user, self.persistent, self.catalog_id
+        )
+        self.instance_map.update(new_deps)
+        return self.instance_map[key]
