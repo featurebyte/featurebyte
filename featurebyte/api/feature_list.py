@@ -1377,6 +1377,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ...     )
         ...   ]
         ... )
+        >>> current_feature.update_readiness("DEPRECATED")
         >>> new_feature.update_default_version_mode("MANUAL")
         >>> new_feature.as_default_version()
         >>> new_feature.is_default is True and current_feature.is_default is False
@@ -1398,6 +1399,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         Reset the default version mode of the feature to make original feature as default. Create a new version
         of feature list using original feature list should throw an error due to no change in feature list is detected.
 
+        >>> current_feature.update_readiness("PRODUCTION_READY")
         >>> current_feature.update_default_version_mode("AUTO")
         >>> current_feature.is_default
         True

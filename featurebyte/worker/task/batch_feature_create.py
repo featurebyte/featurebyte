@@ -150,4 +150,4 @@ class BatchFeatureCreateTask(BaseTask):
 
             # update the progress
             percent = 100 * (i + 1) / total
-            self.update_progress(percent=int(percent), message="Completed {i+1}/{total} features")
+            self.update_progress(percent=int(percent), message=f"Completed {i+1}/{total} features")
